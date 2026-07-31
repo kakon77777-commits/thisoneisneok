@@ -20,7 +20,18 @@ const config = JSON.parse(fs.readFileSync(target, "utf8"));
 
 config.name = "thisoneisneok";
 config.topLevelName = "thisoneisneok";
-config.assets = { ...(config.assets ?? {}), directory: "../client", binding: "ASSETS" };
+// html_handling "none" is required, not cosmetic. Cloudflare's default
+// ("auto-trailing-slash") 307s /foo.html to /foo — but every canonical URL this
+// site publishes carries the .html extension: the paper links, papers-index.json,
+// sitemap.xml, and the canonical baked into each page and PDF. Under the default
+// all 77 of them redirect, and each page's own <link rel="canonical"> then
+// disagrees with the URL actually serving it.
+config.assets = {
+  ...(config.assets ?? {}),
+  directory: "../client",
+  binding: "ASSETS",
+  html_handling: "none",
+};
 config.observability = { enabled: true };
 
 // Keep the workers.dev URL alive. Wrangler disables it by default when the key

@@ -75,18 +75,24 @@ async function onePass() {
     return [live.count === truth.paper_count && listed === truth.paper_count, `count=${live.count}, listed=${listed} (want ${truth.paper_count})`];
   });
 
-  // Spot-check that both published formats actually resolve, one per series.
-  await check("published formats reachable", async () => {
+  // Both published formats must answer 200 AT the canonical URL — no redirect.
+  //
+  // This check used to follow redirects, and so passed while every .html URL was
+  // 307ing to its extensionless form: the URL in the sitemap, in
+  // papers-index.json, and in each page's own <link rel="canonical"> was not the
+  // URL actually serving the page. `redirect: "manual"` is what makes a 3xx
+  // visible instead of silently resolved.
+  await check("published formats reachable, no redirect", async () => {
     const live = await (await get(`${baseUrl}/ai/papers-index.json`)).json();
-    const samples = live.series.map((series) => series.papers[0]).filter(Boolean);
+    const samples = live.series.flatMap((series) => [series.papers[0], series.papers.at(-1)]).filter(Boolean);
     const bad = [];
     for (const paper of samples) {
       for (const url of [paper.html, paper.pdf]) {
-        const response = await fetch(url, { method: "HEAD" });
-        if (!response.ok) bad.push(`${url} -> ${response.status}`);
+        const response = await fetch(url, { method: "GET", redirect: "manual" });
+        if (response.status !== 200) bad.push(`${url} -> ${response.status}${response.headers.get("location") ? ` -> ${response.headers.get("location")}` : ""}`);
       }
     }
-    return [bad.length === 0, bad.length ? bad.join("; ") : `${samples.length * 2} URLs OK (HTML + PDF per series)`];
+    return [bad.length === 0, bad.length ? bad.join("; ") : `${samples.length * 2} URLs answer 200 directly (HTML + PDF, first and last of each series)`];
   });
 
   await check("markdown sources NOT published", async () => {
