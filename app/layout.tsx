@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SiteShell } from "./components/site-shell";
+import { BUILD_ID } from "./data/build-id.generated";
 
 const siteUrl = "https://thisoneisneok.com";
 
@@ -16,7 +17,9 @@ export const metadata: Metadata = {
     canonical: siteUrl,
   },
   other: {
-    "codex-preview": "development",
+    // Read by scripts/verify-deploy.mjs to prove the live HTML came from this
+    // build and not from a stale edge cache.
+    "build-id": BUILD_ID,
   },
   icons: {
     icon: "/favicon.svg",

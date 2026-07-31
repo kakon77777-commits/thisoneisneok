@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Build + deploy + verify thisoneisneok.com in one gated step.
+#   1. stamp a build_id into the app and public/ai/build-id.json
+#   2. npm run build              -> fresh dist/ carrying that build_id
+#   3. patch dist/server/wrangler.json (the Vite plugin rewrites it every build)
+#   4. npx wrangler deploy
+#   5. node scripts/verify-deploy.mjs
+#
+# Step 5 failing means the deploy is not actually consistent yet — stale edge
+# cache, or a real bug. This script's exit code reflects that. Do NOT treat
+# `wrangler deploy` succeeding, on its own, as "done".
+set -euo pipefail
+
+node scripts/stamp-build.mjs
+npm run build
+node scripts/patch-wrangler.mjs
+npx wrangler deploy -c dist/server/wrangler.json
+node scripts/verify-deploy.mjs "$@"
