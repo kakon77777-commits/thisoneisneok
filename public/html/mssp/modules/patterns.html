@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>架構與模式 | MSSP | Neo.K</title>
-<meta name="description" content="狀態拆分、共享契約、孤島測試與檢查順序等可重複使用的結構，以及六種反模式。">
+<meta name="description" content="五個已驗證的可重複結構、六種反模式，以及實作補上的一條規則。">
 <link rel="canonical" href="https://thisoneisneok.com/html/mssp/modules/patterns.html">
 <link rel="stylesheet" href="/vendor/katex/katex.min.css">
 <style>
@@ -37,7 +37,7 @@ footer a{color:var(--accent)}
 <main>
   <span class="state">演化中</span>
   <article class="content"><h1>架構與模式</h1>
-<p>這一頁收錄的是已經被實作驗證過的結構。沒有做過的東西不會出現在這裡。</p>
+<p>這一頁收錄的是已經被實作驗證過的結構。每一條都指得出是哪個範例做出來的，沒有做過的東西不會出現在這裡。</p>
 <h2>模式 1：共享契約取代兄弟引用</h2>
 <p><strong>問題。</strong> 兩個 TMS 需要同一份衍生資料。先寫的那個自然長出一個計算函式，後寫的直接 import 它。</p>
 <pre><code class="language-js">// TMS/reporters/json.js
@@ -99,13 +99,15 @@ TMS/reporters/json  ──┘
 <p>一個從來沒有被證明會失敗的守衛，還不構成任何證據。</p>
 </blockquote>
 <p>現在單元邊界是明確的：<strong>一個 TMS 單元 = 帶有 index 檔的目錄，否則就是單一檔案</strong>。而且檢查在兩個方向都測過：違規時擋下並指出確切檔案，乾淨時通過。</p>
-<h2>還沒有做的</h2>
+<h2>路線</h2>
+<p>以下是這個系列接下來要補的結構，按預期價值排序：</p>
 <ul>
-<li>跨語言的依賴檢查。目前的檢查是文字比對靜態 <code>import</code>，動態 <code>import()</code> 會漏掉。</li>
-<li>形式化驗證 TMS 不存在隱藏依賴。</li>
-<li>上下文污染的量測方法。</li>
-<li>Router 的實作模式。001 號範例沒有 Router——一個型別對一個處理器時，路由就是註冊表裡的一次查表，另設一層會是空的。</li>
+<li><strong>Router 的實作模式。</strong> 這是最快會用到的一個。001 號沒有 Router，因為一個型別對一個處理器時路由就是一次查表，另設一層會是空模組——這本身就是「度」的一個示範：等它需要存在的時候再建。</li>
+<li><strong>跨語言的依賴檢查。</strong> 目前是文字比對靜態 <code>import</code>，動態 <code>import()</code> 會漏掉。一個有真正模組邊界的語言不需要這道檢查。</li>
+<li><strong>上下文污染的量測。</strong> 目前 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ρ</mi><mi>q</mi></msub></mrow><annotation encoding="application/x-tex">\rho_q</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">ρ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> 是一個定義，還不是一個可以在專案上跑出數字的量測。</li>
+<li><strong>形式化驗證隱藏依賴。</strong> 孤島測試能抓到大部分，但它是動態的；靜態證明會更強。</li>
 </ul>
+<p>每一項補上之後都會回到這一頁，並附上做出它的範例編號。</p>
 </article>
 </main>
 <footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>

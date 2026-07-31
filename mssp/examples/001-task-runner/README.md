@@ -132,12 +132,12 @@ file would not even load — the failure is structural, not a wrong assertion.
 
 ## What this example does not solve
 
-- **It is smaller than the threshold that justifies this structure.** 306 lines
-  of code across 13 files (496 including comments) would be perfectly readable as
-  two files. The five sets are here to make the parts visible, not because the
-  size demands them. Presenting a toy at this weight as proof the method pays off
-  would be dishonest; the payoff appears at the scale described in the skill's
-  `SMS/scale-thresholds.md`.
+- **Scale marker.** 306 lines of code across 13 files. The five sets are here to
+  make the parts visible; at this size two files would also do. To see what the
+  structure actually buys, put the same boundaries on a project at the threshold
+  described in [Start here](https://thisoneisneok.com/html/mssp/modules/start.html)
+  — several roles, several tools, irreversible actions, sub-capabilities that
+  need independent tests. This example demonstrates the shape, not the payoff.
 - **The dependency rule is enforced by text matching, not by the language.**
   Static `import ... from` lines are checked. A dynamic `import()` built from a
   string would slip past it, as would a require built at runtime. A language with

@@ -29,6 +29,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-0-01.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-0-01.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-0-01.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-0-01.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-0-01_三重宇宙論_意圖計算與物理存在的基本區分_v0.1.md"
       },
       {
@@ -48,6 +49,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-0-02.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-0-02.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-0-02.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-0-02.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-0-02_三宇宙耦合動力學_從想要表示到世界改變_v0.1.md"
       },
       {
@@ -67,6 +69,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-0-03.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-0-03.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-0-03.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-0-03.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-0-03_表示落差_意圖計算模型與物理現實之間的不可完備映射_v0.1.md"
       },
       {
@@ -86,6 +89,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-0-04.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-0-04.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-0-04.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-0-04.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-0-04_數位宇宙作為人工存在域_實體狀態規則與歷史_v0.1.md"
       },
       {
@@ -105,6 +109,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-0-05.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-0-05.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-0-05.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-0-05.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-0-05_生成與限制_計算機宇宙如何創造並封閉可能性_v0.1.md"
       },
       {
@@ -124,6 +129,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-0-06.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-0-06.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-0-06.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-0-06.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-0-06_我們到底想要什麼_計算目的價值邊界與世界選擇_v0.1.md"
       },
       {
@@ -143,6 +149,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-1-01.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-1-01.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-1-01.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-1-01.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-1-01_程式不等於程式碼_可執行問題模型的基本定義_v0.1.md"
       },
       {
@@ -162,6 +169,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-1-02.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-1-02.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-1-02.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-1-02.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-1-02_問題世界建模_實體關係規則與系統邊界_v0.1.md"
       },
       {
@@ -181,6 +189,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-1-03.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-1-03.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-1-03.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-1-03.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-1-03_資料狀態事件行動_程式系統的四元動力結構_v0.1.md"
       },
       {
@@ -200,6 +209,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-1-04.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-1-04.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-1-04.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-1-04.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-1-04_責任模組與契約_從檔案分類到系統邊界_v0.1.md"
       },
       {
@@ -219,6 +229,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-1-05.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-1-05.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-1-05.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-1-05.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-1-05_可視化作為外部結構記憶_多角色多尺度的程式理解_v0.1.md"
       },
       {
@@ -238,6 +249,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-1-06.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-1-06.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-1-06.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-1-06.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-1-06_失敗也是程式_驗證可觀測恢復與長期維護_v0.1.md"
       },
       {
@@ -257,6 +269,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-2-01.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-2-01.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-2-01.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-2-01.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-2-01_程式語言不等於文字_結構語意與執行的基本分離_v0.1.md"
       },
       {
@@ -276,6 +289,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-2-02.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-2-02.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-2-02.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-2-02.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-2-02_符號作為算子_從靜態字元到可組合計算閉包_v0.1.md"
       },
       {
@@ -295,6 +309,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-2-03.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-2-03.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-2-03.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-2-03.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-2-03_語法語意效果_程式語言的三層存在結構_v0.1.md"
       },
       {
@@ -314,6 +329,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-2-04.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-2-04.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-2-04.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-2-04.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-2-04_意圖中介表示_從自然意圖到多重可執行投影_v0.1.md"
       },
       {
@@ -333,6 +349,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-2-05.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-2-05.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-2-05.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-2-05.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-2-05_可編譯世界_程式執行作為世界狀態差分_v0.1.md"
       },
       {
@@ -352,6 +369,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pu-2-06.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pu-2-06.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pu-2-06.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pu-2-06.md",
         "sourceFile": "ingest\\01-before\\Program_Universe_Foundations\\PU-2-06_後文本程式語言_意圖結構驗證與物理耦合的統一框架_v0.1.md"
       }
     ]
@@ -384,6 +402,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-001.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-001.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-001.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-001.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-001_程式語言設計師風格譜系_從語言特徵分類到設計決策人格_v1.0.md"
       },
       {
@@ -403,6 +422,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-002.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-002.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-002.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-002.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-002_複雜度配置論_程式語言沒有消滅的複雜度去了哪裡_v1.0.md"
       },
       {
@@ -422,6 +442,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-003.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-003.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-003.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-003.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-003_控制責任配置論_使用者編譯器Runtime與工具誰應承擔錯誤_v1.0.md"
       },
       {
@@ -441,6 +462,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-004.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-004.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-004.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-004.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-004_設計者共同體與制度_如何避免程式語言史的創始人歸因偏誤_v1.0.md"
       },
       {
@@ -460,6 +482,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-005.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-005.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-005.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-005.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-005_風格的時間相位_設計師思想語言演化與社群治理如何分離_v1.0.md"
       },
       {
@@ -479,6 +502,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-006.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-006.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-006.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-006.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-006_極簡核心與功能擴張_語言應保持多小又能成長到多大_v1.0.md"
       },
       {
@@ -498,6 +522,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-007.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-007.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-007.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-007.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-007_顯式控制與自動推導_設計者應要求使用者說多少又替使用者猜多少_v1.0.md"
       },
       {
@@ -517,6 +542,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-008.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-008.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-008.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-008.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-008_機器效率與人類可讀性_成本模型應寫在語言表面還是藏在編譯器之後_v1.0.md"
       },
       {
@@ -536,6 +562,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-009.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-009.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-009.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-009.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-009_安全約束與表達自由_語言應禁止多少錯誤又應允許多少逃生_v1.0.md"
       },
       {
@@ -555,6 +582,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-010.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-010.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-010.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-010.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-010_設計一致性相容性與社群演化_語言何時應堅持原則何時應接受歷史_v1.0.md"
       },
       {
@@ -574,6 +602,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-011.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-011.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-011.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-011.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-011_John_Backus_從_FORTRAN_到函數級程式設計的自我反省_v1.0.md"
       },
       {
@@ -593,6 +622,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-012.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-012.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-012.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-012.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-012_John_McCarthy_極小核心符號計算與語言可延展性_v1.0.md"
       },
       {
@@ -612,6 +642,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-013.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-013.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-013.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-013.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-013_Alan_Kay_物件訊息與對物件導向的歷史誤讀_v1.0.md"
       },
       {
@@ -631,6 +662,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-014.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-014.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-014.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-014.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-014_Niklaus_Wirth_簡潔教育與可實作性的設計倫理_v1.0.md"
       },
       {
@@ -650,6 +682,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-015.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-015.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-015.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-015.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-015_Dennis_Ritchie_可攜式系統語言機器透明度與克制的抽象_v1.0.md"
       },
       {
@@ -669,6 +702,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-016.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-016.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-016.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-016.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-016_Bjarne_Stroustrup_零額外成本多範式與相容性政治_v1.0.md"
       },
       {
@@ -688,6 +722,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-017.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-017.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-017.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-017.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-017_Guido_van_Rossum_可讀性實用主義與BDFL裁決_v1.0.md"
       },
       {
@@ -707,6 +742,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-018.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-018.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-018.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-018.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-018_Yukihiro_Matsumoto_程式設計者幸福語言自然性與社群信任_v1.0.md"
       },
       {
@@ -726,6 +762,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-019.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-019.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-019.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-019.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-019_Larry_Wall_語言多義性後現代實用主義與社群文化_v1.0.md"
       },
       {
@@ -745,6 +782,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-020.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-020.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-020.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-020.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-020_Anders_Hejlsberg_工具驅動設計漸進型別與平台折衷_v1.0.md"
       },
       {
@@ -764,6 +802,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-021.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-021.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-021.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-021.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-021_Rich_Hickey_價值身分與簡單性的分離_v1.0.md"
       },
       {
@@ -783,6 +822,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-022.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-022.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-022.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-022.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-022_Graydon_Hoare與Rust共同體_安全系統語言如何從個人原型轉為制度工程_v1.0.md"
       },
       {
@@ -802,6 +842,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-023.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-023.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-023.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-023.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-023_Wirth_Ritchie與Stroustrup_簡潔機器控制與相容性之間的三種系統語言倫理_v1.0.md"
       },
       {
@@ -821,6 +862,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-024.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-024.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-024.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-024.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-024_Guido_Matz與Larry_Wall_可讀性幸福與多義性之間的三種人本語言設計_v1.0.md"
       },
       {
@@ -840,6 +882,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-025.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-025.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-025.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-025.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-025_Backus_McCarthy與Hickey_函數符號與簡單性的不同道路_v1.0.md"
       },
       {
@@ -859,6 +902,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-026.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-026.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-026.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-026.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-026_個人設計者仁慈獨裁者與RFC制度_語言治理風格比較_v1.0.md"
       },
       {
@@ -878,6 +922,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-027.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-027.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-027.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-027.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-027_PLDST評估矩陣與設計決策語料庫規格_v1.0.md"
       },
       {
@@ -897,6 +942,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-028.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-028.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-028.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-028.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-028_PLDST_SKILL技術規格_資料搜尋決策抽取與風格判定_v1.0.md"
       },
       {
@@ -916,6 +962,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-029.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-029.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-029.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-029.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-029_AI模擬程式語言設計師風格_混合轉譯與失真問題_v1.0.md"
       },
       {
@@ -935,6 +982,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/pldst-030.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/pldst-030.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/pldst-030.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/pldst-030.md",
         "sourceFile": "ingest\\01-before\\PLDST\\PLDST-030_程式語言設計師風格譜系總論_設計自由複雜度與代價_v1.0.md"
       }
     ]
@@ -967,6 +1015,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-01.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-01.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-01.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-01.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\分布式脈衝電源架構_v2.0_公開修訂版.md"
       },
       {
@@ -986,6 +1035,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-02.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-02.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-02.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-02.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\立體運算設計空間_v2.0_公開修訂版.md"
       },
       {
@@ -1005,6 +1055,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-03.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-03.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-03.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-03.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\拓撲約束執行引擎_v2.0_公開修訂版.md"
       },
       {
@@ -1024,6 +1075,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-04.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-04.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-04.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-04.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\拓撲導向物質生成系統_v2.0_公開修訂版.md"
       },
       {
@@ -1043,6 +1095,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-05.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-05.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-05.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-05.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\空間解耦模組運算架構_v2.0_公開修訂版.md"
       },
       {
@@ -1062,6 +1115,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-06.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-06.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-06.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-06.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\從逐點掃描到體積光場_AOCLS比較評論_v2.0_公開修訂版.md"
       },
       {
@@ -1081,6 +1135,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-07.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-07.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-07.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-07.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\萬物皆AI_關係形態動力計算_v2.0_公開修訂版.md"
       },
       {
@@ -1100,6 +1155,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-08.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-08.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-08.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-08.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\錐形相位光學平台_v2.0_公開修訂版.md"
       },
       {
@@ -1119,6 +1175,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-09.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-09.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-09.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-09.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\AetherGlass-LaserCPU_v2.0_公開修訂版.md"
       },
       {
@@ -1138,6 +1195,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-10.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-10.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-10.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-10.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\AOCLS虛擬光刻模擬引擎_v2.0_公開修訂版.md"
       },
       {
@@ -1157,6 +1215,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-11.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-11.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-11.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-11.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\AOCLS觀察導向閉環製造平台_v2.0_公開修訂版.md"
       },
       {
@@ -1176,6 +1235,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-12.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-12.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-12.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-12.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\BioSynth生物合成共生介面_v2.0_公開修訂版.md"
       },
       {
@@ -1195,6 +1255,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-13.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-13.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-13.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-13.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\DEO-SynCore_v2.0_公開修訂版.md"
       },
       {
@@ -1214,6 +1275,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-14.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-14.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-14.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-14.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\DryCore氣候控制架構_v2.0_公開修訂版.md"
       },
       {
@@ -1233,6 +1295,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-15.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-15.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-15.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-15.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\O-Chip意圖決策執行解耦架構_v2.0_公開修訂版.md"
       },
       {
@@ -1252,6 +1315,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-16.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-16.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-16.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-16.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\SynCore可重構融合流動運算架構_v2.1_公開修訂版.md"
       },
       {
@@ -1271,6 +1335,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/ccp-17.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/ccp-17.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/ccp-17.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/ccp-17.md",
         "sourceFile": "ingest\\01-before\\計算機概念產品系列\\SynCore核心融合起源篇_v1.1_公開修訂版.md"
       }
     ]
@@ -1303,6 +1368,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-01.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-01.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-01.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-01.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\時空間支配型AI_從單體具身智能到持續性時空域治理_v0.1.md"
       },
       {
@@ -1322,6 +1388,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-02.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-02.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-02.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-02.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\超靈的物理化_從O-Chip維度代理人到分布式具身主體_v0.1.md"
       },
       {
@@ -1341,6 +1408,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-03.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-03.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-03.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-03.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\Oversoul_Station_Fabric_固定站移動站與虛擬站的分布式具身網路_v0.1.md"
       },
       {
@@ -1360,6 +1428,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-04.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-04.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-04.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-04.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\持續性指揮控制區_AI如何佔據維持並安全解除物理時空域_v0.1.md"
       },
       {
@@ -1379,6 +1448,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-05.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-05.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-05.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-05.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\語義即物理路由_從資料流治理到物料能源站點與行動流治理_v0.1.md"
       },
       {
@@ -1398,6 +1468,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-06.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-06.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-06.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-06.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\具身即佔域對齊即能力_分布式身體的時序容量協調稅與規模邊界_v0.1.md"
       },
       {
@@ -1417,6 +1488,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-07.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-07.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-07.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-07.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\中央主權地方自治與動態不動點中央_權限格治理紀元分裂腦防護與責任收斂_v0.1.md"
       },
       {
@@ -1436,6 +1508,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-08.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-08.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-08.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-08.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\連線不是纜線_有線無線光學與離線任務包的混合站網_v0.1.md"
       },
       {
@@ -1455,6 +1528,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-09.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-09.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-09.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-09.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\站點化世界模型_物體區域事件權限與可能行動的共同物理世界表示_v0.1.md"
       },
       {
@@ -1474,6 +1548,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-10.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-10.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-10.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-10.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\具身化AI自主研究閉環_從假說生成物理實驗到證據判定與概念修正_v0.1.md"
       },
       {
@@ -1493,6 +1568,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-11.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-11.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-11.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-11.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\異常即入口_具身自主研究中的反例失敗離群事件與未知管理_v0.1.md"
       },
       {
@@ -1512,6 +1588,7 @@ export const paperSeries = [
         "canonicalUrl": "https://thisoneisneok.com/html/papers/stdi-12.html",
         "htmlUrl": "https://thisoneisneok.com/html/papers/stdi-12.html",
         "pdfUrl": "https://thisoneisneok.com/pdf/papers/stdi-12.pdf",
+        "mdUrl": "https://thisoneisneok.com/md/papers/stdi-12.md",
         "sourceFile": "ingest\\01-before\\時空域支配智能\\安全憲法即運行時_時空域AI的局部否決權限租約運行時保證與物理回退_v0.1.md"
       }
     ]

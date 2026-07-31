@@ -3,8 +3,8 @@ id: patterns
 index: "02"
 title_zh: 架構與模式
 title_en: Architecture & patterns
-summary_zh: 狀態拆分、共享契約、孤島測試與檢查順序等可重複使用的結構，以及六種反模式。
-summary_en: Reusable structures for state separation, shared contracts, island testing, and check ordering — plus six anti-patterns.
+summary_zh: 五個已驗證的可重複結構、六種反模式，以及實作補上的一條規則。
+summary_en: Five verified reusable structures, six anti-patterns, and one rule implementation added to the method.
 state_zh: 演化中
 state_en: Evolving
 updated: 2026-07-31
@@ -12,7 +12,7 @@ updated: 2026-07-31
 
 # 架構與模式
 
-這一頁收錄的是已經被實作驗證過的結構。沒有做過的東西不會出現在這裡。
+這一頁收錄的是已經被實作驗證過的結構。每一條都指得出是哪個範例做出來的，沒有做過的東西不會出現在這裡。
 
 ## 模式 1：共享契約取代兄弟引用
 
@@ -116,9 +116,13 @@ MSSP 的核心主張是一個 TMS 可以被單獨理解與執行。如果這件�
 
 現在單元邊界是明確的：**一個 TMS 單元 = 帶有 index 檔的目錄，否則就是單一檔案**。而且檢查在兩個方向都測過：違規時擋下並指出確切檔案，乾淨時通過。
 
-## 還沒有做的
+## 路線
 
-- 跨語言的依賴檢查。目前的檢查是文字比對靜態 `import`，動態 `import()` 會漏掉。
-- 形式化驗證 TMS 不存在隱藏依賴。
-- 上下文污染的量測方法。
-- Router 的實作模式。001 號範例沒有 Router——一個型別對一個處理器時，路由就是註冊表裡的一次查表，另設一層會是空的。
+以下是這個系列接下來要補的結構，按預期價值排序：
+
+- **Router 的實作模式。** 這是最快會用到的一個。001 號沒有 Router，因為一個型別對一個處理器時路由就是一次查表，另設一層會是空模組——這本身就是「度」的一個示範：等它需要存在的時候再建。
+- **跨語言的依賴檢查。** 目前是文字比對靜態 `import`，動態 `import()` 會漏掉。一個有真正模組邊界的語言不需要這道檢查。
+- **上下文污染的量測。** 目前 $\rho_q$ 是一個定義，還不是一個可以在專案上跑出數字的量測。
+- **形式化驗證隱藏依賴。** 孤島測試能抓到大部分，但它是動態的；靜態證明會更強。
+
+每一項補上之後都會回到這一頁，並附上做出它的範例編號。

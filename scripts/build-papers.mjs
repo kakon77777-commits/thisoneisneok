@@ -1,8 +1,10 @@
-// Papers pipeline: ingest/01-before/<series>/*.md  ->  public HTML + PDF.
+// Papers pipeline: ingest/01-before/<series>/*.md  ->  public HTML + PDF + MD.
 //
-// Deliberate asymmetry with the blog: papers publish as HTML and PDF only.
-// The Markdown stays internal (ingest/ is not under public/), so no /md/papers
-// route and no raw-source link anywhere in the output.
+// HTML and PDF are what a person reads; the Markdown is published underneath as
+// a download. It was withheld at first on the reasoning that humans want the
+// rendered page — true, but it sat badly next to the MSSP field lab, which
+// publishes every example's full source on the grounds that a claim you cannot
+// read the source of is not much of a claim. Same standard now applies to both.
 //
 // Metadata lives in two different shapes across the four series:
 //   - Program_Universe_Foundations: YAML frontmatter
@@ -203,6 +205,10 @@ main{padding:56px 0 96px}
 .content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:28px 0}
 .content .katex{font-size:1.04em}
 .content .katex-error{color:#a3322b;font-family:ui-monospace,monospace;font-size:.85em}
+.source-download{margin:72px 0 0;border:1px solid var(--line);padding:24px}
+.source-download b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.11em;text-transform:uppercase}
+.source-download p{color:var(--muted);font-size:13px;line-height:1.7;margin:10px 0 16px}
+.source-download a{display:inline-block;border:1px solid var(--line-strong,rgba(23,25,20,.38));color:var(--accent);font:11px ui-monospace,monospace;padding:9px 14px}
 footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
 footer a{color:var(--accent)}
 @media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
@@ -216,6 +222,11 @@ footer a{color:var(--accent)}
     .join("")}</section>
   <p class="tools"><a href="${paper.pdfUrl}">下載 PDF ↓</a><a href="${siteUrl}/papers">回到論文索引 ↗</a></p>
   <article class="content">${html}</article>
+  <section class="source-download">
+    <b>原始檔</b>
+    <p>這篇論文的 Markdown 原始檔，與上方頁面和 PDF 由同一份來源產生。</p>
+    <a href="${paper.mdUrl}">下載 Markdown ↓</a>
+  </section>
 </main>
 <footer><span>Neo.K × EveMissLab</span><a href="${paper.canonicalUrl}">${paper.canonicalUrl}</a></footer>
 </body>
@@ -319,6 +330,7 @@ for (const series of SERIES) {
       canonicalUrl: `${siteUrl}/html/papers/${slug}.html`,
       htmlUrl: `${siteUrl}/html/papers/${slug}.html`,
       pdfUrl: `${siteUrl}/pdf/papers/${slug}.pdf`,
+      mdUrl: `${siteUrl}/md/papers/${slug}.md`,
       sourceFile: path.join("ingest", "01-before", series.dir, entry.filename),
       body: entry.body,
     };
@@ -329,6 +341,8 @@ for (const series of SERIES) {
 // ---- write standalone HTML ----
 const htmlDir = path.join(publicDir, "html", "papers");
 fs.mkdirSync(htmlDir, { recursive: true });
+const mdDir = path.join(publicDir, "md", "papers");
+fs.mkdirSync(mdDir, { recursive: true });
 let mathRendered = 0;
 let mathErrors = 0;
 const mathErrorPapers = [];
@@ -363,6 +377,9 @@ for (const { series, paper } of collected) {
     mathLeftoverPapers.push(`${paper.id} (${leftover})`);
   }
   fs.writeFileSync(path.join(htmlDir, `${paper.slug}.html`), standaloneHtml(paper, series.title.zh, html));
+  // The source, byte for byte. Published under the slug rather than the original
+  // filename so the three formats share one stem.
+  fs.copyFileSync(path.join(root, paper.sourceFile), path.join(mdDir, `${paper.slug}.md`));
 }
 
 // ---- write the site's metadata module (no bodies: they stay out of the bundle) ----
@@ -399,7 +416,7 @@ fs.writeFileSync(
     {
       site: siteUrl,
       count: collected.length,
-      note: "Papers are published as HTML and PDF. Markdown sources are not distributed.",
+      note: "Papers publish as three formats from one source: a reading page, a PDF, and the Markdown original.",
       series: bySeries.map((series) => ({
         code: series.code,
         title: series.title.zh,
@@ -412,6 +429,7 @@ fs.writeFileSync(
           date: paper.date,
           html: paper.htmlUrl,
           pdf: paper.pdfUrl,
+          markdown: paper.mdUrl,
         })),
       })),
     },

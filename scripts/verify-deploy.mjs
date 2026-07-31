@@ -169,13 +169,33 @@ async function onePass() {
     return [bad.length === 0, bad.length ? bad.join("; ") : `${sample.length} sampled apps serve their own document`];
   });
 
-  await check("markdown sources NOT published", async () => {
-    // Papers publish as HTML and PDF only. A /md/papers/ route appearing here
-    // would mean the internal-source boundary broke.
-    const response = await fetch(bust(`${baseUrl}/md/papers/pldst-001.zh.md`));
-    const alsoBare = await fetch(bust(`${baseUrl}/md/papers/`));
-    const leaked = response.status === 200 || alsoBare.status === 200;
-    return [!leaked, `/md/papers probes -> ${response.status}, ${alsoBare.status}`];
+  // Three formats from one source, and the third one is the source. This check
+  // used to assert the exact opposite — that /md/papers must NOT resolve —
+  // because papers originally published as HTML and PDF only. When the policy
+  // changed, a check written to enforce the old policy would have failed the
+  // deploy and looked like a bug in the new work. Inverting it deliberately is
+  // part of changing the policy, not an afterthought.
+  await check("markdown source published alongside each paper", async () => {
+    const live = await (await get(`${baseUrl}/ai/papers-index.json`)).json();
+    const samples = live.series.flatMap((series) => [series.papers[0], series.papers.at(-1)]).filter(Boolean);
+    const bad = [];
+    for (const paper of samples) {
+      if (!paper.markdown) {
+        bad.push(`${paper.id}: index lists no markdown URL`);
+        continue;
+      }
+      const response = await fetch(bust(paper.markdown), { redirect: "manual" });
+      if (response.status !== 200) {
+        bad.push(`${paper.markdown} -> ${response.status}`);
+        continue;
+      }
+      const text = await response.text();
+      // A Markdown URL answering with the site's HTML shell would be worse than
+      // a 404: it looks like a working download and delivers the wrong bytes.
+      if (/^\s*<!doctype html/i.test(text) || BUILD_META.test(text)) bad.push(`${paper.id}: markdown URL served HTML`);
+      else if (text.length < 500) bad.push(`${paper.id}: markdown is only ${text.length} bytes`);
+    }
+    return [bad.length === 0, bad.length ? bad.join("; ") : `${samples.length} sampled papers serve their Markdown source directly`];
   });
 
   return results;

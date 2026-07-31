@@ -38,8 +38,8 @@ export default function PapersPage() {
           en: "Four series, all in computing.",
         }}
         description={{
-          zh: "每篇論文以閱讀網頁與 PDF 兩種形式發表，兩者由同一份原始檔生成。原始 Markdown 不對外發佈。版本、日期與證據狀態直接印在每篇論文上，不做成熟度宣稱。",
-          en: "Each paper publishes as a reading page and a PDF, both generated from one source. The Markdown source is not distributed. Version, date, and evidence status are printed on every paper; no maturity is claimed.",
+          zh: "每篇論文以三種形式發表：閱讀網頁、PDF，以及頁面底部可下載的 Markdown 原始檔。三者出自同一份來源。版本、日期與證據狀態直接印在每篇論文上。",
+          en: "Each paper publishes in three forms: a reading page, a PDF, and the Markdown source as a download at the foot of the page. All three come from one origin. Version, date, and evidence status are printed on every paper.",
         }}
         aside={<div className="metric-card"><strong>{paperCount}</strong><span>{t({ zh: "已發表論文", en: "papers published" })}</span></div>}
       />
@@ -96,6 +96,7 @@ export default function PapersPage() {
                 <div className="paper-formats">
                   <a href={paper.htmlUrl}>HTML ↗</a>
                   <a href={paper.pdfUrl}>PDF ↓</a>
+                  <a href={paper.mdUrl}>MD ↓</a>
                 </div>
               </li>
             ))}
@@ -106,8 +107,8 @@ export default function PapersPage() {
       <section className="source-banner">
         <div><span>AI / INDEX</span><h2>{t({ zh: "機器可讀的論文索引。", en: "A machine-readable paper index." })}</h2></div>
         <p>{t({
-          zh: "每篇論文的編號、版本、日期與兩種格式網址都收在同一份 JSON。",
-          en: "Every paper's id, version, date, and both format URLs live in one JSON file.",
+          zh: "每篇論文的編號、版本、日期與三種格式網址都收在同一份 JSON。",
+          en: "Every paper's id, version, date, and all three format URLs live in one JSON file.",
         })}</p>
         <a href="https://thisoneisneok.com/ai/papers-index.json">{t({ zh: "開啟論文索引", en: "Open the paper index" })} ↗</a>
       </section>

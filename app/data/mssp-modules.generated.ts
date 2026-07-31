@@ -8,8 +8,8 @@ export const msspModules = [
       "en": "Start here"
     },
     "summary": {
-      "zh": "用最少前置知識理解 MSSP 的問題意識、基本組件與適用邊界。",
-      "en": "Understand the motivation, base components, and boundaries of MSSP with minimal prerequisites."
+      "zh": "MSSP 的問題意識、五個集合、兩個判斷問題，以及怎麼決定你的專案該用多少。",
+      "en": "The motivation, the five sets, the two questions that decide placement, and how to choose how much of it your project should use."
     },
     "state": {
       "zh": "可讀",
@@ -27,8 +27,8 @@ export const msspModules = [
       "en": "Architecture & patterns"
     },
     "summary": {
-      "zh": "狀態拆分、共享契約、孤島測試與檢查順序等可重複使用的結構，以及六種反模式。",
-      "en": "Reusable structures for state separation, shared contracts, island testing, and check ordering — plus six anti-patterns."
+      "zh": "五個已驗證的可重複結構、六種反模式，以及實作補上的一條規則。",
+      "en": "Five verified reusable structures, six anti-patterns, and one rule implementation added to the method."
     },
     "state": {
       "zh": "演化中",
@@ -46,12 +46,12 @@ export const msspModules = [
       "en": "Open-source archaeology"
     },
     "summary": {
-      "zh": "分析既有專案的哪些結構可以保留、重寫或轉化為 MSSP。方法已定，目前完成 0 個。",
-      "en": "Analysing what existing projects can preserve, rewrite, or transform into MSSP. The method is defined; zero projects have been done."
+      "zh": "每天拆解一個開源專案的結構，優先挑寬鬆授權的。看它的邊界畫在哪裡、為什麼畫在那裡。",
+      "en": "One open-source project a day, permissive licences first — where its boundaries sit, and why they sit there."
     },
     "state": {
-      "zh": "尚未開始",
-      "en": "Not started"
+      "zh": "每日進行",
+      "en": "Daily"
     },
     "updated": "2026-07-31",
     "href": "/html/mssp/modules/archaeology.html",
