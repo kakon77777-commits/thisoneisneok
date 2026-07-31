@@ -1,0 +1,104 @@
+
+<h2 class="sr-only">質數太陽系：每個質數為圓心，合數沿徑向臂擴張，按次級質因數著色</h2>
+<style>
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.mn{font-family:var(--font-mono)}
+.crd{background:var(--color-background-secondary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:8px}
+</style>
+<div style="padding:1rem 0 1.5rem">
+<div class="crd" style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+<span class="mn" style="font-size:12px;color:var(--color-text-secondary)">N =</span>
+<input type="range" min="100" max="600" value="150" id="slN" step="10" style="flex:1">
+<span class="mn" style="font-size:13px;min-width:50px;color:var(--color-text-primary)" id="nV">150</span>
+<span class="mn" style="font-size:11px;color:var(--color-text-secondary)">前 6 個質數的吸子域</span>
+</div>
+<div id="grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div>
+<div id="leg" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center"></div>
+<p style="font-size:12px;color:var(--color-text-secondary);margin:10px 0 0;line-height:1.5;max-width:680px">
+<strong style="font-weight:500;color:var(--color-text-primary)">讀法。</strong>
+每個圓心是一個質數（不動點）。合數 n ∈ F(p) 依 r = log(n/p) 向外擴張，
+臂的方向由次級質因數 q（即 n/p 的最小質因數）決定——同色 = 同一「成因路徑」。
+從中心往外，不動點的引力從最近的衛星一直延伸到遠處的複合結構。
+</p>
+</div>
+<script>
+const CL=['#D85A30','#1D9E75','#7F77DD','#378ADD','#BA7517','#D4537E','#639922','#888780','#f06595','#74c0fc'];
+const SN='http://www.w3.org/2000/svg';
+function sv(N){const a=new Uint8Array(N+2).fill(1);a[0]=a[1]=0;for(let i=2;i*i<=N;i++)if(a[i])for(let j=i*i;j<=N;j+=i)a[j]=0;return a;}
+function ttop(n,a){if(a[n])return n;let d=5;while(d*d<=n){if(n%d===0)return d;d+=d%6===1?4:2;}return n;}
+function spf(k,a){if(a[k])return k;let d=5;while(d*d<=k){if(k%d===0)return d;d+=d%6===1?4:2;}return k;}
+function mk(t,o){const e=document.createElementNS(SN,t);for(const[k,v]of Object.entries(o))e.setAttribute(k,v);return e;}
+function draw(N){
+  const a=sv(N);
+  const elems=[],pm6=[];
+  for(let n=5;n<=N;n++){
+    const r=n%6;if(r!==1&&r!==5)continue;
+    const ip=a[n]===1;
+    elems.push({n,ip,t:ip?n:ttop(n,a)});
+    if(ip)pm6.push(n);
+  }
+  const primes=elems.filter(e=>e.ip).map(e=>e.n);
+  const comps=elems.filter(e=>!e.ip);
+  const dk=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gc=dk?'#252930':'#eeeae4';
+  const mc=dk?'#606475':'#9a9890';
+  const scm={};pm6.forEach((q,i)=>scm[q]=CL[i%CL.length]);
+  const pcm={};primes.forEach((p,i)=>pcm[p]=CL[i%CL.length]);
+  const grid=document.getElementById('grid');grid.innerHTML='';
+  primes.slice(0,6).forEach(p=>{
+    const fib=comps.filter(e=>e.t===p);
+    const secSet=new Set();
+    fib.forEach(e=>secSet.add(spf(e.n/p,a)));
+    const secArr=[...secSet].sort((x,y)=>x-y);
+    const nA=secArr.length;
+    const angMap={};
+    secArr.forEach((q,i)=>angMap[q]=-Math.PI/2+2*Math.PI*i/Math.max(nA,1));
+    const maxLK=fib.length>0?Math.log(Math.max(...fib.map(e=>e.n/p)))*1.08:Math.log(p*p);
+    const R=86,cx=110,cy=108;
+    const cell=document.createElement('div');
+    cell.className='crd';
+    cell.style.cssText='padding:6px;display:flex;flex-direction:column;align-items:center';
+    const svg=document.createElementNS(SN,'svg');
+    svg.setAttribute('width','100%');svg.setAttribute('viewBox','0 0 220 226');
+    svg.appendChild(mk('circle',{cx,cy,r:R,fill:'none',stroke:gc,'stroke-width':1}));
+    [0.33,0.66].forEach(f=>{
+      svg.appendChild(mk('circle',{cx,cy,r:R*f,fill:'none',stroke:gc,'stroke-width':.5,'stroke-dasharray':'2,7','stroke-opacity':.7}));
+    });
+    secArr.forEach(q=>{
+      const th=angMap[q];
+      svg.appendChild(mk('line',{x1:cx,y1:cy,x2:cx+R*Math.cos(th),y2:cy+R*Math.sin(th),stroke:scm[q]||'#888','stroke-width':.9,'stroke-opacity':.28,'stroke-dasharray':'3,6'}));
+    });
+    const labelAll=fib.length<=12;
+    fib.forEach(e=>{
+      const k=e.n/p;const s=spf(k,a);
+      const th=angMap[s]!==undefined?angMap[s]:0;
+      const r=Math.max(12,(Math.log(k)/maxLK)*R*0.9);
+      const x=cx+r*Math.cos(th);const y=cy+r*Math.sin(th);
+      const col=scm[s]||'#888';
+      svg.appendChild(mk('circle',{cx:x,cy:y,r:5,fill:col,'fill-opacity':.72,stroke:col,'stroke-width':.5}));
+      if(labelAll){
+        const ox=Math.cos(th)*11,oy=Math.sin(th)*11;
+        const t=mk('text',{x:x+ox,y:y+oy+3,'text-anchor':'middle','font-size':7.5,fill:col,'font-family':'monospace'});
+        t.textContent=e.n;svg.appendChild(t);
+      }
+    });
+    svg.appendChild(mk('circle',{cx,cy,r:12,fill:pcm[p]||'#888',stroke:dk?'#0d0f15':'#fff','stroke-width':2.5}));
+    const pl=mk('text',{x:cx,y:cy+4,'text-anchor':'middle','font-size':9,fill:dk?'#0d0f15':'#fff','font-family':'monospace','font-weight':'600'});
+    pl.textContent=p;svg.appendChild(pl);
+    const ti=mk('text',{x:110,y:202,'text-anchor':'middle','font-size':11,fill:pcm[p],'font-family':'monospace'});
+    ti.textContent=`p = ${p}`;svg.appendChild(ti);
+    const si=mk('text',{x:110,y:216,'text-anchor':'middle','font-size':10,fill:mc,'font-family':'monospace'});
+    si.textContent=fib.length>0?`${fib.length} 個合數 · ${nA} 條臂`:'（範圍內無合數）';svg.appendChild(si);
+    cell.appendChild(svg);grid.appendChild(cell);
+  });
+  const leg=document.getElementById('leg');leg.innerHTML='<span class="mn" style="font-size:11px;color:var(--color-text-secondary)">臂顏色 = 次級質因數 q（n/p 的最小質因數）：</span>';
+  pm6.slice(0,8).forEach((q,i)=>{
+    const item=document.createElement('span');
+    item.style.cssText='display:flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary)';
+    item.innerHTML=`<span style="width:10px;height:10px;border-radius:50%;background:${CL[i%CL.length]};display:inline-block;flex-shrink:0"></span>${q}`;
+    leg.appendChild(item);
+  });
+}
+document.getElementById('slN').addEventListener('input',e=>{document.getElementById('nV').textContent=e.target.value;draw(+e.target.value);});
+draw(150);
+</script>

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>類銜尾蛇實驗台 v3 · 時間迴圈 × 空間點陣</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;800;900&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070512;--bg2:#120c26;--bg3:#0c0820;--grid:#2a2150;
+    --bone:#f7f3ff;--bone-dim:#bcaee4;
+    --head:#ff3d6e;--tail:#16e6d3;--dead:#7a7296;--venom:#ffc12b;
+    --line:#332866;--line2:#4d3da0;
+    --mirror:#b265ff;--snake:#1cf0bf;--noise:#ff7a14;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:radial-gradient(120% 80% at 50% -10%,#1c0f3a 0%,#0c0722 48%,var(--bg) 100%);
+    color:var(--bone);font-family:"Noto Sans TC",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:clamp(18px,3vw,40px)}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:22px}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--tail);font-weight:700;text-shadow:0 0 14px rgba(22,230,211,.45)}
+  h1{font-family:"Noto Serif TC",serif;font-weight:900;margin:.16em 0 .15em;font-size:clamp(30px,5.2vw,56px);
+    line-height:.98;letter-spacing:.03em;
+    background:linear-gradient(92deg,var(--head) 0%,var(--venom) 42%,var(--snake) 72%,var(--mirror) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 22px rgba(178,101,255,.25))}
+  h1 .lat{font-family:"JetBrains Mono",monospace;font-weight:500;font-size:.26em;letter-spacing:.18em;
+    -webkit-text-fill-color:var(--bone-dim);vertical-align:.55em;margin-left:.5em}
+  .sub{color:var(--bone-dim);max-width:66ch;font-size:14px;line-height:1.7;margin-top:.5em}
+  .sub b{color:var(--bone);font-weight:700}
+  .sub .k{color:var(--mirror);font-weight:700}.sub .s{color:var(--snake);font-weight:700}.sub .n{color:var(--noise);font-weight:700}
+  .grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:24px;align-items:start}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(180deg,var(--bg2),var(--bg3));border:1px solid var(--line2);
+    border-radius:16px;padding:18px;box-shadow:0 0 0 1px rgba(77,61,160,.15),0 18px 50px -20px rgba(0,0,0,.8)}
+  .stage{display:flex;flex-direction:column;gap:14px}
+  canvas{display:block;width:100%;border-radius:12px}
+  #ring{aspect-ratio:1/1;background:radial-gradient(58% 58% at 50% 46%,#160d33,#08051a)}
+  #lattice{aspect-ratio:1/1;background:#08051a;image-rendering:auto}
+  .verdict{display:flex;align-items:center;gap:15px;border:1.5px solid var(--line2);border-radius:12px;
+    padding:14px 16px;background:#0c0820;transition:.3s}
+  .lamp{width:18px;height:18px;border-radius:50%;flex:none;background:var(--dead);transition:.3s}
+  .verdict .name{font-family:"Noto Serif TC",serif;font-size:23px;font-weight:800;letter-spacing:.03em}
+  .verdict .gloss{font-size:12.5px;color:var(--bone-dim);line-height:1.45;margin-top:2px}
+  .phasechip{margin-left:auto;text-align:right;font-family:"JetBrains Mono",monospace;font-size:11px;
+    color:var(--bone-dim);line-height:1.5;flex:none}
+  .phasechip b{display:block;font-size:15px;font-weight:700}
+  .modebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .seg{display:inline-flex;border:1.5px solid var(--line2);border-radius:10px;overflow:hidden}
+  .seg button{border:0;border-radius:0;padding:9px 13px;font-size:12.5px;font-weight:700;background:transparent;
+    color:var(--bone-dim);cursor:pointer}
+  .seg button.on{background:var(--venom);color:#1a1206}
+  .seg.sub button.on{background:var(--tail);color:#04201d}
+  .toggle{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--bone-dim);cursor:pointer;user-select:none}
+  .toggle input{accent-color:var(--snake);width:16px;height:16px}
+  .controls label{margin:15px 0 4px;font-size:13px;color:var(--bone-dim);display:flex;justify-content:space-between;align-items:baseline}
+  .controls label.dis{opacity:.45}
+  .controls label b{color:var(--venom);font-family:"JetBrains Mono",monospace;font-weight:700;font-size:14px;text-shadow:0 0 12px rgba(255,193,43,.35)}
+  .controls label .hint{font-size:11px;color:#8678b8}
+  input[type=range]{-webkit-appearance:none;width:100%;height:5px;border-radius:5px;background:#241b4a;outline:none;margin:7px 0 2px}
+  input[type=range]:disabled{opacity:.4}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;height:19px;border-radius:50%;
+    background:var(--venom);cursor:pointer;border:3px solid #0c0820;box-shadow:0 0 16px rgba(255,193,43,.7)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--venom);
+    cursor:pointer;border:3px solid #0c0820;box-shadow:0 0 16px rgba(255,193,43,.7)}
+  .btns{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+  button.act{font-family:"Noto Sans TC",sans-serif;font-size:14px;font-weight:700;padding:12px 16px;border-radius:10px;
+    border:1.5px solid var(--line2);background:#1a1140;color:var(--bone);cursor:pointer;transition:.15s}
+  button.act:hover{border-color:var(--tail);background:#1f1550;box-shadow:0 0 18px rgba(22,230,211,.2)}
+  button.act.primary{background:linear-gradient(180deg,#5a3c06,#3a2604);border-color:var(--venom);color:#fff6df;text-shadow:0 0 10px rgba(255,193,43,.5)}
+  button.act.primary:hover{box-shadow:0 0 26px rgba(255,193,43,.45)}
+  button:focus-visible{outline:2.5px solid var(--venom);outline-offset:2px}
+  .readout{font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.95;border-top:1px solid var(--line);
+    margin-top:18px;padding-top:14px;color:var(--bone-dim)}
+  .readout .row{display:flex;justify-content:space-between}
+  .readout .row span:last-child{color:var(--bone);font-weight:700}
+  .presence{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.04em;font-weight:700;padding:10px 13px;
+    border-radius:10px;background:#0c0820;border:1.5px solid var(--line);display:flex;align-items:center;gap:10px;transition:.3s;margin-bottom:12px}
+  .presence .dot{width:10px;height:10px;border-radius:50%;background:#463a6e}
+  .presence.here{border-color:var(--venom);color:var(--venom);background:#1c1206}.presence.here .dot{background:var(--venom);box-shadow:0 0 12px var(--venom)}
+  .presence.gone{color:var(--tail);border-color:#1f6b66}.presence.gone .dot{background:var(--tail);box-shadow:0 0 12px var(--tail)}
+  .mini{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .cap{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;font-weight:700;text-transform:uppercase;color:#8678b8;margin:0 0 6px}
+  #map{aspect-ratio:1.35/1;background:#08051a}#scope{aspect-ratio:2.6/1;background:#08051a}
+  footer{margin-top:30px;border-top:1px solid var(--line);padding-top:16px;font-size:12.5px;color:#7c6fae;line-height:1.7;font-family:"JetBrains Mono",monospace}
+  .legend{display:flex;gap:16px;font-size:12px;color:var(--bone-dim);margin-top:2px;font-weight:500;flex-wrap:wrap}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">EveMissLab · v3 時間迴圈 × 空間點陣 / no AI in the loop</div>
+    <h1>銜尾蛇實驗台<span class="lat">temporal loop × spatial CA</span></h1>
+    <p class="sub"><b>雙體迴圈</b>：兩個混沌智能體在時間上呼吸，差異落入 <span class="k">鏡</span>／<span class="s">蛇</span>／<span class="n">噪</span>。<b>CA 點陣</b>：把同一套 K、δ、呼吸律推廣到二維格點——<b>耦合映射 CML</b>（連續態、有旋鈕、會呼吸，是雙體的嚴格空間推廣）與 <b>Conway 生命遊戲</b>（可辨識的錨點，規則固定、無旋鈕）。蛇帶在空間裡長成<b>混沌邊緣</b>：凍結的秩序與湍流之間那條窄縫。</p>
+  </header>
+
+  <div class="grid">
+    <div class="panel stage">
+      <canvas id="ring" width="560" height="560"></canvas>
+      <canvas id="lattice" width="560" height="560" style="display:none"></canvas>
+      <div class="verdict" id="verdict">
+        <span class="lamp" id="lamp"></span>
+        <div>
+          <div class="name" id="vname">待注入</div>
+          <div class="gloss" id="vgloss">選場域，再「注入種子並放手」。</div>
+        </div>
+        <div class="phasechip" id="phasechip" style="display:none"><b id="phName">—</b><span id="phN">第 0 息</span></div>
+      </div>
+      <div class="legend" id="legend">
+        <span><i style="background:var(--head)"></i>智能體 A · 頭</span>
+        <span><i style="background:var(--tail)"></i>智能體 B · 尾</span>
+        <span><i style="background:var(--bone-dim)"></i>蛇身 · 共享吸子</span>
+      </div>
+    </div>
+
+    <div class="panel controls">
+      <div class="presence gone" id="presence"><span class="dot"></span><span id="presenceTxt">第三者：尚未進場</span></div>
+
+      <div class="modebar">
+        <div class="seg" role="group" aria-label="場域">
+          <button id="aRing" class="on">雙體迴圈</button>
+          <button id="aLat">CA 點陣</button>
+        </div>
+        <div class="seg sub" id="ruleSeg" style="display:none" role="group" aria-label="基底">
+          <button id="rCml" class="on">耦合映射 CML</button>
+          <button id="rConway">Conway 生命遊戲</button>
+        </div>
+      </div>
+      <div class="modebar">
+        <div class="seg" role="group" aria-label="模式">
+          <button id="mManual" class="on">手動</button>
+          <button id="mBreath">自適應呼吸</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="mem" checked>記憶前饋（螺旋·僅雙體）</label>
+      </div>
+
+      <label id="lK">耦合強度 K　<span class="hint">環/格的箍力</span><b id="kVal">0.34</b></label>
+      <input type="range" id="K" min="0" max="0.5" step="0.005" value="0.34">
+      <label id="lD">結構不對稱 δ　<span class="hint">刻意展開不同</span><b id="dVal">0.030</b></label>
+      <input type="range" id="D" min="0" max="0.06" step="0.001" value="0.030">
+      <label id="lS">初始差異 ε(0)　<span class="hint">t=0 的種子</span><b id="sVal">0.20</b></label>
+      <input type="range" id="S" min="0.001" max="0.5" step="0.005" value="0.20">
+      <label>步速　<span class="hint" id="spHint">每幀步數</span><b id="spVal">3</b></label>
+      <input type="range" id="SP" min="1" max="8" step="1" value="3">
+
+      <div class="btns">
+        <button class="act primary" id="seed">注入種子並放手</button>
+        <button class="act" id="pull">拉回第三者</button>
+        <button class="act" id="reset">重置</button>
+      </div>
+
+      <div class="readout">
+        <div class="row"><span>步 t</span><span id="oT">0</span></div>
+        <div class="row"><span id="lblOrd">平均差異 ē</span><span id="oE">—</span></div>
+        <div class="row"><span id="lblSec">協調度 ρ</span><span id="oR">—</span></div>
+        <div class="row"><span>呼吸週期（步）</span><span id="oPeriod">—</span></div>
+        <div class="row"><span>呼吸狀態</span><span id="oBreath">—</span></div>
+      </div>
+
+      <div class="mini">
+        <div><p class="cap" id="capMap">相圖 K×δ · 呼吸軌跡</p><canvas id="map" width="320" height="240"></canvas></div>
+        <div><p class="cap" id="capScope">差異 ε(t) · 示波</p><canvas id="scope" width="320" height="124"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <footer id="foot">
+    雙體引擎 x→(1−K)f(x_self)+K·f(x_other)；點陣引擎為四鄰耦合映射格 x→(1−K)f(x)+(K/4)Σf(鄰)，f=r·x(1−x)，r₀=3.90，δ 為格間 r 的離散度。Conway 為 B3/S23（無 K、無 δ、無呼吸）。本台只演空間混沌邊緣（Wolfram 第 2／4／3 類）；不主張混沌邊緣＝通用計算。
+  </footer>
+</div>
+
+<script>
+(() => {
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cs=getComputedStyle(document.documentElement),C=n=>cs.getPropertyValue(n).trim();
+  const PAL={head:C('--head'),tail:C('--tail'),mirror:C('--mirror'),snake:C('--snake'),noise:C('--noise'),
+    dead:C('--dead'),venom:C('--venom'),bone:C('--bone'),boneDim:C('--bone-dim'),grid:C('--grid')};
+  const hex2rgb=h=>{h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
+  const rgbDark=[10,8,26], rgbTeal=hex2rgb(PAL.tail), rgbVen=hex2rgb(PAL.venom);
+
+  const r0=3.90, f=(x,r)=>{let v=r*x*(1-x);return v<0?0:v>1?1:v;};
+  const TGTR={converge:{K:0.34,D:0.004},diverge:{K:0.11,D:0.045}};
+  const TGTL={converge:{K:0.46,D:0.004},diverge:{K:0.06,D:0.050}};
+  const tgt=p=>(arena==='lattice'?TGTL:TGTR)[p];
+  const RELAX=0.02,EMA=0.035,LOCK=2200;
+
+  // shared
+  let arena='ring', rule='cml', mode='manual', memOn=true;
+  let K=.34,D=.03,S=.2,speed=3, live=false, t=0;
+  let ordSm=0, breaths=0, lastCons=0, period=0, cycMaxE=0, spaceVal=0, regime='idle';
+  const W=220, ordHist=[];          // order-parameter time series (ε or meanD)
+  // ring
+  let xA=.4,xB=.6; const histA=[],histB=[],trail=[],TRAIL=90; const mapTrail=[],spiral=[];
+  // lattice
+  const N=120; let g=new Float32Array(N*N), gN=new Float32Array(N*N), fg=new Float32Array(N*N);
+  let cb=new Uint8Array(N*N), cbN=new Uint8Array(N*N);           // conway
+  const randF=new Float32Array(N*N); for(let i=0;i<N*N;i++)randF[i]=Math.random()-0.5;
+  let img=null;
+
+  const $=id=>document.getElementById(id);
+  const ring=$('ring'),rc=ring.getContext('2d'),lat=$('lattice'),lc=lat.getContext('2d');
+  const map=$('map'),mc=map.getContext('2d'),scope=$('scope'),sc=scope.getContext('2d');
+  const off=document.createElement('canvas'); off.width=N; off.height=N; const oc=off.getContext('2d');
+
+  function fit(cv){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);
+    cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);cv.getContext('2d').setTransform(d,0,0,d,0,0);return{w:r.width,h:r.height};}
+  let RD,MD,SD,LD;
+  function fitAll(){RD=fit(ring);MD=fit(map);SD=fit(scope);
+    if(lat.style.display!=='none')LD=fit(lat);
+    drawMap();if(arena==='ring')drawRing();else drawLattice();drawScope();}
+
+  // ---- controls ----
+  const syncUI=()=>{$('kVal').textContent=K.toFixed(3);$('dVal').textContent=D.toFixed(3);
+    $('sVal').textContent=S.toFixed(2);$('spVal').textContent=speed;$('K').value=K;$('D').value=D;};
+  function bind(id,fn){const el=$(id);el.addEventListener('input',()=>{fn(parseFloat(el.value));syncUI();drawMap();if(live)flash();});}
+  bind('K',v=>K=v);bind('D',v=>D=v);bind('S',v=>S=v);bind('SP',v=>speed=Math.round(v));
+
+  function setArena(a){arena=a;$('aRing').classList.toggle('on',a==='ring');$('aLat').classList.toggle('on',a==='lattice');
+    const L=a==='lattice';$('ring').style.display=L?'none':'block';$('lattice').style.display=L?'block':'none';
+    $('ruleSeg').style.display=L?'inline-flex':'none';
+    $('lblOrd').textContent=L?'空間差異 D̄':'平均差異 ē';
+    $('lblSec').textContent=L?'差異斑塊度 σ_D':'協調度 ρ';
+    $('capScope').textContent=L?'空間差異 D̄(t) · 示波':'差異 ε(t) · 示波';
+    $('spHint').textContent=L?'慢 ←→ 快':'每幀步數';
+    $('legend').innerHTML=L?'<span><i style="background:#0a081a"></i>低態/死</span><span><i style="background:var(--tail)"></i>中態</span><span><i style="background:var(--venom)"></i>高態/生</span>'
+      :'<span><i style="background:var(--head)"></i>智能體 A · 頭</span><span><i style="background:var(--tail)"></i>智能體 B · 尾</span><span><i style="background:var(--bone-dim)"></i>蛇身 · 共享吸子</span>';
+    doReset(false); requestAnimationFrame(()=>fitAll());}
+  $('aRing').onclick=()=>setArena('ring'); $('aLat').onclick=()=>setArena('lattice');
+
+  function setRule(r){rule=r;$('rCml').classList.toggle('on',r==='cml');$('rConway').classList.toggle('on',r==='conway');
+    const cw=r==='conway';
+    ['lK','lD'].forEach(i=>$(i).classList.toggle('dis',cw));$('K').disabled=cw||(mode==='breath');$('D').disabled=cw||(mode==='breath');
+    doReset(false);}
+  $('rCml').onclick=()=>setRule('cml'); $('rConway').onclick=()=>setRule('conway');
+
+  function setMode(m){mode=m;$('mManual').classList.toggle('on',m==='manual');$('mBreath').classList.toggle('on',m==='breath');
+    const br=m==='breath', cw=(arena==='lattice'&&rule==='conway');
+    $('K').disabled=br||cw;$('D').disabled=br||cw;$('lK').classList.toggle('dis',br||cw);$('lD').classList.toggle('dis',br||cw);
+    $('phasechip').style.display=br?'block':'none';}
+  $('mManual').onclick=()=>setMode('manual');$('mBreath').onclick=()=>setMode('breath');
+  $('mem').onchange=e=>memOn=e.target.checked;
+
+  let pt=null;
+  function setP(s,txt){$('presence').className='presence '+s;$('presenceTxt').textContent=txt;}
+  function flash(){setP('here','第三者介入中…（差異非自持）');clearTimeout(pt);pt=setTimeout(()=>{if(live)setP('gone','第三者：已撤離');},900);}
+
+  function seedLattice(){
+    if(rule==='conway'){for(let i=0;i<N*N;i++)cb[i]=Math.random()<0.30?1:0;}
+    else{for(let i=0;i<N*N;i++)g[i]=Math.random();}
+  }
+  function doReset(soft){live=false;t=0;ordSm=0;breaths=0;lastCons=0;period=0;cycMaxE=0;spaceVal=0;regime='idle';
+    histA.length=histB.length=trail.length=mapTrail.length=spiral.length=ordHist.length=0;
+    $('oT').textContent=0;['oE','oR','oPeriod','oBreath'].forEach(i=>$(i).textContent='—');
+    $('phName').textContent='—';$('phN').textContent='第 0 息';
+    setVerdict('idle');
+    if(arena==='ring')drawRing();else{seedLattice();drawLattice();}
+    drawScope();drawMap();
+    if(!soft)setP('gone','第三者：尚未進場');}
+  $('seed').onclick=()=>{
+    if(arena==='ring'){const m=.5;xA=m-S/2+(Math.random()-.5)*1e-3;xB=m+S/2+(Math.random()-.5)*1e-3;
+      xA=Math.min(.999,Math.max(.001,xA));xB=Math.min(.999,Math.max(.001,xB));}
+    else seedLattice();
+    doReset(true);live=true;setP('gone','第三者：已撤離');};
+  $('pull').onclick=()=>{live=false;setP('here','第三者：在場（手動把持）');$('vname').textContent='已暫停';
+    $('vgloss').textContent='迴圈停擺——需要被把持的非自主態。';};
+  $('reset').onclick=()=>doReset(false);
+
+  // ---- ring engine (unchanged core) ----
+  function ringStep(){
+    if(mode==='breath'){const tg=tgt(phase);K+=RELAX*(tg.K-K);D+=RELAX*(tg.D-D);
+      if(phase==='diverge')cycMaxE=Math.max(cycMaxE,Math.abs(xA-xB));}
+    const fa=f(xA,r0),fb=f(xB,r0+D),nA=(1-K)*fa+K*fb,nB=(1-K)*fb+K*fa;xA=nA;xB=nB;t++;
+    histA.push(xA);histB.push(xB);if(histA.length>W){histA.shift();histB.shift();}
+    trail.push([xA*2*Math.PI,xB*2*Math.PI]);if(trail.length>TRAIL)trail.shift();
+    const e=Math.abs(xA-xB);pushOrd(e);
+    breathe(e,(xA+xB)/2);
+  }
+  let phase='diverge';
+  function breathe(ord,sig){
+    if(mode!=='breath')return;
+    const dmin=arena==='ring'?0.02:0.030, dmax=arena==='ring'?0.15:0.13;
+    if(phase==='diverge'&&ordSm>dmax){phase='converge';}
+    else if(phase==='converge'&&ordSm<dmin){
+      const n=++breaths;period=lastCons?(t-lastCons):period;lastCons=t;
+      if(arena==='ring'){const amp=cycMaxE,ang=n*2.39996323;let r=spiral.length?spiral[spiral.length-1].r:0;
+        if(memOn){r+=0.12*amp;spaceVal+=amp;}else{r=0.45*amp;spaceVal=amp;}
+        spiral.push({ang,r,n});if(spiral.length>60)spiral.shift();cycMaxE=0;}
+      phase='diverge';
+    }
+    if(arena==='ring'&&t%4===0&&mode==='breath'){mapTrail.push([K,D]);if(mapTrail.length>140)mapTrail.shift();}
+    if(arena==='lattice'&&t%4===0&&mode==='breath'){mapTrail.push([K,D]);if(mapTrail.length>140)mapTrail.shift();}
+  }
+  function pushOrd(v){ordHist.push(v);if(ordHist.length>W)ordHist.shift();ordSm+=EMA*(v-ordSm);}
+
+  // ---- lattice engine ----
+  function idx(x,y){return ((y+N)%N)*N+((x+N)%N);}
+  function cmlStep(){
+    if(mode==='breath'){const tg=tgt(phase);K+=RELAX*(tg.K-K);D+=RELAX*(tg.D-D);}
+    for(let i=0;i<N*N;i++)fg[i]=f(g[i], r0+randF[i]*D);
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;
+      const s=fg[idx(x,y-1)]+fg[idx(x,y+1)]+fg[idx(x-1,y)]+fg[idx(x+1,y)];
+      gN[i]=(1-K)*fg[i]+(K/4)*s;}
+    const tmp=g;g=gN;gN=tmp;t++;
+    const st=spatialStats();pushOrd(st.mean);breathe(st.mean,0);
+    return st;
+  }
+  function spatialStats(){let sum=0,n=0;const dvals=new Float32Array(N*N);
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;
+      const d=(Math.abs(g[i]-g[idx(x+1,y)])+Math.abs(g[i]-g[idx(x,y+1)]))/2;dvals[i]=d;sum+=d;n++;}
+    const mean=sum/n;let v=0;for(let i=0;i<n;i++){const u=dvals[i]-mean;v+=u*u;}
+    return {mean,std:Math.sqrt(v/n)};
+  }
+  function conwayStep(){let changed=0,live2=0;
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;
+      let s=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(dx||dy)s+=cb[idx(x+dx,y+dy)];}
+      const a=cb[i], nv=(a?(s===2||s===3):(s===3))?1:0;cbN[i]=nv;if(nv!==a)changed++;if(nv)live2++;}
+    const tmp=cb;cb=cbN;cbN=tmp;t++;
+    return {act:changed/(N*N),dens:live2/(N*N)};
+  }
+
+  // ---- diagnostics ----
+  function pearson(a,b){const n=a.length;if(n<8)return 0;let sa=0,sb=0;for(let i=0;i<n;i++){sa+=a[i];sb+=b[i];}
+    const ma=sa/n,mb=sb/n;let nu=0,da=0,db=0;for(let i=0;i<n;i++){const u=a[i]-ma,vv=b[i]-mb;nu+=u*vv;da+=u*u;db+=vv*vv;}
+    const dn=Math.sqrt(da*db);return dn<1e-9?0:nu/dn;}
+  const meanLast=(a,k)=>{const n=a.length;if(!n)return 0;let s=0,c=0;for(let i=Math.max(0,n-k);i<n;i++){s+=a[i];c++;}return s/c;};
+
+  function classifyRing(){const e=meanLast(ordHist,W),rho=pearson(histA,histB);
+    let reg=e<0.012?'mirror':rho<0.28?'noise':'snake';
+    $('oT').textContent=t;$('oE').textContent=e.toFixed(4);$('oR').textContent=rho.toFixed(3);
+    breathReadout();return reg;}
+  function classifyCml(st){const m=st.mean,sd=st.std;
+    let reg = m<0.025 ? 'mirror' : (sd>0.045 ? 'snake' : 'noise');
+    $('oT').textContent=t;$('oE').textContent=m.toFixed(4);$('oR').textContent=sd.toFixed(4);
+    breathReadout();return reg;}
+  function classifyConway(st){
+    $('oT').textContent=t;$('oE').textContent=st.dens.toFixed(4);$('oR').textContent=st.act.toFixed(4);
+    $('oPeriod').textContent='—';$('oBreath').textContent='第四類 · 規則固定';
+    return st.act<0.002?'mirror':(st.act<0.06?'snake':'noise');}
+  function breathReadout(){
+    if(mode==='breath'){$('oPeriod').textContent=period?period:'…';
+      const locked=(t-lastCons)>LOCK;
+      $('oBreath').textContent=breaths<1?'醞釀中':locked?'鎖死（停止呼吸）':'自持 · 第'+breaths+'息';
+      $('phName').textContent=phase==='diverge'?'差異化 ↗ 撐開':'合一 ↘ 收攏';
+      $('phName').style.color=phase==='diverge'?PAL.snake:PAL.mirror;$('phN').textContent='第 '+breaths+' 息';
+      $('kVal').textContent=K.toFixed(3);$('dVal').textContent=D.toFixed(3);$('K').value=K;$('D').value=D;
+    } else {$('oPeriod').textContent='—';$('oBreath').textContent='—';}}
+
+  function setVerdict(reg){const lamp=$('lamp'),nm=$('vname'),gl=$('vgloss'),vd=$('verdict');
+    const isL=arena==='lattice';
+    const T={mirror:[PAL.mirror, isL?'鏡 · 凍結秩序':'鏡 · MIRROR', isL?'格點同步成均勻域，空間差異歸零（Wolfram 第 2 類）。':'差異歸零，融成一點。'],
+      snake:[PAL.snake, isL?'蛇 · 混沌邊緣':'蛇 · OUROBOROS', isL?'同調域與非同調域共存，傳播結構在其間——空間 chimera（第 4 類）。':'差異自持且協調——有界非週期。'],
+      noise:[PAL.noise, isL?'噪 · 時空湍流':'噪 · DRIFT', isL?'全域時空混沌，差異失去空間結構（第 3 類）。':'差異失聯，各說各話。'],
+      idle:[PAL.dead,'待注入', arena==='lattice'?'選基底，再「注入種子並放手」。':'選場域，再「注入種子並放手」。']}[reg];
+    lamp.style.background=T[0];lamp.style.boxShadow='0 0 18px '+T[0];
+    nm.textContent=T[1];nm.style.color=reg==='idle'?PAL.bone:T[0];gl.textContent=T[2];
+    vd.style.borderColor=reg==='idle'?C('--line2'):T[0];vd.style.boxShadow=reg==='idle'?'none':'0 0 26px -8px '+T[0];
+    regime=reg;}
+
+  // ---- renders ----
+  function drawRing(){const w=RD.w,h=RD.h,cx=w/2,cy=h*.47,R=Math.min(w,h)*.34;
+    rc.clearRect(0,0,w,h);rc.lineCap='round';rc.lineWidth=Math.max(12,R*.17);rc.strokeStyle='#140b30';
+    rc.beginPath();rc.arc(cx,cy,R,0,7);rc.stroke();rc.lineWidth=1.5;rc.strokeStyle=PAL.grid;rc.beginPath();rc.arc(cx,cy,R,0,7);rc.stroke();
+    for(let i=0;i<trail.length;i++){const a=trail[i][0]-Math.PI/2,b=trail[i][1]-Math.PI/2,al=i/trail.length;
+      rc.globalAlpha=.05+al*.6;rc.lineWidth=Math.max(2.5,R*.06*al);
+      const gr=rc.createLinearGradient(cx+Math.cos(a)*R,cy+Math.sin(a)*R,cx+Math.cos(b)*R,cy+Math.sin(b)*R);
+      gr.addColorStop(0,PAL.head);gr.addColorStop(1,PAL.tail);rc.strokeStyle=gr;
+      rc.beginPath();rc.arc(cx,cy,R,Math.min(a,b),Math.max(a,b));rc.stroke();}
+    rc.globalAlpha=1;
+    function mk(ang,col,lb){const a=ang-Math.PI/2,px=cx+Math.cos(a)*R,py=cy+Math.sin(a)*R;
+      rc.save();rc.shadowColor=col;rc.shadowBlur=22;rc.fillStyle=col;rc.beginPath();rc.arc(px,py,Math.max(9,R*.08),0,7);rc.fill();rc.restore();
+      rc.fillStyle='#08051a';rc.font='700 12px JetBrains Mono';rc.textAlign='center';rc.textBaseline='middle';rc.fillText(lb,px,py);}
+    if(trail.length){const l=trail[trail.length-1],mir=regime==='mirror';mk(l[0],mir?PAL.dead:PAL.head,'A');mk(l[1],mir?PAL.dead:PAL.tail,'B');}
+    rc.fillStyle=PAL.boneDim;rc.textAlign='center';rc.textBaseline='middle';rc.font='600 14px "Noto Serif TC"';
+    rc.fillText(live?(mode==='breath'?(phase==='diverge'?'呼 · 差異化':'吸 · 合一'):'迴圈自演化中'):'迴圈待命',cx,cy);
+    rc.font='500 10px JetBrains Mono';rc.fillStyle='#6a5da0';rc.fillText('ε = |A−B|',cx,cy+19);}
+
+  function drawLattice(){
+    if(!img)img=oc.createImageData(N,N);const d=img.data;
+    if(arena==='lattice'&&rule==='conway'){
+      for(let i=0;i<N*N;i++){const a=cb[i],p=i*4;
+        if(a){d[p]=rgbTeal[0];d[p+1]=rgbTeal[1];d[p+2]=rgbTeal[2];}else{d[p]=rgbDark[0];d[p+1]=rgbDark[1];d[p+2]=rgbDark[2];}d[p+3]=255;}
+    }else{
+      for(let i=0;i<N*N;i++){const x=g[i],p=i*4;let r,gg,b;
+        if(x<0.5){const u=x/0.5;r=rgbDark[0]+(rgbTeal[0]-rgbDark[0])*u;gg=rgbDark[1]+(rgbTeal[1]-rgbDark[1])*u;b=rgbDark[2]+(rgbTeal[2]-rgbDark[2])*u;}
+        else{const u=(x-0.5)/0.5;r=rgbTeal[0]+(rgbVen[0]-rgbTeal[0])*u;gg=rgbTeal[1]+(rgbVen[1]-rgbTeal[1])*u;b=rgbTeal[2]+(rgbVen[2]-rgbTeal[2])*u;}
+        d[p]=r;d[p+1]=gg;d[p+2]=b;d[p+3]=255;}
+    }
+    oc.putImageData(img,0,0);
+    if(!LD)LD=fit(lat);const w=LD.w,h=LD.h;
+    lc.imageSmoothingEnabled=(rule==='cml');lc.clearRect(0,0,w,h);lc.drawImage(off,0,0,w,h);
+    lc.fillStyle='rgba(10,8,26,.55)';lc.fillRect(0,h-22,w,22);
+    lc.fillStyle=PAL.boneDim;lc.font='600 11px JetBrains Mono';lc.textAlign='left';lc.textBaseline='middle';
+    lc.fillText(rule==='conway'?'Conway B3/S23 · '+N+'×'+N:'CML '+N+'×'+N+' · 四鄰耦合',8,h-11);}
+
+  function drawMap(){const w=MD.w,h=MD.h;mc.clearRect(0,0,w,h);
+    if(arena==='lattice'&&rule==='conway'){mc.fillStyle='#6a5da0';mc.font='700 11px JetBrains Mono';mc.textAlign='center';mc.textBaseline='middle';
+      mc.fillText('Conway · 規則固定，無 K×δ 相圖',w/2,h/2);return;}
+    const X=k=>k/.5*w,Y=dd=>h-(dd/.06)*h;
+    for(let px=0;px<w;px+=4)for(let py=0;py<h;py+=4){const k=px/w*.5,dd=(1-py/h)*.06;let c;
+      if(k<.16)c='rgba(255,122,20,.16)';else if(dd<.006)c='rgba(178,101,255,.18)';else c='rgba(28,240,191,.13)';
+      mc.fillStyle=c;mc.fillRect(px,py,4,4);}
+    mc.strokeStyle='rgba(255,255,255,.12)';mc.lineWidth=1;mc.beginPath();mc.moveTo(X(.16),0);mc.lineTo(X(.16),h);mc.stroke();
+    mc.font='700 10px JetBrains Mono';mc.textAlign='left';mc.fillStyle='#8678b8';mc.fillText('K→',w-26,h-5);
+    mc.save();mc.translate(10,18);mc.rotate(-Math.PI/2);mc.fillText('←δ',0,0);mc.restore();
+    mc.fillStyle=PAL.noise;mc.fillText('噪',X(.05),20);mc.fillStyle=PAL.mirror;mc.fillText('鏡',X(.4),h-7);mc.fillStyle=PAL.snake;mc.fillText('蛇',X(.33),30);
+    if(mapTrail.length>1){mc.strokeStyle=PAL.venom;mc.lineWidth=1.4;mc.globalAlpha=.55;mc.beginPath();
+      for(let i=0;i<mapTrail.length;i++){const x=X(mapTrail[i][0]),y=Y(mapTrail[i][1]);i?mc.lineTo(x,y):mc.moveTo(x,y);}mc.stroke();mc.globalAlpha=1;}
+    const px=X(K),py=Y(D);mc.save();mc.shadowColor=PAL.venom;mc.shadowBlur=14;mc.fillStyle=PAL.venom;
+    mc.beginPath();mc.arc(px,py,5,0,7);mc.fill();mc.restore();mc.strokeStyle='#08051a';mc.lineWidth=1.5;mc.stroke();}
+
+  function drawScope(){const w=SD.w,h=SD.h;sc.clearRect(0,0,w,h);sc.strokeStyle=PAL.grid;sc.lineWidth=1;sc.globalAlpha=.5;
+    for(let i=0;i<=4;i++){const y=h*i/4;sc.beginPath();sc.moveTo(0,y);sc.lineTo(w,y);sc.stroke();}sc.globalAlpha=1;
+    if(!ordHist.length){sc.fillStyle='#6a5da0';sc.font='700 10px JetBrains Mono';sc.textAlign='center';sc.fillText('待注入',w/2,h/2);return;}
+    const n=ordHist.length,col=regime==='mirror'?PAL.mirror:regime==='noise'?PAL.noise:PAL.snake;
+    const scaleMax=arena==='ring'?0.6:0.35;
+    sc.save();sc.shadowColor=col;sc.shadowBlur=10;sc.strokeStyle=col;sc.lineWidth=2;sc.beginPath();
+    for(let i=0;i<n;i++){const x=i/(W-1)*w,e=Math.min(ordHist[i],scaleMax)/scaleMax,y=h-e*h;i?sc.lineTo(x,y):sc.moveTo(x,y);}sc.stroke();sc.restore();
+    sc.fillStyle='#6a5da0';sc.font='700 9px JetBrains Mono';sc.textAlign='left';sc.fillText(arena==='ring'?'ε':'D̄',5,13);
+    sc.textAlign='right';sc.fillText('0 – '+scaleMax,w-5,h-5);}
+
+  // ---- loop ----
+  let latAcc=0;
+  function frame(){
+    if(live){
+      if(arena==='ring'){const n=reduce?1:speed;for(let i=0;i<n;i++)ringStep();
+        const reg=classifyRing();if(reg!==regime)setVerdict(reg);else regime=reg;drawRing();}
+      else{
+        latAcc+=reduce?0.02:speed*speed*0.01; let st=null,cap=6;
+        while(latAcc>=1&&cap-->0){st=(rule==='cml')?cmlStep():conwayStep();latAcc--;}
+        if(st){const reg=(rule==='cml')?classifyCml(st):classifyConway(st);if(reg!==regime)setVerdict(reg);else regime=reg;}
+        drawLattice();}
+      drawScope();if(mode==='breath')drawMap();
+    }
+    requestAnimationFrame(frame);}
+
+  function init(){fitAll();syncUI();setMode('manual');setVerdict('idle');frame();}
+  addEventListener('resize',()=>fitAll());
+  requestAnimationFrame(()=>requestAnimationFrame(init));
+})();
+</script>
+</body>
+</html>

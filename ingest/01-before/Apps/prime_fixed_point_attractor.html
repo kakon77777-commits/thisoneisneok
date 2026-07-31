@@ -1,0 +1,130 @@
+
+<h2 class="sr-only">M6* 質數不動點吸子群：引力井視覺化，顯示質數作為不動點（y=0）和合數的對數距離分布</h2>
+<style>
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.mn{font-family:var(--font-mono);font-size:12px}
+.crd{background:var(--color-background-secondary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px}
+.sc{background:var(--color-background-secondary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px}
+</style>
+<div style="padding:1rem 0 1.5rem">
+<div class="crd" style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+<span class="mn" style="color:var(--color-text-secondary)">N =</span>
+<input type="range" min="50" max="400" value="150" id="slN" step="1" style="flex:1">
+<span class="mn" id="nV" style="min-width:40px;color:var(--color-text-primary)">150</span>
+<span class="mn" style="color:var(--color-text-secondary)" id="cI"></span>
+</div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 282px;gap:14px;align-items:start">
+<div class="crd">
+<div style="display:flex;justify-content:space-between;margin-bottom:8px">
+<span class="mn" style="color:var(--color-text-secondary)">引力井 · y = log(n / T_top(n))</span>
+<span class="mn" style="color:#1D9E75;font-size:11px">質數在 y = 0（不動點線）</span>
+</div>
+<svg id="mSvg" width="100%" viewBox="0 0 680 280"></svg>
+<p style="font-size:12px;color:var(--color-text-secondary);margin:8px 0 0;line-height:1.4">點擊底部有色圓點（質數）可高亮其吸子域。同色點屬同一吸子。y 越高 = 乘法上距吸子越遠。</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div class="crd">
+<div class="mn" style="color:var(--color-text-secondary);margin-bottom:8px;font-size:11px">對數幾何視角（質數幾何學連結）</div>
+<svg id="llSvg" width="100%" viewBox="0 0 256 160"></svg>
+<p id="sI" class="mn" style="font-size:11px;color:var(--color-text-secondary);margin:6px 0 0"></p>
+</div>
+<div class="crd">
+<div class="mn" style="color:var(--color-text-secondary);margin-bottom:8px;font-size:11px">吸子域大小（前 8 個質數）</div>
+<div id="fB"></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div class="sc"><div class="mn" style="color:var(--color-text-secondary);font-size:10px">質數·不動點</div><div class="mn" style="font-size:20px;font-weight:500;color:var(--color-text-primary)" id="s1">–</div></div>
+<div class="sc"><div class="mn" style="color:var(--color-text-secondary);font-size:10px">合數·被吸引</div><div class="mn" style="font-size:20px;font-weight:500;color:var(--color-text-primary)" id="s2">–</div></div>
+<div class="sc"><div class="mn" style="color:var(--color-text-secondary);font-size:10px">M6* 總元素</div><div class="mn" style="font-size:20px;font-weight:500;color:var(--color-text-primary)" id="s3">–</div></div>
+<div class="sc"><div class="mn" style="color:var(--color-text-secondary);font-size:10px">對數斜率 m(N)</div><div class="mn" style="font-size:20px;font-weight:500;color:#BA7517" id="s4">–</div></div>
+</div>
+</div>
+</div>
+<p style="font-size:12px;color:var(--color-text-secondary);margin:12px 0 0;line-height:1.5;max-width:680px">
+<strong style="font-weight:500;color:var(--color-text-primary)">讀法。</strong>
+底線（y = 0）是質數線——不動點集。合數懸浮其上，高度 log(n/p) 是在乘法意義上距吸子的對數距離。
+右上斜率 m(N) 趨向 1（質數幾何學的核心命題）：自適應擬何框架在所有尺度下保持不動點群的幾何結構一致。
+隨 N 增大，新質數（新吸子）出現，修正項 ε(N) 收縮，幾何形狀保持。
+</p>
+</div>
+<script>
+const CL=['#D85A30','#1D9E75','#7F77DD','#378ADD','#BA7517','#D4537E','#639922','#888780'];
+const SV='http://www.w3.org/2000/svg';
+let sel=null;
+function sv(N){const a=new Uint8Array(N+1).fill(1);a[0]=a[1]=0;for(let i=2;i*i<=N;i++)if(a[i])for(let j=i*i;j<=N;j+=i)a[j]=0;return a;}
+function tt(n,a){if(a[n])return n;let d=5;while(d*d<=n){if(n%d===0)return d;d+=d%6===1?4:2;}return n;}
+function mk(t,o){const e=document.createElementNS(SV,t);for(const[k,v]of Object.entries(o))e.setAttribute(k,v);return e;}
+function draw(N){
+const a=sv(N+1);const els=[];
+for(let n=5;n<=N;n++){const r=n%6;if(r!==1&&r!==5)continue;const ip=a[n]===1;els.push({n,ip,t:ip?n:tt(n,a),i:els.length});}
+const ps=els.filter(e=>e.ip),cs=els.filter(e=>!e.ip);
+const cm={};ps.forEach((p,i)=>cm[p.n]=CL[i%CL.length]);
+document.getElementById('s1').textContent=ps.length;
+document.getElementById('s2').textContent=cs.length;
+document.getElementById('s3').textContent=els.length;
+document.getElementById('cI').textContent=ps.length+' 個質數 · '+cs.length+' 個合數';
+const pa=ps.map((p,i)=>[Math.log(i+1),Math.log(p.n)]);
+let sx=0,sy=0,sxy=0,sxx=0;pa.forEach(([x,y])=>{sx+=x;sy+=y;sxy+=x*y;sxx+=x*x;});
+const np=pa.length;const slp=np>1?(np*sxy-sx*sy)/(np*sxx-sx*sx):1;
+document.getElementById('s4').textContent=slp.toFixed(4);
+document.getElementById('sI').textContent='m(N) = '+slp.toFixed(4)+' → 1（隨 N → ∞）';
+const dk=window.matchMedia('(prefers-color-scheme: dark)').matches;
+const gc=dk?'#222630':'#eeeae4';const mc=dk?'#6a6e7a':'#999490';
+const mSvg=document.getElementById('mSvg');mSvg.innerHTML='';
+const W=680,H=280,pL=50,pR=24,pT=18,pB=40;
+const pW=W-pL-pR,pH=H-pT-pB,M=els.length;
+const my=Math.max(...cs.map(e=>Math.log(e.n/e.t)),0.1)*1.2;
+const xi=i=>pL+(i/Math.max(M-1,1))*pW;
+const yi=y=>pT+pH-(y/my)*pH;
+[.25,.5,.75,1].forEach(f=>{
+mSvg.appendChild(mk('line',{x1:pL,x2:W-pR,y1:yi(f*my),y2:yi(f*my),stroke:gc,'stroke-width':1}));
+const t=mk('text',{x:pL-4,y:yi(f*my)+4,'text-anchor':'end','font-size':9,fill:mc,'font-family':'monospace'});
+t.textContent=(f*my).toFixed(1);mSvg.appendChild(t);});
+mSvg.appendChild(mk('line',{x1:pL,x2:W-pR,y1:yi(0),y2:yi(0),stroke:'#1D9E75','stroke-width':2.5,'stroke-opacity':.5}));
+const al=mk('text',{x:W-pR+4,y:yi(0)+4,'font-size':9,fill:'#1D9E75','font-family':'monospace'});al.textContent='y=0';mSvg.appendChild(al);
+cs.forEach(e=>{
+const pe=ps.find(p=>p.n===e.t);if(!pe)return;
+const col=cm[e.t]||'#888';const ac=sel===null||sel===e.t;
+mSvg.appendChild(mk('line',{x1:xi(e.i),y1:yi(Math.log(e.n/e.t)),x2:xi(pe.i),y2:yi(0),stroke:col,'stroke-width':.75,'stroke-opacity':ac?.3:.04}));});
+cs.forEach(e=>{
+const col=cm[e.t]||'#888';const h=Math.log(e.n/e.t);const ac=sel===null||sel===e.t;
+const c=mk('circle',{cx:xi(e.i),cy:yi(h),r:3.5,fill:col,'fill-opacity':ac?.55:.07,stroke:col,'stroke-width':.7,'stroke-opacity':ac?.8:.1,style:'cursor:pointer'});
+c.addEventListener('click',()=>{sel=sel===e.t?null:e.t;draw(N);});mSvg.appendChild(c);});
+ps.forEach(e=>{
+const col=cm[e.n]||'#888';const ac=sel===null||sel===e.n;
+const c=mk('circle',{cx:xi(e.i),cy:yi(0),r:ac?7.5:4.5,fill:col,'fill-opacity':ac?1:.22,'stroke-width':0,style:'cursor:pointer'});
+c.addEventListener('click',()=>{sel=sel===e.n?null:e.n;draw(N);});mSvg.appendChild(c);
+if(N<=200&&e.n<=90){const t=mk('text',{x:xi(e.i),y:yi(0)+19,'text-anchor':'middle','font-size':8,fill:ac?col:mc,'font-family':'monospace'});t.textContent=e.n;mSvg.appendChild(t);}});
+const xl=mk('text',{x:pL+pW/2,y:H-4,'text-anchor':'middle','font-size':10,fill:mc});xl.textContent='M6* 位置索引';mSvg.appendChild(xl);
+const yl=mk('text',{x:14,y:pT+pH/2,'text-anchor':'middle','font-size':10,fill:mc,transform:`rotate(-90,14,${pT+pH/2})`});yl.textContent='log(n / T_top)';mSvg.appendChild(yl);
+const llS=document.getElementById('llSvg');llS.innerHTML='';
+const lW=256,lH=160,lPL=10,lPR=10,lPT=8,lPB=8;
+const lPW=lW-lPL-lPR,lPH=lH-lPT-lPB;
+const mLX=Math.log(Math.max(M,2));const mLY=Math.log(N);
+const lxi=i=>lPL+(Math.log(i+1)/mLX)*lPW;
+const lyi=v=>lPT+lPH-(Math.log(Math.max(v,1))/mLY)*lPH;
+if(ps.length>1){
+const fp=ps[0],lp=ps[ps.length-1];
+const x1=lxi(fp.i),y1=lyi(fp.n),x2=lxi(lp.i);
+const sY=lPH/mLY,sX=lPW/mLX;
+llS.appendChild(mk('line',{x1:x1,y1:y1,x2:x2,y2:y1-(sY/sX)*(x2-x1),stroke:dk?'#3a4258':'#ccc','stroke-width':1,'stroke-dasharray':'4,3'}));}
+cs.forEach(e=>{
+const col=cm[e.t]||'#888';const ac=sel===null||sel===e.t;
+llS.appendChild(mk('circle',{cx:lxi(e.i),cy:lyi(e.n),r:2,fill:col,'fill-opacity':ac?.2:.04}));});
+ps.forEach(e=>{
+const col=cm[e.n]||'#888';const ac=sel===null||sel===e.n;
+llS.appendChild(mk('circle',{cx:lxi(e.i),cy:lyi(e.n),r:3.5,fill:col,'fill-opacity':ac?.9:.15}));});
+const sT=mk('text',{x:lW-lPR-3,y:lPT+13,'text-anchor':'end','font-size':9,fill:'#BA7517','font-family':'monospace'});sT.textContent='m = '+slp.toFixed(3)+' → 1';llS.appendChild(sT);
+const fb=document.getElementById('fB');fb.innerHTML='';
+const t8=ps.slice(0,8);const fs=t8.map(p=>({p,sz:cs.filter(e=>e.t===p.n).length}));
+const mxF=Math.max(...fs.map(f=>f.sz),1);
+fs.forEach(({p,sz})=>{
+const col=cm[p.n]||'#888';const ac=sel===null||sel===p.n;
+const row=document.createElement('div');
+row.style.cssText='margin-bottom:6px;cursor:pointer;opacity:'+(ac?1:.25);
+row.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-family:var(--font-mono);font-size:11px;color:${col}">p = ${p.n}</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary)">${sz} 個</span></div><div style="height:5px;background:var(--color-border-tertiary);border-radius:3px;overflow:hidden"><div style="height:100%;width:${(sz/mxF*100).toFixed(0)}%;background:${col};border-radius:3px"></div></div>`;
+row.addEventListener('click',()=>{sel=sel===p.n?null:p.n;draw(N);});fb.appendChild(row);});}
+const sl=document.getElementById('slN');
+sl.addEventListener('input',()=>{document.getElementById('nV').textContent=sl.value;sel=null;draw(+sl.value);});
+draw(150);
+</script>

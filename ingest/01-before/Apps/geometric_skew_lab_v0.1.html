@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>幾何歪度實驗台 v0.1</title>
+<style>
+  :root{
+    --bg:#0d1117;
+    --panel:#161b22;
+    --panel2:#0f1722;
+    --text:#e6edf3;
+    --muted:#8b949e;
+    --line:#30363d;
+    --accent:#7dd3fc;
+    --accent2:#a78bfa;
+    --warn:#fbbf24;
+    --bad:#fb7185;
+    --good:#86efac;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(circle at 10% 0%, rgba(56,189,248,.15), transparent 35%),
+      radial-gradient(circle at 90% 10%, rgba(167,139,250,.12), transparent 30%),
+      radial-gradient(circle at 55% 90%, rgba(134,239,172,.07), transparent 32%),
+      var(--bg);
+  }
+  header{
+    padding:28px 24px 16px;
+    border-bottom:1px solid var(--line);
+    background:rgba(13,17,23,.78);
+    position:sticky;
+    top:0;
+    z-index:5;
+    backdrop-filter: blur(10px);
+  }
+  h1{margin:0 0 8px;font-size:clamp(24px,4vw,38px)}
+  .subtitle{color:var(--muted);line-height:1.75;max-width:1180px}
+  .strip{
+    display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;
+  }
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:7px 11px;border:1px solid var(--line);border-radius:999px;
+    background:rgba(15,23,34,.85);color:var(--muted);font-size:13px;
+  }
+  .pill b{color:var(--accent)}
+  main{
+    display:grid;
+    grid-template-columns:390px minmax(0,1fr);
+    gap:18px;
+    padding:18px;
+  }
+  @media (max-width: 1024px){
+    main{grid-template-columns:1fr}
+    header{position:relative}
+  }
+  section,.card{
+    background:linear-gradient(180deg, rgba(22,27,34,.95), rgba(15,23,34,.95));
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:0 10px 32px rgba(0,0,0,.25);
+  }
+  .controls{padding:18px;height:max-content}
+  .group-title{
+    margin:18px 0 12px;
+    color:#dbeafe;
+    font-weight:700;
+    border-left:3px solid var(--accent);
+    padding-left:10px;
+  }
+  .row{margin:0 0 16px}
+  label{
+    display:flex;justify-content:space-between;gap:12px;
+    font-size:14px;color:var(--muted);margin-bottom:8px;
+  }
+  label b{color:var(--text)}
+  input[type="range"]{width:100%;accent-color:var(--accent)}
+  input[type="number"], select, button{
+    width:100%;background:#0b1220;color:var(--text);
+    border:1px solid var(--line);border-radius:12px;padding:10px 12px;
+    font-size:15px;
+  }
+  button{
+    cursor:pointer;
+    position:relative;
+    transition:.14s transform,.14s box-shadow,.14s background,.14s border-color;
+    overflow:hidden;
+  }
+  button:hover{background:#111a2b;border-color:rgba(125,211,252,.4)}
+  button:active{transform:translateY(1px) scale(.99)}
+  button.flash{
+    border-color:rgba(125,211,252,.95);
+    box-shadow:0 0 0 3px rgba(125,211,252,.16),0 0 24px rgba(125,211,252,.32), inset 0 0 22px rgba(125,211,252,.12);
+  }
+  button.flash::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(circle at center, rgba(255,255,255,.32), transparent 46%);
+    animation:pulse .42s ease-out forwards;
+    pointer-events:none;
+  }
+  @keyframes pulse{from{opacity:.85;transform:scale(.7)}to{opacity:0;transform:scale(1.8)}}
+  .button-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .primary{border-color:rgba(125,211,252,.55);background:rgba(14,116,144,.22)}
+  .danger{border-color:rgba(251,113,133,.45);background:rgba(159,18,57,.18)}
+  .log-panel{
+    margin-top:16px;background:#0b1220;border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  }
+  .log-head{
+    display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.025);
+  }
+  .log-head b{font-size:14px}
+  .log-head button{width:auto;padding:6px 9px;font-size:12px;border-radius:10px}
+  .log-body{
+    height:190px;overflow:auto;padding:9px 10px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+    font-size:12px;line-height:1.55;
+  }
+  .log-entry{padding:4px 0;border-bottom:1px dashed rgba(48,54,61,.48);color:#cbd5e1}
+  .log-entry .time{color:#8b949e}
+  .log-entry .type{color:#7dd3fc}
+  .workspace{display:grid;grid-template-rows:auto auto auto auto;gap:18px}
+  .chart-card{padding:16px}
+  .chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:8px}
+  h2{margin:0;font-size:19px}
+  .hint{color:var(--muted);font-size:13px;line-height:1.6}
+  canvas{
+    width:100%;display:block;border-radius:14px;background:#080d15;border:1px solid #1f2937;
+  }
+  #shapeCanvas{height:430px}
+  #radialCanvas{height:320px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:13px;margin:10px 0 0}
+  .swatch{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px}
+  .metrics{display:grid;grid-template-columns: repeat(6, minmax(120px,1fr));gap:12px}
+  @media (max-width: 1180px){.metrics{grid-template-columns: repeat(2,1fr)}}
+  .metric{padding:15px}
+  .metric .name{color:var(--muted);font-size:13px;margin-bottom:8px}
+  .metric .value{font-size:24px;font-weight:700}
+  .metric .note{color:var(--muted);font-size:12px;margin-top:8px;line-height:1.5}
+  .explain{padding:18px;line-height:1.8}
+  .footer{padding:0 18px 24px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>幾何歪度實驗台 v0.1</h1>
+  <div class="subtitle">
+    把「虛實歪度」從時間序列版轉成幾何版。以 <b>虛擬基準圖形 V</b> 與 <b>真實圖形 R</b> 的差異來計算幾何歪度：
+    面積、周長、重心偏移、徑向歪度曲線與粗糙度。先從不規則圖形開始。
+  </div>
+  <div class="strip">
+    <span class="pill">模式：<b>不規則圖形</b></span>
+    <span class="pill">核心：<b>K<sub>shape</sub> = R − V</b></span>
+    <span class="pill">幾何歪線：<b>K<sub>r</sub>(θ)=r<sub>R</sub>(θ)-r<sub>V</sub>(θ)</b></span>
+  </div>
+</header>
+
+<main>
+  <aside class="controls">
+    <div class="group-title">基準圖形</div>
+
+    <div class="row">
+      <label><b>隨機種子 Seed</b><span id="seedText"></span></label>
+      <input id="seedInput" type="number" value="314159" step="1" />
+    </div>
+
+    <div class="row">
+      <label><b>取樣點數</b><span id="pointsVal"></span></label>
+      <input id="points" type="range" min="48" max="360" step="4" value="160" />
+    </div>
+
+    <div class="row">
+      <label><b>基準半徑</b><span id="radiusVal"></span></label>
+      <input id="radius" type="range" min="60" max="180" step="1" value="118" />
+    </div>
+
+    <div class="row">
+      <label><b>基準不規則度</b><span id="irregularVal"></span></label>
+      <input id="irregular" type="range" min="0.02" max="0.55" step="0.01" value="0.22" />
+    </div>
+
+    <div class="group-title">真實圖形變形</div>
+
+    <div class="row">
+      <label><b>X 拉伸</b><span id="stretchXVal"></span></label>
+      <input id="stretchX" type="range" min="0.55" max="1.65" step="0.01" value="1.08" />
+    </div>
+
+    <div class="row">
+      <label><b>Y 拉伸</b><span id="stretchYVal"></span></label>
+      <input id="stretchY" type="range" min="0.55" max="1.65" step="0.01" value="0.94" />
+    </div>
+
+    <div class="row">
+      <label><b>局部鼓起</b><span id="bulgeVal"></span></label>
+      <input id="bulge" type="range" min="0" max="0.65" step="0.01" value="0.18" />
+    </div>
+
+    <div class="row">
+      <label><b>扭曲 Twist</b><span id="twistVal"></span></label>
+      <input id="twist" type="range" min="-1.2" max="1.2" step="0.01" value="0.18" />
+    </div>
+
+    <div class="row">
+      <label><b>邊界噪聲</b><span id="noiseVal"></span></label>
+      <input id="noise" type="range" min="0" max="0.28" step="0.005" value="0.045" />
+    </div>
+
+    <div class="row">
+      <label><b>旋轉角度</b><span id="rotateVal"></span></label>
+      <input id="rotate" type="range" min="-180" max="180" step="1" value="14" />
+    </div>
+
+    <div class="row">
+      <label><b>X 位移</b><span id="shiftXVal"></span></label>
+      <input id="shiftX" type="range" min="-70" max="70" step="1" value="16" />
+    </div>
+
+    <div class="row">
+      <label><b>Y 位移</b><span id="shiftYVal"></span></label>
+      <input id="shiftY" type="range" min="-70" max="70" step="1" value="-10" />
+    </div>
+
+    <div class="button-grid row">
+      <button class="primary" id="regenBtn">重新生成基準圖形</button>
+      <button id="randomBtn">隨機變形</button>
+      <button id="resetBtn">重設參數</button>
+      <button class="danger" id="clearLogBtn">清空 LOG</button>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-head">
+        <b>操作 LOG</b>
+      </div>
+      <div id="logBody" class="log-body"></div>
+    </div>
+  </aside>
+
+  <div class="workspace">
+    <section class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h2>虛擬基準圖形 V 與真實圖形 R 疊合</h2>
+          <div class="hint">藍色為基準圖形 V，紫色為真實圖形 R。白色十字為重心，黃色箭頭表示重心偏移。</div>
+        </div>
+      </div>
+      <canvas id="shapeCanvas" width="1100" height="430"></canvas>
+      <div class="legend">
+        <span><span class="swatch" style="background:#7dd3fc"></span>虛擬基準圖形 V</span>
+        <span><span class="swatch" style="background:#a78bfa"></span>真實圖形 R</span>
+        <span><span class="swatch" style="background:#fbbf24"></span>重心偏移向量</span>
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h2>徑向歪度曲線 K<sub>r</sub>(θ)</h2>
+          <div class="hint">沿不同角度 θ 比較真實圖形與基準圖形的半徑差。這條曲線可以視為幾何版歪線。</div>
+        </div>
+      </div>
+      <canvas id="radialCanvas" width="1100" height="320"></canvas>
+      <div class="legend">
+        <span><span class="swatch" style="background:#86efac"></span>K<sub>r</sub>(θ) = r<sub>R</sub>(θ) − r<sub>V</sub>(θ)</span>
+        <span><span class="swatch" style="background:#fbbf24"></span>0 軸</span>
+      </div>
+    </section>
+
+    <div class="metrics">
+      <div class="metric card">
+        <div class="name">面積歪度</div>
+        <div class="value" id="areaDiff">0</div>
+        <div class="note">Area(R) − Area(V)</div>
+      </div>
+      <div class="metric card">
+        <div class="name">周長歪度</div>
+        <div class="value" id="periDiff">0</div>
+        <div class="note">Perimeter(R) − Perimeter(V)</div>
+      </div>
+      <div class="metric card">
+        <div class="name">重心偏移</div>
+        <div class="value" id="centroidShift">0</div>
+        <div class="note">‖Centroid(R) − Centroid(V)‖</div>
+      </div>
+      <div class="metric card">
+        <div class="name">平均徑向歪度</div>
+        <div class="value" id="radialMean">0</div>
+        <div class="note">mean(|K<sub>r</sub>(θ)|)</div>
+      </div>
+      <div class="metric card">
+        <div class="name">幾何粗糙度</div>
+        <div class="value" id="roughness">0</div>
+        <div class="note">std(K<sub>r</sub>(θ))</div>
+      </div>
+      <div class="metric card">
+        <div class="name">總歪度分數</div>
+        <div class="value" id="totalScore">0</div>
+        <div class="note">加權整合面積、周長、重心與徑向歪度</div>
+      </div>
+    </div>
+
+    <section class="explain">
+      <h2>這一版在做什麼？</h2>
+      <p>
+        這一版不再用時間序列，而是直接用不規則圖形去表現虛實歪度。
+        先生成一個不規則的虛擬基準圖形 <b>V</b>，再對它施加拉伸、扭曲、局部鼓起、旋轉、位移與噪聲，
+        得到真實圖形 <b>R</b>。之後從面積、周長、重心與徑向函數的差異，構造一組幾何歪度指標。
+      </p>
+      <p>
+        這裡最關鍵的是徑向歪度曲線 <b>K<sub>r</sub>(θ)</b>。它把「圖形對圖形的偏離」轉成可畫、可算的角度函數，
+        相當於把之前的一維歪線概念轉成幾何形狀版本。
+      </p>
+    </section>
+  </div>
+</main>
+
+<div class="footer">
+  EML-GSC / EML-RVSC prototype v0.1. Standalone HTML. No external library.
+</div>
+
+<script>
+(function(){
+  const els = {
+    seedInput: document.getElementById('seedInput'),
+    points: document.getElementById('points'),
+    radius: document.getElementById('radius'),
+    irregular: document.getElementById('irregular'),
+    stretchX: document.getElementById('stretchX'),
+    stretchY: document.getElementById('stretchY'),
+    bulge: document.getElementById('bulge'),
+    twist: document.getElementById('twist'),
+    noise: document.getElementById('noise'),
+    rotate: document.getElementById('rotate'),
+    shiftX: document.getElementById('shiftX'),
+    shiftY: document.getElementById('shiftY'),
+    regenBtn: document.getElementById('regenBtn'),
+    randomBtn: document.getElementById('randomBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    clearLogBtn: document.getElementById('clearLogBtn'),
+    logBody: document.getElementById('logBody'),
+    shapeCanvas: document.getElementById('shapeCanvas'),
+    radialCanvas: document.getElementById('radialCanvas'),
+    areaDiff: document.getElementById('areaDiff'),
+    periDiff: document.getElementById('periDiff'),
+    centroidShift: document.getElementById('centroidShift'),
+    radialMean: document.getElementById('radialMean'),
+    roughness: document.getElementById('roughness'),
+    totalScore: document.getElementById('totalScore'),
+    seedText: document.getElementById('seedText'),
+    pointsVal: document.getElementById('pointsVal'),
+    radiusVal: document.getElementById('radiusVal'),
+    irregularVal: document.getElementById('irregularVal'),
+    stretchXVal: document.getElementById('stretchXVal'),
+    stretchYVal: document.getElementById('stretchYVal'),
+    bulgeVal: document.getElementById('bulgeVal'),
+    twistVal: document.getElementById('twistVal'),
+    noiseVal: document.getElementById('noiseVal'),
+    rotateVal: document.getElementById('rotateVal'),
+    shiftXVal: document.getElementById('shiftXVal'),
+    shiftYVal: document.getElementById('shiftYVal')
+  };
+
+  let baseRadii = [];
+  let realRadii = [];
+  let basePoints = [];
+  let realPoints = [];
+  let radialDiffs = [];
+  let baseFeatures = null;
+  let realFeatures = null;
+  let lastSliderLogAt = 0;
+
+  function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+  function fmt(x){
+    if(!isFinite(x)) return '—';
+    if(Math.abs(x) >= 100) return x.toFixed(1);
+    if(Math.abs(x) >= 10) return x.toFixed(2);
+    return x.toFixed(3);
+  }
+
+  function addLog(type, msg){
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.innerHTML = '<span class="time">[' + new Date().toLocaleTimeString('zh-TW',{hour12:false}) + ']</span> <span class="type">' + type + '</span> ' + msg;
+    els.logBody.prepend(div);
+    while(els.logBody.children.length > 100){
+      els.logBody.removeChild(els.logBody.lastChild);
+    }
+  }
+
+  function flash(btn, type, msg){
+    btn.classList.remove('flash');
+    void btn.offsetWidth;
+    btn.classList.add('flash');
+    window.setTimeout(function(){ btn.classList.remove('flash'); }, 430);
+    addLog(type, msg);
+  }
+
+  function makeRng(seed){
+    let s = (seed >>> 0) || 1;
+    return function(){
+      s = (1664525 * s + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  }
+
+  function params(){
+    return {
+      seed: parseInt(els.seedInput.value || '1', 10) || 1,
+      points: parseInt(els.points.value, 10),
+      radius: parseFloat(els.radius.value),
+      irregular: parseFloat(els.irregular.value),
+      stretchX: parseFloat(els.stretchX.value),
+      stretchY: parseFloat(els.stretchY.value),
+      bulge: parseFloat(els.bulge.value),
+      twist: parseFloat(els.twist.value),
+      noise: parseFloat(els.noise.value),
+      rotate: parseFloat(els.rotate.value) * Math.PI / 180,
+      shiftX: parseFloat(els.shiftX.value),
+      shiftY: parseFloat(els.shiftY.value)
+    };
+  }
+
+  function updateLabels(){
+    const p = params();
+    els.seedText.textContent = String(p.seed);
+    els.pointsVal.textContent = String(p.points);
+    els.radiusVal.textContent = String(p.radius);
+    els.irregularVal.textContent = p.irregular.toFixed(2);
+    els.stretchXVal.textContent = p.stretchX.toFixed(2);
+    els.stretchYVal.textContent = p.stretchY.toFixed(2);
+    els.bulgeVal.textContent = p.bulge.toFixed(2);
+    els.twistVal.textContent = p.twist.toFixed(2);
+    els.noiseVal.textContent = p.noise.toFixed(3);
+    els.rotateVal.textContent = Math.round(p.rotate * 180 / Math.PI) + '°';
+    els.shiftXVal.textContent = String(p.shiftX);
+    els.shiftYVal.textContent = String(p.shiftY);
+  }
+
+  function regenerateBase(){
+    const p = params();
+    const rand = makeRng(p.seed);
+    const n = p.points;
+    baseRadii = new Array(n);
+    const phase1 = rand() * Math.PI * 2;
+    const phase2 = rand() * Math.PI * 2;
+    const phase3 = rand() * Math.PI * 2;
+    const f1 = 2 + Math.floor(rand() * 4);
+    const f2 = 5 + Math.floor(rand() * 4);
+    const f3 = 8 + Math.floor(rand() * 5);
+    for(let i=0;i<n;i++){
+      const th = (i / n) * Math.PI * 2;
+      const wave =
+        0.95 * Math.sin(f1 * th + phase1) +
+        0.55 * Math.sin(f2 * th + phase2) +
+        0.25 * Math.cos(f3 * th + phase3);
+      const local = 1 + p.irregular * wave;
+      baseRadii[i] = Math.max(18, p.radius * local);
+    }
+  }
+
+  function deformReal(){
+    const p = params();
+    const rand = makeRng(p.seed ^ 0x9e3779b9);
+    const n = p.points;
+    realRadii = new Array(n);
+    basePoints = new Array(n);
+    realPoints = new Array(n);
+    radialDiffs = new Array(n);
+
+    const bulgeCenter = rand() * Math.PI * 2;
+    const bulgeWidth = 0.55 + rand() * 0.75;
+    const bulgeFreq = 1 + Math.floor(rand() * 3);
+
+    for(let i=0;i<n;i++){
+      const th = (i / n) * Math.PI * 2;
+      const r0 = baseRadii[i];
+
+      // base point
+      const bx = r0 * Math.cos(th);
+      const by = r0 * Math.sin(th);
+      basePoints[i] = {x:bx, y:by};
+
+      // local bulge around angular zone
+      let dAng = th - bulgeCenter;
+      while(dAng > Math.PI) dAng -= Math.PI * 2;
+      while(dAng < -Math.PI) dAng += Math.PI * 2;
+      const localBump = Math.exp(-Math.pow(dAng / bulgeWidth, 2)) * Math.cos(bulgeFreq * dAng);
+
+      let r1 = r0 * (1 + p.bulge * localBump);
+      r1 *= (1 + p.noise * ((rand() - 0.5) * 1.8));
+
+      // anisotropic stretch in Cartesian after twist and rotation
+      const twistAngle = th + p.twist * (r0 / p.radius);
+      let x = r1 * Math.cos(twistAngle);
+      let y = r1 * Math.sin(twistAngle);
+
+      x *= p.stretchX;
+      y *= p.stretchY;
+
+      const cr = Math.cos(p.rotate), sr = Math.sin(p.rotate);
+      const xr = x * cr - y * sr + p.shiftX;
+      const yr = x * sr + y * cr + p.shiftY;
+
+      realPoints[i] = {x:xr, y:yr};
+    }
+
+    // radii around respective centroids are computed after polygon features
+    baseFeatures = polygonFeatures(basePoints);
+    realFeatures = polygonFeatures(realPoints);
+
+    for(let i=0;i<n;i++){
+      const bdx = basePoints[i].x - baseFeatures.cx;
+      const bdy = basePoints[i].y - baseFeatures.cy;
+      const rdx = realPoints[i].x - realFeatures.cx;
+      const rdy = realPoints[i].y - realFeatures.cy;
+      const rb = Math.hypot(bdx, bdy);
+      const rr = Math.hypot(rdx, rdy);
+      realRadii[i] = rr;
+      radialDiffs[i] = rr - rb;
+    }
+  }
+
+  function polygonFeatures(points){
+    const n = points.length;
+    let a2 = 0;
+    let cxSum = 0;
+    let cySum = 0;
+    let per = 0;
+    for(let i=0;i<n;i++){
+      const p = points[i];
+      const q = points[(i+1)%n];
+      const cross = p.x*q.y - q.x*p.y;
+      a2 += cross;
+      cxSum += (p.x + q.x) * cross;
+      cySum += (p.y + q.y) * cross;
+      per += Math.hypot(q.x-p.x, q.y-p.y);
+    }
+    const area = Math.abs(a2) / 2;
+    let cx = 0, cy = 0;
+    if(Math.abs(a2) > 1e-9){
+      cx = cxSum / (3 * a2);
+      cy = cySum / (3 * a2);
+    }
+    return {area:area, perimeter:per, cx:cx, cy:cy};
+  }
+
+  function totalScore(areaDiff, periDiff, centShift, meanRad, rough){
+    const p = params();
+    const areaNorm = Math.abs(areaDiff) / Math.max(1, baseFeatures.area);
+    const periNorm = Math.abs(periDiff) / Math.max(1, baseFeatures.perimeter);
+    const centNorm = centShift / Math.max(1, p.radius);
+    const radNorm = meanRad / Math.max(1, p.radius);
+    const roughNorm = rough / Math.max(1, p.radius);
+    return 100 * (0.26*areaNorm + 0.18*periNorm + 0.18*centNorm + 0.22*radNorm + 0.16*roughNorm);
+  }
+
+  function drawShapeCanvas(){
+    const c = els.shapeCanvas;
+    const ctx = c.getContext('2d');
+    const w = c.width, h = c.height;
+    ctx.clearRect(0,0,w,h);
+
+    const pad = 40;
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    basePoints.concat(realPoints).forEach(function(p){
+      if(p.x<minX) minX=p.x;
+      if(p.x>maxX) maxX=p.x;
+      if(p.y<minY) minY=p.y;
+      if(p.y>maxY) maxY=p.y;
+    });
+    if(!isFinite(minX)){ return; }
+    const sx = (w - pad*2) / Math.max(1, (maxX-minX));
+    const sy = (h - pad*2) / Math.max(1, (maxY-minY));
+    const s = Math.min(sx, sy) * 0.92;
+    const ox = w/2 - s*(minX+maxX)/2;
+    const oy = h/2 - s*(minY+maxY)/2;
+
+    function map(p){ return {x: ox + s*p.x, y: oy + s*p.y}; }
+
+    // grid
+    ctx.strokeStyle = '#1f2937';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for(let i=0;i<=10;i++){
+      const x = 40 + i*(w-80)/10;
+      ctx.moveTo(x,20); ctx.lineTo(x,h-20);
+    }
+    for(let j=0;j<=6;j++){
+      const y = 20 + j*(h-40)/6;
+      ctx.moveTo(40,y); ctx.lineTo(w-40,y);
+    }
+    ctx.stroke();
+
+    // fill and stroke base
+    drawPolygon(ctx, basePoints, map, 'rgba(125,211,252,0.18)', '#7dd3fc', 2.6);
+    drawPolygon(ctx, realPoints, map, 'rgba(167,139,250,0.20)', '#a78bfa', 2.6);
+
+    // centroid markers
+    const bc = map({x:baseFeatures.cx, y:baseFeatures.cy});
+    const rc = map({x:realFeatures.cx, y:realFeatures.cy});
+
+    drawCross(ctx, bc.x, bc.y, '#ffffff');
+    drawCross(ctx, rc.x, rc.y, '#f3f4f6');
+
+    // arrow
+    ctx.strokeStyle = '#fbbf24';
+    ctx.fillStyle = '#fbbf24';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(bc.x, bc.y);
+    ctx.lineTo(rc.x, rc.y);
+    ctx.stroke();
+    drawArrowHead(ctx, bc, rc);
+
+    // annotation
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('V centroid', bc.x + 8, bc.y - 8);
+    ctx.fillText('R centroid', rc.x + 8, rc.y + 16);
+  }
+
+  function drawPolygon(ctx, points, map, fill, stroke, width){
+    if(points.length < 2) return;
+    ctx.beginPath();
+    let mp = map(points[0]);
+    ctx.moveTo(mp.x, mp.y);
+    for(let i=1;i<points.length;i++){
+      mp = map(points[i]);
+      ctx.lineTo(mp.x, mp.y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = width;
+    ctx.stroke();
+  }
+
+  function drawCross(ctx, x, y, color){
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(x-7, y); ctx.lineTo(x+7, y);
+    ctx.moveTo(x, y-7); ctx.lineTo(x, y+7);
+    ctx.stroke();
+  }
+
+  function drawArrowHead(ctx, from, to){
+    const ang = Math.atan2(to.y - from.y, to.x - from.x);
+    const len = 10;
+    ctx.beginPath();
+    ctx.moveTo(to.x, to.y);
+    ctx.lineTo(to.x - len*Math.cos(ang - 0.34), to.y - len*Math.sin(ang - 0.34));
+    ctx.lineTo(to.x - len*Math.cos(ang + 0.34), to.y - len*Math.sin(ang + 0.34));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawRadialCanvas(){
+    const c = els.radialCanvas;
+    const ctx = c.getContext('2d');
+    const w = c.width, h = c.height;
+    ctx.clearRect(0,0,w,h);
+
+    const left = 46, right = w - 18, top = 20, bottom = h - 28;
+    const zeroY = (top + bottom) / 2;
+
+    // grid
+    ctx.strokeStyle = '#1f2937';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for(let i=0;i<=8;i++){
+      const x = left + i*(right-left)/8;
+      ctx.moveTo(x, top); ctx.lineTo(x, bottom);
+    }
+    for(let j=0;j<=6;j++){
+      const y = top + j*(bottom-top)/6;
+      ctx.moveTo(left, y); ctx.lineTo(right, y);
+    }
+    ctx.stroke();
+
+    const maxAbs = Math.max(1e-6, radialDiffs.reduce(function(m,v){ return Math.max(m, Math.abs(v)); }, 0));
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(left, zeroY);
+    ctx.lineTo(right, zeroY);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#86efac';
+    ctx.lineWidth = 2.3;
+    ctx.beginPath();
+    radialDiffs.forEach(function(v,i){
+      const x = left + i*(right-left)/(radialDiffs.length-1);
+      const y = zeroY - (v / maxAbs) * ((bottom-top)*0.43);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '12px ui-monospace, monospace';
+    ctx.fillText((+maxAbs.toFixed(2)).toString(), 8, top+8);
+    ctx.fillText((-maxAbs).toFixed(2), 8, bottom);
+    ctx.fillText('0°', left, bottom + 16);
+    ctx.fillText('180°', (left+right)/2 - 16, bottom + 16);
+    ctx.fillText('360°', right - 28, bottom + 16);
+  }
+
+  function computeAndRender(logMsg){
+    updateLabels();
+    if(baseRadii.length !== params().points){
+      regenerateBase();
+    }
+    deformReal();
+
+    drawShapeCanvas();
+    drawRadialCanvas();
+
+    const areaD = realFeatures.area - baseFeatures.area;
+    const periD = realFeatures.perimeter - baseFeatures.perimeter;
+    const centShift = Math.hypot(realFeatures.cx - baseFeatures.cx, realFeatures.cy - baseFeatures.cy);
+
+    const meanAbsRad = radialDiffs.reduce(function(a,b){ return a + Math.abs(b); }, 0) / radialDiffs.length;
+    const mean = radialDiffs.reduce(function(a,b){ return a+b; },0) / radialDiffs.length;
+    const rough = Math.sqrt(radialDiffs.reduce(function(a,b){ return a + Math.pow(b-mean,2); },0) / radialDiffs.length);
+    const score = totalScore(areaD, periD, centShift, meanAbsRad, rough);
+
+    els.areaDiff.textContent = fmt(areaD);
+    els.periDiff.textContent = fmt(periD);
+    els.centroidShift.textContent = fmt(centShift);
+    els.radialMean.textContent = fmt(meanAbsRad);
+    els.roughness.textContent = fmt(rough);
+    els.totalScore.textContent = fmt(score);
+
+    els.totalScore.style.color = score > 28 ? 'var(--bad)' : (score > 13 ? 'var(--warn)' : 'var(--good)');
+    els.roughness.style.color = rough > params().radius * 0.12 ? 'var(--warn)' : 'var(--text)';
+
+    if(logMsg){ addLog('更新', logMsg); }
+  }
+
+  function resetParams(){
+    els.seedInput.value = 314159;
+    els.points.value = 160;
+    els.radius.value = 118;
+    els.irregular.value = 0.22;
+    els.stretchX.value = 1.08;
+    els.stretchY.value = 0.94;
+    els.bulge.value = 0.18;
+    els.twist.value = 0.18;
+    els.noise.value = 0.045;
+    els.rotate.value = 14;
+    els.shiftX.value = 16;
+    els.shiftY.value = -10;
+  }
+
+  function randomizeDeform(){
+    const rand = makeRng((parseInt(els.seedInput.value || '1', 10) || 1) ^ 0xa53f9b17);
+    els.stretchX.value = (0.75 + rand()*0.70).toFixed(2);
+    els.stretchY.value = (0.75 + rand()*0.70).toFixed(2);
+    els.bulge.value = (rand()*0.45).toFixed(2);
+    els.twist.value = ((rand()*2.0)-1.0).toFixed(2);
+    els.noise.value = (rand()*0.16).toFixed(3);
+    els.rotate.value = Math.round(rand()*180 - 90);
+    els.shiftX.value = Math.round(rand()*80 - 40);
+    els.shiftY.value = Math.round(rand()*80 - 40);
+  }
+
+  function maybeLogSlider(name, val){
+    const now = Date.now();
+    if(now - lastSliderLogAt > 650){
+      addLog('參數', name + ' = ' + val);
+      lastSliderLogAt = now;
+    }
+  }
+
+  // events
+  [
+    [els.points, '取樣點數'],
+    [els.radius, '基準半徑'],
+    [els.irregular, '基準不規則度'],
+    [els.stretchX, 'X 拉伸'],
+    [els.stretchY, 'Y 拉伸'],
+    [els.bulge, '局部鼓起'],
+    [els.twist, '扭曲'],
+    [els.noise, '邊界噪聲'],
+    [els.rotate, '旋轉角度'],
+    [els.shiftX, 'X 位移'],
+    [els.shiftY, 'Y 位移']
+  ].forEach(function(pair){
+    pair[0].addEventListener('input', function(){
+      if(pair[0] === els.points || pair[0] === els.radius || pair[0] === els.irregular){
+        regenerateBase();
+      }
+      computeAndRender();
+      maybeLogSlider(pair[1], pair[0].value);
+    });
+  });
+
+  els.seedInput.addEventListener('change', function(){
+    regenerateBase();
+    computeAndRender('Seed 變更為 ' + els.seedInput.value);
+  });
+
+  els.regenBtn.addEventListener('click', function(){
+    const curr = parseInt(els.seedInput.value || '1', 10) || 1;
+    els.seedInput.value = String(curr + 1);
+    regenerateBase();
+    computeAndRender();
+    flash(els.regenBtn, '基準', '重新生成基準圖形，seed=' + els.seedInput.value);
+  });
+
+  els.randomBtn.addEventListener('click', function(){
+    randomizeDeform();
+    computeAndRender();
+    flash(els.randomBtn, '隨機', '已隨機生成一組真實圖形變形參數');
+  });
+
+  els.resetBtn.addEventListener('click', function(){
+    resetParams();
+    regenerateBase();
+    computeAndRender();
+    flash(els.resetBtn, '重設', '已恢復預設參數');
+  });
+
+  els.clearLogBtn.addEventListener('click', function(){
+    els.logBody.innerHTML = '';
+    flash(els.clearLogBtn, 'LOG', '紀錄已清空');
+  });
+
+  resetParams();
+  regenerateBase();
+  computeAndRender();
+  addLog('初始化', '幾何歪度實驗台 v0.1 已啟動');
+})();
+</script>
+</body>
+</html>

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { PageIntro } from "../components/page-intro";
 import { useLanguage } from "../components/language-context";
+import { PendingPanel } from "../components/pending-panel";
+import { msspExamples, msspExampleCount } from "../data/mssp.generated";
 import { canonical } from "../data/site";
 
 const modules = [
@@ -37,7 +39,7 @@ const modules = [
 ];
 
 export default function MSSPPage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   return (
     <main className="page-main mssp-page">
       <PageIntro
@@ -71,6 +73,46 @@ export default function MSSPPage() {
             <span className="module-arrow" aria-hidden="true">↘</span>
           </article>
         ))}
+      </section>
+
+      <section className="section-block mssp-examples" id="examples">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">EXAMPLES / {msspExampleCount}</p>
+            <h2>{t({ zh: "每個範例只示範一個結構決策。", en: "One structural decision per example." })}</h2>
+          </div>
+        </div>
+        <p className="mssp-examples-note">{t({
+          zh: "每個範例都可以實際執行，並在建置時被機械檢查：沒有任何 TMS 引用另一個 TMS，沒有空的集合目錄，README 必須寫出這個範例「沒有解決什麼」。檢查失敗就不會發佈。",
+          en: "Every example runs, and is checked mechanically at build time: no TMS imports another TMS, no set directory is empty, and the README must state what the example does not solve. A failing check blocks publication.",
+        })}</p>
+        {msspExamples.length ? (
+          <ol className="example-list">
+            {msspExamples.map((example) => (
+              <li key={example.id}>
+                <span className="example-id">{example.id.split("-")[0]}</span>
+                <div className="example-body">
+                  <h3><a href={example.htmlUrl}>{language === "zh" ? example.title.zh : example.title.en}</a></h3>
+                  <p>{language === "zh" ? example.summary.zh : example.summary.en}</p>
+                  <div className="tag-row">
+                    {example.concepts.map((concept) => <span key={concept}>{concept}</span>)}
+                  </div>
+                  <p className="example-meta">
+                    {[example.language, example.version, example.date, `${example.lineCount} lines`].join("  ·  ")}
+                    {example.kind === "counterexample" ? "  ·  COUNTEREXAMPLE" : ""}
+                  </p>
+                </div>
+                <a className="example-open" href={example.htmlUrl}>{t({ zh: "打開", en: "Open" })} ↗</a>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <PendingPanel
+            code="EXAMPLES / 00"
+            title={{ zh: "還沒有範例。", en: "No examples yet." }}
+            note={{ zh: "第一個範例進來之前，這裡保持空白。", en: "This stays empty until the first example arrives." }}
+          />
+        )}
       </section>
 
       <section className="mssp-roadmap">

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TCGQT 質數三重疊圖 · TRIPLEX v0.1</title>
+<style>
+:root{
+  --bg:#080a0f;--panel:#111520;--ink:#ebe4d6;--dim:#7c8396;--line:#2a3144;
+  --gold:#e8b04b;--gold2:#f2cd86;--cyan:#5fd0c5;--rose:#d95a7a;--red:#d95a5a;--violet:#bd8be6;--green:#8fd98a;--blue:#7ca7ff;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{
+  background:radial-gradient(120% 110% at 50% 0%,#171b29 0%,var(--bg) 58%,#040509 100%);
+  color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans TC",monospace;line-height:1.5;overflow-x:hidden;
+}
+header{text-align:center;padding:18px 14px 8px}
+.kicker{font-size:10.5px;letter-spacing:.38em;text-transform:uppercase;color:var(--dim)}
+h1{font-family:Georgia,"Times New Roman",serif;font-weight:300;font-size:28px;margin-top:5px}
+h1 em{font-style:italic;color:var(--gold2)}
+.sub{font-size:11px;color:var(--dim);margin-top:6px}
+.wrap{max-width:1240px;margin:0 auto;padding:12px 16px 40px;display:grid;grid-template-columns:1.22fr .78fr;gap:16px}
+.card{background:linear-gradient(180deg,rgba(17,21,32,.95),rgba(9,11,17,.95));border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.28);padding:14px}
+.stage{position:relative;overflow:hidden}
+canvas{display:block;width:100%;height:690px;background:radial-gradient(circle at 50% 45%,#121725,#070910 68%,#030407 100%);border-radius:14px;border:1px solid rgba(255,255,255,.055)}
+.topbar{position:absolute;left:26px;top:26px;display:flex;gap:8px;flex-wrap:wrap;max-width:78%}
+.pill{border:1px solid rgba(255,255,255,.09);background:rgba(8,10,16,.62);backdrop-filter:blur(6px);border-radius:999px;padding:5px 9px;font-size:11px;color:var(--dim)}
+.pill b{color:var(--gold);font-weight:400}
+.tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0 12px}
+button{
+  font:inherit;border:1px solid var(--line);background:linear-gradient(180deg,#1a1f2f,#0e111a);color:var(--ink);
+  border-radius:12px;padding:9px 10px;cursor:pointer
+}
+button.on{border-color:var(--gold);color:var(--gold);background:linear-gradient(180deg,#241e13,#14100a)}
+button:hover{filter:brightness(1.08)}
+.row{display:flex;align-items:center;gap:10px;margin:9px 0}
+.row label{width:88px;font-size:12px;color:var(--dim)}
+input[type=range]{flex:1;accent-color:var(--gold)}
+.val{width:58px;text-align:right;color:var(--gold);font-size:12px}
+.panelTitle{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.toggles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0 12px}
+.toggles button{font-size:12px;padding:8px}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0 12px}
+.metric{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:13px;padding:9px}
+.metric .mname{font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+.metric .mval{font-size:20px;margin-top:2px}
+.bar{height:6px;background:#1b2030;border-radius:999px;overflow:hidden;margin-top:7px}
+.fill{height:100%;width:50%;background:var(--cyan);border-radius:999px}
+.note,.warn{font-size:11px;color:var(--dim);border-left:2px solid var(--line);padding-left:10px;margin-top:11px;line-height:1.65}
+.warn{color:#d8b0b6;border-color:var(--rose)}
+.formula{font-size:12px;background:#070910;border:1px solid var(--line);border-radius:13px;padding:10px;margin-top:10px;color:#c7ccd8;overflow:auto}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--dim);margin-top:10px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.log{height:120px;overflow:auto;background:#070910;border:1px solid var(--line);border-radius:13px;padding:10px;font-size:11px;color:#c7ccd8;margin-top:9px}
+.log p{margin-bottom:7px}
+.selected{font-family:Georgia,"Times New Roman",serif;font-size:27px;color:var(--gold)}
+.small{font-size:11px;color:var(--dim)}
+.factorbox{background:#070910;border:1px solid var(--line);border-radius:13px;padding:10px;margin-top:9px;font-size:12px;min-height:74px}
+.chip{display:inline-block;border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:3px 8px;margin:3px 4px 3px 0;color:var(--ink)}
+.chip.p{color:var(--cyan);border-color:rgba(95,208,197,.35)}
+.chip.c{color:var(--violet);border-color:rgba(189,139,230,.35)}
+@media(max-width:980px){.wrap{grid-template-columns:1fr}canvas{height:580px}.topbar{position:static;margin-bottom:10px}.stage{padding-top:0}}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">EML-TCGQT-2026-TRIPLEX</div>
+  <h1>質數<em>三重疊圖</em>實驗台</h1>
+  <div class="sub">閉合篩 A × 生成組合樹 B × M6±1 車道 C｜先做便宜疊圖，用來看乘法結構與加法位置的交織。</div>
+</header>
+
+<div class="wrap">
+<section class="card stage">
+  <div class="topbar">
+    <div class="pill">Mode：<b id="modeName">6k±1 車道疊圖</b></div>
+    <div class="pill">N：<b id="topN">12000</b></div>
+    <div class="pill">π(N)：<b id="topPi">0</b></div>
+    <div class="pill">Rendered：<b id="rendered">0</b></div>
+  </div>
+  <canvas id="cv" width="920" height="690"></canvas>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--cyan)"></i>A：質數殘餘</span>
+    <span><i class="dot" style="background:var(--violet)"></i>B：生成合數 Ω(n)</span>
+    <span><i class="dot" style="background:var(--gold)"></i>C：6k±1 車道</span>
+    <span><i class="dot" style="background:var(--rose)"></i>χ：−1 型因子奇偶</span>
+  </div>
+</section>
+
+<aside class="card">
+  <div class="panelTitle">Views</div>
+  <div class="tabs">
+    <button id="mLane" class="on">6k±1 車道</button>
+    <button id="mSpiral">θ=n 螺旋</button>
+    <button id="mOmega">Ω 深度圖</button>
+    <button id="mTwin">孿生殘餘</button>
+  </div>
+
+  <div class="panelTitle">Layers</div>
+  <div class="toggles">
+    <button id="tA" class="on">A 質數殘餘</button>
+    <button id="tB" class="on">B 生成合數</button>
+    <button id="tC" class="on">C 車道骨架</button>
+    <button id="tChi" class="on">χ 奇偶描邊</button>
+  </div>
+
+  <div class="panelTitle">Parameters</div>
+  <div class="row"><label>可見 N</label><input id="N" type="range" min="1000" max="120000" step="1000" value="12000"><span class="val" id="Nv">12000</span></div>
+  <div class="row"><label>每列 k</label><input id="cols" type="range" min="24" max="180" step="4" value="80"><span class="val" id="colsv">80</span></div>
+  <div class="row"><label>mod q</label><input id="q" type="range" min="2" max="97" step="1" value="30"><span class="val" id="qv">30</span></div>
+  <div class="row"><label>點大小</label><input id="dot" type="range" min="0.5" max="3.5" step="0.1" value="1.4"><span class="val" id="dotv">1.4</span></div>
+
+  <div class="panelTitle" style="margin-top:14px">Selected</div>
+  <div class="selected" id="selTitle">n = 5</div>
+  <div class="small" id="selMeta">prime · lane 6k−1</div>
+
+  <div class="metrics">
+    <div class="metric"><div class="mname">Ω(n)</div><div class="mval" id="mOmega">1</div><div class="bar"><div class="fill" id="bOmega"></div></div></div>
+    <div class="metric"><div class="mname">χ parity</div><div class="mval" id="mChi">1</div><div class="bar"><div class="fill" id="bChi"></div></div></div>
+    <div class="metric"><div class="mname">lane</div><div class="mval" id="mLane">−1</div><div class="bar"><div class="fill" id="bLane"></div></div></div>
+    <div class="metric"><div class="mname">prime gap</div><div class="mval" id="mGap">0</div><div class="bar"><div class="fill" id="bGap"></div></div></div>
+  </div>
+
+  <div class="factorbox" id="factorBox"></div>
+
+  <div class="formula" id="formula">
+    C：n≡±1 (mod 6)<br>
+    B：合數 = 奇質數生成樹的像；質數 = 未被生成的殘餘。
+  </div>
+
+  <div class="note" id="note">
+    本版先做便宜疊圖：在 6k±1 車道上同時看質數殘餘、生成合數深度 Ω(n)、以及 χ 奇偶。重點是探索儀器，不是新定理。
+  </div>
+
+  <div class="warn">
+    信號—載具分離：6k±1、χ、wheel 骨架、合數落道是已知載具；唯一可能值得看的，是「未被生成的殘餘」在車道內的分佈、缺口與孿生。任何斜線/對齊預設先視為載具。
+  </div>
+
+  <div class="panelTitle" style="margin-top:13px">Stats / Log</div>
+  <div class="log" id="log"></div>
+</aside>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let S={N:12000,cols:80,q:30,dot:1.4,mode:'lane',A:true,B:true,C:true,chi:true,sel:5,hover:0};
+let spf=[], omega=[], minusParity=[], isPrime=[], primes=[], prevP=[], nextP=[], twins=[], mouse={x:0,y:0,down:false};
+
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function log(msg){
+  const el=document.getElementById('log'); const p=document.createElement('p');
+  p.textContent='['+(new Date()).toLocaleTimeString()+'] '+msg; el.prepend(p);
+  while(el.children.length>18) el.removeChild(el.lastChild);
+}
+function build(N){
+  spf=Array(N+2).fill(0); omega=Array(N+2).fill(0); minusParity=Array(N+2).fill(0); isPrime=Array(N+2).fill(false);
+  for(let i=2;i<=N;i++){
+    if(spf[i]===0){ spf[i]=i; primes.push(i); if(i<=N/i) for(let j=i*i;j<=N;j+=i) if(spf[j]===0) spf[j]=i; }
+  }
+  primes=[]; for(let i=2;i<=N;i++) if(spf[i]===i){isPrime[i]=true; primes.push(i);}
+  omega[1]=0; minusParity[1]=0;
+  for(let n=2;n<=N;n++){
+    const p=spf[n]||n, m=Math.floor(n/p);
+    omega[n]=omega[m]+1;
+    minusParity[n]=(minusParity[m]+((p%6===5)?1:0))&1;
+  }
+  prevP=Array(N+2).fill(0); nextP=Array(N+2).fill(0);
+  let last=0; for(let i=0;i<=N+1;i++){ if(isPrime[i]) last=i; prevP[i]=last; }
+  let nxt=0; for(let i=N+1;i>=0;i--){ if(isPrime[i]) nxt=i; nextP[i]=nxt; }
+  twins=[];
+  for(let k=1;6*k+1<=N;k++){
+    const a=6*k-1,b=6*k+1;
+    if(a>=2 && isPrime[a] && isPrime[b]) twins.push([a,b,k]);
+  }
+}
+function isLane(n){return n>3 && (n%6===1 || n%6===5);}
+function laneSign(n){return n%6===1?1:(n%6===5?-1:0);}
+function factorize(n){
+  if(n<2)return [];
+  const arr=[]; let x=n;
+  while(x>1){ const p=spf[x]||x; let e=0; while(x%p===0){x=Math.floor(x/p);e++;} arr.push([p,e]); }
+  return arr;
+}
+function factorString(n){
+  const f=factorize(n); if(!f.length)return '1';
+  return f.map(([p,e])=>e===1?''+p:p+'^'+e).join(' × ');
+}
+function genPath(n){
+  const f=[];
+  for(const [p,e] of factorize(n)) for(let i=0;i<e;i++) f.push(p);
+  let acc=1, out=[1];
+  for(const p of f){acc*=p;out.push(acc);}
+  return out;
+}
+function rebuild(){
+  primes=[]; build(S.N);
+  if(S.sel>S.N) S.sel=prevP[S.N]||Math.min(S.N,5);
+  updatePanel();
+  log(`重建：N=${S.N}, π(N)=${primes.length}, 6k±1 candidates≈${candidateCount()}, twins=${twins.length}`);
+}
+function candidateCount(){
+  let c=0; for(let n=5;n<=S.N;n+=2) if(isLane(n)) c++; return c;
+}
+function statusOf(n){
+  if(n<2)return 'unit';
+  if(isPrime[n])return 'prime residual';
+  if(isLane(n))return 'generated composite';
+  return 'wheel-eliminated';
+}
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(S.mode==='spiral') drawSpiral();
+  else drawLaneGrid();
+  updateTop();
+}
+function updateTop(){
+  document.getElementById('topN').textContent=S.N;
+  document.getElementById('topPi').textContent=primes.length;
+}
+function pointColor(n,alpha=1){
+  if(isPrime[n]) return `rgba(95,208,197,${alpha})`;
+  if(isLane(n)){
+    const o=omega[n];
+    if(o===2) return `rgba(232,176,75,${alpha})`;
+    if(o===3) return `rgba(189,139,230,${alpha})`;
+    if(o===4) return `rgba(217,90,122,${alpha})`;
+    return `rgba(217,90,90,${Math.min(alpha,.75)})`;
+  }
+  return `rgba(94,100,118,${Math.min(alpha,.23)})`;
+}
+function shouldDraw(n){
+  if(S.mode==='twin'){
+    // draw all candidates faint + twin primes strong
+    return isLane(n);
+  }
+  if(isPrime[n]) return S.A;
+  if(isLane(n) && !isPrime[n]) return S.B;
+  return false;
+}
+function drawLaneGrid(){
+  const margin=34, top=58, bottom=28, W=cv.width-2*margin, H=cv.height-top-bottom;
+  const maxK=Math.floor((S.N+1)/6), cols=S.cols, rows=Math.ceil(maxK/cols);
+  const cw=W/cols, bh=H/Math.max(1,rows), laneGap=Math.min(13,Math.max(3,bh*.28)), baseR=clamp(Math.min(cw*.28,bh*.12)*S.dot,0.65,4.4);
+  if(S.C){
+    ctx.save(); ctx.strokeStyle='rgba(232,176,75,.16)'; ctx.lineWidth=1;
+    for(let r=0;r<rows;r++){
+      const y=top+r*bh+bh*.50;
+      ctx.beginPath(); ctx.moveTo(margin,y-laneGap); ctx.lineTo(cv.width-margin,y-laneGap); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(margin,y+laneGap); ctx.lineTo(cv.width-margin,y+laneGap); ctx.stroke();
+      if(bh>18){ctx.fillStyle='rgba(130,137,154,.45)';ctx.font='10px ui-monospace,monospace';ctx.fillText(`block ${r+1}`,8,y+3);}
+    }
+    ctx.restore();
+  }
+  let count=0, best=0, bestDist=Infinity;
+  const twinSet=new Set();
+  if(S.mode==='twin') for(const [a,b] of twins){twinSet.add(a);twinSet.add(b);}
+  for(let k=1;6*k-1<=S.N;k++){
+    for(const item of [[6*k-1,-1],[6*k+1,1]]){
+      const n=item[0], sign=item[1]; if(n>S.N || n<2) continue;
+      if(!shouldDraw(n) && !(S.mode==='twin'&&isLane(n))) continue;
+      const row=Math.floor((k-1)/cols), col=(k-1)%cols;
+      const x=margin+col*cw+cw*.5, y=top+row*bh+bh*.5+(sign===-1?-laneGap:laneGap);
+      let alpha=.88;
+      if(S.mode==='twin' && !twinSet.has(n)) alpha=.13;
+      if(S.mode==='omega' && isLane(n) && !isPrime[n]) alpha=.94;
+      if(S.mode==='omega' && isPrime[n]) alpha=.32;
+      ctx.fillStyle=pointColor(n,alpha);
+      const r=(isPrime[n]?baseR*1.16:baseR)*(S.mode==='twin'&&twinSet.has(n)?1.45:1);
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      if(S.chi && isLane(n)){
+        ctx.strokeStyle=minusParity[n]?`rgba(217,90,122,${.42})`:`rgba(143,217,138,${.36})`;
+        ctx.lineWidth=.75; ctx.beginPath(); ctx.arc(x,y,r+1.6,0,Math.PI*2); ctx.stroke();
+      }
+      if(n===S.sel){ctx.strokeStyle='rgba(232,176,75,.96)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r+6,0,Math.PI*2);ctx.stroke();}
+      const dx=x-mouse.x,dy=y-mouse.y,d=dx*dx+dy*dy; if(d<bestDist){bestDist=d;best=n;}
+      count++;
+    }
+  }
+  if(bestDist<420) S.hover=best;
+  document.getElementById('rendered').textContent=count;
+  drawLaneLabels(margin,top,W);
+}
+function drawLaneLabels(margin,top,W){
+  ctx.save(); ctx.font='11px ui-monospace,monospace';
+  ctx.fillStyle='rgba(232,176,75,.7)';
+  ctx.fillText('upper lane: 6k−1 / χ=odd for primes of −1 type',margin,34);
+  ctx.fillText('lower lane: 6k+1 / χ=even product class',margin,49);
+  ctx.fillStyle='rgba(130,137,154,.65)';
+  ctx.fillText('A: primes = residuals, B: composites = generated image, C: wheel-6 lanes',margin+410,49);
+  ctx.restore();
+}
+function drawSpiral(){
+  const cx=cv.width/2, cy=cv.height/2+10, R=Math.min(cv.width,cv.height)*.44;
+  ctx.save();
+  ctx.strokeStyle='rgba(130,138,160,.10)'; ctx.lineWidth=1;
+  for(let rr=.2;rr<=1.001;rr+=.2){ctx.beginPath();ctx.arc(cx,cy,R*rr,0,Math.PI*2);ctx.stroke();}
+  ctx.restore();
+  let count=0,best=0,bestDist=Infinity;
+  const maxDraw=16000, stride=Math.max(1,Math.ceil(S.N/maxDraw));
+  for(let n=2;n<=S.N;n+=stride){
+    if(!shouldDraw(n)) continue;
+    const u=Math.sqrt(n/S.N), a=n;
+    const x=cx+R*u*Math.cos(a), y=cy+R*u*Math.sin(a);
+    const alpha=isPrime[n]?.92:.55, r=(isPrime[n]?2.0:1.25)*S.dot;
+    ctx.fillStyle=pointColor(n,alpha); ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    if(S.chi && isLane(n)){ctx.strokeStyle=minusParity[n]?'rgba(217,90,122,.36)':'rgba(143,217,138,.32)';ctx.lineWidth=.6;ctx.beginPath();ctx.arc(x,y,r+1.4,0,Math.PI*2);ctx.stroke();}
+    if(n===S.sel){ctx.strokeStyle='rgba(232,176,75,.96)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r+6,0,Math.PI*2);ctx.stroke();}
+    const dx=x-mouse.x,dy=y-mouse.y,d=dx*dx+dy*dy;if(d<bestDist){bestDist=d;best=n;}
+    count++;
+  }
+  if(bestDist<420) S.hover=best;
+  document.getElementById('rendered').textContent=count;
+  ctx.fillStyle='rgba(130,137,154,.72)'; ctx.font='11px ui-monospace,monospace';
+  ctx.fillText('θ=n spiral view: same triplex coloring on additive spiral carrier',26,36);
+}
+function updatePanel(){
+  const n=S.sel, f=factorize(n), st=statusOf(n), sign=laneSign(n), gap=(nextP[n]&&prevP[n])?Math.max(0,nextP[n]-prevP[n]):0;
+  document.getElementById('selTitle').textContent='n = '+n;
+  document.getElementById('selMeta').textContent=`${st} · ${sign===1?'lane 6k+1':sign===-1?'lane 6k−1':'not in wheel-6 lanes'}`;
+  document.getElementById('mOmega').textContent=omega[n]??0;
+  document.getElementById('mChi').textContent=isLane(n)?minusParity[n]:'–';
+  document.getElementById('mLane').textContent=sign===1?'+1':sign===-1?'−1':'0';
+  document.getElementById('mGap').textContent=gap;
+  setBar('bOmega',Math.min(omega[n]||0,8),8,'var(--violet)');
+  setBar('bChi',isLane(n)?minusParity[n]:0,1,'var(--rose)');
+  setBar('bLane',sign===0?0.1:(sign===1?1:.5),1,'var(--gold)');
+  setBar('bGap',Math.min(gap,80),80,'var(--cyan)');
+  const box=document.getElementById('factorBox');
+  const path=genPath(n);
+  box.innerHTML = `<div><b>factorization</b>: ${factorString(n)}</div>`+
+    `<div style="margin-top:6px"><b>generation path</b>: ${path.map(x=>`<span class="chip ${isPrime[x]?'p':'c'}">${x}</span>`).join(' → ')}</div>`+
+    `<div class="small" style="margin-top:6px">Ω=${omega[n]||0}; χ=${isLane(n)?minusParity[n]:'not in (ℤ/6)*'}; mod ${S.q} = ${n%S.q}</div>`;
+}
+function setBar(id,val,max,col){const el=document.getElementById(id);el.style.width=(100*clamp(val/max,0,1)).toFixed(1)+'%';el.style.background=col;}
+function setMode(m){
+  S.mode=m;
+  const names={lane:'6k±1 車道疊圖',spiral:'θ=n 螺旋疊圖',omega:'Ω 生成深度圖',twin:'孿生殘餘圖'};
+  document.getElementById('modeName').textContent=names[m];
+  for(const [id,mm] of [['mLane','lane'],['mSpiral','spiral'],['mOmega','omega'],['mTwin','twin']]) document.getElementById(id).classList.toggle('on',m===mm);
+  const note=document.getElementById('note'), formula=document.getElementById('formula');
+  if(m==='lane'){
+    formula.innerHTML='C：n≡±1 (mod 6)<br>B：合數 = 奇質數生成樹的像；質數 = 未被生成的殘餘。';
+    note.textContent='主視圖：把閉合篩 A、組合樹生成層 B、M6±1 車道 C 疊在同一個 wheel-6 格架上。';
+  }else if(m==='spiral'){
+    formula.innerHTML='θ=n carrier + triplex coloring<br>同一批資料換到加法螺旋載具。';
+    note.textContent='螺旋視圖：檢查同一套 A/B/C 著色在 θ=n 載具上是否只是載具效果，還是有值得追的殘餘分佈。';
+  }else if(m==='omega'){
+    formula.innerHTML='depth(n)=Ω(n)<br>Ω=1 prime; Ω=2 semiprime; Ω≥3 generated composite depth.';
+    note.textContent='Ω 深度圖：組合樹不畫完整 DAG，而是先把生成深度疊回位置載具，避免大圖布局爆算力。';
+  }else{
+    formula.innerHTML='twin pair: (6k−1, 6k+1) both prime<br>孿生只能看，不能判定。';
+    note.textContent='孿生殘餘圖：高亮同一 k 的上下兩道同時未被生成的點。這是觀察模式，不是判定器。';
+  }
+  log('切換視圖：'+names[m]); draw();
+}
+function toggle(key,id){
+  S[key]=!S[key]; document.getElementById(id).classList.toggle('on',S[key]); draw();
+}
+function bind(){
+  const sliders=[['N','N',v=>parseInt(v,10),true],['cols','cols',v=>parseInt(v,10),false],['q','q',v=>parseInt(v,10),false],['dot','dot',v=>parseFloat(v),false]];
+  for(const [id,key,parse,need] of sliders){
+    const el=document.getElementById(id), out=document.getElementById(id+'v');
+    el.oninput=()=>{S[key]=parse(el.value);out.textContent=el.value;if(need)rebuild();else{updatePanel();draw();}};
+  }
+  document.getElementById('mLane').onclick=()=>setMode('lane');
+  document.getElementById('mSpiral').onclick=()=>setMode('spiral');
+  document.getElementById('mOmega').onclick=()=>setMode('omega');
+  document.getElementById('mTwin').onclick=()=>setMode('twin');
+  document.getElementById('tA').onclick=()=>toggle('A','tA');
+  document.getElementById('tB').onclick=()=>toggle('B','tB');
+  document.getElementById('tC').onclick=()=>toggle('C','tC');
+  document.getElementById('tChi').onclick=()=>toggle('chi','tChi');
+  cv.addEventListener('mousemove',e=>{
+    const rect=cv.getBoundingClientRect(); mouse.x=(e.clientX-rect.left)*(cv.width/rect.width); mouse.y=(e.clientY-rect.top)*(cv.height/rect.height); draw();
+  });
+  cv.addEventListener('click',()=>{ if(S.hover){S.sel=S.hover; updatePanel(); draw(); log('選取 n='+S.sel+' / '+statusOf(S.sel));}});
+}
+bind();
+rebuild();
+log('啟動 TRIPLEX v0.1：A 篩、B 組合樹、C 6k±1 車道。');
+draw();
+</script>
+</body>
+</html>

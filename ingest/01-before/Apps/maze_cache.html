@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Courier New',monospace;background:#0d0d1a;color:#ccc;font-size:12px;padding:16px}
+.row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:8px}
+button{font-family:inherit;font-size:11px;background:transparent;border:1px solid #334;color:#ccc;padding:4px 11px;border-radius:4px;cursor:pointer}
+button:hover:not(:disabled){background:#1e1e30}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.act{background:#1e1e30;border-color:#556}
+input{font-family:inherit;font-size:11px;background:#111;border:1px solid #334;color:#ccc;padding:4px 8px;border-radius:4px;width:65px;text-align:center}
+.panel{background:#111;border:1px solid #252540;border-radius:6px;padding:10px 14px;margin-bottom:10px;font-size:11px;line-height:1.9}
+.prow{display:flex;gap:20px;flex-wrap:wrap}
+.pc{flex:1;min-width:110px}
+.pl{color:#555;margin-bottom:2px}
+.pv{font-size:14px;font-weight:500}
+.ok{color:#3c9}.hi{color:#7eb4f7}.dim{color:#555}
+.qrow{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+canvas{display:block;image-rendering:pixelated;cursor:crosshair}
+.tip{font-size:10px;color:#444;margin-top:6px}
+#cellinfo{min-height:20px;font-size:11px;color:#888;margin-top:5px}
+</style>
+</head>
+<body>
+<div class="row">
+  <button id="b1" onclick="firstPass()">第一次計算（生成+PDE+建表）</button>
+  <button id="b2" onclick="secondPass()" disabled>第二次計算（從快取載入）</button>
+  <button onclick="toggleOrd()" id="bord" disabled>序數顯示 OFF</button>
+  <button onclick="clearCache()" id="bclr" disabled style="font-size:10px;color:#888">清除快取</button>
+</div>
+<div id="statBox" class="panel" style="display:none">
+  <div class="prow" id="statRow"></div>
+</div>
+<div id="queryBox" class="panel" style="display:none">
+  <div style="color:#888;margin-bottom:6px">路徑查詢（從快取，O(P) 即時）</div>
+  <div class="qrow">
+    <span class="dim">起點序數</span><input id="qs" type="number" value="0" min="0">
+    <span class="dim">終點序數</span><input id="qe" type="number" value="" min="0">
+    <button onclick="doQuery()">查詢路徑</button>
+    <button onclick="rndQuery()">隨機查詢</button>
+  </div>
+  <div id="qr" style="margin-top:8px;font-size:11px;color:#888"></div>
+</div>
+<canvas id="cvs"></canvas>
+<div id="cellinfo">← 按「第一次計算」開始</div>
+<div class="tip">序數按可通行格點讀取順序排列（左→右，上→下）。同一迷宮序數固定。快取存於 localStorage。</div>
+
+<script>
+const CS=16,CELLS=12,SKEY='eml_maze_field_v1';
+let maze=null,fc=null,showOrd=false,qPath=null,hovCell=null;
+const mkRng=s=>{let t=(s>>>0)||1;return()=>{t=Math.imul(t^(t>>>15),0x2c2c57ed);return(t>>>0)/0x100000000;};};
+
+function buildMaze(cw,ch,seed){
+  const rng=mkRng(seed),GW=2*cw+1,GH=2*ch+1;
+  const g=Array.from({length:GH},()=>new Uint8Array(GW).fill(1));
+  const vis=Array.from({length:ch},()=>new Uint8Array(cw));
+  const stk=[{cx:0,cy:0}];vis[0][0]=1;g[1][1]=0;
+  while(stk.length){
+    const{cx,cy}=stk[stk.length-1];
+    const d=[[0,-1],[1,0],[0,1],[-1,0]];for(let i=3;i>0;i--){const j=Math.floor(rng()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
+    let mv=false;
+    for(const[dx,dy]of d){const nx=cx+dx,ny=cy+dy;if(nx>=0&&nx<cw&&ny>=0&&ny<ch&&!vis[ny][nx]){vis[ny][nx]=1;g[2*cy+1+dy][2*cx+1+dx]=0;g[2*ny+1][2*nx+1]=0;stk.push({cx:nx,cy:ny});mv=true;break;}}
+    if(!mv)stk.pop();
+  }
+  g[0][1]=0;g[GH-1][GW-2]=0;
+  return{g,GW,GH,S:{x:1,y:0},E:{x:GW-2,y:GH-1}};
+}
+
+function solveGL(g,GW,GH,S,E){
+  const I=(x,y)=>y*GW+x,N=GW*GH,D=[[0,-1],[1,0],[0,1],[-1,0]];
+  const a=new Float32Array(N),deg=new Uint8Array(N);
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    if(g[y][x])continue;
+    let d=0;for(const[dx,dy]of D){const nx=x+dx,ny=y+dy;if(nx>=0&&nx<GW&&ny>=0&&ny<GH&&!g[ny][nx])d++;}
+    deg[I(x,y)]=d;a[I(x,y)]=Math.max(0,1-y/(GH-1));
+  }
+  a[I(S.x,S.y)]=1;a[I(E.x,E.y)]=0;
+  for(let k=0;k<700;k++){
+    let err=0;
+    for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){
+      const i=I(x,y);if(g[y][x]||!deg[i])continue;
+      let s=0;for(const[dx,dy]of D){const nx=x+dx,ny=y+dy;if(nx>=0&&nx<GW&&ny>=0&&ny<GH&&!g[ny][nx])s+=a[I(nx,ny)];}
+      const gs=s/deg[i],nv=a[i]+1.75*(gs-a[i]);err=Math.max(err,Math.abs(nv-a[i]));a[i]=nv;
+    }
+    if(err<8e-7)break;
+  }
+  return Array.from({length:GH},(_,y)=>Float32Array.from({length:GW},(_,x)=>Math.min(1,Math.max(0,a[I(x,y)]))));
+}
+
+function buildTable(g,GW,GH,phi){
+  const table=[],posMap={};let ord=0;
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    if(g[y][x])continue;
+    const v=phi[y][x];
+    const h=240*(1-v),l=12+v*60;
+    table.push({ord,x,y,phi:v,color:`hsl(${h},${v<.05?30:85}%,${l}%)`});
+    posMap[`${x},${y}`]=ord++;
+  }
+  return{table,posMap,N:ord};
+}
+
+function phiBFS(table,posMap,g,GW,GH,s,e){
+  if(s<0||s>=table.length||e<0||e>=table.length)return null;
+  const{x:sx,y:sy}=table[s],{x:ex,y:ey}=table[e];
+  const I=(x,y)=>y*GW+x,par=new Int32Array(GW*GH).fill(-1),vis=new Uint8Array(GW*GH);
+  const getPhi=(x,y)=>{const k=`${x},${y}`;return k in posMap?table[posMap[k]].phi:0;};
+  vis[I(sx,sy)]=1;const open=[{x:sx,y:sy}];
+  while(open.length){
+    let mi=0;for(let i=1;i<open.length;i++)if(getPhi(open[i].x,open[i].y)>getPhi(open[mi].x,open[mi].y))mi=i;
+    const{x,y}=open.splice(mi,1)[0];
+    if(x===ex&&y===ey)break;
+    for(const[dx,dy]of[[0,-1],[1,0],[0,1],[-1,0]]){
+      const nx=x+dx,ny=y+dy;
+      if(nx<0||nx>=GW||ny<0||ny>=GH||g[ny][nx])continue;
+      const ni=I(nx,ny);if(vis[ni])continue;
+      vis[ni]=1;par[ni]=I(x,y);open.push({x:nx,y:ny});
+    }
+  }
+  const gi=I(ex,ey);if(!vis[gi])return null;
+  const path=[];let c=gi;while(c!==-1){path.push({x:c%GW,y:Math.floor(c/GW)});c=par[c];}
+  return path.reverse();
+}
+
+function showStat(items){
+  document.getElementById('statBox').style.display='block';
+  document.getElementById('statRow').innerHTML=items.map(({l,v,c})=>
+    `<div class="pc"><div class="pl">${l}</div><div class="pv ${c||'hi'}">${v}</div></div>`
+  ).join('');
+}
+
+function draw(){
+  if(!maze||!fc)return;
+  const{g,GW,GH,S,E}=maze;
+  const c=document.getElementById('cvs');
+  c.width=GW*CS;c.height=GH*CS;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#0c0c18';ctx.fillRect(0,0,c.width,c.height);
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const col=g[y][x]?'#181828':fc.table[fc.posMap[`${x},${y}`]]?.color||'#1c1c32';
+    ctx.fillStyle=col;ctx.fillRect(x*CS,y*CS,CS,CS);
+  }
+  if(hovCell){ctx.strokeStyle='rgba(255,255,255,.65)';ctx.lineWidth=1.5;ctx.strokeRect(hovCell.x*CS+.75,hovCell.y*CS+.75,CS-1.5,CS-1.5);}
+  if(qPath&&qPath.length){
+    ctx.strokeStyle='rgba(255,155,40,.92)';ctx.lineWidth=Math.max(1.5,CS*.28);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    qPath.forEach((p,i)=>{const px=p.x*CS+CS/2,py=p.y*CS+CS/2;i?ctx.lineTo(px,py):ctx.moveTo(px,py);});ctx.stroke();
+  }
+  if(showOrd&&CS>=14){
+    ctx.font=`${Math.floor(CS*.38)}px monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+    for(const{ord,x,y,phi:v}of fc.table){
+      ctx.fillStyle=v>.55?'rgba(0,0,0,.55)':'rgba(255,255,255,.45)';
+      ctx.fillText(ord,x*CS+CS/2,y*CS+CS/2);
+    }
+  }
+  const mk=(pos,bg,t)=>{
+    ctx.fillStyle=bg;ctx.beginPath();ctx.arc(pos.x*CS+CS/2,pos.y*CS+CS/2,CS*.4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font=`bold ${Math.floor(CS*.46)}px monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,pos.x*CS+CS/2,pos.y*CS+CS/2);
+  };
+  mk(S,'#22c55e','S');mk(E,'#ef4444','E');
+}
+
+async function firstPass(){
+  document.getElementById('b1').textContent='計算中…';document.getElementById('b1').disabled=true;
+  await new Promise(r=>setTimeout(r,20));
+  const seed=Math.floor(Math.random()*65536);
+  const t0=performance.now();maze=buildMaze(CELLS,CELLS,seed);const tM=performance.now()-t0;
+  const t1=performance.now();const phi=solveGL(maze.g,maze.GW,maze.GH,maze.S,maze.E);const tP=performance.now()-t1;
+  const t2=performance.now();const{table,posMap,N}=buildTable(maze.g,maze.GW,maze.GH,phi);const tT=performance.now()-t2;
+  fc={table,posMap,N,seed,GW:maze.GW,GH:maze.GH};qPath=null;
+  try{localStorage.setItem(SKEY,JSON.stringify({seed,GW:maze.GW,GH:maze.GH,table:table.map(({ord,x,y,phi,color})=>({ord,x,y,phi:+phi.toFixed(5),color}))}));}catch(e){}
+  showStat([
+    {l:'格點總數 N',v:N+'格',c:'hi'},
+    {l:'迷宮生成',v:tM.toFixed(1)+'ms',c:'dim'},
+    {l:'PDE 計算',v:tP.toFixed(1)+'ms',c:'ok'},
+    {l:'建表時間',v:tT.toFixed(2)+'ms',c:'dim'},
+    {l:'seed',v:seed,c:'dim'},
+  ]);
+  document.getElementById('b1').textContent='第一次計算（生成+PDE+建表）';document.getElementById('b1').disabled=false;
+  document.getElementById('b2').disabled=false;document.getElementById('bord').disabled=false;document.getElementById('bclr').disabled=false;
+  document.getElementById('queryBox').style.display='block';document.getElementById('qe').value=N-1;
+  draw();
+}
+
+function secondPass(){
+  const t0=performance.now();
+  let loaded=false;
+  try{
+    const raw=localStorage.getItem(SKEY);
+    if(raw){
+      const data=JSON.parse(raw);
+      if(!maze||data.seed!==fc?.seed)maze=buildMaze(CELLS,CELLS,data.seed);
+      const table=data.table;const posMap={};table.forEach(({x,y,ord})=>posMap[`${x},${y}`]=ord);
+      fc={table,posMap,N:table.length,seed:data.seed,GW:data.GW,GH:data.GH};qPath=null;loaded=true;
+    }
+  }catch(e){}
+  const tL=performance.now()-t0;
+  showStat([
+    {l:'載入方式',v:loaded?'localStorage快取':'記憶體快取',c:loaded?'ok':'hi'},
+    {l:'載入時間',v:tL.toFixed(2)+'ms',c:'ok'},
+    {l:'PDE 重算',v:'0 ms（已跳過）',c:'ok'},
+    {l:'格點數 N',v:fc.N+'格',c:'dim'},
+  ]);
+  document.getElementById('queryBox').style.display='block';document.getElementById('qe').value=fc.N-1;
+  draw();
+}
+
+function doQuery(){
+  if(!fc||!maze)return;
+  const s=+document.getElementById('qs').value,e=+document.getElementById('qe').value;
+  if(isNaN(s)||isNaN(e)||s<0||e<0||s>=fc.N||e>=fc.N){document.getElementById('qr').innerHTML='<span style="color:#e88">序數超出範圍 [0, '+(fc.N-1)+']</span>';return;}
+  const t0=performance.now();
+  qPath=phiBFS(fc.table,fc.posMap,maze.g,maze.GW,maze.GH,s,e);
+  const tQ=performance.now()-t0;
+  const si=fc.table[s],ei=fc.table[e];
+  const avgPhi=qPath?qPath.reduce((a,p)=>{const k=`${p.x},${p.y}`;return a+(k in fc.posMap?fc.table[fc.posMap[k]].phi:0);},0)/qPath.length:0;
+  document.getElementById('qr').innerHTML=qPath
+    ?`路徑長 <b>${qPath.length}</b> 步 &nbsp;·&nbsp; 查詢 <b style="color:#7eb4f7">${tQ.toFixed(3)} ms</b> &nbsp;·&nbsp; 平均φ ${avgPhi.toFixed(3)} &nbsp;·&nbsp; 序${s}(φ=${si.phi.toFixed(3)})→序${e}(φ=${ei.phi.toFixed(3)})`
+    :'<span style="color:#e88">無連通路徑</span>';
+  draw();
+}
+function rndQuery(){if(!fc)return;const N=fc.N;document.getElementById('qs').value=Math.floor(Math.random()*N);document.getElementById('qe').value=Math.floor(Math.random()*N);doQuery();}
+function toggleOrd(){showOrd=!showOrd;document.getElementById('bord').textContent='序數顯示 '+(showOrd?'ON':'OFF');document.getElementById('bord').classList.toggle('act',showOrd);draw();}
+function clearCache(){try{localStorage.removeItem(SKEY);}catch(e){}fc=null;maze=null;qPath=null;showOrd=false;['b2','bord','bclr'].forEach(id=>document.getElementById(id).disabled=true);document.getElementById('statBox').style.display='none';document.getElementById('queryBox').style.display='none';document.getElementById('cellinfo').textContent='快取已清除';const c=document.getElementById('cvs');c.width=0;c.height=0;}
+
+document.getElementById('cvs').addEventListener('mousemove',e=>{
+  if(!fc||!maze)return;
+  const r=e.target.getBoundingClientRect(),gx=Math.floor((e.clientX-r.left)/CS),gy=Math.floor((e.clientY-r.top)/CS);
+  if(gx<0||gx>=maze.GW||gy<0||gy>=maze.GH){hovCell=null;document.getElementById('cellinfo').textContent='';draw();return;}
+  const key=`${gx},${gy}`;
+  if(!(key in fc.posMap)){hovCell=null;document.getElementById('cellinfo').textContent='牆壁';draw();return;}
+  const ent=fc.table[fc.posMap[key]];hovCell={x:gx,y:gy};
+  document.getElementById('cellinfo').innerHTML=`序數 <b>${ent.ord}</b> &nbsp;·&nbsp; (${ent.x},${ent.y}) &nbsp;·&nbsp; φ = <b>${ent.phi.toFixed(5)}</b> &nbsp;<span style="background:${ent.color};padding:1px 10px;border-radius:2px">　</span>`;
+  draw();
+});
+document.getElementById('cvs').addEventListener('mouseleave',()=>{hovCell=null;draw();});
+
+// 自動從 localStorage 恢復
+try{
+  const raw=localStorage.getItem(SKEY);
+  if(raw){
+    const data=JSON.parse(raw);
+    maze=buildMaze(CELLS,CELLS,data.seed);
+    const table=data.table;const posMap={};table.forEach(({x,y,ord})=>posMap[`${x},${y}`]=ord);
+    fc={table,posMap,N:table.length,seed:data.seed,GW:data.GW,GH:data.GH};
+    showStat([{l:'狀態',v:'快取已自動恢復',c:'ok'},{l:'格點數 N',v:table.length+'格',c:'hi'},{l:'PDE 重算',v:'0 ms',c:'ok'}]);
+    document.getElementById('b2').disabled=false;document.getElementById('bord').disabled=false;document.getElementById('bclr').disabled=false;
+    document.getElementById('queryBox').style.display='block';document.getElementById('qe').value=table.length-1;
+    draw();
+  }
+}catch(e){}
+</script>
+</body>
+</html>

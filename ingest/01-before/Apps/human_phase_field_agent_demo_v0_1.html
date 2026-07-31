@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human Phase-Field Agent · Causal Simulation Demo</title>
+<style>
+:root{
+  --bg:#090b10;--panel:#111520;--panel2:#0d1018;--ink:#e8e2d4;--dim:#7b8295;--line:#2b3243;
+  --cyan:#5fd0c5;--rose:#d95a7a;--gold:#e8b04b;--violet:#bd8be6;--green:#8fd98a;--bad:#f06c6c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;background:radial-gradient(110% 110% at 50% 0%,#171b28 0%,var(--bg) 58%,#050609 100%);
+  color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans TC",monospace;line-height:1.5;
+}
+header{text-align:center;padding:22px 16px 10px}
+.kicker{font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:var(--dim)}
+h1{font-family:Georgia,"Times New Roman",serif;font-weight:300;font-size:28px;margin-top:6px}
+h1 em{color:var(--gold);font-style:italic}
+.sub{font-size:12px;color:var(--dim);margin-top:6px}
+.wrap{max-width:1180px;margin:0 auto;padding:14px 16px 40px;display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+.card{background:linear-gradient(180deg,rgba(17,21,32,.94),rgba(10,12,18,.94));border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+.stage{position:relative;min-height:680px;overflow:hidden}
+svg{width:100%;height:660px;display:block}
+.node{cursor:pointer;transition:filter .15s}
+.node:hover{filter:brightness(1.18)}
+.label{font-size:12px;fill:var(--ink);pointer-events:none;text-anchor:middle}
+.small{font-size:10px;fill:var(--dim);pointer-events:none;text-anchor:middle}
+.edge{stroke:rgba(122,130,149,.28);stroke-width:2}
+.edgeHot{stroke:var(--gold);stroke-width:4;filter:drop-shadow(0 0 7px rgba(232,176,75,.5))}
+.ctrls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+button{
+  border:1px solid var(--line);background:linear-gradient(180deg,#1a1f2f,#0f121b);color:var(--ink);
+  border-radius:11px;padding:10px 12px;font:inherit;cursor:pointer
+}
+button.on{border-color:var(--gold);color:var(--gold);background:linear-gradient(180deg,#241d11,#151109)}
+.row{display:flex;align-items:center;gap:10px;margin:10px 0}
+.row label{width:92px;font-size:12px;color:var(--dim)}
+input[type=range]{flex:1;accent-color:var(--gold)}
+.val{width:44px;text-align:right;color:var(--gold)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--dim);margin-top:10px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:-1px}
+.panelTitle{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+.big{font-family:Georgia,"Times New Roman",serif;font-size:28px;color:var(--gold);margin-bottom:2px}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+.metric{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:13px;padding:10px}
+.metric .mname{font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+.metric .mval{font-size:22px;margin-top:3px}
+.bar{height:6px;background:#1b2030;border-radius:99px;overflow:hidden;margin-top:7px}
+.fill{height:100%;width:50%;background:var(--cyan);border-radius:99px}
+.log{height:235px;overflow:auto;background:#070910;border:1px solid var(--line);border-radius:13px;padding:10px;font-size:11px;color:#bfc4d0}
+.log p{margin-bottom:7px}
+.warn{font-size:11px;color:#d9b0b0;border-left:2px solid var(--rose);padding-left:10px;margin-top:12px;line-height:1.65}
+.note{font-size:11px;color:var(--dim);border-left:2px solid var(--line);padding-left:10px;margin-top:12px;line-height:1.65}
+.formula{font-size:12px;color:#c7ccd8;background:#090c14;border:1px solid var(--line);border-radius:13px;padding:11px;margin-top:10px;overflow:auto}
+.badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:10px;color:var(--dim);margin-right:5px;margin-top:5px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}.stage{min-height:auto}svg{height:560px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">EveMissLab · Human Phase-Field Agent</div>
+  <h1>人體<em>相位場</em>因果模擬推演</h1>
+  <div class="sub">假資料展示 · 非醫療資料 · 非診斷工具 · 只示範 Agent 如何追蹤相位差、張力邊界與局部展開</div>
+</header>
+
+<div class="wrap">
+  <section class="card stage">
+    <div class="panelTitle">Synthetic Body Phase Field</div>
+    <svg id="svg" viewBox="0 0 720 660" role="img" aria-label="人體相位場假資料示範">
+      <defs>
+        <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <g id="edges"></g>
+      <g id="nodes"></g>
+    </svg>
+
+    <div class="ctrls">
+      <button id="play" class="on">❚❚ 暫停模擬</button>
+      <button id="inject">注入局部擾動</button>
+      <button id="reset">重置假資料</button>
+      <button id="unfold">局部展開選中區域</button>
+    </div>
+
+    <div class="row"><label>因果擴散</label><input id="coupling" type="range" min="0" max="1" step="0.01" value="0.16"><span class="val" id="couplingv">0.16</span></div>
+    <div class="row"><label>擾動強度</label><input id="shock" type="range" min="0" max="2" step="0.05" value="0.85"><span class="val" id="shockv">0.85</span></div>
+    <div class="row"><label>警戒閾值</label><input id="threshold" type="range" min="0.25" max="2.2" step="0.05" value="0.95"><span class="val" id="thresholdv">0.95</span></div>
+
+    <div class="legend">
+      <span><i class="dot" style="background:var(--cyan)"></i>相位穩定 / 生成張力</span>
+      <span><i class="dot" style="background:var(--rose)"></i>閉合張力 / 內收</span>
+      <span><i class="dot" style="background:var(--gold)"></i>相位差邊界</span>
+      <span><i class="dot" style="background:var(--violet)"></i>手性偏轉</span>
+    </div>
+
+    <div class="warn">
+      安全邊界：本頁所有資料皆為程式隨機生成的假資料，只是因果模擬推演與視覺化原型；不使用、不代表、也不推斷任何真實醫療或人體資料。不可作為診斷、治療、風險評估或健康建議。
+    </div>
+  </section>
+
+  <aside class="card">
+    <div class="panelTitle">Agent Monitor</div>
+    <div class="big" id="selectedName">胸腔</div>
+    <div id="badges"></div>
+
+    <div class="metrics">
+      <div class="metric"><div class="mname">相位 φ</div><div class="mval" id="phaseVal">0.00</div><div class="bar"><div class="fill" id="phaseBar"></div></div></div>
+      <div class="metric"><div class="mname">相位差 Σ|Δφ|</div><div class="mval" id="boundaryVal">0.00</div><div class="bar"><div class="fill" id="boundaryBar"></div></div></div>
+      <div class="metric"><div class="mname">生成 G</div><div class="mval" id="genVal">0.00</div><div class="bar"><div class="fill" id="genBar"></div></div></div>
+      <div class="metric"><div class="mname">閉合 C</div><div class="mval" id="closeVal">0.00</div><div class="bar"><div class="fill" id="closeBar"></div></div></div>
+      <div class="metric"><div class="mname">張力差 G-C</div><div class="mval" id="tensionVal">0.00</div><div class="bar"><div class="fill" id="tensionBar"></div></div></div>
+      <div class="metric"><div class="mname">手性 χ</div><div class="mval" id="chiralVal">0.00</div><div class="bar"><div class="fill" id="chiralBar"></div></div></div>
+    </div>
+
+    <div class="formula">
+      Aᵢ = w₁Σ|Δφᵢⱼ| + w₂|Gᵢ−Cᵢ| + w₃|χᵢ|<br>
+      若 Aᵢ &gt; θ，Agent 標記為「建議局部展開」。
+    </div>
+
+    <div class="note">
+      此處「展開」只是在示範層級把某個區域拆成幾個假細胞群節點，表示 Agent 工作流：全局看場，異常處才局部看點。
+    </div>
+
+    <div class="panelTitle" style="margin-top:14px">Causal Simulation Log</div>
+    <div class="log" id="log"></div>
+  </aside>
+</div>
+
+<script>
+const regions = [
+  {id:'head', name:'頭部', x:360, y:80, rx:58, ry:52},
+  {id:'chest', name:'胸腔', x:360, y:205, rx:90, ry:76},
+  {id:'abdomen', name:'腹部', x:360, y:342, rx:78, ry:82},
+  {id:'larm', name:'左臂', x:220, y:245, rx:52, ry:120},
+  {id:'rarm', name:'右臂', x:500, y:245, rx:52, ry:120},
+  {id:'lleg', name:'左腿', x:305, y:520, rx:47, ry:120},
+  {id:'rleg', name:'右腿', x:415, y:520, rx:47, ry:120}
+];
+const edges = [
+  ['head','chest'],['chest','abdomen'],['chest','larm'],['chest','rarm'],['abdomen','lleg'],['abdomen','rleg'],
+  ['larm','abdomen'],['rarm','abdomen']
+];
+const byId = Object.fromEntries(regions.map(r=>[r.id,r]));
+let selected = 'chest', playing = true, t = 0, unfolded = false;
+let coupling=0.16, shock=0.85, threshold=0.95;
+const state = {};
+function initState(){
+  regions.forEach((r,i)=>{
+    state[r.id] = {
+      phi: Math.sin(i*1.7)*0.35,
+      g: 0.45 + 0.12*Math.sin(i),
+      c: 0.42 + 0.10*Math.cos(i*1.3),
+      chi: 0.10*Math.sin(i*2.1),
+      anomaly: 0
+    };
+  });
+  selected='chest'; t=0; unfolded=false;
+  log('重置：建立七區域假資料相位場。');
+}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function wrapPhase(x){while(x>Math.PI)x-=2*Math.PI;while(x<-Math.PI)x+=2*Math.PI;return x;}
+function phaseDiff(a,b){return Math.abs(wrapPhase(a-b));}
+function neighbors(id){return edges.filter(e=>e[0]===id||e[1]===id).map(e=>e[0]===id?e[1]:e[0]);}
+function score(id){
+  const s=state[id], ns=neighbors(id);
+  const b=ns.reduce((acc,n)=>acc+phaseDiff(s.phi,state[n].phi),0)/Math.max(1,ns.length);
+  const tension=s.g-s.c;
+  const A=0.72*b+0.75*Math.abs(tension)+0.55*Math.abs(s.chi);
+  return {b,tension,A};
+}
+function colorFor(id){
+  const s=state[id], sc=score(id);
+  const hue = 180 + 80*Math.sin(s.phi);
+  const sat = 42 + 22*clamp(sc.A/threshold,0,1);
+  const light = 31 + 18*clamp(sc.A/threshold,0,1);
+  if(sc.A>threshold) return `hsl(38,82%,${48+8*Math.sin(t*0.1)}%)`;
+  return `hsl(${hue},${sat}%,${light}%)`;
+}
+function tick(){
+  t += 0.045;
+  const next = {};
+  for(const r of regions){
+    const s=state[r.id], ns=neighbors(r.id);
+    const avg = ns.reduce((acc,n)=>acc+state[n].phi,0)/Math.max(1,ns.length);
+    const drift = 0.018*Math.sin(t + r.x*0.013) + 0.012*Math.cos(t*0.7 + r.y*0.019);
+    const causal = coupling * wrapPhase(avg - s.phi) * 0.035;
+    const anomalyPush = s.anomaly * 0.045;
+    next[r.id] = {
+      phi: wrapPhase(s.phi + drift + causal + anomalyPush),
+      g: clamp(s.g + 0.010*Math.sin(t*1.1+r.x*.02) + s.anomaly*0.018,0,1.8),
+      c: clamp(s.c + 0.009*Math.cos(t*.9+r.y*.016) - s.anomaly*0.006,0,1.8),
+      chi: clamp(s.chi + 0.012*Math.sin(t*1.4+r.x*.01) + s.anomaly*0.015,-1.6,1.6),
+      anomaly: s.anomaly*0.985
+    };
+  }
+  Object.assign(state,next);
+}
+function svgEl(name, attrs){
+  const e=document.createElementNS('http://www.w3.org/2000/svg',name);
+  for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  return e;
+}
+function render(){
+  const eg=document.getElementById('edges'), ng=document.getElementById('nodes');
+  eg.innerHTML=''; ng.innerHTML='';
+  for(const [a,b] of edges){
+    const A=byId[a], B=byId[b], d=phaseDiff(state[a].phi,state[b].phi);
+    const hot=d>threshold*0.72;
+    const line=svgEl('line',{x1:A.x,y1:A.y,x2:B.x,y2:B.y,class:hot?'edgeHot':'edge',opacity:clamp(0.22+d/2.2,0.22,0.96)});
+    eg.appendChild(line);
+  }
+  for(const r of regions){
+    const s=state[r.id], sc=score(r.id), hot=sc.A>threshold, sel=r.id===selected;
+    const g=svgEl('g',{class:'node',filter:hot?'url(#glow)':''});
+    g.addEventListener('click',()=>{selected=r.id; render();});
+    const outer=svgEl('ellipse',{cx:r.x,cy:r.y,rx:r.rx+10*s.g,ry:r.ry+10*s.g,fill:'none',stroke:'rgba(95,208,197,.55)','stroke-width':sel?4:2,opacity:.72});
+    const inner=svgEl('ellipse',{cx:r.x,cy:r.y,rx:Math.max(10,r.rx-12*s.c),ry:Math.max(10,r.ry-12*s.c),fill:colorFor(r.id),stroke:hot?'var(--gold)':'rgba(255,255,255,.12)','stroke-width':hot?4:1.4});
+    g.appendChild(outer); g.appendChild(inner);
+    const ang=s.chi, len=18+24*Math.abs(s.chi);
+    const x2=r.x+Math.cos(ang)*len, y2=r.y+Math.sin(ang)*len;
+    const arr=svgEl('line',{x1:r.x,y1:r.y,x2:x2,y2:y2,stroke:'var(--violet)','stroke-width':2.2,opacity:0.65+0.25*Math.abs(s.chi)});
+    g.appendChild(arr);
+    const tip=svgEl('circle',{cx:x2,cy:y2,r:3.2,fill:'var(--violet)',opacity:.85});
+    g.appendChild(tip);
+    const lab=svgEl('text',{x:r.x,y:r.y+4,class:'label'}); lab.textContent=r.name; g.appendChild(lab);
+    const sm=svgEl('text',{x:r.x,y:r.y+22,class:'small'}); sm.textContent='A='+sc.A.toFixed(2); g.appendChild(sm);
+    if(sel){ const ring=svgEl('ellipse',{cx:r.x,cy:r.y,rx:r.rx+17,ry:r.ry+17,fill:'none',stroke:'var(--gold)','stroke-width':2,opacity:.9}); g.appendChild(ring); }
+    ng.appendChild(g);
+  }
+  if(unfolded) renderUnfold(ng);
+  updatePanel();
+}
+function renderUnfold(ng){
+  const r=byId[selected], sc=score(selected);
+  for(let i=0;i<9;i++){
+    const a=i/9*Math.PI*2 + t*0.3;
+    const rr=32 + (i%3)*14;
+    const x=r.x+Math.cos(a)*rr, y=r.y+Math.sin(a)*rr;
+    const c=svgEl('circle',{cx:x,cy:y,r:5+2*Math.sin(t+i),fill:i%2?'var(--cyan)':'var(--rose)',opacity:.78});
+    ng.appendChild(c);
+  }
+  const lab=svgEl('text',{x:r.x,y:r.y+r.ry+42,class:'small'});
+  lab.textContent='局部展開：假細胞群節點（示範）';
+  ng.appendChild(lab);
+}
+function setBar(id,val,max,color){
+  const el=document.getElementById(id);
+  el.style.width=(100*clamp(val/max,0,1)).toFixed(1)+'%';
+  el.style.background=color;
+}
+function updatePanel(){
+  const s=state[selected], sc=score(selected);
+  document.getElementById('selectedName').textContent=byId[selected].name;
+  document.getElementById('phaseVal').textContent=s.phi.toFixed(2);
+  document.getElementById('boundaryVal').textContent=sc.b.toFixed(2);
+  document.getElementById('genVal').textContent=s.g.toFixed(2);
+  document.getElementById('closeVal').textContent=s.c.toFixed(2);
+  document.getElementById('tensionVal').textContent=sc.tension.toFixed(2);
+  document.getElementById('chiralVal').textContent=s.chi.toFixed(2);
+  setBar('phaseBar',Math.abs(s.phi),Math.PI,'var(--cyan)');
+  setBar('boundaryBar',sc.b,2.2,sc.b>threshold?'var(--gold)':'var(--cyan)');
+  setBar('genBar',s.g,1.8,'var(--cyan)');
+  setBar('closeBar',s.c,1.8,'var(--rose)');
+  setBar('tensionBar',Math.abs(sc.tension),1.5,sc.tension>=0?'var(--cyan)':'var(--rose)');
+  setBar('chiralBar',Math.abs(s.chi),1.6,'var(--violet)');
+  const b=document.getElementById('badges'); b.innerHTML='';
+  const items=[];
+  if(sc.b>threshold*0.72) items.push('相位差邊界');
+  if(Math.abs(sc.tension)>0.45) items.push('張力失衡');
+  if(Math.abs(s.chi)>0.55) items.push('手性偏轉');
+  if(sc.A>threshold) items.push('建議局部展開');
+  if(!items.length) items.push('穩態觀察');
+  items.forEach(x=>{const span=document.createElement('span');span.className='badge';span.textContent=x;b.appendChild(span);});
+}
+function log(msg){
+  const el=document.getElementById('log');
+  const p=document.createElement('p');
+  p.textContent='['+(new Date()).toLocaleTimeString()+'] '+msg;
+  el.prepend(p);
+  while(el.children.length>28) el.removeChild(el.lastChild);
+}
+function inject(){
+  const id=selected;
+  state[id].anomaly += shock;
+  state[id].g = clamp(state[id].g + shock*0.25,0,1.8);
+  state[id].chi = clamp(state[id].chi + shock*0.22,-1.6,1.6);
+  log('注入假資料擾動 → '+byId[id].name+'：生成張力與手性偏轉上升。');
+}
+function loop(){
+  if(playing) tick();
+  render();
+  requestAnimationFrame(loop);
+}
+document.getElementById('play').onclick=()=>{
+  playing=!playing;
+  const btn=document.getElementById('play');
+  btn.classList.toggle('on',playing);
+  btn.textContent=playing?'❚❚ 暫停模擬':'▶ 繼續模擬';
+  log(playing?'繼續因果模擬推演。':'暫停因果模擬推演。');
+};
+document.getElementById('inject').onclick=inject;
+document.getElementById('reset').onclick=()=>{initState(); render();};
+document.getElementById('unfold').onclick=()=>{unfolded=!unfolded; log((unfolded?'開啟':'關閉')+' '+byId[selected].name+' 的局部展開示意。'); render();};
+for(const id of ['coupling','shock','threshold']){
+  const el=document.getElementById(id), out=document.getElementById(id+'v');
+  el.oninput=()=>{ window[id]=parseFloat(el.value); out.textContent=parseFloat(el.value).toFixed(2); log('調整 '+id+' = '+out.textContent); };
+}
+initState();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

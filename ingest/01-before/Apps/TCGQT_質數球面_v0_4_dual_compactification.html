@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TCGQT 質數球面 · 真無限緊緻化・格點球・雙對偶閉合</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+ :root{--bg:#0a0b0f;--ink:#e7e2d4;--dim:#6f7588;--line:#2a2f3e;
+  --gold:#e8b04b;--gold-soft:#f2cd86;--cyan:#5fd0c5;--rose:#d98a8a;--red:#d95a5a;--violet:#c98bd9;--green:#8fd98a;}
+ *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+ html,body{height:100%;}
+ body{background:radial-gradient(120% 120% at 50% 0%, #12141d 0%, var(--bg) 55%, #06070a 100%);
+  color:var(--ink);font-family:"IBM Plex Mono",ui-monospace,monospace;overflow-x:hidden;line-height:1.5;}
+ .grain{position:fixed;inset:0;pointer-events:none;opacity:.035;z-index:99;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+ header{padding:16px 18px 4px;text-align:center;}
+ header .kicker{font-size:10.5px;letter-spacing:.4em;color:var(--dim);text-transform:uppercase;}
+ header h1{font-family:"Newsreader",serif;font-weight:300;font-size:25px;margin-top:5px;}
+ header h1 em{font-style:italic;color:var(--gold-soft);}
+ header .sub{font-size:10.5px;color:var(--dim);margin-top:6px;}
+ .stage{position:relative;width:100%;display:flex;justify-content:center;margin-top:6px;}
+ canvas{display:block;width:100%;max-width:540px;touch-action:none;cursor:grab;}
+ canvas:active{cursor:grabbing;}
+ .readout{max-width:580px;margin:2px auto 0;padding:2px 16px 0;}
+ .nval{font-family:"Newsreader",serif;font-size:26px;text-align:center;color:var(--gold-soft);min-height:34px;}
+ .nval small{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--cyan);letter-spacing:.08em;}
+ .inspect{text-align:center;font-size:11.5px;color:var(--ink);min-height:15px;margin-top:2px;}
+ .inspect .res{color:var(--dim);}
+ .legend{display:flex;justify-content:center;gap:12px;font-size:9.5px;color:var(--dim);margin-top:4px;flex-wrap:wrap;}
+ .legend span{display:inline-flex;align-items:center;gap:5px;}
+ .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+ .panel{max-width:580px;margin:9px auto 0;padding:0 16px;}
+ .const{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0;}
+ .const .cell{text-align:center;}
+ .const .lbl{font-size:9.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;}
+ .const .v{font-family:"Newsreader",serif;font-size:19px;margin-top:2px;}
+ .const .v.k{color:var(--gold);}
+ .controls{max-width:580px;margin:12px auto 0;padding:0 16px 46px;display:flex;flex-direction:column;gap:12px;}
+ .row{display:flex;align-items:center;gap:11px;}
+ .row .name{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;width:64px;flex:none;}
+ input[type=range]{-webkit-appearance:none;appearance:none;height:2px;background:var(--line);flex:1;border-radius:2px;outline:none;}
+ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px rgba(232,176,75,.5);}
+ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-radius:50%;background:var(--gold);}
+ .rngval{font-size:12.5px;color:var(--gold-soft);width:58px;text-align:right;flex:none;}
+ .btns{display:flex;gap:7px;flex-wrap:wrap;}
+ button{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.03em;color:var(--ink);
+  background:linear-gradient(180deg,#181b25,#10121a);border:1px solid var(--line);border-radius:9px;
+  padding:9px 10px;cursor:pointer;transition:.15s;flex:1;min-width:60px;}
+ button:hover{border-color:var(--gold);color:var(--gold-soft);}
+ button:active{transform:translateY(1px);}
+ button.on{border-color:var(--gold);color:var(--gold);background:linear-gradient(180deg,#221d12,#15110a);}
+ button.cyan.on{border-color:var(--cyan);color:var(--cyan);background:linear-gradient(180deg,#0f211f,#0a1413);}
+ button.res.on{border-color:var(--violet);color:var(--violet);background:linear-gradient(180deg,#1c1320,#120a16);}
+ .numentry{display:flex;gap:7px;}
+ .numentry input[type=text]{flex:1;background:#0d0f16;border:1px solid var(--line);border-radius:9px;color:var(--ink);
+  font-family:"IBM Plex Mono",monospace;font-size:14px;padding:9px 11px;outline:none;}
+ .numentry input[type=text]:focus{border-color:var(--gold);}
+ .numentry .lab{flex:none;color:var(--dim);font-size:11px;padding:9px 2px;}
+ .note{font-size:10.5px;color:var(--dim);line-height:1.6;border-left:2px solid var(--line);padding-left:11px;}
+ .note b{color:var(--cyan);} .note .gd{color:var(--gold);} .note .vi{color:var(--violet);}
+ .warn{font-size:10.5px;color:var(--rose);line-height:1.6;border-left:2px solid var(--rose);padding-left:11px;opacity:.92;}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<header>
+ <div class="kicker">EveMissLab · TCGQT</div>
+ <h1>質數<em>球面</em> θ=n · ∞ · 雙對偶</h1>
+ <div class="sub">真無限緊緻化 · 北極 = ∞ · 有限 N 只是可見截斷 · 可切換雙對偶閉合</div>
+</header>
+
+<div class="stage"><canvas id="c"></canvas></div>
+
+<div class="readout">
+ <div class="nval" id="nval">0</div>
+ <div class="inspect" id="inspect">拖曳轉動球體 · 點任一點查身分</div>
+ <div class="legend">
+   <span><i class="dot" style="background:var(--cyan)"></i>正質數</span>
+   <span><i class="dot" style="background:#6f7588"></i>正合數骨架</span>
+   <span><i class="dot" style="background:var(--rose)"></i>負對偶</span>
+   <span><i class="dot" style="background:var(--gold-soft)"></i>當前數</span>
+   <span><i class="dot" style="background:transparent;border:1px solid var(--violet)"></i>∞ 北極（未佔據）</span>
+ </div>
+</div>
+
+<div class="panel">
+ <div class="const">
+   <div class="cell"><div class="lbl">可見 N</div><div class="v" id="cN">5000</div></div>
+   <div class="cell"><div class="lbl">π(N)</div><div class="v k" id="cP">669</div></div>
+   <div class="cell"><div class="lbl">緊緻 λ</div><div class="v" id="cL">1000</div></div>
+   <div class="cell"><div class="lbl">模式</div><div class="v" id="cMode">∞螺旋</div></div>
+ </div>
+</div>
+
+<div class="controls">
+ <div class="numentry">
+   <input type="text" id="numin" inputmode="numeric" placeholder="輸入一個數查看…" value="0">
+   <button id="set" style="flex:none;min-width:54px;">置入</button>
+ </div>
+ <div class="btns">
+   <button id="inc">＋1</button>
+   <button id="play">▶ 自動數</button>
+   <button id="spin" class="on">⟳ 自轉</button>
+ </div>
+ <div class="numentry">
+   <span class="lab">N=</span>
+   <input type="text" id="ninput" inputmode="numeric" value="5000">
+   <button id="nset" style="flex:none;min-width:54px;">設定</button>
+ </div>
+ <div class="row">
+   <div class="name">範圍 N</div>
+   <input type="range" id="rangeN" min="200" max="120000" value="5000" step="500">
+   <div class="rngval" id="rangeNv">5000</div>
+ </div>
+ <div class="row">
+   <div class="name">緊緻 λ</div>
+   <input type="range" id="lambda" min="50" max="20000" value="1000" step="50">
+   <div class="rngval" id="lambdav">1000</div>
+ </div>
+ <div class="btns">
+   <button id="mSpiral" class="on">∞ 螺旋 θ=n</button>
+   <button id="mGrid">球面格點</button>
+   <button id="mDual">雙對偶閉合</button>
+ </div>
+ <div class="row">
+   <div class="name">格點環數</div>
+   <input type="range" id="gridRows" min="12" max="180" value="64" step="1">
+   <div class="rngval" id="gridRowsv">64</div>
+ </div>
+ <div class="btns">
+   <button id="oPrime" class="cyan on">質數</button>
+   <button id="oComp" class="on">合數骨架</button>
+   <button id="oTwin" class="cyan">孿生連結</button>
+ </div>
+ <div class="row">
+   <div class="name">模 q 相位</div>
+   <input type="range" id="modq" min="2" max="60" value="44" step="1">
+   <div class="rngval" id="modqv">44</div>
+ </div>
+ <div class="btns">
+   <button id="oModq" class="res">mod q 著色（看 Dirichlet 選臂）</button>
+ </div>
+ <div class="note" id="note"></div>
+ <div class="warn">提醒：北極定義為真正的 ∞，不是 N。∞ 螺旋模式看 θ=n 的單相位捲繞；球面格點模式把每個整數分配到緯線×經線格點，讓球面由整數點構成。格點模式會強化載具秩序，所以更要小心：漂亮格線多半是座標系，不是質數新規律。看真，別把載具當信號。</div>
+</div>
+
+<script>
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+let dpr=Math.min(window.devicePixelRatio||1,2.5);
+const MAXN=120000;
+
+let S={N:5000,value:0,q:44,lambda:1000,layout:'spiral',gridRows:64,
+  oPrime:true,oComp:true,oTwin:false,oModq:false,
+  spin:true,playing:false,rotX:-0.35,rotY:0.6};
+
+let sieve={N:-1,isP:null,list:[],nextGap:null};
+function buildSieve(N){ if(sieve.N>=N&&sieve.isP)return;
+  const isP=new Uint8Array(N+1);isP.fill(1);isP[0]=0;if(N>=1)isP[1]=0;
+  for(let i=2;i*i<=N;i++)if(isP[i])for(let j=i*i;j<=N;j+=i)isP[j]=0;
+  const list=[];for(let i=2;i<=N;i++)if(isP[i])list.push(i);
+  const nextGap=new Int32Array(N+1);
+  for(let i=0;i<list.length-1;i++)nextGap[list[i]]=list[i+1]-list[i];
+  sieve={N,isP,list,nextGap};}
+function gcd(a,b){while(b){[a,b]=[b,a%b];}return a;}
+function isPrimeQuick(n){if(n<2)return false;if(n<4)return true;if(n%2===0)return false;for(let d=3;d*d<=n;d+=2)if(n%d===0)return false;return true;}
+function factorString(n){if(n<2)return n+' · 非質非合';let x=n,f=[];for(let d=2;d*d<=x;d++){while(x%d===0){f.push(d);x/=d;}}if(x>1)f.push(x);return f.length===1?n+' · 質數':n+' = '+f.join('×');}
+
+// unit-sphere positions.
+// Spiral mode: longitude phi = n (theta=n), latitude is a true compactification axis.
+// Grid mode: every integer is snapped to a latitude/longitude lattice point, while row choice still follows compactified n.
+// North pole is infinity: no finite n occupies z=1.
+let PX=null,PY=null,PZ=null,posN=-1,posLam=-1,posLayout='',posRows=-1;
+function buildPos(N){ if(posN===N && posLam===S.lambda && posLayout===S.layout && posRows===S.gridRows)return;
+  PX=new Float32Array(N+1);PY=new Float32Array(N+1);PZ=new Float32Array(N+1);
+  const lam=Math.max(1,S.lambda);
+  if(S.layout==='grid'){
+    const rows=Math.max(6,Math.floor(S.gridRows));
+    const counts=new Int32Array(rows), ringOf=new Int32Array(N+1);
+    for(let n=1;n<=N;n++){
+      const t=n/(n+lam);                         // finite n < 1, infinity = 1
+      let r=Math.floor(t*rows);
+      if(r<0)r=0; if(r>=rows)r=rows-1;
+      ringOf[n]=r; counts[r]++;
+    }
+    const seen=new Int32Array(rows);
+    for(let n=1;n<=N;n++){
+      const r=ringOf[n], c=Math.max(1,counts[r]), k=seen[r]++;
+      const z=-1+2*(r+0.5)/rows;                 // ring center: no ring sits exactly on a pole
+      const sp=Math.sqrt(Math.max(0,1-z*z));
+      const phi=2*Math.PI*((k+0.5*(r%2))/c);     // staggered grid on each latitude ring
+      PX[n]=sp*Math.cos(phi);PY[n]=sp*Math.sin(phi);PZ[n]=z;
+    }
+  } else {
+    for(let n=1;n<=N;n++){
+      const t=n/(n+lam);                         // 0..1, but finite n never equals 1
+      const z=2*t-1;                             // n=0 -> south, n→∞ -> north
+      const sp=Math.sqrt(Math.max(0,1-z*z));
+      const phi=n;                               // the single phase: theta = n
+      PX[n]=sp*Math.cos(phi);PY[n]=sp*Math.sin(phi);PZ[n]=z;
+    }
+  }
+  posN=N;posLam=S.lambda;posLayout=S.layout;posRows=S.gridRows;
+}
+
+function modColor(res,q,a){const co=gcd(res,q)===1;if(!co)return 'rgba(90,95,110,'+(a*0.5).toFixed(3)+')';const h=(res/q)*360;return 'hsla('+h.toFixed(1)+',62%,62%,'+a.toFixed(3)+')';}
+
+// rotation matrix R = Rx(rotX) * Ry(rotY)
+let rot={a11:1,a12:0,a13:0,a21:0,a22:1,a23:0,a31:0,a32:0,a33:1};
+function buildRot(rx,ry){
+  const cyv=Math.cos(ry),syv=Math.sin(ry),cxv=Math.cos(rx),sxv=Math.sin(rx);
+  rot.a11=cyv;        rot.a12=0;    rot.a13=syv;
+  rot.a21=syv*sxv;    rot.a22=cxv;  rot.a23=-cyv*sxv;
+  rot.a31=-syv*cxv;   rot.a32=sxv;  rot.a33=cyv*cxv;
+}
+function proj(n,cx,cy,R){
+  return projVec(PX[n],PY[n],PZ[n],cx,cy,R);
+}
+function negSource(k){ return S.N-k+1; }
+function projNeg(k,cx,cy,R){
+  const s=negSource(k);
+  return projVec(-PX[s],-PY[s],PZ[s],cx,cy,R);
+}
+function isPrimeLabelSigned(v){ const a=Math.abs(v); if(a<2)return false; if(a<=sieve.N)return !!sieve.isP[a]; return isPrimeQuick(a); }
+function factorStringSigned(v){
+  if(v===0) return '0 · 原點缺席 / 未佔據';
+  if(v>0) return factorString(v);
+  const a=Math.abs(v);
+  if(a<2) return v+' · 負對偶（|n|=1，非質非合）';
+  const base=factorString(a);
+  if(sieve.isP[a]) return v+' · 負對偶（|n| 為質數）';
+  return v+' · 負對偶（|n|='+a+'；'+base.replace(a+' = ','因子 ')+'）';
+}
+function projVec(x,y,z,cx,cy,R){
+  const X=rot.a11*x+rot.a12*y+rot.a13*z;
+  const Y=rot.a21*x+rot.a22*y+rot.a23*z;
+  const Z=rot.a31*x+rot.a32*y+rot.a33*z;
+  return {sx:cx+X*R, sy:cy-Y*R, d:Z};
+}
+function depthShade(d){return (d+1)/2;} // 0 back .. 1 front
+
+function drawPath3D(cx,cy,R,fn,steps,style,width){
+  ctx.beginPath();let started=false;
+  for(let i=0;i<=steps;i++){
+    const t=i/steps*2*Math.PI, u=fn(t), p=projVec(u[0],u[1],u[2],cx,cy,R);
+    if(!started){ctx.moveTo(p.sx,p.sy);started=true;}else ctx.lineTo(p.sx,p.sy);
+  }
+  ctx.strokeStyle=style;ctx.lineWidth=width;ctx.stroke();
+}
+function drawWire(cx,cy,R){
+  // silhouette
+  ctx.strokeStyle='rgba(95,208,197,0.10)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();
+  const circles=[
+    (t)=>[Math.cos(t),Math.sin(t),0],
+    (t)=>[Math.cos(t),0,Math.sin(t)],
+    (t)=>[0,Math.cos(t),Math.sin(t)]
+  ];
+  for(const f of circles) drawPath3D(cx,cy,R,f,72,'rgba(111,117,136,0.13)',0.8);
+  if(S.layout==='grid'){
+    const rows=Math.max(6,Math.floor(S.gridRows)), maxLatLines=28;
+    const skip=Math.max(1,Math.ceil(rows/maxLatLines));
+    for(let r=0;r<rows;r+=skip){
+      const z=-1+2*(r+0.5)/rows, sp=Math.sqrt(Math.max(0,1-z*z));
+      drawPath3D(cx,cy,R,(t)=>[sp*Math.cos(t),sp*Math.sin(t),z],96,'rgba(95,208,197,0.055)',0.55);
+    }
+    const mer=12;
+    for(let m=0;m<mer;m++){
+      const phi=2*Math.PI*m/mer, cp=Math.cos(phi), sp=Math.sin(phi);
+      drawPath3D(cx,cy,R,(t)=>{const z=Math.cos(t), rr=Math.sin(t); return [rr*cp,rr*sp,z];},72,'rgba(111,117,136,0.06)',0.55);
+    }
+  }
+}
+
+function render(){
+  const W=cv.clientWidth,H=cv.clientHeight;
+  if(W<2||H<2)return;
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2,R=Math.max(1,Math.min(W,H)/2-16);
+  buildSieve(S.N);buildPos(S.N);buildRot(S.rotX,S.rotY);
+
+  drawWire(cx,cy,R);
+
+  // infinity pole: a marked but unoccupied boundary point
+  const inf=projVec(0,0,1,cx,cy,R), infDf=depthShade(inf.d);
+  ctx.strokeStyle='rgba(201,139,217,'+(0.28+0.55*infDf).toFixed(3)+')';
+  ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.arc(inf.sx,inf.sy,5.5,0,7);ctx.stroke();
+  ctx.font='11px IBM Plex Mono, monospace';
+  ctx.fillStyle='rgba(201,139,217,'+(0.35+0.55*infDf).toFixed(3)+')';
+  ctx.fillText('∞',inf.sx+7,inf.sy-7);
+
+  const dual = (S.layout==='dual');
+  if(S.oComp){
+    for(let n=1;n<=S.N;n++){
+      if(sieve.isP[n]) continue;
+      const p=proj(n,cx,cy,R), df=depthShade(p.d);
+      ctx.fillStyle='rgba(111,117,136,'+(0.05+0.16*df).toFixed(3)+')';
+      const s=(S.N>60000?0.35:0.6)+0.7*df;
+      ctx.fillRect(p.sx-s/2,p.sy-s/2,s,s);
+    }
+    if(dual){
+      for(let k=1;k<=S.N;k++){
+        if(sieve.isP[k]) continue;
+        const p=projNeg(k,cx,cy,R), df=depthShade(p.d);
+        ctx.fillStyle='rgba(217,90,90,'+(0.05+0.16*df).toFixed(3)+')';
+        const s=(S.N>60000?0.35:0.6)+0.7*df;
+        ctx.fillRect(p.sx-s/2,p.sy-s/2,s,s);
+      }
+    }
+  }
+  if(S.oTwin){
+    ctx.lineWidth=0.8;
+    for(const pr of sieve.list){ if(pr>S.N) break; if(pr+2<=S.N && sieve.isP[pr+2]){
+      const a=proj(pr,cx,cy,R), b=proj(pr+2,cx,cy,R), df=depthShade((a.d+b.d)/2);
+      ctx.strokeStyle='rgba(201,139,217,'+(0.10+0.4*df).toFixed(3)+')';
+      ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke();
+      if(dual){
+        const an=projNeg(pr,cx,cy,R), bn=projNeg(pr+2,cx,cy,R), dfn=depthShade((an.d+bn.d)/2);
+        ctx.strokeStyle='rgba(217,90,90,'+(0.10+0.36*dfn).toFixed(3)+')';
+        ctx.beginPath();ctx.moveTo(an.sx,an.sy);ctx.lineTo(bn.sx,bn.sy);ctx.stroke();
+      }
+    }}
+  }
+  if(S.oPrime){
+    for(const pr of sieve.list){
+      if(pr>S.N) break;
+      const p=proj(pr,cx,cy,R), df=depthShade(p.d);
+      let col;
+      if(S.oModq){ col=modColor(pr%S.q,S.q,0.32+0.62*df); }
+      else col='rgba(95,208,197,'+(0.3+0.65*df).toFixed(3)+')';
+      ctx.fillStyle=col;
+      const s=(S.N>60000?0.75:1.0)+1.6*df;
+      ctx.beginPath();ctx.arc(p.sx,p.sy,s,0,7);ctx.fill();
+    }
+    if(dual){
+      for(const pr of sieve.list){
+        if(pr>S.N) break;
+        const p=projNeg(pr,cx,cy,R), df=depthShade(p.d);
+        let col;
+        if(S.oModq){
+          const h=((pr%S.q)/S.q)*360 + 180;
+          col='hsla('+(h%360).toFixed(1)+',68%,66%,'+(0.32+0.62*df).toFixed(3)+')';
+        } else col='rgba(217,90,90,'+(0.30+0.62*df).toFixed(3)+')';
+        ctx.fillStyle=col;
+        const s=(S.N>60000?0.75:1.0)+1.6*df;
+        ctx.beginPath();ctx.arc(p.sx,p.sy,s,0,7);ctx.fill();
+      }
+    }
+  }
+  if(S.value!==0 && Math.abs(S.value)<=S.N){
+    const p=S.value>0 ? proj(S.value,cx,cy,R) : projNeg(Math.abs(S.value),cx,cy,R);
+    const df=depthShade(p.d), pulse=0.6+0.4*Math.sin(performance.now()/260);
+    const g=ctx.createRadialGradient(p.sx,p.sy,0,p.sx,p.sy,16);
+    const halo = S.value>0 ? '242,205,134' : '217,90,90';
+    g.addColorStop(0,'rgba('+halo+','+(0.9*pulse*(0.4+0.6*df)).toFixed(3)+')');g.addColorStop(1,'rgba(232,176,75,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.sx,p.sy,16,0,7);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.sx,p.sy,2.6,0,7);ctx.fill();
+  }
+}
+
+function loop(){ if(S.spin){S.rotY+=0.0032;} render(); requestAnimationFrame(loop); }
+function resize(){const W=Math.min(cv.parentElement.clientWidth,540);if(W<2)return;dpr=Math.min(window.devicePixelRatio||1,2.5);cv.style.height=W+'px';cv.width=Math.round(W*dpr);cv.height=Math.round(W*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);}
+
+function updateText(){
+  buildSieve(Math.max(S.N,2));
+  let tag='';
+  if(S.value>0){
+    const isp=isPrimeLabelSigned(S.value); tag=isp?' · 正質數':' · 正合數';
+  } else if(S.value<0){
+    const isp=isPrimeLabelSigned(S.value); tag=isp?' · 負對偶（|n|質）':' · 負對偶';
+  }
+  document.getElementById('nval').innerHTML=S.value.toLocaleString('en-US')+(tag?'<small>'+tag+'</small>':'');
+  document.getElementById('cN').textContent=S.N;
+  document.getElementById('cP').textContent=sieve.list.filter(p=>p<=S.N).length;
+  document.getElementById('cL').textContent=S.lambda;
+  document.getElementById('cMode').textContent=S.layout==='grid'?'格點':(S.layout==='dual'?'雙對偶':'∞螺旋');
+}
+function setValue(v){v=Math.floor(v); if(v>S.N)v=S.N; if(v<-S.N)v=-S.N; S.value=v; document.getElementById('numin').value=v; updateText();}
+
+document.getElementById('inc').onclick=()=>setValue(S.value+1);
+document.getElementById('set').onclick=()=>{const raw=document.getElementById('numin').value.trim(); const m=raw.match(/^-?\d+/); setValue(m?parseInt(m[0],10):0); document.getElementById('inspect').textContent=factorStringSigned(S.value);};
+document.getElementById('numin').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('set').click();});
+
+let timer=null;const playBtn=document.getElementById('play');
+playBtn.onclick=()=>{S.playing=!S.playing;playBtn.classList.toggle('on',S.playing);playBtn.textContent=S.playing?'❚❚ 暫停':'▶ 自動數';
+  if(S.playing){timer=setInterval(()=>{let nx=S.value+1;if(nx>S.N)nx=1;setValue(nx);},90);}else clearInterval(timer);};
+
+const spinBtn=document.getElementById('spin');
+spinBtn.onclick=()=>{S.spin=!S.spin;spinBtn.classList.toggle('on',S.spin);};
+
+function setN(n){n=Math.max(200,Math.min(MAXN,Math.floor(n)));S.N=n;
+  document.getElementById('rangeN').value=n;document.getElementById('rangeNv').textContent=n;document.getElementById('ninput').value=n;
+  if(S.value>n)S.value=n; if(S.value<-n)S.value=-n; updateText();}
+document.getElementById('rangeN').oninput=function(){setN(parseInt(this.value,10));};
+const lamSlider=document.getElementById('lambda');
+lamSlider.oninput=function(){S.lambda=parseInt(this.value,10);document.getElementById('lambdav').textContent=S.lambda;posN=-1;updateText();updateNote();};
+const gridRows=document.getElementById('gridRows');
+gridRows.oninput=function(){S.gridRows=parseInt(this.value,10);document.getElementById('gridRowsv').textContent=S.gridRows;posN=-1;updateText();updateNote();};
+const mSpiral=document.getElementById('mSpiral'), mGrid=document.getElementById('mGrid'), mDual=document.getElementById('mDual');
+function setLayout(mode){S.layout=mode;mSpiral.classList.toggle('on',mode==='spiral');mGrid.classList.toggle('on',mode==='grid');mDual.classList.toggle('on',mode==='dual');posN=-1;updateText();updateNote();}
+mSpiral.onclick=()=>setLayout('spiral');
+mGrid.onclick=()=>setLayout('grid');
+mDual.onclick=()=>setLayout('dual');
+document.getElementById('nset').onclick=()=>{const r=document.getElementById('ninput').value.replace(/[^0-9]/g,'');setN(r===''?5000:parseInt(r,10));};
+document.getElementById('ninput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('nset').click();});
+
+function tog(id,key){document.getElementById(id).onclick=function(){S[key]=!S[key];this.classList.toggle('on',S[key]);};}
+tog('oPrime','oPrime');tog('oComp','oComp');tog('oTwin','oTwin');tog('oModq','oModq');
+
+const modq=document.getElementById('modq');
+modq.oninput=function(){S.q=parseInt(this.value,10);document.getElementById('modqv').textContent=S.q;};
+
+let drag=null;
+cv.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,moved:0};try{cv.setPointerCapture(e.pointerId);}catch(_){}});
+cv.addEventListener('pointermove',e=>{ if(!drag)return;
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+  S.rotY+=dx*0.008; S.rotX+=dy*0.008;
+  S.rotX=Math.max(-Math.PI/2,Math.min(Math.PI/2,S.rotX));
+  drag.moved+=Math.abs(dx)+Math.abs(dy); drag.x=e.clientX;drag.y=e.clientY;
+});
+cv.addEventListener('pointerup',e=>{ if(!drag)return;
+  if(drag.moved<5){
+    const rect=cv.getBoundingClientRect(),W=cv.clientWidth,H=cv.clientHeight,cx=W/2,cy=H/2,R=Math.min(W,H)/2-16;
+    const px=e.clientX-rect.left, py=e.clientY-rect.top;
+    buildPos(S.N);buildRot(S.rotX,S.rotY);
+    let best=0,bd=1e18;
+    for(let n=1;n<=S.N;n++){
+      const p=proj(n,cx,cy,R); let ddx=p.sx-px,ddy=p.sy-py,d2=ddx*ddx+ddy*ddy; if(d2<bd){bd=d2;best=n;}
+      if(S.layout==='dual'){
+        const q=projNeg(n,cx,cy,R); ddx=q.sx-px; ddy=q.sy-py; d2=ddx*ddx+ddy*ddy; if(d2<bd){bd=d2;best=-n;}
+      }
+    }
+    if(best!==0){ setValue(best);
+      const a=Math.abs(best), r10=((a%10)+10)%10, r6=((a%6)+6)%6, rq=((a%S.q)+S.q)%S.q;
+      if(best>0){
+        const gp=sieve.nextGap[a]||'-';
+        document.getElementById('inspect').innerHTML='<span style="color:'+(sieve.isP[a]?'var(--cyan)':'var(--dim)')+'">'+factorStringSigned(best)+'</span> <span class="res">mod10='+r10+' mod6='+r6+' mod'+S.q+'='+rq+(sieve.isP[a]?' 下一間隙='+gp:'')+'</span>';
+      }else{
+        const src=negSource(a);
+        document.getElementById('inspect').innerHTML='<span style="color:var(--rose)">'+factorStringSigned(best)+'</span> <span class="res">|n|='+a+' 反向源='+src+' (= N-|n|+1) · 0 不被命中</span>';
+      }
+    }
+  }
+  drag=null;
+});
+
+function updateNote(){
+  const common='N 只是可見截斷；北極空心 ∞ 不被任何有限 n 佔據。λ 越小，有限數越快被壓向 ∞；λ 越大，球面展開越慢。';
+  if(S.layout==='grid'){
+    document.getElementById('note').innerHTML='<b>球面格點</b>：每個整數 n 先用 <span class="gd">t=n/(n+λ)</span> 分配到緊緻化緯度帶，再在該緯線上均勻排成經度格點。這會把「每一個數字」變成球面格點，形成由整數點構成的圓形球殼。'+common+' 這是載具比較模式：格線越清楚，越要小心別把格線當數論信號。';
+  } else if(S.layout==='dual') {
+    document.getElementById('note').innerHTML='<b>對稱破缺雙對偶閉合</b>：正支鏈仍用 <span class="gd">z(n)=2n/(n+λ)-1</span> 與 φ=n。負支鏈不是從 0 往左生成，而是把可見窗的尾端反向標號：<span class="gd">ν(s)=-(N-s+1)</span>，也就是 N↦-1、N-1↦-2、…、1↦-N；其位置取自正支鏈的反向源，再做對偶鏡映（對向經度）。因此 <span class="vi">0 永遠不被負支鏈命中</span>，這就是此版的對稱破缺。注意：負支鏈的數論顏色依 |ν| 判定，但其位置來自反向源 s。';
+  } else {
+    document.getElementById('note').innerHTML='<b>真無限映射</b>：經度 φ=n（θ=n 的相位），緯度用 <span class="gd">z(n)=2n/(n+λ)-1</span>；因此 n→∞ 才到北極 z=1。'+common+' 半徑固定，<span class="vi">沒有第二個相位被造出來</span>。';
+  }
+}
+
+window.addEventListener('resize',resize);
+if(window.ResizeObserver){try{new ResizeObserver(()=>resize()).observe(cv.parentElement);}catch(_){}}
+setN(5000);updateNote();resize();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

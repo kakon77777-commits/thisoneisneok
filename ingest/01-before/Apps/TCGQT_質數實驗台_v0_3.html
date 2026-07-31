@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TCGQT 質數實驗台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0b0f;--ink:#e7e2d4;--dim:#6f7588;--line:#2a2f3e;
+    --gold:#e8b04b;--gold-soft:#f2cd86;--cyan:#5fd0c5;--rose:#d98a8a;--red:#d95a5a;--violet:#c98bd9;--green:#8fd98a;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{background:radial-gradient(120% 120% at 50% 0%, #12141d 0%, var(--bg) 55%, #06070a 100%);
+    color:var(--ink);font-family:"IBM Plex Mono",ui-monospace,monospace;overflow-x:hidden;line-height:1.5;}
+  .grain{position:fixed;inset:0;pointer-events:none;opacity:.035;z-index:99;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  header{padding:16px 18px 4px;text-align:center;}
+  header .kicker{font-size:10.5px;letter-spacing:.4em;color:var(--dim);text-transform:uppercase;}
+  header h1{font-family:"Newsreader",serif;font-weight:300;font-size:25px;margin-top:5px;}
+  header h1 em{font-style:italic;color:var(--gold-soft);}
+  header .sub{font-size:10.5px;color:var(--dim);margin-top:6px;}
+  .tabs{display:flex;gap:7px;max-width:580px;margin:8px auto 0;padding:0 16px;}
+  .tabs button{flex:1;}
+  .stage{position:relative;width:100%;display:flex;justify-content:center;margin-top:4px;}
+  canvas{display:block;width:100%;max-width:540px;touch-action:none;cursor:crosshair;}
+  .readout{max-width:580px;margin:2px auto 0;padding:2px 16px 0;}
+  .nval{font-family:"Newsreader",serif;font-size:26px;text-align:center;color:var(--gold-soft);min-height:34px;}
+  .nval small{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--cyan);letter-spacing:.08em;}
+  .inspect{text-align:center;font-size:11.5px;color:var(--ink);min-height:15px;margin-top:2px;}
+  .inspect .res{color:var(--dim);}
+  .legend{display:flex;justify-content:center;gap:12px;font-size:9.5px;color:var(--dim);margin-top:4px;flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .panel{max-width:580px;margin:9px auto 0;padding:0 16px;}
+  .const{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0;}
+  .const .cell{text-align:center;}
+  .const .lbl{font-size:9.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;}
+  .const .v{font-family:"Newsreader",serif;font-size:19px;margin-top:2px;}
+  .const .v.k{color:var(--gold);}
+  .controls{max-width:580px;margin:12px auto 0;padding:0 16px 46px;display:flex;flex-direction:column;gap:12px;}
+  .row{display:flex;align-items:center;gap:11px;}
+  .row .name{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;width:64px;flex:none;}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:2px;background:var(--line);flex:1;border-radius:2px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px rgba(232,176,75,.5);}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-radius:50%;background:var(--gold);}
+  .rngval{font-size:12.5px;color:var(--gold-soft);width:52px;text-align:right;flex:none;}
+  .btns{display:flex;gap:7px;flex-wrap:wrap;}
+  button{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.03em;color:var(--ink);
+    background:linear-gradient(180deg,#181b25,#10121a);border:1px solid var(--line);border-radius:9px;
+    padding:9px 10px;cursor:pointer;transition:.15s;flex:1;min-width:60px;}
+  button:hover{border-color:var(--gold);color:var(--gold-soft);}
+  button:active{transform:translateY(1px);}
+  button.on{border-color:var(--gold);color:var(--gold);background:linear-gradient(180deg,#221d12,#15110a);}
+  button.cyan.on{border-color:var(--cyan);color:var(--cyan);background:linear-gradient(180deg,#0f211f,#0a1413);}
+  button.res.on{border-color:var(--violet);color:var(--violet);background:linear-gradient(180deg,#1c1320,#120a16);}
+  .numentry{display:flex;gap:7px;}
+  .numentry input[type=text]{flex:1;background:#0d0f16;border:1px solid var(--line);border-radius:9px;color:var(--ink);
+    font-family:"IBM Plex Mono",monospace;font-size:14px;padding:9px 11px;outline:none;}
+  .numentry input[type=text]:focus{border-color:var(--gold);}
+  .numentry .lab{flex:none;color:var(--dim);font-size:11px;padding:9px 2px;}
+  .note{font-size:10.5px;color:var(--dim);line-height:1.6;border-left:2px solid var(--line);padding-left:11px;}
+  .note b{color:var(--cyan);} .note .gd{color:var(--gold);} .note .rd{color:var(--red);} .note .vi{color:var(--violet);}
+  .warn{font-size:10.5px;color:var(--rose);line-height:1.6;border-left:2px solid var(--rose);padding-left:11px;opacity:.92;}
+  .grp{display:none;flex-direction:column;gap:12px;} .grp.show{display:flex;}
+  .os{font-size:11px;color:var(--ink);line-height:1.7;background:#0d0f16;border:1px solid var(--line);border-radius:9px;padding:10px 12px;}
+  .os b{color:var(--gold);} .os .hi{color:var(--cyan);}
+  /* knowledge */
+  .kb{max-width:580px;margin:12px auto 0;padding:0 16px 50px;display:none;}
+  .kb.show{display:block;}
+  .kb h3{font-family:"Newsreader",serif;font-weight:500;font-size:16px;color:var(--gold-soft);margin:16px 0 8px;border-bottom:1px solid var(--line);padding-bottom:5px;}
+  .kb .item{margin:9px 0;font-size:12px;line-height:1.65;}
+  .kb .item .tag{font-size:9.5px;letter-spacing:.1em;padding:1px 6px;border-radius:6px;margin-right:6px;}
+  .kb .tag.thm{color:var(--green);border:1px solid var(--green);}
+  .kb .tag.cnj{color:var(--gold);border:1px solid var(--gold);}
+  .kb .tag.heu{color:var(--rose);border:1px solid var(--rose);}
+  .kb .f{color:var(--cyan);font-family:"IBM Plex Mono";}
+  .kb .lens{color:var(--dim);font-size:11px;}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<header>
+  <div class="kicker">EveMissLab · TCGQT</div>
+  <h1>質數<em>實驗台</em></h1>
+  <div class="sub">四鍵 · 已知規律全疊 · 多特徵共振 · 紀律內建</div>
+</header>
+
+<div class="tabs">
+  <button id="tabField" class="on">實驗場</button>
+  <button id="tabRing">位值環</button>
+  <button id="tabKB">知識庫</button>
+</div>
+
+<div class="stage" id="stage"><canvas id="c"></canvas></div>
+
+<div class="readout" id="readout">
+  <div class="nval" id="nval">0</div>
+  <div class="inspect" id="inspect">點圖上任一點查它的身分、因式、各底相位、間隙</div>
+  <div class="legend" id="legend"></div>
+</div>
+
+<div class="panel" id="panelConst">
+  <div class="const">
+    <div class="cell"><div class="lbl" id="l1">基底 b</div><div class="v" id="c1">10</div></div>
+    <div class="cell"><div class="lbl" id="l2">範圍 N</div><div class="v" id="c2">10000</div></div>
+    <div class="cell"><div class="lbl" id="l3">π(N)</div><div class="v k" id="c3">1229</div></div>
+  </div>
+</div>
+
+<div class="controls" id="controls">
+  <div class="numentry">
+    <input type="text" id="numin" inputmode="numeric" placeholder="輸入一個數查看…" value="0">
+    <button id="set" style="flex:none;min-width:54px;">置入</button>
+  </div>
+  <div class="btns">
+    <button id="inc">＋1</button>
+    <button id="play">▶ 自動數</button>
+    <button id="zero">歸零 O</button>
+  </div>
+
+  <div class="grp show" id="grpField">
+    <div class="numentry">
+      <span class="lab">N=</span>
+      <input type="text" id="ninput" inputmode="numeric" value="10000">
+      <button id="nset" style="flex:none;min-width:54px;">設定</button>
+    </div>
+    <div class="row">
+      <div class="name">範圍 N</div>
+      <input type="range" id="rangeN" min="100" max="100000" value="10000" step="100">
+      <div class="rngval" id="rangeNv">10000</div>
+    </div>
+    <div class="btns">
+      <button id="lSacks" class="on">平方螺旋</button>
+      <button id="lUlam">Ulam 方旋</button>
+      <button id="lPolar">θ=n</button>
+      <button id="lSpiral">進位螺旋</button>
+    </div>
+    <div class="btns">
+      <button id="oPrime" class="cyan on">質數</button>
+      <button id="oLaw" class="on">可約律</button>
+      <button id="oTwin" class="cyan">孿生連結</button>
+      <button id="oGap" class="cyan">間隙著色</button>
+    </div>
+    <div class="row">
+      <div class="name">模 q 相位</div>
+      <input type="range" id="modq" min="2" max="30" value="6" step="1">
+      <div class="rngval" id="modqv">6</div>
+    </div>
+    <div class="btns">
+      <button id="oModq" class="res">mod q 著色</button>
+      <button id="oReson" class="res">共振 (多特徵交集)</button>
+    </div>
+    <div class="row" id="rowSpot">
+      <div class="name">聚焦餘類 r</div>
+      <input type="range" id="spotr" min="-1" max="29" value="-1" step="1">
+      <div class="rngval" id="spotrv">全部</div>
+    </div>
+    <div class="os" id="osPanel"></div>
+    <div class="note" id="fieldnote"></div>
+    <div class="warn">提醒（焊進工具）：漂亮 ≠ 新。你最可能「看見」的，是載具自己的結構（可約弧、模輻條）——那些是已知。任何疑似新規律，先問它有沒有贏過「篩＋Hardy–Littlewood」基線；沒贏，就是把格子當成了質數。</div>
+  </div>
+
+  <div class="grp" id="grpRing">
+    <div class="row">
+      <div class="name">基底</div>
+      <input type="range" id="base" min="2" max="16" value="10" step="1">
+      <div class="rngval" id="basev">10</div>
+    </div>
+    <div class="btns">
+      <button id="mLog" class="on">對數視圖</button>
+      <button id="mWeight">權重視圖</button>
+    </div>
+    <div class="note" id="modenote"></div>
+  </div>
+</div>
+
+<div class="kb" id="kbPanel">
+  <h3>定理（已證）</h3>
+  <div class="item"><span class="tag thm">定理</span><b>算術基本定理</b>：每個 &gt;1 的整數唯一分解為質數之積。<span class="lens">→ 質數是乘法的不可約原子；可約律的根據。</span></div>
+  <div class="item"><span class="tag thm">定理</span><b>Euclid</b>：質數有無窮多。</div>
+  <div class="item"><span class="tag thm">定理</span><b>質數定理 (PNT)</b>：<span class="f">π(x) ~ x/ln x ~ Li(x)</span>。<span class="lens">→ 密度 1/ln n；間隙著色的尺度來源。</span></div>
+  <div class="item"><span class="tag thm">定理</span><b>Euler 乘積</b>：<span class="f">ζ(s) = Σ n⁻ˢ = Π_p (1 − p⁻ˢ)⁻¹</span>。<span class="lens">→ 把「加法的數線」與「乘法的質數」鎖在同一式；質數的譜在此。</span></div>
+  <div class="item"><span class="tag thm">定理</span><b>Dirichlet 等差數列</b>：gcd(a,q)=1 時 {a, a+q, a+2q, …} 含無窮多質數。<span class="lens">→ mod q 著色的根據：互質餘類才住得了質數。</span></div>
+  <div class="item"><span class="tag thm">定理</span><b>Wilson</b>：p 質數 ⟺ <span class="f">(p−1)! ≡ −1 (mod p)</span>。<span class="lens">→ 罕見的「充要」質數判準，但階乘代價高。</span></div>
+  <div class="item"><span class="tag thm">定理</span><b>Fermat 小定理</b>：p 質數 ⟹ <span class="f">aᵖ ≡ a (mod p)</span>（非充要，有 Carmichael 偽質數）。</div>
+  <div class="item"><span class="tag thm">定理</span><b>Green–Tao (2004)</b>：質數含任意長的等差數列。</div>
+  <div class="item"><span class="tag thm">定理</span><b>Zhang / Maynard (2013–14)</b>：存在無窮多對間隙有界的質數（界已壓到 246）。<span class="lens">→ 孿生連結與間隙著色的硬背景。</span></div>
+
+  <h3>猜想 / 啟發式（未證）</h3>
+  <div class="item"><span class="tag cnj">猜想</span><b>Riemann 假設</b>：ζ 的非平凡零點實部皆為 1/2。<span class="lens">→ 等價於質數計數誤差的最優界。</span></div>
+  <div class="item"><span class="tag cnj">猜想</span><b>孿生質數</b>：差為 2 的質數對有無窮多。</div>
+  <div class="item"><span class="tag cnj">猜想</span><b>Goldbach</b>：每個 &gt;2 偶數是兩質數之和。</div>
+  <div class="item"><span class="tag cnj">猜想</span><b>Hardy–Littlewood k-元組</b>：質數星座的漸近密度公式（含孿生質數常數）。<span class="lens">→ 本台所有「局部聚集」現象的基線。</span></div>
+  <div class="item"><span class="tag cnj">猜想</span><b>Oliver–Soundararajan (2016)</b>：連續質數末位的分布有偏，且在每個進位制成立——尤其質數傾向不重複前一個的末位。可由 k-元組猜想導出，偏差隨尺度極緩消退。<span class="lens">→ 本台 mod q 相位、O-S 面板直接量它。這是「進位制鍵」surface 出真實質數結構的最強先例。</span></div>
+  <div class="item"><span class="tag heu">啟發式</span><b>Cramér 模型</b>：把每個 n 以機率 1/ln n 獨立視為質數；預測最大間隙 ~ (ln p)²。<span class="lens">→ 「偽隨機」那一層的標準圖像。</span></div>
+  <div class="item"><span class="tag cnj">猜想</span><b>Montgomery 對相關 ↔ GUE</b>：ζ 零點間距統計似隨機厄米矩陣本徵值。</div>
+  <div class="item"><span class="tag cnj">猜想</span><b>Landau (n²+1)</b>：形如 n²+1 的質數有無窮多（不可約弧的無窮性，未證）。</div>
+
+  <h3>本台的本體論立場</h3>
+  <div class="item"><span class="tag heu">立場</span><b>TCGQT</b>：質數 = 多底數相位共振節點。節點不動，顯形它的「鍵」會動。本台提供四把鍵與多特徵疊加，讓你在不同鍵下看同一組節點。</div>
+  <div class="item"><span class="tag heu">紀律</span><b>信號—載具分離</b>：在某鍵下看起來有規律，必先排除規律來自鍵本身。可視度高是 TCGQT 的優勢，也是它最大的陷阱——更容易看見，也更容易看見不存在的東西。</div>
+  <div class="item"><span class="tag heu">開放</span><b>不動點鍵</b>：是否存在一把鍵讓質數線塌成點（質數=Fix(O) 而非套套邏輯）？共識預期否（殘差偽隨機）。本台是探這個反共識賭注的工具，不是它的證明。</div>
+</div>
+
+<script>
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const GLYPH="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+let dpr=Math.min(window.devicePixelRatio||1,2.5);
+const MAXN=100000;
+
+let S={view:'field',base:10,value:0,ringMode:'log',
+  N:10000,layout:'sacks',
+  oPrime:true,oLaw:true,oTwin:false,oGap:false,oModq:false,oReson:false,
+  q:6,spot:-1,playing:false};
+
+let sieve={N:-1,isP:null,list:[],nextGap:null};
+function buildSieve(N){ if(sieve.N>=N&&sieve.isP)return;
+  const isP=new Uint8Array(N+1);isP.fill(1);isP[0]=0;if(N>=1)isP[1]=0;
+  for(let i=2;i*i<=N;i++)if(isP[i])for(let j=i*i;j<=N;j+=i)isP[j]=0;
+  const list=[];for(let i=2;i<=N;i++)if(isP[i])list.push(i);
+  const nextGap=new Int32Array(N+1);
+  for(let i=0;i<list.length-1;i++)nextGap[list[i]]=list[i+1]-list[i];
+  sieve={N,isP,list,nextGap};}
+function glyph(d){return GLYPH[d]||'?';}
+function gcd(a,b){while(b){[a,b]=[b,a%b];}return a;}
+function digitsOf(n,b){if(n===0)return[0];const o=[];let x=n;while(x>0){o.push(x%b);x=Math.floor(x/b);}return o;}
+function isPrimeQuick(n){if(n<2)return false;if(n<4)return true;if(n%2===0)return false;for(let d=3;d*d<=n;d+=2)if(n%d===0)return false;return true;}
+function factorString(n){if(n<2)return n+' · 非質非合';let x=n,f=[];for(let d=2;d*d<=x;d++){while(x%d===0){f.push(d);x/=d;}}if(x>1)f.push(x);return f.length===1?n+' · 質數':n+' = '+f.join('×');}
+
+// Ulam coords precompute
+let ulamX=null,ulamY=null,ulamMax=1,ulamN=-1;
+function buildUlam(N){ if(ulamN===N)return;
+  ulamX=new Float32Array(N+1);ulamY=new Float32Array(N+1);
+  let x=0,y=0,dx=1,dy=0,segLen=1,segPass=0,steps=0,mx=1;
+  ulamX[1]=0;ulamY[1]=0;
+  for(let n=2;n<=N;n++){
+    x+=dx;y+=dy;ulamX[n]=x;ulamY[n]=y;
+    if(Math.abs(x)>mx)mx=Math.abs(x); if(Math.abs(y)>mx)mx=Math.abs(y);
+    steps++;
+    if(steps===segLen){steps=0;const ndx=-dy,ndy=dx;dx=ndx;dy=ndy;segPass++;if(segPass===2){segPass=0;segLen++;}}
+  }
+  ulamMax=mx;ulamN=N;
+}
+
+function fieldPos(n,maxR){
+  if(n<=0)return{x:0,y:0};
+  if(S.layout==='sacks'){const r=maxR*Math.sqrt(n/S.N);const a=2*Math.PI*Math.sqrt(n)-Math.PI/2;return{x:Math.cos(a)*r,y:Math.sin(a)*r};}
+  if(S.layout==='ulam'){const sc=(maxR-4)/ulamMax;return{x:ulamX[n]*sc,y:ulamY[n]*sc};}
+  if(S.layout==='polar'){const r=maxR*(n/S.N);const a=n-Math.PI/2;return{x:Math.cos(a)*r,y:Math.sin(a)*r};}
+  const b=S.base,L=Math.log(n)/Math.log(b),Lmax=Math.log(S.N)/Math.log(b);
+  const r=maxR*(L/Lmax),a=2*Math.PI*L-Math.PI/2;return{x:Math.cos(a)*r,y:Math.sin(a)*r};
+}
+
+function gapColor(g){ // small->cyan, large->warm
+  const t=Math.min(1,g/40);
+  const r=Math.round(95+ (217-95)*t), gg=Math.round(208+(90-208)*t), b=Math.round(197+(90-197)*t);
+  return 'rgba('+r+','+gg+','+b+',0.95)';
+}
+function modColor(res,q){
+  const co=gcd(res,q)===1;
+  if(!co) return 'rgba(90,95,110,0.5)';
+  const h=(res/q)*360;
+  return 'hsla('+h+',62%,62%,0.95)';
+}
+
+let cache=document.createElement('canvas'),cdirty=true;
+function markDirty(){cdirty=true;}
+function seqGen(fn,k0){const o=[];for(let k=k0;;k++){const v=fn(k);if(v>S.N)break;if(v>=1)o.push(v);}return o;}
+function drawSeq(g,cx,cy,maxR,seq,color,w){g.beginPath();let s=false;for(const n of seq){const p=fieldPos(n,maxR);if(!s){g.moveTo(cx+p.x,cy+p.y);s=true;}else g.lineTo(cx+p.x,cy+p.y);}g.strokeStyle=color;g.lineWidth=w;g.stroke();}
+
+function buildField(){
+  const W=cv.clientWidth,H=cv.clientHeight;
+  cache.width=Math.round(W*dpr);cache.height=Math.round(H*dpr);
+  const g=cache.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2,maxR=Math.min(W,H)/2-14;
+  buildSieve(S.N); if(S.layout==='ulam')buildUlam(S.N);
+
+  // composites / dim points
+  const _isUlam = S.layout==='ulam';
+  const _ccell = _isUlam ? (maxR-4)/ulamMax : 0;
+  const _csq = _isUlam ? Math.max(_ccell*0.82, 1.0) : 1.1;
+  for(let n=1;n<=S.N;n++){
+    if(sieve.isP[n]&&S.oPrime)continue;
+    const p=fieldPos(n,maxR);
+    g.fillStyle=_isUlam?'rgba(111,117,136,0.15)':'rgba(111,117,136,0.22)';
+    g.fillRect(cx+p.x-_csq/2,cy+p.y-_csq/2,_csq,_csq);
+  }
+
+  // reducibility law
+  if(S.oLaw && (S.layout==='sacks'||S.layout==='ulam'||S.layout==='spiral'||S.layout==='polar')){
+    drawSeq(g,cx,cy,maxR,seqGen(k=>k*k,1),'rgba(217,90,90,0.5)',1.0);
+    drawSeq(g,cx,cy,maxR,seqGen(k=>k*k-1,2),'rgba(217,90,90,0.34)',0.85);
+    drawSeq(g,cx,cy,maxR,seqGen(k=>k*k+k,1),'rgba(217,90,90,0.34)',0.85);
+    drawSeq(g,cx,cy,maxR,seqGen(k=>k*k+1,1),'rgba(95,208,197,0.4)',0.85);
+    drawSeq(g,cx,cy,maxR,seqGen(k=>k*k+k+41,0),'rgba(95,208,197,0.55)',1.0);
+  }
+
+  // twin links
+  if(S.oTwin&&S.oPrime){
+    g.strokeStyle='rgba(201,139,217,0.5)';g.lineWidth=0.9;
+    for(const p of sieve.list){if(p+2<=S.N&&sieve.isP[p+2]){const a=fieldPos(p,maxR),b=fieldPos(p+2,maxR);g.beginPath();g.moveTo(cx+a.x,cy+a.y);g.lineTo(cx+b.x,cy+b.y);g.stroke();}}
+  }
+
+  // primes
+  if(S.oPrime){
+    const dotR = S.N<=20000?1.7:1.2;
+    const isUlam = S.layout==='ulam';
+    const cellSize = isUlam ? (maxR-4)/ulamMax : 0;
+    const primeSq = isUlam ? Math.max(cellSize*0.9, 1.4) : 0;
+    for(const pr of sieve.list){
+      const p=fieldPos(pr,maxR);
+      let col;
+      if(S.oModq){ const res=pr%S.q; col=modColor(res,S.q);
+        if(S.spot>=0 && res!==S.spot) col='rgba(80,85,100,0.28)';
+      } else if(S.oGap){ col=gapColor(sieve.nextGap[pr]||40); }
+      else col='rgba(95,208,197,0.92)';
+      // resonance: intersection of (irreducible-ish band) ∩ (spotlight residue)
+      if(S.oReson){
+        const onIrr = ((pr-1)%4===0)||false; // weak proxy: ≡1 mod4 (sum of two squares family hint)
+        const inSpot = (S.spot<0)|| (pr%S.q===S.spot);
+        if(!(inSpot)) col='rgba(70,75,90,0.22)';
+      }
+      g.fillStyle=col;
+      if(isUlam){ g.fillRect(cx+p.x-primeSq/2, cy+p.y-primeSq/2, primeSq, primeSq); }
+      else { g.beginPath();g.arc(cx+p.x,cy+p.y,dotR,0,7);g.fill(); }
+    }
+  }
+  g.fillStyle='#d98a8a';g.beginPath();g.arc(cx,cy,2.3,0,7);g.fill();
+  cdirty=false;
+}
+
+function renderField(t){
+  const W=cv.clientWidth,H=cv.clientHeight;
+  if(cdirty)buildField();
+  ctx.clearRect(0,0,W,H);ctx.drawImage(cache,0,0,W,H);
+  const cx=W/2,cy=H/2,maxR=Math.min(W,H)/2-14;
+  if(S.value>=1&&S.value<=S.N){
+    const p=fieldPos(S.value,maxR),x=cx+p.x,y=cy+p.y,pulse=0.6+0.4*Math.sin(t/260);
+    const gl=ctx.createRadialGradient(x,y,0,x,y,15);gl.addColorStop(0,'rgba(242,205,134,'+(0.9*pulse)+')');gl.addColorStop(1,'rgba(232,176,75,0)');
+    ctx.fillStyle=gl;ctx.beginPath();ctx.arc(x,y,15,0,7);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,2.5,0,7);ctx.fill();
+  }
+}
+
+// ring view
+let anim=[];
+function ringRadii(places,maxR,b){const inner=maxR*0.13,r=[];
+  if(S.ringMode==='weight'){const top=Math.pow(b,places-1);for(let k=0;k<places;k++){const w=Math.pow(b,k);r.push(inner+(maxR-inner)*(places===1?0:(w-1)/(top-1+1e-9)));}}
+  else{for(let k=0;k<places;k++)r.push(inner+(maxR-inner)*(places===1?0:k/(places-1)));}return r;}
+function renderRing(){
+  const W=cv.clientWidth,H=cv.clientHeight;ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2,maxR=Math.min(W,H)/2-26,b=S.base;
+  const dg=digitsOf(S.value,b),places=Math.max(dg.length,1);
+  while(anim.length<places)anim.push(0);anim.length=places;
+  const radii=ringRadii(places,maxR,b);
+  for(let k=places-1;k>=0;k--){const R=radii[k];
+    ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.strokeStyle='rgba(95,208,197,'+(0.16+(k===0?0.1:0))+')';ctx.lineWidth=k===0?1.6:1.1;ctx.stroke();
+    for(let s=0;s<b;s++){const a=-Math.PI/2+(2*Math.PI)*s/b;ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*(R-3.5),cy+Math.sin(a)*(R-3.5));ctx.lineTo(cx+Math.cos(a)*(R+3.5),cy+Math.sin(a)*(R+3.5));ctx.strokeStyle='rgba(111,117,136,0.45)';ctx.lineWidth=1;ctx.stroke();}
+    const target=dg[k];let diff=target-anim[k];if(Math.abs(diff)>b/2)diff-=Math.sign(diff)*b;anim[k]+=diff*0.22;
+    if(Math.abs(target-anim[k])<0.01&&Math.abs(diff)<b/2)anim[k]=target;
+    const shown=((anim[k]%b)+b)%b,ang=-Math.PI/2+(2*Math.PI)*shown/b,mx=cx+Math.cos(ang)*R,my=cy+Math.sin(ang)*R;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(mx,my);ctx.strokeStyle='rgba(232,176,75,'+(0.1+(k===0?0.1:0))+')';ctx.lineWidth=1;ctx.stroke();
+    const gl=ctx.createRadialGradient(mx,my,0,mx,my,12);gl.addColorStop(0,'rgba(242,205,134,0.9)');gl.addColorStop(1,'rgba(232,176,75,0)');ctx.fillStyle=gl;ctx.beginPath();ctx.arc(mx,my,12,0,7);ctx.fill();
+    ctx.fillStyle='#e8b04b';ctx.beginPath();ctx.arc(mx,my,4.2,0,7);ctx.fill();
+    ctx.fillStyle='#f2cd86';ctx.font='13px "IBM Plex Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(glyph(target),cx+Math.cos(ang)*(R+15),cy+Math.sin(ang)*(R+15));
+    ctx.fillStyle='rgba(111,117,136,0.7)';ctx.font='9px "IBM Plex Mono",monospace';ctx.textAlign='left';ctx.fillText('b^'+k,cx+4,cy-R+8);}
+  const og=ctx.createRadialGradient(cx,cy,0,cx,cy,10);og.addColorStop(0,'rgba(217,138,138,0.95)');og.addColorStop(1,'rgba(217,138,138,0)');ctx.fillStyle=og;ctx.beginPath();ctx.arc(cx,cy,10,0,7);ctx.fill();
+  ctx.fillStyle='#d98a8a';ctx.beginPath();ctx.arc(cx,cy,2.3,0,7);ctx.fill();
+}
+
+// O-S panel
+function computeOS(){
+  buildSieve(S.N); const b=S.base, list=sieve.list;
+  // coprime residues
+  const cores=[]; for(let r=1;r<b;r++) if(gcd(r,b)===1) cores.push(r);
+  const idx={}; cores.forEach((r,i)=>idx[r]=i);
+  let repeat=0,total=0;
+  for(let i=0;i<list.length-1;i++){
+    const a=list[i]%b, c=list[i+1]%b;
+    if(idx[a]===undefined||idx[c]===undefined)continue;
+    total++; if(a===c)repeat++;
+  }
+  const phi=cores.length;
+  const exp = total/phi;       // expected repeats if uniform
+  const repPct=(100*repeat/total)||0;
+  const expPct=(100/phi)||0;
+  const el=document.getElementById('osPanel');
+  el.innerHTML='<b>Oliver–Soundararajan 偏差</b>（底 '+b+'，連續質數末位，共 '+total+' 對）<br>'+
+    '末位<span class="hi">重複</span>率：'+repPct.toFixed(2)+'%　｜　若獨立應為 '+expPct.toFixed(2)+'%（=1/φ('+b+')）<br>'+
+    '偏差 Δ = '+(repPct-expPct).toFixed(2)+' 個百分點'+(repPct<expPct?'（重複被壓抑——正是 O-S 現象，且為定理級數據、非可視化幻覺）':'（在此尺度未見壓抑，可能 N 太小）');
+}
+
+function updateText(){
+  const b=S.base,dg=digitsOf(S.value,b);
+  buildSieve(Math.max(S.N,2));
+  let isp; if(S.value<2)isp=null; else if(S.value<=sieve.N)isp=!!sieve.isP[S.value]; else if(S.value<=1e7)isp=isPrimeQuick(S.value); else isp=null;
+  let tag = isp===null?'':(isp?' · 質數':' · 合數');
+  document.getElementById('nval').innerHTML=S.value.toLocaleString('en-US')+(tag?'<small>'+tag+'</small>':'');
+  document.getElementById('c1').textContent=b;
+  if(S.view==='field'){document.getElementById('c2').textContent=S.N;document.getElementById('c3').textContent=sieve.list.filter(p=>p<=S.N).length;}
+  else{document.getElementById('c2').textContent=Math.log(b).toFixed(4);document.getElementById('c3').textContent=b;}
+}
+
+function loop(t){if(S.view==='field')renderField(t);else if(S.view==='ring')renderRing();requestAnimationFrame(loop);}
+function resize(){const W=Math.min(cv.parentElement.clientWidth,540);dpr=Math.min(window.devicePixelRatio||1,2.5);cv.style.height=W+'px';cv.width=Math.round(W*dpr);cv.height=Math.round(W*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);markDirty();}
+
+function setValue(v){v=Math.max(0,Math.floor(v));if(v>9.99e14)v=Math.floor(9.99e14);S.value=v;document.getElementById('numin').value=v;updateText();}
+document.getElementById('inc').onclick=()=>setValue(S.value+1);
+document.getElementById('zero').onclick=()=>setValue(0);
+document.getElementById('set').onclick=()=>{const r=document.getElementById('numin').value.replace(/[^0-9]/g,'');setValue(r===''?0:parseInt(r,10));document.getElementById('inspect').textContent=factorString(S.value);};
+document.getElementById('numin').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('set').click();});
+
+let timer=null;const playBtn=document.getElementById('play');
+playBtn.onclick=()=>{S.playing=!S.playing;playBtn.classList.toggle('on',S.playing);playBtn.textContent=S.playing?'❚❚ 暫停':'▶ 自動數';
+  if(S.playing){const sp=S.view==='field'?40:280;timer=setInterval(()=>{let nx=S.value+1;if(S.view==='field'&&nx>S.N)nx=0;setValue(nx);},sp);}else clearInterval(timer);};
+
+cv.addEventListener('pointerdown',e=>{
+  if(S.view!=='field')return;
+  const rect=cv.getBoundingClientRect(),W=cv.clientWidth,H=cv.clientHeight,cx=W/2,cy=H/2,maxR=Math.min(W,H)/2-14;
+  const px=(e.clientX-rect.left)-cx, py=(e.clientY-rect.top)-cy;
+  let best=-1,bd=1e18;
+  for(let n=1;n<=S.N;n++){const p=fieldPos(n,maxR);const dx=p.x-px,dy=p.y-py,d=dx*dx+dy*dy;if(d<bd){bd=d;best=n;}}
+  if(best>0){setValue(best);
+    const r10=best%10,r6=best%6,r30=best%30,gp=sieve.nextGap[best]||'-';
+    document.getElementById('inspect').innerHTML='<span style="color:'+(sieve.isP[best]?'var(--cyan)':'var(--dim)')+'">'+factorString(best)+'</span>　<span class="res">mod10='+r10+' mod6='+r6+' mod30='+r30+(sieve.isP[best]?' 下一間隙='+gp:'')+'</span>';}
+});
+
+function setView(v){S.view=v;
+  document.getElementById('tabField').classList.toggle('on',v==='field');
+  document.getElementById('tabRing').classList.toggle('on',v==='ring');
+  document.getElementById('tabKB').classList.toggle('on',v==='kb');
+  document.getElementById('grpField').classList.toggle('show',v==='field');
+  document.getElementById('grpRing').classList.toggle('show',v==='ring');
+  const showLab = v!=='kb';
+  document.getElementById('stage').style.display=showLab?'flex':'none';
+  document.getElementById('readout').style.display=showLab?'block':'none';
+  document.getElementById('panelConst').style.display=showLab?'block':'none';
+  document.getElementById('controls').style.display=showLab?'flex':'none';
+  document.getElementById('kbPanel').classList.toggle('show',v==='kb');
+  document.getElementById('l2').textContent=v==='field'?'範圍 N':'曲率常數 κ=ln b';
+  document.getElementById('l3').textContent=v==='field'?'π(N)':'比率級距 b';
+  document.getElementById('legend').innerHTML=v==='field'
+    ?'<span><i class="dot" style="background:var(--gold-soft)"></i>當前數</span><span><i class="dot" style="background:var(--cyan)"></i>質數</span><span><i class="dot" style="background:var(--red)"></i>可約弧</span><span><i class="dot" style="background:var(--violet)"></i>孿生</span>'
+    :'<span><i class="dot" style="background:var(--gold)"></i>當前位值</span><span><i class="dot" style="background:var(--cyan)"></i>位值環</span><span><i class="dot" style="background:var(--rose)"></i>O · GOD POINT</span>';
+  markDirty();updateText();
+}
+document.getElementById('tabField').onclick=()=>setView('field');
+document.getElementById('tabRing').onclick=()=>setView('ring');
+document.getElementById('tabKB').onclick=()=>setView('kb');
+
+const rangeN=document.getElementById('rangeN');
+function setN(n){n=Math.max(100,Math.min(MAXN,Math.floor(n)));S.N=n;rangeN.value=n;document.getElementById('rangeNv').textContent=n;document.getElementById('ninput').value=n;markDirty();updateText();computeOS();}
+rangeN.oninput=()=>setN(parseInt(rangeN.value,10));
+document.getElementById('nset').onclick=()=>{const r=document.getElementById('ninput').value.replace(/[^0-9]/g,'');setN(r===''?1000:parseInt(r,10));};
+document.getElementById('ninput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('nset').click();});
+
+function setLayout(l){S.layout=l;
+  [['lSacks','sacks'],['lUlam','ulam'],['lPolar','polar'],['lSpiral','spiral']].forEach(([id,v])=>document.getElementById(id).classList.toggle('on',l===v));
+  const n=document.getElementById('fieldnote');
+  if(l==='sacks')n.innerHTML='<b>平方螺旋</b>：完全平方落正上方軸（無質數）；質數沿二次弧聚集。可約律最清晰。';
+  else if(l==='ulam')n.innerHTML='<b>Ulam 方旋</b>（Stanisław Ulam · 1963）：整數捲成方形螺旋，質數以<span class="vi">格胞方塊</span>呈現，沿對角線（二次多項式如 n²+n+41）連成斜線。<span class="gd">N 調小到 ≤2000 對角線最清晰</span>，N 大則退為點陣。2025 ML 可學習性研究即用此鍵。';
+  else if(l==='polar')n.innerHTML='<b>θ=n</b>：角度＝n 弧度，因 2π≈6.28，<span class="vi">mod6/mod q 相位現為螺臂</span>。配 mod q 著色看餘類分流。';
+  else n.innerHTML='<b>進位螺旋</b>：全整數捲成單一阿基米德臂、越外越密——量的是捲法非質數，<span class="rd">已知的視覺陷阱</span>，留作對照。';
+  markDirty();}
+['lSacks','lUlam','lPolar','lSpiral'].forEach(id=>document.getElementById(id).onclick=()=>setLayout(id.slice(1).toLowerCase()));
+
+function tog(id,key,cb){document.getElementById(id).onclick=function(){S[key]=!S[key];this.classList.toggle('on',S[key]);markDirty();if(cb)cb();};}
+tog('oPrime','oPrime');tog('oLaw','oLaw');tog('oTwin','oTwin');tog('oGap','oGap');tog('oModq','oModq');tog('oReson','oReson');
+
+const modq=document.getElementById('modq');
+modq.oninput=()=>{S.q=parseInt(modq.value,10);document.getElementById('modqv').textContent=S.q;const sr=document.getElementById('spotr');sr.max=S.q-1;if(S.spot>=S.q){S.spot=-1;sr.value=-1;document.getElementById('spotrv').textContent='全部';}markDirty();};
+const spotr=document.getElementById('spotr');
+spotr.oninput=()=>{S.spot=parseInt(spotr.value,10);document.getElementById('spotrv').textContent=S.spot<0?'全部':('r='+S.spot+(gcd(S.spot,S.q)===1?'':' (非互質·空)'));markDirty();};
+
+const baseEl=document.getElementById('base');
+baseEl.oninput=()=>{S.base=parseInt(baseEl.value,10);document.getElementById('basev').textContent=S.base;anim=[];markDirty();updateText();computeOS();};
+function setMode(m){S.ringMode=m;document.getElementById('mLog').classList.toggle('on',m==='log');document.getElementById('mWeight').classList.toggle('on',m==='weight');
+  document.getElementById('modenote').innerHTML=m==='log'?'<b>對數視圖</b>：環半徑 ∝ k，圓圓等距，每格級距=<span class="gd">ln b</span>。κ₁₀≈2.302585。':'<b>權重視圖</b>：環半徑 ∝ b^k，指數爆裂——線性進位制的視覺真相。';anim=[];markDirty();}
+document.getElementById('mLog').onclick=()=>setMode('log');
+document.getElementById('mWeight').onclick=()=>setMode('weight');
+
+window.addEventListener('resize',resize);
+setLayout('sacks');setMode('log');setView('field');setN(10000);resize();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

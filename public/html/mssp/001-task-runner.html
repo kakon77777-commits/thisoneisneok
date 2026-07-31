@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>任務執行器：兩個 TMS 想互相引用時 | MSSP | Neo.K</title>
+<meta name="description" content="兩個報表模組需要同一份計算結果。直接互相引用會讓其中一個永遠無法單獨載入；改由 SMS 持有共享契約後，兩者都通過孤島測試。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/001-task-runner.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>001-task-runner</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>001-task-runner</span></div>
+    <div><b>語言</b><span>javascript</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-07-31</span></div>
+    <div><b>行數</b><span>509</span></div>
+    <div><b>執行</b><span><code>node src/main.js</code></span></div>
+  </section>
+  <article class="content"><h1>001 — Task Runner: when two TMS want to import each other</h1>
+<h2>What this program does</h2>
+<p>It takes a list of typed tasks, runs each one, and prints the outcome two ways:
+a human-readable report and a JSON one. Tasks can read a file or fetch a URL.
+Some are refused by policy. Nothing touches the network or the disk — the tools
+are stubbed so the example runs anywhere.</p>
+<pre><code class="language-bash">node src/main.js
+node src/island-test.js
+</code></pre>
+<h2>The structural decision</h2>
+<p>Both reporters need the same derived numbers: how long each task took, how many
+passed, and which was slowest. Whichever reporter is written first naturally
+grows a small summarise function, and the second one imports it:</p>
+<pre><code class="language-js">// TMS/reporters/json.js
+import { summarise } from &quot;./text.js&quot;;   // ← the line this example is about
+</code></pre>
+<p>That line works. It also does two things that are invisible on the day it is
+written:</p>
+<ol>
+<li><code>json</code> can no longer be loaded without <code>text</code>. The island test for <code>json</code>
+silently becomes a test of both.</li>
+<li>Deleting <code>text</code> breaks <code>json</code>, which has nothing to do with it.</li>
+</ol>
+<p>This is the TMS-to-TMS dependency the method forbids (§7.3). The fix is not to
+copy the function into both — that produces two summaries that drift apart. It
+is to notice that the summary was never reporter-specific: it is a property of
+the run.</p>
+<p>So <code>runReport()</code> lives in <code>SMS/model.js</code>, computes <code>counts</code>, <code>totalMs</code>,
+<code>passed</code>, and <code>slowest</code> once, and both reporters read those fields.</p>
+<pre><code>TMS/reporters/text  ──┐
+                      ├──▶  SMS/model.js  (runReport)
+TMS/reporters/json  ──┘
+</code></pre>
+<p>Neither reporter imports the other. <code>scripts/build-mssp.mjs</code> greps every example
+for sibling-TMS imports and fails the build if one appears, so this does not
+depend on anyone remembering.</p>
+<h2>Set by set</h2>
+<p><strong>FMS</strong> — <code>src/FMS/manifest.json</code>. What the system is, its non-goals, where each
+capability lives, and the dependency rule. Nothing at runtime reads it; it
+exists so a person or an agent can find a capability without loading it. No
+procedure lives here, which is what keeps it from becoming a second monolith
+(§15.4).</p>
+<p><strong>SCL</strong> — <code>src/SCL/permissions.{js,json}</code>. Per-type limits: a path prefix for
+<code>file.read</code>, an allowed host list for <code>http.get</code>, outright denial for
+<code>file.delete</code>. This is a set rather than a comment because a comment is an
+expectation and a function is a contract (§15.5). Unknown types are denied by
+default.</p>
+<p><strong>SMS</strong> — three modules, each failing the identity test if removed:</p>
+<ul>
+<li><code>model.js</code> — the task result, the run report, and the two interfaces TMS bind
+to. Delete it and there is no shape for a handler to return or a reporter to
+read.</li>
+<li><code>registry.js</code> — how TMS become present. Delete it and <code>main.js</code> must import
+every module directly, which makes &quot;load exactly one TMS&quot; impossible, which
+makes the island test impossible.</li>
+<li><code>runner.js</code> — the loop. Delete it and the program is not a task runner.</li>
+</ul>
+<p><strong>TMS</strong> — four modules, each importing only from SMS: two handlers
+(<code>file.read</code>, <code>http.get</code>) and two reporters (<code>text</code>, <code>json</code>). Any one can be
+removed and the rest still run.</p>
+<p><strong>DMS</strong> — <code>src/DMS/trace.js</code>. Kept separate from the reporters because a
+reporter renders the <em>result</em> while the trace records the <em>run</em>, including what
+never became a result. <code>4 skipped</code> is a number; the human view is what says
+which four and why.</p>
+<p>There is no Router here. With one task type per handler, routing is a <code>Map</code>
+lookup inside the registry, and a separate router would be an empty layer. It
+appears when task selection stops being a lookup.</p>
+<h2>A second decision the code makes</h2>
+<p><code>runner.js</code> checks permission <strong>before</strong> capability. The reverse reads more
+naturally — why consult policy about something you cannot do anyway? — and it is
+what this example did first. It produced this line:</p>
+<pre><code>skipped wipe-data  no handler loaded for this type
+</code></pre>
+<p>True, and quietly wrong: <code>file.delete</code> is denied by policy, and the run reported
+the loading state instead. The moment someone registers a delete handler, that
+message changes meaning without anyone editing the policy. With the checks in
+the right order it reads:</p>
+<pre><code>skipped wipe-data  denied: irreversible; no handler is loaded for it and policy denies it regardless
+</code></pre>
+<p>The general form: a policy answer that depends on which modules happen to be
+loaded is not a policy answer.</p>
+<h2>The island test</h2>
+<p><code>src/island-test.js</code> builds a system with the minimal SMS and exactly one TMS,
+stubs every tool, and asserts nothing else was loaded.</p>
+<pre><code class="language-bash">$ node src/island-test.js
+island test: TMS/reporters/json, alone
+  [OK]   only one TMS loaded
+  [OK]   renders a report with no sibling TMS present
+  [OK]   absent handler is a skip, not a crash
+  [OK]   DMS explains the skip
+
+island test: TMS/handlers/file-read, alone
+  [OK]   runs with a stubbed tool and no reporter registered
+  [OK]   SCL refuses the traversal path, and the core does the refusing
+
+all island checks passed
+</code></pre>
+<p>The first block is the one that matters. If <code>json</code> still imported <code>text</code>, that
+file would not even load — the failure is structural, not a wrong assertion.</p>
+<h2>What this example does not solve</h2>
+<ul>
+<li><strong>It is smaller than the threshold that justifies this structure.</strong> 306 lines
+of code across 13 files (496 including comments) would be perfectly readable as
+two files. The five sets are here to make the parts visible, not because the
+size demands them. Presenting a toy at this weight as proof the method pays off
+would be dishonest; the payoff appears at the scale described in the skill&#39;s
+<code>SMS/scale-thresholds.md</code>.</li>
+<li><strong>The dependency rule is enforced by text matching, not by the language.</strong>
+Static <code>import ... from</code> lines are checked. A dynamic <code>import()</code> built from a
+string would slip past it, as would a require built at runtime. A language with
+real module boundaries would not need the check at all.</li>
+<li><strong>That check was wrong when first written, and passed anyway.</strong> It treated
+two files in the same category directory as internal to one module, so the
+exact import this example warns about did not trigger it. It was found by
+adding the forbidden line on purpose and noticing the build stayed green. A
+guard that has never been shown to fail is not yet evidence of anything.</li>
+<li><strong>One TMS per file is not the general case.</strong> Real subsets have internal
+structure, and the boundary question gets harder when a TMS has its own
+submodules.</li>
+<li><strong>No Router, no versioning, no migration.</strong> Three of the seven parts of a full
+MSSP-Scale system are simply absent here, and the example says so rather than
+implying they were handled.</li>
+</ul>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;system&quot;: {
+    &quot;id&quot;: &quot;001-task-runner&quot;,
+    &quot;version&quot;: &quot;1.0.0&quot;,
+    &quot;purpose&quot;: &quot;Run a list of typed tasks and report the outcome.&quot;,
+    &quot;non_goals&quot;: [
+      &quot;scheduling or cron&quot;,
+      &quot;parallel execution&quot;,
+      &quot;retry and backoff&quot;,
+      &quot;persistence between runs&quot;
+    ]
+  },
+  &quot;capability_index&quot;: {
+    &quot;SMS&quot;: {
+      &quot;model&quot;: &quot;src/SMS/model.js — task result, run report, the handler and reporter interfaces&quot;,
+      &quot;registry&quot;: &quot;src/SMS/registry.js — how TMS modules are made present&quot;,
+      &quot;runner&quot;: &quot;src/SMS/runner.js — the loop, permission check, trace emission&quot;
+    },
+    &quot;SCL&quot;: {
+      &quot;permissions&quot;: &quot;src/SCL/permissions.js + permissions.json — per-type limits the runner enforces&quot;
+    },
+    &quot;TMS&quot;: {
+      &quot;handlers/file-read&quot;: &quot;type file.read&quot;,
+      &quot;handlers/http-get&quot;: &quot;type http.get&quot;,
+      &quot;reporters/text&quot;: &quot;human-readable render of a run report&quot;,
+      &quot;reporters/json&quot;: &quot;machine-readable render of the same report&quot;
+    },
+    &quot;DMS&quot;: {
+      &quot;trace&quot;: &quot;src/DMS/trace.js — run events, plus the human view of skips and refusals&quot;
+    }
+  },
+  &quot;dependency_rule&quot;: &quot;TMS may import SMS. No TMS imports another TMS. Checked mechanically by scripts/build-mssp.mjs.&quot;,
+  &quot;notes&quot;: &quot;FMS is metadata only. No procedure lives in this file, and nothing at runtime reads it — it exists so a person or an agent can locate a capability without loading it.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/permissions.js</summary><pre><code>// SCL — what a task is allowed to do, checkable by the runtime.
+//
+// The point of putting this in its own set is that it is a check, not a
+// sentence. &quot;Please do not write outside the output directory&quot; in a handler's
+// comment is an expectation; this function is a contract, and the runner
+// consults it before any handler runs.
+
+import policy from &quot;./permissions.json&quot; with { type: &quot;json&quot; };
+
+/** @returns {{allowed: boolean, reason?: string}} */
+export function permits(task) {
+  const rule = policy.types[task.type];
+  if (!rule) return { allowed: false, reason: `type not in policy: ${task.type}` };
+
+  if (rule.deny_all) return { allowed: false, reason: rule.note ?? &quot;denied by policy&quot; };
+
+  if (rule.path_prefix &amp;&amp; task.path) {
+    // Compared after normalising separators so a Windows-style path in a task
+    // definition is not silently treated as escaping the allowed prefix.
+    const path = task.path.replaceAll(&quot;\\&quot;, &quot;/&quot;);
+    if (!path.startsWith(rule.path_prefix)) {
+      return { allowed: false, reason: `path outside ${rule.path_prefix}` };
+    }
+    if (path.includes(&quot;..&quot;)) return { allowed: false, reason: &quot;path traversal&quot; };
+  }
+
+  if (rule.hosts &amp;&amp; task.url) {
+    const host = new URL(task.url).host;
+    if (!rule.hosts.includes(host)) return { allowed: false, reason: `host not allowed: ${host}` };
+  }
+
+  return { allowed: true };
+}
+
+export const riskLevel = (task) =&gt; policy.types[task.type]?.risk ?? &quot;unknown&quot;;
+</code></pre></details><details><summary>SCL/permissions.json</summary><pre><code>{
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;types&quot;: {
+    &quot;file.read&quot;: {
+      &quot;risk&quot;: &quot;L0&quot;,
+      &quot;path_prefix&quot;: &quot;data/&quot;
+    },
+    &quot;http.get&quot;: {
+      &quot;risk&quot;: &quot;L1&quot;,
+      &quot;hosts&quot;: [&quot;example.org&quot;, &quot;example.com&quot;]
+    },
+    &quot;file.delete&quot;: {
+      &quot;risk&quot;: &quot;L4&quot;,
+      &quot;deny_all&quot;: true,
+      &quot;note&quot;: &quot;irreversible; no handler is loaded for it and policy denies it regardless&quot;
+    }
+  }
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/model.js</summary><pre><code>// SMS — the shared data contract.
+//
+// This file is the whole point of the example. Both reporters need the same
+// derived numbers: per-task outcome, duration, and the run totals. The obvious
+// move is to compute them in whichever reporter is written first and import
+// that from the second. This is where they live instead.
+//
+// It is SMS by the identity test: delete it and there is nothing for the runner
+// to hand to a reporter, nothing for a handler to return, and no shape for the
+// trace to record. The system stops being a task runner.
+
+/** @typedef {&quot;ok&quot; | &quot;failed&quot; | &quot;skipped&quot;} Outcome */
+
+/** One task's result. Handlers produce this; nothing else constructs it. */
+export function taskResult({ id, type, outcome, detail = &quot;&quot;, ms = 0 }) {
+  if (!id || !type) throw new Error(&quot;taskResult requires id and type&quot;);
+  if (![&quot;ok&quot;, &quot;failed&quot;, &quot;skipped&quot;].includes(outcome)) {
+    throw new Error(`unknown outcome: ${outcome}`);
+  }
+  return Object.freeze({ id, type, outcome, detail, ms });
+}
+
+/**
+ * The run report. Every consumer reads these fields and no consumer recomputes
+ * them — that is what stops a second reporter from reaching into the first.
+ */
+export function runReport(results) {
+  const counts = { ok: 0, failed: 0, skipped: 0 };
+  let totalMs = 0;
+  for (const result of results) {
+    counts[result.outcome] += 1;
+    totalMs += result.ms;
+  }
+  return Object.freeze({
+    results: Object.freeze([...results]),
+    counts: Object.freeze(counts),
+    totalMs,
+    passed: counts.failed === 0,
+    // Derived here rather than in a reporter. The moment one reporter owns a
+    // derived field, every other reporter either imports it or drifts from it.
+    slowest: results.reduce((worst, r) =&gt; (!worst || r.ms &gt; worst.ms ? r : worst), null),
+  });
+}
+
+/**
+ * The interface a handler TMS binds to. Declared in SMS so a handler never has
+ * to know which other handlers exist.
+ */
+export function defineHandler({ type, run }) {
+  if (typeof run !== &quot;function&quot;) throw new Error(&quot;handler needs a run function&quot;);
+  return Object.freeze({ type, run });
+}
+
+/** The interface a reporter TMS binds to. */
+export function defineReporter({ name, render }) {
+  if (typeof render !== &quot;function&quot;) throw new Error(&quot;reporter needs a render function&quot;);
+  return Object.freeze({ name, render });
+}
+</code></pre></details><details><summary>SMS/registry.js</summary><pre><code>// SMS — how TMS modules get in.
+//
+// A registry is what makes &quot;load one TMS alone&quot; possible. Without it, main.js
+// would import every handler and reporter directly, and the island test would
+// have no way to construct a system with exactly one TMS present.
+
+export function createRegistry() {
+  const handlers = new Map();
+  const reporters = new Map();
+
+  return {
+    /** Registering the same type twice is a wiring bug, not a last-one-wins. */
+    addHandler(handler) {
+      if (handlers.has(handler.type)) {
+        throw new Error(`handler already registered for type: ${handler.type}`);
+      }
+      handlers.set(handler.type, handler);
+      return this;
+    },
+    addReporter(reporter) {
+      if (reporters.has(reporter.name)) {
+        throw new Error(`reporter already registered: ${reporter.name}`);
+      }
+      reporters.set(reporter.name, reporter);
+      return this;
+    },
+    handlerFor(type) {
+      return handlers.get(type) ?? null;
+    },
+    reporterList() {
+      return [...reporters.values()];
+    },
+    loaded() {
+      return {
+        handlers: [...handlers.keys()],
+        reporters: [...reporters.keys()],
+      };
+    },
+  };
+}
+</code></pre></details><details><summary>SMS/runner.js</summary><pre><code>// SMS — the task loop.
+//
+// Removing this ends the system's identity, so it is core by the identity test.
+// It knows about the registry, the model, permissions, and the trace. It knows
+// nothing about any specific handler or reporter.
+
+import { runReport, taskResult } from &quot;./model.js&quot;;
+import { permits } from &quot;../SCL/permissions.js&quot;;
+
+export async function runTasks({ tasks, registry, trace, clock = () =&gt; Date.now() }) {
+  const results = [];
+
+  for (const task of tasks) {
+    // Permission is checked BEFORE capability, and the order is load-bearing.
+    //
+    // The reverse order reads more naturally — why consult policy for something
+    // you cannot do anyway? — but it makes the policy's answer depend on which
+    // TMS happen to be loaded. `file.delete` is denied outright here; with the
+    // checks reversed it reported &quot;no handler loaded&quot;, which is true today and
+    // becomes silently wrong the moment someone registers a delete handler.
+    //
+    // SCL is also consulted in the core, not inside each handler. A handler that
+    // policed its own permissions could simply decide not to.
+    const decision = permits(task);
+    if (!decision.allowed) {
+      trace.record(&quot;permission.denied&quot;, { id: task.id, type: task.type, reason: decision.reason });
+      results.push(taskResult({ id: task.id, type: task.type, outcome: &quot;skipped&quot;, detail: `denied: ${decision.reason}` }));
+      continue;
+    }
+
+    const handler = registry.handlerFor(task.type);
+    if (!handler) {
+      // A missing handler is a normal outcome, not a crash: the whole premise
+      // of on-demand loading is that some capabilities are absent by design.
+      trace.record(&quot;handler.missing&quot;, { id: task.id, type: task.type });
+      results.push(taskResult({ id: task.id, type: task.type, outcome: &quot;skipped&quot;, detail: &quot;no handler loaded for this type&quot; }));
+      continue;
+    }
+
+    const started = clock();
+    try {
+      const detail = await handler.run(task);
+      results.push(taskResult({ id: task.id, type: task.type, outcome: &quot;ok&quot;, detail, ms: clock() - started }));
+      trace.record(&quot;task.ok&quot;, { id: task.id, type: task.type });
+    } catch (error) {
+      results.push(taskResult({ id: task.id, type: task.type, outcome: &quot;failed&quot;, detail: error.message, ms: clock() - started }));
+      trace.record(&quot;task.failed&quot;, { id: task.id, type: task.type, error: error.message });
+    }
+  }
+
+  return runReport(results);
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/handlers/file-read.js</summary><pre><code>// TMS — one handler, for one task type.
+//
+// Imports only from SMS. It does not know that an http handler exists, and
+// nothing breaks if that handler is absent.
+
+import { defineHandler } from &quot;../../SMS/model.js&quot;;
+
+export function fileReadHandler({ readFile }) {
+  // The tool arrives by injection rather than by importing node:fs directly.
+  // That is what lets the island test run this module with a stub and no disk.
+  return defineHandler({
+    type: &quot;file.read&quot;,
+    async run(task) {
+      const text = await readFile(task.path);
+      return `${task.path}: ${text.length} chars`;
+    },
+  });
+}
+</code></pre></details><details><summary>TMS/handlers/http-get.js</summary><pre><code>// TMS — a second handler, structurally parallel to the first and unaware of it.
+
+import { defineHandler } from &quot;../../SMS/model.js&quot;;
+
+export function httpGetHandler({ fetchUrl }) {
+  return defineHandler({
+    type: &quot;http.get&quot;,
+    async run(task) {
+      const { status, bytes } = await fetchUrl(task.url);
+      if (status &gt;= 400) throw new Error(`HTTP ${status}`);
+      return `${task.url}: ${status}, ${bytes} bytes`;
+    },
+  });
+}
+</code></pre></details><details><summary>TMS/reporters/json.js</summary><pre><code>// TMS — machine-readable report.
+//
+// The other half of the point. This module wants exactly what text.js wants:
+// counts, totals, the slowest task. The tempting line is
+//
+//     import { summarise } from &quot;./text.js&quot;;
+//
+// which would work, and would quietly make text.js a dependency of json.js —
+// so the island test for json could never run without text present, and
+// deleting text would break a module that has nothing to do with it.
+//
+// It reads the SMS-owned report instead. Neither reporter imports the other,
+// and scripts/build-mssp.mjs greps for sibling-TMS imports to keep it that way.
+
+import { defineReporter } from &quot;../../SMS/model.js&quot;;
+
+export function jsonReporter() {
+  return defineReporter({
+    name: &quot;json&quot;,
+    render(report) {
+      return JSON.stringify(
+        {
+          passed: report.passed,
+          counts: report.counts,
+          totalMs: report.totalMs,
+          slowest: report.slowest &amp;&amp; { id: report.slowest.id, ms: report.slowest.ms },
+          results: report.results,
+        },
+        null,
+        2,
+      );
+    },
+  });
+}
+</code></pre></details><details><summary>TMS/reporters/text.js</summary><pre><code>// TMS — human-readable report.
+//
+// This is one half of the example's point. Both reporters need per-task
+// duration, the counts, and which task was slowest. None of that is computed
+// here: it is read from the report SMS built.
+
+import { defineReporter } from &quot;../../SMS/model.js&quot;;
+
+export function textReporter() {
+  return defineReporter({
+    name: &quot;text&quot;,
+    render(report) {
+      const lines = report.results.map(
+        (r) =&gt; `  ${r.outcome.padEnd(7)} ${r.id.padEnd(14)} ${String(r.ms).padStart(4)}ms  ${r.detail}`,
+      );
+      const { ok, failed, skipped } = report.counts;
+      return [
+        &quot;RUN REPORT&quot;,
+        ...lines,
+        &quot;&quot;,
+        `  ${ok} ok, ${failed} failed, ${skipped} skipped in ${report.totalMs}ms`,
+        report.slowest ? `  slowest: ${report.slowest.id} (${report.slowest.ms}ms)` : &quot;  slowest: n/a&quot;,
+        `  result: ${report.passed ? &quot;PASS&quot; : &quot;FAIL&quot;}`,
+      ].join(&quot;\n&quot;);
+    },
+  });
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/trace.js</summary><pre><code>// DMS — what happened, and what a human can see about it.
+//
+// Separate from the reporters on purpose. A reporter renders the *result*; the
+// trace records the *run* — including the parts that never reach a result, like
+// a task skipped because no handler was loaded or a permission was refused.
+// Without it, &quot;2 skipped&quot; is a number with no explanation attached.
+
+export function createTrace() {
+  const events = [];
+  return {
+    record(event, data = {}) {
+      events.push({ event, ...data });
+    },
+    /** Machine view: for tests and tooling. */
+    events: () =&gt; [...events],
+    /** Human view: the sentences a person needs to trust the run. */
+    humanView(registry) {
+      const loaded = registry.loaded();
+      const denied = events.filter((e) =&gt; e.event === &quot;permission.denied&quot;);
+      const missing = events.filter((e) =&gt; e.event === &quot;handler.missing&quot;);
+      const lines = [
+        `Loaded handlers: ${loaded.handlers.join(&quot;, &quot;) || &quot;none&quot;}`,
+        `Loaded reporters: ${loaded.reporters.join(&quot;, &quot;) || &quot;none&quot;}`,
+      ];
+      for (const e of missing) lines.push(`Skipped ${e.id}: no handler for &quot;${e.type}&quot; was loaded.`);
+      for (const e of denied) lines.push(`Refused ${e.id}: ${e.reason}.`);
+      if (!missing.length &amp;&amp; !denied.length) lines.push(&quot;Nothing was skipped or refused.&quot;);
+      return lines.join(&quot;\n&quot;);
+    },
+  };
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.js</summary><pre><code>// The island test, as an executable file rather than a claim.
+//
+// Builds a system with the minimal SMS and EXACTLY ONE TMS, stubs every tool,
+// runs that module's representative task, and asserts that nothing else was
+// loaded. Run: node src/island-test.js
+
+import assert from &quot;node:assert/strict&quot;;
+import { createRegistry } from &quot;./SMS/registry.js&quot;;
+import { runTasks } from &quot;./SMS/runner.js&quot;;
+import { createTrace } from &quot;./DMS/trace.js&quot;;
+import { jsonReporter } from &quot;./TMS/reporters/json.js&quot;;
+import { fileReadHandler } from &quot;./TMS/handlers/file-read.js&quot;;
+
+let failures = 0;
+function check(name, fn) {
+  try {
+    fn();
+    console.log(`  [OK]   ${name}`);
+  } catch (error) {
+    failures += 1;
+    console.log(`  [FAIL] ${name} — ${error.message}`);
+  }
+}
+
+console.log(&quot;island test: TMS/reporters/json, alone&quot;);
+
+// Only the json reporter is registered. text.js is never imported. If json had
+// reached into text for its summary numbers, this file would not even load.
+const registry = createRegistry().addReporter(jsonReporter());
+const trace = createTrace();
+let tick = 0;
+const report = await runTasks({
+  tasks: [{ id: &quot;read-config&quot;, type: &quot;file.read&quot;, path: &quot;data/config.yaml&quot; }],
+  registry,
+  trace,
+  clock: () =&gt; (tick += 5),
+});
+const rendered = JSON.parse(registry.reporterList()[0].render(report));
+
+check(&quot;only one TMS loaded&quot;, () =&gt; {
+  const loaded = registry.loaded();
+  assert.deepEqual(loaded.reporters, [&quot;json&quot;]);
+  assert.deepEqual(loaded.handlers, []);
+});
+check(&quot;renders a report with no sibling TMS present&quot;, () =&gt; {
+  assert.equal(typeof rendered.counts.skipped, &quot;number&quot;);
+  assert.equal(rendered.counts.skipped, 1, &quot;no handler was loaded, so the task is skipped&quot;);
+});
+check(&quot;absent handler is a skip, not a crash&quot;, () =&gt; {
+  assert.equal(report.results[0].outcome, &quot;skipped&quot;);
+});
+check(&quot;DMS explains the skip&quot;, () =&gt; {
+  assert.match(trace.humanView(registry), /no handler for &quot;file\.read&quot;/);
+});
+
+console.log(&quot;\nisland test: TMS/handlers/file-read, alone&quot;);
+
+const handlerOnly = createRegistry().addHandler(fileReadHandler({ readFile: async () =&gt; &quot;abc&quot; }));
+const handlerTrace = createTrace();
+let tick2 = 0;
+const handlerReport = await runTasks({
+  tasks: [
+    { id: &quot;allowed&quot;, type: &quot;file.read&quot;, path: &quot;data/ok.txt&quot; },
+    { id: &quot;escaping&quot;, type: &quot;file.read&quot;, path: &quot;data/../../secret&quot; },
+  ],
+  registry: handlerOnly,
+  trace: handlerTrace,
+  clock: () =&gt; (tick2 += 5),
+});
+
+check(&quot;runs with a stubbed tool and no reporter registered&quot;, () =&gt; {
+  assert.equal(handlerReport.results[0].outcome, &quot;ok&quot;);
+  assert.deepEqual(handlerOnly.loaded().reporters, []);
+});
+check(&quot;SCL refuses the traversal path, and the core does the refusing&quot;, () =&gt; {
+  assert.equal(handlerReport.results[1].outcome, &quot;skipped&quot;);
+  assert.match(handlerReport.results[1].detail, /denied: path traversal/);
+});
+
+console.log(failures ? `\n${failures} check(s) failed` : &quot;\nall island checks passed&quot;);
+process.exit(failures ? 1 : 0);
+</code></pre></details><details><summary>main.js</summary><pre><code>// Entry point. The only file that knows which TMS exist — which is what lets
+// every other file stay unaware of them.
+
+import { createRegistry } from &quot;./SMS/registry.js&quot;;
+import { runTasks } from &quot;./SMS/runner.js&quot;;
+import { createTrace } from &quot;./DMS/trace.js&quot;;
+import { fileReadHandler } from &quot;./TMS/handlers/file-read.js&quot;;
+import { httpGetHandler } from &quot;./TMS/handlers/http-get.js&quot;;
+import { textReporter } from &quot;./TMS/reporters/text.js&quot;;
+import { jsonReporter } from &quot;./TMS/reporters/json.js&quot;;
+
+// Tools are stubbed so the example runs anywhere with no network and no disk
+// layout. Real implementations would be injected the same way.
+const tools = {
+  readFile: async (path) =&gt; `&lt;contents of ${path}&gt;`.repeat(3),
+  fetchUrl: async (url) =&gt; ({ status: url.includes(&quot;/missing&quot;) ? 404 : 200, bytes: 1024 }),
+};
+
+const tasks = [
+  { id: &quot;read-config&quot;, type: &quot;file.read&quot;, path: &quot;data/config.yaml&quot; },
+  { id: &quot;read-escape&quot;, type: &quot;file.read&quot;, path: &quot;../../etc/passwd&quot; },
+  { id: &quot;fetch-home&quot;, type: &quot;http.get&quot;, url: &quot;https://example.org/&quot; },
+  { id: &quot;fetch-missing&quot;, type: &quot;http.get&quot;, url: &quot;https://example.org/missing&quot; },
+  { id: &quot;fetch-elsewhere&quot;, type: &quot;http.get&quot;, url: &quot;https://not-allowed.test/&quot; },
+  { id: &quot;wipe-data&quot;, type: &quot;file.delete&quot;, path: &quot;data/&quot; },
+  { id: &quot;send-mail&quot;, type: &quot;mail.send&quot;, to: &quot;someone@example.org&quot; },
+];
+
+const trace = createTrace();
+const registry = createRegistry()
+  .addHandler(fileReadHandler(tools))
+  .addHandler(httpGetHandler(tools))
+  .addReporter(textReporter())
+  .addReporter(jsonReporter());
+
+// A monotonic fake clock keeps the printed durations identical on every run, so
+// the output in the README stays true and a diff means something changed.
+let tick = 0;
+const clock = () =&gt; (tick += 5);
+
+const report = await runTasks({ tasks, registry, trace, clock });
+
+for (const reporter of registry.reporterList()) {
+  console.log(`\n--- ${reporter.name} ---`);
+  console.log(reporter.render(report));
+}
+
+console.log(&quot;\n--- DMS human view ---&quot;);
+console.log(trace.humanView(registry));
+
+// `wipe-data` and `send-mail` are both absent from the result for different
+// reasons: one is denied by SCL, the other has no handler loaded. The trace is
+// where that distinction survives.
+process.exit(report.passed ? 0 : 0); // reporting demo, not a CI gate
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

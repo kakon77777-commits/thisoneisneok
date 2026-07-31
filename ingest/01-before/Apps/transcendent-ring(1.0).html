@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>超越性閉合 · 無限內外圓</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;800;900&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#070512;--bg2:#120c26;--bg3:#0c0820;--grid:#2a2150;--bone:#f7f3ff;--bone-dim:#bcaee4;
+    --head:#ff3d6e;--tail:#16e6d3;--dead:#7a7296;--venom:#ffc12b;--line:#332866;--line2:#4d3da0;
+    --mirror:#b265ff;--snake:#1cf0bf;--noise:#ff7a14;}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:radial-gradient(120% 80% at 50% -10%,#1c0f3a 0%,#0c0722 48%,var(--bg) 100%);
+    color:var(--bone);font-family:"Noto Sans TC",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:clamp(18px,3vw,40px)}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:22px}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--tail);font-weight:700;text-shadow:0 0 14px rgba(22,230,211,.45)}
+  h1{font-family:"Noto Serif TC",serif;font-weight:900;margin:.16em 0 .15em;font-size:clamp(30px,5.2vw,56px);
+    line-height:.98;letter-spacing:.03em;
+    background:linear-gradient(92deg,var(--mirror) 0%,var(--tail) 45%,var(--venom) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 22px rgba(178,101,255,.25))}
+  h1 .lat{font-family:"JetBrains Mono",monospace;font-weight:500;font-size:.27em;letter-spacing:.18em;
+    -webkit-text-fill-color:var(--bone-dim);vertical-align:.55em;margin-left:.5em}
+  .sub{color:var(--bone-dim);max-width:66ch;font-size:14px;line-height:1.7;margin-top:.5em}
+  .sub b{color:var(--bone);font-weight:700}.sub .s{color:var(--snake);font-weight:700}.sub .v{color:var(--venom);font-weight:700}.sub .m{color:var(--mirror);font-weight:700}
+  .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:24px;align-items:start}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(180deg,var(--bg2),var(--bg3));border:1px solid var(--line2);border-radius:16px;
+    padding:18px;box-shadow:0 0 0 1px rgba(77,61,160,.15),0 18px 50px -20px rgba(0,0,0,.8)}
+  canvas{display:block;width:100%;border-radius:12px}
+  #ring{aspect-ratio:1/1;background:radial-gradient(60% 60% at 50% 50%,#13092e,#070414)}
+  #strip{aspect-ratio:2.4/1;background:#08051a;margin-top:6px}
+  .controls label{margin:15px 0 4px;font-size:13px;color:var(--bone-dim);display:flex;justify-content:space-between;align-items:baseline}
+  .controls label b{color:var(--venom);font-family:"JetBrains Mono",monospace;font-weight:700;font-size:13px;text-shadow:0 0 12px rgba(255,193,43,.35)}
+  .controls label .hint{font-size:11px;color:#8678b8}
+  input[type=range]{-webkit-appearance:none;width:100%;height:5px;border-radius:5px;background:#241b4a;outline:none;margin:7px 0 2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;height:19px;border-radius:50%;
+    background:var(--venom);cursor:pointer;border:3px solid #0c0820;box-shadow:0 0 16px rgba(255,193,43,.7)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--venom);cursor:pointer;border:3px solid #0c0820;box-shadow:0 0 16px rgba(255,193,43,.7)}
+  .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+  .toggle{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--bone-dim);cursor:pointer;user-select:none}
+  .toggle input{accent-color:var(--snake);width:16px;height:16px}
+  .btns{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  button{font-family:"Noto Sans TC",sans-serif;font-size:13.5px;font-weight:700;padding:11px 15px;border-radius:10px;
+    border:1.5px solid var(--line2);background:#1a1140;color:var(--bone);cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--tail);background:#1f1550;box-shadow:0 0 18px rgba(22,230,211,.2)}
+  button:focus-visible{outline:2.5px solid var(--venom);outline-offset:2px}
+  .cap{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;font-weight:700;text-transform:uppercase;color:#8678b8;margin:14px 0 6px}
+  .note{font-family:"JetBrains Mono",monospace;font-size:11px;color:#7c6fae;line-height:1.7;margin-top:10px}
+  footer{margin-top:28px;border-top:1px solid var(--line);padding-top:16px;font-size:12.5px;color:#7c6fae;line-height:1.7;font-family:"JetBrains Mono",monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">EveMissLab · Cl 動態自超越 / 視覺化</div>
+    <h1>無限內外圓<span class="lat">transcendent closure</span></h1>
+    <p class="sub">環不再咬自己，而是<b>從缺口咬穿出去</b>，進入一個更大的環——再開缺口、再穿出。向外是 <span class="v">擴大</span>，向內是 <span class="m">緊緻化</span>，缺口連成一條 <span class="s">貫穿線</span>。因為自相似，中段看起來幾乎靜止（<b>分不出來</b>），只有最外圈不斷冒出新環，讓你感覺它<b>還在變大</b>。內缺口與外缺口在對數尺度上是同一塊磚——右下的展開圖把它攤平給你看。</p>
+  </header>
+
+  <div class="grid">
+    <div class="panel"><canvas id="ring" width="640" height="640"></canvas></div>
+
+    <div class="panel controls">
+      <label>縮放　<span class="hint">向內緊緻 ← → 向外擴大</span><b id="spVal">+0.12</b></label>
+      <input type="range" id="SP" min="-1" max="1" step="0.01" value="0.12">
+      <label>級距 s　<span class="hint">緊緻化率</span><b id="sVal">1.32</b></label>
+      <input type="range" id="S" min="1.12" max="1.7" step="0.01" value="1.32">
+      <label>缺口　<span class="hint">環的開口角</span><b id="gVal">0.28</b></label>
+      <input type="range" id="G" min="0.04" max="0.7" step="0.01" value="0.28">
+      <label>旋扭　<span class="hint">缺口的螺旋角</span><b id="tVal">0.45</b></label>
+      <input type="range" id="T" min="-0.9" max="0.9" step="0.01" value="0.45">
+
+      <div class="row">
+        <label class="toggle"><input type="checkbox" id="thread" checked>貫穿線</label>
+        <label class="toggle"><input type="checkbox" id="invert">反演 1/r（內外互換）</label>
+      </div>
+      <div class="btns">
+        <button id="pause">暫停</button>
+        <button id="reset">重置</button>
+      </div>
+
+      <p class="cap">log-polar 展開 · 內 ＝ 外</p>
+      <canvas id="strip" width="320" height="134"></canvas>
+      <p class="note">展開圖把半徑取對數：每一塊磚就是「一層」。磚與磚完全相同——這就是為什麼向內無限緊緻、向外無限擴大，兩端在對數尺度上是同一道縫。</p>
+    </div>
+  </div>
+
+  <footer>
+    R_n = R₀·sⁿ⁺ᵠ（幾何巢狀），缺口中心角 θ_n = 旋扭·(n+φ)，φ 隨縮放連續推移、整數層無縫遞補。向內 n→−∞ 鎖向中心一點（緊緻化 / solenoid 細結構），向外 n→+∞ 永不封頂（超限攀升）；單點緊緻化把 0 與 ∞ 黏成同一點。純幾何，無動力學量測。
+  </footer>
+</div>
+
+<script>
+(() => {
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cs=getComputedStyle(document.documentElement),C=n=>cs.getPropertyValue(n).trim();
+  const hex=h=>{h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
+  const VIO=hex(C('--mirror')), TEA=hex(C('--tail')), VEN=hex(C('--venom'));
+  const lerp=(a,b,u)=>a+(b-a)*u;
+  const mix=(c1,c2,u)=>`rgb(${lerp(c1[0],c2[0],u)|0},${lerp(c1[1],c2[1],u)|0},${lerp(c1[2],c2[2],u)|0})`;
+  const ramp=u=>u<0.5?mix(VIO,TEA,u/0.5):mix(TEA,VEN,(u-0.5)/0.5);  // inner violet → mid teal → outer amber
+
+  let phase=0, speed=0.12, s=1.32, gap=0.28, twist=0.45, thread=true, invert=false, paused=false;
+
+  const $=id=>document.getElementById(id);
+  const ring=$('ring'),rc=ring.getContext('2d'),strip=$('strip'),sc=strip.getContext('2d');
+  function fit(cv){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);
+    cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);cv.getContext('2d').setTransform(d,0,0,d,0,0);return{w:r.width,h:r.height};}
+  let RD,SD; function fitAll(){RD=fit(ring);SD=fit(strip);}
+
+  const sync=()=>{$('spVal').textContent=(speed>=0?'+':'')+speed.toFixed(2);$('sVal').textContent=s.toFixed(2);
+    $('gVal').textContent=gap.toFixed(2);$('tVal').textContent=twist.toFixed(2);};
+  function bind(id,fn){const e=$(id);e.addEventListener('input',()=>{fn(parseFloat(e.value));sync();});}
+  bind('SP',v=>speed=v);bind('S',v=>s=v);bind('G',v=>gap=v);bind('T',v=>twist=v);
+  $('thread').onchange=e=>thread=e.target.checked;
+  $('invert').onchange=e=>invert=e.target.checked;
+  $('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'繼續':'暫停';};
+  $('reset').onclick=()=>{phase=0;speed=0.12;s=1.32;gap=0.28;twist=0.45;invert=false;
+    $('SP').value=0.12;$('S').value=1.32;$('G').value=0.28;$('T').value=0.45;$('invert').checked=false;sync();};
+
+  function drawRing(){
+    const w=RD.w,h=RD.h,cx=w/2,cy=h/2; rc.clearRect(0,0,w,h);
+    const Rmax=Math.min(w,h)*0.475, Rmin=2.2, lnS=Math.log(s);
+    const dir=invert?-1:1;
+    const baseR=Rmin;
+    const nMinF=Math.log(Rmin/baseR)/lnS - phase;
+    const nMaxF=Math.log(Rmax/baseR)/lnS - phase;
+    const nMin=Math.floor(nMinF), nMax=Math.ceil(nMaxF);
+    const span=Math.max(1,nMaxF-nMinF);
+    // collect gap-edge points for the thread
+    const pts=[];
+    rc.lineCap='round';
+    for(let n=nMin;n<=nMax;n++){
+      const lvl=n+phase, R=baseR*Math.exp(lvl*lnS);
+      if(R<Rmin*0.6||R>Rmax*1.06)continue;
+      const frac=Math.min(1,Math.max(0,(lvl-nMinF)/span));
+      const col=ramp(invert?1-frac:frac);
+      // emergence/fade: brighten frontier, fade extremes
+      const edge=Math.min(frac,1-frac);
+      const a=0.18+0.82*Math.min(1,edge*4.5);
+      const isFront=(n===nMax-1||n===nMax);
+      const th=twist*lvl;                        // gap center angle
+      const lw=Math.min(7,Math.max(1.1,R*0.013));
+      rc.globalAlpha=a; rc.strokeStyle=col; rc.lineWidth=lw;
+      rc.beginPath(); rc.arc(cx,cy,R, th+gap, th+2*Math.PI-gap, false); rc.stroke();
+      if(isFront){rc.save();rc.globalAlpha=Math.min(1,a*1.0);rc.shadowColor=col;rc.shadowBlur=22;
+        rc.lineWidth=lw*1.1;rc.beginPath();rc.arc(cx,cy,R,th+gap,th+2*Math.PI-gap,false);rc.stroke();rc.restore();}
+      // gap-edge point (start edge) for thread
+      pts.push([cx+Math.cos(th+gap)*R, cy+Math.sin(th+gap)*R, frac]);
+    }
+    rc.globalAlpha=1;
+    // thread through the gaps
+    if(thread&&pts.length>1){
+      rc.save();rc.shadowColor=C('--snake');rc.shadowBlur=10;rc.lineWidth=2;rc.lineCap='round';
+      rc.beginPath();
+      for(let i=0;i<pts.length;i++){i?rc.lineTo(pts[i][0],pts[i][1]):rc.moveTo(pts[i][0],pts[i][1]);}
+      const g=rc.createRadialGradient(cx,cy,Rmin,cx,cy,Rmax);
+      g.addColorStop(0,'rgba(178,101,255,.5)');g.addColorStop(.5,C('--snake'));g.addColorStop(1,C('--venom'));
+      rc.strokeStyle=g;rc.stroke();rc.restore();
+      // a moving spark riding the thread (the "still biting through")
+      const k=(performance.now()*0.00018)%1, fi=k*(pts.length-1), i0=Math.floor(fi), u=fi-i0;
+      if(pts[i0+1]){const px=lerp(pts[i0][0],pts[i0+1][0],u),py=lerp(pts[i0][1],pts[i0+1][1],u);
+        rc.save();rc.shadowColor=C('--venom');rc.shadowBlur=18;rc.fillStyle=C('--venom');
+        rc.beginPath();rc.arc(px,py,3.4,0,7);rc.fill();rc.restore();}
+    }
+    // center sink + frontier ticks
+    rc.fillStyle='rgba(178,101,255,.5)';rc.beginPath();rc.arc(cx,cy,2.2,0,7);rc.fill();
+    rc.fillStyle='#6a5da0';rc.font='600 10px JetBrains Mono';rc.textAlign='center';
+    rc.fillText('緊緻化 →  • ←  緊緻化',cx,cy+ Math.min(w,h)*0.46);
+    rc.textAlign='left';rc.fillStyle='#8678b8';rc.fillText('最外圈 · 仍在生長',10,18);
+  }
+
+  function drawStrip(){
+    const w=SD.w,h=SD.h; sc.clearRect(0,0,w,h);
+    // log-polar: x = frac(log_s R + phase) over PERIODS periods ; y = angle/2π ; ring => vertical line w/ gap
+    const PERIODS=3; const lnS=Math.log(s);
+    sc.strokeStyle=C('--grid');sc.globalAlpha=.35;sc.lineWidth=1;
+    for(let p=1;p<PERIODS;p++){const x=p/PERIODS*w;sc.beginPath();sc.moveTo(x,0);sc.lineTo(x,h);sc.stroke();}
+    sc.globalAlpha=1;
+    // draw the repeating tile: one ring per period at the same relative x; gap at y = (twist*lvl)/2π mod 1
+    for(let p=0;p<PERIODS;p++){
+      const lvl=p+phase;                       // representative level for this tile
+      const frac=p/(PERIODS-1||1);
+      const x=((p+phase)/PERIODS)*w % w;
+      const gy=(((twist*lvl)/(2*Math.PI))%1+1)%1;   // gap angular position
+      const col=ramp(0.2+0.6*frac);
+      sc.strokeStyle=col;sc.lineWidth=3;sc.globalAlpha=.9;
+      // vertical line with a gap segment removed
+      const gh=(gap/(2*Math.PI))*h*2;
+      sc.beginPath();sc.moveTo(x,0);sc.lineTo(x,Math.max(0,gy*h-gh));sc.stroke();
+      sc.beginPath();sc.moveTo(x,Math.min(h,gy*h+gh));sc.lineTo(x,h);sc.stroke();
+    }
+    sc.globalAlpha=1;sc.fillStyle='#6a5da0';sc.font='600 9px JetBrains Mono';sc.textAlign='left';
+    sc.fillText('一磚＝一層　·　磚磚相同 ⇒ 內＝外',6,12);
+    sc.textAlign='right';sc.fillText('log_s R →',w-6,h-5);
+  }
+
+  function frame(){
+    if(!paused){phase+= (reduce?0.004:1)*speed*(invert?-1:1)*0.02; phase=((phase%1)+1)%1;}
+    drawRing();drawStrip();requestAnimationFrame(frame);
+  }
+  function init(){fitAll();sync();frame();}
+  addEventListener('resize',fitAll);
+  requestAnimationFrame(()=>requestAnimationFrame(init));
+})();
+</script>
+</body>
+</html>

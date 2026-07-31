@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三維球面 / 球體互動示意</title>
+<style>
+  :root{
+    --bg:#0e1117;
+    --panel:#171b24;
+    --panel2:#202634;
+    --text:#eef2f7;
+    --muted:#aab3c2;
+    --accent:#f1ce72;
+    --blue:#8fb5ff;
+    --green:#98efbe;
+    --red:#ff9ea5;
+    --grid:#2a3142;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif;
+    color:var(--text);
+    background:radial-gradient(circle at top, #1d2536 0%, #0f131b 45%, #090b10 100%);
+  }
+  header{
+    max-width:1200px;
+    margin:auto;
+    padding:28px 22px 12px;
+  }
+  h1{
+    margin:0 0 10px;
+    font-size:clamp(24px,4vw,42px);
+  }
+  .sub{
+    line-height:1.7;
+    color:var(--muted);
+    max-width:980px;
+  }
+  main{
+    max-width:1200px;
+    margin:auto;
+    padding:12px 22px 32px;
+    display:grid;
+    grid-template-columns:1.15fr .85fr;
+    gap:18px;
+  }
+  @media(max-width:920px){ main{grid-template-columns:1fr;} }
+  .card{
+    background:rgba(23,27,36,.92);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:18px;
+    box-shadow:0 18px 60px rgba(0,0,0,.24);
+    overflow:hidden;
+  }
+  .canvasWrap{ padding:14px; }
+  canvas{
+    width:100%;
+    aspect-ratio:1.05/1;
+    display:block;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.07);
+    background:
+      radial-gradient(circle at 50% 45%, #111726 0%, #0d121c 65%, #090c13 100%);
+  }
+  .controls{
+    padding:18px;
+    display:grid;
+    gap:14px;
+  }
+  .control{
+    background:var(--panel2);
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:14px;
+    padding:14px;
+  }
+  label{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-bottom:10px;
+    font-weight:650;
+  }
+  label span:last-child{
+    color:var(--accent);
+    font-variant-numeric:tabular-nums;
+  }
+  input[type=range]{ width:100%; }
+  .checks{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .checks label{
+    justify-content:flex-start;
+    margin:0;
+    font-weight:500;
+    color:var(--muted);
+  }
+  button{
+    border:none;
+    border-radius:12px;
+    padding:12px 14px;
+    cursor:pointer;
+    font-weight:800;
+  }
+  button.primary{ background:var(--accent); color:#1d180d; }
+  button.secondary{ background:#2c3448; color:var(--text); }
+  .metrics{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .metric{
+    background:#10141d;
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:14px;
+    padding:14px;
+    min-height:92px;
+  }
+  .metric .name{
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .metric .value{
+    font-size:20px;
+    font-weight:800;
+    color:var(--green);
+    word-break:break-word;
+  }
+  .notes{
+    padding:0 18px 18px;
+    line-height:1.7;
+    color:var(--muted);
+  }
+  .formula{
+    background:#0c1018;
+    border-left:4px solid var(--accent);
+    border-radius:12px;
+    padding:12px 14px;
+    margin:10px 0;
+    color:#f2f4f8;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    overflow:auto;
+  }
+  .pill{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:999px;
+    background:rgba(241,206,114,.15);
+    color:var(--accent);
+    font-size:12px;
+    margin-left:6px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>三維球面 / 球體與 4π <span class="pill">互動式網頁</span></h1>
+  <div class="sub">
+    這個版本把前面的二維圓，提升到三維球面。從中心點 <b>O</b> 向所有方向延伸固定長度 <b>r</b>，端點形成的是
+    <b>S²<sub>r</sub>(O)</b>（球面）；如果把內部也填滿，得到的是 <b>B³<sub>r</sub>(O)</b>（實心球）。
+    三維全方向不再只是 <b>2π</b>，而是總立體角 <b>4π</b>。
+  </div>
+</header>
+
+<main>
+  <section class="card canvasWrap">
+    <canvas id="canvas"></canvas>
+  </section>
+
+  <aside class="card">
+    <div class="controls">
+      <div class="control">
+        <label>半徑 r <span id="radiusVal">1.00</span></label>
+        <input id="radius" type="range" min="0.50" max="3.00" step="0.01" value="1.00">
+      </div>
+
+      <div class="control">
+        <label>經度 θ <span id="thetaVal">45°</span></label>
+        <input id="theta" type="range" min="0" max="360" step="1" value="45">
+      </div>
+
+      <div class="control">
+        <label>緯度 φ（從北極往下） <span id="phiVal">60°</span></label>
+        <input id="phi" type="range" min="0" max="180" step="1" value="60">
+      </div>
+
+      <div class="control">
+        <label>旋轉視角 <span id="rotVal">25°</span></label>
+        <input id="rot" type="range" min="-180" max="180" step="1" value="25">
+      </div>
+
+      <div class="control checks">
+        <label><input id="showWire" type="checkbox" checked> 顯示球面網格</label>
+        <label><input id="showAxes" type="checkbox" checked> 顯示座標軸</label>
+        <label><input id="showRadius" type="checkbox" checked> 顯示半徑向量</label>
+        <label><input id="showFill" type="checkbox"> 顯示球體截面填色</label>
+        <label><input id="showCircle" type="checkbox" checked> 顯示赤道圓</label>
+        <label><input id="showPoint" type="checkbox" checked> 顯示球面點</label>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button id="toggleSpin" class="primary">開始自轉</button>
+        <button id="reset" class="secondary">重設</button>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="name">球面</div>
+          <div class="value">S²<sub>r</sub>(O)</div>
+        </div>
+        <div class="metric">
+          <div class="name">球體</div>
+          <div class="value">B³<sub>r</sub>(O)</div>
+        </div>
+        <div class="metric">
+          <div class="name">球面積 4πr²</div>
+          <div class="value" id="areaVal">12.5664</div>
+        </div>
+        <div class="metric">
+          <div class="name">球體積 (4/3)πr³</div>
+          <div class="value" id="volumeVal">4.1888</div>
+        </div>
+        <div class="metric">
+          <div class="name">總立體角</div>
+          <div class="value">4π sr</div>
+        </div>
+        <div class="metric">
+          <div class="name">高斯總曲率 ∫K dA</div>
+          <div class="value">4π</div>
+        </div>
+        <div class="metric">
+          <div class="name">該點座標</div>
+          <div class="value" id="pointVal">(0.61, 0.61, 0.50)</div>
+        </div>
+        <div class="metric">
+          <div class="name">赤道截面</div>
+          <div class="value">S¹ ：2πr</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="formula">S²ᵣ(O) = { x ∈ ℝ³ : ||x − O|| = r }</div>
+      <div class="formula">B³ᵣ(O) = { x ∈ ℝ³ : ||x − O|| ≤ r }</div>
+      <div class="formula">(x,y,z)=r( sinφ cosθ, sinφ sinθ, cosφ )</div>
+      <div class="formula">Area = 4πr²,　Volume = (4/3)πr³,　∫<sub>S²</sub>K dA = 4π</div>
+      <p>
+        二維的完整方向是 <b>2π</b>；三維的完整方向空間是球面 <b>S²</b>，其總立體角是 <b>4π</b>。
+        所以你前面從「360° 全方向 + 固定長度 → 圓」的想法，提升到三維後，就會變成：
+        <b>所有方向 + 固定長度 → 球面</b>。
+      </p>
+    </div>
+  </aside>
+</main>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const radiusInput = document.getElementById('radius');
+const thetaInput = document.getElementById('theta');
+const phiInput = document.getElementById('phi');
+const rotInput = document.getElementById('rot');
+
+const showWire = document.getElementById('showWire');
+const showAxes = document.getElementById('showAxes');
+const showRadius = document.getElementById('showRadius');
+const showFill = document.getElementById('showFill');
+const showCircle = document.getElementById('showCircle');
+const showPoint = document.getElementById('showPoint');
+
+const radiusVal = document.getElementById('radiusVal');
+const thetaVal = document.getElementById('thetaVal');
+const phiVal = document.getElementById('phiVal');
+const rotVal = document.getElementById('rotVal');
+const areaVal = document.getElementById('areaVal');
+const volumeVal = document.getElementById('volumeVal');
+const pointVal = document.getElementById('pointVal');
+
+const toggleSpin = document.getElementById('toggleSpin');
+const resetBtn = document.getElementById('reset');
+
+let spinning = false;
+let spinRAF = null;
+let autoRot = +rotInput.value;
+
+function fmt(x, d=4){
+  return Number(x).toFixed(d).replace(/\.?0+$/,'');
+}
+
+function resize(){
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  canvas.width = Math.floor(rect.width*dpr);
+  canvas.height = Math.floor(rect.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  draw();
+}
+
+function rotateY(p, a){
+  const c = Math.cos(a), s = Math.sin(a);
+  return {x: c*p.x + s*p.z, y: p.y, z: -s*p.x + c*p.z};
+}
+
+function rotateX(p, a){
+  const c = Math.cos(a), s = Math.sin(a);
+  return {x: p.x, y: c*p.y - s*p.z, z: s*p.y + c*p.z};
+}
+
+function project(p, scale, cx, cy){
+  const dist = 5.8;
+  const fac = dist / (dist - p.z);
+  return {x: cx + p.x*scale*fac, y: cy - p.y*scale*fac, fac};
+}
+
+function getPoint(){
+  const r = +radiusInput.value;
+  const th = (+thetaInput.value) * Math.PI/180;
+  const ph = (+phiInput.value) * Math.PI/180;
+  return {
+    x: r*Math.sin(ph)*Math.cos(th),
+    y: r*Math.sin(ph)*Math.sin(th),
+    z: r*Math.cos(ph)
+  };
+}
+
+function updateReadouts(){
+  const r = +radiusInput.value;
+  const th = +thetaInput.value;
+  const ph = +phiInput.value;
+  const p = getPoint();
+
+  radiusVal.textContent = fmt(r,2);
+  thetaVal.textContent = `${th}°`;
+  phiVal.textContent = `${ph}°`;
+  rotVal.textContent = `${Math.round(autoRot)}°`;
+
+  areaVal.textContent = fmt(4*Math.PI*r*r,4);
+  volumeVal.textContent = fmt((4/3)*Math.PI*r*r*r,4);
+  pointVal.textContent = `(${fmt(p.x,2)}, ${fmt(p.y,2)}, ${fmt(p.z,2)})`;
+}
+
+function drawSphereGrid(cx, cy, scale, rotYAngle){
+  const latitudes = [-60,-30,0,30,60];
+  const longitudes = [];
+  for(let a=0;a<180;a+=30) longitudes.push(a);
+
+  ctx.lineWidth = 1.1;
+
+  // latitude circles
+  latitudes.forEach(lat=>{
+    ctx.beginPath();
+    let first = true;
+    for(let i=0;i<=180;i++){
+      const t = i/180 * Math.PI*2;
+      const phi = (90-lat)*Math.PI/180;
+      const p0 = {x: Math.sin(phi)*Math.cos(t), y: Math.sin(phi)*Math.sin(t), z: Math.cos(phi)};
+      let p = rotateY(p0, rotYAngle);
+      p = rotateX(p, -0.38);
+      const q = project(p, scale, cx, cy);
+      if(first){ ctx.moveTo(q.x,q.y); first=false; }
+      else ctx.lineTo(q.x,q.y);
+    }
+    ctx.strokeStyle = lat===0 ? 'rgba(241,206,114,.9)' : 'rgba(143,181,255,.45)';
+    ctx.stroke();
+  });
+
+  // longitude circles
+  longitudes.forEach(lon=>{
+    ctx.beginPath();
+    let first = true;
+    const th = lon*Math.PI/180;
+    for(let i=0;i<=180;i++){
+      const phi = i/180*Math.PI;
+      const p0 = {x: Math.sin(phi)*Math.cos(th), y: Math.sin(phi)*Math.sin(th), z: Math.cos(phi)};
+      let p = rotateY(p0, rotYAngle);
+      p = rotateX(p, -0.38);
+      const q = project(p, scale, cx, cy);
+      if(first){ ctx.moveTo(q.x,q.y); first=false; }
+      else ctx.lineTo(q.x,q.y);
+    }
+    ctx.strokeStyle = 'rgba(143,181,255,.28)';
+    ctx.stroke();
+  });
+}
+
+function draw(){
+  updateReadouts();
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  ctx.clearRect(0,0,w,h);
+
+  const cx = w*0.51;
+  const cy = h*0.53;
+  const scale = Math.min(w,h)*0.20;
+  const r = +radiusInput.value;
+  autoRot = spinning ? autoRot : +rotInput.value;
+  const rotYAngle = autoRot*Math.PI/180;
+
+  // Title text
+  ctx.fillStyle = '#f1ce72';
+  ctx.font = '700 15px system-ui, sans-serif';
+  ctx.fillText('三維：固定半徑 + 全方向 ⇒ 球面 S²', 18, 28);
+  ctx.fillStyle = '#aab3c2';
+  ctx.font = '13px system-ui, sans-serif';
+  ctx.fillText('二維是圓 S¹；三維升級成球面 S²；填滿內部則是球體 B³。', 18, 49);
+
+  // optional filled disk to hint solid sphere cross-section
+  if(showFill.checked){
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, scale*r, scale*r*0.92, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(152,239,190,.10)';
+    ctx.fill();
+  }
+
+  // outer sphere silhouette
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, scale*r, scale*r*0.92, 0, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(255,255,255,.23)';
+  ctx.lineWidth = 1.3;
+  ctx.stroke();
+
+  if(showWire.checked){
+    drawSphereGrid(cx, cy, scale*r, rotYAngle);
+  }
+
+  // axes
+  if(showAxes.checked){
+    const axes = [
+      {p:{x:1.45*r,y:0,z:0}, color:'rgba(255,120,120,.95)', name:'x'},
+      {p:{x:0,y:1.45*r,z:0}, color:'rgba(152,239,190,.95)', name:'y'},
+      {p:{x:0,y:0,z:1.45*r}, color:'rgba(143,181,255,.95)', name:'z'},
+    ];
+    axes.forEach(a=>{
+      let p = rotateY(a.p, rotYAngle);
+      p = rotateX(p, -0.38);
+      const q = project(p, scale, cx, cy);
+      ctx.strokeStyle = a.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(q.x, q.y);
+      ctx.stroke();
+      ctx.fillStyle = a.color;
+      ctx.font = '700 14px system-ui, sans-serif';
+      ctx.fillText(a.name, q.x+6, q.y-6);
+    });
+  }
+
+  // equator / great circle
+  if(showCircle.checked){
+    ctx.beginPath();
+    let first = true;
+    for(let i=0;i<=180;i++){
+      const t = i/180 * Math.PI*2;
+      const p0 = {x: Math.cos(t), y: Math.sin(t), z: 0};
+      let p = rotateY(p0, rotYAngle);
+      p = rotateX(p, -0.38);
+      const q = project({x:p.x*r,y:p.y*r,z:p.z*r}, scale, cx, cy);
+      if(first){ctx.moveTo(q.x,q.y); first=false;}
+      else ctx.lineTo(q.x,q.y);
+    }
+    ctx.strokeStyle = 'rgba(241,206,114,.95)';
+    ctx.lineWidth = 2.3;
+    ctx.stroke();
+  }
+
+  // selected point
+  const pRaw = getPoint();
+  let p = rotateY(pRaw, rotYAngle);
+  p = rotateX(p, -0.38);
+  const q = project(p, scale, cx, cy);
+
+  if(showRadius.checked){
+    ctx.strokeStyle = 'rgba(255,158,165,.95)';
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(q.x, q.y);
+    ctx.stroke();
+  }
+
+  if(showPoint.checked){
+    ctx.beginPath();
+    ctx.arc(q.x, q.y, 5, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,158,165,1)';
+    ctx.fill();
+    ctx.fillStyle = '#eef2f7';
+    ctx.font = '700 13px system-ui, sans-serif';
+    ctx.fillText('P(θ, φ)', q.x+10, q.y-8);
+  }
+
+  // small legend
+  ctx.fillStyle = '#aab3c2';
+  ctx.font = '13px system-ui, sans-serif';
+  ctx.fillText('總立體角 = 4π', 22, h-58);
+  ctx.fillText('球面積 = 4πr²', 22, h-39);
+  ctx.fillText('球體積 = (4/3)πr³', 22, h-20);
+}
+
+function spin(){
+  if(!spinning) return;
+  autoRot += 0.5;
+  if(autoRot > 180) autoRot -= 360;
+  rotInput.value = Math.round(autoRot);
+  draw();
+  spinRAF = requestAnimationFrame(spin);
+}
+
+[radiusInput, thetaInput, phiInput, rotInput, showWire, showAxes, showRadius, showFill, showCircle, showPoint].forEach(el=>{
+  el.addEventListener('input', draw);
+  el.addEventListener('change', draw);
+});
+
+toggleSpin.addEventListener('click', ()=>{
+  spinning = !spinning;
+  toggleSpin.textContent = spinning ? '停止自轉' : '開始自轉';
+  if(spinning){
+    autoRot = +rotInput.value;
+    spin();
+  }else if(spinRAF){
+    cancelAnimationFrame(spinRAF);
+  }
+});
+
+resetBtn.addEventListener('click', ()=>{
+  radiusInput.value = "1.00";
+  thetaInput.value = "45";
+  phiInput.value = "60";
+  rotInput.value = "25";
+  showWire.checked = true;
+  showAxes.checked = true;
+  showRadius.checked = true;
+  showFill.checked = false;
+  showCircle.checked = true;
+  showPoint.checked = true;
+  spinning = false;
+  toggleSpin.textContent = '開始自轉';
+  autoRot = +rotInput.value;
+  draw();
+});
+
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>

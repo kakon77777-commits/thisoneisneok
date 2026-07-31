@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>歪度預測器 v0.1｜SKEW-PRED</title>
+<style>
+:root{--bg:#0f1117;--card:#171a23;--muted:#99a1b3;--text:#eef2ff;--line:#2a2f3d;--accent:#9fb7ff;}
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+header{padding:24px 28px;border-bottom:1px solid var(--line);background:#121621} h1{margin:0 0 8px;font-size:24px} p{color:var(--muted);line-height:1.6} main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px} section,.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px} label{display:block;margin:14px 0 6px;color:#cbd5e1;font-size:13px} input,select{width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);background:#0d1018;color:var(--text)} button{margin-top:14px;width:100%;padding:11px;border:0;border-radius:10px;background:var(--accent);font-weight:700;color:#111827;cursor:pointer} .grid{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px;margin-bottom:14px}.metric{background:#0d1018;border:1px solid var(--line);border-radius:10px;padding:12px}.metric b{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}.metric span{font-size:18px}.note{font-size:13px;color:var(--muted)} canvas{width:100%;height:430px;background:#0b0e14;border:1px solid var(--line);border-radius:12px}.table{overflow:auto} table{width:100%;border-collapse:collapse;margin-top:12px} th,td{border-bottom:1px solid var(--line);padding:8px;text-align:right;font-variant-numeric:tabular-nums} th:first-child,td:first-child{text-align:left}@media(max-width:900px){main{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><h1>歪度預測器 v0.1</h1><p>有限尺度實驗原型：把 K、V、A、J、Q 作為因果狀態，測試 closure / hold / linear / quadratic 預測器。瀏覽器端離線運算，不連網。</p></header>
+<main>
+<section>
+  <label>最大篩值 maxN</label><input id="maxN" type="number" value="300000" min="10000" max="1000000" step="10000" />
+  <label>生成函數</label><select id="kind"><option value="pi">π(x) - Li₂(x)</option><option value="theta">θ(x) - x</option><option value="psi">ψ(x) - x</option></select>
+  <label>目前位置 x</label><input id="x" type="number" value="200000" min="1000" step="1000" />
+  <label>歷史步長 h</label><input id="h" type="number" value="1000" min="10" step="10" />
+  <label>預測距離 Δ</label><input id="delta" type="number" value="1000" min="1" step="10" />
+  <label>顯示視窗半徑</label><input id="span" type="number" value="30000" min="1000" step="1000" />
+  <button onclick="run()">重新計算</button>
+  <p class="note">建議先用 maxN=300000。若調到 1000000，瀏覽器可能需要數秒。</p>
+</section>
+<section>
+  <div class="grid">
+    <div class="metric"><b>K(x)</b><span id="K">—</span></div>
+    <div class="metric"><b>V⁻ₕ(x)</b><span id="V">—</span></div>
+    <div class="metric"><b>A⁻ₕ(x)</b><span id="A">—</span></div>
+    <div class="metric"><b>J⁻ₕ(x)</b><span id="J">—</span></div>
+    <div class="metric"><b>Q⁻ₕ(x)</b><span id="Q">—</span></div>
+  </div>
+  <canvas id="chart" width="1100" height="430"></canvas>
+  <div class="table"><table><thead><tr><th>模型</th><th>預測 P(x+Δ)</th><th>真值</th><th>誤差</th><th>|誤差|</th></tr></thead><tbody id="rows"></tbody></table></div>
+</section>
+</main>
+<script>
+let cache={};
+function sieve(n){
+  let key='s'+n;if(cache[key])return cache[key];
+  let isP=new Uint8Array(n+1);isP.fill(1);isP[0]=0;isP[1]=0;
+  for(let p=2;p*p<=n;p++) if(isP[p]) for(let q=p*p;q<=n;q+=p) isP[q]=0;
+  let pi=new Int32Array(n+1),theta=new Float64Array(n+1),psiEv=new Float64Array(n+1);let c=0,pr=[];
+  for(let i=2;i<=n;i++){ if(isP[i]){c++; pr.push(i); let lp=Math.log(i); theta[i]+=lp; for(let q=i;q<=n;q*=i){psiEv[q]+=lp; if(q>Math.floor(n/i))break;} } pi[i]=c; }
+  for(let i=1;i<=n;i++){pi[i]=pi[i]||pi[i-1];theta[i]+=theta[i-1];psiEv[i]+=psiEv[i-1];}
+  cache[key]={isP,pi,theta,psi:psiEv};return cache[key];
+}
+function li2(x){ // fast asymptotic + crude small correction; enough for visualization
+  if(x<3)return 0; let L=Math.log(x); let sum=1, term=1;
+  for(let k=1;k<=8;k++){term*=k/L; sum+=term;}
+  let val=x/L*sum; let L2=Math.log(2); let sum2=1, t=1; for(let k=1;k<=8;k++){t*=k/L2; sum2+=t;} return val-2/L2*sum2;
+}
+function P(kind,d,x){x=Math.max(2,Math.floor(x)); if(kind==='pi')return d.pi[x]; if(kind==='theta')return d.theta[x]; return d.psi[x];}
+function C(kind,x){return kind==='pi'?li2(x):x;}
+function K(kind,d,x){return P(kind,d,x)-C(kind,x);}
+function state(kind,d,x,h){let K0=K(kind,d,x),K1=K(kind,d,x-h),K2=K(kind,d,x-2*h);let V=(K0-K1)/h;let A=(K0-2*K1+K2)/(h*h);let J=(P(kind,d,x)-P(kind,d,x-h))/h;let vals=[];for(let i=0;i<8;i++)vals.push(K(kind,d,x-i*h));let m=vals.reduce((a,b)=>a+b,0)/vals.length;let Q=vals.reduce((a,b)=>a+(b-m)*(b-m),0)/vals.length;return{K:K0,V,A,J,Q};}
+function pred(kind,d,x,h,delta,mode){let s=state(kind,d,x,h), cf=C(kind,x+delta); if(mode==='closure')return cf; if(mode==='hold')return cf+s.K; if(mode==='linear')return cf+s.K+delta*s.V; if(mode==='quadratic')return cf+s.K+delta*s.V+0.5*delta*delta*s.A;}
+function fmt(v){return Number.isFinite(v)?(Math.abs(v)<1e-3?v.toExponential(3):v.toFixed(4)):'—'}
+function run(){let maxN=+maxNEl.value, kind=kindEl.value, x=+xEl.value, h=+hEl.value, delta=+deltaEl.value, span=+spanEl.value; if(x+delta>maxN){x=maxN-delta; xEl.value=x} if(x-2*h<3){alert('需要 x-2h >= 3');return} let d=sieve(maxN), s=state(kind,d,x,h); KEl.textContent=fmt(s.K);VEl.textContent=fmt(s.V);AEl.textContent=fmt(s.A);JEl.textContent=fmt(s.J);QEl.textContent=fmt(s.Q); let actual=P(kind,d,x+delta); let modes=['closure','hold','linear','quadratic']; rowsEl.innerHTML=modes.map(m=>{let y=pred(kind,d,x,h,delta,m),e=y-actual;return `<tr><td>${m}</td><td>${fmt(y)}</td><td>${fmt(actual)}</td><td>${fmt(e)}</td><td>${fmt(Math.abs(e))}</td></tr>`}).join(''); draw(kind,d,x,span,h,delta);}
+function draw(kind,d,x,span,h,delta){let cv=chart,ctx=cv.getContext('2d'),W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);let a=Math.max(3,x-span),b=Math.min(+maxNEl.value,x+span);let pts=[];let step=Math.max(1,Math.floor((b-a)/700));for(let t=a;t<=b;t+=step)pts.push([t,K(kind,d,t)]);let ys=pts.map(p=>p[1]);let ymin=Math.min(...ys),ymax=Math.max(...ys);if(ymin===ymax){ymin-=1;ymax+=1}function X(t){return (t-a)/(b-a)*W}function Y(y){return H-(y-ymin)/(ymax-ymin)*H}ctx.strokeStyle='#2a2f3d';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,Y(0));ctx.lineTo(W,Y(0));ctx.stroke();ctx.strokeStyle='#9fb7ff';ctx.lineWidth=2;ctx.beginPath();pts.forEach((p,i)=>{let xx=X(p[0]),yy=Y(p[1]);if(i)ctx.lineTo(xx,yy);else ctx.moveTo(xx,yy)});ctx.stroke();ctx.strokeStyle='#facc15';ctx.beginPath();ctx.moveTo(X(x),0);ctx.lineTo(X(x),H);ctx.stroke();ctx.strokeStyle='#fb7185';ctx.beginPath();ctx.moveTo(X(x+delta),0);ctx.lineTo(X(x+delta),H);ctx.stroke();ctx.fillStyle='#cbd5e1';ctx.font='14px system-ui';ctx.fillText('K(x) 歪度場；黃線=x，紅線=x+Δ',14,22);}
+const maxNEl=document.getElementById('maxN'), kindEl=document.getElementById('kind'), xEl=document.getElementById('x'), hEl=document.getElementById('h'), deltaEl=document.getElementById('delta'), spanEl=document.getElementById('span');
+const KEl=document.getElementById('K'),VEl=document.getElementById('V'),AEl=document.getElementById('A'),JEl=document.getElementById('J'),QEl=document.getElementById('Q'), rowsEl=document.getElementById('rows'), chart=document.getElementById('chart');
+run();
+</script>
+</body></html>

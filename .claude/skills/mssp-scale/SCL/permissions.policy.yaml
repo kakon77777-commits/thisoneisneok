@@ -1,0 +1,49 @@
+# What this skill may change, and at which risk level.
+#
+# Present because a permission stated only in prose is an expectation, not a
+# contract (§15.5). This file is what a reviewer checks against.
+
+version: 0.1.0
+
+roles:
+  author:
+    description: Writes a new MSSP example on the daily cadence.
+    may:
+      - create mssp/examples/<new-id>/**
+      - run scripts/build-mssp.mjs
+      - read the MSSP source papers
+    may_not:
+      - modify an already-published example's id, slug, or date
+      - modify scripts/build-mssp.mjs to make a failing example pass
+      - publish an example whose `runnable` command exits non-zero
+      - deploy the site
+
+  reviewer:
+    description: Applies DMS/review-checklist.md before publication.
+    may:
+      - read everything
+      - reject an example
+    may_not:
+      - author and review the same example without saying so
+
+risk_levels:
+  L0:
+    what: Wording of an example's README.
+    approval: none
+  L1:
+    what: A new example added to mssp/examples/.
+    approval: none, but the island test must pass and be reported honestly
+  L2:
+    what: The example contract in SMS/example-contract.md.
+    approval: Neo, because every existing example is validated against it
+  L3:
+    what: scripts/build-mssp.mjs checks.
+    approval: Neo. Weakening a check to let content through inverts its purpose.
+  L4:
+    what: Deploying to thisoneisneok.com.
+    approval: Neo, explicitly, per deploy.
+
+# The self-approval loop the method warns about (§15.6): the same agent finds a
+# problem, fixes it, declares it fixed, and ships it. Breaking that here is
+# simple — the build's checks are L3 and the deploy is L4, so an author cannot
+# clear their own path.

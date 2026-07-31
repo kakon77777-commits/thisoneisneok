@@ -1,0 +1,91 @@
+<h2 class="sr-only">兩個互動：左邊把曲線放大到變成直線（導數＝這一刻的速度），右邊把速度曲線下的區域切成薄片相加（積分＝走過的距離）。同一段 s=t² 的行程，速度曲線下的面積等於走過的距離。</h2>
+<style>
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.sec-label{font-size:13px;color:var(--color-text-secondary);margin:0 0 10px}
+.row{display:flex;align-items:center;gap:12px;margin:0 0 10px}
+.row label{font-size:13px;color:var(--color-text-secondary);min-width:64px}
+.row span.val{font-size:13px;font-weight:500;min-width:40px;text-align:right}
+.readout{font-size:14px;color:var(--color-text-primary);margin:8px 0 4px;line-height:1.7}
+.readout b{font-weight:500}
+.muted{color:var(--color-text-secondary)}
+canvas{width:100%;height:220px;display:block;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary)}
+.panel{padding:1rem 0}
+</style>
+
+<div class="panel">
+  <p class="sec-label">① 放大就變直 — 這一刻的速度（導數）</p>
+  <canvas id="c1"></canvas>
+  <div class="row" style="margin-top:12px"><label>位置 t</label><input type="range" id="t0" min="0.4" max="1.6" step="0.05" value="1" style="flex:1"><span class="val" id="t0v">1.00</span></div>
+  <div class="row"><label>視窗寬度</label><input type="range" id="w" min="0.04" max="0.8" step="0.02" value="0.6" style="flex:1"><span class="val" id="wv">0.60</span></div>
+  <p class="readout"><span class="muted">割線斜率（看得到的平均速度）</span> <b id="sec">2.60</b> &nbsp;→&nbsp; <span class="muted">這一刻的真速度</span> <b id="tan">2.00</b></p>
+</div>
+
+<div class="panel">
+  <p class="sec-label">② 薄片加總 — 走過的距離（積分）</p>
+  <canvas id="c2"></canvas>
+  <div class="row" style="margin-top:12px"><label>切幾條</label><input type="range" id="n" min="1" max="80" step="1" value="8" style="flex:1"><span class="val" id="nv">8</span></div>
+  <p class="readout"><span class="muted" id="nlab">8</span> <span class="muted">條相加</span> <b id="sum">3.500</b> &nbsp;→&nbsp; <span class="muted">真正面積（＝走過的距離）</span> <b>4.000</b> &nbsp;<span class="muted">誤差</span> <b id="err">0.500</b></p>
+</div>
+
+<script>
+(function(){
+  var cs=getComputedStyle(document.documentElement);
+  var ink=(cs.getPropertyValue('--color-text-primary')||'#2C2C2A').trim();
+  var muted=(cs.getPropertyValue('--color-text-secondary')||'#888780').trim();
+  var BLUE='#378ADD', TEAL='#1D9E75', CORAL='#D85A30';
+  function setup(cv){var dpr=window.devicePixelRatio||1;var w=cv.clientWidth||640,h=220;cv.width=w*dpr;cv.height=h*dpr;var x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);return {x:x,w:w,h:h};}
+
+  function drawP1(){
+    var t0=parseFloat(document.getElementById('t0').value);
+    var w=parseFloat(document.getElementById('w').value);
+    var g=setup(document.getElementById('c1'));var ctx=g.x,W=g.w,H=g.h;
+    var cx=W/2, cy=H/2, s=W/(3*w);
+    var f=function(t){return t*t;};
+    var SX=function(t){return cx+(t-t0)*s;}, SY=function(y){return cy-(y-f(t0))*s;};
+    var tL=t0-(cx)/s, tR=t0+(W-cx)/s;
+    ctx.strokeStyle=muted;ctx.globalAlpha=0.35;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(W,cy);ctx.moveTo(cx,0);ctx.lineTo(cx,H);ctx.stroke();ctx.globalAlpha=1;
+    ctx.strokeStyle=TEAL;ctx.lineWidth=2;ctx.beginPath();
+    var m=2*t0, yl=f(t0)+m*(tL-t0), yr=f(t0)+m*(tR-t0);
+    ctx.moveTo(SX(tL),SY(yl));ctx.lineTo(SX(tR),SY(yr));ctx.stroke();
+    var tq=t0+w, P=[t0,f(t0)], Q=[tq,f(tq)], ms=(f(tq)-f(t0))/w;
+    ctx.strokeStyle=CORAL;ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.beginPath();
+    var sl=f(t0)+ms*(tL-t0), sr=f(t0)+ms*(tR-t0);
+    ctx.moveTo(SX(tL),SY(sl));ctx.lineTo(SX(tR),SY(sr));ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle=BLUE;ctx.lineWidth=2.5;ctx.beginPath();var first=true;
+    for(var i=0;i<=240;i++){var t=tL+(tR-tL)*i/240;var px=SX(t),py=SY(f(t));if(first){ctx.moveTo(px,py);first=false;}else ctx.lineTo(px,py);}
+    ctx.stroke();
+    ctx.fillStyle=TEAL;ctx.beginPath();ctx.arc(SX(P[0]),SY(P[1]),4,0,7);ctx.fill();
+    ctx.fillStyle=CORAL;ctx.beginPath();ctx.arc(SX(Q[0]),SY(Q[1]),4,0,7);ctx.fill();
+    document.getElementById('t0v').textContent=t0.toFixed(2);
+    document.getElementById('wv').textContent=w.toFixed(2);
+    document.getElementById('sec').textContent=ms.toFixed(2);
+    document.getElementById('tan').textContent=m.toFixed(2);
+  }
+
+  function drawP2(){
+    var n=parseInt(document.getElementById('n').value);
+    var g=setup(document.getElementById('c2'));var ctx=g.x,W=g.w,H=g.h;
+    var pad=28, x0=pad, x1=W-pad, y0=H-pad, y1=18;
+    var T=2, VMAX=4, sx=function(t){return x0+(t/T)*(x1-x0);}, sy=function(v){return y0-(v/VMAX)*(y0-y1);};
+    ctx.strokeStyle=muted;ctx.globalAlpha=0.35;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y0);ctx.moveTo(x0,y0);ctx.lineTo(x0,y1);ctx.stroke();ctx.globalAlpha=1;
+    var dt=T/n;
+    ctx.fillStyle=BLUE;ctx.strokeStyle=BLUE;
+    for(var i=0;i<n;i++){var t=i*dt, v=2*t, rx=sx(t), rw=sx(t+dt)-sx(t), ry=sy(v), rh=y0-ry;
+      ctx.globalAlpha=0.18;ctx.fillRect(rx,ry,rw,rh);ctx.globalAlpha=0.6;ctx.lineWidth=1;ctx.strokeRect(rx,ry,rw,rh);}
+    ctx.globalAlpha=1;
+    ctx.strokeStyle=ink;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(sx(0),sy(0));ctx.lineTo(sx(T),sy(4));ctx.stroke();
+    var sum=4-4/n, er=4/n;
+    document.getElementById('nv').textContent=n;
+    document.getElementById('nlab').textContent=n;
+    document.getElementById('sum').textContent=sum.toFixed(3);
+    document.getElementById('err').textContent=er.toFixed(3);
+  }
+
+  ['t0','w'].forEach(function(id){document.getElementById(id).addEventListener('input',drawP1);});
+  document.getElementById('n').addEventListener('input',drawP2);
+  drawP1();drawP2();
+  window.addEventListener('resize',function(){drawP1();drawP2();});
+})();
+</script>

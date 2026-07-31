@@ -1,0 +1,34 @@
+{
+  "system": {
+    "id": "001-task-runner",
+    "version": "1.0.0",
+    "purpose": "Run a list of typed tasks and report the outcome.",
+    "non_goals": [
+      "scheduling or cron",
+      "parallel execution",
+      "retry and backoff",
+      "persistence between runs"
+    ]
+  },
+  "capability_index": {
+    "SMS": {
+      "model": "src/SMS/model.js — task result, run report, the handler and reporter interfaces",
+      "registry": "src/SMS/registry.js — how TMS modules are made present",
+      "runner": "src/SMS/runner.js — the loop, permission check, trace emission"
+    },
+    "SCL": {
+      "permissions": "src/SCL/permissions.js + permissions.json — per-type limits the runner enforces"
+    },
+    "TMS": {
+      "handlers/file-read": "type file.read",
+      "handlers/http-get": "type http.get",
+      "reporters/text": "human-readable render of a run report",
+      "reporters/json": "machine-readable render of the same report"
+    },
+    "DMS": {
+      "trace": "src/DMS/trace.js — run events, plus the human view of skips and refusals"
+    }
+  },
+  "dependency_rule": "TMS may import SMS. No TMS imports another TMS. Checked mechanically by scripts/build-mssp.mjs.",
+  "notes": "FMS is metadata only. No procedure lives in this file, and nothing at runtime reads it — it exists so a person or an agent can locate a capability without loading it."
+}

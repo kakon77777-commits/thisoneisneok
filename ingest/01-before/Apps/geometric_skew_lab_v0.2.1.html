@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>幾何歪度實驗台 v0.2.1 修正版</title>
+<style>
+:root{
+  --bg:#0d1117;--panel:#161b22;--panel2:#0f1722;--text:#e6edf3;--muted:#8b949e;
+  --line:#30363d;--accent:#7dd3fc;--accent2:#a78bfa;--warn:#fbbf24;--bad:#fb7185;--good:#86efac;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;color:var(--text);
+  font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  background:radial-gradient(circle at 10% 0%,rgba(56,189,248,.15),transparent 35%),
+             radial-gradient(circle at 90% 8%,rgba(167,139,250,.13),transparent 30%),
+             var(--bg);
+}
+header{
+  padding:26px 24px 16px;border-bottom:1px solid var(--line);
+  background:rgba(13,17,23,.84);position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)
+}
+h1{margin:0 0 8px;font-size:clamp(24px,4vw,38px)}
+.subtitle{color:var(--muted);line-height:1.7;max-width:1200px}
+.strip{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:7px 11px;background:rgba(15,23,34,.86);color:var(--muted);font-size:13px}
+.pill b{color:var(--accent)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 15px var(--good)}
+.dot.paused{background:var(--warn);box-shadow:0 0 15px var(--warn)}
+main{display:grid;grid-template-columns:390px minmax(0,1fr);gap:18px;padding:18px}
+@media(max-width:1060px){main{grid-template-columns:1fr}header{position:relative}}
+section,.card{background:linear-gradient(180deg,rgba(22,27,34,.95),rgba(15,23,34,.95));border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 32px rgba(0,0,0,.25)}
+.controls{padding:18px;height:max-content}
+.group-title{margin:18px 0 12px;color:#dbeafe;font-weight:700;border-left:3px solid var(--accent);padding-left:10px}
+.row{margin:0 0 16px}
+label{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted);margin-bottom:8px}
+label b{color:var(--text)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=number],select,button{width:100%;background:#0b1220;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:15px}
+button{cursor:pointer;position:relative;overflow:hidden;transition:.14s transform,.14s box-shadow,.14s background,.14s border-color}
+button:hover{background:#111a2b;border-color:rgba(125,211,252,.4)}
+button:active{transform:translateY(1px) scale(.99)}
+button.flash{border-color:rgba(125,211,252,.95);box-shadow:0 0 0 3px rgba(125,211,252,.16),0 0 24px rgba(125,211,252,.32),inset 0 0 22px rgba(125,211,252,.12)}
+button.flash:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at center,rgba(255,255,255,.32),transparent 46%);animation:pulse .42s ease-out forwards;pointer-events:none}
+@keyframes pulse{from{opacity:.85;transform:scale(.7)}to{opacity:0;transform:scale(1.8)}}
+.button-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.primary{border-color:rgba(125,211,252,.55);background:rgba(14,116,144,.22)}
+.danger{border-color:rgba(251,113,133,.45);background:rgba(159,18,57,.18)}
+.log-panel{margin-top:16px;background:#0b1220;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.log-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.025)}
+.log-head b{font-size:14px}
+.log-body{height:170px;overflow:auto;padding:9px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;line-height:1.55}
+.log-entry{padding:4px 0;border-bottom:1px dashed rgba(48,54,61,.48);color:#cbd5e1}
+.log-entry .time{color:#8b949e}.log-entry .type{color:#7dd3fc}
+.workspace{display:grid;grid-template-rows:auto auto auto auto auto;gap:18px}
+.chart-card{padding:16px}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:8px}
+h2{margin:0;font-size:19px}
+.hint{color:var(--muted);font-size:13px;line-height:1.6}
+canvas{width:100%;display:block;border-radius:14px;background:#080d15;border:1px solid #1f2937}
+#shapeCanvas{height:430px}#historyCanvas{height:250px}#radialCanvas{height:290px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:13px;margin:10px 0 0}
+.swatch{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px}
+.metrics{display:grid;grid-template-columns:repeat(8,minmax(120px,1fr));gap:12px}
+@media(max-width:1180px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.metric{padding:15px}.metric .name{color:var(--muted);font-size:13px;margin-bottom:8px}.metric .value{font-size:24px;font-weight:700}.metric .note{color:var(--muted);font-size:12px;margin-top:8px;line-height:1.5}
+.adaptive-panel{padding:16px;display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px}
+@media(max-width:1180px){.adaptive-panel{grid-template-columns:repeat(2,1fr)}}
+.gauge{background:rgba(11,18,32,.74);border:1px solid var(--line);border-radius:16px;padding:12px}
+.gauge .name{color:var(--muted);font-size:13px;margin-bottom:9px}.bar{height:10px;border-radius:999px;background:#111827;border:1px solid #1f2937;overflow:hidden}.bar>div{height:100%;width:50%;background:linear-gradient(90deg,var(--bad),var(--warn),var(--good));border-radius:999px}.gauge .value{margin-top:8px;font-weight:700}
+.explain{padding:18px;line-height:1.8}
+.footer{padding:0 18px 24px;color:var(--muted);font-size:12px}
+#errorBox{display:none;position:fixed;left:18px;right:18px;bottom:18px;z-index:99;background:#3b0b16;color:#fee2e2;border:1px solid #fb7185;border-radius:14px;padding:12px 14px;font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>幾何歪度實驗台 v0.2.1</h1>
+  <div class="subtitle">
+    修正版：重寫時間滑桿與模擬流程，避免拖動時間時反覆重建與反覆繪圖造成黑畫面。
+    真實圖形 <b>R(t)</b> 隨時間演化，虛擬孿生體 <b>V(t)</b> 以自適應演算法追蹤與對齊。
+  </div>
+  <div class="strip">
+    <span class="pill"><span id="runDot" class="dot"></span><span id="runText">運行中</span></span>
+    <span class="pill">時間：<b>t=<span id="timeText">0</span></b></span>
+    <span class="pill">對齊模式：<b><span id="modeText">平衡</span></b></span>
+    <span class="pill">同步狀態：<b><span id="syncText">初始化</span></b></span>
+  </div>
+</header>
+
+<main>
+  <aside class="controls">
+    <div class="group-title">時間與播放</div>
+    <div class="row">
+      <label><b>時間滑桿</b><span id="timelineVal"></span></label>
+      <input id="timeline" type="range" min="0" max="720" step="1" value="0" />
+    </div>
+    <div class="row">
+      <label><b>播放速度</b><span id="speedVal"></span></label>
+      <input id="speed" type="range" min="1" max="6" step="1" value="2" />
+    </div>
+    <div class="button-grid row">
+      <button class="primary" id="playBtn">暫停 / 繼續</button>
+      <button id="stepBtn">單步推進</button>
+      <button id="resetTimeBtn">重設時間</button>
+      <button class="danger" id="clearLogBtn">清空 LOG</button>
+    </div>
+
+    <div class="group-title">基準圖形</div>
+    <div class="row"><label><b>隨機種子 Seed</b><span id="seedText"></span></label><input id="seedInput" type="number" value="314159" step="1" /></div>
+    <div class="row"><label><b>取樣點數</b><span id="pointsVal"></span></label><input id="points" type="range" min="64" max="360" step="4" value="160" /></div>
+    <div class="row"><label><b>基準半徑</b><span id="radiusVal"></span></label><input id="radius" type="range" min="60" max="180" step="1" value="118" /></div>
+    <div class="row"><label><b>基準不規則度</b><span id="irregularVal"></span></label><input id="irregular" type="range" min="0.02" max="0.55" step="0.01" value="0.22" /></div>
+
+    <div class="group-title">真實圖形動態</div>
+    <div class="row"><label><b>形變振幅</b><span id="shapeAmpVal"></span></label><input id="shapeAmp" type="range" min="0" max="1.6" step="0.01" value="0.82" /></div>
+    <div class="row"><label><b>平移振幅</b><span id="shiftAmpVal"></span></label><input id="shiftAmp" type="range" min="0" max="70" step="1" value="24" /></div>
+    <div class="row"><label><b>旋轉振幅</b><span id="rotAmpVal"></span></label><input id="rotAmp" type="range" min="0" max="120" step="1" value="26" /></div>
+    <div class="row"><label><b>動態噪聲</b><span id="noiseVal"></span></label><input id="noiseLevel" type="range" min="0" max="0.22" step="0.005" value="0.04" /></div>
+
+    <div class="group-title">自適應對齊</div>
+    <div class="row">
+      <label><b>對齊模式</b><span id="modeLabel"></span></label>
+      <select id="adaptMode">
+        <option value="off">關閉：無自適應</option>
+        <option value="conservative">保守：穩定優先</option>
+        <option value="balanced" selected>平衡：追蹤與穩定折衷</option>
+        <option value="aggressive">激進：快速追蹤</option>
+      </select>
+    </div>
+    <div class="row"><label><b>位置學習率 η_pos</b><span id="etaPosVal"></span></label><input id="etaPos" type="range" min="0" max="0.55" step="0.005" value="0.17" /></div>
+    <div class="row"><label><b>形狀學習率 η_shape</b><span id="etaShapeVal"></span></label><input id="etaShape" type="range" min="0" max="0.45" step="0.005" value="0.10" /></div>
+    <div class="row"><label><b>旋轉學習率 η_rot</b><span id="etaRotVal"></span></label><input id="etaRot" type="range" min="0" max="0.45" step="0.005" value="0.14" /></div>
+    <div class="row"><label><b>風險敏感度 η</b><span id="etaRiskVal"></span></label><input id="etaRisk" type="range" min="0" max="2.0" step="0.01" value="0.75" /></div>
+    <div class="row"><label><b>目標粗糙度 Q*</b><span id="targetQVal"></span></label><input id="targetQ" type="range" min="0.02" max="0.8" step="0.01" value="0.18" /></div>
+
+    <div class="button-grid row">
+      <button class="primary" id="regenBtn">重新生成圖形</button>
+      <button id="randomDynBtn">隨機動態設定</button>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-head"><b>操作 LOG</b></div>
+      <div id="logBody" class="log-body"></div>
+    </div>
+  </aside>
+
+  <div class="workspace">
+    <section class="chart-card">
+      <div class="chart-head"><div><h2>R(t) 與 V(t) 的幾何疊合</h2><div class="hint">藍色為虛擬孿生體 V(t)，紫色為真實圖形 R(t)。黃色箭頭顯示重心偏移。</div></div></div>
+      <canvas id="shapeCanvas" width="1100" height="430"></canvas>
+      <div class="legend">
+        <span><span class="swatch" style="background:#7dd3fc"></span>虛擬孿生體 V(t)</span>
+        <span><span class="swatch" style="background:#a78bfa"></span>真實圖形 R(t)</span>
+        <span><span class="swatch" style="background:#fbbf24"></span>重心偏移向量</span>
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <div class="chart-head"><div><h2>時間歷史：總歪度分數與同步信心</h2><div class="hint">綠線是同步信心，粉線是總歪度分數。拖動時間滑桿時只在最後重畫，避免卡死。</div></div></div>
+      <canvas id="historyCanvas" width="1100" height="250"></canvas>
+      <div class="legend">
+        <span><span class="swatch" style="background:#86efac"></span>同步信心 confidence</span>
+        <span><span class="swatch" style="background:#fb7185"></span>總歪度分數 total skew</span>
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <div class="chart-head"><div><h2>當前徑向歪度曲線 K<sub>r</sub>(θ,t)</h2><div class="hint">帶時間的幾何歪線。</div></div></div>
+      <canvas id="radialCanvas" width="1100" height="290"></canvas>
+      <div class="legend">
+        <span><span class="swatch" style="background:#fbbf24"></span>0 軸</span>
+        <span><span class="swatch" style="background:#86efac"></span>K<sub>r</sub>(θ,t)</span>
+      </div>
+    </section>
+
+    <section class="adaptive-panel">
+      <div class="gauge"><div class="name">同步信心 c</div><div class="bar"><div id="confBar"></div></div><div class="value" id="confNow">0</div></div>
+      <div class="gauge"><div class="name">狀態風險 r</div><div class="bar"><div id="riskBar"></div></div><div class="value" id="riskNow">0</div></div>
+      <div class="gauge"><div class="name">有效位置學習率</div><div class="bar"><div id="posBar"></div></div><div class="value" id="posNow">0</div></div>
+      <div class="gauge"><div class="name">有效形狀學習率</div><div class="bar"><div id="shapeBar"></div></div><div class="value" id="shapeNow">0</div></div>
+    </section>
+
+    <div class="metrics">
+      <div class="metric card"><div class="name">面積歪度</div><div class="value" id="areaDiff">0</div><div class="note">Area(R)-Area(V)</div></div>
+      <div class="metric card"><div class="name">周長歪度</div><div class="value" id="periDiff">0</div><div class="note">Perimeter(R)-Perimeter(V)</div></div>
+      <div class="metric card"><div class="name">重心偏移</div><div class="value" id="centroidShift">0</div><div class="note">‖C_R-C_V‖</div></div>
+      <div class="metric card"><div class="name">方向差</div><div class="value" id="orientationDiff">0</div><div class="note">principal orientation difference</div></div>
+      <div class="metric card"><div class="name">平均徑向歪度</div><div class="value" id="radialMean">0</div><div class="note">mean(|K_r|)</div></div>
+      <div class="metric card"><div class="name">幾何粗糙度</div><div class="value" id="roughness">0</div><div class="note">std(K_r)</div></div>
+      <div class="metric card"><div class="name">總歪度分數</div><div class="value" id="totalScore">0</div><div class="note">綜合差異分數</div></div>
+      <div class="metric card"><div class="name">同步信心</div><div class="value" id="syncConfidence">0</div><div class="note">越高表示虛實越接近</div></div>
+    </div>
+
+    <section class="explain">
+      <h2>v0.2.1 修正內容</h2>
+      <p>
+        這版修正 v0.2 的黑圖與時間滑桿問題。原本拖動時間時會在 input 事件中反覆重建整段模擬並多次繪圖；
+        這版改成「安靜跑到指定時間，最後只 render 一次」。同時新增錯誤提示框，如果 JavaScript runtime 出錯，不會只留下黑畫面。
+      </p>
+    </section>
+  </div>
+</main>
+<div id="errorBox"></div>
+<div class="footer">EML-GSC / EML-RVSC prototype v0.2.1. Standalone HTML. No external library.</div>
+
+<script>
+(function(){
+  window.onerror = function(message, source, lineno, colno, error){
+    var box = document.getElementById('errorBox');
+    if(box){
+      box.style.display = 'block';
+      box.textContent = 'Runtime error: ' + message + '\nline=' + lineno + ' col=' + colno + '\n' + (error && error.stack ? error.stack : '');
+    }
+  };
+
+  var els = {};
+  [
+    'timeline','speed','playBtn','stepBtn','resetTimeBtn','clearLogBtn','seedInput','points','radius','irregular',
+    'shapeAmp','shiftAmp','rotAmp','noiseLevel','adaptMode','etaPos','etaShape','etaRot','etaRisk','targetQ',
+    'regenBtn','randomDynBtn','shapeCanvas','historyCanvas','radialCanvas','logBody','runDot','runText','timeText',
+    'modeText','syncText','timelineVal','speedVal','seedText','pointsVal','radiusVal','irregularVal','shapeAmpVal',
+    'shiftAmpVal','rotAmpVal','noiseVal','modeLabel','etaPosVal','etaShapeVal','etaRotVal','etaRiskVal','targetQVal',
+    'areaDiff','periDiff','centroidShift','orientationDiff','radialMean','roughness','totalScore','syncConfidence',
+    'confBar','riskBar','posBar','shapeBar','confNow','riskNow','posNow','shapeNow'
+  ].forEach(function(id){ els[id] = document.getElementById(id); });
+
+  var running = true;
+  var currentT = 0;
+  var lastTick = performance.now();
+  var baseRadii = [];
+  var histories = {score:[], conf:[]};
+  var state = null;
+  var realShape = null;
+  var twinShape = null;
+  var radialDiffs = [];
+  var lastSliderLogAt = 0;
+  var timelineTimer = null;
+
+  function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+  function wrapAngle(a){ while(a > Math.PI) a -= Math.PI*2; while(a < -Math.PI) a += Math.PI*2; return a; }
+  function fmt(x){ if(!isFinite(x)) return '—'; if(Math.abs(x)>=100)return x.toFixed(1); if(Math.abs(x)>=10)return x.toFixed(2); return x.toFixed(3); }
+  function nowText(){ return new Date().toLocaleTimeString('zh-TW',{hour12:false}); }
+  function addLog(type,msg){
+    var div=document.createElement('div');
+    div.className='log-entry';
+    div.innerHTML='<span class="time">['+nowText()+']</span> <span class="type">'+type+'</span> '+msg;
+    els.logBody.prepend(div);
+    while(els.logBody.children.length>110){ els.logBody.removeChild(els.logBody.lastChild); }
+  }
+  function flash(btn,type,msg){
+    btn.classList.remove('flash'); void btn.offsetWidth; btn.classList.add('flash');
+    window.setTimeout(function(){btn.classList.remove('flash');},430);
+    addLog(type,msg);
+  }
+  function makeRng(seed){
+    var s=(seed>>>0)||1;
+    return function(){ s=(1664525*s+1013904223)>>>0; return s/4294967296; };
+  }
+  function params(){
+    return {
+      maxT:parseInt(els.timeline.max,10),
+      seed:parseInt(els.seedInput.value||'1',10)||1,
+      points:parseInt(els.points.value,10),
+      radius:parseFloat(els.radius.value),
+      irregular:parseFloat(els.irregular.value),
+      shapeAmp:parseFloat(els.shapeAmp.value),
+      shiftAmp:parseFloat(els.shiftAmp.value),
+      rotAmp:parseFloat(els.rotAmp.value)*Math.PI/180,
+      noiseLevel:parseFloat(els.noiseLevel.value),
+      adaptMode:els.adaptMode.value,
+      etaPos:parseFloat(els.etaPos.value),
+      etaShape:parseFloat(els.etaShape.value),
+      etaRot:parseFloat(els.etaRot.value),
+      etaRisk:parseFloat(els.etaRisk.value),
+      targetQ:parseFloat(els.targetQ.value),
+      baseSpeed:parseInt(els.speed.value,10)
+    };
+  }
+
+  function updateLabels(){
+    var p=params();
+    var modeNames={off:'關閉',conservative:'保守',balanced:'平衡',aggressive:'激進'};
+    els.timelineVal.textContent=String(currentT);
+    els.speedVal.textContent=p.baseSpeed+'x';
+    els.seedText.textContent=String(p.seed);
+    els.pointsVal.textContent=String(p.points);
+    els.radiusVal.textContent=String(p.radius);
+    els.irregularVal.textContent=p.irregular.toFixed(2);
+    els.shapeAmpVal.textContent=p.shapeAmp.toFixed(2);
+    els.shiftAmpVal.textContent=String(p.shiftAmp);
+    els.rotAmpVal.textContent=Math.round(p.rotAmp*180/Math.PI)+'°';
+    els.noiseVal.textContent=p.noiseLevel.toFixed(3);
+    els.modeLabel.textContent=modeNames[p.adaptMode];
+    els.modeText.textContent=modeNames[p.adaptMode];
+    els.etaPosVal.textContent=p.etaPos.toFixed(3);
+    els.etaShapeVal.textContent=p.etaShape.toFixed(3);
+    els.etaRotVal.textContent=p.etaRot.toFixed(3);
+    els.etaRiskVal.textContent=p.etaRisk.toFixed(2);
+    els.targetQVal.textContent=p.targetQ.toFixed(2);
+    els.timeText.textContent=String(currentT);
+    els.runText.textContent=running?'運行中':'已暫停';
+    els.runDot.classList.toggle('paused',!running);
+    els.timeline.value=String(currentT);
+  }
+
+  function regenerateBase(){
+    var p=params(), rand=makeRng(p.seed), n=p.points;
+    baseRadii = new Array(n);
+    var phase1=rand()*Math.PI*2, phase2=rand()*Math.PI*2, phase3=rand()*Math.PI*2;
+    var f1=2+Math.floor(rand()*4), f2=5+Math.floor(rand()*4), f3=8+Math.floor(rand()*5);
+    for(var i=0;i<n;i++){
+      var th=(i/n)*Math.PI*2;
+      var wave=0.95*Math.sin(f1*th+phase1)+0.55*Math.sin(f2*th+phase2)+0.25*Math.cos(f3*th+phase3);
+      baseRadii[i]=Math.max(18,p.radius*(1+p.irregular*wave));
+    }
+  }
+
+  function initState(){
+    state={shiftX:0,shiftY:0,stretchX:1,stretchY:1,rotate:0,bulge:0.04,twist:0};
+  }
+
+  function realParamsAt(t){
+    var p=params(), x=t/22;
+    return {
+      stretchX:1+p.shapeAmp*(0.18*Math.sin(0.93*x+0.4)+0.06*Math.cos(0.27*x)),
+      stretchY:1+p.shapeAmp*(0.14*Math.cos(0.72*x+1.2)-0.04*Math.sin(0.21*x)),
+      bulge:p.shapeAmp*(0.12+0.20*(0.5+0.5*Math.sin(0.85*x+0.7))),
+      twist:p.shapeAmp*0.40*Math.sin(0.57*x+0.25),
+      rotate:p.rotAmp*Math.sin(0.41*x+0.18),
+      shiftX:p.shiftAmp*(0.85*Math.sin(0.31*x)+0.22*Math.sin(1.05*x+0.4)),
+      shiftY:p.shiftAmp*(0.76*Math.cos(0.36*x+0.5)+0.16*Math.sin(0.88*x)),
+      noise:p.noiseLevel*(0.65+0.35*(0.5+0.5*Math.sin(0.93*x+0.9)))
+    };
+  }
+
+  function makeShape(tr, seedOffset){
+    var p=params(), n=p.points, rand=makeRng((p.seed ^ (seedOffset||0))>>>0);
+    var bulgeCenter=rand()*Math.PI*2, bulgeWidth=0.70+rand()*0.58, bulgeFreq=1+Math.floor(rand()*3);
+    var pts=new Array(n);
+    for(var i=0;i<n;i++){
+      var th=(i/n)*Math.PI*2, r0=baseRadii[i];
+      var dAng=th-bulgeCenter;
+      while(dAng>Math.PI)dAng-=Math.PI*2;
+      while(dAng<-Math.PI)dAng+=Math.PI*2;
+      var bump=Math.exp(-Math.pow(dAng/bulgeWidth,2))*Math.cos(bulgeFreq*dAng);
+      var r1=r0*(1+tr.bulge*bump);
+      if(tr.noise>0){ r1 *= (1+tr.noise*((rand()-0.5)*1.8)); }
+      var twistAngle=th+tr.twist*(r0/p.radius);
+      var x=r1*Math.cos(twistAngle), y=r1*Math.sin(twistAngle);
+      x*=tr.stretchX; y*=tr.stretchY;
+      var cr=Math.cos(tr.rotate), sr=Math.sin(tr.rotate);
+      pts[i]={x:x*cr-y*sr+tr.shiftX, y:x*sr+y*cr+tr.shiftY};
+    }
+    return pts;
+  }
+
+  function polygonFeatures(points){
+    var n=points.length, a2=0, cxSum=0, cySum=0, per=0;
+    var minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    for(var i=0;i<n;i++){
+      var p=points[i], q=points[(i+1)%n];
+      var cross=p.x*q.y-q.x*p.y;
+      a2+=cross; cxSum+=(p.x+q.x)*cross; cySum+=(p.y+q.y)*cross;
+      per+=Math.hypot(q.x-p.x,q.y-p.y);
+      if(p.x<minX)minX=p.x;if(p.x>maxX)maxX=p.x;if(p.y<minY)minY=p.y;if(p.y>maxY)maxY=p.y;
+    }
+    var area=Math.abs(a2)/2, cx=0, cy=0;
+    if(Math.abs(a2)>1e-9){ cx=cxSum/(3*a2); cy=cySum/(3*a2); }
+    var sxx=0, syy=0, sxy=0;
+    for(i=0;i<n;i++){
+      var dx=points[i].x-cx, dy=points[i].y-cy;
+      sxx+=dx*dx; syy+=dy*dy; sxy+=dx*dy;
+    }
+    var orientation=0.5*Math.atan2(2*sxy,sxx-syy);
+    return {area:area,perimeter:per,cx:cx,cy:cy,width:maxX-minX,height:maxY-minY,orientation:orientation};
+  }
+
+  function radialDiffProfile(realPts,twinPts,realF,twinF){
+    var n=realPts.length, diffs=new Array(n);
+    for(var i=0;i<n;i++){
+      var rr=Math.hypot(realPts[i].x-realF.cx, realPts[i].y-realF.cy);
+      var rv=Math.hypot(twinPts[i].x-twinF.cx, twinPts[i].y-twinF.cy);
+      diffs[i]=rr-rv;
+    }
+    return diffs;
+  }
+
+  function summarizeRadial(diffs){
+    var mean=0, meanAbs=0;
+    for(var i=0;i<diffs.length;i++){ mean+=diffs[i]; meanAbs+=Math.abs(diffs[i]); }
+    mean/=diffs.length; meanAbs/=diffs.length;
+    var v=0; for(i=0;i<diffs.length;i++){ v+=Math.pow(diffs[i]-mean,2); }
+    return {mean:mean,meanAbs:meanAbs,std:Math.sqrt(v/diffs.length)};
+  }
+
+  function totalScore(areaDiff,periDiff,centShift,orientDiff,meanRad,rough,realF){
+    var p=params();
+    var areaNorm=Math.abs(areaDiff)/Math.max(1,realF.area);
+    var periNorm=Math.abs(periDiff)/Math.max(1,realF.perimeter);
+    var centNorm=centShift/Math.max(1,p.radius);
+    var orientNorm=Math.abs(orientDiff)/Math.PI;
+    var radNorm=meanRad/Math.max(1,p.radius);
+    var roughNorm=rough/Math.max(1,p.radius);
+    return 100*(0.21*areaNorm+0.15*periNorm+0.20*centNorm+0.12*orientNorm+0.18*radNorm+0.14*roughNorm);
+  }
+
+  function modeMultiplier(mode){
+    if(mode==='off')return {riskBias:0,gain:0};
+    if(mode==='conservative')return {riskBias:1.25,gain:0.72};
+    if(mode==='aggressive')return {riskBias:0.68,gain:1.45};
+    return {riskBias:1,gain:1};
+  }
+
+  function computeAdaptive(score,roughStd,centShift,orientDiff){
+    var p=params();
+    if(p.adaptMode==='off')return {risk:1,conf:0,etaPosEff:0,etaShapeEff:0,etaRotEff:0};
+    var mult=modeMultiplier(p.adaptMode);
+    var nScore=clamp(score/38,0,1.8);
+    var nRough=clamp(roughStd/Math.max(1,p.radius*p.targetQ),0,1.8);
+    var nShift=clamp(centShift/Math.max(1,p.radius*0.8),0,1.8);
+    var nOrient=clamp(Math.abs(orientDiff)/1.2,0,1.8);
+    var risk=clamp(mult.riskBias*(0.38*nScore+0.24*nRough+0.22*nShift+0.16*nOrient),0,2);
+    var conf=clamp(Math.exp(-p.etaRisk*risk),0.02,1);
+    var gain=mult.gain*(0.22+0.78*conf);
+    return {risk: risk, conf: conf, etaPosEff: p.etaPos*gain, etaShapeEff:p.etaShape*gain, etaRotEff:p.etaRot*gain};
+  }
+
+  function computeStepOnly(){
+    var rp=realParamsAt(currentT);
+    var realPts=makeShape(rp,0x61c88647);
+    var realF=polygonFeatures(realPts);
+
+    var twinPts=makeShape({stretchX:state.stretchX,stretchY:state.stretchY,bulge:state.bulge,twist:state.twist,rotate:state.rotate,shiftX:state.shiftX,shiftY:state.shiftY,noise:0},0x61c88647);
+    var twinF=polygonFeatures(twinPts);
+    var diffs=radialDiffProfile(realPts,twinPts,realF,twinF);
+    var rad=summarizeRadial(diffs);
+    var centShift=Math.hypot(realF.cx-twinF.cx, realF.cy-twinF.cy);
+    var orientDiff=wrapAngle(realF.orientation-twinF.orientation);
+    var score=totalScore(realF.area-twinF.area, realF.perimeter-twinF.perimeter, centShift, orientDiff, rad.meanAbs, rad.std, realF);
+    var adapt=computeAdaptive(score,rad.std,centShift,orientDiff);
+
+    if(params().adaptMode!=='off'){
+      state.shiftX += adapt.etaPosEff*(realF.cx-twinF.cx);
+      state.shiftY += adapt.etaPosEff*(realF.cy-twinF.cy);
+      state.rotate += adapt.etaRotEff*orientDiff;
+
+      var widthRatio=clamp(realF.width/Math.max(1,twinF.width),0.85,1.18);
+      var heightRatio=clamp(realF.height/Math.max(1,twinF.height),0.85,1.18);
+      state.stretchX *= (1+adapt.etaShapeEff*(widthRatio-1));
+      state.stretchY *= (1+adapt.etaShapeEff*(heightRatio-1));
+
+      var bulgeNudge=clamp(rad.mean/Math.max(1,params().radius*0.8),-0.04,0.04);
+      state.bulge=clamp(state.bulge+adapt.etaShapeEff*0.6*bulgeNudge,-0.30,0.55);
+      state.twist=clamp(state.twist+adapt.etaRotEff*0.2*orientDiff,-1.2,1.2);
+    }
+
+    // recompute after update
+    twinPts=makeShape({stretchX:state.stretchX,stretchY:state.stretchY,bulge:state.bulge,twist:state.twist,rotate:state.rotate,shiftX:state.shiftX,shiftY:state.shiftY,noise:0},0x61c88647);
+    twinF=polygonFeatures(twinPts);
+    diffs=radialDiffProfile(realPts,twinPts,realF,twinF);
+    rad=summarizeRadial(diffs);
+    centShift=Math.hypot(realF.cx-twinF.cx, realF.cy-twinF.cy);
+    orientDiff=wrapAngle(realF.orientation-twinF.orientation);
+    score=totalScore(realF.area-twinF.area, realF.perimeter-twinF.perimeter, centShift, orientDiff, rad.meanAbs, rad.std, realF);
+    adapt=computeAdaptive(score,rad.std,centShift,orientDiff);
+
+    realShape={points:realPts,features:realF};
+    twinShape={points:twinPts,features:twinF};
+    radialDiffs=diffs;
+    histories.score[currentT]=score;
+    histories.conf[currentT]=adapt.conf;
+    return {realF:realF,twinF:twinF,rad:rad,centShift:centShift,orientDiff:orientDiff,score:score,adapt:adapt};
+  }
+
+  function runToTime(targetT){
+    targetT=clamp(targetT,0,params().maxT);
+    currentT=0;
+    histories={score:[],conf:[]};
+    initState();
+    var result=null;
+    for(var i=0;i<=targetT;i++){
+      currentT=i;
+      result=computeStepOnly();
+    }
+    currentT=targetT;
+    return result;
+  }
+
+  function setBar(el,x,isRisk){
+    var pct=clamp(x,0,1)*100;
+    el.style.width=pct.toFixed(1)+'%';
+    el.style.background=isRisk?'linear-gradient(90deg,var(--good),var(--warn),var(--bad))':'linear-gradient(90deg,var(--bad),var(--warn),var(--good))';
+  }
+
+  function updateMetrics(res){
+    var realF=res.realF,twinF=res.twinF,rad=res.rad,adapt=res.adapt;
+    var areaD=realF.area-twinF.area;
+    var periD=realF.perimeter-twinF.perimeter;
+    els.areaDiff.textContent=fmt(areaD);
+    els.periDiff.textContent=fmt(periD);
+    els.centroidShift.textContent=fmt(res.centShift);
+    els.orientationDiff.textContent=(res.orientDiff*180/Math.PI).toFixed(2)+'°';
+    els.radialMean.textContent=fmt(rad.meanAbs);
+    els.roughness.textContent=fmt(rad.std);
+    els.totalScore.textContent=fmt(res.score);
+    els.syncConfidence.textContent=fmt(adapt.conf);
+    els.confNow.textContent=fmt(adapt.conf);
+    els.riskNow.textContent=fmt(adapt.risk);
+    els.posNow.textContent=fmt(adapt.etaPosEff);
+    els.shapeNow.textContent=fmt(adapt.etaShapeEff);
+
+    setBar(els.confBar,adapt.conf,false);
+    setBar(els.riskBar,adapt.risk/2,true);
+    setBar(els.posBar,adapt.etaPosEff/Math.max(0.001,params().etaPos||0.001),false);
+    setBar(els.shapeBar,adapt.etaShapeEff/Math.max(0.001,params().etaShape||0.001),false);
+
+    els.totalScore.style.color=res.score>28?'var(--bad)':(res.score>13?'var(--warn)':'var(--good)');
+    els.syncConfidence.style.color=adapt.conf<0.35?'var(--bad)':(adapt.conf<0.68?'var(--warn)':'var(--good)');
+    els.syncText.textContent=adapt.conf>0.85?'高同步':(adapt.conf>0.55?'中度同步':(adapt.conf>0.28?'低同步':'偏離較大'));
+  }
+
+  function render(){
+    updateLabels();
+    var res=computeStepOnly();
+    updateMetrics(res);
+    drawShapeCanvas();
+    drawHistoryCanvas();
+    drawRadialCanvas();
+  }
+
+  function renderAt(targetT){
+    var res=runToTime(targetT);
+    updateLabels();
+    updateMetrics(res);
+    drawShapeCanvas();
+    drawHistoryCanvas();
+    drawRadialCanvas();
+  }
+
+  function drawShapeCanvas(){
+    var c=els.shapeCanvas, ctx=c.getContext('2d'), w=c.width, h=c.height;
+    ctx.clearRect(0,0,w,h);
+    var all=realShape.points.concat(twinShape.points), minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    all.forEach(function(p){ if(p.x<minX)minX=p.x;if(p.x>maxX)maxX=p.x;if(p.y<minY)minY=p.y;if(p.y>maxY)maxY=p.y; });
+    var pad=40, sx=(w-pad*2)/Math.max(1,maxX-minX), sy=(h-pad*2)/Math.max(1,maxY-minY), s=Math.min(sx,sy)*0.92;
+    var ox=w/2-s*(minX+maxX)/2, oy=h/2-s*(minY+maxY)/2;
+    function map(p){ return {x:ox+s*p.x,y:oy+s*p.y}; }
+
+    ctx.strokeStyle='#1f2937'; ctx.lineWidth=1; ctx.beginPath();
+    for(var i=0;i<=10;i++){ var x=40+i*(w-80)/10; ctx.moveTo(x,20); ctx.lineTo(x,h-20); }
+    for(var j=0;j<=6;j++){ var y=20+j*(h-40)/6; ctx.moveTo(40,y); ctx.lineTo(w-40,y); }
+    ctx.stroke();
+
+    drawPolygon(ctx,twinShape.points,map,'rgba(125,211,252,0.18)','#7dd3fc',2.6);
+    drawPolygon(ctx,realShape.points,map,'rgba(167,139,250,0.20)','#a78bfa',2.6);
+
+    var vc=map({x:twinShape.features.cx,y:twinShape.features.cy});
+    var rc=map({x:realShape.features.cx,y:realShape.features.cy});
+    drawCross(ctx,vc.x,vc.y,'#fff'); drawCross(ctx,rc.x,rc.y,'#f3f4f6');
+    ctx.strokeStyle='#fbbf24'; ctx.fillStyle='#fbbf24'; ctx.lineWidth=2.4;
+    ctx.beginPath(); ctx.moveTo(vc.x,vc.y); ctx.lineTo(rc.x,rc.y); ctx.stroke(); drawArrowHead(ctx,vc,rc);
+    ctx.fillStyle='#cbd5e1'; ctx.font='13px sans-serif'; ctx.fillText('V(t)',vc.x+8,vc.y-8); ctx.fillText('R(t)',rc.x+8,rc.y+16);
+  }
+
+  function drawPolygon(ctx,pts,map,fill,stroke,width){
+    if(!pts || pts.length<2)return;
+    ctx.beginPath(); var p=map(pts[0]); ctx.moveTo(p.x,p.y);
+    for(var i=1;i<pts.length;i++){ p=map(pts[i]); ctx.lineTo(p.x,p.y); }
+    ctx.closePath(); ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=stroke; ctx.lineWidth=width; ctx.stroke();
+  }
+  function drawCross(ctx,x,y,color){ ctx.strokeStyle=color; ctx.lineWidth=1.8; ctx.beginPath(); ctx.moveTo(x-7,y); ctx.lineTo(x+7,y); ctx.moveTo(x,y-7); ctx.lineTo(x,y+7); ctx.stroke(); }
+  function drawArrowHead(ctx,from,to){
+    var a=Math.atan2(to.y-from.y,to.x-from.x), len=10;
+    ctx.beginPath(); ctx.moveTo(to.x,to.y); ctx.lineTo(to.x-len*Math.cos(a-0.34),to.y-len*Math.sin(a-0.34)); ctx.lineTo(to.x-len*Math.cos(a+0.34),to.y-len*Math.sin(a+0.34)); ctx.closePath(); ctx.fill();
+  }
+
+  function drawHistoryCanvas(){
+    var c=els.historyCanvas,ctx=c.getContext('2d'),w=c.width,h=c.height;
+    ctx.clearRect(0,0,w,h);
+    var left=46,right=w-18,top=20,bottom=h-28;
+    ctx.strokeStyle='#1f2937'; ctx.lineWidth=1; ctx.beginPath();
+    for(var i=0;i<=8;i++){ var x=left+i*(right-left)/8; ctx.moveTo(x,top); ctx.lineTo(x,bottom); }
+    for(var j=0;j<=5;j++){ var y=top+j*(bottom-top)/5; ctx.moveTo(left,y); ctx.lineTo(right,y); }
+    ctx.stroke();
+
+    var maxScore=10;
+    for(i=0;i<=currentT;i++){ if(typeof histories.score[i]==='number')maxScore=Math.max(maxScore,histories.score[i]); }
+
+    ctx.strokeStyle='#86efac'; ctx.lineWidth=2.2; ctx.beginPath();
+    var started=false;
+    for(i=0;i<=currentT;i++){
+      if(typeof histories.conf[i]!=='number')continue;
+      x=left+i*(right-left)/Math.max(1,params().maxT); y=bottom-histories.conf[i]*(bottom-top);
+      if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle='#fb7185'; ctx.lineWidth=2.2; ctx.beginPath(); started=false;
+    for(i=0;i<=currentT;i++){
+      if(typeof histories.score[i]!=='number')continue;
+      x=left+i*(right-left)/Math.max(1,params().maxT); y=bottom-(histories.score[i]/maxScore)*(bottom-top);
+      if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    var cx=left+currentT*(right-left)/Math.max(1,params().maxT);
+    ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.7; ctx.beginPath(); ctx.moveTo(cx,top); ctx.lineTo(cx,bottom); ctx.stroke();
+    ctx.fillStyle='#8b949e'; ctx.font='12px ui-monospace,monospace'; ctx.fillText('0',left,bottom+16); ctx.fillText(String(params().maxT),right-24,bottom+16);
+  }
+
+  function drawRadialCanvas(){
+    var c=els.radialCanvas,ctx=c.getContext('2d'),w=c.width,h=c.height;
+    ctx.clearRect(0,0,w,h);
+    var left=46,right=w-18,top=20,bottom=h-28,zeroY=(top+bottom)/2;
+    ctx.strokeStyle='#1f2937'; ctx.lineWidth=1; ctx.beginPath();
+    for(var i=0;i<=8;i++){ var x=left+i*(right-left)/8; ctx.moveTo(x,top); ctx.lineTo(x,bottom); }
+    for(var j=0;j<=6;j++){ var y=top+j*(bottom-top)/6; ctx.moveTo(left,y); ctx.lineTo(right,y); }
+    ctx.stroke();
+    var maxAbs=1e-6; for(i=0;i<radialDiffs.length;i++){ maxAbs=Math.max(maxAbs,Math.abs(radialDiffs[i])); }
+    ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(left,zeroY); ctx.lineTo(right,zeroY); ctx.stroke();
+    ctx.strokeStyle='#86efac'; ctx.lineWidth=2.3; ctx.beginPath();
+    for(i=0;i<radialDiffs.length;i++){
+      x=left+i*(right-left)/(radialDiffs.length-1); y=zeroY-(radialDiffs[i]/maxAbs)*((bottom-top)*0.43);
+      if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.fillStyle='#8b949e'; ctx.font='12px ui-monospace,monospace'; ctx.fillText(maxAbs.toFixed(2),8,top+8); ctx.fillText((-maxAbs).toFixed(2),8,bottom);
+  }
+
+  function resetToStart(){
+    currentT=0; histories={score:[],conf:[]}; initState(); renderAt(0);
+  }
+
+  function advanceOne(){
+    currentT=clamp(currentT+1,0,params().maxT);
+    renderAt(currentT);
+  }
+
+  function tick(ts){
+    var p=params();
+    if(running){
+      var dt=ts-lastTick, threshold=260/p.baseSpeed;
+      if(dt>=threshold){
+        advanceOne();
+        if(currentT>=p.maxT) running=false;
+        lastTick=ts;
+      }
+    }else{
+      lastTick=ts;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function maybeLogSlider(name,val){
+    var now=Date.now();
+    if(now-lastSliderLogAt>650){ addLog('參數',name+' = '+val); lastSliderLogAt=now; }
+  }
+
+  function randomizeDynamic(){
+    var rand=makeRng((params().seed ^ 0x9e3779b9)>>>0);
+    els.shapeAmp.value=(0.25+rand()*1.2).toFixed(2);
+    els.shiftAmp.value=String(Math.round(10+rand()*45));
+    els.rotAmp.value=String(Math.round(8+rand()*62));
+    els.noiseLevel.value=(rand()*0.14).toFixed(3);
+    els.etaPos.value=(0.06+rand()*0.22).toFixed(3);
+    els.etaShape.value=(0.04+rand()*0.18).toFixed(3);
+    els.etaRot.value=(0.06+rand()*0.18).toFixed(3);
+    els.etaRisk.value=(0.35+rand()*1.15).toFixed(2);
+    els.targetQ.value=(0.06+rand()*0.30).toFixed(2);
+    var modes=['conservative','balanced','aggressive']; els.adaptMode.value=modes[Math.floor(rand()*modes.length)];
+  }
+
+  [els.points,els.radius,els.irregular].forEach(function(el){
+    el.addEventListener('input',function(){
+      regenerateBase(); renderAt(currentT);
+      maybeLogSlider(el===els.points?'取樣點數':(el===els.radius?'基準半徑':'基準不規則度'),el.value);
+    });
+  });
+  [
+    [els.shapeAmp,'形變振幅'],[els.shiftAmp,'平移振幅'],[els.rotAmp,'旋轉振幅'],[els.noiseLevel,'動態噪聲'],
+    [els.etaPos,'位置學習率'],[els.etaShape,'形狀學習率'],[els.etaRot,'旋轉學習率'],[els.etaRisk,'風險敏感度'],[els.targetQ,'目標粗糙度']
+  ].forEach(function(pair){
+    pair[0].addEventListener('input',function(){ renderAt(currentT); maybeLogSlider(pair[1],pair[0].value); });
+  });
+
+  els.speed.addEventListener('input',function(){ updateLabels(); });
+  els.seedInput.addEventListener('change',function(){ regenerateBase(); renderAt(currentT); addLog('Seed','變更為 '+els.seedInput.value); });
+  els.adaptMode.addEventListener('change',function(){ renderAt(currentT); addLog('模式','切換為「'+els.adaptMode.options[els.adaptMode.selectedIndex].text+'」'); });
+
+  els.timeline.addEventListener('input',function(){
+    running=false;
+    updateLabels();
+    var target=parseInt(els.timeline.value,10);
+    if(timelineTimer) clearTimeout(timelineTimer);
+    timelineTimer=setTimeout(function(){
+      renderAt(target);
+      addLog('時間','跳轉到 t='+target);
+    },30);
+  });
+
+  els.playBtn.addEventListener('click',function(){ running=!running; flash(els.playBtn,running?'播放':'暫停',running?'時間流已恢復':'時間流已暫停'); updateLabels(); });
+  els.stepBtn.addEventListener('click',function(){ running=false; advanceOne(); flash(els.stepBtn,'單步','推進到 t='+currentT); updateLabels(); });
+  els.resetTimeBtn.addEventListener('click',function(){ running=false; resetToStart(); flash(els.resetTimeBtn,'重設','時間已重置，孿生體重新初始化'); });
+  els.regenBtn.addEventListener('click',function(){ els.seedInput.value=String((parseInt(els.seedInput.value||'1',10)||1)+1); regenerateBase(); renderAt(currentT); flash(els.regenBtn,'圖形','重新生成基準圖形，seed='+els.seedInput.value); });
+  els.randomDynBtn.addEventListener('click',function(){ randomizeDynamic(); renderAt(currentT); flash(els.randomDynBtn,'動態','已隨機生成一組時間動態與自適應參數'); });
+  els.clearLogBtn.addEventListener('click',function(){ els.logBody.innerHTML=''; flash(els.clearLogBtn,'LOG','紀錄已清空'); });
+
+  regenerateBase();
+  resetToStart();
+  addLog('初始化','v0.2.1 已啟動；黑圖與時間滑桿修正已載入');
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

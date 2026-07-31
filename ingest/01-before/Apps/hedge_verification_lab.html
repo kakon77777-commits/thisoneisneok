@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-mono,'Courier New',monospace);background:transparent;color:var(--color-text-primary);font-size:12px}
+.wrap{padding:12px 0}
+.row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:8px}
+button{font-family:inherit;font-size:11px;background:transparent;border:0.5px solid var(--color-border-secondary);color:var(--color-text-primary);padding:4px 10px;border-radius:4px;cursor:pointer}
+button:hover:not(:disabled){background:var(--color-background-secondary)}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.act{background:var(--color-background-secondary);border-color:var(--color-border-primary);font-weight:500}
+.hint{font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;min-height:16px}
+canvas{display:block;image-rendering:pixelated;cursor:crosshair}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.mc{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px 10px}
+.ml{font-size:10px;color:var(--color-text-tertiary);margin-bottom:3px}
+.mv{font-size:15px;font-weight:500}
+.ok{color:var(--color-text-success)}.warn{color:var(--color-text-warning)}.hi{color:var(--color-text-info)}
+.leg{margin-top:8px;font-size:11px;color:var(--color-text-tertiary);display:flex;gap:12px;flex-wrap:wrap}
+.ld{display:inline-block;width:12px;height:4px;border-radius:1px;margin-right:3px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="row">
+  <button onclick="gen()">生成迷宮</button>
+  <span style="color:var(--color-text-tertiary);font-size:11px;margin:0 4px">模式</span>
+  <button onclick="setMode('tension')" id="m_tension">張力場 T</button>
+  <button onclick="setMode('hedge')" id="m_hedge">對沖場 H</button>
+  <button onclick="setMode('nested')" id="m_nested">崁套 H₂</button>
+</div>
+<div class="hint" id="hint">按「生成迷宮」開始</div>
+<canvas id="cvs"></canvas>
+<div class="leg" id="leg"></div>
+<div class="metrics" id="metrics" style="display:none"></div>
+</div>
+<script>
+const CS=16,CELLS=12;
+let mz=null,mode='tension',click_target=0;
+let agA=null,agB=null,agG=null,agE1=null,agE2=null;
+let phi_A=null,phi_G=null,phi_E1=null,phi_E2=null;
+let T_field=null,H_field=null,H2_field=null;
+let path_astar=null,path_hedge=null,path_nested=null;
+let metrics={};
+
+const mkRng=s=>{let t=(s>>>0)||1;return()=>{t=Math.imul(t^(t>>>15),0x2c2c57ed);return(t>>>0)/0x100000000;};};
+
+function buildMaze(cw,ch,seed){
+  const rng=mkRng(seed),GW=2*cw+1,GH=2*ch+1;
+  const g=Array.from({length:GH},()=>new Uint8Array(GW).fill(1));
+  const vis=Array.from({length:ch},()=>new Uint8Array(cw));
+  const stk=[{cx:0,cy:0}];vis[0][0]=1;g[1][1]=0;
+  while(stk.length){
+    const{cx,cy}=stk[stk.length-1];
+    const d=[[0,-1],[1,0],[0,1],[-1,0]];const rng2=mkRng(seed^cx*31+cy*17);
+    for(let i=3;i>0;i--){const j=Math.floor(rng()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
+    let mv=false;
+    for(const[dx,dy]of d){
+      const nx=cx+dx,ny=cy+dy;
+      if(nx>=0&&nx<cw&&ny>=0&&ny<ch&&!vis[ny][nx]){
+        vis[ny][nx]=1;g[2*cy+1+dy][2*cx+1+dx]=0;g[2*ny+1][2*nx+1]=0;
+        stk.push({cx:nx,cy:ny});mv=true;break;
+      }
+    }
+    if(!mv)stk.pop();
+  }
+  g[0][1]=0;g[GH-1][GW-2]=0;
+  return{g,GW,GH,S:{x:1,y:0},E:{x:GW-2,y:GH-1}};
+}
+
+function solveGL(g,GW,GH,src,snk,omega=1.75,maxIter=700){
+  const I=(x,y)=>y*GW+x,N=GW*GH,D=[[0,-1],[1,0],[0,1],[-1,0]];
+  const a=new Float32Array(N),deg=new Uint8Array(N);
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    if(g[y][x])continue;
+    let d=0;for(const[dx,dy]of D){const nx=x+dx,ny=y+dy;if(nx>=0&&nx<GW&&ny>=0&&ny<GH&&!g[ny][nx])d++;}
+    deg[I(x,y)]=d;a[I(x,y)]=Math.max(0,1-y/(GH-1));
+  }
+  a[I(src.x,src.y)]=1;a[I(snk.x,snk.y)]=0;
+  for(let k=0;k<maxIter;k++){
+    let err=0;
+    for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){
+      const i=I(x,y);if(g[y][x]||!deg[i])continue;
+      let s=0;for(const[dx,dy]of D){const nx=x+dx,ny=y+dy;if(nx>=0&&nx<GW&&ny>=0&&ny<GH&&!g[ny][nx])s+=a[I(nx,ny)];}
+      const gs=s/deg[i],nv=a[i]+omega*(gs-a[i]);
+      err=Math.max(err,Math.abs(nv-a[i]));a[i]=nv;
+    }
+    if(err<8e-7)break;
+  }
+  return Array.from({length:GH},(_,y)=>Float32Array.from({length:GW},(_,x)=>Math.min(1,Math.max(0,a[I(x,y)]))));
+}
+
+function phiBFS(phi,g,GW,GH,start,goal){
+  const I=(x,y)=>y*GW+x,par=new Int32Array(GW*GH).fill(-1),vis=new Uint8Array(GW*GH);
+  vis[I(start.x,start.y)]=1;const open=[{...start}];let exp=0;
+  while(open.length){
+    let mi=0;for(let i=1;i<open.length;i++)if(phi[open[i].y][open[i].x]>phi[open[mi].y][open[mi].x])mi=i;
+    const{x,y}=open.splice(mi,1)[0];exp++;
+    if(x===goal.x&&y===goal.y)break;
+    for(const[dx,dy]of[[0,-1],[1,0],[0,1],[-1,0]]){
+      const nx=x+dx,ny=y+dy;
+      if(nx<0||nx>=GW||ny<0||ny>=GH||g[ny][nx])continue;
+      const ni=I(nx,ny);if(vis[ni])continue;
+      vis[ni]=1;par[ni]=I(x,y);open.push({x:nx,y:ny});
+    }
+  }
+  if(!vis[I(goal.x,goal.y)])return null;
+  const path=[];let c=I(goal.x,goal.y);while(c!==-1){path.push({x:c%GW,y:Math.floor(c/GW)});c=par[c];}
+  path.reverse();return path;
+}
+
+function astar(g,GW,GH,start,goal){
+  const I=(x,y)=>y*GW+x;
+  const gs=new Float32Array(GW*GH).fill(1e9),fs=new Float32Array(GW*GH).fill(1e9);
+  const par=new Int32Array(GW*GH).fill(-1),cl=new Uint8Array(GW*GH);
+  const h=(x,y)=>Math.abs(x-goal.x)+Math.abs(y-goal.y);
+  gs[I(start.x,start.y)]=0;fs[I(start.x,start.y)]=h(start.x,start.y);
+  const open=[{...start}];
+  while(open.length){
+    let mi=0;for(let i=1;i<open.length;i++)if(fs[I(open[i].x,open[i].y)]<fs[I(open[mi].x,open[mi].y)])mi=i;
+    const{x,y}=open.splice(mi,1)[0],ci=I(x,y);
+    if(cl[ci])continue;cl[ci]=1;
+    if(x===goal.x&&y===goal.y)break;
+    for(const[dx,dy]of[[0,-1],[1,0],[0,1],[-1,0]]){
+      const nx=x+dx,ny=y+dy;
+      if(nx<0||nx>=GW||ny<0||ny>=GH||g[ny][nx])continue;
+      const ni=I(nx,ny);if(cl[ni])continue;
+      const ng=gs[ci]+1;if(ng<gs[ni]){gs[ni]=ng;fs[ni]=ng+h(nx,ny);par[ni]=ci;open.push({x:nx,y:ny});}
+    }
+  }
+  const gi=I(goal.x,goal.y);if(gs[gi]===1e9)return null;
+  const path=[];let c=gi;while(c!==-1){path.push({x:c%GW,y:Math.floor(c/GW)});c=par[c];}
+  path.reverse();return path;
+}
+
+function computeAll(){
+  if(!mz)return;
+  const{g,GW,GH,S,E}=mz;
+  if(mode==='tension'&&agA&&agB){
+    phi_A=solveGL(g,GW,GH,agA,agB);
+    const phi_B_indep=solveGL(g,GW,GH,agB,agA);
+    T_field=phi_A.map((row,y)=>Float32Array.from(row,(_,x)=>2*row[x]-1));
+    path_astar=astar(g,GW,GH,agA,agB);
+    let e1=0,e3=0,tot=0;
+    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+      if(g[y][x])continue;
+      e1=Math.max(e1,Math.abs(phi_A[y][x]+phi_B_indep[y][x]-1));
+      if(Math.abs(T_field[y][x])<0.05)e3++;
+      tot++;
+    }
+    let e2=0;
+    const D=[[0,-1],[1,0],[0,1],[-1,0]];
+    for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){
+      if(g[y][x])continue;
+      let deg=0;let jx=0,jy=0;
+      for(const[dx,dy]of D){const nx=x+dx,ny=y+dy;if(!g[ny][nx]){deg++;jx=nx;jy=ny;}}
+      if(deg===1) e2=Math.max(e2,Math.abs(phi_A[y][x]-phi_A[jy][jx]));
+    }
+    metrics={E1:e1.toExponential(1),E2:e2.toExponential(1),E3:(e3/tot*100).toFixed(1)+'%',mode:'tension'};
+  }
+  if((mode==='hedge'||mode==='nested')&&agE1){
+    const snk_G=agB||E;
+    phi_G=solveGL(g,GW,GH,S,E);
+    phi_E1=solveGL(g,GW,GH,agE1,S);
+    H_field=phi_G.map((row,y)=>Float32Array.from(row,(_,x)=>row[x]*(1-phi_E1[y][x])));
+    path_astar=astar(g,GW,GH,E,S);
+    path_hedge=phiBFS(H_field,g,GW,GH,E,S);
+    if(mode==='nested'&&agE2){
+      phi_E2=solveGL(g,GW,GH,agE2,S);
+      H2_field=phi_G.map((row,y)=>Float32Array.from(row,(_,x)=>row[x]*(1-phi_E1[y][x])*(1-phi_E2[y][x])));
+      path_nested=phiBFS(H2_field,g,GW,GH,E,S);
+    }
+    const D=[[0,-1],[1,0],[0,1],[-1,0]];
+    let e4=0,tot=0;
+    const field=mode==='nested'&&H2_field?H2_field:H_field;
+    for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){
+      if(g[y][x])continue;tot++;
+      let s=0,cnt=0;for(const[dx,dy]of D){const nx=x+dx,ny=y+dy;if(!g[ny][nx]){s+=field[ny][nx];cnt++;}}
+      if(cnt>0&&Math.abs(field[y][x]-s/cnt)>0.01)e4++;
+    }
+    const safeScore=(path,phiE)=>{if(!path||!path.length)return 0;return path.reduce((a,p)=>a+(1-phiE[p.y][p.x]),0)/path.length;};
+    const s_astar=safeScore(path_astar,phi_E1),s_hedge=safeScore(path_hedge||path_astar,phi_E1);
+    metrics={
+      E4:(e4/tot*100).toFixed(0)+'%',
+      E5safe_astar:(s_astar*100).toFixed(0)+'%',
+      E5safe_hedge:(s_hedge*100).toFixed(0)+'%',
+      E6:path_hedge&&path_astar?(path_hedge.length/path_astar.length).toFixed(2)+'×':'—',
+      mode:mode
+    };
+  }
+}
+
+const C_TENSION=(t)=>{
+  const v=Math.min(1,Math.max(-1,t));
+  if(v>=0){const r=Math.floor(255-100*(1-v)),g2=Math.floor(220-160*v),b=Math.floor(220-160*v);return`rgb(${r},${g2},${b})`;}
+  const r=Math.floor(220-160*(-v)),g2=Math.floor(220-160*(-v)),b=Math.floor(255-100*(1+v));return`rgb(${r},${g2},${b})`;
+};
+const C_HEDGE=(h)=>{const v=Math.min(1,Math.max(0,h));return`rgb(${Math.floor(12+50*v)},${Math.floor(15+180*v)},${Math.floor(20+80*v)})`;};
+const WALL='#181828';
+
+function draw(){
+  if(!mz)return;
+  const{g,GW,GH,S,E}=mz;
+  const c=document.getElementById('cvs');
+  c.width=GW*CS;c.height=GH*CS;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#0c0c18';ctx.fillRect(0,0,c.width,c.height);
+
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const px=x*CS,py=y*CS;
+    let col;
+    if(g[y][x])col=WALL;
+    else if(mode==='tension'&&T_field)col=C_TENSION(T_field[y][x]);
+    else if(mode==='hedge'&&H_field)col=C_HEDGE(H_field[y][x]);
+    else if(mode==='nested'&&H2_field)col=C_HEDGE(H2_field[y][x]);
+    else col='#1c1c32';
+    ctx.fillStyle=col;ctx.fillRect(px,py,CS,CS);
+  }
+
+  if(mode==='tension'&&T_field){
+    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+      if(g[y][x])continue;
+      if(Math.abs(T_field[y][x])<0.06){
+        ctx.fillStyle='rgba(255,255,255,0.35)';ctx.fillRect(x*CS,y*CS,CS,CS);
+      }
+    }
+  }
+
+  const ln=(pts,s,w)=>{
+    if(!pts?.length)return;
+    ctx.save();ctx.strokeStyle=s;ctx.lineWidth=w;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    pts.forEach((p,i)=>{const px=p.x*CS+CS/2,py=p.y*CS+CS/2;i?ctx.lineTo(px,py):ctx.moveTo(px,py);});
+    ctx.stroke();ctx.restore();
+  };
+  if(mode==='tension'){
+    ln(path_astar,'rgba(200,200,200,.7)',Math.max(1.5,CS*.35));
+  } else {
+    ln(path_astar,'rgba(46,205,112,.8)',Math.max(1.5,CS*.42));
+    ln(path_hedge,'rgba(255,160,30,.9)',Math.max(1,CS*.26));
+    if(mode==='nested')ln(path_nested,'rgba(200,100,255,.9)',Math.max(1,CS*.18));
+  }
+
+  const mk=(pos,bg,txt,r2=CS*.4)=>{
+    if(!pos)return;
+    ctx.fillStyle=bg;ctx.beginPath();ctx.arc(pos.x*CS+CS/2,pos.y*CS+CS/2,r2,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font=`bold ${Math.floor(CS*.48)}px monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(txt,pos.x*CS+CS/2,pos.y*CS+CS/2);
+  };
+  if(mode==='tension'){mk(agA,'#e05555','A');mk(agB,'#5588ff','B');}
+  else{
+    mk(mz.S,'#22c55e','G',CS*.45);
+    mk(agE1,'#ff7730','E1');
+    if(mode==='nested')mk(agE2,'#ffcc20','E2');
+    mk(mz.E,'#888','·',CS*.3);
+  }
+
+  const leg=document.getElementById('leg');
+  if(mode==='tension'){
+    leg.innerHTML=`<span><span class="ld" style="background:#e08080"></span>A 領域(T>0)</span><span><span class="ld" style="background:#8080e0"></span>B 領域(T<0)</span><span><span class="ld" style="background:rgba(255,255,255,.5)"></span>Nash 前線(T≈0)</span><span><span class="ld" style="background:rgba(200,200,200,.7)"></span>A*路徑</span>`;
+  } else if(mode==='hedge'){
+    leg.innerHTML=`<span><span class="ld" style="background:#0c9050"></span>H高(安全)</span><span><span class="ld" style="background:rgba(46,205,112,.8)"></span>A*路徑</span><span><span class="ld" style="background:rgba(255,160,30,.9)"></span>H路徑(迴避E1)</span>`;
+  } else {
+    leg.innerHTML=`<span><span class="ld" style="background:rgba(46,205,112,.8)"></span>A*</span><span><span class="ld" style="background:rgba(255,160,30,.9)"></span>單威脅H</span><span><span class="ld" style="background:rgba(200,100,255,.9)"></span>雙威脅H₂</span>`;
+  }
+  updateMetrics();
+}
+
+function updateMetrics(){
+  const el=document.getElementById('metrics');
+  if(!Object.keys(metrics).length){el.style.display='none';return;}
+  el.style.display='grid';
+  let html='';
+  if(metrics.mode==='tension'){
+    html=`
+      <div class="mc"><div class="ml">E1 互補性誤差 max|φ_A+φ_B−1|</div><div class="mv ${+metrics.E1.replace('e','*10^')<0.001?'ok':'warn'}">${metrics.E1}</div></div>
+      <div class="mc"><div class="ml">E2 死巷平台誤差 max|φ(d)−φ(j)|</div><div class="mv ${+metrics.E2.replace('e','*10^')<0.001?'ok':'warn'}">${metrics.E2}</div></div>
+      <div class="mc"><div class="ml">E3 Nash前線寬度 |T|&lt;0.05</div><div class="mv hi">${metrics.E3}</div></div>
+    `;
+  } else {
+    html=`
+      <div class="mc"><div class="ml">E4 H非調和節點比例</div><div class="mv hi">${metrics.E4}</div></div>
+      <div class="mc"><div class="ml">E5 路徑安全分 A* vs H-path</div><div class="mv"><span style="color:var(--color-text-success)">${metrics.E5safe_hedge}</span> vs ${metrics.E5safe_astar}</div></div>
+      <div class="mc"><div class="ml">E6 路徑長度比 H/A*</div><div class="mv ${metrics.E6&&+metrics.E6<1.2?'ok':'warn'}">${metrics.E6}</div></div>
+    `;
+  }
+  el.innerHTML=html;
+}
+
+function updateHint(){
+  const h=document.getElementById('hint');
+  if(!mz){h.textContent='按「生成迷宮」開始';return;}
+  if(mode==='tension'){
+    if(!agA)h.textContent='點擊迷宮格點設置 A（追逐者）';
+    else if(!agB)h.textContent='點擊設置 B（逃跑者）';
+    else h.textContent=`A=(${agA.x},${agA.y}) · B=(${agB.x},${agB.y}) · 再次點擊移動 A`;
+  } else if(mode==='hedge'){
+    if(!agE1)h.textContent='點擊迷宮格點設置 E1（威脅源），目標 G 固定在入口';
+    else h.textContent=`G=入口(固定) · E1=(${agE1.x},${agE1.y}) · 點擊移動 E1`;
+  } else {
+    if(!agE1)h.textContent='點擊設置 E1（第一威脅）';
+    else if(!agE2)h.textContent=`E1=(${agE1.x},${agE1.y}) · 點擊設置 E2（第二威脅）`;
+    else h.textContent=`E1=(${agE1.x},${agE1.y}) · E2=(${agE2.x},${agE2.y}) · 點擊交替移動`;
+  }
+}
+
+function gen(){
+  mz=buildMaze(CELLS,CELLS,Date.now()&0xffff);
+  agA=null;agB=null;agE1=null;agE2=null;
+  phi_A=null;phi_G=null;phi_E1=null;phi_E2=null;
+  T_field=null;H_field=null;H2_field=null;
+  path_astar=null;path_hedge=null;path_nested=null;
+  metrics={};
+  if(mode==='hedge'||mode==='nested'){
+    phi_G=solveGL(mz.g,mz.GW,mz.GH,mz.S,mz.E);
+    path_astar=astar(mz.g,mz.GW,mz.GH,mz.E,mz.S);
+  }
+  setMode(mode);
+}
+
+function setMode(m){
+  mode=m;click_target=0;
+  ['tension','hedge','nested'].forEach(k=>document.getElementById('m_'+k).classList.toggle('act',k===m));
+  if(mz&&(m==='hedge'||m==='nested')&&!phi_G){
+    phi_G=solveGL(mz.g,mz.GW,mz.GH,mz.S,mz.E);
+    path_astar=astar(mz.g,mz.GW,mz.GH,mz.E,mz.S);
+  }
+  metrics={};
+  updateHint();draw();
+}
+
+document.getElementById('cvs').addEventListener('click',e=>{
+  if(!mz)return;
+  const rect=e.target.getBoundingClientRect();
+  const gx=Math.floor((e.clientX-rect.left)/CS);
+  const gy=Math.floor((e.clientY-rect.top)/CS);
+  if(gx<0||gx>=mz.GW||gy<0||gy>=mz.GH||mz.g[gy][gx])return;
+  const pos={x:gx,y:gy};
+  if(mode==='tension'){
+    if(!agA){agA=pos;}
+    else if(!agB){agB=pos;}
+    else{agA=pos;agB=null;}
+  } else if(mode==='hedge'){
+    agE1=pos;
+  } else {
+    if(!agE1){agE1=pos;}
+    else if(!agE2){agE2=pos;}
+    else{click_target=1-click_target;if(click_target===0)agE1=pos;else agE2=pos;}
+  }
+  computeAll();updateHint();draw();
+});
+</script>
+</body>
+</html>
