@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { applications, books } from "./data/catalog";
+import { applications } from "./data/catalog";
+import { books, bookCount, bookEditionCount } from "./data/books.generated";
 import { paperSeries, paperCount } from "./data/papers.generated";
 import { posts } from "./data/posts.generated";
 import { ProjectCard } from "./components/project-card";
@@ -151,19 +152,48 @@ export default function Home() {
       <section className="section-block books-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">BOOKS / EVOLVING EDITIONS</p>
-            <h2>{t({ zh: "書並不完成；版本只是在時間中暫時停靠。", en: "Books do not finish; editions only pause in time." })}</h2>
+            <p className="eyebrow">BOOKS / {bookCount} · {bookEditionCount} EDITIONS</p>
+            <h2>{t({ zh: "已經在架上的書。", en: "Books already on the shelf." })}</h2>
           </div>
         </div>
+        <p className="books-note">{t({
+          zh: `${bookCount} 部作品、${bookEditionCount} 個版本，全部在 Amazon 上。有中文版的連中文版，只有英文版的連英文版。`,
+          en: `${bookCount} works across ${bookEditionCount} editions, all on Amazon. Each cover links to the Traditional Chinese edition where one exists, and to the English edition otherwise.`,
+        })}</p>
         <div className="book-rail">
           {books.map((book) => (
-            <article className="book-card" key={book.title.zh}>
-              <div className="book-cover">
-                <Image src={book.image} alt={t(book.title)} fill sizes="(max-width: 700px) 72vw, 260px" unoptimized />
-              </div>
-              <p>{t(book.phase)}</p>
-              <h3>{t(book.title)}</h3>
-              <span>{t(book.subtitle)}</span>
+            <article className="book-card" key={book.slug}>
+              <a href={book.url} target="_blank" rel="noreferrer" className="book-cover">
+                <Image
+                  src={book.image}
+                  alt={language === "zh" ? book.title.zh : book.title.en}
+                  fill
+                  sizes="(max-width: 700px) 72vw, 260px"
+                  unoptimized
+                />
+              </a>
+              <p>
+                {book.series ? `${book.series} #${book.seriesIndex}` : book.bilingual
+                  ? t({ zh: "中文版／英文版", en: "Chinese & English" })
+                  : book.primaryLang === "zh"
+                    ? t({ zh: "繁體中文版", en: "Traditional Chinese" })
+                    : t({ zh: "英文版", en: "English" })}
+              </p>
+              <h3>
+                <a href={book.url} target="_blank" rel="noreferrer">
+                  {language === "zh" ? book.title.zh : book.title.en}
+                </a>
+              </h3>
+              <span>{language === "zh" ? book.subtitle.zh : book.subtitle.en}</span>
+              {book.editions.length > 1 ? (
+                <div className="book-editions">
+                  {book.editions.map((edition) => (
+                    <a href={edition.url} target="_blank" rel="noreferrer" key={edition.asin}>
+                      {edition.lang === "zh" ? "中文" : "EN"} ↗
+                    </a>
+                  ))}
+                </div>
+              ) : null}
             </article>
           ))}
         </div>
