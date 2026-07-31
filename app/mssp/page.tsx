@@ -104,8 +104,8 @@ export default function MSSPPage() {
       <section className="source-banner">
         <div><span>AI / SOURCE</span><h2>{t({ zh: "人類讀網頁，AI 讀原始結構。", en: "Humans read pages; AI reads source structure." })}</h2></div>
         <p>{t({
-          zh: "每個範例的完整原始碼、行數與檢查結果都在頁面上，並收在同一份機器可讀索引裡。論文只以 HTML 與 PDF 發表，Markdown 不對外發佈。",
-          en: "Every example's full source, line count, and check results are on its page and in one machine-readable index. Papers publish as HTML and PDF only; their Markdown is not distributed.",
+          zh: "每個範例的完整原始碼、行數與檢查結果都在頁面上，並收在同一份機器可讀索引裡。論文同樣三種形式：閱讀網頁、PDF，與可下載的 Markdown 原始檔。",
+          en: "Every example's full source, line count, and check results are on its page and in one machine-readable index. Papers publish the same way: a reading page, a PDF, and the Markdown source as a download.",
         })}</p>
         <a href={canonical("/ai/mssp-index.json")}>{t({ zh: "開啟 MSSP 索引", en: "Open the MSSP index" })} ↗</a>
       </section>
