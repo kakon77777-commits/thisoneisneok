@@ -11,7 +11,7 @@
 // Both are read here so no series has to be rewritten by hand.
 import fs from "node:fs";
 import path from "node:path";
-import { marked } from "marked";
+import { marked, renderMarkdown, countRenderedMath, countMathErrors, countLeftoverRawMath } from "./lib/markdown-math.mjs";
 
 const root = process.cwd();
 const ingestDir = path.join(root, "ingest", "01-before");
@@ -171,6 +171,7 @@ function standaloneHtml(paper, seriesTitle, html) {
 <title>${escapeHtml(paper.title)} | Neo.K</title>
 <meta name="description" content="${escapeHtml(paper.summary)}">
 <link rel="canonical" href="${paper.canonicalUrl}">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
 <style>
 :root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
@@ -197,6 +198,11 @@ main{padding:56px 0 96px}
 .content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
 .content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
 .content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+/* Long display formulas scroll inside their own block instead of forcing the
+   page to scroll sideways; KaTeX itself never wraps a formula. */
+.content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:28px 0}
+.content .katex{font-size:1.04em}
+.content .katex-error{color:#a3322b;font-family:ui-monospace,monospace;font-size:.85em}
 footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
 footer a{color:var(--accent)}
 @media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
@@ -323,6 +329,11 @@ for (const series of SERIES) {
 // ---- write standalone HTML ----
 const htmlDir = path.join(publicDir, "html", "papers");
 fs.mkdirSync(htmlDir, { recursive: true });
+let mathRendered = 0;
+let mathErrors = 0;
+const mathErrorPapers = [];
+let mathLeftover = 0;
+const mathLeftoverPapers = [];
 for (const { series, paper } of collected) {
   // Drop the leading H1 + label block from the body: the standalone page renders
   // its own title and facts panel, so leaving them in would print everything twice.
@@ -339,7 +350,18 @@ for (const { series, paper } of collected) {
     }
     break;
   }
-  const html = `<h1>${escapeHtml(paper.title)}</h1>\n${marked.parse(rest.slice(cut).join("\n"))}`;
+  const html = `<h1>${escapeHtml(paper.title)}</h1>\n${renderMarkdown(rest.slice(cut).join("\n"))}`;
+  mathRendered += countRenderedMath(html);
+  const errors = countMathErrors(html);
+  if (errors) {
+    mathErrors += errors;
+    mathErrorPapers.push(`${paper.id} (${errors})`);
+  }
+  const leftover = countLeftoverRawMath(html);
+  if (leftover) {
+    mathLeftover += leftover;
+    mathLeftoverPapers.push(`${paper.id} (${leftover})`);
+  }
   fs.writeFileSync(path.join(htmlDir, `${paper.slug}.html`), standaloneHtml(paper, series.title.zh, html));
 }
 
@@ -412,3 +434,23 @@ if (fs.existsSync(sitemapPath)) {
 
 console.log(`Generated ${collected.length} papers across ${bySeries.length} series.`);
 for (const series of bySeries) console.log(`  ${series.code.padEnd(6)} ${series.papers.length}`);
+console.log(`Math: ${mathRendered} formulas rendered by KaTeX, ${mathErrors} rejected, ${mathLeftover} raw delimiters left.`);
+if (mathErrorPapers.length) console.log(`  rejected in: ${mathErrorPapers.join(", ")}`);
+if (mathLeftoverPapers.length) console.log(`  raw LaTeX still visible in: ${mathLeftoverPapers.join(", ")}`);
+
+// A leftover `$$` means a reader sees raw LaTeX on the page — the exact failure
+// this pipeline exists to prevent. The rendered count cannot catch it: it read
+// 17,161 while two papers still shipped a visible \boxed{...} formula.
+if (mathLeftover > 0) {
+  console.error(`${mathLeftover} raw math delimiter(s) survived rendering. Refusing to publish raw LaTeX.`);
+  process.exit(1);
+}
+
+// Every paper in this corpus contains display math. Zero rendered formulas means
+// the KaTeX step silently stopped working (a delimiter regression, a missing
+// dependency) and the papers would publish as raw LaTeX — which is precisely the
+// state this pipeline exists to prevent, so fail rather than ship it.
+if (mathRendered === 0) {
+  console.error("No math was rendered at all — the KaTeX step is broken. Refusing to publish raw LaTeX.");
+  process.exit(1);
+}

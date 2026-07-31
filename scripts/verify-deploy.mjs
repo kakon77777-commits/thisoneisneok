@@ -95,6 +95,39 @@ async function onePass() {
     return [bad.length === 0, bad.length ? bad.join("; ") : `${samples.length * 2} URLs answer 200 directly (HTML + PDF, first and last of each series)`];
   });
 
+  // Notation must reach the reader as typeset symbols, not as source. Both
+  // halves matter: KaTeX output present, AND no surviving `$$` — the build
+  // metric "17,161 formulas rendered" was green while two papers still showed a
+  // raw \boxed{...} on the page.
+  await check("math typeset, not raw LaTeX", async () => {
+    const live = await (await get(`${baseUrl}/ai/papers-index.json`)).json();
+    const samples = live.series.map((series) => series.papers[0]).filter(Boolean);
+    const problems = [];
+    let typeset = 0;
+    for (const paper of samples) {
+      const html = await (await get(paper.html)).text();
+      const rendered = (html.match(/class="katex/g) || []).length;
+      const raw = (html.match(/\$\$/g) || []).length;
+      typeset += rendered;
+      if (rendered === 0) problems.push(`${paper.id}: no typeset math`);
+      if (raw > 0) problems.push(`${paper.id}: ${raw} raw delimiter(s)`);
+    }
+    return [problems.length === 0, problems.length ? problems.join("; ") : `${typeset} typeset formulas across ${samples.length} sampled papers, 0 raw delimiters`];
+  });
+
+  await check("KaTeX fonts self-hosted", async () => {
+    // The stylesheet is useless if its fonts 404 — the page would silently fall
+    // back to system glyphs and the notation would look wrong rather than broken.
+    const css = await (await get(`${baseUrl}/vendor/katex/katex.min.css`)).text();
+    const fonts = [...new Set([...css.matchAll(/url\(fonts\/([^)]+?)\)/g)].map((match) => match[1]))];
+    const bad = [];
+    for (const name of fonts.slice(0, 6)) {
+      const response = await fetch(`${baseUrl}/vendor/katex/fonts/${name}`, { method: "HEAD" });
+      if (!response.ok) bad.push(`${name} -> ${response.status}`);
+    }
+    return [bad.length === 0 && fonts.length > 0, bad.length ? bad.join("; ") : `stylesheet references ${fonts.length} fonts, sampled ${Math.min(6, fonts.length)} — all present`];
+  });
+
   await check("markdown sources NOT published", async () => {
     // Papers publish as HTML and PDF only. A /md/papers/ route appearing here
     // would mean the internal-source boundary broke.

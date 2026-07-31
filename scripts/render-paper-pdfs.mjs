@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import PDFDocument from "pdfkit";
+import { useFont, convertMathSpans } from "./lib/latex-to-text.mjs";
 
 const root = process.cwd();
 
@@ -26,8 +27,12 @@ if (!fs.existsSync(manifestPath)) {
 const manifestSource = fs.readFileSync(manifestPath, "utf8");
 const series = JSON.parse(manifestSource.slice(manifestSource.indexOf("["), manifestSource.lastIndexOf("]") + 1));
 
+// Math is transliterated against the very font that will draw it, so a symbol the
+// font lacks degrades to an ASCII form instead of printing as a .notdef box.
+useFont(regularFont);
+
 function stripInline(value) {
-  return value
+  return convertMathSpans(value)
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
     .replace(/`(.+?)`/g, "$1")
@@ -109,8 +114,41 @@ function render(target, paper, body) {
   let inFence = false;
   let seenFirstHeading = false;
 
+  // A $$…$$ display block spans several lines, so it is buffered whole and then
+  // transliterated in one pass — converting line by line would break formulas
+  // that wrap, and `convertMathSpans` only sees single-line spans.
+  let inDisplayMath = false;
+  let displayBuffer = [];
+  const flushDisplayMath = () => {
+    const source = displayBuffer.join("\n").trim();
+    displayBuffer = [];
+    if (!source) return;
+    const rendered = convertMathSpans(`$$${source}$$`);
+    if (!rendered.trim()) return;
+    ensure(52);
+    doc.moveDown(0.45);
+    const y = doc.y;
+    const height = doc.font("Noto").fontSize(11).heightOfString(rendered, { width: contentWidth - 30, lineGap: 4 });
+    doc.save().strokeColor(colors.line).lineWidth(1).moveTo(PAGE.left, y).lineTo(PAGE.left, y + height + 8).stroke().restore();
+    doc.fillColor(colors.ink).font("Noto").fontSize(11).lineGap(4)
+      .text(rendered, PAGE.left + 18, y + 3, { width: contentWidth - 30 });
+    doc.y = y + height + 14;
+    doc.x = PAGE.left;
+  };
+
   for (const raw of body.split("\n")) {
     const line = raw.trim();
+
+    if (line === "$$") {
+      flushBullets();
+      if (inDisplayMath) flushDisplayMath();
+      inDisplayMath = !inDisplayMath;
+      continue;
+    }
+    if (inDisplayMath) {
+      displayBuffer.push(raw);
+      continue;
+    }
 
     if (line.startsWith("```")) {
       inFence = !inFence;

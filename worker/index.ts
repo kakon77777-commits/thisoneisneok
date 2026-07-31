@@ -29,6 +29,16 @@ const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    // en.thisoneisneok.com used to be a separate English site. This site is
+    // bilingual on a single URL (the header switch, persisted per visitor), so
+    // the subdomain has nothing of its own to serve. Redirect permanently and
+    // keep the path, so any existing deep link still lands somewhere real.
+    if (url.hostname.startsWith("en.")) {
+      const target = new URL(url.toString());
+      target.hostname = url.hostname.slice(3);
+      return Response.redirect(target.toString(), 301);
+    }
+
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
       return handleImageOptimization(request, {

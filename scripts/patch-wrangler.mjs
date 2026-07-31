@@ -43,8 +43,14 @@ config.workers_dev = true;
 // Cloudflare error 100117 while another service (here: the Pages project
 // `knowledgerevolutionwebsite`) still owns thisoneisneok.com's DNS records, and
 // a failed attach aborts the whole deploy — so this is opt-in, not the default.
+// en.thisoneisneok.com is attached to the same Worker purely so it can 301 to
+// the apex (see worker/index.ts) — the site is bilingual on one URL, so the old
+// English subdomain has nothing of its own left to serve.
 if (process.env.ATTACH_APEX === "1") {
-  config.routes = [{ pattern: "thisoneisneok.com", custom_domain: true }];
+  config.routes = [
+    { pattern: "thisoneisneok.com", custom_domain: true },
+    { pattern: "en.thisoneisneok.com", custom_domain: true },
+  ];
 } else {
   delete config.routes;
 }
