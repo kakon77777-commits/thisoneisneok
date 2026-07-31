@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>超越性閉合 · 無限內外圓場</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;800;900&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#070512;--bg2:#120c26;--bg3:#0c0820;--grid:#2a2150;--bone:#f7f3ff;--bone-dim:#bcaee4;
+    --head:#ff3d6e;--tail:#16e6d3;--dead:#7a7296;--venom:#ffc12b;--line:#332866;--line2:#4d3da0;
+    --mirror:#b265ff;--snake:#1cf0bf;--noise:#ff7a14;}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:radial-gradient(120% 80% at 50% -10%,#1c0f3a 0%,#0c0722 48%,var(--bg) 100%);
+    color:var(--bone);font-family:"Noto Sans TC",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:clamp(18px,3vw,40px)}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:22px}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--tail);font-weight:700;text-shadow:0 0 14px rgba(22,230,211,.45)}
+  h1{font-family:"Noto Serif TC",serif;font-weight:900;margin:.16em 0 .15em;font-size:clamp(30px,5.2vw,56px);
+    line-height:.98;letter-spacing:.03em;
+    background:linear-gradient(92deg,var(--mirror) 0%,var(--tail) 45%,var(--venom) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 22px rgba(178,101,255,.25))}
+  h1 .lat{font-family:"JetBrains Mono",monospace;font-weight:500;font-size:.27em;letter-spacing:.18em;
+    -webkit-text-fill-color:var(--bone-dim);vertical-align:.55em;margin-left:.5em}
+  .sub{color:var(--bone-dim);max-width:66ch;font-size:14px;line-height:1.7;margin-top:.5em}
+  .sub b{color:var(--bone);font-weight:700}.sub .s{color:var(--snake);font-weight:700}.sub .v{color:var(--venom);font-weight:700}.sub .m{color:var(--mirror);font-weight:700}
+  .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:24px;align-items:start}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(180deg,var(--bg2),var(--bg3));border:1px solid var(--line2);border-radius:16px;
+    padding:18px;box-shadow:0 0 0 1px rgba(77,61,160,.15),0 18px 50px -20px rgba(0,0,0,.8)}
+  canvas{display:block;width:100%;border-radius:12px}
+  #ring{aspect-ratio:1/1;background:radial-gradient(70% 70% at 50% 50%,#11082a,#060312)}
+  #strip{aspect-ratio:2.4/1;background:#08051a;margin-top:6px}
+  .controls label{margin:13px 0 4px;font-size:13px;color:var(--bone-dim);display:flex;justify-content:space-between;align-items:baseline}
+  .controls label b{color:var(--venom);font-family:"JetBrains Mono",monospace;font-weight:700;font-size:13px;text-shadow:0 0 12px rgba(255,193,43,.35)}
+  .controls label .hint{font-size:11px;color:#8678b8}
+  input[type=range]{-webkit-appearance:none;width:100%;height:5px;border-radius:5px;background:#241b4a;outline:none;margin:6px 0 2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;height:19px;border-radius:50%;
+    background:var(--venom);cursor:pointer;border:3px solid #0c0820;box-shadow:0 0 16px rgba(255,193,43,.7)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--venom);cursor:pointer;border:3px solid #0c0820;box-shadow:0 0 16px rgba(255,193,43,.7)}
+  #N{accent-color:var(--noise)}
+  #N::-webkit-slider-thumb{background:var(--noise);box-shadow:0 0 16px rgba(255,122,20,.8)}
+  #N::-moz-range-thumb{background:var(--noise);box-shadow:0 0 16px rgba(255,122,20,.8)}
+  .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
+  .toggle{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--bone-dim);cursor:pointer;user-select:none}
+  .toggle input{accent-color:var(--snake);width:16px;height:16px}
+  .seg{display:inline-flex;border:1.5px solid var(--line2);border-radius:10px;overflow:hidden}
+  .seg button{border:0;border-radius:0;padding:8px 13px;font-size:12.5px;font-weight:700;background:transparent;color:var(--bone-dim);cursor:pointer}
+  .seg button.on{background:var(--venom);color:#1a1206}
+  .btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  button.act{font-family:"Noto Sans TC",sans-serif;font-size:13.5px;font-weight:700;padding:11px 15px;border-radius:10px;
+    border:1.5px solid var(--line2);background:#1a1140;color:var(--bone);cursor:pointer;transition:.15s}
+  button.act:hover{border-color:var(--tail);background:#1f1550;box-shadow:0 0 18px rgba(22,230,211,.2)}
+  button:focus-visible{outline:2.5px solid var(--venom);outline-offset:2px}
+  .cap{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;font-weight:700;text-transform:uppercase;color:#8678b8;margin:14px 0 6px}
+  .note{font-family:"JetBrains Mono",monospace;font-size:11px;color:#7c6fae;line-height:1.7;margin-top:10px}
+  footer{margin-top:28px;border-top:1px solid var(--line);padding-top:16px;font-size:12.5px;color:#7c6fae;line-height:1.7;font-family:"JetBrains Mono",monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">EveMissLab · Cl 動態自超越 / 場</div>
+    <h1>無限內外圓 · 場<span class="lat">a field of transcendent closures</span></h1>
+    <p class="sub">一顆是標本，一片才是場。把那個帶缺口、向外<span class="v">擴大</span>向內<span class="m">緊緻</span>的無限環疊成一整片——每顆有自己的相位、大小、旋向，全用<b>加色混合</b>堆在一起，重疊處燒成亮核。把<b>數量</b>往上推，那道壓迫感是疊出來的，不是畫出來的。</p>
+  </header>
+
+  <div class="grid">
+    <div class="panel"><canvas id="ring" width="720" height="720"></canvas></div>
+
+    <div class="panel controls">
+      <label>數量　<span class="hint">把它推到喘不過氣</span><b id="nVal">28</b></label>
+      <input type="range" id="N" min="1" max="160" step="1" value="28">
+      <label>球大小　<span class="hint">每顆的外圈半徑</span><b id="oVal">0.16</b></label>
+      <input type="range" id="O" min="0.05" max="0.45" step="0.005" value="0.16">
+      <label>大小散佈　<span class="hint">遠近層次</span><b id="vVal">0.40</b></label>
+      <input type="range" id="V" min="0" max="0.75" step="0.01" value="0.40">
+
+      <div class="row">
+        <div class="seg" role="group" aria-label="排列">
+          <button id="lScatter" class="on">散佈</button>
+          <button id="lGrid">密鋪</button>
+        </div>
+      </div>
+
+      <label>縮放　<span class="hint">向內 ← → 向外</span><b id="spVal">+0.12</b></label>
+      <input type="range" id="SP" min="-1" max="1" step="0.01" value="0.12">
+      <label>級距 s　<span class="hint">緊緻化率</span><b id="sVal">1.32</b></label>
+      <input type="range" id="S" min="1.12" max="1.7" step="0.01" value="1.32">
+      <label>缺口　<span class="hint">開口角</span><b id="gVal">0.28</b></label>
+      <input type="range" id="G" min="0.04" max="0.7" step="0.01" value="0.28">
+      <label>旋扭　<span class="hint">缺口螺旋角</span><b id="tVal">0.45</b></label>
+      <input type="range" id="T" min="-0.9" max="0.9" step="0.01" value="0.45">
+      <label>缺口亂度　<span class="hint">隨機化開口位置與大小</span><b id="rVal">0.60</b></label>
+      <input type="range" id="RND" min="0" max="1" step="0.01" value="0.60">
+
+      <div class="row">
+        <label class="toggle"><input type="checkbox" id="thread">貫穿線（少量時）</label>
+        <label class="toggle"><input type="checkbox" id="invert">反演 1/r</label>
+      </div>
+      <div class="btns">
+        <button class="act" id="pause">暫停</button>
+        <button class="act" id="reset">重置</button>
+      </div>
+
+      <p class="cap">log-polar 展開 · 內 ＝ 外</p>
+      <canvas id="strip" width="320" height="120"></canvas>
+      <p class="note">展開圖把半徑取對數：每一塊磚就是一層，磚磚相同 ⇒ 向內無限緊緻與向外無限擴大，在對數尺度上是同一道縫。</p>
+    </div>
+  </div>
+
+  <footer>
+    每顆：R_n=R₀·sⁿ⁺ᵠ 的巢狀環，缺口中心角 θ_n=旋扭·(n+φ)+旋向。場以加色混合(lighter)疊加，重疊即增亮。數量大時自動降每顆層數以保幀率、並關閉貫穿線。純幾何，無動力學量測。
+  </footer>
+</div>
+
+<script>
+(() => {
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cs=getComputedStyle(document.documentElement),C=n=>cs.getPropertyValue(n).trim();
+  const hex=h=>{h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
+  const VIO=hex(C('--mirror')),TEA=hex(C('--tail')),VEN=hex(C('--venom'));
+  const lerp=(a,b,u)=>a+(b-a)*u, clamp=(x,a,b)=>x<a?a:x>b?b:x;
+  const mix=(c1,c2,u)=>`rgb(${lerp(c1[0],c2[0],u)|0},${lerp(c1[1],c2[1],u)|0},${lerp(c1[2],c2[2],u)|0})`;
+  const ramp=u=>u<0.5?mix(VIO,TEA,u/0.5):mix(TEA,VEN,(u-0.5)/0.5);
+  const nz=(x,sd)=>0.5*Math.sin(x*1.73+sd*6.2831)+0.32*Math.sin(x*1.11-sd*3.7+2.1)+0.18*Math.sin(x*2.61+sd*5.1+4.0);
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+  let phase=0, N=28, objSize=0.16, spread=0.40, layout='scatter';
+  let speed=0.12, s=1.32, gap=0.28, twist=0.45, rnd=0.60, thread=false, invert=false, paused=false;
+  let objs=[];
+
+  const $=id=>document.getElementById(id);
+  const ring=$('ring'),rc=ring.getContext('2d'),strip=$('strip'),sc=strip.getContext('2d');
+  function fit(cv){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);
+    cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);cv.getContext('2d').setTransform(d,0,0,d,0,0);return{w:r.width,h:r.height};}
+  let RD,SD; function fitAll(){RD=fit(ring);SD=fit(strip);}
+
+  function rebuild(){objs=[];const rng=mulberry32(20260614);
+    if(layout==='grid'){const cols=Math.ceil(Math.sqrt(N)),rows=Math.ceil(N/cols);let k=0;
+      for(let r=0;r<rows&&k<N;r++)for(let c=0;c<cols&&k<N;c++,k++){
+        objs.push({x:(c+0.5)/cols,y:(r+0.5)/rows,sc:1+(rng()*2-1)*spread*0.5,ph:rng(),rot:rng()*6.283,seed:rng()*40});}
+    }else{for(let i=0;i<N;i++)objs.push({x:0.06+rng()*0.88,y:0.07+rng()*0.86,sc:1+(rng()*2-1)*spread,ph:rng(),rot:rng()*6.283,seed:rng()*40});}
+  }
+
+  const sync=()=>{$('nVal').textContent=N;$('oVal').textContent=objSize.toFixed(2);$('vVal').textContent=spread.toFixed(2);
+    $('spVal').textContent=(speed>=0?'+':'')+speed.toFixed(2);$('sVal').textContent=s.toFixed(2);
+    $('gVal').textContent=gap.toFixed(2);$('tVal').textContent=twist.toFixed(2);$('rVal').textContent=rnd.toFixed(2);};
+  function bind(id,fn,reb){const e=$(id);e.addEventListener('input',()=>{fn(parseFloat(e.value));sync();if(reb)rebuild();});}
+  bind('N',v=>N=Math.round(v),true);bind('O',v=>objSize=v,false);bind('V',v=>spread=v,true);
+  bind('SP',v=>speed=v);bind('S',v=>s=v);bind('G',v=>gap=v);bind('T',v=>twist=v);bind('RND',v=>rnd=v);
+  $('thread').onchange=e=>thread=e.target.checked;$('invert').onchange=e=>invert=e.target.checked;
+  $('lScatter').onclick=()=>{layout='scatter';$('lScatter').classList.add('on');$('lGrid').classList.remove('on');rebuild();};
+  $('lGrid').onclick=()=>{layout='grid';$('lGrid').classList.add('on');$('lScatter').classList.remove('on');rebuild();};
+  $('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'繼續':'暫停';};
+  $('reset').onclick=()=>{phase=0;N=28;objSize=0.16;spread=0.40;speed=0.12;s=1.32;gap=0.28;twist=0.45;rnd=0.60;invert=false;layout='scatter';
+    $('N').value=28;$('O').value=0.16;$('V').value=0.40;$('SP').value=0.12;$('S').value=1.32;$('G').value=0.28;$('T').value=0.45;$('RND').value=0.60;
+    $('invert').checked=false;$('lScatter').classList.add('on');$('lGrid').classList.remove('on');sync();rebuild();};
+
+  function drawNest(cx,cy,maxR,phOff,rotOff,maxLevels,drawThread,seed){
+    const Rmin=2, lnS=Math.log(s), denom=Math.log(maxR/Rmin)||1;
+    const ph=(((phase*(invert?-1:1))+phOff)%1+1)%1;
+    const nMaxF=Math.log(maxR/Rmin)/lnS - ph, nMax=Math.ceil(nMaxF);
+    const nMin=Math.max(Math.floor(-ph), nMax-maxLevels);
+    const pts=[];
+    for(let n=nMax;n>=nMin;n--){const lvl=n+ph, R=Rmin*Math.exp(lvl*lnS);
+      if(R<Rmin*0.6||R>maxR*1.06)continue;
+      const fc=clamp(Math.log(R/Rmin)/denom,0,1);
+      const a=0.10+0.45*fc;
+      const th=twist*lvl+rotOff + rnd*Math.PI*nz(lvl,seed);
+      const gsz=clamp(gap*(1+rnd*0.85*nz(lvl,seed+11.3)),0.04,1.15);
+      const lw=clamp(R*0.012,0.8,5);
+      rc.globalAlpha=a;rc.strokeStyle=ramp(invert?1-fc:fc);rc.lineWidth=lw;
+      rc.beginPath();rc.arc(cx,cy,R,th+gsz,th+2*Math.PI-gsz,false);rc.stroke();
+      if(drawThread)pts.push([cx+Math.cos(th+gsz)*R,cy+Math.sin(th+gsz)*R]);
+    }
+    if(drawThread&&pts.length>1){rc.globalAlpha=.8;rc.strokeStyle=C('--snake');rc.lineWidth=1.4;
+      rc.beginPath();for(let i=0;i<pts.length;i++){i?rc.lineTo(pts[i][0],pts[i][1]):rc.moveTo(pts[i][0],pts[i][1]);}rc.stroke();}
+  }
+
+  function drawField(){
+    const W=RD.w,H=RD.h,base=Math.min(W,H);rc.clearRect(0,0,W,H);
+    const maxLevels=clamp(Math.round(22-N*0.11),5,20);
+    const doThread=thread&&N<=14;
+    rc.save();rc.globalCompositeOperation='lighter';rc.lineCap='round';
+    for(const o of objs){const cx=o.x*W,cy=o.y*H,maxR=Math.max(8,base*objSize*o.sc);
+      drawNest(cx,cy,maxR,o.ph,o.rot,maxLevels,doThread,o.seed);}
+    rc.restore();rc.globalAlpha=1;
+    rc.fillStyle='#8678b8';rc.font='600 10px JetBrains Mono';rc.textAlign='left';
+    rc.fillText(N+' 顆 · 每顆 ≤'+maxLevels+' 層 · 加色疊加',10,18);
+  }
+
+  function drawStrip(){const w=SD.w,h=SD.h;sc.clearRect(0,0,w,h);const PER=3;
+    sc.strokeStyle=C('--grid');sc.globalAlpha=.35;sc.lineWidth=1;
+    for(let p=1;p<PER;p++){const x=p/PER*w;sc.beginPath();sc.moveTo(x,0);sc.lineTo(x,h);sc.stroke();}sc.globalAlpha=1;
+    for(let p=0;p<PER;p++){const lvl=p+phase,frac=p/(PER-1||1),x=((p+phase)/PER)*w%w,
+      gy=(((twist*lvl)/(2*Math.PI))%1+1)%1,gh=(gap/(2*Math.PI))*h*2,col=ramp(0.2+0.6*frac);
+      sc.strokeStyle=col;sc.lineWidth=3;sc.globalAlpha=.9;
+      sc.beginPath();sc.moveTo(x,0);sc.lineTo(x,Math.max(0,gy*h-gh));sc.stroke();
+      sc.beginPath();sc.moveTo(x,Math.min(h,gy*h+gh));sc.lineTo(x,h);sc.stroke();}
+    sc.globalAlpha=1;sc.fillStyle='#6a5da0';sc.font='600 9px JetBrains Mono';sc.textAlign='left';
+    sc.fillText('一磚＝一層 · 磚磚相同 ⇒ 內＝外',6,12);}
+
+  function frame(){if(!paused){phase+=(reduce?0.004:1)*speed*0.02;phase=((phase%1)+1)%1;}
+    drawField();drawStrip();requestAnimationFrame(frame);}
+  function init(){fitAll();rebuild();sync();frame();}
+  addEventListener('resize',fitAll);
+  requestAnimationFrame(()=>requestAnimationFrame(init));
+})();
+</script>
+</body>
+</html>

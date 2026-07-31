@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>無限光譜太極</title>
+<meta name="description" content="無極 → 太極 → 坍塌。三種測量前狀態（噪音、白光、黑光）過渡到旋轉的光譜太極，按下觀測就觸發波函數坍塌。">
+<style>:root{
+  --color-text-primary:#171914;
+  --color-text-secondary:#55584f;
+  --color-text-tertiary:#85887e;
+  --color-text-info:#16728a;
+  --color-text-success:#315b53;
+  --color-text-warning:#a16e20;
+  --color-background-primary:#f2efe8;
+  --color-background-secondary:#e7e4dc;
+  --color-background-tertiary:#dedbd2;
+  --color-border-primary:rgba(23,25,20,.38);
+  --color-border-secondary:rgba(23,25,20,.22);
+  --color-border-tertiary:rgba(23,25,20,.14);
+  --border-radius-sm:4px;
+  --border-radius-md:8px;
+  --border-radius-lg:12px;
+  --font-sans:Inter,ui-sans-serif,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"SFMono-Regular",Consolas,"Liberation Mono",ui-monospace,monospace;
+  --font-serif:"Noto Serif TC","Songti TC",Georgia,serif;
+}
+html,body{background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)}
+body{margin:0;padding:22px}</style>
+</head>
+<body>
+
+<h2 class="sr-only">Corrected Infinite Spectrum Taiji v2: proper S-curve fish shape with three wuji modes and wave-function collapse.</h2>
+
+<div style="padding:1.5rem 0 1rem;display:flex;flex-direction:column;align-items:center;gap:14px;">
+
+  <canvas id="tc2" width="300" height="300"
+    style="border-radius:var(--border-radius-md);width:min(300px,calc(100% - 32px));aspect-ratio:1;height:auto;display:block;"></canvas>
+
+  <div style="display:flex;align-items:center;gap:12px;font-size:13px;">
+    <span id="ph0b" style="color:var(--color-text-primary);transition:color .5s;">無極</span>
+    <span style="color:var(--color-text-tertiary);font-size:10px;">→</span>
+    <span id="ph1b" style="color:var(--color-text-tertiary);transition:color .5s;">太極</span>
+    <span style="color:var(--color-text-tertiary);font-size:10px;">→</span>
+    <span id="ph2b" style="color:var(--color-text-tertiary);transition:color .5s;">坍塌</span>
+  </div>
+
+  <div style="display:flex;gap:8px;" id="mg2">
+    <button onclick="TJ2_mode('A')" data-m="A">A 噪音</button>
+    <button onclick="TJ2_mode('B')" data-m="B">B 白光</button>
+    <button onclick="TJ2_mode('C')" data-m="C">C 黑光</button>
+  </div>
+
+  <button id="ob2" onclick="TJ2_obs()" disabled>觀測 / 坍塌</button>
+
+  <div id="rd2" style="font-size:13px;color:var(--color-text-secondary);height:20px;opacity:0;transition:opacity 1.2s;text-align:center;"></div>
+
+  <div style="font-family:var(--font-mono);font-size:12px;color:var(--color-text-tertiary);text-align:center;line-height:2;">
+    |ψ⟩ = Σ<sub>λ</sub> α<sub>λ</sub>|λ⟩ &nbsp;→&nbsp; |λ₀⟩ &nbsp;·&nbsp; P(λ₀) = |α<sub>λ₀</sub>|²
+    <br><span style="font-family:var(--font-sans);font-size:11px;color:var(--color-text-tertiary);">🌫 潛能態 &nbsp;·&nbsp; 🌈 實在態 &nbsp;·&nbsp; 切換模式可重置</span>
+  </div>
+
+</div>
+
+<script>
+(function(){
+const W=300,H=300,CX=150,CY=150,R=124,R2=62,R2q=3844,Rq=15376;
+const cv=document.getElementById('tc2'),cx=cv.getContext('2d');
+const mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;return c;};
+const bgC=mk(),bgX=bgC.getContext('2d');
+const tjC=mk(),tjX=tjC.getContext('2d');
+const wuC=mk(),wuX=wuC.getContext('2d');
+
+const NS=256,NT=new Uint8Array(NS*NS);
+for(let i=0;i<NT.length;i++)NT[i]=Math.random()*255|0;
+const sn=(x,y)=>NT[(((y|0)%NS+NS)%NS)*NS+(((x|0)%NS+NS)%NS)]/255;
+
+function h2r(h,s,l){
+  h=((h%360)+360)%360/360;
+  if(!s){const v=l*255|0;return[v,v,v];}
+  const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;
+  const f=t=>{t=(t+1)%1;return t<1/6?p+(q-p)*6*t:t<.5?q:t<2/3?p+(q-p)*(2/3-t)*6:p;};
+  return[f(h+1/3)*255|0,f(h)*255|0,f(h-1/3)*255|0];
+}
+const lH=(a,b,t)=>{let d=b-a;if(d>180)d-=360;if(d<-180)d+=360;return((a+d*t)%360+360)%360;};
+
+// ── 修正後的太極公式 ──
+// 正確 S 曲線：上弧 = 上內圓左弧，下弧 = 下內圓右弧
+// yang = 魚形（上半大頭 + 下半右弧小尾），yin = 鏡像
+const reg=(x,y)=>{
+  if(x*x+y*y>Rq)return 0;
+  const dU=x*x+(y+R2)*(y+R2);
+  const dL=x*x+(y-R2)*(y-R2);
+  if(y<=0){
+    // 上半：除了左外弧以外全部是 yang
+    return(x<0&&dU>=R2q)?-1:1;
+  }else{
+    // 下半：只有右外弧是 yang
+    return(x>=0&&dL>=R2q)?1:-1;
+  }
+};
+
+const S={md:'A',ph:'wu',f:0,rot:0,wA:1,tA:0,cH:null,cP:0};
+
+function initBg(){
+  bgX.fillStyle='#04040d';bgX.fillRect(0,0,W,H);
+  for(let i=0;i<90;i++){
+    const x=Math.random()*W,y=Math.random()*H,r=Math.random()*1.4,a=Math.random()*.44+.03;
+    bgX.beginPath();bgX.arc(x,y,r,0,Math.PI*2);
+    bgX.fillStyle=`rgba(148,148,255,${a})`;bgX.fill();
+  }
+}
+
+function renderTaiji(){
+  const img=tjX.createImageData(W,H),d=img.data;
+  const t=S.f*.065,cr=Math.cos(-S.rot),sr=Math.sin(-S.rot);
+  for(let py=0;py<H;py++){
+    for(let px=0;px<W;px++){
+      const dx=px-CX,dy=py-CY,lx=dx*cr-dy*sr,ly=dx*sr+dy*cr;
+      const r=reg(lx,ly);if(!r)continue;
+      const i=(py*W+px)*4;
+      if(r>0){
+        const ang=((Math.atan2(ly,lx)/(2*Math.PI))*360+360)%360;
+        const h=(S.cP>0&&S.cH!==null)?lH(ang,S.cH,S.cP):ang;
+        const[R_,G_,B_]=h2r(h,1,.55);
+        d[i]=R_;d[i+1]=G_;d[i+2]=B_;d[i+3]=255;
+      }else{
+        const nx=lx*.5+Math.sin(t+ly*.025)*32,ny=ly*.5+Math.cos(t*.64+lx*.025)*32;
+        const n=sn(nx,ny);
+        let rv,gv,bv;
+        if(S.md==='B'){rv=n*168+22|0;gv=rv;bv=Math.min(255,rv+18);}
+        else if(S.md==='C'){rv=n*58|0;gv=n*18|0;bv=n*98+22|0;}
+        else{rv=n*55|0;gv=rv;bv=n*86+10|0;}
+        d[i]=rv;d[i+1]=gv;d[i+2]=bv;d[i+3]=255;
+      }
+    }
+  }
+  tjX.putImageData(img,0,0);
+  tjX.save();tjX.translate(CX,CY);
+  tjX.beginPath();tjX.arc(0,0,R+1,0,Math.PI*2);
+  tjX.strokeStyle='rgba(105,105,195,.28)';tjX.lineWidth=1.5;tjX.stroke();
+  tjX.restore();
+}
+
+function renderWuji(){
+  const img=wuX.createImageData(W,H),d=img.data,t=S.f*.038;
+  for(let py=0;py<H;py++){
+    for(let px=0;px<W;px++){
+      const dx=px-CX,dy=py-CY,ds=dx*dx+dy*dy;
+      if(ds>Rq)continue;
+      const dn=Math.sqrt(ds)/R,i=(py*W+px)*4;
+      if(S.md==='A'){
+        const nx=px*.58+Math.sin(t+dy*.033)*30,ny=py*.58+Math.cos(t*.7+dx*.033)*30;
+        const n=sn(nx,ny),v=n*65|0;
+        d[i]=v;d[i+1]=v;d[i+2]=n*92+10|0;d[i+3]=218;
+      }else if(S.md==='B'){
+        const p=.82+.18*Math.sin(t*2.3),g=Math.pow(1-dn,1.7)*p;
+        const v=g*242+8|0;
+        d[i]=v;d[i+1]=v;d[i+2]=Math.min(255,v+20);d[i+3]=g*216+28|0;
+      }else{
+        const p=.78+.22*Math.sin(t*1.15),g=Math.pow(1-dn,2.3)*p;
+        d[i]=g*102|0;d[i+1]=g*24|0;d[i+2]=g*160+25|0;d[i+3]=g*212+15|0;
+      }
+    }
+  }
+  wuX.putImageData(img,0,0);
+  wuX.save();wuX.translate(CX,CY);
+  wuX.beginPath();wuX.arc(0,0,R,0,Math.PI*2);
+  wuX.strokeStyle='rgba(32,32,78,.5)';wuX.lineWidth=1;wuX.stroke();
+  wuX.restore();
+}
+
+function tick(){
+  switch(S.ph){
+    case 'wu':if(S.f>=82)S.ph='tr';break;
+    case 'tr':
+      S.wA=Math.max(0,S.wA-.018);S.tA=Math.min(1,S.tA+.018);S.rot+=.013;
+      if(S.wA<=0){S.ph='ta';document.getElementById('ob2').disabled=false;litN(1);}
+      break;
+    case 'ta':S.rot+=.013;break;
+    case 'co':
+      S.rot+=.013*(1-S.cP*.9);S.cP=Math.min(1,S.cP+.013);
+      if(S.cP>=1){S.ph='done';litN(2);showRes();}
+      break;
+    case 'done':break;
+  }
+  S.f++;
+}
+
+function drawFrame(){
+  cx.drawImage(bgC,0,0);tick();
+  if(S.tA>0){renderTaiji();cx.save();cx.globalAlpha=S.tA;cx.drawImage(tjC,0,0);cx.restore();}
+  if(S.wA>0){renderWuji();cx.save();cx.globalAlpha=S.wA;cx.drawImage(wuC,0,0);cx.restore();}
+  if(S.ph==='co'&&S.cH!==null){
+    const fl=Math.sin(S.cP*Math.PI)*.5;
+    if(fl>.005){
+      const[R_,G_,B_]=h2r(S.cH,1,.55);
+      cx.save();cx.globalAlpha=fl;cx.beginPath();cx.arc(CX,CY,R,0,Math.PI*2);
+      cx.fillStyle=`rgb(${R_},${G_},${B_})`;cx.fill();cx.restore();
+    }
+  }
+  requestAnimationFrame(drawFrame);
+}
+
+function litN(n){
+  ['ph0b','ph1b','ph2b'].forEach((id,i)=>{
+    document.getElementById(id).style.color=i<=n?'var(--color-text-primary)':'var(--color-text-tertiary)';
+  });
+}
+function showRes(){
+  const h=Math.round(S.cH),[R_,G_,B_]=h2r(h,1,.58);
+  const el=document.getElementById('rd2');
+  el.innerHTML=`觀測結果：<span style="color:rgb(${R_},${G_},${B_})">◆</span> 波長角 ${h}°`;
+  el.style.opacity='1';
+}
+
+window.TJ2_mode=function(m){
+  S.md=m;Object.assign(S,{ph:'wu',f:0,rot:0,wA:1,tA:0,cH:null,cP:0});
+  document.getElementById('ob2').disabled=true;
+  document.getElementById('rd2').style.opacity='0';
+  litN(0);
+  document.querySelectorAll('#mg2 button').forEach(b=>{
+    b.style.background=b.dataset.m===m?'var(--color-background-secondary)':'';
+  });
+};
+window.TJ2_obs=function(){
+  if(S.ph!=='ta')return;
+  S.ph='co';S.cH=Math.random()*360;S.cP=0;
+  document.getElementById('ob2').disabled=true;
+};
+
+document.querySelector('#mg2 [data-m="A"]').style.background='var(--color-background-secondary)';
+initBg();
+drawFrame();
+})();
+</script>
+
+</body>
+</html>

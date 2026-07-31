@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FDRS · 展開／收斂 · 升維／降維 · 同步性</title>
+<style>
+  :root{
+    --bg:#070b09; --panel:#0b1310; --line:#173b2a; --green:#39ff9e; --green-dim:#1f7a55;
+    --txt:#bfe9d4; --txt-dim:#5f8a74; --hi:#aaffd5;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+    font-family:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace}
+  #wrap{display:flex;flex-direction:column;height:100%;gap:8px;padding:10px}
+  #top{display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;
+    border-bottom:1px solid var(--line);padding-bottom:8px}
+  #title{color:var(--hi);font-weight:700;letter-spacing:.5px}
+  #title small{color:var(--txt-dim);font-weight:400}
+  .stat{color:var(--txt-dim)}
+  .stat b{color:var(--green);font-weight:600}
+  #stage{display:flex;flex:1;gap:10px;min-height:0}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    position:relative;overflow:hidden;min-height:0}
+  #mainPanel{flex:2}
+  #sidePanel{flex:1;display:flex;flex-direction:column}
+  .panel canvas{display:block;width:100%;height:100%}
+  .ptag{position:absolute;top:8px;left:10px;font-size:12px;color:var(--green-dim);
+    pointer-events:none;letter-spacing:.5px}
+  .pinfo{position:absolute;bottom:8px;left:10px;right:10px;font-size:12px;color:var(--txt-dim);
+    pointer-events:none;line-height:1.5}
+  .pinfo b{color:var(--green)}
+  #ctrl{display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+    border-top:1px solid var(--line);padding-top:8px}
+  button{background:#0e1d16;color:var(--hi);border:1px solid var(--green-dim);
+    border-radius:6px;padding:6px 12px;font-family:inherit;font-size:13px;cursor:pointer}
+  button:hover{border-color:var(--green);color:var(--green)}
+  button.on{background:#13311f;border-color:var(--green);color:var(--green)}
+  label{color:var(--txt-dim);font-size:13px;display:flex;align-items:center;gap:6px}
+  input[type=range]{accent-color:var(--green);width:150px}
+  .morphlab{color:var(--green);min-width:230px;font-size:13px}
+  .sep{width:1px;align-self:stretch;background:var(--line)}
+  .phase{padding:2px 8px;border:1px solid var(--green-dim);border-radius:10px;color:var(--green);font-size:12px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="top">
+    <div id="title">FDRS&nbsp;·&nbsp;容器同一性 𝓡 <small>— 一個容器 C∗(H)，連續展開／收斂</small></div>
+    <span class="stat">指紋 C∗(H): <b id="fp">--------</b></span>
+    <span class="stat">β₀ = mult(0;L): <b id="b0">6</b></span>
+    <span class="stat">歸位 <b id="solvedN">54</b>/54</span>
+    <span class="stat">相位 <span class="phase" id="phase">IDLE</span></span>
+    <span class="stat">步 <b id="moveN">0</b></span>
+  </div>
+
+  <div id="stage">
+    <div class="panel" id="mainPanel">
+      <div class="ptag">立體 ⇄ 展平　STEREO ⇄ FLAT　（連續 Φ）</div>
+      <canvas id="cMain"></canvas>
+      <div class="pinfo" id="mainInfo"></div>
+    </div>
+    <div class="panel" id="sidePanel">
+      <div class="ptag">譜　SPECTRAL　貼面鄰接圖</div>
+      <canvas id="cGraph"></canvas>
+      <div class="pinfo">同色連通分量 β₀ = <b id="b0b">6</b>　|V|=54 |E|=108　解 ⇒ 6</div>
+    </div>
+  </div>
+
+  <div id="ctrl">
+    <button id="btnRun">▶ 自動求解（FSM）</button>
+    <button id="btnStep">單步亂序→解</button>
+    <button id="btnReset">重置容器</button>
+    <div class="sep"></div>
+    <label>亂序深度 <input id="depth" type="range" min="3" max="7" value="6"><b id="depthV" style="color:var(--green)">6</b></label>
+    <div class="sep"></div>
+    <label>展開 t <input id="morph" type="range" min="0" max="1000" value="0"></label>
+    <span class="morphlab" id="morphLab">t=0.00　立體 R³</span>
+    <div class="sep"></div>
+    <label><input id="spin" type="checkbox" checked> 視角自轉</label>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   FDRS core — proven engine (perm-based), IDA* solver, adjacency, components.
+   (Engine + solver + adjacency verified headlessly before embedding.)
+   ========================================================================= */
+const NORMALS={U:[0,1,0],D:[0,-1,0],R:[1,0,0],L:[-1,0,0],F:[0,0,1],B:[0,0,-1]};
+const SOLVED={U:0,D:1,F:2,B:3,L:4,R:5};
+const FO=['U','D','F','B','L','R'];
+const FB={U:[[1,0,0],[0,0,1]],D:[[1,0,0],[0,0,-1]],F:[[1,0,0],[0,-1,0]],
+  B:[[-1,0,0],[0,-1,0]],L:[[0,0,1],[0,-1,0]],R:[[0,0,-1],[0,-1,0]]};
+const COLOR_RGB=[[245,245,245],[240,215,40],[40,200,90],[45,95,220],[235,130,20],[220,45,45]];
+function rot90(v,axis,sign){let[x,y,z]=v,[ax,ay,az]=axis,s=sign;
+  if(ax<0||ay<0||az<0){ax=-ax;ay=-ay;az=-az;s=-s;}
+  if(ax===1)return[x,-s*z,s*y]; if(ay===1)return[s*z,y,-s*x]; return[-s*y,s*x,z];}
+const kP=p=>p[0]+','+p[1]+','+p[2];
+function makeCubies(){const cs=[];for(const x of[-1,0,1])for(const y of[-1,0,1])for(const z of[-1,0,1]){
+  if(!x&&!y&&!z)continue;const st={};
+  if(x===1)st[kP([1,0,0])]=1; if(x===-1)st[kP([-1,0,0])]=1;
+  if(y===1)st[kP([0,1,0])]=1; if(y===-1)st[kP([0,-1,0])]=1;
+  if(z===1)st[kP([0,0,1])]=1; if(z===-1)st[kP([0,0,-1])]=1;
+  cs.push({p:[x,y,z],st});}return cs;}
+const ALL=[];for(const f of FO)for(let r=0;r<3;r++)for(let c=0;c<3;c++)ALL.push([f,r,c]);
+function faceletPos(f,r,c){const n=NORMALS[f],[ri,dn]=FB[f];
+  return[n[0]+ri[0]*(c-1)+dn[0]*(r-1),n[1]+ri[1]*(c-1)+dn[1]*(r-1),n[2]+ri[2]*(c-1)+dn[2]*(r-1)];}
+const POSNORM2IDX=new Map();
+ALL.forEach(([f,r,c],i)=>{POSNORM2IDX.set(kP(faceletPos(f,r,c))+'|'+kP(NORMALS[f]),i);});
+function derivePerm(face){const cs=makeCubies();
+  for(const cb of cs){const ns={};for(const k in cb.st)ns[k]=POSNORM2IDX.get(kP(cb.p)+'|'+k);cb.st=ns;}
+  const axis=NORMALS[face];
+  for(const cb of cs){const[x,y,z]=cb.p,[ax,ay,az]=axis;
+    if(!((ax&&x===ax)||(ay&&y===ay)||(az&&z===az)))continue;
+    cb.p=rot90(cb.p,axis,1);const ns={};for(const k in cb.st){const kk=k.split(',').map(Number);ns[kP(rot90(kk,axis,1))]=cb.st[k];}cb.st=ns;}
+  const perm=new Array(54);
+  for(const cb of cs)for(const k in cb.st){const kk=k.split(',').map(Number);
+    perm[POSNORM2IDX.get(kP(cb.p)+'|'+kP(kk))]=cb.st[k];}
+  return perm;}
+const inv=p=>{const q=new Array(54);for(let i=0;i<54;i++)q[p[i]]=i;return q;};
+const compose=(a,b)=>{const q=new Array(54);for(let i=0;i<54;i++)q[i]=a[b[i]];return q;};
+const CW={},CCW={},DBL={};
+for(const f of FO){CW[f]=derivePerm(f);CCW[f]=inv(CW[f]);DBL[f]=compose(CW[f],CW[f]);}
+const SOLSTATE=new Int8Array(54);ALL.forEach(([f],i)=>{SOLSTATE[i]=SOLVED[f];});
+const applyPerm=(s,p)=>{const n=new Int8Array(54);for(let i=0;i<54;i++)n[i]=s[p[i]];return n;};
+// piece tables (heuristic)
+function buildPieces(){const cs=makeCubies();const corners=[],edges=[];
+  for(const cb of cs){const ks=Object.keys(cb.st);if(ks.length===1)continue;
+    const grp=ks.map(k=>{const kk=k.split(',').map(Number);return POSNORM2IDX.get(kP(cb.p)+'|'+kP(kk));});
+    const rec={idx:grp,col:grp.map(i=>SOLSTATE[i])};(ks.length===3?corners:edges).push(rec);}
+  return{corners,edges};}
+const PCS=buildPieces();
+function homeCount(s,ps){let h=0;for(const pc of ps){let ok=true;for(let j=0;j<pc.idx.length;j++)if(s[pc.idx[j]]!==pc.col[j]){ok=false;break;}if(ok)h++;}return h;}
+function heuristic(s){const cN=PCS.corners.length-homeCount(s,PCS.corners),eN=PCS.edges.length-homeCount(s,PCS.edges);
+  return Math.max(Math.ceil(cN/4),Math.ceil(eN/4));}
+const isSolved=s=>{for(let i=0;i<54;i++)if(s[i]!==SOLSTATE[i])return false;return true;};
+const MOVES=[];for(const f of FO){MOVES.push([f,CW[f],'cw']);MOVES.push([f,CCW[f],'ccw']);MOVES.push([f,DBL[f],'dbl']);}
+const OPP={U:'D',D:'U',F:'B',B:'F',L:'R',R:'L'};
+let NODES=0;const NODE_CAP=2.2e6;
+function idaSolve(start,maxBound){let bound=heuristic(start);const path=[];
+  function dfs(s,g,bound,pf,pf2){NODES++;if(NODES>NODE_CAP)return -2;
+    const fc=g+heuristic(s);if(fc>bound)return fc;if(isSolved(s))return -1;let min=Infinity;
+    for(const m of MOVES){const f=m[0];if(f===pf)continue;if(OPP[f]===pf&&f===pf2)continue;
+      const ns=applyPerm(s,m[1]);path.push(m);const t=dfs(ns,g+1,bound,f,pf);
+      if(t===-1)return -1;if(t===-2)return -2;if(t<min)min=t;path.pop();}
+    return min;}
+  while(bound<=maxBound){const t=dfs(start,0,bound,null,null);
+    if(t===-1)return path.slice();if(t===-2)return null;if(t===Infinity)return null;bound=t;}
+  return null;}
+// adjacency + components (graph panel)
+function faceletCenter(f,r,c){const n=NORMALS[f],[ri,dn]=FB[f];
+  return[n[0]*1.5+ri[0]*(c-1)+dn[0]*(r-1),n[1]*1.5+ri[1]*(c-1)+dn[1]*(r-1),n[2]*1.5+ri[2]*(c-1)+dn[2]*(r-1)];}
+function buildAdj(){const mids=new Map();const kk=p=>p.map(v=>Math.round(v*1000)/1000).join(',');
+  ALL.forEach(([f,r,c],i)=>{const ctr=faceletCenter(f,r,c);const[ri,dn]=FB[f];
+    for(const d of[ri,dn])for(const s of[0.5,-0.5]){const m=kk([ctr[0]+d[0]*s,ctr[1]+d[1]*s,ctr[2]+d[2]*s]);
+      if(!mids.has(m))mids.set(m,[]);mids.get(m).push(i);}});
+  const adj=Array.from({length:54},()=>new Set());
+  for(const lst of mids.values())for(const i of lst)for(const j of lst)if(i!==j)adj[i].add(j);
+  return adj.map(s=>[...s]);}
+const ADJ=buildAdj();
+function monoComponents(s){const par=[...Array(54).keys()];const find=a=>{while(par[a]!==a){par[a]=par[par[a]];a=par[a];}return a;};
+  for(let i=0;i<54;i++)for(const j of ADJ[i])if(j>i&&s[i]===s[j]){const ri=find(i),rj=find(j);if(ri!==rj)par[ri]=rj;}
+  const roots=new Set();for(let i=0;i<54;i++)roots.add(find(i));return roots.size;}
+function fingerprint(s){let h=0;for(let i=0;i<54;i++){h=((h*6)+s[i])>>>0;h=Math.imul(h,2654435761)>>>0;}return h.toString(16).toUpperCase().padStart(8,'0');}
+function solvedFacelets(s){let n=0;for(let f=0;f<6;f++){const cen=s[f*9+4];for(let i=0;i<9;i++)if(s[f*9+i]===cen)n++;}return n;}
+
+/* =========================================================================
+   Geometry — cube-local sticker squares + flat-net squares (morph endpoints)
+   ========================================================================= */
+const HALF=0.46;
+function cubeCorners(f,r,c){const ctr=faceletCenter(f,r,c);const[ri,dn]=FB[f];
+  const mk=(sx,sy)=>[ctr[0]+ri[0]*sx*HALF+dn[0]*sy*HALF,ctr[1]+ri[1]*sx*HALF+dn[1]*sy*HALF,ctr[2]+ri[2]*sx*HALF+dn[2]*sy*HALF];
+  return[mk(-1,-1),mk(1,-1),mk(1,1),mk(-1,1)];}
+const NETLAYOUT={U:[1,0],L:[0,1],F:[1,1],R:[2,1],B:[3,1],D:[1,2]};
+const NETSCALE=0.62;
+function netCorners(f,r,c){const[bc,br]=NETLAYOUT[f];
+  const x0=-6, y0=4.5; // cross spans 12 wide x 9 tall, centered
+  const cx=x0+bc*3+c+0.5, cy=y0-(br*3+r)-0.5;
+  const mk=(sx,sy)=>[(cx+sx*HALF)*NETSCALE,(cy+sy*HALF)*NETSCALE,0];
+  return[mk(-1,-1),mk(1,-1),mk(1,1),mk(-1,1)];}
+// per-facelet precompute
+const FL=ALL.map(([f,r,c],i)=>({i,f,r,c,cube:cubeCorners(f,r,c),net:netCorners(f,r,c),
+  layerPos:faceletPos(f,r,c),axis:NORMALS[f]}));
+// graph node 2D positions (net-like), static
+const GN=ALL.map(([f,r,c])=>{const[bc,br]=NETLAYOUT[f];return{x:bc*3+c, y:br*3+r};});
+
+/* =========================================================================
+   View math
+   ========================================================================= */
+function rotAxis(p,axis,ang){ // Rodrigues, axis unit
+  const[ux,uy,uz]=axis,ca=Math.cos(ang),sa=Math.sin(ang),d=p[0]*ux+p[1]*uy+p[2]*uz;
+  return[p[0]*ca+(uy*p[2]-uz*p[1])*sa+ux*d*(1-ca),
+         p[1]*ca+(uz*p[0]-ux*p[2])*sa+uy*d*(1-ca),
+         p[2]*ca+(ux*p[1]-uy*p[0])*sa+uz*d*(1-ca)];}
+let yaw=0.6, pitch=-0.5;
+function viewRot(p){ // pitch about X then yaw about Y
+  let x=p[0],y=p[1],z=p[2];
+  let y2=y*Math.cos(pitch)-z*Math.sin(pitch), z2=y*Math.sin(pitch)+z*Math.cos(pitch);
+  let x3=x*Math.cos(yaw)+z2*Math.sin(yaw), z3=-x*Math.sin(yaw)+z2*Math.cos(yaw);
+  return[x3,y2,z3];}
+const LIGHT=(()=>{const l=[0.4,0.8,0.6],n=Math.hypot(...l);return l.map(v=>v/n);})();
+
+/* =========================================================================
+   State + FSM
+   ========================================================================= */
+let state=SOLSTATE.slice();
+let morphT=0;           // 0 cube ... 1 flat
+let spin=true;
+// FSM
+const FSM={phase:'IDLE',queue:[],turn:null,timer:0,running:false,scrambleDepth:6};
+let pulse=new Float32Array(54); // changed-cell highlight decay (graph/net)
+
+function startScramble(){
+  // build a random scramble sequence (move tokens), enqueue as turns; record nothing (solver re-derives)
+  const seq=[];let prev=null;
+  for(let i=0;i<FSM.scrambleDepth;i++){let f;do{f=FO[Math.floor(Math.random()*6)];}while(f===prev);prev=f;
+    const v=Math.floor(Math.random()*3);seq.push([f,v]);}
+  FSM.queue=seq.map(([f,v])=>({f,v,kind:'scramble'}));
+  FSM.phase='SCRAMBLING';
+}
+function planSolve(){
+  NODES=0;
+  const sol=idaSolve(state.slice(),FSM.scrambleDepth+2);
+  if(!sol){ // fallback (shouldn't happen at these depths): just reset
+    FSM.queue=[]; state=SOLSTATE.slice(); FSM.phase='DONE'; FSM.timer=0.6; return; }
+  FSM.queue=sol.map(m=>({f:m[0],v:m[2]==='cw'?0:m[2]==='ccw'?1:2,kind:'solve'}));
+  FSM.phase='SOLVING';
+}
+function beginTurn(item){
+  const ang=item.v===0?Math.PI/2:item.v===1?-Math.PI/2:Math.PI;
+  const perm=item.v===0?CW[item.f]:item.v===1?CCW[item.f]:DBL[item.f];
+  FSM.turn={f:item.f,v:item.v,kind:item.kind,axis:NORMALS[item.f],ang,perm,prog:0,
+    dur:item.kind==='scramble'?0.16:0.22};
+}
+function commitTurn(){
+  const t=FSM.turn;const perm=t.v===0?CW[t.f]:t.v===1?CCW[t.f]:DBL[t.f];
+  const before=state;state=applyPerm(state,perm);
+  for(let i=0;i<54;i++)if(state[i]!==before[i])pulse[i]=1;
+  FSM.turn=null;
+}
+function fsmStep(dt){
+  if(FSM.turn){ // animate active turn (only meaningful at morphT≈0)
+    FSM.turn.prog+=dt/FSM.turn.dur;
+    if(FSM.turn.prog>=1){FSM.turn.prog=1;commitTurn();}
+    return;
+  }
+  if(FSM.phase==='SCRAMBLING'){
+    if(FSM.queue.length){beginTurn(FSM.queue.shift());}
+    else {FSM.phase='PLANNING';FSM.timer=0.12;}
+  } else if(FSM.phase==='PLANNING'){
+    FSM.timer-=dt; if(FSM.timer<=0) planSolve();
+  } else if(FSM.phase==='SOLVING'){
+    if(FSM.queue.length){beginTurn(FSM.queue.shift());}
+    else {FSM.phase='DONE';FSM.timer=0.9;}
+  } else if(FSM.phase==='DONE'){
+    FSM.timer-=dt; if(FSM.timer<=0){ if(FSM.running) startScramble(); else FSM.phase='IDLE'; }
+  } else if(FSM.phase==='IDLE'){
+    if(FSM.running){ if(isSolved(state)) startScramble(); else planSolve(); }
+  }
+}
+
+/* =========================================================================
+   Rendering
+   ========================================================================= */
+const cMain=document.getElementById('cMain'),gMain=cMain.getContext('2d');
+const cGraph=document.getElementById('cGraph'),gGraph=cGraph.getContext('2d');
+function fitCanvas(cv){const r=cv.getBoundingClientRect();const dpr=window.devicePixelRatio||1;
+  cv.width=Math.max(2,r.width*dpr);cv.height=Math.max(2,r.height*dpr);return dpr;}
+function colorStr(ci,b){const[r,g,bl]=COLOR_RGB[ci];return`rgb(${r*b|0},${g*b|0},${bl*b|0})`;}
+function mixColor(ciA,ciB,w){const a=COLOR_RGB[ciA],b=COLOR_RGB[ciB];
+  return[a[0]+(b[0]-a[0])*w,a[1]+(b[1]-a[1])*w,a[2]+(b[2]-a[2])*w];}
+function rgbStr(c,b){return`rgb(${Math.min(255,c[0]*b)|0},${Math.min(255,c[1]*b)|0},${Math.min(255,c[2]*b)|0})`;}
+
+function drawMain(){
+  const dpr=fitCanvas(cMain);const W=cMain.width,H=cMain.height;
+  gMain.setTransform(1,0,0,1,0,0);gMain.clearRect(0,0,W,H);
+  const cx=W/2, cy=H/2;
+  const camZ=7.0, focal=4.2;
+  const scale=Math.min(W,H)/ (5.4 + morphT*3.2);  // zoom out a bit when flattened
+  const t=morphT;
+  const cfMain=(FSM.turn && morphT>0.05)?FSM.turn.prog:0; // color-flow when not pure-cube
+  const quads=[];
+  for(const fl of FL){
+    let cs=fl.cube;
+    // active turn rotation (only when essentially cube form)
+    if(FSM.turn && t<0.05){
+      const onLayer=fl.layerPos.some((v,k)=>NORMALS[FSM.turn.f][k]!==0 && v===NORMALS[FSM.turn.f][k]);
+      if(onLayer){const a=FSM.turn.axis,ang=FSM.turn.ang*FSM.turn.prog;
+        cs=fl.cube.map(p=>rotAxis(p,a,ang));}
+    }
+    // morph + view + project
+    const pts=[],zs=[];
+    for(let k=0;k<4;k++){
+      const cu=cs[k],ne=fl.net[k];
+      const mx=cu[0]+(ne[0]-cu[0])*t, my=cu[1]+(ne[1]-cu[1])*t, mz=cu[2]+(ne[2]-cu[2])*t;
+      const rv=viewRot([mx,my,mz]);
+      const zc=camZ-rv[2];
+      const px=cx+ (rv[0]*focal/zc)*scale;
+      const py=cy- (rv[1]*focal/zc)*scale;
+      pts.push([px,py]);zs.push(rv[2]);
+    }
+    // normal (for shading) from view-space corners
+    const e1=[pts[1][0]-pts[0][0],pts[1][1]-pts[0][1]];
+    const e2=[pts[3][0]-pts[0][0],pts[3][1]-pts[0][1]];
+    const screenArea=e1[0]*e2[1]-e1[1]*e2[0]; // signed; skip degenerate backfaces only when cube-like
+    // shading via world normal
+    const wn=(()=>{const a=cs[1].map((v,k)=>v-cs[0][k]),b=cs[3].map((v,k)=>v-cs[0][k]);
+      const n=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+      const L=Math.hypot(...n)||1;return n.map(v=>v/L);})();
+    const rn=viewRot(wn);
+    const bright=0.5+0.5*Math.max(0,rn[0]*LIGHT[0]+rn[1]*LIGHT[1]+rn[2]*LIGHT[2]);
+    const meanZ=(zs[0]+zs[1]+zs[2]+zs[3])/4;
+    const src=FSM.turn?FSM.turn.perm[fl.i]:fl.i;
+    const rgb=mixColor(state[fl.i],state[src],cfMain);
+    quads.push({pts,rgb,b:(1-t)*bright + t*1.0,z:meanZ,i:fl.i});
+  }
+  quads.sort((a,b)=>a.z-b.z); // far first (painter)
+  for(const q of quads){
+    gMain.beginPath();gMain.moveTo(q.pts[0][0],q.pts[0][1]);
+    for(let k=1;k<4;k++)gMain.lineTo(q.pts[k][0],q.pts[k][1]);gMain.closePath();
+    gMain.fillStyle=rgbStr(q.rgb,Math.min(1,q.b));gMain.fill();
+    gMain.lineWidth=Math.max(1,1.2*dpr);gMain.strokeStyle='rgba(0,0,0,0.55)';gMain.stroke();
+    if(pulse[q.i]>0.01){gMain.strokeStyle=`rgba(57,255,158,${pulse[q.i]*0.9})`;gMain.lineWidth=2.4*dpr;gMain.stroke();}
+  }
+}
+
+function drawGraph(){
+  const dpr=fitCanvas(cGraph);const W=cGraph.width,H=cGraph.height;
+  gGraph.setTransform(1,0,0,1,0,0);gGraph.clearRect(0,0,W,H);
+  const cols=12,rows=9;
+  const pad=20*dpr;
+  const cw=(W-2*pad)/(cols-1), ch=(H-2*pad)/(rows-1);
+  const PX=n=>pad+GN[n].x*cw, PY=n=>pad+GN[n].y*ch;
+  // edges (intra-face only, drawn); same-color bright
+  gGraph.lineWidth=1.2*dpr;
+  for(let i=0;i<54;i++)for(const j of ADJ[i]){if(j<=i)continue;
+    const fi=ALL[i][0],fj=ALL[j][0];if(fi!==fj)continue;
+    gGraph.strokeStyle=state[i]===state[j]?'rgba(57,255,158,0.45)':'rgba(31,122,85,0.35)';
+    gGraph.beginPath();gGraph.moveTo(PX(i),PY(i));gGraph.lineTo(PX(j),PY(j));gGraph.stroke();}
+  // nodes
+  const cfG=FSM.turn?FSM.turn.prog:0;
+  for(let i=0;i<54;i++){const x=PX(i),y=PY(i);
+    const src=FSM.turn?FSM.turn.perm[i]:i;
+    gGraph.beginPath();gGraph.arc(x,y,5.2*dpr,0,7);gGraph.fillStyle=rgbStr(mixColor(state[i],state[src],cfG),1);gGraph.fill();
+    if(pulse[i]>0.01){gGraph.strokeStyle=`rgba(57,255,158,${pulse[i]})`;gGraph.lineWidth=2.4*dpr;gGraph.stroke();}
+    else{gGraph.strokeStyle='rgba(0,0,0,0.5)';gGraph.lineWidth=1*dpr;gGraph.stroke();}}
+}
+
+/* =========================================================================
+   HUD + loop
+   ========================================================================= */
+const el=id=>document.getElementById(id);
+function updateHUD(){
+  el('fp').textContent=fingerprint(state);
+  const b0=monoComponents(state);el('b0').textContent=b0;el('b0b').textContent=b0;
+  el('solvedN').textContent=solvedFacelets(state);
+  el('phase').textContent=FSM.turn?('TURN '+FSM.turn.f):FSM.phase;
+  el('moveN').textContent=moveCount;
+  const t=morphT;
+  let lab;
+  if(t<0.01)lab='t=0.00　立體 R³（容器，可自轉求解）';
+  else if(t>0.99)lab='t=1.00　攤平 R²（FCSR 十字網）';
+  else lab='t='+t.toFixed(2)+'　展開中　Φ 降維↓ ／ RDCM 升維↑';
+  el('morphLab').textContent=lab;
+  el('mainInfo').innerHTML=
+    '展開＝攤平 Φ（3D→2D，<b>降維</b>）　收斂＝重構 RDCM（2D→3D，<b>升維</b>）'+
+    '　·　morph 改變的是表示，不是容器：指紋與 β₀ 在展開中<b>不變</b>，唯 Φ 轉層改變它。';
+}
+let moveCount=0, last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(spin && morphT<0.02 && !FSM.turn) yaw+=dt*0.35;
+  const prevTurn=FSM.turn;
+  fsmStep(dt);
+  if(prevTurn && !FSM.turn) moveCount++; // a turn just committed
+  for(let i=0;i<54;i++) if(pulse[i]>0) pulse[i]=Math.max(0,pulse[i]-dt*2.2);
+  drawMain();drawGraph();updateHUD();
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================================
+   Controls
+   ========================================================================= */
+el('btnRun').addEventListener('click',()=>{
+  FSM.running=!FSM.running;
+  el('btnRun').classList.toggle('on',FSM.running);
+  el('btnRun').textContent=FSM.running?'⏸ 停止自動':'▶ 自動求解（FSM）';
+  if(FSM.running && FSM.phase==='IDLE'){ if(isSolved(state)) startScramble(); else planSolve(); }
+});
+el('btnStep').addEventListener('click',()=>{
+  if(FSM.turn||FSM.queue.length)return;
+  morphT=0;el('morph').value=0;
+  if(isSolved(state)) startScramble(); else planSolve();
+});
+el('btnReset').addEventListener('click',()=>{
+  state=SOLSTATE.slice();FSM.queue=[];FSM.turn=null;FSM.phase='IDLE';FSM.running=false;
+  el('btnRun').classList.remove('on');el('btnRun').textContent='▶ 自動求解（FSM）';
+});
+el('depth').addEventListener('input',e=>{FSM.scrambleDepth=+e.target.value;el('depthV').textContent=e.target.value;});
+el('morph').addEventListener('input',e=>{morphT=(+e.target.value)/1000;});
+el('spin').addEventListener('change',e=>{spin=e.target.checked;});
+// drag-orbit on main panel
+let drag=false,lx=0,ly=0;
+cMain.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;spin=false;el('spin').checked=false;});
+window.addEventListener('pointerup',()=>drag=false);
+window.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-lx)*0.008;pitch+=(e.clientY-ly)*0.008;
+  pitch=Math.max(-1.4,Math.min(1.4,pitch));lx=e.clientX;ly=e.clientY;});
+
+updateHUD();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

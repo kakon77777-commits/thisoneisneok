@@ -30,8 +30,16 @@ if (!fs.existsSync(truthPath)) {
 }
 const truth = JSON.parse(fs.readFileSync(truthPath, "utf8"));
 
+// A `Cache-Control: no-cache` request header does not reliably bypass a CDN edge
+// cache, so every probe carries a unique query string. Without it this gate can
+// pass against a copy the previous deploy left behind — which happened: a stale
+// /ai/apps-index.json listed the old app URLs long enough to make 25 working
+// pages look like 25 redirects.
+let probe = 0;
+const bust = (url) => `${url}${url.includes("?") ? "&" : "?"}__v=${Date.now().toString(36)}${(probe += 1)}`;
+
 async function get(url) {
-  const response = await fetch(url, {
+  const response = await fetch(bust(url), {
     headers: { "User-Agent": "verify-deploy/1.0", "Cache-Control": "no-cache" },
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -88,7 +96,7 @@ async function onePass() {
     const bad = [];
     for (const paper of samples) {
       for (const url of [paper.html, paper.pdf]) {
-        const response = await fetch(url, { method: "GET", redirect: "manual" });
+        const response = await fetch(bust(url), { method: "GET", redirect: "manual" });
         if (response.status !== 200) bad.push(`${url} -> ${response.status}${response.headers.get("location") ? ` -> ${response.headers.get("location")}` : ""}`);
       }
     }
@@ -122,17 +130,50 @@ async function onePass() {
     const fonts = [...new Set([...css.matchAll(/url\(fonts\/([^)]+?)\)/g)].map((match) => match[1]))];
     const bad = [];
     for (const name of fonts.slice(0, 6)) {
-      const response = await fetch(`${baseUrl}/vendor/katex/fonts/${name}`, { method: "HEAD" });
+      const response = await fetch(bust(`${baseUrl}/vendor/katex/fonts/${name}`), { method: "HEAD" });
       if (!response.ok) bad.push(`${name} -> ${response.status}`);
     }
     return [bad.length === 0 && fonts.length > 0, bad.length ? bad.join("; ") : `stylesheet references ${fonts.length} fonts, sampled ${Math.min(6, fonts.length)} — all present`];
   });
 
+  // Each experiment must serve its OWN document — not the app shell.
+  //
+  // This check exists because status codes could not see the failure it was
+  // written for: /apps/<slug>/ answered 200 with the router's "back to catalog"
+  // page, because html_handling "none" disables directory-index resolution and
+  // the request fell through to the Worker's /apps/[slug] route. Every URL
+  // looked healthy. The tell was that four different apps all returned exactly
+  // 5,968 bytes. So: compare the served <title> against the manifest's, and
+  // reject anything carrying the shell's build-id meta.
+  await check("experiments serve their own document", async () => {
+    const live = await (await get(`${baseUrl}/ai/apps-index.json`)).json();
+    const runnable = live.apps.filter((app) => !app.sourceOnly);
+    const sample = [runnable[0], runnable[Math.floor(runnable.length / 2)], runnable.at(-1)].filter(Boolean);
+    const bad = [];
+    for (const app of sample) {
+      const response = await fetch(bust(app.url), { redirect: "manual" });
+      if (response.status !== 200) {
+        bad.push(`${app.slug} -> ${response.status}`);
+        continue;
+      }
+      const html = await response.text();
+      if (BUILD_META.test(html)) {
+        bad.push(`${app.slug} served the site shell, not the app`);
+        continue;
+      }
+      const title = html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() ?? "";
+      // The wrapped fragments get their title from the manifest; the rest keep
+      // their own. Either way an app's title must not be the site's.
+      if (!title || /Neo\.K × EveMissLab/.test(title)) bad.push(`${app.slug} title looks wrong: "${title}"`);
+    }
+    return [bad.length === 0, bad.length ? bad.join("; ") : `${sample.length} sampled apps serve their own document`];
+  });
+
   await check("markdown sources NOT published", async () => {
     // Papers publish as HTML and PDF only. A /md/papers/ route appearing here
     // would mean the internal-source boundary broke.
-    const response = await fetch(`${baseUrl}/md/papers/pldst-001.zh.md`);
-    const alsoBare = await fetch(`${baseUrl}/md/papers/`);
+    const response = await fetch(bust(`${baseUrl}/md/papers/pldst-001.zh.md`));
+    const alsoBare = await fetch(bust(`${baseUrl}/md/papers/`));
     const leaked = response.status === 200 || alsoBare.status === 200;
     return [!leaked, `/md/papers probes -> ${response.status}, ${alsoBare.status}`];
   });

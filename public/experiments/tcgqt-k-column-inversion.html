@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TCGQT K-Column Generative Inversion · v0.2</title>
+<style>
+:root{
+  --bg:#080a0f;--panel:#111520;--ink:#ebe4d6;--dim:#7c8396;--line:#2a3144;
+  --gold:#e8b04b;--gold2:#f2cd86;--cyan:#5fd0c5;--rose:#d95a7a;--red:#d95a5a;--violet:#bd8be6;--green:#8fd98a;--blue:#7ca7ff;--orange:#ff9f43;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{
+  background:radial-gradient(120% 110% at 50% 0%,#171b29 0%,var(--bg) 58%,#040509 100%);
+  color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans TC",monospace;line-height:1.5;overflow-x:hidden;
+}
+header{text-align:center;padding:18px 14px 8px}
+.kicker{font-size:10.5px;letter-spacing:.38em;text-transform:uppercase;color:var(--dim)}
+h1{font-family:Georgia,"Times New Roman",serif;font-weight:300;font-size:28px;margin-top:5px}
+h1 em{font-style:italic;color:var(--gold2)}
+.sub{font-size:11px;color:var(--dim);margin-top:6px}
+.wrap{max-width:1260px;margin:0 auto;padding:12px 16px 40px;display:grid;grid-template-columns:1.22fr .78fr;gap:16px}
+.card{background:linear-gradient(180deg,rgba(17,21,32,.95),rgba(9,11,17,.95));border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.28);padding:14px}
+.stage{position:relative;overflow:hidden}
+canvas{display:block;width:100%;height:700px;background:radial-gradient(circle at 50% 45%,#121725,#070910 68%,#030407 100%);border-radius:14px;border:1px solid rgba(255,255,255,.055)}
+.topbar{position:absolute;left:26px;top:26px;display:flex;gap:8px;flex-wrap:wrap;max-width:78%}
+.pill{border:1px solid rgba(255,255,255,.09);background:rgba(8,10,16,.62);backdrop-filter:blur(6px);border-radius:999px;padding:5px 9px;font-size:11px;color:var(--dim)}
+.pill b{color:var(--gold);font-weight:400}
+.tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0 12px}
+button{
+  font:inherit;border:1px solid var(--line);background:linear-gradient(180deg,#1a1f2f,#0e111a);color:var(--ink);
+  border-radius:12px;padding:9px 10px;cursor:pointer
+}
+button.on{border-color:var(--gold);color:var(--gold);background:linear-gradient(180deg,#241e13,#14100a)}
+button:hover{filter:brightness(1.08)}
+.row{display:flex;align-items:center;gap:10px;margin:9px 0}
+.row label{width:88px;font-size:12px;color:var(--dim)}
+input[type=range]{flex:1;accent-color:var(--gold)}
+.val{width:58px;text-align:right;color:var(--gold);font-size:12px}
+.panelTitle{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.toggles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0 12px}
+.toggles button{font-size:12px;padding:8px}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0 12px}
+.metric{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:13px;padding:9px}
+.metric .mname{font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+.metric .mval{font-size:20px;margin-top:2px}
+.bar{height:6px;background:#1b2030;border-radius:999px;overflow:hidden;margin-top:7px}
+.fill{height:100%;width:50%;background:var(--cyan);border-radius:999px}
+.note,.warn{font-size:11px;color:var(--dim);border-left:2px solid var(--line);padding-left:10px;margin-top:11px;line-height:1.65}
+.warn{color:#d8b0b6;border-color:var(--rose)}
+.formula{font-size:12px;background:#070910;border:1px solid var(--line);border-radius:13px;padding:10px;margin-top:10px;color:#c7ccd8;overflow:auto}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--dim);margin-top:10px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.log{height:122px;overflow:auto;background:#070910;border:1px solid var(--line);border-radius:13px;padding:10px;font-size:11px;color:#c7ccd8;margin-top:9px}
+.log p{margin-bottom:7px}
+.selected{font-family:Georgia,"Times New Roman",serif;font-size:27px;color:var(--gold)}
+.small{font-size:11px;color:var(--dim)}
+.factorbox{background:#070910;border:1px solid var(--line);border-radius:13px;padding:10px;margin-top:9px;font-size:12px;min-height:96px;overflow:auto}
+.chip{display:inline-block;border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:3px 8px;margin:3px 4px 3px 0;color:var(--ink)}
+.chip.p{color:var(--cyan);border-color:rgba(95,208,197,.35)}
+.chip.c{color:var(--violet);border-color:rgba(189,139,230,.35)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+@media(max-width:980px){.wrap{grid-template-columns:1fr}canvas{height:590px}.topbar{position:static;margin-bottom:10px}.stage{padding-top:0}}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">EML-TCGQT-2026-KCOLUMN</div>
+  <h1>K 欄<em>生成反演</em>實驗台</h1>
+  <div class="sub">把 \(6k-1,6k+1\) 壓縮成欄位 \(k\)：分類 PP/PC/CP/CC、Ω-pair、雙半質數、公式族反推與滑動統計。</div>
+</header>
+
+<div class="wrap">
+<section class="card stage">
+  <div class="topbar">
+    <div class="pill">View：<b id="modeName">K 欄分類</b></div>
+    <div class="pill">N：<b id="topN">120000</b></div>
+    <div class="pill">Kmax：<b id="topK">19999</b></div>
+    <div class="pill">Rendered：<b id="rendered">0</b></div>
+  </div>
+  <canvas id="cv" width="940" height="700"></canvas>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--cyan)"></i>PP 雙殘餘 / 孿生</span>
+    <span><i class="dot" style="background:var(--gold)"></i>PC / CP 單側生成</span>
+    <span><i class="dot" style="background:var(--red)"></i>CC 雙生成</span>
+    <span><i class="dot" style="background:var(--violet)"></i>SS 雙半質數</span>
+  </div>
+</section>
+
+<aside class="card">
+  <div class="panelTitle">Views</div>
+  <div class="tabs">
+    <button id="mK" class="on">K 欄分類</button>
+    <button id="mPair">Ω-pair 圖</button>
+    <button id="mStats">滑動統計</button>
+    <button id="mLane">上下車道</button>
+  </div>
+
+  <div class="panelTitle">Highlight / Layers</div>
+  <div class="toggles">
+    <button id="hTwin" class="on">PP 孿生</button>
+    <button id="hSemi" class="on">SS 雙半質數</button>
+    <button id="hSingle" class="on">單側破缺</button>
+    <button id="hDeep" class="on">深層生成</button>
+  </div>
+
+  <div class="panelTitle">Parameters</div>
+  <div class="row"><label>可見 N</label><input id="N" type="range" min="6000" max="300000" step="6000" value="120000"><span class="val" id="Nv">120000</span></div>
+  <div class="row"><label>每列 k</label><input id="cols" type="range" min="40" max="260" step="4" value="140"><span class="val" id="colsv">140</span></div>
+  <div class="row"><label>窗口 W</label><input id="win" type="range" min="20" max="1000" step="20" value="200"><span class="val" id="winv">200</span></div>
+  <div class="row"><label>點大小</label><input id="dot" type="range" min="0.5" max="3.5" step="0.1" value="1.5"><span class="val" id="dotv">1.5</span></div>
+
+  <div class="panelTitle" style="margin-top:14px">Selected K Column</div>
+  <div class="selected" id="selTitle">k = 20</div>
+  <div class="small" id="selMeta">6k−1 = 119 · 6k+1 = 121</div>
+
+  <div class="metrics">
+    <div class="metric"><div class="mname">state</div><div class="mval" id="mState">CC</div><div class="bar"><div class="fill" id="bState"></div></div></div>
+    <div class="metric"><div class="mname">Ω-pair</div><div class="mval" id="mPair">(2,2)</div><div class="bar"><div class="fill" id="bPair"></div></div></div>
+    <div class="metric"><div class="mname">left/right</div><div class="mval" id="mLR">C/C</div><div class="bar"><div class="fill" id="bLR"></div></div></div>
+    <div class="metric"><div class="mname">window PP%</div><div class="mval" id="mWin">0%</div><div class="bar"><div class="fill" id="bWin"></div></div></div>
+  </div>
+
+  <div class="factorbox" id="factorBox"></div>
+
+  <div class="formula" id="formula">
+    (6a+s)(6b+t)=6(6ab+at+bs)+st<br>
+    K 欄反演：同一 k 看上下兩側是否被生成式擊中。
+  </div>
+
+  <div class="note" id="note">
+    這不是二階質數，而是欄位級生成反演。PP 是雙未命中；CC 是雙生成；SS 是雙半質數重疊；PC/CP 是單側破缺。
+  </div>
+
+  <div class="warn">
+    機器驗證內建：χ 與車道在 wheel-6 內完全重疊；v0.2 因此把 χ 降級為解釋，不再當獨立信號。真正看的，是同一 k 欄上下兩側的生成/未生成狀態。
+  </div>
+
+  <div class="panelTitle" style="margin-top:13px">Stats / Log</div>
+  <div class="log" id="log"></div>
+</aside>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let S={N:120000,cols:140,win:200,dot:1.5,mode:'k',twin:true,semi:true,single:true,deep:true,selK:20,hoverK:0};
+let spf=[], omega=[], isPrime=[], minusParity=[], primes=[], mouse={x:0,y:0};
+let Kmax=0, kState=[], kOmegaL=[], kOmegaR=[], kStats=null;
+
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function log(msg){
+  const el=document.getElementById('log'); const p=document.createElement('p');
+  p.textContent='['+(new Date()).toLocaleTimeString()+'] '+msg; el.prepend(p);
+  while(el.children.length>18) el.removeChild(el.lastChild);
+}
+function build(N){
+  spf=Array(N+2).fill(0); omega=Array(N+2).fill(0); isPrime=Array(N+2).fill(false); minusParity=Array(N+2).fill(0); primes=[];
+  for(let i=2;i<=N;i++){
+    if(spf[i]===0){
+      spf[i]=i;
+      if(i<=N/i) for(let j=i*i;j<=N;j+=i) if(spf[j]===0) spf[j]=i;
+    }
+  }
+  for(let i=2;i<=N;i++) if(spf[i]===i){isPrime[i]=true; primes.push(i);}
+  omega[1]=0; minusParity[1]=0;
+  for(let n=2;n<=N;n++){
+    const p=spf[n]||n, m=Math.floor(n/p);
+    omega[n]=omega[m]+1;
+    minusParity[n]=(minusParity[m]+((p%6===5)?1:0))&1;
+  }
+  Kmax=Math.floor((N-1)/6);
+  kState=Array(Kmax+1); kOmegaL=Array(Kmax+1); kOmegaR=Array(Kmax+1);
+  const counts={PP:0,PC:0,CP:0,CC:0,SS:0,DD:0,leftOnly:0,rightOnly:0};
+  let chiOk=true, chiChecked=0;
+  for(let k=1;k<=Kmax;k++){
+    const L=6*k-1, R=6*k+1;
+    const pL=isPrime[L], pR=R<=N&&isPrime[R];
+    const st=(pL?'P':'C')+(pR?'P':'C');
+    kState[k]=st; kOmegaL[k]=omega[L]||0; kOmegaR[k]=omega[R]||0;
+    counts[st]++;
+    if(!pL && !pR && kOmegaL[k]===2 && kOmegaR[k]===2) counts.SS++;
+    if(!pL && !pR && kOmegaL[k]>=3 && kOmegaR[k]>=3) counts.DD++;
+    if(st==='CP') counts.leftOnly++;
+    if(st==='PC') counts.rightOnly++;
+    for(const n of [L,R]){
+      if(n>3 && n<=N && (n%6===1||n%6===5)){
+        chiChecked++;
+        const laneChi=(n%6===5)?1:0;
+        if(minusParity[n]!==laneChi) chiOk=false;
+      }
+    }
+  }
+  kStats={counts,chiOk,chiChecked};
+}
+function factorize(n){
+  if(n<2)return [];
+  const arr=[]; let x=n;
+  while(x>1){ const p=spf[x]||x; let e=0; while(x%p===0){x=Math.floor(x/p);e++;} arr.push([p,e]); }
+  return arr;
+}
+function flatFactors(n){
+  const f=[]; for(const [p,e] of factorize(n)) for(let i=0;i<e;i++) f.push(p); return f;
+}
+function factorString(n){
+  const f=factorize(n); if(!f.length)return '1';
+  return f.map(([p,e])=>e===1?''+p:p+'^'+e).join(' × ');
+}
+function signAB(p){
+  if(p%6===1) return {s:'+1',a:(p-1)/6,pm:'+'};
+  if(p%6===5) return {s:'-1',a:(p+1)/6,pm:'-'};
+  return {s:'0',a:null,pm:'0'};
+}
+function formulaForSemiprime(n,k,side){
+  const f=flatFactors(n);
+  if(f.length!==2 || f[0]===2 || f[0]===3 || f[1]===2 || f[1]===3) return null;
+  const A=signAB(f[0]), B=signAB(f[1]);
+  const a=A.a,b=B.a, sp=A.pm, tp=B.pm;
+  let expr='', kval=0;
+  if(sp==='+' && tp==='+'){ expr='6ab + a + b'; kval=6*a*b+a+b; }
+  if(sp==='-' && tp==='-'){ expr='6ab - a - b'; kval=6*a*b-a-b; }
+  if(sp==='+' && tp==='-'){ expr='6ab - a + b'; kval=6*a*b-a+b; }
+  if(sp==='-' && tp==='+'){ expr='6ab + a - b'; kval=6*a*b+a-b; }
+  return {f1:f[0],f2:f[1],a,b,sp,tp,expr,kval,ok:kval===k,side};
+}
+function rebuild(){
+  build(S.N);
+  if(S.selK>Kmax) S.selK=Math.max(1,Kmax);
+  updatePanel();
+  updateTop();
+  log(`重建：N=${S.N}, Kmax=${Kmax}, PP=${kStats.counts.PP}, PC=${kStats.counts.PC}, CP=${kStats.counts.CP}, CC=${kStats.counts.CC}, SS=${kStats.counts.SS}`);
+  log(`χ 驗證：${kStats.chiOk?'PASS':'FAIL'}，檢查 ${kStats.chiChecked} 個 wheel-6 數。`);
+}
+function updateTop(){
+  document.getElementById('topN').textContent=S.N;
+  document.getElementById('topK').textContent=Kmax;
+}
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(S.mode==='stats') drawStats();
+  else if(S.mode==='lane') drawLane();
+  else drawKGrid();
+  updateTop();
+}
+function gridGeom(){
+  const margin=34, top=58, bottom=28, W=cv.width-2*margin, H=cv.height-top-bottom;
+  const cols=S.cols, rows=Math.ceil(Kmax/cols);
+  return {margin,top,bottom,W,H,cols,rows,cw:W/cols,ch:H/Math.max(1,rows)};
+}
+function colorState(k,alpha=1){
+  const st=kState[k], ol=kOmegaL[k], or=kOmegaR[k];
+  if(st==='PP') return S.twin?`rgba(95,208,197,${alpha})`:`rgba(95,208,197,.12)`;
+  if(st==='PC' || st==='CP') return S.single?`rgba(232,176,75,${alpha})`:`rgba(232,176,75,.12)`;
+  if(st==='CC'){
+    if(ol===2 && or===2) return S.semi?`rgba(189,139,230,${alpha})`:`rgba(189,139,230,.14)`;
+    if(ol>=3 && or>=3) return S.deep?`rgba(217,90,90,${alpha})`:`rgba(217,90,90,.12)`;
+    return `rgba(217,90,122,${alpha*.78})`;
+  }
+  return `rgba(120,126,145,.28)`;
+}
+function pairColor(k,alpha=1){
+  const a=Math.min(kOmegaL[k],5), b=Math.min(kOmegaR[k],5);
+  const hue=180+((a*37+b*61)%230);
+  const light=34+Math.min(22,(a+b)*2.5);
+  if(kState[k]==='PP') return `rgba(95,208,197,${alpha})`;
+  if(a===2 && b===2) return `rgba(189,139,230,${alpha})`;
+  return `hsla(${hue},65%,${light}%,${alpha})`;
+}
+function drawKGrid(){
+  const g=gridGeom(); let count=0,best=0,bestDist=Infinity;
+  ctx.save();
+  ctx.fillStyle='rgba(130,137,154,.72)'; ctx.font='11px ui-monospace,monospace';
+  ctx.fillText(S.mode==='pair'?'Ω-pair map: each k colored by (Ω(6k−1), Ω(6k+1))':'K-column classification: PP / PC / CP / CC / SS / DD',g.margin,36);
+  ctx.restore();
+  const rBase=clamp(Math.min(g.cw,g.ch)*.34*S.dot,0.7,5.2);
+  for(let k=1;k<=Kmax;k++){
+    const row=Math.floor((k-1)/g.cols), col=(k-1)%g.cols;
+    const x=g.margin+col*g.cw+g.cw*.5, y=g.top+row*g.ch+g.ch*.5;
+    const st=kState[k];
+    let alpha=.9;
+    if(st==='CC' && kOmegaL[k]!==2 && kOmegaR[k]!==2) alpha=.78;
+    ctx.fillStyle=S.mode==='pair'?pairColor(k,alpha):colorState(k,alpha);
+    const rr=(kState[k]==='PP'?rBase*1.22:(kOmegaL[k]===2&&kOmegaR[k]===2?rBase*1.18:rBase));
+    ctx.beginPath(); ctx.arc(x,y,rr,0,Math.PI*2); ctx.fill();
+    if(st==='PC' || st==='CP'){
+      ctx.strokeStyle=st==='PC'?'rgba(95,208,197,.35)':'rgba(217,90,122,.35)';
+      ctx.lineWidth=.8; ctx.beginPath(); ctx.arc(x,y,rr+1.8,0,Math.PI*2); ctx.stroke();
+    }
+    if(k===S.selK){ctx.strokeStyle='rgba(232,176,75,.96)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,rr+6,0,Math.PI*2);ctx.stroke();}
+    const dx=x-mouse.x,dy=y-mouse.y,d=dx*dx+dy*dy; if(d<bestDist){bestDist=d;best=k;}
+    count++;
+  }
+  if(bestDist<420) S.hoverK=best;
+  document.getElementById('rendered').textContent=count;
+  drawLegendCounts();
+}
+function drawLegendCounts(){
+  const c=kStats.counts, x=28, y=cv.height-88, w=455, h=65;
+  ctx.save();
+  ctx.fillStyle='rgba(7,9,16,.78)'; ctx.strokeStyle='rgba(255,255,255,.08)';
+  ctx.beginPath(); ctx.roundRect(x,y,w,h,14); ctx.fill(); ctx.stroke();
+  ctx.font='12px ui-monospace,monospace';
+  const items=[['PP',c.PP,'var(--cyan)'],['PC',c.PC,'var(--gold)'],['CP',c.CP,'var(--gold)'],['CC',c.CC,'var(--red)'],['SS',c.SS,'var(--violet)'],['DD',c.DD,'var(--rose)']];
+  let xx=x+14, yy=y+24;
+  for(const [name,val,col] of items){
+    ctx.fillStyle=col; ctx.fillText(`${name}:${val}`,xx,yy); xx+=74;
+    if(xx>x+w-80){xx=x+14;yy+=23;}
+  }
+  ctx.fillStyle='rgba(130,137,154,.85)'; ctx.fillText('PP=雙未命中；SS=雙半質數；DD=雙深層生成',x+14,y+52);
+  ctx.restore();
+}
+function drawLane(){
+  const g=gridGeom(), laneGap=Math.min(13,Math.max(3,g.ch*.28)); let count=0,best=0,bestDist=Infinity;
+  ctx.save(); ctx.strokeStyle='rgba(232,176,75,.14)';
+  for(let r=0;r<g.rows;r++){
+    const y=g.top+r*g.ch+g.ch*.5; ctx.beginPath();ctx.moveTo(g.margin,y-laneGap);ctx.lineTo(cv.width-g.margin,y-laneGap);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(g.margin,y+laneGap);ctx.lineTo(cv.width-g.margin,y+laneGap);ctx.stroke();
+  }
+  ctx.restore();
+  const rBase=clamp(Math.min(g.cw*.28,g.ch*.13)*S.dot,0.7,4.4);
+  for(let k=1;k<=Kmax;k++){
+    const L=6*k-1,R=6*k+1;
+    for(const [n,side] of [[L,-1],[R,1]]){
+      const row=Math.floor((k-1)/g.cols), col=(k-1)%g.cols;
+      const x=g.margin+col*g.cw+g.cw*.5, y=g.top+row*g.ch+g.ch*.5+(side===-1?-laneGap:laneGap);
+      const p=isPrime[n], om=omega[n]||0;
+      ctx.fillStyle=p?'rgba(95,208,197,.9)':(om===2?'rgba(189,139,230,.88)':om>=3?'rgba(217,90,90,.72)':'rgba(232,176,75,.62)');
+      ctx.beginPath();ctx.arc(x,y,p?rBase*1.15:rBase,0,Math.PI*2);ctx.fill();
+      if(k===S.selK){ctx.strokeStyle='rgba(232,176,75,.96)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,rBase+5,0,Math.PI*2);ctx.stroke();}
+      const dx=x-mouse.x,dy=y-mouse.y,d=dx*dx+dy*dy; if(d<bestDist){bestDist=d;best=k;}
+      count++;
+    }
+  }
+  if(bestDist<420) S.hoverK=best;
+  document.getElementById('rendered').textContent=count;
+  ctx.fillStyle='rgba(130,137,154,.72)';ctx.font='11px ui-monospace,monospace';
+  ctx.fillText('Upper: 6k−1, Lower: 6k+1. Same k column is the unit of inversion.',28,36);
+}
+function drawStats(){
+  const margin=52, top=62, W=cv.width-2*margin, H=cv.height-130, win=S.win, bins=[];
+  for(let start=1;start<=Kmax;start+=win){
+    const end=Math.min(Kmax,start+win-1), c={PP:0,PC:0,CP:0,CC:0,SS:0};
+    for(let k=start;k<=end;k++){
+      c[kState[k]]++;
+      if(kState[k]==='CC' && kOmegaL[k]===2 && kOmegaR[k]===2)c.SS++;
+    }
+    const len=end-start+1; bins.push({start,end,len,...c});
+  }
+  ctx.save();
+  ctx.strokeStyle='rgba(130,138,160,.18)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(margin,top); ctx.lineTo(margin,top+H); ctx.lineTo(margin+W,top+H); ctx.stroke();
+  const colors={PP:'rgba(95,208,197,.95)',PC:'rgba(232,176,75,.9)',CP:'rgba(255,159,67,.9)',CC:'rgba(217,90,90,.85)',SS:'rgba(189,139,230,.95)'};
+  const series=['PP','PC','CP','CC','SS'];
+  for(const key of series){
+    ctx.strokeStyle=colors[key]; ctx.lineWidth=key==='SS'?1.7:1.3; ctx.beginPath();
+    bins.forEach((b,i)=>{
+      const x=margin+(i/(bins.length-1||1))*W;
+      const rate=b[key]/b.len;
+      const y=top+H-rate*H*.98;
+      if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  }
+  ctx.fillStyle='rgba(235,228,214,.8)'; ctx.font='12px ui-monospace,monospace';
+  ctx.fillText(`Sliding window W=${win}. Rates per k-block.`,margin,34);
+  let lx=margin, ly=cv.height-48;
+  for(const key of series){ctx.fillStyle=colors[key];ctx.fillText(key,lx,ly);lx+=52;}
+  ctx.restore();
+  document.getElementById('rendered').textContent=bins.length+' bins';
+}
+function windowRate(k){
+  const w=S.win, start=Math.max(1,k-Math.floor(w/2)), end=Math.min(Kmax,start+w-1);
+  let pp=0,len=0; for(let i=start;i<=end;i++){if(kState[i]==='PP')pp++;len++;}
+  return len?pp/len:0;
+}
+function updatePanel(){
+  const k=S.selK, L=6*k-1, R=6*k+1, st=kState[k], ol=kOmegaL[k], or=kOmegaR[k], wr=windowRate(k);
+  document.getElementById('selTitle').textContent='k = '+k;
+  document.getElementById('selMeta').textContent=`6k−1 = ${L} · 6k+1 = ${R}`;
+  document.getElementById('mState').textContent=st;
+  document.getElementById('mPair').textContent=`(${ol},${or})`;
+  document.getElementById('mLR').textContent=`${isPrime[L]?'P':'C'}/${isPrime[R]?'P':'C'}`;
+  document.getElementById('mWin').textContent=(wr*100).toFixed(1)+'%';
+  setBar('bState',st==='PP'?1:st==='CC'?.8:.55,1,st==='PP'?'var(--cyan)':st==='CC'?'var(--red)':'var(--gold)');
+  setBar('bPair',Math.min(ol+or,10),10,'var(--violet)');
+  setBar('bLR',st==='PP'?1:st==='CC'?.1:.55,1,'var(--gold)');
+  setBar('bWin',wr,.16,'var(--cyan)');
+  renderFactorBox();
+}
+function renderFactorBox(){
+  const k=S.selK, L=6*k-1, R=6*k+1;
+  const leftFormula=formulaForSemiprime(L,k,'6k−1');
+  const rightFormula=formulaForSemiprime(R,k,'6k+1');
+  const fmt=(n,side,fo)=>{
+    let s=`<div><b>${side}</b> = ${n} = ${factorString(n)} · Ω=${omega[n]||0}</div>`;
+    if(fo){
+      s+=`<div class="small">formula: (${fo.sp},${fo.tp}) → ${side.endsWith('1')?'+1':'−1'}; k=${fo.expr}=${fo.kval} ${fo.ok?'✓':'✗'}</div>`;
+      s+=`<div class="small">${fo.f1}=6·${fo.a}${fo.sp==='+'?'+1':'−1'}, ${fo.f2}=6·${fo.b}${fo.tp==='+'?'+1':'−1'}</div>`;
+    } else {
+      s+=`<div class="small">formula: ${isPrime[n]?'prime residual / 未被生成':'deep composite / 非半質數，需沿因子鏈繼續往原點推'}</div>`;
+    }
+    return s;
+  };
+  const path=(n)=>flatFactors(n).reduce((acc,p)=>{acc.push(acc[acc.length-1]*p);return acc;},[1]);
+  document.getElementById('factorBox').innerHTML=
+    fmt(L,'6k−1',leftFormula)+`<div style="height:7px"></div>`+
+    fmt(R,'6k+1',rightFormula)+
+    `<div style="margin-top:8px"><b>generation chains</b><br>`+
+    `L: ${path(L).map(x=>`<span class="chip ${isPrime[x]?'p':'c'}">${x}</span>`).join(' → ')}<br>`+
+    `R: ${path(R).map(x=>`<span class="chip ${isPrime[x]?'p':'c'}">${x}</span>`).join(' → ')}</div>`;
+}
+function factorString(n){
+  const f=factorize(n); if(!f.length)return '1';
+  return f.map(([p,e])=>e===1?''+p:p+'^'+e).join(' × ');
+}
+function setBar(id,val,max,col){const el=document.getElementById(id);el.style.width=(100*clamp(val/max,0,1)).toFixed(1)+'%';el.style.background=col;}
+function setMode(m){
+  S.mode=m;
+  const names={k:'K 欄分類',pair:'Ω-pair 圖',stats:'滑動統計',lane:'上下車道'};
+  document.getElementById('modeName').textContent=names[m];
+  for(const [id,mm] of [['mK','k'],['mPair','pair'],['mStats','stats'],['mLane','lane']]) document.getElementById(id).classList.toggle('on',m===mm);
+  const note=document.getElementById('note'), formula=document.getElementById('formula');
+  if(m==='k'){
+    formula.innerHTML='state(k) ∈ {PP,PC,CP,CC}<br>PP=雙未命中；CC=雙生成；PC/CP=單側破缺。';
+    note.textContent='K 欄分類圖：每個 k 只畫一個點，直接顯示上下兩側的生成/未生成狀態。';
+  }else if(m==='pair'){
+    formula.innerHTML='Ω-pair(k)=(Ω(6k−1),Ω(6k+1))<br>(1,1)=孿生殘餘；(2,2)=雙半質數。';
+    note.textContent='Ω-pair 圖：不是看質數點，而是看欄位兩側在組合樹中的深度配對。';
+  }else if(m==='stats'){
+    formula.innerHTML='window W: rate(PP), rate(PC), rate(CP), rate(CC), rate(SS)<br>統計式推演：看比例如何隨 k 漂移。';
+    note.textContent='滑動統計圖：把生成式反演轉成統計式觀察，避免人眼盯點雲看不出來。';
+  }else{
+    formula.innerHTML='upper=6k−1, lower=6k+1<br>上下兩點只是欄位 k 的展開視圖。';
+    note.textContent='上下車道圖：保留原本 triplex 視覺，但 v0.2 的主體是 k 欄，而不是單點。';
+  }
+  log('切換視圖：'+names[m]); draw();
+}
+function toggle(key,id){
+  S[key]=!S[key]; document.getElementById(id).classList.toggle('on',S[key]); draw();
+}
+function bind(){
+  const sliders=[['N','N',v=>parseInt(v,10),true],['cols','cols',v=>parseInt(v,10),false],['win','win',v=>parseInt(v,10),false],['dot','dot',v=>parseFloat(v),false]];
+  for(const [id,key,parse,need] of sliders){
+    const el=document.getElementById(id), out=document.getElementById(id+'v');
+    el.oninput=()=>{S[key]=parse(el.value);out.textContent=el.value;if(need)rebuild();else{updatePanel();draw();}};
+  }
+  document.getElementById('mK').onclick=()=>setMode('k');
+  document.getElementById('mPair').onclick=()=>setMode('pair');
+  document.getElementById('mStats').onclick=()=>setMode('stats');
+  document.getElementById('mLane').onclick=()=>setMode('lane');
+  document.getElementById('hTwin').onclick=()=>toggle('twin','hTwin');
+  document.getElementById('hSemi').onclick=()=>toggle('semi','hSemi');
+  document.getElementById('hSingle').onclick=()=>toggle('single','hSingle');
+  document.getElementById('hDeep').onclick=()=>toggle('deep','hDeep');
+  cv.addEventListener('mousemove',e=>{
+    const rect=cv.getBoundingClientRect(); mouse.x=(e.clientX-rect.left)*(cv.width/rect.width); mouse.y=(e.clientY-rect.top)*(cv.height/rect.height); draw();
+  });
+  cv.addEventListener('click',()=>{ if(S.hoverK){S.selK=S.hoverK; updatePanel(); draw(); log('選取 k='+S.selK+' / state='+kState[S.selK]);}});
+}
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.moveTo(x+r,y);this.lineTo(x+w-r,y);this.quadraticCurveTo(x+w,y,x+w,y+r);this.lineTo(x+w,y+h-r);this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);this.lineTo(x+r,y+h);this.quadraticCurveTo(x,y+h,x,y+h-r);this.lineTo(x,y+r);this.quadraticCurveTo(x,y,x+r,y);return this;
+  }
+}
+bind();
+rebuild();
+log('啟動 K-column v0.2：欄位級生成反演與統計式推演。');
+draw();
+</script>
+</body>
+</html>

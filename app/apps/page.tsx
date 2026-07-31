@@ -2,35 +2,30 @@
 
 import { useMemo, useState } from "react";
 import { applications } from "../data/catalog";
+import { experiments, experimentCount, experimentSourceFileCount } from "../data/apps.generated";
 import { ProjectCard } from "../components/project-card";
 import { PageIntro } from "../components/page-intro";
 import { PendingPanel } from "../components/pending-panel";
 import { useLanguage } from "../components/language-context";
 
-const filters = ["all", "application", "experiment", "open-source"] as const;
+const ALL_TAGS = [...new Set(experiments.flatMap((item) => item.tags))].sort();
 
 export default function AppsPage() {
-  const [filter, setFilter] = useState<(typeof filters)[number]>("all");
+  const [tag, setTag] = useState<string>("all");
   const [query, setQuery] = useState("");
   const { language, t } = useLanguage();
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return applications.filter((item) => {
-      const categoryMatch = filter === "all" || item.category === filter;
-      const haystack = [item.title.zh, item.title.en, item.summary.zh, item.summary.en, ...item.tags]
+    return experiments.filter((item) => {
+      const tagMatch = tag === "all" || item.tags.includes(tag);
+      if (!q) return tagMatch;
+      const haystack = [item.title.zh, item.title.en, item.summary.zh, item.summary.en, item.slug, ...item.tags]
         .join(" ")
         .toLowerCase();
-      return categoryMatch && (!q || haystack.includes(q));
+      return tagMatch && haystack.includes(q);
     });
-  }, [filter, query]);
-
-  const labels = {
-    all: { zh: "全部", en: "All" },
-    application: { zh: "應用", en: "Applications" },
-    experiment: { zh: "實驗", en: "Experiments" },
-    "open-source": { zh: "開源", en: "Open source" },
-  };
+  }, [tag, query]);
 
   return (
     <main className="page-main">
@@ -38,57 +33,88 @@ export default function AppsPage() {
         eyebrow={{ zh: "應用與實驗", en: "Applications & experiments" }}
         title={{ zh: "把研究暫時編譯成可被打開的東西。", en: "Temporarily compiling research into things that can be opened." }}
         description={{
-          zh: "這裡只展示值得被操作、觀看或繼續開發的項目。狀態代表生命週期，不宣稱終極成熟。",
-          en: "Only projects worth operating, viewing, or continuing appear here. Status describes lifecycle, not final maturity.",
+          zh: "全部在瀏覽器裡直接跑，不需要安裝，也不上傳任何東西。多數是同一個問題的連續迭代，這裡只放最新的一版，並標出這條線走過幾版。",
+          en: "Everything runs in the browser: nothing to install, nothing uploaded. Most are successive iterations on one question, so only the latest is published — with a count of how many versions that line went through.",
         }}
         aside={
-          applications.length
-            ? <div className="metric-card"><strong>{visible.length}</strong><span>{t({ zh: "目前顯示", en: "currently shown" })}</span></div>
-            : undefined
+          <div className="metric-card">
+            <strong>{experimentCount}</strong>
+            <span>{t({ zh: `實驗，來自 ${experimentSourceFileCount} 個檔案`, en: `experiments from ${experimentSourceFileCount} files` })}</span>
+          </div>
         }
       />
 
       {applications.length ? (
-        <>
-          <section className="catalog-controls">
-            <label className="search-box">
-              <span aria-hidden="true">⌕</span>
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={t({ zh: "搜尋名稱、標籤或說明", en: "Search names, tags, or descriptions" })}
-              />
-            </label>
-            <div className="filter-row">
-              {filters.map((item) => (
-                <button
-                  type="button"
-                  onClick={() => setFilter(item)}
-                  className={filter === item ? "is-active" : ""}
-                  key={item}
-                >
-                  {labels[item][language]}
-                </button>
-              ))}
-            </div>
-          </section>
+        <section className="project-grid catalog-grid">
+          {applications.map((item, index) => <ProjectCard item={item} index={index} key={item.slug} />)}
+        </section>
+      ) : null}
 
-          <section className="project-grid catalog-grid">
-            {visible.map((item, index) => <ProjectCard item={item} index={index} key={item.slug} />)}
-          </section>
-        </>
+      <section className="catalog-controls">
+        <label className="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t({ zh: "搜尋名稱、說明或標籤", en: "Search names, descriptions, or tags" })}
+          />
+        </label>
+        <div className="filter-row">
+          <button type="button" className={tag === "all" ? "is-active" : ""} onClick={() => setTag("all")}>
+            {t({ zh: "全部", en: "All" })} · {experiments.length}
+          </button>
+          {ALL_TAGS.map((item) => (
+            <button type="button" key={item} className={tag === item ? "is-active" : ""} onClick={() => setTag(item)}>
+              {item}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {visible.length ? (
+        <section className="experiment-grid">
+          {visible.map((item) => (
+            <article className="experiment-card" key={item.slug}>
+              <header>
+                <span className="experiment-version">{item.version}</span>
+                {item.versionCount > 1 ? (
+                  <span className="experiment-iterations">
+                    {t({ zh: `${item.versionCount} 版迭代`, en: `${item.versionCount} iterations` })}
+                  </span>
+                ) : null}
+                <time dateTime={item.date}>{item.date}</time>
+              </header>
+              <h3>
+                {item.sourceOnly ? (
+                  <span>{language === "zh" ? item.title.zh : item.title.en}</span>
+                ) : (
+                  <a href={item.href}>{language === "zh" ? item.title.zh : item.title.en}</a>
+                )}
+              </h3>
+              <p>{language === "zh" ? item.summary.zh : item.summary.en}</p>
+              <div className="tag-row">{item.tags.map((one) => <span key={one}>{one}</span>)}</div>
+              <footer>
+                {item.sourceOnly ? (
+                  <a href={item.href} className="experiment-open is-source">
+                    {t({ zh: "只有原始碼", en: "Source only" })} ↗
+                  </a>
+                ) : (
+                  <a href={item.href} className="experiment-open">{t({ zh: "開啟", en: "Open" })} ↗</a>
+                )}
+                {item.externalHosts.length ? (
+                  <span className="experiment-note" title={item.externalHosts.join(", ")}>
+                    {t({ zh: "載入外部字型", en: "loads web fonts" })}
+                  </span>
+                ) : null}
+              </footer>
+            </article>
+          ))}
+        </section>
       ) : (
         <PendingPanel
-          code="CATALOG / 00"
-          title={{
-            zh: "目錄已清空，等待第一個真正可以操作的項目。",
-            en: "The catalog is cleared, waiting for the first genuinely operable entry.",
-          }}
-          note={{
-            zh: "先前的示範項目多數只有名稱與一段說明，沒有可打開的東西，因此全部移除。之後進來的每一個項目都會帶著可用的連結、版本與更新日期。搜尋與分類會在第一個項目進駐時一起回來。",
-            en: "Most earlier entries had a name and a paragraph but nothing to open, so they were removed. Every entry from here on arrives with a working link, a version, and an update date. Search and filtering return with the first real entry.",
-          }}
-          action={{ href: "/mssp", label: { zh: "前往 MSSP 專區", en: "Go to the MSSP field lab" } }}
+          code="FILTER / 00"
+          title={{ zh: "沒有符合的實驗。", en: "No experiment matches." }}
+          note={{ zh: "換個關鍵字或標籤。", en: "Try another keyword or tag." }}
         />
       )}
     </main>

@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>閉合性認知圖 π₂(Cl)</title>
+<meta name="description" content="元規則層由作者寫下並上鎖，它不規定內容，只規定規則能長成什麼樣；移交之後，下面的規則層交給使用者或 AI 改寫。關掉「度量連接」幾何天花板就失效，關掉「閉合」容器直接破裂。">
+<style>:root{
+  --color-text-primary:#171914;
+  --color-text-secondary:#55584f;
+  --color-text-tertiary:#85887e;
+  --color-text-info:#16728a;
+  --color-text-success:#315b53;
+  --color-text-warning:#a16e20;
+  --color-background-primary:#f2efe8;
+  --color-background-secondary:#e7e4dc;
+  --color-background-tertiary:#dedbd2;
+  --color-border-primary:rgba(23,25,20,.38);
+  --color-border-secondary:rgba(23,25,20,.22);
+  --color-border-tertiary:rgba(23,25,20,.14);
+  --border-radius-sm:4px;
+  --border-radius-md:8px;
+  --border-radius-lg:12px;
+  --font-sans:Inter,ui-sans-serif,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"SFMono-Regular",Consolas,"Liberation Mono",ui-monospace,monospace;
+  --font-serif:"Noto Serif TC","Songti TC",Georgia,serif;
+}
+html,body{background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)}
+body{margin:0;padding:22px}</style>
+</head>
+<body>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>閉合性認知圖 · 動態元規則沙盒</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+
+  :root{
+    --void:#080a0e;
+    --void2:#0d1016;
+    --panel:#11151c;
+    --line:#1d2530;
+    --bone:#e9e4d6;
+    --dim:#8b94a3;
+    --faint:#525c6b;
+    --cyl:#63d4dc;      /* chirality + */
+    --amb:#e0a85e;      /* chirality - */
+    --ring:#39505a;
+    --hot:#f06a5d;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --serif:'Spectral',Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 800px at 18% -10%, #10161f 0%, transparent 55%),
+      radial-gradient(900px 700px at 110% 120%, #120f14 0%, transparent 50%),
+      var(--void);
+    color:var(--bone);
+    font-family:var(--serif);
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  .grain{position:fixed;inset:0;pointer-events:none;opacity:.035;mix-blend-mode:overlay;z-index:50;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .wrap{display:grid;grid-template-columns:1fr 372px;height:100vh}
+  @media (max-width:820px){.wrap{grid-template-columns:1fr;grid-template-rows:54vh 46vh}}
+
+  /* ---- stage ---- */
+  .stage{position:relative;overflow:hidden}
+  canvas{display:block;width:100%;height:100%}
+  .stamp{position:absolute;left:26px;top:22px;z-index:5;pointer-events:none}
+  .stamp h1{font-weight:300;font-size:15px;letter-spacing:.5px;margin:0;color:var(--bone)}
+  .stamp .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:2.5px;color:var(--faint);text-transform:uppercase;margin-top:5px}
+  .readout{position:absolute;left:26px;bottom:22px;z-index:5;pointer-events:none;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.85}
+  .readout b{color:var(--cyl);font-weight:500}
+  .readout .amb{color:var(--amb)}
+  .envelope{position:absolute;right:24px;bottom:22px;z-index:5;width:230px;pointer-events:none;font-family:var(--mono);font-size:10px;color:var(--faint)}
+  .bar{position:relative;height:5px;background:var(--line);border-radius:3px;margin:7px 0 4px}
+  .bar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(90deg,var(--amb),var(--cyl));transition:width .25s}
+  .bar .lo,.bar .hi{position:absolute;top:-3px;width:1px;height:11px;background:var(--bone);opacity:.55}
+  .envrow{display:flex;justify-content:space-between}
+
+  /* ---- panel ---- */
+  .panel{background:linear-gradient(180deg,var(--panel),var(--void2));border-left:1px solid var(--line);
+    padding:24px 22px;overflow-y:auto;position:relative}
+  .panel::-webkit-scrollbar{width:8px}.panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+  .layer{border:1px solid var(--line);border-radius:8px;margin-bottom:16px;background:#0c1117}
+  .layer.locked{opacity:.62}
+  .lhead{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--line)}
+  .lhead .t{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+  .lhead .t .cn{font-family:var(--serif);font-size:13px;letter-spacing:0;text-transform:none;color:var(--bone);margin-right:8px}
+  .lock{font-family:var(--mono);font-size:9.5px;letter-spacing:1px;color:var(--faint)}
+  .lock.on{color:var(--hot)}
+  .lbody{padding:14px}
+  .note{font-size:12px;line-height:1.55;color:var(--faint);font-style:italic;margin:0 0 12px}
+
+  .ctl{margin-bottom:14px}
+  .ctl:last-child{margin-bottom:2px}
+  .ctl .lab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:6px}
+  .ctl .lab .v{color:var(--bone)}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--ring);border-radius:2px;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--bone);cursor:pointer;border:2px solid var(--void2);box-shadow:0 0 0 1px var(--ring)}
+  input[type=range]:disabled{opacity:.4}
+  input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--bone);cursor:pointer;border:2px solid var(--void2)}
+
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:64px;font-family:var(--mono);font-size:10.5px;letter-spacing:.5px;padding:8px 4px;
+    background:transparent;color:var(--dim);border:1px solid var(--line);border-radius:5px;cursor:pointer;transition:.15s}
+  .seg button:hover{border-color:var(--ring);color:var(--bone)}
+  .seg button.on{background:var(--bone);color:var(--void);border-color:var(--bone)}
+
+  .row{display:flex;gap:8px}
+  .act{flex:1;font-family:var(--mono);font-size:11px;letter-spacing:.5px;padding:11px;background:transparent;color:var(--bone);
+    border:1px solid var(--ring);border-radius:6px;cursor:pointer;transition:.15s}
+  .act:hover{background:var(--bone);color:var(--void)}
+  .act.live.on{border-color:var(--cyl);color:var(--cyl)}
+  .act.mut:hover{background:var(--hot);border-color:var(--hot);color:var(--void)}
+
+  .toggle{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .toggle:last-child{border-bottom:none}
+  .toggle .tl{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .toggle .tl .cn{font-family:var(--serif);color:var(--bone);font-size:13px;margin-right:7px}
+  .sw{position:relative;width:38px;height:20px;border-radius:11px;background:var(--line);cursor:pointer;transition:.2s;flex:none;border:1px solid var(--ring)}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--faint);transition:.2s}
+  .sw.on{background:rgba(99,212,220,.18);border-color:var(--cyl)}
+  .sw.on::after{left:20px;background:var(--cyl)}
+  .sw.dis{opacity:.35;pointer-events:none}
+  .sw.handover.on{background:rgba(240,106,93,.18);border-color:var(--hot)}
+  .sw.handover.on::after{background:var(--hot)}
+  .foot{font-family:var(--mono);font-size:9.5px;color:var(--faint);line-height:1.7;margin-top:6px;letter-spacing:.3px}
+  .hk{color:var(--bone)}
+</style>
+
+<div class="grain"></div>
+<div class="wrap">
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="stamp">
+      <h1>π₂(Cl) — 閉合性認知圖</h1>
+      <div class="sub">EVEMISSLAB · DYNAMIC META-RULE SANDBOX</div>
+    </div>
+    <div class="readout" id="ro"></div>
+    <div class="envelope">
+      <div class="envrow"><span>n<sup>1.014</sup> 方格下界</span><span>n<sup>4/3</sup> 等距上界</span></div>
+      <div class="bar"><div class="lo" id="bLo"></div><div class="hi" id="bHi"></div><div class="fill" id="bFill"></div></div>
+      <div class="envrow"><span id="eLeft">—</span><span style="color:var(--dim)" id="eMid"></span><span id="eRight">—</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <!-- META -->
+    <div class="layer locked" id="metaLayer">
+      <div class="lhead">
+        <div class="t"><span class="cn">元規則層</span>META</div>
+        <div class="lock" id="metaLock">● LOCKED · 作者</div>
+      </div>
+      <div class="lbody">
+        <p class="note">由作者寫下、上鎖。它不規定內容,只規定「規則能長成什麼樣」。移交後,下方不變量交由使用者／AI 改寫。</p>
+        <div class="toggle">
+          <div class="tl"><span class="cn">閉合</span>節點不得離開容器</div>
+          <div class="sw dis on" id="swClosure"></div>
+        </div>
+        <div class="toggle">
+          <div class="tl"><span class="cn">度量連接</span>邊只能由距離決定</div>
+          <div class="sw dis on" id="swMetric"></div>
+        </div>
+        <div class="toggle">
+          <div class="tl"><span class="cn">手性</span>依定向為邊上色</div>
+          <div class="sw dis" id="swChiral"></div>
+        </div>
+        <div class="foot">關閉「度量連接」→ 幾何天花板失效(任意連接)。關閉「閉合」→ π₂(Cl) 容器破裂,降維框架瓦解。</div>
+      </div>
+    </div>
+
+    <!-- HANDOVER -->
+    <div class="layer">
+      <div class="lbody" style="padding:13px 14px">
+        <div class="toggle" style="border:none;padding:2px 0">
+          <div class="tl"><span class="cn">移交</span>解鎖元規則層</div>
+          <div class="sw handover" id="swHandover"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RULE -->
+    <div class="layer">
+      <div class="lhead">
+        <div class="t"><span class="cn">規則層</span>RULE</div>
+        <div class="lock">○ 可變 · AI／使用者</div>
+      </div>
+      <div class="lbody">
+        <div class="ctl">
+          <div class="lab"><span>連接距離 d / R</span><span class="v" id="vD"></span></div>
+          <input type="range" id="rD" min="6" max="55" value="20">
+        </div>
+        <div class="ctl">
+          <div class="lab"><span>單位面積 · 帶寬 ε / d</span><span class="v" id="vE"></span></div>
+          <input type="range" id="rE" min="2" max="45" value="9">
+        </div>
+        <div class="ctl">
+          <div class="lab" style="margin-bottom:8px"><span>置點族</span></div>
+          <div class="seg" id="segPlace">
+            <button data-p="rand">自由</button>
+            <button data-p="grid">方格</button>
+            <button data-p="algebraic" class="on">代數螺旋</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:4px">
+          <button class="act mut" id="btnMut">突變規則</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NODE -->
+    <div class="layer">
+      <div class="lhead">
+        <div class="t"><span class="cn">節點層</span>NODE</div>
+        <div class="lock">○ 概念</div>
+      </div>
+      <div class="lbody">
+        <div class="ctl">
+          <div class="lab"><span>節點數 n</span><span class="v" id="vN"></span></div>
+          <input type="range" id="rN" min="8" max="320" value="120">
+        </div>
+        <div class="row">
+          <button class="act live" id="btnLive">動態 ◦</button>
+          <button class="act" id="btnReseed">重置佈點</button>
+        </div>
+        <div class="foot">拖曳任一節點 = 手動(語意)定位。動態 = 系統在當前規則下自行演化。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2),cx,cy,R;
+
+  const S={
+    n:120, dFrac:0.20, eFrac:0.09, place:'algebraic',
+    live:false, nodes:[], edges:[], drag:-1,
+    meta:{closure:true, metric:true, chiral:false}, handover:false, pulse:0
+  };
+
+  function resize(){
+    const r=cv.parentElement.getBoundingClientRect();
+    W=r.width; H=r.height;
+    cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    cx=W/2; cy=H/2; R=Math.min(W,H)*0.42;
+    if(S.nodes.length) clampAll();
+  }
+  window.addEventListener('resize',resize);
+
+  // ---------- placement families ----------
+  function seed(){
+    const arr=[], n=S.n;
+    if(S.place==='rand'){
+      for(let i=0;i<n;i++){const u=Math.sqrt(Math.random())*R*0.96, a=Math.random()*Math.PI*2;
+        arr.push({x:cx+u*Math.cos(a),y:cy+u*Math.sin(a),vx:0,vy:0});}
+    } else if(S.place==='grid'){
+      const cols=Math.ceil(Math.sqrt(n*4/Math.PI)); const step=(R*1.92)/cols; let k=0;
+      for(let gy=0;gy<cols && k<n;gy++)for(let gx=0;gx<cols && k<n;gx++){
+        const x=cx-R*0.96+step*(gx+.5), y=cy-R*0.96+step*(gy+.5);
+        if((x-cx)**2+(y-cy)**2<=(R*0.97)**2){arr.push({x,y,vx:0,vy:0});k++;}
+      }
+      while(arr.length<n){const u=Math.sqrt(Math.random())*R*0.9,a=Math.random()*6.283;
+        arr.push({x:cx+u*Math.cos(a),y:cy+u*Math.sin(a),vx:0,vy:0});}
+    } else { // algebraic golden-angle (Vogel / quasicrystal-flavored)
+      const ga=Math.PI*(3-Math.sqrt(5)), c=R*0.95/Math.sqrt(n);
+      for(let i=0;i<n;i++){const rr=c*Math.sqrt(i+0.5), a=i*ga;
+        arr.push({x:cx+rr*Math.cos(a),y:cy+rr*Math.sin(a),vx:0,vy:0});}
+    }
+    S.nodes=arr; computeEdges();
+  }
+
+  function clampAll(){ for(const p of S.nodes) contain(p); }
+  function contain(p){
+    if(!S.meta.closure) return;
+    const dx=p.x-cx,dy=p.y-cy,dd=Math.hypot(dx,dy),lim=R*0.985;
+    if(dd>lim){p.x=cx+dx/dd*lim;p.y=cy+dy/dd*lim;p.vx*=-0.4;p.vy*=-0.4;}
+  }
+
+  // ---------- connection rule: unit-area band ----------
+  function computeEdges(){
+    const d=S.dFrac*R, eps=S.eFrac*d, lo=(d-eps)**2, hi=(d+eps)**2, N=S.nodes.length, E=[];
+    for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+      const a=S.nodes[i],b=S.nodes[j],q=(a.x-b.x)**2+(a.y-b.y)**2;
+      if(q>=lo && q<=hi){
+        let sign=0;
+        if(S.meta.chiral){const cr=(a.x-cx)*(b.y-cy)-(a.y-cy)*(b.x-cx); sign=cr>=0?1:-1;}
+        E.push([i,j,sign]);
+      }
+    }
+    if(!S.meta.metric){ // M2 off: arbitrary (non-metric) edges allowed → ceiling stops biting
+      const extra=Math.floor(N*1.2);
+      for(let k=0;k<extra;k++){const i=Math.random()*N|0,j=Math.random()*N|0;if(i!==j)E.push([i,j,0]);}
+    }
+    S.edges=E;
+  }
+
+  // ---------- draw ----------
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // container ring(s) — π₂(Cl) boundary
+    ctx.lineWidth=1;
+    ctx.strokeStyle='rgba(57,80,90,.55)'; ctx.beginPath();ctx.arc(cx,cy,R,0,6.2832);ctx.stroke();
+    ctx.strokeStyle='rgba(57,80,90,.18)';
+    for(const f of [0.66,0.33]){ctx.beginPath();ctx.arc(cx,cy,R*f,0,6.2832);ctx.stroke();}
+    // unit-distance reference circle around centre node region (faint scale cue)
+    const d=S.dFrac*R;
+    ctx.setLineDash([2,5]);ctx.strokeStyle='rgba(99,212,220,.20)';
+    ctx.beginPath();ctx.arc(cx,cy,d,0,6.2832);ctx.stroke();ctx.setLineDash([]);
+
+    // edges
+    for(const e of S.edges){
+      const a=S.nodes[e[0]],b=S.nodes[e[1]];
+      if(S.meta.chiral){ctx.strokeStyle=e[2]>0?'rgba(99,212,220,.42)':'rgba(224,168,94,.42)';}
+      else ctx.strokeStyle='rgba(180,196,210,.22)';
+      ctx.lineWidth=0.9;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    }
+    // nodes
+    const deg=new Array(S.nodes.length).fill(0);
+    for(const e of S.edges){deg[e[0]]++;deg[e[1]]++;}
+    for(let i=0;i<S.nodes.length;i++){
+      const p=S.nodes[i], hot=deg[i], rad=2.2+Math.min(hot,9)*0.45;
+      ctx.beginPath();ctx.arc(p.x,p.y,rad,0,6.2832);
+      ctx.fillStyle = hot? 'rgba(233,228,214,'+(0.5+Math.min(hot,10)*0.05)+')':'rgba(120,132,148,.7)';
+      ctx.fill();
+    }
+    if(S.pulse>0){ctx.strokeStyle='rgba(240,106,93,'+S.pulse*0.5+')';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(cx,cy,R*(1.02-S.pulse*0.06),0,6.2832);ctx.stroke();S.pulse-=0.04;}
+  }
+
+  // ---------- metrics ----------
+  function metrics(){
+    const N=S.nodes.length, m=S.edges.length;
+    const lo=Math.pow(N,1.014), hi=Math.pow(N,4/3);
+    const reso=Math.round(Math.pow((2*R)/(S.dFrac*R),2)); // (2R/d)^2 covering cells
+    document.getElementById('ro').innerHTML=
+      '節點 n = <b>'+N+'</b>　邊 m = <b>'+m+'</b><br>'+
+      '密度 m/n = <b>'+(m/N).toFixed(2)+'</b>　邊/容量 = <span class="amb">'+(m/hi).toFixed(2)+'</span><br>'+
+      '解析度 (2R/d)² ≈ <b>'+reso+'</b> 單元';
+    // envelope bar: map m within [lo,hi] (clamped, log-ish)
+    let f=(m-lo)/(hi-lo); f=Math.max(0,Math.min(1.18,f));
+    document.getElementById('bFill').style.width=(Math.min(f,1)*100)+'%';
+    document.getElementById('bLo').style.left='0%';
+    document.getElementById('bHi').style.left='100%';
+    document.getElementById('eLeft').textContent=Math.round(lo);
+    document.getElementById('eRight').textContent=Math.round(hi);
+    document.getElementById('eMid').textContent = m>hi? '↑ 越界(帶寬)' : (m<lo? '↓ 方格之下':'容量帶內');
+  }
+
+  // ---------- loop ----------
+  function step(){
+    if(S.live){
+      for(let i=0;i<S.nodes.length;i++){ if(i===S.drag) continue;
+        const p=S.nodes[i];
+        p.vx+=(Math.random()-0.5)*0.18; p.vy+=(Math.random()-0.5)*0.18;
+        p.vx*=0.94; p.vy*=0.94; p.x+=p.vx; p.y+=p.vy; contain(p);
+      }
+      computeEdges();
+    }
+    draw(); metrics();
+    requestAnimationFrame(step);
+  }
+
+  // ---------- UI ----------
+  const $=id=>document.getElementById(id);
+  function syncLabels(){
+    $('vD').textContent='0.'+String(Math.round(S.dFrac*100)).padStart(2,'0');
+    $('vE').textContent='0.'+String(Math.round(S.eFrac*100)).padStart(2,'0');
+    $('vN').textContent=S.n;
+  }
+  $('rD').oninput=e=>{S.dFrac=+e.target.value/100;syncLabels();if(!S.live)computeEdges();};
+  $('rE').oninput=e=>{S.eFrac=+e.target.value/100;syncLabels();if(!S.live)computeEdges();};
+  $('rN').oninput=e=>{S.n=+e.target.value;syncLabels();seed();};
+  document.querySelectorAll('#segPlace button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#segPlace button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); S.place=b.dataset.p; seed();
+  });
+  $('btnReseed').onclick=()=>seed();
+  $('btnLive').onclick=e=>{S.live=!S.live;e.target.classList.toggle('on',S.live);
+    e.target.textContent=S.live?'動態 ●':'動態 ◦';};
+  $('btnMut').onclick=()=>{
+    S.dFrac=(8+Math.random()*42)/100; S.eFrac=(2+Math.random()*40)/100;
+    $('rD').value=Math.round(S.dFrac*100); $('rE').value=Math.round(S.eFrac*100);
+    const ps=['rand','grid','algebraic'],np=ps[Math.random()*3|0];
+    document.querySelectorAll('#segPlace button').forEach(x=>x.classList.toggle('on',x.dataset.p===np));
+    S.place=np; S.pulse=1; syncLabels(); seed();
+  };
+
+  // handover + meta switches
+  const swH=$('swHandover');
+  swH.onclick=()=>{
+    S.handover=!S.handover; swH.classList.toggle('on',S.handover);
+    $('metaLayer').classList.toggle('locked',!S.handover);
+    $('metaLock').textContent=S.handover?'○ 已移交 · AI／使用者':'● LOCKED · 作者';
+    $('metaLock').classList.toggle('on',S.handover);
+    ['swClosure','swMetric','swChiral'].forEach(id=>$(id).classList.toggle('dis',!S.handover));
+  };
+  function meta(id,key){ $(id).onclick=()=>{ if(!S.handover)return;
+    S.meta[key]=!S.meta[key]; $(id).classList.toggle('on',S.meta[key]);
+    if(key==='closure')clampAll(); computeEdges(); }; }
+  meta('swClosure','closure'); meta('swMetric','metric'); meta('swChiral','chiral');
+
+  // drag = manual/semantic placement
+  function pos(ev){const r=cv.getBoundingClientRect();const t=ev.touches?ev.touches[0]:ev;return{x:t.clientX-r.left,y:t.clientY-r.top};}
+  function down(ev){const m=pos(ev);let best=-1,bd=144;
+    for(let i=0;i<S.nodes.length;i++){const dd=(S.nodes[i].x-m.x)**2+(S.nodes[i].y-m.y)**2;if(dd<bd){bd=dd;best=i;}}
+    S.drag=best;}
+  function move(ev){if(S.drag<0)return;ev.preventDefault();const m=pos(ev);
+    S.nodes[S.drag].x=m.x;S.nodes[S.drag].y=m.y;S.nodes[S.drag].vx=0;S.nodes[S.drag].vy=0;
+    contain(S.nodes[S.drag]);if(!S.live)computeEdges();}
+  function up(){S.drag=-1;}
+  cv.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+  cv.addEventListener('touchstart',down,{passive:true});window.addEventListener('touchmove',move,{passive:false});window.addEventListener('touchend',up);
+
+  resize(); syncLabels(); seed(); step();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>虛實歪度計算實驗台 v0.3 自適應版</title>
+<style>
+  :root{
+    --bg:#0d1117;
+    --panel:#161b22;
+    --panel2:#0f1722;
+    --text:#e6edf3;
+    --muted:#8b949e;
+    --line:#30363d;
+    --accent:#7dd3fc;
+    --accent2:#a78bfa;
+    --warn:#fbbf24;
+    --bad:#fb7185;
+    --good:#86efac;
+    --log:#0b1220;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(56,189,248,.18), transparent 34%),
+      radial-gradient(circle at 90% 10%, rgba(167,139,250,.16), transparent 28%),
+      radial-gradient(circle at 60% 70%, rgba(134,239,172,.08), transparent 34%),
+      var(--bg);
+    color:var(--text);
+  }
+  header{
+    padding:28px 24px 18px;
+    border-bottom:1px solid var(--line);
+    background:rgba(13,17,23,.78);
+    position:sticky;
+    top:0;
+    z-index:5;
+    backdrop-filter: blur(10px);
+  }
+  h1{
+    margin:0 0 8px;
+    font-size:clamp(24px, 4vw, 40px);
+    letter-spacing:.02em;
+  }
+  .subtitle{
+    color:var(--muted);
+    line-height:1.7;
+    max-width:1180px;
+  }
+  .status-strip{
+    margin-top:14px;
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    border:1px solid var(--line);
+    background:rgba(15,23,34,.82);
+    border-radius:999px;
+    padding:7px 11px;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .dot{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:var(--good);
+    box-shadow:0 0 16px var(--good);
+  }
+  .dot.paused{
+    background:var(--warn);
+    box-shadow:0 0 16px var(--warn);
+  }
+  .last-action{
+    color:var(--accent);
+  }
+  main{
+    display:grid;
+    grid-template-columns: 395px minmax(0, 1fr);
+    gap:18px;
+    padding:18px;
+  }
+  @media (max-width: 1020px){
+    main{grid-template-columns:1fr}
+    header{position:relative}
+  }
+  section, .card{
+    background:linear-gradient(180deg, rgba(22,27,34,.94), rgba(15,23,34,.94));
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:0 10px 32px rgba(0,0,0,.25);
+  }
+  .controls{
+    padding:18px;
+    height:max-content;
+  }
+  .row{
+    margin:0 0 16px;
+  }
+  .group-title{
+    margin:18px 0 12px;
+    color:#dbeafe;
+    font-weight:700;
+    letter-spacing:.02em;
+    border-left:3px solid var(--accent);
+    padding-left:10px;
+  }
+  label{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    font-size:14px;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  label b{color:var(--text); font-weight:600}
+  input[type="range"]{width:100%; accent-color: var(--accent);}
+  select, button{
+    width:100%;
+    background:#0b1220;
+    color:var(--text);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px 12px;
+    font-size:15px;
+  }
+  button{
+    position:relative;
+    cursor:pointer;
+    transition:
+      .14s transform,
+      .14s background,
+      .14s box-shadow,
+      .14s border-color,
+      .14s color;
+    overflow:hidden;
+    user-select:none;
+  }
+  button:hover{
+    background:#111a2b;
+    border-color:rgba(125,211,252,.38);
+  }
+  button:active{
+    transform:translateY(1px) scale(.99);
+  }
+  button.flash{
+    border-color:rgba(125,211,252,.95);
+    box-shadow:
+      0 0 0 3px rgba(125,211,252,.16),
+      0 0 26px rgba(125,211,252,.34),
+      inset 0 0 22px rgba(125,211,252,.12);
+    color:#e0f7ff;
+  }
+  button.flash::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:radial-gradient(circle at center, rgba(255,255,255,.32), transparent 46%);
+    animation:pulse .42s ease-out forwards;
+    pointer-events:none;
+  }
+  @keyframes pulse{
+    from{opacity:.85; transform:scale(.7)}
+    to{opacity:0; transform:scale(1.8)}
+  }
+  .button-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .primary{
+    border-color:rgba(125,211,252,.55);
+    background:rgba(14,116,144,.22);
+  }
+  .danger{
+    border-color:rgba(251,113,133,.45);
+    background:rgba(159,18,57,.18);
+  }
+  .formula{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    background:#0b1220;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+    line-height:1.7;
+    color:#dbeafe;
+    overflow:auto;
+  }
+  .log-panel{
+    margin-top:16px;
+    background:rgba(11,18,32,.96);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+  }
+  .log-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.025);
+  }
+  .log-head b{
+    font-size:14px;
+  }
+  .log-head button{
+    width:auto;
+    padding:6px 9px;
+    font-size:12px;
+    border-radius:10px;
+  }
+  .log-body{
+    height:190px;
+    overflow:auto;
+    padding:9px 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size:12px;
+    line-height:1.55;
+  }
+  .log-entry{
+    padding:4px 0;
+    border-bottom:1px dashed rgba(48,54,61,.48);
+    color:#cbd5e1;
+  }
+  .log-entry .time{color:#8b949e}
+  .log-entry .type{color:#7dd3fc}
+  .log-entry.warn .type{color:#fbbf24}
+  .log-entry.good .type{color:#86efac}
+  .log-entry.bad .type{color:#fb7185}
+  .workspace{
+    display:grid;
+    grid-template-rows:auto auto auto auto;
+    gap:18px;
+  }
+  .chart-card{
+    padding:16px;
+  }
+  .chart-head{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:8px;
+  }
+  h2{
+    margin:0;
+    font-size:19px;
+  }
+  .hint{
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.6;
+  }
+  canvas{
+    width:100%;
+    height:360px;
+    display:block;
+    border-radius:14px;
+    background:#080d15;
+    border:1px solid #1f2937;
+  }
+  .metrics{
+    display:grid;
+    grid-template-columns: repeat(5, minmax(120px, 1fr));
+    gap:12px;
+  }
+  @media (max-width: 1180px){
+    .metrics{grid-template-columns: repeat(2, 1fr)}
+  }
+  .metric{
+    padding:15px;
+  }
+  .metric .name{
+    color:var(--muted);
+    font-size:13px;
+    margin-bottom:8px;
+  }
+  .metric .value{
+    font-size:24px;
+    font-weight:700;
+    letter-spacing:.01em;
+  }
+  .metric .note{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:8px;
+    line-height:1.5;
+  }
+  .adaptive-panel{
+    padding:16px;
+    display:grid;
+    grid-template-columns: repeat(4, minmax(160px,1fr));
+    gap:12px;
+  }
+  @media (max-width: 1180px){
+    .adaptive-panel{grid-template-columns: repeat(2, 1fr)}
+  }
+  .gauge{
+    background:rgba(11,18,32,.74);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px;
+  }
+  .gauge .name{
+    color:var(--muted);
+    font-size:13px;
+    margin-bottom:9px;
+  }
+  .bar{
+    height:10px;
+    border-radius:999px;
+    background:#111827;
+    border:1px solid #1f2937;
+    overflow:hidden;
+  }
+  .bar > div{
+    height:100%;
+    width:50%;
+    background:linear-gradient(90deg, var(--good), var(--accent), var(--warn));
+    border-radius:999px;
+  }
+  .gauge .value{
+    margin-top:8px;
+    font-weight:700;
+  }
+  .explain{
+    padding:18px;
+    line-height:1.8;
+  }
+  .explain h2{margin-bottom:10px}
+  .pill{
+    display:inline-block;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:2px 9px;
+    font-size:12px;
+    color:var(--muted);
+    margin-right:6px;
+  }
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    color:var(--muted);
+    font-size:13px;
+    margin:10px 0 0;
+  }
+  .swatch{
+    width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;
+  }
+  .footer{
+    padding:0 18px 24px;
+    color:var(--muted);
+    font-size:12px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>虛實歪度計算實驗台 v0.3</h1>
+  <div class="subtitle">
+    新增 <b>歪度自適應演算法 SAA</b>：系統會根據歪度 K、歪速、歪加速度、粗糙度 Q 與預測誤差，
+    自動調整虛擬基準更新率、預測阻尼與信心值。
+  </div>
+  <div class="status-strip">
+    <span class="status-pill"><span id="runDot" class="dot"></span><span id="runText">運行中</span></span>
+    <span class="status-pill">自適應：<span id="adaptStatus" class="last-action">balanced</span></span>
+    <span class="status-pill">最後操作：<span id="lastAction" class="last-action">初始化</span></span>
+    <span class="status-pill">t = <span id="timeNow">0</span></span>
+  </div>
+</header>
+
+<main>
+  <aside class="controls">
+    <div class="row">
+      <label><b>實驗場景</b><span id="scenarioName"></span></label>
+      <select id="scenario">
+        <option value="oscillator">受擾振盪器：物理偏移</option>
+        <option value="thermal">熱漂移：慢性模型失配</option>
+        <option value="agent">Agent 路徑：意圖與執行偏差</option>
+        <option value="shape">形態波：無限維形態的低維投影</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label><b>歪度強度</b><span id="ampVal"></span></label>
+      <input id="amp" type="range" min="0" max="2.5" step="0.01" value="0.8" />
+    </div>
+
+    <div class="row">
+      <label><b>慢性漂移</b><span id="driftVal"></span></label>
+      <input id="drift" type="range" min="-1.5" max="1.5" step="0.01" value="0.25" />
+    </div>
+
+    <div class="row">
+      <label><b>擾動／粗糙度</b><span id="roughVal"></span></label>
+      <input id="rough" type="range" min="0" max="1.8" step="0.01" value="0.35" />
+    </div>
+
+    <div class="row">
+      <label><b>基礎更新率 λ₀</b><span id="lambdaVal"></span></label>
+      <input id="lambda" type="range" min="0" max="0.45" step="0.005" value="0.08" />
+    </div>
+
+    <div class="row">
+      <label><b>預測步長 Δ</b><span id="predVal"></span></label>
+      <input id="predH" type="range" min="1" max="40" step="1" value="12" />
+    </div>
+
+    <div class="row">
+      <label><b>粗糙度視窗 Q</b><span id="winVal"></span></label>
+      <input id="win" type="range" min="5" max="80" step="1" value="24" />
+    </div>
+
+    <div class="group-title">自適應演算法</div>
+
+    <div class="row">
+      <label><b>自適應模式</b><span id="adaptModeName"></span></label>
+      <select id="adaptMode">
+        <option value="off">關閉：固定 λ 與固定外推</option>
+        <option value="conservative">保守：高 Q 時強阻尼</option>
+        <option value="balanced" selected>平衡：自動修正與防爆</option>
+        <option value="aggressive">激進：快速追蹤歪度</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label><b>學習率 η</b><span id="etaVal"></span></label>
+      <input id="eta" type="range" min="0" max="1" step="0.01" value="0.35" />
+    </div>
+
+    <div class="row">
+      <label><b>目標粗糙度 Q*</b><span id="targetQVal"></span></label>
+      <input id="targetQ" type="range" min="0.05" max="2.0" step="0.01" value="0.55" />
+    </div>
+
+    <div class="row">
+      <label><b>修正增益 β</b><span id="betaVal"></span></label>
+      <input id="beta" type="range" min="0" max="1.5" step="0.01" value="0.55" />
+    </div>
+
+    <div class="button-grid row">
+      <button class="primary" id="playBtn">暫停 / 繼續</button>
+      <button id="stepBtn">單步推進</button>
+      <button id="randomBtn">重置擾動</button>
+      <button class="danger" id="resetBtn">重設時間</button>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-head">
+        <b>操作 LOG</b>
+        <button id="clearLogBtn">清空</button>
+      </div>
+      <div id="logBody" class="log-body"></div>
+    </div>
+
+    <div class="row" style="margin-top:16px;">
+      <div class="formula">
+        e<sub>K</sub>=|K|+|V<sub>K</sub>|+|A<sub>K</sub>|+Q<br/>
+        c = exp(−η·e<sub>K</sub>)<br/>
+        λ<sub>eff</sub>=clip(λ₀+β·c·|K|/(1+Q),0,0.85)<br/>
+        d = clip(c/(1+Q/Q*),0.03,1)<br/>
+        K̂=K+d·(ΔV<sub>K</sub>+½Δ²A<sub>K</sub>)
+      </div>
+    </div>
+  </aside>
+
+  <div class="workspace">
+    <section class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h2>真實系統 R vs 虛擬基準體 V</h2>
+          <div class="hint">v0.3 中 V 的更新率會由 SAA 自動調整。粗糙度越高，預測阻尼越強。</div>
+        </div>
+      </div>
+      <canvas id="mainChart" width="1100" height="360"></canvas>
+      <div class="legend">
+        <span><span class="swatch" style="background:#7dd3fc"></span>真實 R</span>
+        <span><span class="swatch" style="background:#a78bfa"></span>虛擬 V</span>
+        <span><span class="swatch" style="background:#fbbf24"></span>自適應預測 R̂</span>
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h2>歪度場 K、歪速 V<sub>K</sub>、歪加速度 A<sub>K</sub></h2>
+          <div class="hint">K 是可計算差場；V<sub>K</sub> 與 A<sub>K</sub> 是演化訊號；Q 是失效閘門候選。</div>
+        </div>
+      </div>
+      <canvas id="skewChart" width="1100" height="360"></canvas>
+      <div class="legend">
+        <span><span class="swatch" style="background:#86efac"></span>K 歪度</span>
+        <span><span class="swatch" style="background:#fbbf24"></span>V<sub>K</sub> 歪速 ×8</span>
+        <span><span class="swatch" style="background:#fb7185"></span>A<sub>K</sub> 歪加速度 ×28</span>
+      </div>
+    </section>
+
+    <section class="adaptive-panel">
+      <div class="gauge">
+        <div class="name">有效更新率 λ<sub>eff</sub></div>
+        <div class="bar"><div id="lambdaBar"></div></div>
+        <div class="value" id="lambdaEffNow">0</div>
+      </div>
+      <div class="gauge">
+        <div class="name">預測阻尼 d</div>
+        <div class="bar"><div id="dampBar"></div></div>
+        <div class="value" id="dampNow">0</div>
+      </div>
+      <div class="gauge">
+        <div class="name">信心值 c</div>
+        <div class="bar"><div id="confBar"></div></div>
+        <div class="value" id="confNow">0</div>
+      </div>
+      <div class="gauge">
+        <div class="name">狀態風險 r</div>
+        <div class="bar"><div id="riskBar"></div></div>
+        <div class="value" id="riskNow">0</div>
+      </div>
+    </section>
+
+    <div class="metrics">
+      <div class="metric card">
+        <div class="name">目前歪度 K</div>
+        <div class="value" id="kNow">0</div>
+        <div class="note">R−V。虛實差場的當下值。</div>
+      </div>
+      <div class="metric card">
+        <div class="name">歪速 V<sub>K</sub></div>
+        <div class="value" id="vNow">0</div>
+        <div class="note">歪度變化速度。正值表示歪正在擴大。</div>
+      </div>
+      <div class="metric card">
+        <div class="name">歪加速度 A<sub>K</sub></div>
+        <div class="value" id="aNow">0</div>
+        <div class="note">歪速的變化。過大時容易外推失效。</div>
+      </div>
+      <div class="metric card">
+        <div class="name">粗糙度 Q</div>
+        <div class="value" id="qNow">0</div>
+        <div class="note">近期 K 的變異。可作為失效閘門候選。</div>
+      </div>
+      <div class="metric card">
+        <div class="name">預測誤差 |R−R̂|</div>
+        <div class="value" id="eNow">0</div>
+        <div class="note">用自適應歪度外推後，對 Δ 步後真實值的誤差。</div>
+      </div>
+    </div>
+
+    <section class="explain">
+      <h2>v0.3 新增什麼？</h2>
+      <p>
+        <span class="pill">SAA</span>
+        歪度自適應演算法會把 K、V<sub>K</sub>、A<sub>K</sub>、Q 壓成狀態風險，並把風險轉成信心值。
+        信心高時允許追蹤與外推；信心低時降低預測外推，避免二階歪加速度爆炸。
+      </p>
+      <p>
+        <span class="pill">工程意義</span>
+        這是把「歪度計算」往數位孿生、AI agent、物理模擬與形態空間推進的一步：
+        不只算歪，也讓系統根據歪的狀態自動調整自己的計算策略。
+      </p>
+    </section>
+  </div>
+</main>
+
+<div class="footer">
+  EML-RVSC / EML-GSC prototype v0.3. Standalone HTML. No external library.
+</div>
+
+<script>
+(function(){
+  const els = {
+    scenario: document.getElementById('scenario'),
+    amp: document.getElementById('amp'),
+    drift: document.getElementById('drift'),
+    rough: document.getElementById('rough'),
+    lambda: document.getElementById('lambda'),
+    predH: document.getElementById('predH'),
+    win: document.getElementById('win'),
+    adaptMode: document.getElementById('adaptMode'),
+    eta: document.getElementById('eta'),
+    targetQ: document.getElementById('targetQ'),
+    beta: document.getElementById('beta'),
+    playBtn: document.getElementById('playBtn'),
+    stepBtn: document.getElementById('stepBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    randomBtn: document.getElementById('randomBtn'),
+    clearLogBtn: document.getElementById('clearLogBtn'),
+    ampVal: document.getElementById('ampVal'),
+    driftVal: document.getElementById('driftVal'),
+    roughVal: document.getElementById('roughVal'),
+    lambdaVal: document.getElementById('lambdaVal'),
+    predVal: document.getElementById('predVal'),
+    winVal: document.getElementById('winVal'),
+    adaptModeName: document.getElementById('adaptModeName'),
+    etaVal: document.getElementById('etaVal'),
+    targetQVal: document.getElementById('targetQVal'),
+    betaVal: document.getElementById('betaVal'),
+    scenarioName: document.getElementById('scenarioName'),
+    mainCanvas: document.getElementById('mainChart'),
+    skewCanvas: document.getElementById('skewChart'),
+    kNow: document.getElementById('kNow'),
+    vNow: document.getElementById('vNow'),
+    aNow: document.getElementById('aNow'),
+    qNow: document.getElementById('qNow'),
+    eNow: document.getElementById('eNow'),
+    runDot: document.getElementById('runDot'),
+    runText: document.getElementById('runText'),
+    adaptStatus: document.getElementById('adaptStatus'),
+    lastAction: document.getElementById('lastAction'),
+    timeNow: document.getElementById('timeNow'),
+    logBody: document.getElementById('logBody'),
+    lambdaEffNow: document.getElementById('lambdaEffNow'),
+    dampNow: document.getElementById('dampNow'),
+    confNow: document.getElementById('confNow'),
+    riskNow: document.getElementById('riskNow'),
+    lambdaBar: document.getElementById('lambdaBar'),
+    dampBar: document.getElementById('dampBar'),
+    confBar: document.getElementById('confBar'),
+    riskBar: document.getElementById('riskBar')
+  };
+
+  let running = true;
+  let seed = 1337;
+  let t = 0;
+  let data = [];
+  const maxN = 260;
+  let lastSliderLogAt = 0;
+  let adaptiveState = {lambdaEff:0, damping:1, confidence:1, risk:0};
+
+  function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+  function nowText(){
+    return new Date().toLocaleTimeString('zh-TW', {hour12:false});
+  }
+
+  function addLog(type, msg, cls){
+    const div = document.createElement('div');
+    div.className = 'log-entry ' + (cls || '');
+    div.innerHTML = '<span class="time">[' + nowText() + ']</span> ' +
+      '<span class="type">' + type + '</span> ' + msg;
+    els.logBody.prepend(div);
+    while(els.logBody.children.length > 90){
+      els.logBody.removeChild(els.logBody.lastChild);
+    }
+    els.lastAction.textContent = type + '｜' + msg.replace(/<[^>]*>/g,'');
+  }
+
+  function flashButton(btn, type, msg, cls){
+    btn.classList.remove('flash');
+    void btn.offsetWidth;
+    btn.classList.add('flash');
+    window.setTimeout(function(){ btn.classList.remove('flash'); }, 460);
+    addLog(type, msg, cls);
+  }
+
+  function rand(){
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  }
+  function noise(x){
+    return (rand() - 0.5) * x;
+  }
+
+  function params(){
+    return {
+      scenario: els.scenario.value,
+      amp: parseFloat(els.amp.value),
+      drift: parseFloat(els.drift.value),
+      rough: parseFloat(els.rough.value),
+      lambda: parseFloat(els.lambda.value),
+      predH: parseInt(els.predH.value,10),
+      win: parseInt(els.win.value,10),
+      adaptMode: els.adaptMode.value,
+      eta: parseFloat(els.eta.value),
+      targetQ: parseFloat(els.targetQ.value),
+      beta: parseFloat(els.beta.value)
+    };
+  }
+
+  function modeMultiplier(mode){
+    if(mode === 'off') return {eta:0, beta:0, dampingBias:1.0, lambdaBias:1.0};
+    if(mode === 'conservative') return {eta:1.35, beta:0.62, dampingBias:0.58, lambdaBias:0.82};
+    if(mode === 'aggressive') return {eta:0.72, beta:1.42, dampingBias:1.18, lambdaBias:1.25};
+    return {eta:1.0, beta:1.0, dampingBias:0.86, lambdaBias:1.0};
+  }
+
+  function computeAdaptive(p, currentK, currentV, currentA, q, predErr){
+    if(p.adaptMode === 'off'){
+      return {lambdaEff:p.lambda, damping:1, confidence:1, risk:0};
+    }
+    const mult = modeMultiplier(p.adaptMode);
+    const normK = Math.abs(currentK) / (1 + Math.abs(currentK));
+    const normV = Math.abs(currentV) / (1 + Math.abs(currentV));
+    const normA = Math.abs(currentA) / (1 + Math.abs(currentA));
+    const normQ = q / (p.targetQ + q + 1e-9);
+    const normE = predErr ? predErr / (1 + predErr) : 0;
+    const risk = clamp(0.42*normK + 0.18*normV + 0.22*normA + 0.26*normQ + 0.18*normE, 0, 1.8);
+    const confidence = clamp(Math.exp(-p.eta * mult.eta * risk), 0.02, 1);
+    const correction = p.beta * mult.beta * confidence * Math.abs(currentK) / (1 + q);
+    const lambdaEff = clamp((p.lambda + correction) * mult.lambdaBias, 0, 0.85);
+    const damping = clamp(mult.dampingBias * confidence / (1 + q / (p.targetQ + 1e-9)), 0.03, 1);
+    return {lambdaEff, damping, confidence, risk};
+  }
+
+  function baseline(tt, p){
+    const x = tt / 12;
+    if(p.scenario === 'oscillator'){
+      return 2.5*Math.sin(x*0.9) + 0.9*Math.sin(x*0.23);
+    }
+    if(p.scenario === 'thermal'){
+      return 0.014*tt + 1.1*Math.sin(x*0.18);
+    }
+    if(p.scenario === 'agent'){
+      return Math.tanh((tt-90)/55)*3 + 0.45*Math.sin(x*0.55);
+    }
+    return 1.8*Math.sin(x*0.33) + 1.4*Math.cos(x*0.11);
+  }
+
+  function skewSignal(tt, p){
+    const x = tt / 12;
+    let s = 0;
+    if(p.scenario === 'oscillator'){
+      s = p.amp*(0.9*Math.sin(x*1.7+0.8) + 0.45*Math.sin(x*0.37)) + p.drift*0.004*tt;
+    } else if(p.scenario === 'thermal'){
+      s = p.amp*(1 - Math.exp(-tt/90))*Math.sin(x*0.28+1.2) + p.drift*0.012*tt;
+    } else if(p.scenario === 'agent'){
+      const shock = Math.exp(-Math.pow((tt-130)/22, 2))*p.amp*2.1;
+      s = p.amp*0.7*Math.sin(x*0.8) + shock + p.drift*Math.tanh((tt-120)/35);
+    } else {
+      s = p.amp*(Math.sin(x*0.2)*Math.sin(x*1.1) + 0.5*Math.cos(x*0.07)) + p.drift*0.006*tt;
+    }
+    s += p.rough*(0.35*Math.sin(x*3.1 + 0.4) + 0.22*Math.sin(x*5.7));
+    return s;
+  }
+
+  function realValue(tt, p){
+    return baseline(tt, p) + skewSignal(tt, p) + noise(p.rough * 0.045);
+  }
+
+  function qValueFor(arr, win){
+    const ks = arr.slice(-win).map(function(d){return d.k;});
+    if(ks.length < 2) return 0;
+    const mean = ks.reduce(function(a,b){return a+b;},0)/ks.length;
+    return ks.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/ks.length;
+  }
+
+  function computeStep(){
+    const p = params();
+    const prev1 = data[data.length-1];
+    const prev2 = data[data.length-2];
+
+    let prevK = prev1 ? prev1.k : 0;
+    let prevV = (prev1 && prev2) ? prev1.k - prev2.k : 0;
+    let prevA = (prev1 && prev2) ? prev1.ak : 0;
+    let qPrev = qValueFor(data, p.win);
+    let prevErr = prev1 && prev1.predErr ? prev1.predErr : 0;
+
+    const adapt = computeAdaptive(p, prevK, prevV, prevA, qPrev, prevErr);
+    adaptiveState = adapt;
+
+    const r = realValue(t, p);
+    let v;
+    if(data.length === 0){
+      v = baseline(t, p);
+    } else {
+      const target = baseline(t, p);
+      v = (1-adapt.lambdaEff)*target + adapt.lambdaEff*prev1.r + 0.18*(prev1.v - target);
+    }
+    const k = r - v;
+    const vk = prev1 ? k - prev1.k : 0;
+    const ak = (prev1 && prev2) ? k - 2*prev1.k + prev2.k : 0;
+
+    // Store a one-step-ahead diagnostic prediction error for adaptation.
+    let predErr = 0;
+    if(prev1){
+      const khat1 = prev1.k + adapt.damping * (prev1.vk + 0.5*prev1.ak);
+      const rhat1 = baseline(t, p) + khat1;
+      predErr = Math.abs(r - rhat1);
+    }
+
+    data.push({t, r, v, k, vk, ak, lambdaEff:adapt.lambdaEff, damping:adapt.damping, confidence:adapt.confidence, risk:adapt.risk, predErr});
+    if(data.length > maxN) data.shift();
+    t++;
+  }
+
+  function reset(){
+    t = 0; data = [];
+    adaptiveState = {lambdaEff:params().lambda, damping:1, confidence:1, risk:0};
+    for(let i=0;i<120;i++) computeStep();
+    render();
+  }
+
+  function qValue(){
+    return qValueFor(data, params().win);
+  }
+
+  function futurePrediction(){
+    const p = params();
+    const n = data.length;
+    if(n < 3) return null;
+    const last = data[n-1];
+    const d = p.predH;
+    const q = qValue();
+    const adapt = computeAdaptive(p, last.k, last.vk, last.ak, q, last.predErr || 0);
+    const khat = last.k + adapt.damping * (d*last.vk + 0.5*d*d*last.ak);
+    const vFuture = baseline(last.t+d, p);
+    const rhat = vFuture + khat;
+    const rActual = baseline(last.t+d, p) + skewSignal(last.t+d, p);
+    return {t:last.t+d, rhat, rActual, err: Math.abs(rActual-rhat), adapt};
+  }
+
+  function drawAxes(ctx, w, h){
+    ctx.strokeStyle = '#1f2937';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for(let i=0;i<=5;i++){
+      const y = 24 + i*(h-48)/5;
+      ctx.moveTo(42,y); ctx.lineTo(w-18,y);
+    }
+    for(let i=0;i<=8;i++){
+      const x = 42 + i*(w-60)/8;
+      ctx.moveTo(x,20); ctx.lineTo(x,h-28);
+    }
+    ctx.stroke();
+  }
+
+  function drawLine(ctx, arr, key, color, minY, maxY, scale, offset){
+    const w = ctx.canvas.width, h = ctx.canvas.height;
+    const left=42, right=w-18, top=20, bottom=h-28;
+    scale = scale || 1;
+    offset = offset || 0;
+    if(arr.length < 2) return;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    arr.forEach(function(d,i){
+      const x = left + i*(right-left)/(arr.length-1);
+      const yv = d[key]*scale + offset;
+      const y = bottom - (yv-minY)/(maxY-minY)*(bottom-top);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  }
+
+  function autoRange(values){
+    let min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+    if(!isFinite(min) || !isFinite(max)){min=-1;max=1}
+    if(Math.abs(max-min) < 1e-6){min-=1;max+=1}
+    const pad = (max-min)*0.13;
+    return [min-pad, max+pad];
+  }
+
+  function drawMain(){
+    const c = els.mainCanvas, ctx = c.getContext('2d');
+    const w=c.width,h=c.height;
+    ctx.clearRect(0,0,w,h);
+    drawAxes(ctx,w,h);
+    const pred = futurePrediction();
+    const values = [];
+    data.forEach(function(d){ values.push(d.r,d.v); });
+    if(pred) values.push(pred.rhat, pred.rActual);
+    const range = autoRange(values);
+    const minY = range[0], maxY = range[1];
+    drawLine(ctx,data,'r','#7dd3fc',minY,maxY);
+    drawLine(ctx,data,'v','#a78bfa',minY,maxY);
+    if(pred && data.length>0){
+      const left=42, right=w-18, top=20, bottom=h-28;
+      const last = data[data.length-1];
+      const x1 = right;
+      const y1 = bottom - (last.r-minY)/(maxY-minY)*(bottom-top);
+      const x2 = right - 4 + Math.min(80, params().predH*3);
+      const y2 = bottom - (pred.rhat-minY)/(maxY-minY)*(bottom-top);
+      ctx.strokeStyle = '#fbbf24';
+      ctx.setLineDash([6,5]);
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath(); ctx.arc(x2,y2,5,0,Math.PI*2); ctx.fill();
+    }
+    drawLabels(ctx, minY, maxY);
+  }
+
+  function drawSkew(){
+    const c = els.skewCanvas, ctx = c.getContext('2d');
+    const w=c.width,h=c.height;
+    ctx.clearRect(0,0,w,h);
+    drawAxes(ctx,w,h);
+    const values = [];
+    data.forEach(function(d){ values.push(d.k, d.vk*8, d.ak*28); });
+    const range = autoRange(values);
+    const minY = range[0], maxY = range[1];
+    drawLine(ctx,data,'k','#86efac',minY,maxY);
+    drawLine(ctx,data,'vk','#fbbf24',minY,maxY,8);
+    drawLine(ctx,data,'ak','#fb7185',minY,maxY,28);
+    drawLabels(ctx, minY, maxY);
+  }
+
+  function drawLabels(ctx, minY, maxY){
+    const h=ctx.canvas.height;
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '12px ui-monospace, monospace';
+    ctx.fillText(maxY.toFixed(2), 8, 28);
+    ctx.fillText(minY.toFixed(2), 8, h-30);
+  }
+
+  function fmt(x){
+    if(!isFinite(x)) return '—';
+    if(Math.abs(x) >= 100) return x.toFixed(1);
+    if(Math.abs(x) >= 10) return x.toFixed(2);
+    return x.toFixed(3);
+  }
+
+  function setBar(el, x, colorKind){
+    const pct = clamp(x, 0, 1) * 100;
+    el.style.width = pct.toFixed(1) + '%';
+    if(colorKind === 'risk'){
+      el.style.background = 'linear-gradient(90deg, var(--good), var(--warn), var(--bad))';
+    } else {
+      el.style.background = 'linear-gradient(90deg, var(--bad), var(--warn), var(--good))';
+    }
+  }
+
+  function updateText(){
+    const p = params();
+    els.ampVal.textContent = p.amp.toFixed(2);
+    els.driftVal.textContent = p.drift.toFixed(2);
+    els.roughVal.textContent = p.rough.toFixed(2);
+    els.lambdaVal.textContent = p.lambda.toFixed(3);
+    els.predVal.textContent = p.predH + ' step';
+    els.winVal.textContent = p.win + ' step';
+    els.etaVal.textContent = p.eta.toFixed(2);
+    els.targetQVal.textContent = p.targetQ.toFixed(2);
+    els.betaVal.textContent = p.beta.toFixed(2);
+
+    const modeNames = {
+      off:'關閉',
+      conservative:'保守',
+      balanced:'平衡',
+      aggressive:'激進'
+    };
+    els.adaptModeName.textContent = modeNames[p.adaptMode];
+    els.adaptStatus.textContent = modeNames[p.adaptMode];
+
+    const names = {
+      oscillator:'物理偏移',
+      thermal:'熱漂移',
+      agent:'意圖執行偏差',
+      shape:'形態投影'
+    };
+    els.scenarioName.textContent = names[p.scenario];
+
+    const last = data[data.length-1] || {k:0,vk:0,ak:0, lambdaEff:p.lambda, damping:1, confidence:1, risk:0};
+    const pred = futurePrediction();
+    const q = qValue();
+    const adapt = pred ? pred.adapt : adaptiveState;
+
+    els.kNow.textContent = fmt(last.k);
+    els.vNow.textContent = fmt(last.vk);
+    els.aNow.textContent = fmt(last.ak);
+    els.qNow.textContent = fmt(q);
+    els.eNow.textContent = pred ? fmt(pred.err) : '—';
+    els.timeNow.textContent = String(t);
+
+    els.lambdaEffNow.textContent = fmt(adapt.lambdaEff);
+    els.dampNow.textContent = fmt(adapt.damping);
+    els.confNow.textContent = fmt(adapt.confidence);
+    els.riskNow.textContent = fmt(adapt.risk);
+
+    setBar(els.lambdaBar, adapt.lambdaEff / 0.85, 'confidence');
+    setBar(els.dampBar, adapt.damping, 'confidence');
+    setBar(els.confBar, adapt.confidence, 'confidence');
+    setBar(els.riskBar, adapt.risk, 'risk');
+
+    els.runText.textContent = running ? '運行中' : '已暫停';
+    els.runDot.classList.toggle('paused', !running);
+
+    els.qNow.style.color = q > 1.2 ? 'var(--bad)' : (q > 0.45 ? 'var(--warn)' : 'var(--good)');
+    els.aNow.style.color = Math.abs(last.ak) > 0.5 ? 'var(--bad)' : 'var(--text)';
+    els.confNow.style.color = adapt.confidence < 0.35 ? 'var(--bad)' : (adapt.confidence < 0.68 ? 'var(--warn)' : 'var(--good)');
+    els.riskNow.style.color = adapt.risk > 0.9 ? 'var(--bad)' : (adapt.risk > 0.45 ? 'var(--warn)' : 'var(--good)');
+  }
+
+  function render(){
+    updateText();
+    drawMain();
+    drawSkew();
+  }
+
+  function tick(){
+    if(running){
+      computeStep();
+      render();
+    }
+    window.setTimeout(function(){ requestAnimationFrame(tick); }, 70);
+  }
+
+  function maybeLogSlider(name, val){
+    const now = Date.now();
+    if(now - lastSliderLogAt > 700){
+      addLog('參數', name + ' = ' + val, '');
+      lastSliderLogAt = now;
+    }
+  }
+
+  els.scenario.addEventListener('change', function(){
+    reset();
+    addLog('場景', '切換為「' + els.scenario.options[els.scenario.selectedIndex].text + '」', 'good');
+  });
+
+  els.adaptMode.addEventListener('change', function(){
+    render();
+    addLog('自適應', '模式切換為「' + els.adaptMode.options[els.adaptMode.selectedIndex].text + '」', 'good');
+  });
+
+  [
+    [els.amp, '歪度強度'],
+    [els.drift, '慢性漂移'],
+    [els.rough, '擾動／粗糙度'],
+    [els.lambda, '基礎更新率 λ₀'],
+    [els.predH, '預測步長 Δ'],
+    [els.win, '粗糙度視窗 Q'],
+    [els.eta, '學習率 η'],
+    [els.targetQ, '目標粗糙度 Q*'],
+    [els.beta, '修正增益 β']
+  ].forEach(function(pair){
+    pair[0].addEventListener('input', function(){
+      render();
+      maybeLogSlider(pair[1], pair[0].value);
+    });
+  });
+
+  els.playBtn.addEventListener('click', function(){
+    running = !running;
+    flashButton(els.playBtn, running ? '繼續' : '暫停', running ? '動畫已恢復' : '動畫已暫停', running ? 'good' : 'warn');
+    render();
+  });
+  els.stepBtn.addEventListener('click', function(){
+    computeStep();
+    render();
+    flashButton(els.stepBtn, '單步', '推進一步，t=' + t, 'good');
+  });
+  els.resetBtn.addEventListener('click', function(){
+    reset();
+    flashButton(els.resetBtn, '重設', '時間與資料已重設', 'bad');
+  });
+  els.randomBtn.addEventListener('click', function(){
+    seed = Math.floor(Math.random()*1e9);
+    reset();
+    flashButton(els.randomBtn, '擾動', '已重置隨機種子 seed=' + seed, 'warn');
+  });
+  els.clearLogBtn.addEventListener('click', function(){
+    els.logBody.innerHTML = '';
+    flashButton(els.clearLogBtn, 'LOG', '紀錄已清空', '');
+  });
+
+  reset();
+  addLog('初始化', 'v0.3 已啟動，SAA 自適應演算法已載入', 'good');
+  tick();
+})();
+</script>
+</body>
+</html>
