@@ -18,13 +18,13 @@ export default function AboutPage() {
       />
 
       <section className="profile-layout">
-        <div className="profile-image"><Image src="/media/profile/neok.png" alt="Neo.K abstract silhouette" fill sizes="(max-width: 800px) 100vw, 42vw" priority /></div>
+        <div className="profile-image"><Image src="/media/profile/neok.webp" alt="Neo.K abstract silhouette" fill sizes="(max-width: 800px) 100vw, 42vw" priority unoptimized /></div>
         <div className="profile-copy">
           <p className="eyebrow">POSITION</p>
           <h2>{t({ zh: "我不需要把所有內容塞進同一個網站。", en: "I do not need to put everything into one website." })}</h2>
           <p>{t({
-            zh: "Logic Matrix 保存深層理論語料；這個網站則保留個人文字、應用、MSSP、Lean4 與少量仍值得展示的作品。分工本身就是降低維護成本的一部分。",
-            en: "Logic Matrix preserves the deep theory corpus. This site keeps personal writing, applications, MSSP, Lean4, and a small set of works still worth presenting. Separation is itself part of reducing maintenance.",
+            zh: "完整的網站群、研究語料與產品線由 evemiss.com 與 evemisslab.com 兩個入口承接；這個網站只保留個人文字、實驗性小應用、MSSP、Lean4 與少量仍值得展示的作品。分工本身就是降低維護成本的一部分。",
+            en: "The full network of sites, research corpora, and product lines is reached through evemiss.com and evemisslab.com. This site keeps only personal writing, small experimental applications, MSSP, Lean4, and a few works still worth presenting. Separation is itself part of reducing maintenance.",
           })}</p>
           <div className="profile-facts">
             <div><span>{t({ zh: "組織", en: "Organization" })}</span><strong>EVEMISS Technology Co., Ltd.</strong></div>
@@ -35,9 +35,8 @@ export default function AboutPage() {
       </section>
 
       <section className="link-ledger">
-        <a href="https://logic.evemisslab.com/"><span>01</span><div><strong>Logic Matrix</strong><small>{t({ zh: "理論語料庫與時間線", en: "Theory corpus and timeline" })}</small></div><b>↗</b></a>
-        <a href="https://evemisslab.com/"><span>02</span><div><strong>EveMissLab</strong><small>{t({ zh: "研究與應用品牌", en: "Research and application brand" })}</small></div><b>↗</b></a>
-        <a href="https://evemisstechnology.com/"><span>03</span><div><strong>EVEMISS Technology</strong><small>{t({ zh: "企業入口", en: "Company entrance" })}</small></div><b>↗</b></a>
+        <a href="https://evemiss.com/"><span>01</span><div><strong>evemiss.com</strong><small>{t({ zh: "主要導航站，通往大部分網站群", en: "Main navigation site, reaching most of the network" })}</small></div><b>↗</b></a>
+        <a href="https://evemisslab.com/"><span>02</span><div><strong>evemisslab.com</strong><small>{t({ zh: "研究與應用品牌入口", en: "Research and application brand entrance" })}</small></div><b>↗</b></a>
       </section>
     </main>
   );

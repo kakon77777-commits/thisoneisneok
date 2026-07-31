@@ -5,6 +5,7 @@ import Link from "next/link";
 import { applications, books } from "./data/catalog";
 import { posts } from "./data/posts.generated";
 import { ProjectCard } from "./components/project-card";
+import { PendingPanel } from "./components/pending-panel";
 import { useLanguage } from "./components/language-context";
 
 export default function Home() {
@@ -55,9 +56,11 @@ export default function Home() {
         </div>
       </section>
 
+      {/* The first cell leads with MSSP while the application catalog is empty.
+          Swap it back to a live count once applications.length is non-zero. */}
       <section className="home-strip" aria-label={t({ zh: "網站範圍", en: "Site scope" })}>
-        <div><strong>{applications.length}</strong><span>{t({ zh: "應用與實驗", en: "apps & experiments" })}</span></div>
-        <div><strong>01</strong><span>{t({ zh: "MSSP 主專區", en: "MSSP field lab" })}</span></div>
+        <div><strong>MSSP</strong><span>{t({ zh: "主要專區", en: "primary field" })}</span></div>
+        <div><strong>{books.length}</strong><span>{t({ zh: "書籍展示", en: "books on show" })}</span></div>
         <div><strong>ZH/EN</strong><span>{t({ zh: "自動語言切換", en: "automatic language" })}</span></div>
         <div><strong>MD</strong><span>{t({ zh: "人類閱讀＋AI 原始檔", en: "human pages + AI source" })}</span></div>
       </section>
@@ -68,13 +71,30 @@ export default function Home() {
             <p className="eyebrow">SELECTED APPLICATIONS</p>
             <h2>{t({ zh: "應用不是結論，而是研究留下的可操作痕跡。", en: "Applications are operable traces left by research." })}</h2>
           </div>
-          <Link href="/apps" className="text-link">{t({ zh: "查看全部", en: "View all" })} ↗</Link>
+          {applications.length ? (
+            <Link href="/apps" className="text-link">{t({ zh: "查看全部", en: "View all" })} ↗</Link>
+          ) : null}
         </div>
-        <div className="project-grid featured-grid">
-          {applications.slice(0, 4).map((item, index) => (
-            <ProjectCard item={item} index={index} key={item.slug} />
-          ))}
-        </div>
+        {applications.length ? (
+          <div className="project-grid featured-grid">
+            {applications.slice(0, 4).map((item, index) => (
+              <ProjectCard item={item} index={index} key={item.slug} />
+            ))}
+          </div>
+        ) : (
+          <PendingPanel
+            code="EMPTY / 00"
+            title={{
+              zh: "這一區目前是空的，而且是刻意的。",
+              en: "This section is empty, and that is deliberate.",
+            }}
+            note={{
+              zh: "舊的示範卡片已經全部移除。實驗性小應用要能真的被打開、被操作，才會進駐這裡——不放佔位卡片。",
+              en: "The old demonstration cards have been removed. An experimental application appears here only once it can actually be opened and operated — no placeholder cards.",
+            }}
+            action={{ href: "/mssp", label: { zh: "先看 MSSP 專區", en: "Start with the MSSP field lab" } }}
+          />
+        )}
       </section>
 
       <section className="mssp-feature">
@@ -118,7 +138,7 @@ export default function Home() {
           {books.map((book) => (
             <article className="book-card" key={book.title.zh}>
               <div className="book-cover">
-                <Image src={book.image} alt={t(book.title)} fill sizes="(max-width: 700px) 72vw, 260px" />
+                <Image src={book.image} alt={t(book.title)} fill sizes="(max-width: 700px) 72vw, 260px" unoptimized />
               </div>
               <p>{t(book.phase)}</p>
               <h3>{t(book.title)}</h3>

@@ -1,6 +1,7 @@
 "use client";
 
 import { PageIntro } from "../components/page-intro";
+import { PendingPanel } from "../components/pending-panel";
 import { leanProjects, phaseLabels } from "../data/catalog";
 import { useLanguage } from "../components/language-context";
 
@@ -17,6 +18,20 @@ export default function Lean4Page() {
         }}
         aside={<div className="proof-aside"><span>LEAN</span><b>4</b><small>PROOF / SOURCE</small></div>}
       />
+
+      {leanProjects.length ? null : (
+        <PendingPanel
+          code="PROOF / 00"
+          title={{
+            zh: "先前的形式化條目已移除，這裡等待實際的證明檔案。",
+            en: "The earlier formalization entries were removed; this page is waiting for real proof files.",
+          }}
+          note={{
+            zh: "只列出能對應到具體 Lean4 原始檔、明確版本與明確驗證邊界的項目。論文會作為理解證明所必需的配套一起放上來，而不是反過來。",
+            en: "Only entries backed by concrete Lean4 sources, an explicit version, and an explicit proof boundary are listed. Papers arrive as the companion material needed to read a proof, not the other way round.",
+          }}
+        />
+      )}
 
       <section className="proof-list">
         {leanProjects.map((item, index) => (

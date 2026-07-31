@@ -21,6 +21,7 @@ Canonical site: https://thisoneisneok.com/
   - ZH Markdown: https://thisoneisneok.com/md/blog/mssp-open-source-route.zh.md
   - EN Markdown: https://thisoneisneok.com/md/blog/mssp-open-source-route.en.md
 
-## Source package
+## Wider network
 
-- https://thisoneisneok.com/source/neok-evemisslab-source.zip
+- https://evemiss.com/ — main navigation site, reaching most of the network
+- https://evemisslab.com/ — research and application brand entrance

@@ -75,9 +75,9 @@ function Shell({ children }: { children: ReactNode }) {
           <p>{t({ zh: "個人記錄、研究應用與 MSSP 實驗場。", en: "Personal records, research applications, and the MSSP field lab." })}</p>
         </div>
         <div className="footer-links">
-          <a href="https://logic.evemisslab.com/">Logic Matrix</a>
+          <a href="https://evemiss.com/">evemiss.com</a>
+          <a href="https://evemisslab.com/">evemisslab.com</a>
           <a href={canonical("/ai/site-index.md")}>AI Index</a>
-          <a href={canonical("/source/neok-evemisslab-source.zip")}>Source</a>
           <a href={canonical("/llms.txt")}>llms.txt</a>
         </div>
       </footer>
