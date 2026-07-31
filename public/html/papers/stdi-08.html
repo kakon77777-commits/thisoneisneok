@@ -1,0 +1,1738 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>連線不是纜線 | Neo.K</title>
+<meta name="description" content="分布式具身智能常被想像成「中央 AI 透過網路控制許多機器」。這種描述容易將網路視為透明、連續且同質的管道，彷彿只要設備具有 IP 位址、無線訊號或某條纜線，就能承擔相同的控制責任。然而，物理站網中的通訊條件高度異質：本地馬達與安全互鎖需要微秒至毫秒級的確定性；跨站樣本交接需要有界延遲、時間同步與高可靠度；移動機器人需要可漫遊的無線連線；顯微影像與模型檔案可能需要高吞吐光學或有線鏈路；遠端、深海、軌道或災害環境則…">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/stdi-08.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / STDI</strong><span>時空域支配智能</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>STDI-08</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>通訊架構論文／混合鏈路與斷線治理規格</span></div><div><b>證據</b><span>E0——形式模型、協議架構與 MVP 驗證路線</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/stdi-08.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>連線不是纜線</h1>
+<h2>有線、無線、光學與離線任務包的混合站網</h2>
+<p><strong>Connection Is Not a Cable: A Hybrid Station Fabric of Wired, Wireless, Optical, and Offline Mission Bundles</strong></p>
+<p><strong>系列：</strong>《時空域支配智能》系列第 8 篇<br><strong>文件編號：</strong> EML-STDI-HLF-2026-v0.1<br><strong>作者：</strong> Neo.K<br><strong>協作整理：</strong> Aletheia（阿萊）<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>日期：</strong> 2026 年 7 月 30 日<br><strong>文件類型：</strong> 通訊架構論文／混合鏈路與斷線治理規格<br><strong>證據成熟度：</strong> E0——形式模型、協議架構與 MVP 驗證路線<br><strong>公開狀態：</strong> 私人研究稿；公開前應經 EML-CF 的 IP Gate、安全、來源與通訊合規審查<br><strong>上位理論：</strong> STDI｜時空域支配智能<br><strong>直接前序：</strong></p>
+<ol>
+<li>《時空間支配型 AI：從單體具身智能到持續性時空域治理》</li>
+<li>《超靈的物理化：從 O-Chip 維度代理人到分布式具身主體》</li>
+<li>《Oversoul Station Fabric：固定站、移動站與虛擬站的分布式具身網路》</li>
+<li>《持續性指揮控制區：AI 如何佔據、維持並安全解除一個物理時空域》</li>
+<li>《語義即物理路由：從資料流治理到物料、能源、站點與行動流治理》</li>
+<li>《具身即佔域，對齊即能力：分布式身體的時序容量、協調稅與規模邊界》</li>
+<li>《中央主權、地方自治與動態不動點中央》</li>
+</ol>
+<hr>
+<h2>摘要</h2>
+<p>分布式具身智能常被想像成「中央 AI 透過網路控制許多機器」。這種描述容易將網路視為透明、連續且同質的管道，彷彿只要設備具有 IP 位址、無線訊號或某條纜線，就能承擔相同的控制責任。然而，物理站網中的通訊條件高度異質：本地馬達與安全互鎖需要微秒至毫秒級的確定性；跨站樣本交接需要有界延遲、時間同步與高可靠度；移動機器人需要可漫遊的無線連線；顯微影像與模型檔案可能需要高吞吐光學或有線鏈路；遠端、深海、軌道或災害環境則可能只有間歇連線，必須依靠可儲存、攜帶與轉送的任務包。</p>
+<p>本文提出：</p>
+<blockquote>
+<p><strong>連線不是纜線。</strong></p>
+</blockquote>
+<p>「連線」不是某條物理媒介持續存在，而是站點、治理中心與任務之間，仍維持可驗證身份、有效權限、可接受世界紀元、明確消息新鮮度、可用回報路徑與安全降級規則的邏輯關係。纜線、無線電、可見光、紅外線、移動載體與離線儲存只是承載這段關係的不同媒介。</p>
+<p>本文將此架構命名為 <strong>Hybrid Link Fabric（HLF，混合鏈路織網）</strong>，作為 Oversoul Station Fabric 的通訊與時間平面。HLF 的基本形式為：</p>
+<h1>$$
+\mathcal{H}_{\mathrm{HLF}}</h1>
+<p>\left(
+\mathcal{N},
+\mathcal{L},
+\mathcal{P},
+\mathcal{Q},
+\mathcal{T},
+\mathcal{S},
+\mathcal{B},
+\mathcal{E}
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathcal{N}$：OSF 站點；</li>
+<li>$\mathcal{L}$：實體與邏輯鏈路；</li>
+<li>$\mathcal{P}$：可行路徑與多重連線；</li>
+<li>$\mathcal{Q}$：服務品質與控制關鍵度；</li>
+<li>$\mathcal{T}$：時間同步、時間不確定性與 holdover；</li>
+<li>$\mathcal{S}$：身份、完整性、機密性與防重放；</li>
+<li>$\mathcal{B}$：離線任務包與儲存轉送；</li>
+<li>$\mathcal{E}$：鏈路事件、證據與故障紀錄。</li>
+</ul>
+<p>本文區分六類鏈路：</p>
+<ol>
+<li><strong>L0 本地硬安全鏈路</strong>；</li>
+<li><strong>L1 確定性有線鏈路</strong>；</li>
+<li><strong>L2 一般操作與資料鏈路</strong>；</li>
+<li><strong>L3 移動無線鏈路</strong>；</li>
+<li><strong>L4 光學與光通訊鏈路</strong>；</li>
+<li><strong>L5 延遲容忍與離線任務包鏈路</strong>。</li>
+</ol>
+<p>同時區分五類控制流：</p>
+<ul>
+<li>$K_0$：硬安全與立即停止；</li>
+<li>$K_1$：即時閉環與精密同步；</li>
+<li>$K_2$：站點操作、交接與狀態；</li>
+<li>$K_3$：治理、研究、模型與批次資料；</li>
+<li>$K_4$：延遲容忍任務、證據與遠端同步。</li>
+</ul>
+<p>鏈路類型與控制流不能隨意互換。無線連線可支援大量移動與操作任務，但不能因標稱低延遲就自動承擔硬體安全；光學鏈路可提供高資料能力與頻譜隔離，卻受視距、遮擋、對準和環境影響；離線任務包能維持治理關係，卻不能承擔需要即時撤銷的不可逆動作。</p>
+<p>本文建立 Link Descriptor、Path Contract、Time Contract、Freshness Budget、Multi-Homing Policy、Failover Epoch、Mission Bundle、Link Degradation State 與 Reconnection Reconciliation 等核心物件。其中心原則是：</p>
+<p>$$
+\boxed{
+\text{控制責任必須依鏈路能力降級，而不是假裝所有鏈路等價}
+}
+$$</p>
+<p>現有技術已提供可組合的底座。IEEE 802.1 TSN 以有界延遲、低延遲變異與低丟包為確定性網路目標；IEEE 802.1AS 管理時間敏感應用的同步，並處理網路元件加入、移除、故障和重配置；IEEE 802.1CB 提供幀複製、冗餘傳送與重複消除。3GPP 已建立 5G 與 TSN、時間同步和時間敏感通訊的整合機制。DDS 和 ROS 2 提供可靠度、deadline、lifespan、liveliness、durability 等 QoS 控制。IEEE 802.11bb 已將光通訊納入 802.11，而 P802.11br 正在延伸增強型光通訊。IETF Bundle Protocol v7 以 store-carry-forward 疊加網路支援間歇連線、長延遲和高錯誤率環境，BPSec 則提供 bundle 的完整性與機密性保護。</p>
+<p>HLF 不試圖以一種新鏈路取代所有既有標準。它新增的是一個上層治理映射：</p>
+<p>$$
+\text{任務語義與風險}
+\rightarrow
+\text{控制關鍵度}
+\rightarrow
+\text{鏈路契約}
+\rightarrow
+\text{路徑與備援}
+\rightarrow
+\text{降級和離線策略}.
+$$</p>
+<p>本文的核心命題為：</p>
+<blockquote>
+<p>一個站點即使暫時沒有纜線、沒有無線訊號或沒有即時回程，也可能在有限租約與任務包內保持治理連續；反之，一個訊號滿格且封包可達的站點，若權限過期、世界紀元失效或資料已不新鮮，也已經失去有效連線。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> 連線不是纜線、Hybrid Link Fabric、HLF、混合站網、有線、無線、光學通訊、離線任務包、TSN、5G TSN、IEEE 802.11bb、Bundle Protocol、DTN、QoS、時間同步、多重連線、failover、fencing、站點治理</p>
+<hr>
+<h1>0. 版本定位：第八篇補的是「治理如何穿越不同媒介與斷線」</h1>
+<p>前七篇已建立：</p>
+<ul>
+<li>STDI 的時空域治理；</li>
+<li>多身體超靈；</li>
+<li>OSF 站點；</li>
+<li>PCD 持續存在；</li>
+<li>SPR 物理路由；</li>
+<li>EAC 對齊容量；</li>
+<li>DFC 中央與地方治理。</li>
+</ul>
+<p>但仍有一個未處理的假設：</p>
+<blockquote>
+<p>站點之間始終有一條可用、低延遲、可信且一致的網路。</p>
+</blockquote>
+<p>真實物理域中可能同時存在：</p>
+<ul>
+<li>安全 PLC 與本地總線；</li>
+<li>TSN Ethernet；</li>
+<li>一般 Ethernet；</li>
+<li>Wi-Fi；</li>
+<li>私有 5G；</li>
+<li>UWB 或短距無線；</li>
+<li>光纖；</li>
+<li>可見光或紅外線；</li>
+<li>移動儲存；</li>
+<li>長延遲 DTN；</li>
+<li>完全離線任務包。</li>
+</ul>
+<p>本篇的任務不是選出「最好的網路」，而是建立：</p>
+<blockquote>
+<p>不同控制責任如何被安全地映射到不同鏈路，並在鏈路退化、切換或消失時維持治理邊界。</p>
+</blockquote>
+<hr>
+<h1>1. 連線的重新定義</h1>
+<h2>1.1 物理可達不等於治理可達</h2>
+<p>若站點可以 ping 通，但：</p>
+<ul>
+<li>憑證無效；</li>
+<li>租約過期；</li>
+<li>治理紀元落後；</li>
+<li>世界狀態過期；</li>
+<li>消息超過 lifespan；</li>
+<li>站點已被隔離；</li>
+</ul>
+<p>則：</p>
+<p>$$
+\operatorname{PhysicallyReachable}=1,
+\quad
+\operatorname{GovernanceConnected}=0.
+$$</p>
+<h2>1.2 沒有即時鏈路也可能維持有限治理</h2>
+<p>若遠端站點持有：</p>
+<ul>
+<li>已簽章任務包；</li>
+<li>世界狀態快照；</li>
+<li>短期權限租約；</li>
+<li>本地安全包絡；</li>
+<li>明確到期時間；</li>
+<li>回報與補償規則；</li>
+</ul>
+<p>則在短期內：</p>
+<p>$$
+\operatorname{Online}=0,
+\quad
+\operatorname{GovernanceContinuity}=1.
+$$</p>
+<h2>1.3 連線契約</h2>
+<p>定義站點 $i$ 與治理域之間的邏輯連線：</p>
+<h1>$$
+\chi_i(t)</h1>
+<p>\left(
+I_i,
+G_i,
+W_i,
+A_i,
+F_i,
+R_i
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$I_i$：身份可驗證；</li>
+<li>$G_i$：治理紀元可接受；</li>
+<li>$W_i$：世界狀態新鮮度；</li>
+<li>$A_i$：權限與租約；</li>
+<li>$F_i$：前向與回報鏈路能力；</li>
+<li>$R_i$：失聯、恢復與撤銷規則。</li>
+</ul>
+<p>只有這些條件成立，站點才處於有效治理連線。</p>
+<hr>
+<h1>2. 六類鏈路</h1>
+<h2>2.1 L0：本地硬安全鏈路</h2>
+<p>用途：</p>
+<ul>
+<li>急停；</li>
+<li>馬達電流；</li>
+<li>碰撞；</li>
+<li>雷射互鎖；</li>
+<li>高壓；</li>
+<li>壓力；</li>
+<li>熱失控；</li>
+<li>安全門。</li>
+</ul>
+<p>特徵：</p>
+<ul>
+<li>微秒至毫秒；</li>
+<li>通常不經雲端；</li>
+<li>不依賴跨站路由；</li>
+<li>必須能在上層網路全部失效時工作。</li>
+</ul>
+<p>可能使用：</p>
+<ul>
+<li>專用硬線；</li>
+<li>安全 PLC；</li>
+<li>工業現場總線；</li>
+<li>本地 MCU；</li>
+<li>獨立互鎖。</li>
+</ul>
+<p>HLF 不對 L0 做高階替代，只記錄其狀態與否決結果。</p>
+<h2>2.2 L1：確定性有線鏈路</h2>
+<p>用途：</p>
+<ul>
+<li>精密同步；</li>
+<li>機械交接；</li>
+<li>儀器觸發；</li>
+<li>時間敏感控制；</li>
+<li>高可靠站點協調。</li>
+</ul>
+<p>特徵：</p>
+<ul>
+<li>有界延遲；</li>
+<li>低抖動；</li>
+<li>流量排程；</li>
+<li>冗餘；</li>
+<li>時間同步。</li>
+</ul>
+<p>候選底座包括：</p>
+<ul>
+<li>TSN Ethernet；</li>
+<li>工業 Ethernet；</li>
+<li>專用光纖；</li>
+<li>其他經驗證的確定性網路。</li>
+</ul>
+<h2>2.3 L2：一般操作與資料鏈路</h2>
+<p>用途：</p>
+<ul>
+<li>ROS 2 Topic／Service／Action；</li>
+<li>DDS data space；</li>
+<li>OPC UA；</li>
+<li>站點遙測；</li>
+<li>一般任務；</li>
+<li>影像與資料。</li>
+</ul>
+<p>特徵：</p>
+<ul>
+<li>可設定可靠度、deadline、lifespan、durability 和 liveliness；</li>
+<li>不保證所有端到端物理期限；</li>
+<li>適合站點操作和資料交換。</li>
+</ul>
+<h2>2.4 L3：移動無線鏈路</h2>
+<p>用途：</p>
+<ul>
+<li>AMR／AGV；</li>
+<li>無人機；</li>
+<li>移動感測；</li>
+<li>穿戴設備；</li>
+<li>臨時站；</li>
+<li>重新配置空間。</li>
+</ul>
+<p>候選包括：</p>
+<ul>
+<li>Wi-Fi；</li>
+<li>私有 5G；</li>
+<li>UWB；</li>
+<li>短距無線；</li>
+<li>專用 RF。</li>
+</ul>
+<p>特徵：</p>
+<ul>
+<li>覆蓋和吞吐隨位置變化；</li>
+<li>可能漫遊、遮蔽、干擾；</li>
+<li>能支援時間敏感服務，但必須按部署條件驗證；</li>
+<li>不應默認承擔 L0。</li>
+</ul>
+<h2>2.5 L4：光學與光通訊鏈路</h2>
+<p>用途：</p>
+<ul>
+<li>高吞吐影像與科學資料；</li>
+<li>電磁敏感環境；</li>
+<li>定向安全區；</li>
+<li>移動對接；</li>
+<li>空間與遠距資料傳輸。</li>
+</ul>
+<p>形式包括：</p>
+<ul>
+<li>光纖；</li>
+<li>可見光通訊；</li>
+<li>紅外線；</li>
+<li>free-space optical；</li>
+<li>雷射通訊。</li>
+</ul>
+<p>優點：</p>
+<ul>
+<li>高資料能力；</li>
+<li>可與 RF 頻譜分離；</li>
+<li>空間方向性；</li>
+<li>光纖具有良好隔離性。</li>
+</ul>
+<p>限制：</p>
+<ul>
+<li>視距；</li>
+<li>遮擋；</li>
+<li>指向、捕獲與追蹤；</li>
+<li>污染、煙霧、雲層或環境干擾；</li>
+<li>光學安全；</li>
+<li>移動對準成本。</li>
+</ul>
+<h2>2.6 L5：延遲容忍與離線任務包</h2>
+<p>用途：</p>
+<ul>
+<li>間歇連線；</li>
+<li>遠端基地；</li>
+<li>深海；</li>
+<li>軌道；</li>
+<li>災害環境；</li>
+<li>跨組織離線資料室；</li>
+<li>人工攜帶資料。</li>
+</ul>
+<p>特徵：</p>
+<ul>
+<li>store-carry-forward；</li>
+<li>高延遲；</li>
+<li>非即時；</li>
+<li>需要到期和重放保護；</li>
+<li>任務和證據必須自包含；</li>
+<li>無法依賴即時撤銷。</li>
+</ul>
+<hr>
+<h1>3. 五類控制關鍵度</h1>
+<h2>$K_0$：硬安全</h2>
+<p>要求：</p>
+<ul>
+<li>最小延遲；</li>
+<li>本地確定性；</li>
+<li>獨立供電或安全失效；</li>
+<li>不允許經 L5；</li>
+<li>不允許依賴遠端 AI。</li>
+</ul>
+<h2>$K_1$：即時閉環與同步</h2>
+<p>例：</p>
+<ul>
+<li>精密伺服；</li>
+<li>多站同步觸發；</li>
+<li>協同搬運。</li>
+</ul>
+<p>偏好：</p>
+<ul>
+<li>L0／L1；</li>
+<li>經驗證的 L3 或 L4 只能作特定部署下的補充。</li>
+</ul>
+<h2>$K_2$：站點操作與交接</h2>
+<p>例：</p>
+<ul>
+<li>ROS 2 Action；</li>
+<li>樣本交接；</li>
+<li>任務狀態；</li>
+<li>移動交通。</li>
+</ul>
+<p>可使用：</p>
+<ul>
+<li>L1／L2／L3；</li>
+<li>必須有 deadline、freshness 和 failover。</li>
+</ul>
+<h2>$K_3$：治理、模型與高吞吐資料</h2>
+<p>例：</p>
+<ul>
+<li>世界模型同步；</li>
+<li>影像；</li>
+<li>模型更新；</li>
+<li>EML-CF；</li>
+<li>研究資料。</li>
+</ul>
+<p>可使用：</p>
+<ul>
+<li>L2／L3／L4；</li>
+<li>可緩衝、壓縮和重傳。</li>
+</ul>
+<h2>$K_4$：延遲容忍任務與證據</h2>
+<p>例：</p>
+<ul>
+<li>遠端任務包；</li>
+<li>批次證據；</li>
+<li>長延遲同步；</li>
+<li>離線更新。</li>
+</ul>
+<p>可使用：</p>
+<ul>
+<li>L5；</li>
+<li>必須自包含、可驗證和可到期。</li>
+</ul>
+<hr>
+<h1>4. 控制—鏈路映射</h1>
+<table>
+<thead>
+<tr>
+<th>控制類別</th>
+<th align="right">L0</th>
+<th align="right">L1</th>
+<th align="right">L2</th>
+<th align="right">L3</th>
+<th align="right">L4</th>
+<th align="right">L5</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$K_0$ 硬安全</td>
+<td align="right">核心</td>
+<td align="right">輔助</td>
+<td align="right">禁止作唯一鏈路</td>
+<td align="right">禁止作唯一鏈路</td>
+<td align="right">禁止作唯一鏈路</td>
+<td align="right">禁止</td>
+</tr>
+<tr>
+<td>$K_1$ 即時同步</td>
+<td align="right">可用</td>
+<td align="right">核心</td>
+<td align="right">有條件</td>
+<td align="right">經驗證後</td>
+<td align="right">經驗證後</td>
+<td align="right">禁止</td>
+</tr>
+<tr>
+<td>$K_2$ 站點操作</td>
+<td align="right">—</td>
+<td align="right">可用</td>
+<td align="right">核心</td>
+<td align="right">核心</td>
+<td align="right">有條件</td>
+<td align="right">僅非即時</td>
+</tr>
+<tr>
+<td>$K_3$ 治理與資料</td>
+<td align="right">—</td>
+<td align="right">可用</td>
+<td align="right">核心</td>
+<td align="right">可用</td>
+<td align="right">核心／可用</td>
+<td align="right">可緩衝</td>
+</tr>
+<tr>
+<td>$K_4$ 延遲容忍</td>
+<td align="right">—</td>
+<td align="right">可用</td>
+<td align="right">可用</td>
+<td align="right">可用</td>
+<td align="right">可用</td>
+<td align="right">核心</td>
+</tr>
+</tbody></table>
+<p>此表不是普世認證，而是 HLF 的保守預設。實際部署仍需依：</p>
+<ul>
+<li>延遲；</li>
+<li>抖動；</li>
+<li>丟包；</li>
+<li>覆蓋；</li>
+<li>安全等級；</li>
+<li>終端能力；</li>
+</ul>
+<p>進行驗證。</p>
+<hr>
+<h1>5. Link Descriptor</h1>
+<p>每條鏈路 $l$ 表示為：</p>
+<h1>$$
+l</h1>
+<p>\left(
+m,
+d,
+j,
+p,
+b,
+r,
+f,
+s,
+e,
+v
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$m$：媒介；</li>
+<li>$d$：延遲區間；</li>
+<li>$j$：抖動；</li>
+<li>$p$：丟包和錯誤；</li>
+<li>$b$：吞吐；</li>
+<li>$r$：可靠度與冗餘；</li>
+<li>$f$：新鮮度與消息期限；</li>
+<li>$s$：身份、完整性、機密性；</li>
+<li>$e$：能源成本；</li>
+<li>$v$：可見性、移動性和環境限制。</li>
+</ul>
+<h2>5.1 最小描述</h2>
+<pre><code class="language-yaml">link:
+  id: &quot;hlf:lab-a:wifi-01&quot;
+  medium: &quot;wireless_rf&quot;
+  technology: &quot;private_wifi&quot;
+
+endpoints:
+  - &quot;osf:amr-02&quot;
+  - &quot;osf:edge-gateway-01&quot;
+
+performance:
+  latency_budget_ms: 30
+  jitter_budget_ms: 10
+  loss_budget: 0.01
+  bandwidth_mbps: 200
+
+semantics:
+  supported_classes: [&quot;K2&quot;, &quot;K3&quot;]
+  forbidden_classes: [&quot;K0&quot;]
+  maximum_message_age_ms: 500
+  offline_fallback: &quot;local_safe_mission&quot;
+
+security:
+  mutual_authentication: true
+  encryption: true
+  replay_protection: true
+
+mobility:
+  roaming: true
+  coverage_zones: [&quot;lab-a&quot;, &quot;corridor-1&quot;]
+</code></pre>
+<h2>5.2 描述不等於實測</h2>
+<p>Link Descriptor 是設計契約。</p>
+<p>運行時仍需收集：</p>
+<ul>
+<li>實際延遲；</li>
+<li>實際丟包；</li>
+<li>訊號；</li>
+<li>漫遊；</li>
+<li>時鐘偏差；</li>
+<li>斷線；</li>
+<li>安全事件。</li>
+</ul>
+<hr>
+<h1>6. Path Contract</h1>
+<p>任務流 $f$ 的路徑契約：</p>
+<h1>$$
+\pi_f</h1>
+<p>\left(
+K_f,
+D_f,
+J_f,
+R_f,
+F_f,
+S_f,
+T_f,
+B_f
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$K_f$：控制關鍵度；</li>
+<li>$D_f$：最大延遲；</li>
+<li>$J_f$：抖動；</li>
+<li>$R_f$：可靠度；</li>
+<li>$F_f$：最大消息年齡；</li>
+<li>$S_f$：安全需求；</li>
+<li>$T_f$：時間同步；</li>
+<li>$B_f$：失效和備援策略。</li>
+</ul>
+<p>路徑可由多條鏈路組成：</p>
+<h1>$$
+P_f</h1>
+<p>(l_1,l_2,\ldots,l_n).
+$$</p>
+<p>端到端契約不能只看其中一段。</p>
+<hr>
+<h1>7. QoS 不等於物理安全</h1>
+<h2>7.1 DDS 與 ROS 2 QoS</h2>
+<p>可配置：</p>
+<ul>
+<li>reliability；</li>
+<li>durability；</li>
+<li>deadline；</li>
+<li>lifespan；</li>
+<li>liveliness；</li>
+<li>history；</li>
+<li>resource limits。</li>
+</ul>
+<p>這些能力對站點資料和任務非常重要。</p>
+<h2>7.2 仍需端到端驗證</h2>
+<p>即使 Topic 設為 reliable：</p>
+<ul>
+<li>應用程式可能延遲；</li>
+<li>執行器可能排隊；</li>
+<li>世界狀態可能過期；</li>
+<li>命令可能已失去權限；</li>
+<li>物理機構可能故障。</li>
+</ul>
+<p>所以：</p>
+<p>$$
+\text{Reliable Delivery}
+\neq
+\text{Timely Safe Effect}.
+$$</p>
+<h2>7.3 服務的舊請求</h2>
+<p>具有副作用的 Service 或 Action 必須帶：</p>
+<ul>
+<li>command ID；</li>
+<li>governance epoch；</li>
+<li>deadline；</li>
+<li>idempotency key；</li>
+<li>world epoch；</li>
+<li>fencing token。</li>
+</ul>
+<p>避免重啟後重新執行過期命令。</p>
+<hr>
+<h1>8. Freshness Budget</h1>
+<p>消息 $m$ 的有效條件：</p>
+<h1>$$
+\operatorname{Fresh}(m,t)</h1>
+<p>\mathbb{1}
+\left[
+t-t_{\mathrm{source}}
+\leq
+\Delta_m^{\max}
+\right].
+$$</p>
+<h2>8.1 不同消息不同期限</h2>
+<table>
+<thead>
+<tr>
+<th>消息</th>
+<th>典型語義</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>急停與人員存在</td>
+<td>極短</td>
+</tr>
+<tr>
+<td>機器人姿態</td>
+<td>短</td>
+</tr>
+<tr>
+<td>任務狀態</td>
+<td>秒級或任務級</td>
+</tr>
+<tr>
+<td>儀器校準</td>
+<td>依校準政策</td>
+</tr>
+<tr>
+<td>模型檔案</td>
+<td>版本固定</td>
+</tr>
+<tr>
+<td>遠端研究報告</td>
+<td>長</td>
+</tr>
+</tbody></table>
+<h2>8.2 過期不一定丟棄</h2>
+<p>過期消息可：</p>
+<ul>
+<li>保存為歷史證據；</li>
+<li>禁止作為當前控制；</li>
+<li>觸發重新觀測；</li>
+<li>進入調和流程。</li>
+</ul>
+<hr>
+<h1>9. 時間平面與資料平面分離</h1>
+<h2>9.1 同步不是普通資料</h2>
+<p>精密協作需要：</p>
+<ul>
+<li>共同時間；</li>
+<li>可估計偏差；</li>
+<li>來源與失效狀態；</li>
+<li>holdover。</li>
+</ul>
+<h2>9.2 Time Contract</h2>
+<h1>$$
+\tau_i</h1>
+<p>\left(
+c_i,
+\epsilon_i,
+u_i,
+h_i,
+s_i
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$c_i$：時鐘來源；</li>
+<li>$\epsilon_i$：誤差界；</li>
+<li>$u_i$：更新頻率；</li>
+<li>$h_i$：失去來源後 holdover；</li>
+<li>$s_i$：同步狀態。</li>
+</ul>
+<h2>9.3 IEEE 802.1AS</h2>
+<p>可作時間敏感站網的同步底座之一，並處理網路元件加入、移除、故障和重配置時的同步維持。</p>
+<h2>9.4 無線與 5G 時間</h2>
+<p>3GPP 的工業 5G 工作已支援 TSN 整合、時間同步和時間敏感通訊。</p>
+<p>但部署仍需量測：</p>
+<ul>
+<li>空口延遲；</li>
+<li>排程；</li>
+<li>漫遊；</li>
+<li>覆蓋；</li>
+<li>時鐘路徑；</li>
+<li>trust domain。</li>
+</ul>
+<h2>9.5 Holdover</h2>
+<p>同步來源中斷後，站點可以在有限時間依本地時鐘維持。</p>
+<p>若：</p>
+<p>$$
+\epsilon_i(t)</p>
+<blockquote>
+</blockquote>
+<p>\epsilon_{\max},
+$$</p>
+<p>精密同步任務必須停止或降級。</p>
+<hr>
+<h1>10. 確定性有線與冗餘</h1>
+<h2>10.1 TSN</h2>
+<p>TSN 的目標是透過 IEEE 802 網路提供：</p>
+<ul>
+<li>有界延遲；</li>
+<li>低延遲變異；</li>
+<li>低丟包；</li>
+<li>時間敏感服務。</li>
+</ul>
+<p>HLF 可將 TSN 用於：</p>
+<ul>
+<li>站點觸發；</li>
+<li>同步量測；</li>
+<li>關鍵操作資料；</li>
+<li>時間分配。</li>
+</ul>
+<h2>10.2 Frame Replication and Elimination</h2>
+<p>IEEE 802.1CB 提供：</p>
+<ul>
+<li>幀識別；</li>
+<li>多路複製；</li>
+<li>冗餘傳送；</li>
+<li>重複消除。</li>
+</ul>
+<p>這可降低單一路徑故障造成的丟失。</p>
+<h2>10.3 不重複計算容量</h2>
+<p>若同一幀經兩條路徑複製：</p>
+<p>$$
+\text{Delivered Information}=1,
+$$</p>
+<p>不是 $2$。</p>
+<p>冗餘增加可靠度，但消耗額外頻寬。</p>
+<h2>10.4 無縫不等於無故障</h2>
+<p>即使使用冗餘：</p>
+<ul>
+<li>兩條路徑可能共享交換器；</li>
+<li>共享電源；</li>
+<li>共享時間源；</li>
+<li>配置錯誤；</li>
+<li>接收端故障。</li>
+</ul>
+<p>需建立失效域圖。</p>
+<hr>
+<h1>11. 移動無線與 5G／Wi-Fi</h1>
+<h2>11.1 無線的不可替代價值</h2>
+<ul>
+<li>移動；</li>
+<li>快速重配置；</li>
+<li>臨時站；</li>
+<li>跨房間；</li>
+<li>減少拖纜；</li>
+<li>人員與穿戴裝置。</li>
+</ul>
+<h2>11.2 無線容量是位置函數</h2>
+<h1>$$
+C_{\mathrm{wireless}}</h1>
+<p>f(
+z,
+t,
+i,
+o,
+m,
+p
+),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$z$：位置；</li>
+<li>$t$：時間；</li>
+<li>$i$：干擾；</li>
+<li>$o$：遮蔽；</li>
+<li>$m$：漫遊和調變；</li>
+<li>$p$：功率與政策。</li>
+</ul>
+<h2>11.3 5G 與 TSN</h2>
+<p>5G 系統可以作為整合 TSN 的邏輯橋梁並提供時間敏感通訊與時間同步服務，但不代表所有 5G 部署都自動滿足相同的確定性。</p>
+<h2>11.4 Wi-Fi</h2>
+<p>適合：</p>
+<ul>
+<li>高吞吐移動資料；</li>
+<li>一般控制；</li>
+<li>影像；</li>
+<li>臨時設備。</li>
+</ul>
+<p>需要：</p>
+<ul>
+<li>覆蓋量測；</li>
+<li>漫遊測試；</li>
+<li>頻道與干擾管理；</li>
+<li>重要流量優先；</li>
+<li>斷線地方策略。</li>
+</ul>
+<h2>11.5 多無線鏈路</h2>
+<p>移動站可同時具有：</p>
+<ul>
+<li>Wi-Fi；</li>
+<li>5G；</li>
+<li>短距對接鏈路；</li>
+<li>本地離線任務包。</li>
+</ul>
+<p>但多鏈路不應讓同一命令被重複執行。</p>
+<hr>
+<h1>12. 光學與光通訊</h1>
+<h2>12.1 光纖</h2>
+<p>適合：</p>
+<ul>
+<li>高吞吐；</li>
+<li>長距；</li>
+<li>電磁隔離；</li>
+<li>穩定固定站點。</li>
+</ul>
+<h2>12.2 Light Communications</h2>
+<p>IEEE 802.11bb 已將光通訊納入 802.11 系列；P802.11br 正在研究增強型光通訊。</p>
+<p>可用於：</p>
+<ul>
+<li>室內高吞吐；</li>
+<li>RF 受限區；</li>
+<li>空間定向鏈路；</li>
+<li>特定移動站對接。</li>
+</ul>
+<h2>12.3 Free-Space Optical／Laser Communication</h2>
+<p>NASA 的光通訊實作證明紅外線與雷射鏈路可承擔高資料量，但也需要精密指向，並受到大氣、雲層、遮擋和追蹤條件影響。</p>
+<h2>12.4 光學鏈路狀態</h2>
+<pre><code class="language-text">ACQUIRING
+TRACKING
+LOCKED
+DEGRADED
+OBSCURED
+LOST
+</code></pre>
+<h2>12.5 光學不應單獨承擔不可中斷控制</h2>
+<p>若光學鏈路被遮擋，站點應：</p>
+<ul>
+<li>切換 RF／有線；</li>
+<li>降級；</li>
+<li>本地完成安全步驟；</li>
+<li>暫停高風險任務。</li>
+</ul>
+<hr>
+<h1>13. Multi-Homing</h1>
+<h2>13.1 定義</h2>
+<p>站點同時具有路徑集合：</p>
+<h1>$$
+\mathcal{P}_i</h1>
+<p>{P_i^{(1)},P_i^{(2)},\ldots,P_i^{(k)}}.
+$$</p>
+<h2>13.2 策略</h2>
+<ul>
+<li>Active／Standby；</li>
+<li>Active／Active；</li>
+<li>流分類；</li>
+<li>冗餘複製；</li>
+<li>負載分散；</li>
+<li>僅證據批次轉移。</li>
+</ul>
+<h2>13.3 路徑選擇</h2>
+<h1>$$
+P_f^\star</h1>
+<p>\arg\min_{P\in\mathcal{P}_f}
+\left(
+w_dD_P
++
+w_jJ_P
++
+w_lL_P
++
+w_eE_P
++
+w_rR_P
+\right),
+$$</p>
+<p>其中 $R_P$ 可表示風險，不是可靠度。</p>
+<h2>13.4 不以吞吐最大為唯一目標</h2>
+<p>高吞吐路徑可能：</p>
+<ul>
+<li>延遲不穩；</li>
+<li>信任域不同；</li>
+<li>能耗高；</li>
+<li>不允許機密資料；</li>
+<li>不支援時間同步。</li>
+</ul>
+<hr>
+<h1>14. 鏈路切換</h1>
+<h2>14.1 切換狀態機</h2>
+<pre><code class="language-text">PRIMARY_ACTIVE
+DEGRADING
+SECONDARY_PREPARE
+DUAL_PATH_VERIFY
+SECONDARY_COMMIT
+PRIMARY_RELEASE
+RECOVERY
+</code></pre>
+<h2>14.2 切換前檢查</h2>
+<ul>
+<li>新路徑身份；</li>
+<li>路徑契約；</li>
+<li>治理紀元；</li>
+<li>時間狀態；</li>
+<li>QoS；</li>
+<li>安全；</li>
+<li>消息序號。</li>
+</ul>
+<h2>14.3 Failover Epoch</h2>
+<p>鏈路切換建立：</p>
+<h1>$$
+f_k</h1>
+<p>\left(
+k,
+P_{\mathrm{old}},
+P_{\mathrm{new}},
+s_{\mathrm{commit}}
+\right).
+$$</p>
+<p>站點只接受最高 failover epoch 的提交流，避免新舊路徑同時執行。</p>
+<h2>14.4 非冪等操作</h2>
+<p>以下不能自動重送：</p>
+<ul>
+<li>啟動加熱；</li>
+<li>釋放夾具；</li>
+<li>注入材料；</li>
+<li>執行破壞性試驗。</li>
+</ul>
+<p>需使用：</p>
+<ul>
+<li>idempotency key；</li>
+<li>command ledger；</li>
+<li>執行前狀態；</li>
+<li>本地確認。</li>
+</ul>
+<hr>
+<h1>15. 鏈路退化不是二元</h1>
+<h2>15.1 狀態集合</h2>
+<pre><code class="language-text">HEALTHY
+CONSTRAINED
+LOSSY
+HIGH_LATENCY
+ASYMMETRIC
+INTERMITTENT
+PARTITIONED
+RECOVERING
+QUARANTINED
+</code></pre>
+<h2>15.2 降級動作</h2>
+<h3>CONSTRAINED</h3>
+<ul>
+<li>降低影像品質；</li>
+<li>壓縮；</li>
+<li>延長回報週期。</li>
+</ul>
+<h3>LOSSY</h3>
+<ul>
+<li>增加重傳；</li>
+<li>切換可靠流；</li>
+<li>冗餘路徑。</li>
+</ul>
+<h3>HIGH_LATENCY</h3>
+<ul>
+<li>增加地方自治；</li>
+<li>禁止精密遠端閉環；</li>
+<li>任務批次化。</li>
+</ul>
+<h3>INTERMITTENT</h3>
+<ul>
+<li>使用 bundle；</li>
+<li>縮短租約；</li>
+<li>本地保存證據。</li>
+</ul>
+<h3>PARTITIONED</h3>
+<ul>
+<li>C2／C3 凍結；</li>
+<li>地方安全；</li>
+<li>等待治理收斂。</li>
+</ul>
+<hr>
+<h1>16. Mission Bundle</h1>
+<h2>16.1 定義</h2>
+<p>離線任務包：</p>
+<h1>$$
+B_q</h1>
+<p>\left(
+I,
+G,
+WE,
+GE,
+L,
+S,
+D,
+R,
+V,
+X
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$I$：身份與目的；</li>
+<li>$G$：任務圖；</li>
+<li>$WE$：世界紀元快照；</li>
+<li>$GE$：治理紀元；</li>
+<li>$L$：權限租約；</li>
+<li>$S$：安全與禁止集合；</li>
+<li>$D$：期限和到期；</li>
+<li>$R$：回報與補償；</li>
+<li>$V$：證據要求；</li>
+<li>$X$：簽章與安全資訊。</li>
+</ul>
+<h2>16.2 任務包必須自包含</h2>
+<p>不能依賴：</p>
+<ul>
+<li>即時中央追問；</li>
+<li>隨時取得新模型；</li>
+<li>即時撤銷；</li>
+<li>雲端秘密；</li>
+<li>未攜帶的能力描述。</li>
+</ul>
+<h2>16.3 Store-Carry-Forward</h2>
+<p>Bundle Protocol v7 可將 bundle 放在應用層疊加網路中，跨間歇連線、長延遲和高錯誤率環境儲存與轉送。</p>
+<h2>16.4 BPSec</h2>
+<p>BPSec 可為 bundle 提供：</p>
+<ul>
+<li>完整性；</li>
+<li>機密性。</li>
+</ul>
+<p>HLF 仍需額外處理：</p>
+<ul>
+<li>任務權限；</li>
+<li>世界紀元；</li>
+<li>防重放；</li>
+<li>執行冪等；</li>
+<li>物理安全。</li>
+</ul>
+<h2>16.5 Bundle 到期</h2>
+<p>若：</p>
+<p>$$
+t&gt;t_{\mathrm{expire}},
+$$</p>
+<p>站點不得自行執行，必須：</p>
+<ul>
+<li>丟棄控制權；</li>
+<li>保留歷史；</li>
+<li>等待更新；</li>
+<li>執行安全義務。</li>
+</ul>
+<hr>
+<h1>17. 離線撤銷的限制</h1>
+<h2>17.1 即時撤銷不可能保證</h2>
+<p>當鏈路不存在時，中央無法保證撤銷立即送達。</p>
+<h2>17.2 因此租約必須自動到期</h2>
+<p>本地站點根據：</p>
+<ul>
+<li>本地時鐘；</li>
+<li>任務步驟；</li>
+<li>世界狀態；</li>
+<li>風險；</li>
+</ul>
+<p>自行終止權限。</p>
+<h2>17.3 離線任務必須保守</h2>
+<p>允許：</p>
+<ul>
+<li>觀測；</li>
+<li>安全返航；</li>
+<li>保存樣本；</li>
+<li>完成已開始的低風險步驟；</li>
+<li>等待。</li>
+</ul>
+<p>禁止：</p>
+<ul>
+<li>新高風險任務；</li>
+<li>自行續租；</li>
+<li>擴張區域；</li>
+<li>轉授權；</li>
+<li>公開或外傳資料。</li>
+</ul>
+<hr>
+<h1>18. 重連與狀態調和</h1>
+<h2>18.1 重連不是直接恢復中央控制</h2>
+<p>步驟：</p>
+<ol>
+<li>身份再認證；</li>
+<li>交換治理紀元；</li>
+<li>交換世界紀元；</li>
+<li>上傳離線事件；</li>
+<li>驗證 bundle 執行；</li>
+<li>解決物理與日誌差異；</li>
+<li>撤銷舊租約；</li>
+<li>重新簽發權限；</li>
+<li>進入正常模式。</li>
+</ol>
+<h2>18.2 衝突</h2>
+<p>可能出現：</p>
+<ul>
+<li>中央認為樣本在 A，地方已移到 B；</li>
+<li>任務在中央被取消，地方已完成；</li>
+<li>模型版本不同；</li>
+<li>兩方都建立新的任務。</li>
+</ul>
+<h2>18.3 不覆蓋歷史</h2>
+<p>衝突應保存為：</p>
+<pre><code class="language-yaml">reconciliation_conflict:
+  central_state: &quot;&quot;
+  station_state: &quot;&quot;
+  physical_observation: &quot;&quot;
+  resolution: &quot;&quot;
+  responsible_party: &quot;&quot;
+  evidence: []
+</code></pre>
+<hr>
+<h1>19. 安全與威脅模型</h1>
+<h2>19.1 鏈路降級攻擊</h2>
+<p>攻擊者使系統誤以為需要切換至較弱安全鏈路。</p>
+<p>控制：</p>
+<ul>
+<li>路徑策略；</li>
+<li>最低安全等級；</li>
+<li>降級不可放寬權限。</li>
+</ul>
+<h2>19.2 重放舊命令</h2>
+<p>控制：</p>
+<ul>
+<li>治理紀元；</li>
+<li>failover epoch；</li>
+<li>command ID；</li>
+<li>world epoch；</li>
+<li>lifespan；</li>
+<li>fencing。</li>
+</ul>
+<h2>19.3 重複執行</h2>
+<p>多路徑或重傳可能造成同一物理命令執行兩次。</p>
+<p>控制：</p>
+<ul>
+<li>idempotency；</li>
+<li>本地 command ledger；</li>
+<li>效果確認。</li>
+</ul>
+<h2>19.4 假鏈路或假基站</h2>
+<p>控制：</p>
+<ul>
+<li>雙向身份；</li>
+<li>憑證；</li>
+<li>trust domain；</li>
+<li>station policy。</li>
+</ul>
+<h2>19.5 光學側錄與干擾</h2>
+<p>方向性不等於絕對安全。</p>
+<p>仍需：</p>
+<ul>
+<li>加密；</li>
+<li>完整性；</li>
+<li>光學安全；</li>
+<li>遮擋偵測。</li>
+</ul>
+<h2>19.6 Bundle 遺失或延遲</h2>
+<p>控制：</p>
+<ul>
+<li>到期；</li>
+<li>多路複製；</li>
+<li>優先級；</li>
+<li>狀態回報；</li>
+<li>任務風險限制。</li>
+</ul>
+<h2>19.7 時間欺騙</h2>
+<p>控制：</p>
+<ul>
+<li>多時間源；</li>
+<li>誤差界；</li>
+<li>holdover；</li>
+<li>異常偵測；</li>
+<li>本地安全不只依賴網路時間。</li>
+</ul>
+<hr>
+<h1>20. HLF 架構</h1>
+<h2>20.1 Link Registry</h2>
+<p>保存：</p>
+<ul>
+<li>鏈路；</li>
+<li>技術；</li>
+<li>範圍；</li>
+<li>性能；</li>
+<li>信任；</li>
+<li>支援控制類別。</li>
+</ul>
+<h2>20.2 Link Adapter</h2>
+<p>封裝：</p>
+<ul>
+<li>TSN；</li>
+<li>DDS；</li>
+<li>ROS 2；</li>
+<li>OPC UA；</li>
+<li>5G；</li>
+<li>Wi-Fi；</li>
+<li>光學；</li>
+<li>BPv7。</li>
+</ul>
+<h2>20.3 Path Broker</h2>
+<p>根據 Path Contract 選擇路徑。</p>
+<h2>20.4 QoS／Safety Mapper</h2>
+<p>將 DomainIR、Task Envelope 和決策類別映射至鏈路要求。</p>
+<h2>20.5 Time Authority</h2>
+<p>管理：</p>
+<ul>
+<li>時鐘；</li>
+<li>誤差；</li>
+<li>holdover；</li>
+<li>同步狀態；</li>
+<li>時間事件。</li>
+</ul>
+<h2>20.6 Multi-Homing Manager</h2>
+<p>管理：</p>
+<ul>
+<li>主備；</li>
+<li>active-active；</li>
+<li>frame replication；</li>
+<li>路徑切換；</li>
+<li>failover epoch。</li>
+</ul>
+<h2>20.7 Bundle Agent</h2>
+<p>建立、儲存、轉送、驗證和提交離線任務包。</p>
+<h2>20.8 Link Health Monitor</h2>
+<p>監測：</p>
+<ul>
+<li>延遲；</li>
+<li>抖動；</li>
+<li>丟包；</li>
+<li>覆蓋；</li>
+<li>光學 lock；</li>
+<li>漫遊；</li>
+<li>信任；</li>
+<li>消息新鮮度。</li>
+</ul>
+<h2>20.9 Reconciliation Manager</h2>
+<p>管理斷線後的事件和世界狀態調和。</p>
+<h2>20.10 Evidence Journal</h2>
+<p>保存所有：</p>
+<ul>
+<li>路徑；</li>
+<li>切換；</li>
+<li>丟包；</li>
+<li>降級；</li>
+<li>bundle；</li>
+<li>重連；</li>
+<li>安全事件。</li>
+</ul>
+<hr>
+<h1>21. MVP：Hybrid Link Lab</h1>
+<h2>21.1 配置</h2>
+<ul>
+<li>一台中央治理節點；</li>
+<li>兩個固定 OSF 站；</li>
+<li>一台移動站；</li>
+<li>一個虛擬站；</li>
+<li>有線 Ethernet／TSN 模擬；</li>
+<li>Wi-Fi；</li>
+<li>可選私有 5G 或 5G 模擬；</li>
+<li>一條短距光學鏈路；</li>
+<li>BPv7 Bundle Agent；</li>
+<li>本地安全控制器。</li>
+</ul>
+<h2>21.2 任務</h2>
+<ol>
+<li>固定站進行量測；</li>
+<li>移動站搬運樣本；</li>
+<li>影像經高吞吐路徑回傳；</li>
+<li>操作命令使用一般操作鏈路；</li>
+<li>精密交接使用確定性或本地同步；</li>
+<li>故意斷開中央；</li>
+<li>移動站依離線任務包進入安全區；</li>
+<li>重連後提交證據並調和世界狀態。</li>
+</ol>
+<h2>21.3 故障注入</h2>
+<ul>
+<li>Wi-Fi 漫遊；</li>
+<li>有線斷路；</li>
+<li>光學遮擋；</li>
+<li>高延遲；</li>
+<li>消息過期；</li>
+<li>舊路徑恢復；</li>
+<li>兩路重複命令；</li>
+<li>時鐘漂移；</li>
+<li>bundle 延遲；</li>
+<li>假憑證；</li>
+<li>中央撤銷但站點離線。</li>
+</ul>
+<h2>21.4 成功條件</h2>
+<ul>
+<li>$K_0$ 不依賴上層網路；</li>
+<li>鏈路降級不放寬權限；</li>
+<li>過期消息不控制設備；</li>
+<li>多重連線不重複執行物理命令；</li>
+<li>光學遮擋能安全切換或停止；</li>
+<li>離線站點不自行續租；</li>
+<li>重連後不直接覆蓋中央狀態；</li>
+<li>所有切換和 bundle 有證據。</li>
+</ul>
+<hr>
+<h1>22. 評估指標</h1>
+<h2>22.1 性能</h2>
+<ul>
+<li>端到端延遲；</li>
+<li>抖動；</li>
+<li>吞吐；</li>
+<li>丟包；</li>
+<li>切換時間；</li>
+<li>時鐘誤差。</li>
+</ul>
+<h2>22.2 治理</h2>
+<ul>
+<li>過期命令執行數；</li>
+<li>舊紀元命令拒絕率；</li>
+<li>離線越權；</li>
+<li>重連衝突；</li>
+<li>重複物理作用。</li>
+</ul>
+<h2>22.3 可靠度</h2>
+<ul>
+<li>任務完成率；</li>
+<li>多路徑生存率；</li>
+<li>共享失效域；</li>
+<li>恢復時間。</li>
+</ul>
+<h2>22.4 安全</h2>
+<ul>
+<li>降級放權；</li>
+<li>假鏈路接入；</li>
+<li>bundle 重放；</li>
+<li>時間欺騙；</li>
+<li>光學鏈路失鎖處理。</li>
+</ul>
+<h2>22.5 能源</h2>
+<ul>
+<li>移動無線耗能；</li>
+<li>多鏈路常開成本；</li>
+<li>光學對準成本；</li>
+<li>bundle 儲存和轉送成本。</li>
+</ul>
+<hr>
+<h1>23. 可證偽命題</h1>
+<h2>H1：單一媒介不能同時最優承擔所有控制類別</h2>
+<p>若同一鏈路在安全、即時、移動、高吞吐和長延遲場景都無代價勝出，測試設計可能不充分。</p>
+<h2>H2：多重連線提高韌性，但增加重複、切換和安全成本</h2>
+<h2>H3：消息新鮮度比可靠送達更能預測控制正確性</h2>
+<p>可靠送達的過期命令仍可能有害。</p>
+<h2>H4：光學鏈路提高資料能力，但對遮擋和對準更敏感</h2>
+<h2>H5：事件與控制分級能降低不必要的高可靠鏈路成本</h2>
+<p>並非所有遙測都需要 TSN 或可靠重傳。</p>
+<h2>H6：離線任務包提高斷線連續性，但必須降低自治範圍</h2>
+<h2>H7：fencing 與 idempotency 可降低多路徑重複執行</h2>
+<h2>H8：時間平面失效會先於資料平面失效破壞精密協作</h2>
+<p>封包仍可達，但時間誤差超標時，強同步任務應停止。</p>
+<hr>
+<h1>24. 主要限制</h1>
+<h2>24.1 鏈路性能依部署高度變動</h2>
+<p>標準支援某項能力，不表示具體部署一定達標。</p>
+<h2>24.2 QoS 參數跨中介軟體不一定完全一致</h2>
+<h2>24.3 光學鏈路的安全、視距和移動對準需要專門工程</h2>
+<h2>24.4 多重連線增加配置和觀測複雜度</h2>
+<h2>24.5 DTN 無法解決即時撤銷</h2>
+<p>只能依保守租約和本地到期。</p>
+<h2>24.6 時間同步本身可能形成共同失效域</h2>
+<h2>24.7 端到端證明比單鏈路測試困難</h2>
+<h2>24.8 本文未建立特定安全認證等級</h2>
+<p>實際工業、醫療或危險環境必須依相應法規與安全標準設計。</p>
+<hr>
+<h1>25. 不能宣稱的內容</h1>
+<p>本篇不主張：</p>
+<ul>
+<li>無線可以取代所有有線安全鏈路；</li>
+<li>5G 或 Wi-Fi 標稱低延遲即表示端到端確定性；</li>
+<li>TSN 能修復應用程式和物理控制錯誤；</li>
+<li>光通訊永遠比 RF 安全；</li>
+<li>光學鏈路不會被遮擋或干擾；</li>
+<li>多路徑使系統不會失效；</li>
+<li>frame replication 會增加有效資訊容量；</li>
+<li>reliable QoS 表示命令仍然新鮮；</li>
+<li>DTN 可支援任意即時控制；</li>
+<li>離線站點能即時收到撤銷；</li>
+<li>同一命令可在不同路徑自由重送而不考慮副作用；</li>
+<li>站點訊號滿格即代表治理連線有效；</li>
+<li>所有媒介都應被統一成單一協定；</li>
+<li>HLF 已是成熟標準。</li>
+</ul>
+<hr>
+<h1>26. 與後續系列的關係</h1>
+<p>本篇建立通訊與時間平面後，下一篇將處理：</p>
+<blockquote>
+<p>多個站點、物件、區域、事件、權限、任務和不確定性，應如何形成一個可供超靈持續推理的世界模型？</p>
+</blockquote>
+<p>因此第 9 篇為：</p>
+<h1>《站點化世界模型：物體、區域、事件、權限與可能行動》</h1>
+<p>將建立：</p>
+<ul>
+<li>Object／Zone／Agent Model；</li>
+<li>Event Graph；</li>
+<li>Action Affordance；</li>
+<li>Uncertainty；</li>
+<li>World Epoch；</li>
+<li>Partial Observability；</li>
+<li>Digital Twin Boundary；</li>
+<li>Causal and Custody Relations；</li>
+<li>Human and AI Perspectives；</li>
+<li>World Model Reconciliation。</li>
+</ul>
+<hr>
+<h1>27. 結論</h1>
+<p>「連線」最不應被簡化成：</p>
+<ul>
+<li>是否插著線；</li>
+<li>是否有 Wi-Fi；</li>
+<li>是否能 ping；</li>
+<li>是否收到心跳。</li>
+</ul>
+<p>對時空域支配智能而言，真正的連線是：</p>
+<p>$$
+\boxed{
+\text{身份仍可信}
++
+\text{紀元仍有效}
++
+\text{權限未過期}
++
+\text{消息仍新鮮}
++
+\text{回報仍可重建}
++
+\text{失聯仍有安全邊界}
+}
+$$</p>
+<p>有線、無線、光學和離線任務包各有不同的：</p>
+<ul>
+<li>延遲；</li>
+<li>吞吐；</li>
+<li>移動性；</li>
+<li>視距；</li>
+<li>能耗；</li>
+<li>信任；</li>
+<li>故障；</li>
+<li>撤銷能力。</li>
+</ul>
+<p>因此，合理架構不是選擇唯一媒介，而是：</p>
+<p>$$
+\boxed{
+\text{任務語義}
+\rightarrow
+\text{控制關鍵度}
+\rightarrow
+\text{鏈路契約}
+\rightarrow
+\text{多路徑與降級策略}
+}
+$$</p>
+<p>本文最終命題是：</p>
+<blockquote>
+<p><strong>纜線只是連線的一種載體；真正的連線，是治理關係跨媒介、跨時間、跨斷線仍保持可驗證邊界。</strong></p>
+</blockquote>
+<p>所以：</p>
+<p>$$
+\boxed{
+\text{連線不是纜線}
+}
+$$</p>
+<p>而是：</p>
+<h1>$$
+\boxed{
+\text{連線}</h1>
+<p>\text{可被安全承載、可被降級、可被恢復的治理關係}
+}
+$$</p>
+<hr>
+<h1>參考文獻與官方技術資料</h1>
+<ol>
+<li><p>IEEE 802.1 Time-Sensitive Networking Task Group.<br><a href="https://1.ieee802.org/tsn/">https://1.ieee802.org/tsn/</a></p>
+</li>
+<li><p>IEEE 802.1AS. <strong>Timing and Synchronization for Time-Sensitive Applications.</strong><br><a href="https://1.ieee802.org/maintenance/802-1as-2025-revision-timing-and-synchronization-for-time-sensitive-applications/">https://1.ieee802.org/maintenance/802-1as-2025-revision-timing-and-synchronization-for-time-sensitive-applications/</a></p>
+</li>
+<li><p>IEEE 802.1CB. <strong>Frame Replication and Elimination for Reliability.</strong><br><a href="https://1.ieee802.org/tsn/802-1cb/">https://1.ieee802.org/tsn/802-1cb/</a></p>
+</li>
+<li><p>3GPP. <strong>5G for Industry 4.0／TSN Integration.</strong><br><a href="https://www.3gpp.org/technologies/tsn-v-lan">https://www.3gpp.org/technologies/tsn-v-lan</a></p>
+</li>
+<li><p>3GPP. <strong>Industrial 5G.</strong><br><a href="https://www.3gpp.org/technologies/ind-5g">https://www.3gpp.org/technologies/ind-5g</a></p>
+</li>
+<li><p>Object Management Group. <strong>Data Distribution Service, Version 1.4.</strong><br><a href="https://www.omg.org/spec/DDS/1.4/">https://www.omg.org/spec/DDS/1.4/</a></p>
+</li>
+<li><p>Open Robotics. <strong>ROS 2 Quality of Service Settings.</strong><br><a href="https://docs.ros.org/en/humble/Concepts/Intermediate/About-Quality-of-Service-Settings.html">https://docs.ros.org/en/humble/Concepts/Intermediate/About-Quality-of-Service-Settings.html</a></p>
+</li>
+<li><p>IEEE 802.11 Working Group. <strong>IEEE Std 802.11bb-2023 Light Communications.</strong><br><a href="https://www.ieee802.org/11/overview.html">https://www.ieee802.org/11/overview.html</a></p>
+</li>
+<li><p>IEEE 802.11 Working Group. <strong>P802.11br Enhanced Light Communications.</strong><br><a href="https://www.ieee802.org/11/Reports/tgbr_update.htm">https://www.ieee802.org/11/Reports/tgbr_update.htm</a></p>
+</li>
+<li><p>NASA. <strong>Laser Communications.</strong><br><a href="https://www.nasa.gov/communicating-with-missions/lasercomms/">https://www.nasa.gov/communicating-with-missions/lasercomms/</a></p>
+</li>
+<li><p>NASA. <strong>Optical Communications Overview.</strong><br><a href="https://www.nasa.gov/technology/space-comms/optical-communications-overview/">https://www.nasa.gov/technology/space-comms/optical-communications-overview/</a></p>
+</li>
+<li><p>IETF. <strong>RFC 9171: Bundle Protocol Version 7.</strong><br><a href="https://www.rfc-editor.org/rfc/rfc9171.html">https://www.rfc-editor.org/rfc/rfc9171.html</a></p>
+</li>
+<li><p>IETF. <strong>RFC 9172: Bundle Protocol Security.</strong><br><a href="https://www.rfc-editor.org/rfc/rfc9172.html">https://www.rfc-editor.org/rfc/rfc9172.html</a></p>
+</li>
+<li><p>IETF. <strong>RFC 9173: Default Security Contexts for Bundle Protocol Security.</strong><br><a href="https://www.rfc-editor.org/rfc/rfc9173.html">https://www.rfc-editor.org/rfc/rfc9173.html</a></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>Oversoul Station Fabric：固定站、移動站與虛擬站的分布式具身網路.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>持續性指揮控制區：AI 如何佔據、維持並安全解除一個物理時空域.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>中央主權、地方自治與動態不動點中央.</strong></p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A：Link Descriptor</h1>
+<pre><code class="language-yaml">link:
+  id: &quot;&quot;
+  medium: &quot;&quot;
+  technology: &quot;&quot;
+  endpoints: []
+
+  performance:
+    latency_budget: null
+    jitter_budget: null
+    loss_budget: null
+    bandwidth: null
+
+  semantics:
+    supported_control_classes: []
+    forbidden_control_classes: []
+    maximum_message_age: null
+    offline_fallback: null
+
+  time:
+    synchronization_supported: false
+    maximum_time_error: null
+    holdover: null
+
+  security:
+    mutual_authentication: false
+    integrity: false
+    confidentiality: false
+    replay_protection: false
+
+  mobility:
+    roaming: false
+    coverage_zones: []
+
+  evidence:
+    monitoring_required: true
+    logs: []
+</code></pre>
+<hr>
+<h1>附錄 B：Path Contract</h1>
+<pre><code class="language-yaml">path_contract:
+  flow_id: &quot;&quot;
+  control_class: &quot;K0 | K1 | K2 | K3 | K4&quot;
+
+  bounds:
+    maximum_latency: null
+    maximum_jitter: null
+    maximum_loss: null
+    maximum_message_age: null
+    minimum_bandwidth: null
+
+  time:
+    synchronization_required: false
+    maximum_clock_error: null
+
+  security:
+    trust_domain: &quot;&quot;
+    confidentiality: false
+    integrity: true
+
+  failover:
+    mode: &quot;none | active_standby | active_active | replicated&quot;
+    fallback_path: null
+    local_behavior_on_loss: &quot;safe_stop&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：Mission Bundle</h1>
+<pre><code class="language-yaml">mission_bundle:
+  id: &quot;&quot;
+  source: &quot;&quot;
+  destination: &quot;&quot;
+
+  governance:
+    domain_id: &quot;&quot;
+    governance_epoch: 0
+    world_epoch: &quot;&quot;
+    lease_id: &quot;&quot;
+
+  task:
+    graph: &quot;&quot;
+    allowed_actions: []
+    forbidden_actions: []
+
+  validity:
+    created_at: &quot;&quot;
+    valid_from: &quot;&quot;
+    expires_at: &quot;&quot;
+
+  safety:
+    local_safe_set: []
+    stop_conditions: []
+    human_approval_required: false
+
+  reporting:
+    required_events: []
+    evidence_required: []
+    compensation_on_failure: []
+
+  security:
+    integrity: true
+    confidentiality: true
+    anti_replay: true
+    signature: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 D：Link Degradation Policy</h1>
+<pre><code class="language-yaml">link_degradation_policy:
+  healthy:
+    allowed_classes: [&quot;K1&quot;, &quot;K2&quot;, &quot;K3&quot;, &quot;K4&quot;]
+
+  constrained:
+    actions:
+      - reduce_bandwidth
+      - compress_data
+      - extend_noncritical_reporting
+
+  high_latency:
+    actions:
+      - disable_remote_closed_loop
+      - increase_local_autonomy
+      - batch_noncritical_data
+
+  intermittent:
+    actions:
+      - activate_bundle_mode
+      - shorten_offline_lease
+      - preserve_local_evidence
+
+  partitioned:
+    actions:
+      - freeze_C2
+      - prohibit_C3
+      - allow_C0
+      - allow_limited_C1
+</code></pre>
+<hr>
+<h1>附錄 E：Failover Record</h1>
+<pre><code class="language-yaml">failover:
+  id: &quot;&quot;
+  flow_id: &quot;&quot;
+  failover_epoch: 0
+  old_path: &quot;&quot;
+  new_path: &quot;&quot;
+  reason: &quot;&quot;
+  old_path_last_sequence: 0
+  new_path_first_sequence: 0
+  duplicate_elimination: true
+  physical_command_idempotency_checked: false
+  committed_at: &quot;&quot;
+  evidence: []
+</code></pre>
+<hr>
+<h1>附錄 F：系列血緣</h1>
+<pre><code class="language-text">OSF
+  站點與能力端
+        ↓
+
+PCD
+  跨時間治理連續
+        ↓
+
+DFC
+  中央、地方、紀元與權限
+        ↓
+
+本篇 HLF
+  治理關係如何穿越有線、無線、光學、斷線與離線任務包
+        ↓
+
+第 9 篇
+  站點、物件、區域、事件與可能行動如何形成共同世界模型
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/stdi-08.html">https://thisoneisneok.com/html/papers/stdi-08.html</a></footer>
+</body>
+</html>

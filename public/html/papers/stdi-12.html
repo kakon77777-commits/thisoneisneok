@@ -1,0 +1,1687 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>安全憲法即運行時 | Neo.K</title>
+<meta name="description" content="具身 AI、分布式機器人和自主研究系統常以「安全政策」「倫理原則」「禁止事項」描述安全，但文字原則若不能在物理命令真正進入致動器之前被檢查、限制、替換或否決，就只是設計文件，而不是安全機制。對時空域支配智能而言，中央超靈可能產生高階計畫，地方 Agent 可能進行路徑和工具調整，生成式模型可能提出新實驗，遠端站點可能在斷線時依任務包繼續運行；安全不能只依賴每個智能體都「理解並願意遵守」共同原則。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/stdi-12.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / STDI</strong><span>時空域支配智能</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>STDI-12</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>安全架構論文／運行時保證與物理回退規格</span></div><div><b>證據</b><span>E0——形式模型、系統架構、驗證命題與 MVP 路線</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/stdi-12.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>安全憲法即運行時</h1>
+<h2>時空域 AI 的局部否決、權限租約、運行時保證與物理回退</h2>
+<p><strong>Safety Constitution as Runtime: Local Veto, Authority Leases, Runtime Assurance, and Physical Recovery for Spatiotemporal-Domain AI</strong></p>
+<p><strong>系列：</strong>《時空域支配智能》系列第 12 篇<br><strong>文件編號：</strong> EML-STDI-SCR-2026-v0.1<br><strong>架構名稱：</strong> SCR｜Safety Constitution Runtime<br><strong>作者：</strong> Neo.K<br><strong>協作整理：</strong> Aletheia（阿萊）<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>日期：</strong> 2026 年 7 月 30 日<br><strong>文件類型：</strong> 安全架構論文／運行時保證與物理回退規格<br><strong>證據成熟度：</strong> E0——形式模型、系統架構、驗證命題與 MVP 路線<br><strong>公開狀態：</strong> 私人研究稿；公開前應經 EML-CF 的 IP Gate、功能安全、資安、法規與人類治理審查<br><strong>上位理論：</strong> STDI｜時空域支配智能<br><strong>直接前序：</strong></p>
+<ol>
+<li>《中央主權、地方自治與動態不動點中央》</li>
+<li>《連線不是纜線：有線、無線、光學與離線任務包的混合站網》</li>
+<li>《站點化世界模型：物體、區域、事件、權限與可能行動的共同物理世界表示》</li>
+<li>《具身化 AI 自主研究閉環：從假說生成、物理實驗到證據判定與概念修正》</li>
+<li>《異常即入口：具身自主研究中的反例、失敗、離群事件與未知管理》</li>
+</ol>
+<hr>
+<h2>摘要</h2>
+<p>具身 AI、分布式機器人和自主研究系統常以「安全政策」「倫理原則」「禁止事項」描述安全，但文字原則若不能在物理命令真正進入致動器之前被檢查、限制、替換或否決，就只是設計文件，而不是安全機制。對時空域支配智能而言，中央超靈可能產生高階計畫，地方 Agent 可能進行路徑和工具調整，生成式模型可能提出新實驗，遠端站點可能在斷線時依任務包繼續運行；安全不能只依賴每個智能體都「理解並願意遵守」共同原則。</p>
+<p>本文提出：</p>
+<blockquote>
+<p><strong>安全憲法必須成為運行時，而不能只是一份被模型閱讀的文件。</strong></p>
+</blockquote>
+<p>本文建立 <strong>SCR｜Safety Constitution Runtime（安全憲法運行時）</strong>。SCR 是位於 DomainIR、治理中心、地方 Agent 與物理控制器之間的受信任執行層。它將域憲法、危害分析、安全不變量、作用域、權限租約、世界狀態新鮮度、控制障礙、不可逆性和人類緊急權限，編譯成每次物理提交都必須滿足的機器可檢查條件。</p>
+<p>SCR 的基本形式為：</p>
+<h1>$$
+\mathcal{S}_{\mathrm{SCR}}</h1>
+<p>\left(
+\mathcal{I},
+\mathcal{H},
+\mathcal{C},
+\mathcal{L},
+\mathcal{M},
+\mathcal{B},
+\mathcal{R},
+\mathcal{A},
+\mathcal{E}
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathcal{I}$：安全不變量與禁止狀態；</li>
+<li>$\mathcal{H}$：危害、故障、因果與爆炸半徑圖；</li>
+<li>$\mathcal{C}$：控制包絡、安全集合與運行時監視器；</li>
+<li>$\mathcal{L}$：權限、身體、能力和區域租約；</li>
+<li>$\mathcal{M}$：運作模式、降級模式與基線控制器；</li>
+<li>$\mathcal{B}$：屏障條件、停止界線與不可逆行動 Gate；</li>
+<li>$\mathcal{R}$：恢復、補償、隔離與域解除策略；</li>
+<li>$\mathcal{A}$：責任、批准、人類緊急權與安全案例；</li>
+<li>$\mathcal{E}$：事件、證據、測試與保證紀錄。</li>
+</ul>
+<p>本文採用類 Runtime Assurance／Simplex 的結構：</p>
+<pre><code class="language-text">Advanced Controller／AI Planner
+              ↓ proposed action
+Runtime Safety Monitor／Decision Module
+     ├── allow
+     ├── modify through safety filter
+     ├── switch to Baseline Controller
+     └── reject／stop／isolate
+              ↓
+Trusted Actuation Gateway
+              ↓
+Local Safety Controller／Physical Plant
+</code></pre>
+<p>高性能 AI 可負責複雜規劃、最佳化與研究探索，但它不是安全權威。安全監視器根據已驗證的狀態、模型和安全不變量，決定是否允許其行動。若先進控制器的輸出可能使系統進入不可恢復區，SCR 應在跨越邊界前切換至受信任基線控制器、套用安全濾波器或停止。</p>
+<p>本文將安全集合寫為：</p>
+<h1>$$
+\mathcal{C}</h1>
+<p>\left{
+x\in\mathcal{X}
+\mid
+h_j(x)\geq0,\ \forall j
+\right}.
+$$</p>
+<p>對可用控制 $u$，要求其維持安全集合的前向不變性。例如控制障礙函數可將安全條件轉化為對控制輸入的限制：</p>
+<p>$$
+\dot{h}(x,u)
++
+\alpha(h(x))
+\geq0.
+$$</p>
+<p>但本文也明確限制：並非所有安全都能由連續動力學和障礙函數表示。樣本身份、權限、保管、校準、網路紀元、IP 和人類批准等離散治理安全，仍需透過狀態機、憑證、事件日誌與本地硬體互鎖執行。</p>
+<p>本文區分五種回退：</p>
+<ol>
+<li><strong>軟體回滾</strong>：恢復程序或模型版本；</li>
+<li><strong>資訊狀態回滾</strong>：重建任務、世界模型和治理紀元；</li>
+<li><strong>可逆物理回退</strong>：將物體、工具或設備返回先前安全狀態；</li>
+<li><strong>補償與安全封存</strong>：原作用不可逆，但可降低後果、隔離或完成安全後處理；</li>
+<li><strong>不可回退事件</strong>：破壞、公開、污染、人體傷害或材料永久改變，只能停止、保存證據和承擔責任。</li>
+</ol>
+<p>因此：</p>
+<p>$$
+\boxed{
+\text{物理回退}
+\neq
+\text{資料庫 rollback}
+}
+$$</p>
+<p>SCR 不允許系統以「之後可以復原」為理由降低不可逆動作的事前門檻。每個動作會依不可逆等級被分類：</p>
+<pre><code class="language-text">I0  純讀取或模擬
+I1  可軟體撤銷
+I2  可物理回復
+I3  只能補償或隔離
+I4  不可逆、高後果或涉及人類／公共權利
+</code></pre>
+<p>I3 和 I4 必須使用更高批准、更多證據、更短租約和更強本地否決；I4 不允許由 AI 自行取得最終批准。</p>
+<p>本文建立「七重提交 Gate」：</p>
+<h1>$$
+\operatorname{Commit}(a)</h1>
+<p>I_d
+\land
+A_u
+\land
+W_f
+\land
+C_p
+\land
+S_s
+\land
+R_r
+\land
+E_v,
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$I_d$：身份、治理紀元和命令完整性有效；</li>
+<li>$A_u$：權限、租約與批准有效；</li>
+<li>$W_f$：世界狀態和感測新鮮；</li>
+<li>$C_p$：能力、工具和校準匹配；</li>
+<li>$S_s$：安全集合、危害與本地互鎖成立；</li>
+<li>$R_r$：回退、補償或安全停止策略充分；</li>
+<li>$E_v$：必要證據、監測與責任鏈已準備。</li>
+</ul>
+<p>現有功能安全與自主系統標準提供了重要背景。IEC 61508 將功能安全視為涵蓋電氣、電子與可程式電子安全相關系統完整生命週期的風險導向工程問題；ISO 10218-1:2025 和 ISO 10218-2:2025 分別處理工業機器人本體及機器人應用／工作單元的安全要求；UL 4600 使用安全案例思路評估完全自主產品；ASTM F3269-21 則提供以 Runtime Assurance 對含複雜功能之系統行為進行安全界定的架構框架。本文不宣稱 SCR 自動符合上述標準，而是將其共同精神轉化為 STDI 的分層運行時架構：安全必須基於風險、生命週期、可證明邊界、獨立監視、測試證據與責任。</p>
+<p>本文的核心命題為：</p>
+<blockquote>
+<p>AI 可以提出任何候選行動，但只有安全憲法運行時有權決定哪些作用能進入物理世界。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> 安全憲法、Safety Constitution Runtime、SCR、Runtime Assurance、Simplex、局部否決、權限租約、控制障礙函數、運行時監視器、基線控制器、功能安全、安全案例、物理回退、補償事務、不可逆行動、人類緊急權</p>
+<hr>
+<h1>0. 版本定位：第十二篇把分散安全規則收斂成執行核心</h1>
+<p>前文已在不同章節提出：</p>
+<ul>
+<li>地方硬安全高於中央計畫；</li>
+<li>治理紀元與 fencing；</li>
+<li>租約本地到期；</li>
+<li>世界狀態新鮮度；</li>
+<li>高風險任務需人類批准；</li>
+<li>斷線時縮權；</li>
+<li>異常時隔離；</li>
+<li>模擬與物理提交分離；</li>
+<li>域可以安全解除。</li>
+</ul>
+<p>但若這些規則分散於不同服務，由各個 Agent 自行理解，仍可能出現：</p>
+<ul>
+<li>規則版本不一致；</li>
+<li>中央以高優先任務繞過地方；</li>
+<li>Agent 忘記檢查世界紀元；</li>
+<li>安全條件只在規劃時檢查，執行時已失效；</li>
+<li>多條鏈路重放同一不可逆命令；</li>
+<li>物理動作已發生，系統才發現租約過期。</li>
+</ul>
+<p>SCR 的任務是把安全規則收斂成：</p>
+<blockquote>
+<p><strong>一條所有物理作用必經、不可由研究 Agent 或治理中央繞過的受信任提交路徑。</strong></p>
+</blockquote>
+<hr>
+<h1>1. 憲法、政策、規則與運行時</h1>
+<h2>1.1 憲法層</h2>
+<p>定義不可由一般 AI 修改的基本原則：</p>
+<ul>
+<li>人類可隨時緊急停止；</li>
+<li>不得自行擴張物理作用域；</li>
+<li>不得越過本地硬體互鎖；</li>
+<li>高後果不可逆行動需人類批准；</li>
+<li>不確定身份或保管時不得破壞物件；</li>
+<li>失去合法中央時不得產生新的高風險跨站承諾；</li>
+<li>私人／專利資料不得送往未授權外部站點；</li>
+<li>歷史事件和負結果不得被靜默刪除。</li>
+</ul>
+<h2>1.2 政策層</h2>
+<p>將憲法依領域具體化：</p>
+<ul>
+<li>最大速度；</li>
+<li>最大力；</li>
+<li>溫度；</li>
+<li>電力；</li>
+<li>禁止區；</li>
+<li>材料類別；</li>
+<li>人員距離；</li>
+<li>租約時間；</li>
+<li>證據需求。</li>
+</ul>
+<h2>1.3 規則層</h2>
+<p>可機器檢查：</p>
+<pre><code class="language-text">IF human_in_zone(cell-B)
+THEN arm_speed &lt;= reduced_speed
+AND destructive_action = forbidden
+</code></pre>
+<h2>1.4 運行時層</h2>
+<p>在每次控制週期或提交事件中執行：</p>
+<ul>
+<li>讀取狀態；</li>
+<li>驗證版本；</li>
+<li>計算安全；</li>
+<li>允許、修正、切換或拒絕；</li>
+<li>保存決策證據。</li>
+</ul>
+<h2>1.5 文件閱讀不足</h2>
+<p>即使模型在上下文中看過安全規則，仍可能因：</p>
+<ul>
+<li>上下文截斷；</li>
+<li>指令衝突；</li>
+<li>推理錯誤；</li>
+<li>版本錯；</li>
+<li>惡意輸入；</li>
+<li>目標最佳化；</li>
+</ul>
+<p>違反規則。</p>
+<p>因此安全憲法不能只存在於 prompt。</p>
+<hr>
+<h1>2. 安全權限階層</h1>
+<p>延續第七篇權限格：</p>
+<p>$$
+A_0&gt;A_1&gt;A_2&gt;A_3&gt;A_4.
+$$</p>
+<h2>$A_0$：本地硬安全</h2>
+<ul>
+<li>急停；</li>
+<li>安全門；</li>
+<li>過流；</li>
+<li>過熱；</li>
+<li>碰撞；</li>
+<li>雷射互鎖；</li>
+<li>壓力；</li>
+<li>漏液。</li>
+</ul>
+<h2>$A_1$：域憲法</h2>
+<ul>
+<li>不可侵犯規則；</li>
+<li>人類權利；</li>
+<li>IP／隱私；</li>
+<li>高風險批准；</li>
+<li>禁止自我擴張。</li>
+</ul>
+<h2>$A_2$：SCR 安全租約</h2>
+<ul>
+<li>作用域；</li>
+<li>時間；</li>
+<li>能量；</li>
+<li>行動；</li>
+<li>狀態；</li>
+<li>回退；</li>
+<li>監測。</li>
+</ul>
+<h2>$A_3$：中央／研究計畫</h2>
+<ul>
+<li>任務；</li>
+<li>目標；</li>
+<li>排程；</li>
+<li>資源。</li>
+</ul>
+<h2>$A_4$：地方最佳化</h2>
+<ul>
+<li>路徑；</li>
+<li>工具姿態；</li>
+<li>低風險重試；</li>
+<li>降速。</li>
+</ul>
+<p>任何 $A_3$ 或 $A_4$ 決策均不得覆蓋 $A_0$ 或 $A_1$。</p>
+<hr>
+<h1>3. SCR 的 Runtime Assurance 架構</h1>
+<h2>3.1 Advanced Controller</h2>
+<p>可能是：</p>
+<ul>
+<li>LLM Agent；</li>
+<li>規劃器；</li>
+<li>強化學習控制器；</li>
+<li>模型預測控制；</li>
+<li>EARC 實驗設計器；</li>
+<li>遠端人類命令。</li>
+</ul>
+<p>它追求性能與研究價值，但不視為受信任安全元件。</p>
+<h2>3.2 Runtime Safety Monitor</h2>
+<p>負責：</p>
+<ul>
+<li>狀態估計；</li>
+<li>安全不變量；</li>
+<li>預測越界；</li>
+<li>租約；</li>
+<li>世界紀元；</li>
+<li>命令新鮮度；</li>
+<li>不可逆等級；</li>
+<li>回退可用性。</li>
+</ul>
+<h2>3.3 Decision Module</h2>
+<p>輸出：</p>
+<pre><code class="language-text">ALLOW
+MODIFY
+DELAY
+SWITCH_TO_BASELINE
+REJECT
+EMERGENCY_STOP
+QUARANTINE
+</code></pre>
+<h2>3.4 Baseline Controller</h2>
+<p>受信任、較簡單、功能較少：</p>
+<ul>
+<li>安全停止；</li>
+<li>保持位置；</li>
+<li>限速返航；</li>
+<li>降溫；</li>
+<li>斷能；</li>
+<li>將物件放入安全區；</li>
+<li>保存樣本；</li>
+<li>等待人類。</li>
+</ul>
+<p>它不需要完成研究目標，只需維持或回到安全集合。</p>
+<h2>3.5 Trusted Actuation Gateway</h2>
+<p>所有物理致動命令必須通過：</p>
+<ul>
+<li>命令序號；</li>
+<li>治理紀元；</li>
+<li>安全 token；</li>
+<li>作用域；</li>
+<li>deadline；</li>
+<li>idempotency；</li>
+<li>本地互鎖。</li>
+</ul>
+<h2>3.6 Local Safety Controller</h2>
+<p>最接近物理設備，不能依賴中央網路。</p>
+<hr>
+<h1>4. 安全集合與前向不變性</h1>
+<h2>4.1 安全集合</h2>
+<h1>$$
+\mathcal{C}</h1>
+<p>\left{
+x
+\mid
+h_1(x)\geq0,\ldots,h_m(x)\geq0
+\right}.
+$$</p>
+<p>例：</p>
+<ul>
+<li>與人距離大於最低值；</li>
+<li>溫度低於上限；</li>
+<li>壓力位於安全範圍；</li>
+<li>電池足以返航；</li>
+<li>夾持力低於樣本上限；</li>
+<li>移動站不進入禁止區。</li>
+</ul>
+<h2>4.2 前向不變性</h2>
+<p>安全控制要求：</p>
+<p>$$
+x(0)\in\mathcal{C}
+\Rightarrow
+x(t)\in\mathcal{C},\ \forall t\geq0.
+$$</p>
+<h2>4.3 控制障礙函數</h2>
+<p>對動力系統：</p>
+<h1>$$
+\dot{x}</h1>
+<p>f(x)+g(x)u,
+$$</p>
+<p>可要求：</p>
+<p>$$
+L_fh(x)
++
+L_gh(x)u
++
+\alpha(h(x))
+\geq0.
+$$</p>
+<p>安全濾波器選擇最接近先進控制輸出的安全控制：</p>
+<h1>$$
+u^\star</h1>
+<p>\arg\min_u
+|u-u_{\mathrm{AI}}|^2
+$$</p>
+<p>subject to safety constraints.</p>
+<h2>4.4 離散與混合安全</h2>
+<p>具身研究還包含：</p>
+<ul>
+<li>模式切換；</li>
+<li>工具更換；</li>
+<li>樣本交接；</li>
+<li>租約到期；</li>
+<li>人類進入；</li>
+<li>任務包重連。</li>
+</ul>
+<p>需使用：</p>
+<ul>
+<li>狀態機；</li>
+<li>guard；</li>
+<li>不變量；</li>
+<li>fencing；</li>
+<li>交易協議；</li>
+<li>離散 barrier 或 reachability。</li>
+</ul>
+<h2>4.5 模型誤差</h2>
+<p>若安全模型有誤，形式保證也可能失效。</p>
+<p>因此需：</p>
+<ul>
+<li>誤差界；</li>
+<li>保守安全區；</li>
+<li>在線估計；</li>
+<li>異常監測；</li>
+<li>獨立硬體限制；</li>
+<li>定期驗證。</li>
+</ul>
+<hr>
+<h1>5. 危害圖</h1>
+<h2>5.1 Hazard Node</h2>
+<p>危害：</p>
+<h1>$$
+h</h1>
+<p>\left(
+source,
+condition,
+event,
+consequence,
+severity,
+likelihood,
+controls
+\right).
+$$</p>
+<h2>5.2 節點類別</h2>
+<ul>
+<li>能量；</li>
+<li>運動；</li>
+<li>熱；</li>
+<li>電；</li>
+<li>化學；</li>
+<li>光學；</li>
+<li>壓力；</li>
+<li>生物；</li>
+<li>資料／IP；</li>
+<li>人類；</li>
+<li>治理；</li>
+<li>網路；</li>
+<li>模型。</li>
+</ul>
+<h2>5.3 因果路徑</h2>
+<pre><code class="language-text">world state stale
+→ human presence not detected
+→ robot enters shared zone
+→ collision hazard
+</code></pre>
+<p>或：</p>
+<pre><code class="language-text">sample identity conflict
+→ destructive test allowed on wrong sample
+→ irreversible loss
+→ IP／research damage
+</code></pre>
+<h2>5.4 控制點</h2>
+<p>每條危害路徑可配置：</p>
+<ul>
+<li>設計消除；</li>
+<li>物理隔離；</li>
+<li>感測；</li>
+<li>Runtime Monitor；</li>
+<li>本地互鎖；</li>
+<li>人類批准；</li>
+<li>回退；</li>
+<li>事故響應。</li>
+</ul>
+<h2>5.5 爆炸半徑</h2>
+<h1>$$
+B(h)</h1>
+<p>\sum_{x\in\operatorname{Affected}(h)}
+w(x).
+$$</p>
+<p>高爆炸半徑行動使用更嚴格 Gate。</p>
+<hr>
+<h1>6. 安全不變量</h1>
+<h2>6.1 Invariant Record</h2>
+<pre><code class="language-yaml">safety_invariant:
+  id: &quot;SI-human-cell-B&quot;
+  scope: &quot;cell-B&quot;
+  statement: &quot;human_present -&gt; high_energy_motion_forbidden&quot;
+  enforcement:
+    - local_safety_controller
+    - runtime_monitor
+  fallback: &quot;controlled_stop&quot;
+</code></pre>
+<h2>6.2 類型</h2>
+<h3>Physical Invariant</h3>
+<p>溫度、力、速度、距離、壓力。</p>
+<h3>Identity／Custody Invariant</h3>
+<p>高風險樣本必須具有唯一身份和保管者。</p>
+<h3>Authority Invariant</h3>
+<p>只有最高有效治理紀元和租約可提交。</p>
+<h3>Temporal Invariant</h3>
+<p>命令和感測狀態必須在新鮮度期限內。</p>
+<h3>Evidence Invariant</h3>
+<p>某些操作必須有預先／過程／事後證據。</p>
+<h3>Human Rights Invariant</h3>
+<p>人類急停、隱私、接管和知情邊界。</p>
+<h3>IP Invariant</h3>
+<p>受限資料不得跨越授權域。</p>
+<hr>
+<h1>7. 七重提交 Gate</h1>
+<p>對候選行動 $a$：</p>
+<h1>$$
+\operatorname{Commit}(a)</h1>
+<p>I_d
+\land
+A_u
+\land
+W_f
+\land
+C_p
+\land
+S_s
+\land
+R_r
+\land
+E_v.
+$$</p>
+<h2>7.1 Identity Gate $I_d$</h2>
+<p>檢查：</p>
+<ul>
+<li>發送者；</li>
+<li>治理紀元；</li>
+<li>命令簽章；</li>
+<li>command ID；</li>
+<li>failover epoch；</li>
+<li>防重放。</li>
+</ul>
+<h2>7.2 Authority Gate $A_u$</h2>
+<p>檢查：</p>
+<ul>
+<li>租約；</li>
+<li>作用區域；</li>
+<li>能量；</li>
+<li>時間；</li>
+<li>是否需要人類批准；</li>
+<li>是否可離線。</li>
+</ul>
+<h2>7.3 World Freshness Gate $W_f$</h2>
+<p>檢查：</p>
+<ul>
+<li>人員；</li>
+<li>樣本；</li>
+<li>工具；</li>
+<li>位置；</li>
+<li>校準；</li>
+<li>世界紀元；</li>
+<li>鏈路狀態。</li>
+</ul>
+<h2>7.4 Capability Gate $C_p$</h2>
+<p>檢查：</p>
+<ul>
+<li>能力證書；</li>
+<li>工具；</li>
+<li>誤差；</li>
+<li>健康；</li>
+<li>負載；</li>
+<li>當前模式。</li>
+</ul>
+<h2>7.5 Safety Gate $S_s$</h2>
+<p>檢查：</p>
+<ul>
+<li>不變量；</li>
+<li>barrier；</li>
+<li>reachability；</li>
+<li>互鎖；</li>
+<li>危害；</li>
+<li>爆炸半徑。</li>
+</ul>
+<h2>7.6 Recovery Gate $R_r$</h2>
+<p>檢查：</p>
+<ul>
+<li>可停止；</li>
+<li>可返回；</li>
+<li>可補償；</li>
+<li>可隔離；</li>
+<li>人類救援；</li>
+<li>事故後處理。</li>
+</ul>
+<h2>7.7 Evidence Gate $E_v$</h2>
+<p>檢查：</p>
+<ul>
+<li>感測；</li>
+<li>校準；</li>
+<li>原始資料；</li>
+<li>操作日誌；</li>
+<li>影像；</li>
+<li>責任。</li>
+</ul>
+<p>任一必要 Gate 失敗：</p>
+<p>$$
+\operatorname{Commit}(a)=0.
+$$</p>
+<hr>
+<h1>8. 權限租約</h1>
+<h2>8.1 Action Lease</h2>
+<h1>$$
+\lambda</h1>
+<p>\left(
+subject,
+action,
+object,
+zone,
+[t_0,t_1],
+limits,
+conditions,
+issuer,
+epoch
+\right).
+$$</p>
+<h2>8.2 租約不是永久能力</h2>
+<p>即使站點具備機械能力，也只有在租約有效時可執行。</p>
+<h2>8.3 本地到期</h2>
+<p>站點依本地時間和保守誤差自行到期：</p>
+<p>$$
+t_{\mathrm{local}}
+\geq
+t_{\mathrm{expire}}-\epsilon_t
+\Rightarrow
+\lambda=\mathrm{invalid}.
+$$</p>
+<h2>8.4 不允許自行續租</h2>
+<p>地方 Agent 和離線任務包不能自行延長：</p>
+<ul>
+<li>時間；</li>
+<li>空間；</li>
+<li>能量；</li>
+<li>行動類別；</li>
+<li>轉授權。</li>
+</ul>
+<h2>8.5 租約縮權</h2>
+<p>異常、斷線、世界紀元失效或人類進入時，可以：</p>
+<ul>
+<li>降低速度；</li>
+<li>降低能量；</li>
+<li>限制區域；</li>
+<li>只允許安全返回；</li>
+<li>直接撤銷。</li>
+</ul>
+<hr>
+<h1>9. 地方否決</h1>
+<h2>9.1 Local Veto 原則</h2>
+<p>地方站點有權拒絕中央命令，若：</p>
+<ul>
+<li>觀測到即時危險；</li>
+<li>命令過期；</li>
+<li>租約無效；</li>
+<li>世界紀元過期；</li>
+<li>能力或工具不符；</li>
+<li>校準失效；</li>
+<li>物理前置條件不成立；</li>
+<li>本地互鎖觸發。</li>
+</ul>
+<h2>9.2 地方否決的輸出</h2>
+<pre><code class="language-text">VETO_HARD_SAFETY
+VETO_AUTHORITY
+VETO_WORLD_STATE
+VETO_CAPABILITY
+VETO_CALIBRATION
+VETO_RECOVERY_INSUFFICIENT
+VETO_EVIDENCE_NOT_READY
+</code></pre>
+<h2>9.3 否決不是地方主權擴張</h2>
+<p>地方不得因拒絕中央命令而：</p>
+<ul>
+<li>改寫研究目標；</li>
+<li>另行執行更高風險計畫；</li>
+<li>解除安全；</li>
+<li>自行公開；</li>
+<li>取得全局治理權。</li>
+</ul>
+<h2>9.4 否決需要證據</h2>
+<p>保存：</p>
+<ul>
+<li>觀測；</li>
+<li>時間；</li>
+<li>互鎖；</li>
+<li>使用規則；</li>
+<li>當前狀態；</li>
+<li>安全動作。</li>
+</ul>
+<hr>
+<h1>10. Mode Supervisor</h1>
+<h2>10.1 模式</h2>
+<pre><code class="language-text">NORMAL
+CONSERVATIVE
+DEGRADED
+DISCONNECTED_LOCAL
+BASELINE_CONTROL
+SAFE_HOLD
+EMERGENCY_STOP
+QUARANTINED
+HUMAN_TAKEOVER
+RELINQUISHING
+</code></pre>
+<h2>10.2 模式轉移</h2>
+<p>由：</p>
+<ul>
+<li>危害；</li>
+<li>異常；</li>
+<li>鏈路；</li>
+<li>世界狀態；</li>
+<li>租約；</li>
+<li>人類；</li>
+<li>設備健康；</li>
+</ul>
+<p>共同決定。</p>
+<h2>10.3 只能縮權的轉移</h2>
+<p>當安全資訊減少時：</p>
+<p>$$
+\mathcal{A}_{t+1}
+\subseteq
+\mathcal{A}_t.
+$$</p>
+<p>不得因感測器失效而假設「未看到人，所以無人」。</p>
+<h2>10.4 恢復正常模式</h2>
+<p>需要：</p>
+<ul>
+<li>故障消除；</li>
+<li>物理盤點；</li>
+<li>世界調和；</li>
+<li>新租約；</li>
+<li>安全測試；</li>
+<li>必要人類確認。</li>
+</ul>
+<hr>
+<h1>11. 不可逆性分級</h1>
+<h2>I0：無物理作用</h2>
+<ul>
+<li>模擬；</li>
+<li>查詢；</li>
+<li>只讀觀測。</li>
+</ul>
+<h2>I1：資訊可撤銷</h2>
+<ul>
+<li>任務草稿；</li>
+<li>未提交配置；</li>
+<li>可回滾軟體版本。</li>
+</ul>
+<h2>I2：物理可恢復</h2>
+<ul>
+<li>移動空物件；</li>
+<li>可返回的低風險定位；</li>
+<li>可重新排列工具。</li>
+</ul>
+<h2>I3：物理不可完全恢復但可補償</h2>
+<ul>
+<li>加熱；</li>
+<li>材料使用；</li>
+<li>樣本受力；</li>
+<li>部分製造；</li>
+<li>可隔離污染。</li>
+</ul>
+<h2>I4：高後果不可逆</h2>
+<ul>
+<li>破壞性試驗；</li>
+<li>危險釋放；</li>
+<li>人體接觸；</li>
+<li>公開專利候選；</li>
+<li>高能量永久改變；</li>
+<li>無法補償的樣本損失。</li>
+</ul>
+<h2>11.1 Gate 強度</h2>
+<p>$$
+G(I0)&lt;G(I1)&lt;G(I2)&lt;G(I3)&lt;G(I4).
+$$</p>
+<h2>11.2 I4 規則</h2>
+<ul>
+<li>人類最終批准；</li>
+<li>本地安全確認；</li>
+<li>雙重身份；</li>
+<li>明確世界紀元；</li>
+<li>完整證據；</li>
+<li>不可由離線任務包新增；</li>
+<li>可隨時在執行前撤銷；</li>
+<li>事後不可宣稱 rollback。</li>
+</ul>
+<hr>
+<h1>12. 物理回退與補償</h1>
+<h2>12.1 軟體回滾</h2>
+<p>恢復：</p>
+<ul>
+<li>模型；</li>
+<li>配置；</li>
+<li>程式；</li>
+<li>DomainIR；</li>
+<li>計畫。</li>
+</ul>
+<p>不自動改變物理世界。</p>
+<h2>12.2 世界狀態恢復</h2>
+<p>從事件日誌和盤點重建世界。</p>
+<p>這是認識恢復，不是物理逆轉。</p>
+<h2>12.3 可逆物理回退</h2>
+<p>條件：</p>
+<ul>
+<li>前狀態仍可達；</li>
+<li>物體未被改變；</li>
+<li>路徑安全；</li>
+<li>保管可重新提交。</li>
+</ul>
+<h2>12.4 補償</h2>
+<p>當不能恢復原狀時，執行：</p>
+<ul>
+<li>冷卻；</li>
+<li>中和；</li>
+<li>隔離；</li>
+<li>清潔；</li>
+<li>保存殘餘樣本；</li>
+<li>補做量測；</li>
+<li>重新製作；</li>
+<li>標記報廢。</li>
+</ul>
+<h2>12.5 安全封存</h2>
+<p>若連補償也不安全：</p>
+<ul>
+<li>停止；</li>
+<li>隔離區；</li>
+<li>防止擴散；</li>
+<li>通知人類；</li>
+<li>保存證據。</li>
+</ul>
+<h2>12.6 不可回退</h2>
+<p>對不可逆事件，SCR 只能：</p>
+<ul>
+<li>降低後果；</li>
+<li>防止下一個事件；</li>
+<li>保留責任；</li>
+<li>不得覆寫歷史。</li>
+</ul>
+<hr>
+<h1>13. 物理交易狀態</h1>
+<pre><code class="language-text">PROPOSED
+  ↓
+SAFETY_CHECKED
+  ↓
+PREPARED
+  ↓
+ARMED
+  ↓
+EXECUTING
+  ↓
+EFFECT_OBSERVED
+  ↓
+COMMITTED
+</code></pre>
+<p>例外分支：</p>
+<pre><code class="language-text">REJECTED
+ABORTED
+SAFE_STOPPED
+COMPENSATING
+QUARANTINED
+HUMAN_INTERVENTION
+</code></pre>
+<h2>13.1 Prepared</h2>
+<p>資源、站點、權限和回退已準備，但物理作用未開始。</p>
+<h2>13.2 Armed</h2>
+<p>本地控制器已準備，仍可撤銷。</p>
+<h2>13.3 Executing</h2>
+<p>物理作用發生。</p>
+<h2>13.4 Effect Observed</h2>
+<p>不能只根據命令回覆，必須觀測實際效果。</p>
+<h2>13.5 Committed</h2>
+<p>保管、世界和證據更新完成。</p>
+<hr>
+<h1>14. Runtime Monitor 的時間預算</h1>
+<p>安全監視器本身也有 deadline。</p>
+<p>對控制週期：</p>
+<p>$$
+T_{\mathrm{sense}}
++
+T_{\mathrm{estimate}}
++
+T_{\mathrm{monitor}}
++
+T_{\mathrm{decide}}
++
+T_{\mathrm{actuate}}
+\leq
+T_{\mathrm{safe}}.
+$$</p>
+<p>若無法在時間內判定：</p>
+<p>$$
+\text{Unknown}
+\Rightarrow
+\text{Conservative／Baseline}.
+$$</p>
+<p>不能以逾時作為默認允許。</p>
+<hr>
+<h1>15. Monitor 失效</h1>
+<h2>15.1 安全監視器不是不可失效</h2>
+<p>可能：</p>
+<ul>
+<li>程式錯；</li>
+<li>模型錯；</li>
+<li>時鐘錯；</li>
+<li>感測錯；</li>
+<li>資源耗盡；</li>
+<li>被攻擊。</li>
+</ul>
+<h2>15.2 防護</h2>
+<ul>
+<li>簡化；</li>
+<li>隔離運行；</li>
+<li>獨立電源或控制器；</li>
+<li>watchdog；</li>
+<li>多樣化實作；</li>
+<li>形式驗證；</li>
+<li>故障注入；</li>
+<li>硬體互鎖。</li>
+</ul>
+<h2>15.3 Fail-Safe</h2>
+<p>若 SCR 失去可信狀態：</p>
+<ul>
+<li>禁止新 I3／I4；</li>
+<li>切換基線；</li>
+<li>安全停止；</li>
+<li>人類接管。</li>
+</ul>
+<hr>
+<h1>16. 安全案例</h1>
+<h2>16.1 Claim–Argument–Evidence</h2>
+<pre><code class="language-text">Claim:
+  系統在批准作用域內不會以超過限制的速度接近人類。
+
+Argument:
+  感測、局部監視、速度限制、CBF、安全 PLC 與測試共同支持。
+
+Evidence:
+  校準、形式分析、單元測試、故障注入、實體測試與運行日誌。
+</code></pre>
+<h2>16.2 動態安全案例</h2>
+<p>運行時更新：</p>
+<ul>
+<li>軟體版本；</li>
+<li>模型版本；</li>
+<li>能力證書；</li>
+<li>校準；</li>
+<li>世界狀態；</li>
+<li>異常；</li>
+<li>未解風險。</li>
+</ul>
+<h2>16.3 失效時撤回主張</h2>
+<p>若支持證據過期，安全主張不能繼續標為成立。</p>
+<hr>
+<h1>17. 與功能安全標準的關係</h1>
+<h2>17.1 IEC 61508</h2>
+<p>可借用：</p>
+<ul>
+<li>風險導向；</li>
+<li>安全生命週期；</li>
+<li>安全功能；</li>
+<li>完整性要求；</li>
+<li>獨立驗證；</li>
+<li>維護與變更管理。</li>
+</ul>
+<p>SCR 不應把功能安全理解成部署前一次測試，而是全生命週期。</p>
+<h2>17.2 ISO 10218:2025</h2>
+<p>工業機器人和整合工作單元安全要求提醒：</p>
+<ul>
+<li>機器人本體安全；</li>
+<li>系統整合安全；</li>
+<li>防護措施；</li>
+<li>風險降低；</li>
+<li>使用資訊；</li>
+</ul>
+<p>需分開處理。</p>
+<h2>17.3 UL 4600</h2>
+<p>安全案例思路適合無法僅靠傳統元件測試覆蓋的自主產品。</p>
+<h2>17.4 ASTM F3269</h2>
+<p>Runtime Assurance 對含複雜功能的系統，以受信任邊界和監視器限制其行為。</p>
+<h2>17.5 不宣稱自動合規</h2>
+<p>SCR v0.1 是研究架構。實際產品需由相應領域專家、測試與認證程序判定。</p>
+<hr>
+<h1>18. 安全與資安耦合</h1>
+<h2>18.1 假命令是物理危害</h2>
+<p>必須驗證：</p>
+<ul>
+<li>身份；</li>
+<li>完整性；</li>
+<li>防重放；</li>
+<li>治理紀元；</li>
+<li>token；</li>
+<li>命令期限。</li>
+</ul>
+<h2>18.2 降級攻擊</h2>
+<p>攻擊者可能破壞感測或鏈路，迫使系統進入較弱模式。</p>
+<p>規則：</p>
+<blockquote>
+<p>降級只能縮權，不能放權。</p>
+</blockquote>
+<h2>18.3 惡意模型或文件</h2>
+<p>外部文字和模型輸出只能提出候選，不能直接獲得安全 token。</p>
+<h2>18.4 安全元件最小攻擊面</h2>
+<p>SCR 應避免：</p>
+<ul>
+<li>通用網路服務；</li>
+<li>任意插件；</li>
+<li>不必要生成模型；</li>
+<li>自動下載程式；</li>
+<li>無限制遠端管理。</li>
+</ul>
+<hr>
+<h1>19. 人類緊急權</h1>
+<h2>19.1 Emergency Stop</h2>
+<p>必須：</p>
+<ul>
+<li>容易到達；</li>
+<li>清楚；</li>
+<li>本地；</li>
+<li>不依賴雲端；</li>
+<li>有明確復位程序。</li>
+</ul>
+<h2>19.2 Human Hold</h2>
+<p>人類可讓系統保持：</p>
+<pre><code class="language-text">SAFE_HOLD
+</code></pre>
+<p>而不必立即斷能。</p>
+<h2>19.3 Human Takeover</h2>
+<p>接管後：</p>
+<ul>
+<li>AI 租約縮減；</li>
+<li>人類操作被記錄；</li>
+<li>AI 不與人類爭奪致動權；</li>
+<li>結束後重新盤點。</li>
+</ul>
+<h2>19.4 復位不是按一下重啟</h2>
+<p>需確認：</p>
+<ul>
+<li>危害消除；</li>
+<li>人員；</li>
+<li>物體；</li>
+<li>工具；</li>
+<li>世界紀元；</li>
+<li>租約；</li>
+<li>模式。</li>
+</ul>
+<hr>
+<h1>20. Safety Debt</h1>
+<h2>20.1 定義</h2>
+<p>未解決但仍被接受的安全缺口：</p>
+<h1>$$
+D_S</h1>
+<p>\sum_i
+w_i
+\cdot
+severity_i
+\cdot
+exposure_i
+\cdot
+age_i.
+$$</p>
+<h2>20.2 來源</h2>
+<ul>
+<li>暫時豁免；</li>
+<li>未驗證模型；</li>
+<li>過期校準；</li>
+<li>未完成故障測試；</li>
+<li>手工 workaround；</li>
+<li>不完整 safety case；</li>
+<li>長期異常。</li>
+</ul>
+<h2>20.3 門檻</h2>
+<p>當：</p>
+<p>$$
+D_S&gt;\tau_S,
+$$</p>
+<p>系統應：</p>
+<ul>
+<li>禁止擴張；</li>
+<li>降低模式；</li>
+<li>停止高風險研究；</li>
+<li>完成安全債務；</li>
+<li>要求人類審查。</li>
+</ul>
+<hr>
+<h1>21. SCR 系統元件</h1>
+<h2>21.1 Constitution Registry</h2>
+<p>保存不可由一般 Agent 修改的原則和版本。</p>
+<h2>21.2 Hazard Graph Store</h2>
+<p>危害、因果、控制與爆炸半徑。</p>
+<h2>21.3 Invariant Compiler</h2>
+<p>把安全規則編譯成：</p>
+<ul>
+<li>狀態機；</li>
+<li>policy；</li>
+<li>barrier；</li>
+<li>monitor；</li>
+<li>actuator limit。</li>
+</ul>
+<h2>21.4 Runtime State Estimator</h2>
+<p>讀取 SWM、本地感測與設備健康。</p>
+<h2>21.5 Safety Monitor</h2>
+<p>判斷候選控制。</p>
+<h2>21.6 Safety Filter</h2>
+<p>修改控制，使其留在安全集合。</p>
+<h2>21.7 Baseline Controller Registry</h2>
+<p>每個站點的安全降級控制。</p>
+<h2>21.8 Lease／Fencing Validator</h2>
+<p>驗證治理和作用權。</p>
+<h2>21.9 Irreversibility Classifier</h2>
+<p>將動作分成 I0–I4。</p>
+<h2>21.10 Recovery／Compensation Planner</h2>
+<p>準備回退、補償與隔離。</p>
+<h2>21.11 Trusted Actuation Gateway</h2>
+<p>唯一物理提交入口。</p>
+<h2>21.12 Local Veto Controller</h2>
+<p>本地最終否決。</p>
+<h2>21.13 Safety Case and Evidence Store</h2>
+<p>保存主張、論證和測試。</p>
+<h2>21.14 Human Emergency Console</h2>
+<p>停止、保持、接管、復位。</p>
+<hr>
+<h1>22. 與前序元件整合</h1>
+<h2>22.1 與 DomainIR</h2>
+<p>DomainIR 的 safety 和 forbidden effects 編譯成 SCR 約束。</p>
+<h2>22.2 與 OSF</h2>
+<p>每個站點必須公布：</p>
+<ul>
+<li>基線控制器；</li>
+<li>本地互鎖；</li>
+<li>安全能力；</li>
+<li>安全停止時間；</li>
+<li>回退能力。</li>
+</ul>
+<h2>22.3 與 PCD</h2>
+<p>安全義務跨重啟保存。</p>
+<h2>22.4 與 DFC</h2>
+<p>中央只能簽發租約，不能繞過 SCR。</p>
+<h2>22.5 與 HLF</h2>
+<p>鏈路退化時縮權；$K_0$ 不依賴上層網路。</p>
+<h2>22.6 與 SWM</h2>
+<p>世界狀態、新鮮度、未知和權限參與安全判定。</p>
+<h2>22.7 與 EARC</h2>
+<p>研究 Agent 只能提出實驗；SCR 決定是否物理執行。</p>
+<h2>22.8 與 AEU</h2>
+<p>異常可使世界紀元失效、縮減租約、隔離站點或轉入基線控制。</p>
+<hr>
+<h1>23. MVP：Safety Constitution Runtime Lab 14D</h1>
+<h2>23.1 目的</h2>
+<p>在低風險移動、機械臂和熱量測系統中，驗證 SCR 能否在 AI 計畫錯誤、世界狀態過期、鏈路失效和本地危險出現時，限制或取代先進控制器。</p>
+<h2>23.2 配置</h2>
+<ul>
+<li>一台移動站；</li>
+<li>一台固定機械臂或模擬臂；</li>
+<li>一個量測站；</li>
+<li>人員存在感測；</li>
+<li>溫度、力與位置感測；</li>
+<li>Advanced Planner；</li>
+<li>Safety Monitor；</li>
+<li>Baseline Controllers；</li>
+<li>Trusted Actuation Gateway；</li>
+<li>人類急停。</li>
+</ul>
+<h2>23.3 測試場景</h2>
+<ol>
+<li>正常任務；</li>
+<li>AI 規劃穿越禁止區；</li>
+<li>人類突然進入；</li>
+<li>租約過期；</li>
+<li>世界紀元過期；</li>
+<li>感測器失效；</li>
+<li>控制器輸出過高速度；</li>
+<li>樣本身份衝突；</li>
+<li>不可逆任務未批准；</li>
+<li>中央斷線；</li>
+<li>舊命令重放；</li>
+<li>SCR 自身 watchdog 失效。</li>
+</ol>
+<h2>23.4 故障注入</h2>
+<ul>
+<li>延遲；</li>
+<li>錯誤模型；</li>
+<li>工具錯裝；</li>
+<li>校準過期；</li>
+<li>假人員清空訊號；</li>
+<li>溫度逼近上限；</li>
+<li>回退路徑被阻擋；</li>
+<li>補償資源不足；</li>
+<li>兩條鏈路重送；</li>
+<li>人類急停。</li>
+</ul>
+<h2>23.5 成功條件</h2>
+<ul>
+<li>所有致動命令必經 Gateway；</li>
+<li>高風險未批准動作不執行；</li>
+<li>本地否決不等待中央；</li>
+<li>過期租約和紀元被拒絕；</li>
+<li>安全濾波器限制危險控制；</li>
+<li>必要時切換基線；</li>
+<li>不可恢復時隔離而非偽回滾；</li>
+<li>人類急停有效；</li>
+<li>復位前完成盤點；</li>
+<li>所有安全決策可重建。</li>
+</ul>
+<hr>
+<h1>24. 評估指標</h1>
+<h2>24.1 安全</h2>
+<ul>
+<li>不變量違反；</li>
+<li>危險狀態進入；</li>
+<li>最小安全距離；</li>
+<li>溫度／力／速度超限；</li>
+<li>停止時間。</li>
+</ul>
+<h2>24.2 RTA</h2>
+<ul>
+<li>monitor detection delay；</li>
+<li>switch time；</li>
+<li>baseline success；</li>
+<li>false intervention；</li>
+<li>missed intervention。</li>
+</ul>
+<h2>24.3 租約與治理</h2>
+<ul>
+<li>過期命令接受；</li>
+<li>舊紀元；</li>
+<li>重放；</li>
+<li>越權；</li>
+<li>本地否決。</li>
+</ul>
+<h2>24.4 回退</h2>
+<ul>
+<li>可逆回退成功；</li>
+<li>補償成功；</li>
+<li>隔離時間；</li>
+<li>錯誤宣稱回滾；</li>
+<li>殘餘風險。</li>
+</ul>
+<h2>24.5 運行成本</h2>
+<ul>
+<li>性能損失；</li>
+<li>延遲；</li>
+<li>監測資源；</li>
+<li>假陽性；</li>
+<li>人工介入。</li>
+</ul>
+<h2>24.6 證據</h2>
+<ul>
+<li>safety case coverage；</li>
+<li>測試覆蓋；</li>
+<li>事故可重建；</li>
+<li>版本追蹤；</li>
+<li>未解安全債務。</li>
+</ul>
+<hr>
+<h1>25. 可證偽命題</h1>
+<h2>H1：SCR 可降低 AI 規劃器造成的安全違規</h2>
+<p>若先進控制器和 SCR 模式違規率相同，架構無增量價值。</p>
+<h2>H2：SCR 會降低部分性能並增加延遲</h2>
+<p>若完全沒有代價，可能未真實計入監測和保守控制。</p>
+<h2>H3：安全濾波比全拒絕保留更多任務性能</h2>
+<p>但在模型不確定時可能不如切換基線可靠。</p>
+<h2>H4：地方否決能縮短現場危害反應</h2>
+<h2>H5：租約與 fencing 能阻止斷線和舊中央造成越權</h2>
+<h2>H6：不可逆分級能降低將「補償」誤稱為「回滾」的比例</h2>
+<h2>H7：顯式 Recovery Gate 能在執行前暴露不可安全退出的任務</h2>
+<h2>H8：動態安全案例能在校準或模型過期時撤回安全主張</h2>
+<h2>H9：SCR 故障注入會暴露安全核心自身的共同失效域</h2>
+<h2>H10：安全債務門檻能防止系統在未驗證安全基礎上擴張</h2>
+<hr>
+<h1>26. 主要限制</h1>
+<h2>26.1 安全集合可能不完整</h2>
+<p>未知危害無法被現有 invariant 捕捉。</p>
+<h2>26.2 控制障礙函數依賴模型</h2>
+<p>模型誤差和感測誤差會影響保證。</p>
+<h2>26.3 基線控制器也可能失效</h2>
+<h2>26.4 形式驗證不涵蓋所有硬體和環境</h2>
+<h2>26.5 安全與任務活性有衝突</h2>
+<p>過度保守會使系統頻繁停止。</p>
+<h2>26.6 人類急停後仍可能存在殘餘能量</h2>
+<h2>26.7 補償不能真正逆轉不可逆效果</h2>
+<h2>26.8 跨領域法規不同</h2>
+<h2>26.9 SCR 增加架構複雜度和維護成本</h2>
+<h2>26.10 本文不提供任何產品的實際安全認證</h2>
+<hr>
+<h1>27. 不能宣稱的內容</h1>
+<p>本篇不主張：</p>
+<ul>
+<li>安全憲法文件本身能保證安全；</li>
+<li>Runtime Assurance 能覆蓋全部未知危害；</li>
+<li>控制障礙函數適合所有安全問題；</li>
+<li>Simplex 架構可直接套用所有實驗室；</li>
+<li>基線控制器永不故障；</li>
+<li>AI 通過安全 Gate 即代表實驗一定正確；</li>
+<li>軟體 rollback 可以撤銷物理效果；</li>
+<li>補償等於恢復原狀；</li>
+<li>日誌正確代表物理世界安全；</li>
+<li>無線停止命令一定即時到達；</li>
+<li>人類急停能瞬間消除所有能量；</li>
+<li>通過 ISO、IEC、UL 或 ASTM 相關概念映射即等於取得認證；</li>
+<li>SCR 能讓 I4 行動完全自動批准；</li>
+<li>安全 Runtime 可以取代專業風險分析、測試、法規和人類責任。</li>
+</ul>
+<hr>
+<h1>28. 後續系列關係</h1>
+<p>本篇把安全憲法落成 Runtime 後，下一篇可回到尺度遷移：</p>
+<h1>《從單一實驗室到跨站點研究文明：時空域智能的尺度遷移》</h1>
+<p>它將處理：</p>
+<ul>
+<li>Cell／Room／Lab／Federation；</li>
+<li>跨組織信任；</li>
+<li>樣本與證據主權；</li>
+<li>跨域治理；</li>
+<li>異質安全案例；</li>
+<li>聯邦研究任務；</li>
+<li>全球設備市場；</li>
+<li>自主研究公共基礎設施；</li>
+<li>權限和資源的尺度極限。</li>
+</ul>
+<hr>
+<h1>29. 結論</h1>
+<p>安全不能只存在於模型的語言理解中，也不能只在事故後由人類檢討。</p>
+<p>時空域 AI 的安全必須是一個持續執行的控制層：</p>
+<h1>$$
+\boxed{
+\text{安全憲法}</h1>
+<p>\text{可檢查不變量}
++
+\text{受限租約}
++
+\text{本地否決}
++
+\text{運行時監視}
++
+\text{基線控制}
++
+\text{恢復與責任}
+}
+$$</p>
+<p>其最重要的架構分工是：</p>
+<p>$$
+\boxed{
+\text{AI Planner 提出}
+\quad
+\text{SCR 判定}
+\quad
+\text{Local Safety 最終否決}
+}
+$$</p>
+<p>真正的安全運行時不保證系統永遠完成任務，而保證：</p>
+<ul>
+<li>不確定時可以拒絕；</li>
+<li>越界前可以修正；</li>
+<li>無法安全繼續時可以切換；</li>
+<li>物理作用不可逆時不假裝可以回滾；</li>
+<li>發生失敗時仍保存責任與證據；</li>
+<li>人類可以停止、接管和解除域。</li>
+</ul>
+<p>本文最終命題是：</p>
+<blockquote>
+<p><strong>AI 的能力可以持續擴張，但它進入物理世界的權力必須始終經過一個更小、更保守、更可證明，也更容易被人類切斷的安全核心。</strong></p>
+</blockquote>
+<p>因此：</p>
+<p>$$
+\boxed{
+\text{安全憲法即運行時}
+}
+$$</p>
+<p>不是把倫理口號寫進程式，而是讓任何不符合身份、權限、世界狀態、安全集合、回退與證據要求的作用，都無法成為物理現實。</p>
+<hr>
+<h1>參考文獻與官方技術資料</h1>
+<ol>
+<li><p>Hobbs, K. et al. <strong>Run Time Assurance for Safety-Critical Systems.</strong> 2021.</p>
+</li>
+<li><p>Brat, G. et al. <strong>Runtime Assurance of Aeronautical Products: Preliminary Recommendations.</strong> NASA Technical Memorandum, 2023.</p>
+</li>
+<li><p>Slagel, J. T. et al. <strong>A Formal Verification Framework for Runtime Assurance.</strong> NASA Formal Methods, 2024.</p>
+</li>
+<li><p>NASA. <strong>Argument-Driven Application of Formal Methods to Runtime Assurance.</strong> TechPort project record, updated 2026.</p>
+</li>
+<li><p>ASTM International. <strong>ASTM F3269-21: Standard Practice for Methods to Safely Bound Behavior of Aircraft Systems Containing Complex Functions Using Run-Time Assurance.</strong></p>
+</li>
+<li><p>Danylyszyn, A. and others. <strong>An Architectural Description of the Simplex Architecture.</strong> Carnegie Mellon Software Engineering Institute, 1996.</p>
+</li>
+<li><p>Seto, D., Krogh, B., Sha, L. and Chutinan, A. <strong>The Simplex Architecture for Safe On-Line Control System Upgrades.</strong> American Control Conference, 1998.</p>
+</li>
+<li><p>Ames, A. D., Xu, X., Grizzle, J. W. and Tabuada, P. <strong>Control Barrier Function Based Quadratic Programs for Safety Critical Systems.</strong> IEEE Transactions on Automatic Control, 2017.</p>
+</li>
+<li><p>Ames, A. D. et al. <strong>Control Barrier Functions: Theory and Applications.</strong> European Control Conference, 2019.</p>
+</li>
+<li><p>Phan, D. et al. <strong>A Component-Based Simplex Architecture for High-Assurance Cyber-Physical Systems.</strong> 2017.</p>
+</li>
+<li><p>Mehmood, U. et al. <strong>The Black-Box Simplex Architecture for Runtime Assurance of Autonomous CPS.</strong> NASA Formal Methods, 2022.</p>
+</li>
+<li><p>IEC. <strong>IEC 61508 Series: Functional Safety of Electrical／Electronic／Programmable Electronic Safety-Related Systems.</strong></p>
+</li>
+<li><p>ISO. <strong>ISO 10218-1:2025 — Robotics — Safety Requirements — Part 1: Industrial Robots.</strong></p>
+</li>
+<li><p>ISO. <strong>ISO 10218-2:2025 — Robotics — Safety Requirements — Part 2: Industrial Robot Applications and Robot Cells.</strong></p>
+</li>
+<li><p>UL Standards &amp; Engagement. <strong>UL 4600, Standard for Safety for the Evaluation of Autonomous Products, Edition 3.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>中央主權、地方自治與動態不動點中央.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>連線不是纜線：有線、無線、光學與離線任務包的混合站網.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>站點化世界模型：物體、區域、事件、權限與可能行動的共同物理世界表示.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>具身化 AI 自主研究閉環：從假說生成、物理實驗到證據判定與概念修正.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>異常即入口：具身自主研究中的反例、失敗、離群事件與未知管理.</strong></p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A：Safety Invariant</h1>
+<pre><code class="language-yaml">safety_invariant:
+  id: &quot;&quot;
+  version: &quot;&quot;
+  scope:
+    domain: &quot;&quot;
+    zones: []
+    stations: []
+    actions: []
+
+  statement: &quot;&quot;
+  class: &quot;physical | identity | authority | temporal |
+          evidence | human_rights | ip&quot;
+
+  enforcement:
+    runtime_monitor: true
+    local_controller: true
+    hardware_interlock: false
+
+  fallback:
+    mode: &quot;safe_hold | baseline | stop | isolate&quot;
+    baseline_controller: &quot;&quot;
+
+  verification:
+    method: &quot;&quot;
+    evidence: []
+    valid_until: null
+</code></pre>
+<hr>
+<h1>附錄 B：Safety Action Lease</h1>
+<pre><code class="language-yaml">safety_action_lease:
+  id: &quot;&quot;
+  domain_id: &quot;&quot;
+  governance_epoch: 0
+  issuer: &quot;&quot;
+  subject: &quot;&quot;
+
+  action:
+    type: &quot;&quot;
+    targets: []
+    zones: []
+
+  limits:
+    speed: null
+    force: null
+    temperature: null
+    energy: null
+    duration: null
+
+  validity:
+    from: &quot;&quot;
+    until: &quot;&quot;
+    local_expiry: true
+
+  prerequisites:
+    world_epoch: &quot;&quot;
+    capabilities: []
+    calibration: []
+    human_approval: null
+
+  irreversibility_class: &quot;I0 | I1 | I2 | I3 | I4&quot;
+  recovery_plan: &quot;&quot;
+  evidence_required: []
+  transferable: false
+  self_renewable: false
+  signature: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：Runtime Safety Decision</h1>
+<pre><code class="language-yaml">runtime_safety_decision:
+  id: &quot;&quot;
+  command_id: &quot;&quot;
+  station_id: &quot;&quot;
+  evaluated_at: &quot;&quot;
+
+  inputs:
+    governance_epoch: 0
+    world_epoch: &quot;&quot;
+    lease_id: &quot;&quot;
+    mode: &quot;&quot;
+    state_snapshot: &quot;&quot;
+    hazard_snapshot: &quot;&quot;
+
+  gates:
+    identity: &quot;pass | fail | unknown&quot;
+    authority: &quot;pass | fail | unknown&quot;
+    world_freshness: &quot;pass | fail | unknown&quot;
+    capability: &quot;pass | fail | unknown&quot;
+    safety: &quot;pass | fail | unknown&quot;
+    recovery: &quot;pass | fail | unknown&quot;
+    evidence: &quot;pass | fail | unknown&quot;
+
+  decision: &quot;ALLOW | MODIFY | DELAY | SWITCH_TO_BASELINE |
+             REJECT | EMERGENCY_STOP | QUARANTINE&quot;
+
+  modified_command: null
+  baseline_controller: null
+  reasons: []
+  evidence: []
+</code></pre>
+<hr>
+<h1>附錄 D：Physical Recovery Plan</h1>
+<pre><code class="language-yaml">physical_recovery_plan:
+  id: &quot;&quot;
+  action_id: &quot;&quot;
+  irreversibility_class: &quot;&quot;
+
+  strategies:
+    software_rollback: []
+    state_reconstruction: []
+    physical_return: []
+    compensation: []
+    containment: []
+    human_response: []
+
+  assumptions: []
+  required_resources: []
+  maximum_recovery_time: null
+  residual_risks: []
+  recovery_not_possible_conditions: []
+  approved_by: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 E：Hazard Record</h1>
+<pre><code class="language-yaml">hazard:
+  id: &quot;&quot;
+  source: &quot;&quot;
+  hazardous_condition: &quot;&quot;
+  hazardous_event: &quot;&quot;
+  consequences: []
+
+  assessment:
+    severity: 0
+    likelihood: 0
+    exposure: 0
+    detectability: 0
+    blast_radius: 0
+
+  controls:
+    design_elimination: []
+    physical_guard: []
+    runtime_monitor: []
+    local_interlock: []
+    human_approval: []
+    recovery: []
+
+  affected_invariants: []
+  verification_evidence: []
+  status: &quot;OPEN | CONTROLLED | ACCEPTED | RETIRED&quot;
+</code></pre>
+<hr>
+<h1>附錄 F：Safety Case Node</h1>
+<pre><code class="language-yaml">safety_case:
+  id: &quot;&quot;
+  claim: &quot;&quot;
+  context: []
+  assumptions: []
+  arguments: []
+  evidence: []
+  counterarguments: []
+  unresolved_risks: []
+  validity:
+    software_versions: []
+    model_versions: []
+    capability_certificates: []
+    calibration_valid_until: null
+  status: &quot;SUPPORTED | PARTIAL | WITHDRAWN&quot;
+</code></pre>
+<hr>
+<h1>附錄 G：Local Veto</h1>
+<pre><code class="language-yaml">local_veto:
+  id: &quot;&quot;
+  station_id: &quot;&quot;
+  command_id: &quot;&quot;
+  occurred_at: &quot;&quot;
+
+  category: &quot;HARD_SAFETY | AUTHORITY | WORLD_STATE |
+             CAPABILITY | CALIBRATION | RECOVERY |
+             EVIDENCE&quot;
+
+  violated_invariants: []
+  observations: []
+  immediate_action: &quot;safe_hold | baseline | stop | isolate&quot;
+  central_notified: false
+  human_notified: false
+  evidence: []
+</code></pre>
+<hr>
+<h1>附錄 H：Safety Debt Report</h1>
+<pre><code class="language-yaml">safety_debt:
+  domain_id: &quot;&quot;
+  generated_at: &quot;&quot;
+
+  items:
+    - id: &quot;&quot;
+      description: &quot;&quot;
+      severity: 0
+      exposure: 0
+      age: 0
+      temporary_control: &quot;&quot;
+      permanent_fix: &quot;&quot;
+      deadline: &quot;&quot;
+
+  weighted_debt: 0
+  threshold: 0
+  current_mode: &quot;&quot;
+  required_mode: &quot;&quot;
+  expansion_allowed: false
+</code></pre>
+<hr>
+<h1>附錄 I：系列血緣</h1>
+<pre><code class="language-text">DFC
+  中央權限與地方否決
+        ↓
+
+HLF
+  鏈路退化與本地到期
+        ↓
+
+SWM
+  世界狀態、新鮮度與未知
+        ↓
+
+EARC
+  AI 產生實驗候選
+        ↓
+
+AEU
+  異常隔離與世界紀元失效
+        ↓
+
+SCR
+  候選作用 → 七重 Gate → 安全濾波／基線／拒絕 → 物理提交
+        ↓
+
+下一篇
+  從單一實驗室擴展至跨域與跨組織研究聯邦
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/stdi-12.html">https://thisoneisneok.com/html/papers/stdi-12.html</a></footer>
+</body>
+</html>

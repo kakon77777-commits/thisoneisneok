@@ -1,0 +1,2092 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>程式語言設計師風格譜系總論：設計自由、複雜度與代價 | Neo.K</title>
+<meta name="description" content="程式語言設計史通常以範式、語法、型別系統、執行模型與著名語言為主線。這些分類可以說明一門語言「具有什麼」，卻較難回答另一組問題：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-030.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-030</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第一批 30 篇封頂總論</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-030.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>程式語言設計師風格譜系總論：設計自由、複雜度與代價</h1>
+<h2>摘要</h2>
+<p>程式語言設計史通常以範式、語法、型別系統、執行模型與著名語言為主線。這些分類可以說明一門語言「具有什麼」，卻較難回答另一組問題：</p>
+<ul>
+<li>為何不同設計者面對相似限制，會反覆保護不同價值？</li>
+<li>為何一門語言的「簡單」常伴隨 Compiler、Runtime、工具、函式庫或治理複雜度的增加？</li>
+<li>為何安全、自由、可讀性、機器透明、相容性與快速演化無法被同時無限最大化？</li>
+<li>為何創始者原始思想、共同設計、參考實作、現代治理及生態結果必須分開？</li>
+<li>為何同一設計者在不同時期可能呈現不同風格？</li>
+<li>AI 又如何在不冒充歷史人物的前提下，使用這些風格分析新問題？</li>
+</ul>
+<p>PLDST 第一批三十篇的核心結論是：</p>
+<blockquote>
+<p>程式語言不是抽象功能的中性容器，而是一份關於自由、複雜度、責任、時間與權力如何被配置的技術—制度契約。</p>
+</blockquote>
+<p>本文把程式語言設計表示為：</p>
+<h1>$$
+\boxed{
+\mathfrak{L}_{d,t}</h1>
+<p>(
+C,
+P,
+V,
+F,
+B,
+R,
+E,
+G,
+T,
+O
+)
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$C$：Context，歷史、硬體、組織與生態背景；</li>
+<li>$P$：Problem framing，設計者如何定義問題；</li>
+<li>$V$：Value ordering，價值衝突時的優先序；</li>
+<li>$F$：Freedom allocation，自由被配置給誰；</li>
+<li>$B$：Burden allocation，複雜度與成本被配置到哪裡；</li>
+<li>$R$：Responsibility allocation，誰負責預防、偵測、修復與承擔後果；</li>
+<li>$E$：Evidence standard，何種證據足以支持或拒絕功能；</li>
+<li>$G$：Governance，誰能提出、裁決、實作、發布及接班；</li>
+<li>$T$：Temporal evolution，風格、語言與制度如何跨時間變化；</li>
+<li>$O$：Outcome，實際實作、生態與長期結果。</li>
+</ul>
+<p>因此，設計風格不是語言特徵總和，也不是心理人格：</p>
+<h1>$$
+\boxed{
+DesignStyle</h1>
+<p>RepeatedTradeoffRules
++
+BurdenAllocation
++
+ResponsibilityAllocation
++
+EvidenceStandard
++
+Governance
++
+TemporalRevision
+}
+$$</p>
+<p>本文進一步提出五項總論命題。</p>
+<p>第一，<strong>自由是複數的</strong>。作者表達自由、讀者理解自由、實作者最佳化自由、使用者遷移自由、領域社群延展自由與治理參與自由可能彼此衝突。</p>
+<p>第二，<strong>複雜度可以被真正刪除，也可以被壓縮、封裝、轉移、延後、攤銷、複製或隱藏</strong>。PLDST 不主張粗糙的物理式「複雜度永恆守恆」，而主張所有「變簡單」的設計都必須追問剩餘負擔及新負擔的位置。</p>
+<p>第三，<strong>責任應與控制權及可觀測性對齊</strong>。如果使用者沒有足夠資訊與控制，卻被要求承擔錯誤；或 Compiler、Runtime、工具擁有控制權，卻不提供可解釋回饋，設計便形成責任錯置。</p>
+<p>第四，<strong>相容性把過去轉成現在的共同作者</strong>。一門成熟語言的設計者不只與當代需求協商，也與舊程式、ABI、工具、教材、組織知識和使用者信任協商。</p>
+<p>第五，<strong>治理是語言本體的一部分</strong>。PEP、RFC、Steering Council、Core Team、企業工程資源與標準委員會決定什麼能成為下一版語言，因此治理不是附錄，而是演化語義的控制層。</p>
+<p>PLDST 最終不是建立「誰最好」的排行榜，而是建立一套可回答下列問題的分析語言：</p>
+<blockquote>
+<p>當設計者面對不可同時滿足的要求時，他保護什麼、限制什麼、把代價交給誰、要求什麼證據，又如何讓這些選擇跨越時間形成可辨識的設計風格？</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> PLDST、程式語言設計、設計師風格、設計自由、複雜度配置、責任配置、相容性、語言治理、設計決策、程式語言史、AI 模擬</p>
+<hr>
+<h1>第一部分　PLDST 的研究對象</h1>
+<h2>一、從語言特徵轉向決策規則</h2>
+<p>傳統分類常使用：</p>
+<pre><code class="language-text">命令式
+函數式
+物件導向
+邏輯式
+動態型別
+靜態型別
+編譯式
+直譯式
+系統語言
+腳本語言
+</code></pre>
+<p>這些標籤描述語言結果，但不能直接解釋設計者。</p>
+<hr>
+<h2>二、相同特徵可以來自不同理由</h2>
+<p>兩門語言都可能使用型別推導，但一門是為了：</p>
+<ul>
+<li>減少樣板；</li>
+</ul>
+<p>另一門可能是為了：</p>
+<ul>
+<li>保持形式推理；</li>
+<li>提升工具；</li>
+<li>讓既有動態生態逐步加入證據；</li>
+<li>不破壞原始表面。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+SameFeature
+\not\Rightarrow
+SameStyle
+$$</p>
+<hr>
+<h2>三、不同特徵可以來自同一深層風格</h2>
+<p>同一設計者可能在不同語言中採取不同機制，卻維持相似決策規則。</p>
+<p>例如工具驅動風格可以在：</p>
+<ul>
+<li>快速編譯器；</li>
+<li>IDE；</li>
+<li>漸進型別；</li>
+<li>Metadata；</li>
+<li>Language service；</li>
+</ul>
+<p>中呈現，而不必綁定單一語法。</p>
+<hr>
+<h2>四、最小研究單位</h2>
+<p>PLDST 的最小單位不是人物評語，而是 Design Decision Record：</p>
+<h1>$$
+DDR</h1>
+<p>(
+Actor,
+Time,
+Problem,
+Constraints,
+Options,
+Decision,
+Rationale,
+Implementation,
+Consequences,
+Evidence
+)
+$$</p>
+<hr>
+<h2>五、風格是多筆決策的聚合</h2>
+<h1>$$
+Style(d,\tau)</h1>
+<p>Aggregate
+\left(
+DDR_1,\ldots,DDR_n
+\right)
+$$</p>
+<p>一段名言最多只能成為一項證據。</p>
+<hr>
+<h2>六、風格具有時間索引</h2>
+<h1>$$
+\Sigma_d</h1>
+<p>{
+\Sigma_{d,t_1},
+\Sigma_{d,t_2},
+\dots,
+\Sigma_{d,t_n}
+}
+$$</p>
+<p>所以：</p>
+<p>$$
+LanguageToday
+\not\Rightarrow
+FounderAlwaysBelievedThis
+$$</p>
+<hr>
+<h1>第二部分　設計是一場價值衝突</h1>
+<h2>七、語言設計沒有單一目標函數</h2>
+<p>語言可能同時追求：</p>
+<ul>
+<li>可讀；</li>
+<li>可寫；</li>
+<li>可學；</li>
+<li>安全；</li>
+<li>快速；</li>
+<li>可攜；</li>
+<li>可延展；</li>
+<li>可推理；</li>
+<li>可最佳化；</li>
+<li>可部署；</li>
+<li>可相容；</li>
+<li>可治理。</li>
+</ul>
+<hr>
+<h2>八、多目標形式</h2>
+<h1>$$
+J</h1>
+<h2>w_RR
++
+w_WW
++
+w_SS
++
+w_PP
++
+w_CC
++
+w_EE
++
+w_GG</h2>
+<p>Cost
+$$</p>
+<p>權重 $w_i$ 不只是技術常數，而是設計風格的核心。</p>
+<hr>
+<h2>九、真正差異在衝突時出現</h2>
+<p>所有設計者都可能支持「簡單」「實用」「安全」。</p>
+<p>只有在以下情況才看見風格：</p>
+<pre><code class="language-text">安全與互操作衝突
+可讀與短碼衝突
+相容與一致性衝突
+抽象與成本透明衝突
+個人品味與社群需求衝突
+</code></pre>
+<hr>
+<h2>十、設計風格是排序而非口號</h2>
+<h1>$$
+V_d</h1>
+<p>ValueOrdering_d
+$$</p>
+<p>不是：</p>
+<h1>$$
+V_d</h1>
+<p>ListOfValues_d
+$$</p>
+<hr>
+<h1>第三部分　自由的六種形式</h1>
+<h2>十一、作者表達自由</h2>
+<p>作者能否：</p>
+<ul>
+<li>使用多種慣用法；</li>
+<li>建立 DSL；</li>
+<li>使用 Metaprogramming；</li>
+<li>控制記憶體；</li>
+<li>連接外部系統；</li>
+<li>建立新抽象。</li>
+</ul>
+<hr>
+<h2>十二、讀者理解自由</h2>
+<p>讀者能否不依賴：</p>
+<ul>
+<li>隱藏 Context；</li>
+<li>私有框架知識；</li>
+<li>過多特殊符號；</li>
+<li>全域搜尋；</li>
+<li>執行後才知道的語義；</li>
+</ul>
+<p>而理解程式。</p>
+<hr>
+<h2>十三、實作者自由</h2>
+<p>Compiler／Runtime 能否：</p>
+<ul>
+<li>最佳化；</li>
+<li>更換表示；</li>
+<li>平行執行；</li>
+<li>延遲求值；</li>
+<li>使用不同 GC；</li>
+<li>建立多實作。</li>
+</ul>
+<hr>
+<h2>十四、使用者遷移自由</h2>
+<p>使用者能否：</p>
+<ul>
+<li>保持舊程式；</li>
+<li>逐步採用；</li>
+<li>使用舊版；</li>
+<li>由工具遷移；</li>
+<li>避免被單一 Runtime 鎖定。</li>
+</ul>
+<hr>
+<h2>十五、生態延展自由</h2>
+<p>Library、Framework 與領域社群能否：</p>
+<ul>
+<li>建立新協定；</li>
+<li>擴充類型；</li>
+<li>形成 DSL；</li>
+<li>發布套件；</li>
+<li>替換工具。</li>
+</ul>
+<hr>
+<h2>十六、治理參與自由</h2>
+<p>誰能：</p>
+<ul>
+<li>提案；</li>
+<li>討論；</li>
+<li>審查；</li>
+<li>裁決；</li>
+<li>實作；</li>
+<li>發布；</li>
+<li>分叉。</li>
+</ul>
+<hr>
+<h2>十七、自由可能互相衝突</h2>
+<p>$$
+Freedom_{\text{author}}\uparrow
+\Rightarrow
+Vocabulary_{\text{reader}}\uparrow
+$$</p>
+<p>$$
+Freedom_{\text{implementation}}\uparrow
+\Rightarrow
+Predictability_{\text{machine-cost}}\downarrow
+$$</p>
+<p>$$
+Freedom_{\text{migration}}\uparrow
+\Rightarrow
+Freedom_{\text{redesign}}\downarrow
+$$</p>
+<hr>
+<h2>十八、限制也可能創造自由</h2>
+<ul>
+<li>靜態限制可創造重構自由；</li>
+<li>共同 Style 可創造跨團隊閱讀自由；</li>
+<li>不可變值可創造並行分享自由；</li>
+<li>Edition 可創造語言演化自由；</li>
+<li>明確 Unsafe 邊界可創造安全核心內的高階自由。</li>
+</ul>
+<hr>
+<h1>第四部分　複雜度配置總論</h1>
+<h2>十九、複雜度不只有一種</h2>
+<h1>$$
+\mathcal{C}</h1>
+<p>(
+C_{\text{problem}},
+C_{\text{language}},
+C_{\text{author}},
+C_{\text{reader}},
+C_{\text{compiler}},
+C_{\text{runtime}},
+C_{\text{tool}},
+C_{\text{library}},
+C_{\text{governance}},
+C_{\text{migration}}
+)
+$$</p>
+<hr>
+<h2>二十、本質與偶發</h2>
+<p>部分複雜度來自問題本身：</p>
+<ul>
+<li>並行；</li>
+<li>分散式失敗；</li>
+<li>資源生命週期；</li>
+<li>相容；</li>
+<li>安全；</li>
+<li>時間；</li>
+<li>不確定性。</li>
+</ul>
+<p>部分來自歷史表示、工具不足或糟糕介面。</p>
+<hr>
+<h2>二十一、複雜度可以真正刪除</h2>
+<p>若一項負擔只是：</p>
+<ul>
+<li>重複樣板；</li>
+<li>無必要轉換；</li>
+<li>偶發語法差異；</li>
+<li>人工記帳；</li>
+<li>可由工具可靠推導的資訊；</li>
+</ul>
+<p>它可以被真正消除或攤銷。</p>
+<p>因此 PLDST 不主張：</p>
+<p>$$
+Complexity_{\text{total}}=\text{永恆常數}
+$$</p>
+<hr>
+<h2>二十二、剩餘負擔仍需追蹤</h2>
+<p>設計宣稱「簡單」時，至少檢查：</p>
+<pre><code class="language-text">刪除了什麼？
+轉移了什麼？
+新增了什麼？
+誰支付？
+何時支付？
+是否可見？
+規模增長後是否仍成立？
+</code></pre>
+<hr>
+<h2>二十三、九種複雜度操作</h2>
+<pre><code class="language-text">Eliminate
+Compress
+Encapsulate
+Transfer
+Defer
+Amortize
+Duplicate
+Hide
+Institutionalize
+</code></pre>
+<hr>
+<h2>二十四、垃圾回收例子</h2>
+<p>垃圾回收：</p>
+<ul>
+<li>降低作者手工釋放責任；</li>
+<li>增加 Runtime、延遲、記憶體與實作者負擔；</li>
+<li>可能提高安全及生產力；</li>
+<li>不表示所有資源生命週期都被處理。</li>
+</ul>
+<hr>
+<h2>二十五、型別推導例子</h2>
+<p>型別推導：</p>
+<ul>
+<li>減少標註；</li>
+<li>增加 Compiler 推理；</li>
+<li>增加診斷與工具責任；</li>
+<li>可能使公開介面受實作細節影響。</li>
+</ul>
+<hr>
+<h2>二十六、零額外成本例子</h2>
+<p>零額外成本通常約束：</p>
+<ul>
+<li>Runtime；</li>
+<li>Code size；</li>
+<li>Data representation；</li>
+</ul>
+<p>不自動保證：</p>
+<ul>
+<li>編譯時間；</li>
+<li>規格大小；</li>
+<li>錯誤訊息；</li>
+<li>學習成本；</li>
+<li>委員會成本；</li>
+</ul>
+<p>也為零。</p>
+<hr>
+<h1>第五部分　責任配置</h1>
+<h2>二十七、責任不是「誰犯錯」</h2>
+<p>責任包含：</p>
+<h1>$$
+\mathcal{R}</h1>
+<p>(
+Prevention,
+Detection,
+Localization,
+Containment,
+Handling,
+Recovery,
+Accountability
+)
+$$</p>
+<hr>
+<h2>二十八、責任主體</h2>
+<pre><code class="language-text">使用者
+語言規則
+型別系統
+Compiler
+Runtime
+Library
+Tool
+Framework
+部署平台
+治理共同體
+</code></pre>
+<hr>
+<h2>二十九、控制—責任對齊</h2>
+<p>$$
+Responsibility(a)
+\leq
+Control(a)
++
+Observability(a)
++
+Capability(a)
+$$</p>
+<p>若沒有控制、資訊與能力，責任便不應完全交給該主體。</p>
+<hr>
+<h2>三十、Compiler 前移責任</h2>
+<p>所有權、型別、效果、可空性與資料流分析可把部分錯誤前移。</p>
+<p>代價是：</p>
+<ul>
+<li>規則；</li>
+<li>診斷；</li>
+<li>編譯時間；</li>
+<li>標註；</li>
+<li>學習；</li>
+<li>Escape hatch。</li>
+</ul>
+<hr>
+<h2>三十一、Runtime 承擔責任</h2>
+<p>GC、Exception、Dynamic dispatch、JIT、Actor supervision 會把部分責任放到執行期。</p>
+<p>其優勢是：</p>
+<ul>
+<li>動態資訊；</li>
+<li>彈性；</li>
+<li>恢復能力。</li>
+</ul>
+<p>其代價是：</p>
+<ul>
+<li>延遲；</li>
+<li>部署複雜度；</li>
+<li>執行期失敗；</li>
+<li>可預測性。</li>
+</ul>
+<hr>
+<h2>三十二、工具承擔責任</h2>
+<p>Type checker、Linter、IDE、Formatter、Migration tool 可在不完全改變 Runtime 語義的情況下提供保證。</p>
+<p>工具不是語言之外的中性附加物，而是實際使用契約的一部分。</p>
+<hr>
+<h1>第六部分　顯式、隱式與可恢復性</h1>
+<h2>三十三、顯式不是越多越好</h2>
+<p>過度顯式會造成：</p>
+<ul>
+<li>樣板；</li>
+<li>重複；</li>
+<li>視覺噪音；</li>
+<li>資訊漂移；</li>
+<li>維護負擔。</li>
+</ul>
+<hr>
+<h2>三十四、隱式不是越少越好</h2>
+<p>可靠推導可以：</p>
+<ul>
+<li>減少錯誤；</li>
+<li>保持意圖；</li>
+<li>提升流暢；</li>
+<li>讓程式聚焦問題。</li>
+</ul>
+<hr>
+<h2>三十五、關鍵是可恢復性</h2>
+<h1>$$
+ImplicitnessQuality</h1>
+<h2>Recoverability
++
+Stability
++
+Explainability</h2>
+<p>SearchCost
+$$</p>
+<hr>
+<h2>三十六、局部恢復與工具恢復</h2>
+<p>隱式資訊可由：</p>
+<ul>
+<li>局部語法；</li>
+<li>型別；</li>
+<li>IDE；</li>
+<li>Trace；</li>
+<li>Compiler message；</li>
+<li>Runtime inspection；</li>
+</ul>
+<p>恢復。</p>
+<p>不同設計者對工具依賴的容忍不同。</p>
+<hr>
+<h2>三十七、公共 API 與局部實作</h2>
+<p>局部程式可容許更多推導；公共介面通常需要更高穩定性及可讀性。</p>
+<p>所以顯式—隱式不是單一全域開關。</p>
+<hr>
+<h1>第七部分　機器與人的雙重現實</h1>
+<h2>三十八、機器模型不能完全消失</h2>
+<p>所有程式最終受：</p>
+<ul>
+<li>記憶體；</li>
+<li>延遲；</li>
+<li>帶寬；</li>
+<li>Cache；</li>
+<li>排程；</li>
+<li>故障；</li>
+<li>資料表示；</li>
+<li>能源；</li>
+</ul>
+<p>限制。</p>
+<hr>
+<h2>三十九、也不必全部寫在表面</h2>
+<p>Compiler、Runtime 與工具可以封裝大量機器細節。</p>
+<p>問題不是「抽象是否隱藏機器」，而是：</p>
+<blockquote>
+<p>隱藏到什麼程度、何時洩漏、誰能恢復、失敗時是否可解釋？</p>
+</blockquote>
+<hr>
+<h2>四十、Ritchie 型透明度</h2>
+<p>C 的力量來自提供一個相對薄、可攜且可預測的系統層，而不是等同特定組合語言。</p>
+<hr>
+<h2>四十一、Stroustrup 型抽象</h2>
+<p>高階抽象可存在，但：</p>
+<ul>
+<li>不使用不支付；</li>
+<li>使用時成本可接近手寫低階方案；</li>
+<li>資料表示與系統互操作仍重要。</li>
+</ul>
+<hr>
+<h2>四十二、Hejlsberg 型工具化</h2>
+<p>有些複雜度可由 Compiler 與 IDE 共同承擔，使使用者逐步獲得靜態證據，而不必一次重寫生態。</p>
+<hr>
+<h2>四十三、人類可讀性也是成本模型</h2>
+<p>讀者時間、團隊協調、除錯、Code review 與錯誤修正，都是真實工程成本。</p>
+<hr>
+<h1>第八部分　簡單性的多重道路</h1>
+<h2>四十四、語法簡單</h2>
+<p>表面規則少、符號少、例外少。</p>
+<hr>
+<h2>四十五、核心簡單</h2>
+<p>少量原語具有高生成力。</p>
+<hr>
+<h2>四十六、代數簡單</h2>
+<p>程式可由組合律、等式與轉換規則理解。</p>
+<hr>
+<h2>四十七、表示簡單</h2>
+<p>資料、程式與語義使用統一表示。</p>
+<hr>
+<h2>四十八、去交纏簡單</h2>
+<p>值、身分、狀態、時間、來源與執行策略保持可分離。</p>
+<hr>
+<h2>四十九、實作簡單</h2>
+<p>Compiler、Runtime 或完整系統可由人理解和重建。</p>
+<hr>
+<h2>五十、治理簡單</h2>
+<p>提案、裁決、實作、發布與接班權限清楚。</p>
+<hr>
+<h2>五十一、Backus、McCarthy、Hickey</h2>
+<p>$$
+\boxed{
+\begin{aligned}
+Backus &amp;: \text{代數轉換型簡單性}\
+McCarthy &amp;: \text{生成符號型簡單性}\
+Hickey &amp;: \text{去交纏結構型簡單性}
+\end{aligned}
+}
+$$</p>
+<p>三者都重視函數與簡單，卻不是同一路線。</p>
+<hr>
+<h1>第九部分　人本設計的三種政治</h1>
+<h2>五十二、以讀者為中心</h2>
+<p>Guido 式人本重視：</p>
+<ul>
+<li>可讀；</li>
+<li>明示；</li>
+<li>慣例收斂；</li>
+<li>團隊；</li>
+<li>下一位維護者。</li>
+</ul>
+<hr>
+<h2>五十三、以作者體驗為中心</h2>
+<p>Matz 式人本重視：</p>
+<ul>
+<li>自然；</li>
+<li>流動；</li>
+<li>和諧；</li>
+<li>創造；</li>
+<li>程式設計者幸福。</li>
+</ul>
+<hr>
+<h2>五十四、以異質求解者為中心</h2>
+<p>Wall 式人本重視：</p>
+<ul>
+<li>多種慣用法；</li>
+<li>Context；</li>
+<li>領域差異；</li>
+<li>表達壓縮；</li>
+<li>社群文化。</li>
+</ul>
+<hr>
+<h2>五十五、人本不是單一友善度</h2>
+<h1>$$
+HumanCentered</h1>
+<p>ForWhom
++
+WhichTask
++
+WhichTimeScale
++
+WhoPays
+$$</p>
+<hr>
+<h2>五十六、三種自由</h2>
+<pre><code class="language-text">Python：共同理解的自由
+Ruby：創造流動的自由
+Perl：多元表達的自由
+</code></pre>
+<hr>
+<h1>第十部分　安全與逃生</h1>
+<h2>五十七、安全不是禁止一切</h2>
+<p>安全是對特定錯誤建立可說明保證。</p>
+<hr>
+<h2>五十八、自由不是任意位元操作</h2>
+<p>自由也包括：</p>
+<ul>
+<li>建立高階抽象；</li>
+<li>安全重構；</li>
+<li>可靠並行；</li>
+<li>連接外部世界；</li>
+<li>在限制外建立受控 Escape hatch。</li>
+</ul>
+<hr>
+<h2>五十九、安全核心與危險邊界</h2>
+<p>成熟設計常使用：</p>
+<p>$$
+SafeCore
++
+ExplicitEscape
+$$</p>
+<p>而不是：</p>
+<p>$$
+EverythingSafe
+\quad\text{或}\quad
+EverythingUnrestricted
+$$</p>
+<hr>
+<h2>六十、Escape hatch 的責任</h2>
+<p>逃生口應具有：</p>
+<ul>
+<li>明確名稱；</li>
+<li>小範圍；</li>
+<li>文件；</li>
+<li>Code review；</li>
+<li>測試；</li>
+<li>責任轉移標記。</li>
+</ul>
+<hr>
+<h1>第十一部分　相容性與歷史</h1>
+<h2>六十一、相容性不是保守情緒</h2>
+<p>相容性保護：</p>
+<ul>
+<li>程式；</li>
+<li>資料；</li>
+<li>ABI；</li>
+<li>套件；</li>
+<li>教材；</li>
+<li>技能；</li>
+<li>部署；</li>
+<li>使用者信任。</li>
+</ul>
+<hr>
+<h2>六十二、相容性也是永久成本</h2>
+<p>$$
+HistoricalChoice
+\rightarrow
+CompatibilityObligation
+\rightarrow
+CurrentComplexity
+$$</p>
+<hr>
+<h2>六十三、設計一致性的誘惑</h2>
+<p>Clean slate 可以：</p>
+<ul>
+<li>移除例外；</li>
+<li>重整語義；</li>
+<li>提升安全；</li>
+<li>簡化教學。</li>
+</ul>
+<p>但可能造成：</p>
+<ul>
+<li>生態分裂；</li>
+<li>遷移失敗；</li>
+<li>使用者流失；</li>
+<li>組織成本。</li>
+</ul>
+<hr>
+<h2>六十四、相容性化石</h2>
+<p>現代語言保留某功能，不代表現代治理仍喜歡它。</p>
+<p>它可能只是：</p>
+<ul>
+<li>既有程式；</li>
+<li>標準；</li>
+<li>ABI；</li>
+<li>工具；</li>
+<li>社群依賴；</li>
+</ul>
+<p>形成的化石。</p>
+<hr>
+<h2>六十五、遷移工具是設計機制</h2>
+<p>Edition、Deprecation、Formatter、Codemod、Type migration 會把破壞成本分期與攤銷。</p>
+<hr>
+<h2>六十六、歷史成為共同作者</h2>
+<p>成熟語言可表示為：</p>
+<h1>$$
+Language_t</h1>
+<p>CurrentDesign
++
+AccumulatedCommitments_{&lt;t}
+$$</p>
+<hr>
+<h1>第十二部分　多主體歸因</h1>
+<h2>六十七、創始者偏誤</h2>
+<p>語言史常把：</p>
+<ul>
+<li>創始人；</li>
+<li>共同設計者；</li>
+<li>Compiler team；</li>
+<li>標準委員會；</li>
+<li>Framework；</li>
+<li>使用者生態；</li>
+</ul>
+<p>壓成一個名字。</p>
+<hr>
+<h2>六十八、五種歸因</h2>
+<p>$$
+Credit
+\neq
+Causality
+\neq
+Authority
+\neq
+Accountability
+\neq
+Maintenance
+$$</p>
+<hr>
+<h2>六十九、提案者不等於裁決者</h2>
+<p>一項功能可能由：</p>
+<ul>
+<li>A 提出；</li>
+<li>B 設計；</li>
+<li>C 實作；</li>
+<li>D 批准；</li>
+<li>E 維護；</li>
+<li>F 形成生態慣例。</li>
+</ul>
+<hr>
+<h2>七十、個人風格與制度風格</h2>
+<p>Guido 的 BDFL 風格不能直接代表 2018 年後所有 Python 決策。</p>
+<p>Rust 的現代語言風格也不能全部歸因於 Graydon Hoare。</p>
+<hr>
+<h2>七十一、人物個案的正確格式</h2>
+<p>每篇人物研究應同時處理：</p>
+<ul>
+<li>直接決策；</li>
+<li>共同作者；</li>
+<li>實作；</li>
+<li>組織；</li>
+<li>治理；</li>
+<li>生態；</li>
+<li>後期變化。</li>
+</ul>
+<hr>
+<h1>第十三部分　治理是演化語義</h1>
+<h2>七十二、誰能改變語言</h2>
+<p>治理決定：</p>
+<pre><code class="language-text">誰能提出？
+誰能進入議程？
+誰能要求證據？
+誰能拒絕？
+誰能合併？
+誰能發布？
+誰能接班？
+</code></pre>
+<hr>
+<h2>七十三、個人工作室</h2>
+<p>優勢：</p>
+<ul>
+<li>一致；</li>
+<li>快速；</li>
+<li>可刪除；</li>
+<li>整體實作。</li>
+</ul>
+<p>風險：</p>
+<ul>
+<li>單點；</li>
+<li>不可擴張；</li>
+<li>隱性知識；</li>
+<li>接班。</li>
+</ul>
+<hr>
+<h2>七十四、BDFL</h2>
+<p>$$
+DistributedContribution
++
+CentralFinalJudgment
+$$</p>
+<p>它把探索分散，把最終性集中。</p>
+<hr>
+<h2>七十五、RFC 聯邦</h2>
+<p>$$
+OpenDeliberation
++
+TeamResponsibility
++
+DocumentedDecision
+$$</p>
+<p>RFC 不等於全民投票。</p>
+<hr>
+<h2>七十六、Steering Group</h2>
+<p>公開提案與小型專業裁決群體並存。</p>
+<p>企業資源可能形成正式程序之外的實際議程權。</p>
+<hr>
+<h2>七十七、標準委員會</h2>
+<p>多實作、國家與公司代表、正式 Paper 和共識，交換較高協調成本以取得長期產業承諾。</p>
+<hr>
+<h2>七十八、治理不是道德排名</h2>
+<p>不同制度適合不同：</p>
+<ul>
+<li>使用者規模；</li>
+<li>風險；</li>
+<li>實作數量；</li>
+<li>相容責任；</li>
+<li>資源；</li>
+<li>創始者狀態。</li>
+</ul>
+<hr>
+<h2>七十九、接班是設計問題</h2>
+<p>接班需要轉移：</p>
+<ul>
+<li>品味；</li>
+<li>權威；</li>
+<li>文件；</li>
+<li>資產；</li>
+<li>Release；</li>
+<li>衝突處理；</li>
+<li>社群信任。</li>
+</ul>
+<hr>
+<h1>第十四部分　證據標準</h1>
+<h2>八十、設計主張需要何種證據</h2>
+<p>可使用：</p>
+<ul>
+<li>原始論文；</li>
+<li>語言報告；</li>
+<li>設計 FAQ；</li>
+<li>PEP／RFC；</li>
+<li>Compiler commit；</li>
+<li>口述歷史；</li>
+<li>訪談；</li>
+<li>標準文件；</li>
+<li>實作結果；</li>
+<li>後期回顧。</li>
+</ul>
+<hr>
+<h2>八十一、第一手來源不是絕對真理</h2>
+<p>設計者可能：</p>
+<ul>
+<li>事後合理化；</li>
+<li>忽略協作者；</li>
+<li>重寫歷史；</li>
+<li>只描述目標而非結果。</li>
+</ul>
+<hr>
+<h2>八十二、實作也是證據</h2>
+<p>如果正式哲學與實際 Compiler、Runtime、Library 長期不符，PLDST 必須記錄差距。</p>
+<hr>
+<h2>八十三、拒絕也是資料</h2>
+<p>被拒提案最能顯示：</p>
+<ul>
+<li>邊界；</li>
+<li>優先序；</li>
+<li>證據門檻；</li>
+<li>相容責任。</li>
+</ul>
+<hr>
+<h2>八十四、反證不是破壞人物形象</h2>
+<p>反證用來：</p>
+<ul>
+<li>限定範圍；</li>
+<li>區分時期；</li>
+<li>修正歸因；</li>
+<li>防止口號化；</li>
+<li>發現自我修正。</li>
+</ul>
+<hr>
+<h1>第十五部分　PLDST 第一批人物譜系</h1>
+<h2>八十五、Backus：從實用編譯器到自我批判</h2>
+<p>Backus 先將機器最佳化負擔集中到 FORTRAN Compiler，後來又批判逐字、變數、賦值與狀態支配的馮紐曼風格。</p>
+<p>其重要性不只是轉向函數式，而是展示：</p>
+<p>$$
+Designer
+\text{ can revise }
+DesignerStyle
+$$</p>
+<hr>
+<h2>八十六、McCarthy：小型符號核心</h2>
+<p>McCarthy 以 S-expression、遞迴、Lambda、<code>apply</code> 與 <code>eval</code> 建立生成性符號系統。</p>
+<p>小核心可以形成巨大語言空間，也會產生 Runtime、Macro、方言與治理負擔。</p>
+<hr>
+<h2>八十七、Kay：語言作為動態媒介</h2>
+<p>Alan Kay 的物件不是只為企業資料封裝，而服務：</p>
+<ul>
+<li>訊息；</li>
+<li>個人運算；</li>
+<li>教育；</li>
+<li>圖形環境；</li>
+<li>可延展媒介。</li>
+</ul>
+<hr>
+<h2>八十八、Wirth：可完整理解的系統</h2>
+<p>Wirth 的簡潔不是少寫字，而是讓語言、Compiler、OS 與教學形成可被完整掌握的系統。</p>
+<hr>
+<h2>八十九、Ritchie：克制的機器抽象</h2>
+<p>C 提供足夠薄、足夠可攜、足夠可預測的系統語言層。</p>
+<hr>
+<h2>九十、Stroustrup：抽象與既有世界共存</h2>
+<p>C++ 的核心不是「功能很多」，而是讓高階抽象與 C、硬體、工業生態和長期相容同時存在。</p>
+<p>代價是規格、工具與學習複雜度。</p>
+<hr>
+<h2>九十一、Guido：公共文本</h2>
+<p>Python 將可讀性、明示、慣例收斂與實用 Escape hatch 結合。</p>
+<hr>
+<h2>九十二、Matz：認知環境</h2>
+<p>Ruby 願意讓內部系統更複雜，以換取程式設計者的自然表達與持續流動。</p>
+<hr>
+<h2>九十三、Wall：異質性容納</h2>
+<p>Perl 接受 Context、多義性與多種慣用法，再以文化、文件、<code>strict</code>、<code>warnings</code> 及生態治理自由。</p>
+<hr>
+<h2>九十四、Hejlsberg：語言—工具—平台整體</h2>
+<p>Turbo Pascal、Delphi、C#、TypeScript 顯示其穩定風格不是某種語法，而是降低真實開發者從編輯、檢查到部署的整體摩擦。</p>
+<hr>
+<h2>九十五、Hickey：解除交纏</h2>
+<p>Clojure 把 Value、Identity、State、Reference 與 Time 分開，讓 Runtime 承擔 Persistent data 的結構複雜度。</p>
+<hr>
+<h2>九十六、Hoare 與 Rust 共同體：制度工程</h2>
+<p>Rust 從個人原型變成由團隊、RFC、Compiler、Library、Edition 與治理共同維持的安全系統語言。</p>
+<p>其設計風格不能再由單一人物概括。</p>
+<hr>
+<h1>第十六部分　跨設計者比較的成果</h1>
+<h2>九十七、系統語言三角</h2>
+<p>Wirth、Ritchie、Stroustrup 分別代表：</p>
+<pre><code class="language-text">可理解的完整系統
+可攜的機器控制
+相容約束下的高階抽象
+</code></pre>
+<hr>
+<h2>九十八、人本語言三角</h2>
+<p>Guido、Matz、Wall 分別保護：</p>
+<pre><code class="language-text">讀者與團隊
+正在編程的作者
+異質領域與表達者
+</code></pre>
+<hr>
+<h2>九十九、簡單性三角</h2>
+<p>Backus、McCarthy、Hickey分別追求：</p>
+<pre><code class="language-text">代數轉換
+符號生成
+責任分離
+</code></pre>
+<hr>
+<h2>一百、治理五型</h2>
+<pre><code class="language-text">個人工作室
+BDFL
+RFC 團隊聯邦
+Steering 混合制
+標準委員會
+</code></pre>
+<hr>
+<h2>一百零一、比較的真正價值</h2>
+<p>比較不是決定誰較好，而是顯示：</p>
+<ul>
+<li>同一口號的不同含義；</li>
+<li>同一功能的不同理由；</li>
+<li>不同成本配置；</li>
+<li>不同適用條件；</li>
+<li>不可直接合併的價值衝突。</li>
+</ul>
+<hr>
+<h1>第十七部分　PLDST 統一模型</h1>
+<h2>一百零二、完整分析單位</h2>
+<h1>$$
+\boxed{
+\mathfrak{D}</h1>
+<p>(
+Actor,
+Decision,
+Context,
+Time,
+Values,
+Freedom,
+Complexity,
+Responsibility,
+Evidence,
+Governance,
+Outcome
+)
+}
+$$</p>
+<hr>
+<h2>一百零三、風格向量</h2>
+<h1>$$
+\Sigma_{d,t}</h1>
+<p>(
+P,
+V,
+F,
+B,
+R,
+E,
+G,
+X
+)
+$$</p>
+<p>其中 $X$ 表示演化與修正模式。</p>
+<hr>
+<h2>一百零四、語言狀態</h2>
+<h1>$$
+L_t</h1>
+<p>Design_t
++
+Implementation_t
++
+Compatibility_{&lt;t}
++
+Ecosystem_t
++
+Governance_t
+$$</p>
+<hr>
+<h2>一百零五、設計結果</h2>
+<h1>$$
+Outcome</h1>
+<p>f(
+Style,
+Constraints,
+Implementation,
+Adoption,
+History,
+Institutions
+)
+$$</p>
+<p>所以：</p>
+<p>$$
+SuccessfulLanguage
+\not\Rightarrow
+EveryDecisionWasCorrect
+$$</p>
+<hr>
+<h2>一百零六、代價配置契約</h2>
+<h1>$$
+\boxed{
+LanguageDesign</h1>
+<p>Affordances
++
+Prohibitions
++
+CostModel
++
+ResponsibilityModel
++
+EvolutionConstitution
+}
+$$</p>
+<hr>
+<h1>第十八部分　PLDST 十八軸的總論地位</h1>
+<h2>一百零七、軸只是索引</h2>
+<p>PLDST-027 的十八軸可協助：</p>
+<ul>
+<li>比較；</li>
+<li>搜尋；</li>
+<li>視覺化；</li>
+<li>聚合；</li>
+<li>AI 分析。</li>
+</ul>
+<hr>
+<h2>一百零八、軸不是人物本體</h2>
+<p>$$
+Profile
+\neq
+Person
+$$</p>
+<hr>
+<h2>一百零九、數值不是精確真理</h2>
+<p>4.2 不表示風格可被自然測量到小數點。</p>
+<p>必須同時顯示：</p>
+<ul>
+<li>Coverage；</li>
+<li>Confidence；</li>
+<li>Time；</li>
+<li>DDR count；</li>
+<li>Counterevidence。</li>
+</ul>
+<hr>
+<h2>一百一十、矩陣與語料不可分離</h2>
+<h1>$$
+MatrixWithoutCorpus</h1>
+<p>Labeling
+$$</p>
+<h1>$$
+CorpusWithoutMatrix</h1>
+<p>ArchiveWithoutComparison
+$$</p>
+<hr>
+<h1>第十九部分　PLDST SKILL 與 AI</h1>
+<h2>一百一十一、SKILL 是研究管線</h2>
+<p>$$
+Request
+\rightarrow
+Search
+\rightarrow
+Evidence
+\rightarrow
+DDR
+\rightarrow
+Challenge
+\rightarrow
+Assessment
+\rightarrow
+Profile
+$$</p>
+<hr>
+<h2>一百一十二、結構正確不等於史實正確</h2>
+<p>$$
+SchemaValid
+\not\Rightarrow
+HistoricallyTrue
+$$</p>
+<hr>
+<h2>一百一十三、AI 預設只能生成 Candidate</h2>
+<p>高影響紀錄需要：</p>
+<ul>
+<li>來源恢復；</li>
+<li>歸因檢查；</li>
+<li>時間檢查；</li>
+<li>反證；</li>
+<li>人類覆核。</li>
+</ul>
+<hr>
+<h2>一百一十四、重新搜尋是必要規則</h2>
+<p>每篇新 PLDST 文章或新研究 Run 都應重新搜尋。</p>
+<p>舊 Corpus 是起點，不是唯一依據。</p>
+<hr>
+<h1>第二十部分　AI 風格模擬</h1>
+<h2>一百一十五、模擬不是身份</h2>
+<p>$$
+Simulation
+\neq
+Identity
+\neq
+Prediction
+\neq
+Impersonation
+$$</p>
+<hr>
+<h2>一百一十六、表面與決策</h2>
+<p>$$
+SurfaceStyle=Rhetoric
+$$</p>
+<h1>$$
+DecisionStyle</h1>
+<p>Values
++
+Heuristics
++
+Burden
++
+Evidence
++
+Governance
+$$</p>
+<hr>
+<h2>一百一十七、混合不是平均</h2>
+<p>$$
+Hybrid
+\neq
+Average
+$$</p>
+<p>合理混合需要：</p>
+<ul>
+<li>分層；</li>
+<li>Gate；</li>
+<li>Council；</li>
+<li>Constraint reviewer；</li>
+<li>Pareto set；</li>
+<li>衝突公開。</li>
+</ul>
+<hr>
+<h2>一百一十八、跨時代轉譯</h2>
+<p>使用歷史風格分析現代問題時，必須分開：</p>
+<ul>
+<li>穩定價值；</li>
+<li>歷史限制；</li>
+<li>現代限制；</li>
+<li>治理權變化；</li>
+<li>不確定性。</li>
+</ul>
+<hr>
+<h2>一百一十九、好模擬應更可追蹤</h2>
+<h1>$$
+GoodSimulation</h1>
+<p>MoreTraceableThanOrdinaryGeneration
+$$</p>
+<hr>
+<h1>第二十一部分　PLDST 對新語言設計的實際用途</h1>
+<h2>一百二十、設計前提卡</h2>
+<p>新語言應先寫：</p>
+<pre><code class="language-text">主要使用者：
+主要問題：
+非目標：
+機器成本：
+相容邊界：
+核心大小：
+擴張位置：
+錯誤責任：
+治理方式：
+</code></pre>
+<hr>
+<h2>一百二十一、自由配置卡</h2>
+<pre><code class="language-text">作者可做什麼？
+讀者可假設什麼？
+Compiler 可改寫什麼？
+Runtime 可延後什麼？
+Library 可擴張什麼？
+治理可拒絕什麼？
+</code></pre>
+<hr>
+<h2>一百二十二、複雜度配置卡</h2>
+<pre><code class="language-text">消除：
+轉移：
+封裝：
+延後：
+攤銷：
+新增：
+隱藏：
+制度化：
+</code></pre>
+<hr>
+<h2>一百二十三、責任配置卡</h2>
+<pre><code class="language-text">誰預防？
+誰偵測？
+誰定位？
+誰圍堵？
+誰恢復？
+誰負責遷移？
+誰負責長期維護？
+</code></pre>
+<hr>
+<h2>一百二十四、證據卡</h2>
+<pre><code class="language-text">原型：
+Benchmark：
+使用案例：
+反例：
+多實作：
+工具影響：
+遷移成本：
+未解問題：
+</code></pre>
+<hr>
+<h2>一百二十五、治理卡</h2>
+<pre><code class="language-text">誰可提案？
+誰設定議程？
+誰裁決？
+誰實作？
+誰發布？
+誰接班？
+如何申訴？
+如何分叉？
+</code></pre>
+<hr>
+<h1>第二十二部分　設計自由的邊界</h1>
+<h2>一百二十六、不可能無條件最大化所有自由</h2>
+<p>$$
+\max
+(
+AuthorFreedom,
+ReaderFreedom,
+ImplementationFreedom,
+CompatibilityFreedom,
+GovernanceFreedom
+)
+$$</p>
+<p>通常受到共同限制。</p>
+<hr>
+<h2>一百二十七、但也不是純零和</h2>
+<p>更好的 Compiler、資料結構、工具與制度可以同時改善多項維度。</p>
+<p>因此 PLDST 不主張所有改進必須犧牲另一項同等價值。</p>
+<hr>
+<h2>一百二十八、Pareto 前沿</h2>
+<p>更合理的問題是：</p>
+<blockquote>
+<p>此設計是否在現有限制下支配其他方案，或位於可說明的 Pareto 前沿？</p>
+</blockquote>
+<hr>
+<h2>一百二十九、代價應公開</h2>
+<p>不能只說：</p>
+<pre><code class="language-text">更安全
+更簡單
+更自然
+更快
+</code></pre>
+<p>還應說：</p>
+<pre><code class="language-text">對誰？
+相較何物？
+在哪個尺度？
+由誰支付？
+是否可逆？
+</code></pre>
+<hr>
+<h1>第二十三部分　對語言史的重新理解</h1>
+<h2>一百三十、不是範式接力史</h2>
+<p>語言史不是：</p>
+<pre><code class="language-text">命令式被物件導向取代
+物件導向被函數式取代
+動態被靜態取代
+</code></pre>
+<hr>
+<h2>一百三十一、是反覆重配負擔</h2>
+<p>同一問題會在不同年代被重新配置：</p>
+<ul>
+<li>記憶體；</li>
+<li>型別；</li>
+<li>並行；</li>
+<li>模組；</li>
+<li>相容；</li>
+<li>工具；</li>
+<li>治理。</li>
+</ul>
+<hr>
+<h2>一百三十二、舊設計不必然落後</h2>
+<p>某些歷史設計在原始條件下是高品質答案。</p>
+<p>PLDST 避免以今日工具對歷史人物作廉價評判。</p>
+<hr>
+<h2>一百三十三、新設計不必然進步</h2>
+<p>新功能可能只把：</p>
+<ul>
+<li>複雜度；</li>
+<li>錯誤；</li>
+<li>相容成本；</li>
+<li>工具負擔；</li>
+</ul>
+<p>推到未來。</p>
+<hr>
+<h2>一百三十四、語言史是制度史</h2>
+<p>成熟語言的演化由：</p>
+<ul>
+<li>公司；</li>
+<li>標準；</li>
+<li>Core team；</li>
+<li>基金會；</li>
+<li>Package 生態；</li>
+<li>教育；</li>
+<li>部署平台；</li>
+</ul>
+<p>共同塑造。</p>
+<hr>
+<h1>第二十四部分　PLDST 的限制</h1>
+<h2>一百三十五、公開資料不完整</h2>
+<p>部分決策只存在：</p>
+<ul>
+<li>私人信件；</li>
+<li>未保存會議；</li>
+<li>非正式對話；</li>
+<li>已失效來源。</li>
+</ul>
+<hr>
+<h2>一百三十六、人物與環境難以完全分離</h2>
+<p>設計者受：</p>
+<ul>
+<li>硬體；</li>
+<li>組織；</li>
+<li>經濟；</li>
+<li>同事；</li>
+<li>既有語言；</li>
+<li>使用者；</li>
+</ul>
+<p>限制。</p>
+<hr>
+<h2>一百三十七、評估者也有風格</h2>
+<p>研究者可能偏好：</p>
+<ul>
+<li>極簡；</li>
+<li>安全；</li>
+<li>函數式；</li>
+<li>動態；</li>
+<li>系統透明。</li>
+</ul>
+<p>因此必須保存：</p>
+<ul>
+<li>軸定義；</li>
+<li>來源；</li>
+<li>反證；</li>
+<li>編碼者；</li>
+<li>信心；</li>
+<li>分歧。</li>
+</ul>
+<hr>
+<h2>一百三十八、第一批樣本不完整</h2>
+<p>第一批未完整覆蓋：</p>
+<ul>
+<li>ML／Haskell；</li>
+<li>Ada；</li>
+<li>Java；</li>
+<li>Go 創始團隊；</li>
+<li>Erlang；</li>
+<li>Lua；</li>
+<li>Scheme；</li>
+<li>Prolog；</li>
+<li>APL；</li>
+<li>SQL；</li>
+<li>GPU／Shader 語言；</li>
+<li>WebAssembly；</li>
+<li>AI 原生語言。</li>
+</ul>
+<hr>
+<h2>一百三十九、風格不是因果全部</h2>
+<p>$$
+Style
+\subset
+CausalSystem
+$$</p>
+<p>不是：</p>
+<h1>$$
+Style</h1>
+<p>CausalSystem
+$$</p>
+<hr>
+<h1>第二十五部分　第一批三十篇的結構</h1>
+<h2>一百四十、第一部：方法論地基</h2>
+<p>PLDST-001 至 005 建立：</p>
+<ul>
+<li>決策風格；</li>
+<li>複雜度配置；</li>
+<li>責任配置；</li>
+<li>多主體歸因；</li>
+<li>時間相位。</li>
+</ul>
+<hr>
+<h2>一百四十一、第二部：核心衝突</h2>
+<p>PLDST-006 至 010 建立：</p>
+<ul>
+<li>核心與擴張；</li>
+<li>顯式與推導；</li>
+<li>機器與人；</li>
+<li>安全與自由；</li>
+<li>一致性與相容。</li>
+</ul>
+<hr>
+<h2>一百四十二、第三部：設計者個案</h2>
+<p>PLDST-011 至 022 用十二組個案驗證方法能穿越：</p>
+<ul>
+<li>系統語言；</li>
+<li>函數與符號；</li>
+<li>物件；</li>
+<li>動態語言；</li>
+<li>工具平台；</li>
+<li>安全共同體。</li>
+</ul>
+<hr>
+<h2>一百四十三、第四部：跨案例比較</h2>
+<p>PLDST-023 至 026 證明 PLDST 不是人物傳記合集，而能比較：</p>
+<ul>
+<li>技術現實；</li>
+<li>人本價值；</li>
+<li>簡單性；</li>
+<li>治理。</li>
+</ul>
+<hr>
+<h2>一百四十四、第五部：方法落地</h2>
+<p>PLDST-027 至 030 建立：</p>
+<ul>
+<li>評估矩陣；</li>
+<li>決策語料；</li>
+<li>SKILL；</li>
+<li>AI 模擬；</li>
+<li>總論。</li>
+</ul>
+<hr>
+<h1>第二十六部分　第一批研究成果</h1>
+<h2>一百四十五、理論成果</h2>
+<p>PLDST 已建立：</p>
+<pre><code class="language-text">設計決策人格
+複雜度配置論
+控制責任配置論
+時間相位
+多主體歸因
+自由—安全模型
+核心—擴張模型
+治理風格分類
+</code></pre>
+<hr>
+<h2>一百四十六、歷史成果</h2>
+<p>已對十二組設計者或共同體建立正式個案。</p>
+<hr>
+<h2>一百四十七、比較成果</h2>
+<p>已建立四篇跨設計者比較，避免人物研究碎片化。</p>
+<hr>
+<h2>一百四十八、工程成果</h2>
+<p>已建立：</p>
+<ul>
+<li>DDR Schema；</li>
+<li>十八軸 Vocabulary；</li>
+<li>Corpus 規格；</li>
+<li>PLDST SKILL；</li>
+<li>Simulation Contract；</li>
+<li>Validator；</li>
+<li>Contract tests。</li>
+</ul>
+<hr>
+<h2>一百四十九、成書成果</h2>
+<p>三十篇可以重組為：</p>
+<ol>
+<li>方法；</li>
+<li>衝突；</li>
+<li>人物；</li>
+<li>比較；</li>
+<li>AI 與未來。</li>
+</ol>
+<hr>
+<h1>第二十七部分　PLDST 的最終分析語言</h1>
+<h2>一百五十、不要問「此語言是否簡單」</h2>
+<p>應問：</p>
+<pre><code class="language-text">哪一種簡單？
+對誰簡單？
+在哪一層簡單？
+代價在哪裡？
+</code></pre>
+<hr>
+<h2>一百五十一、不要問「此語言是否自由」</h2>
+<p>應問：</p>
+<pre><code class="language-text">誰的自由？
+控制什麼？
+限制誰？
+是否有 Escape hatch？
+</code></pre>
+<hr>
+<h2>一百五十二、不要問「此語言是否安全」</h2>
+<p>應問：</p>
+<pre><code class="language-text">防止哪一類錯誤？
+在哪個階段？
+由誰保證？
+保證邊界在哪裡？
+</code></pre>
+<hr>
+<h2>一百五十三、不要問「此設計者是否務實」</h2>
+<p>應問：</p>
+<pre><code class="language-text">接受哪種證據？
+願意犧牲哪種純度？
+對哪些歷史承諾負責？
+</code></pre>
+<hr>
+<h2>一百五十四、不要問「誰發明了這門語言」</h2>
+<p>應問：</p>
+<pre><code class="language-text">誰提出？
+誰設計？
+誰實作？
+誰裁決？
+誰維護？
+誰讓它成為生態？
+</code></pre>
+<hr>
+<h1>第二十八部分　總公式</h1>
+<h2>一百五十五、設計風格公式</h2>
+<h1>$$
+\boxed{
+\Sigma_{d,t}</h1>
+<p>(
+ProblemFraming,
+ValueOrdering,
+FreedomAllocation,
+BurdenAllocation,
+Responsibility,
+Evidence,
+Governance,
+Evolution
+)
+}
+$$</p>
+<hr>
+<h2>一百五十六、語言公式</h2>
+<h1>$$
+\boxed{
+L_t</h1>
+<p>Syntax
++
+Semantics
++
+Implementation
++
+Library
++
+Tooling
++
+Compatibility
++
+Governance
+}
+$$</p>
+<hr>
+<h2>一百五十七、代價公式</h2>
+<h1>$$
+\boxed{
+Cost</h1>
+<p>WhoPays
++
+WhatIsPaid
++
+WhenPaid
++
+Visibility
++
+FailureExternality
+}
+$$</p>
+<hr>
+<h2>一百五十八、自由公式</h2>
+<h1>$$
+\boxed{
+Freedom</h1>
+<p>AvailableActions
++
+PredictableConsequences
++
+RecoverableInformation
++
+ExitOptions
+}
+$$</p>
+<hr>
+<h2>一百五十九、良好配置</h2>
+<h1>$$
+\boxed{
+GoodAllocation</h1>
+<p>CostAtCapableLayer
++
+ResponsibilityWithControl
++
+VisibleTradeoffs
++
+BoundedFailure
++
+RevisableGovernance
+}
+$$</p>
+<hr>
+<h1>第二十九部分　最終命題</h1>
+<h2>一百六十、語言設計不是消滅代價</h2>
+<p>設計的核心是：</p>
+<blockquote>
+<p>將不可避免及新產生的代價，配置到最能承擔、最能重用、最能觀測且最不會造成不可接受外溢的位置。</p>
+</blockquote>
+<hr>
+<h2>一百六十一、語言設計不是最大化自由</h2>
+<p>設計的核心是：</p>
+<blockquote>
+<p>決定哪些自由應受保護、哪些自由需受限制，以及限制是否創造更高階、更長期的自由。</p>
+</blockquote>
+<hr>
+<h2>一百六十二、語言設計不是創始者獨白</h2>
+<p>設計會逐步成為：</p>
+<p>$$
+Founder
++
+CoDesigners
++
+Implementers
++
+Users
++
+Institutions
++
+History
+$$</p>
+<hr>
+<h2>一百六十三、語言設計不是一次性作品</h2>
+<p>每個版本都重新回答：</p>
+<ul>
+<li>什麼仍值得保護；</li>
+<li>什麼已成化石；</li>
+<li>什麼可以遷移；</li>
+<li>什麼必須拒絕；</li>
+<li>誰仍具有權力。</li>
+</ul>
+<hr>
+<h2>一百六十四、PLDST 的總命題</h2>
+<h1>$$
+\boxed{
+ProgrammingLanguageDesign</h1>
+<p>TheConstitutionalAllocation
+\left(
+Freedom,
+Complexity,
+Responsibility,
+Time,
+Authority
+\right)
+}
+$$</p>
+<hr>
+<h1>第三十部分　封頂結論</h1>
+<h2>一百六十五、PLDST 不是排行榜</h2>
+<p>它不宣告：</p>
+<ul>
+<li>Wirth 優於 Stroustrup；</li>
+<li>Python 優於 Perl；</li>
+<li>函數式優於命令式；</li>
+<li>委員會優於 BDFL；</li>
+<li>安全優於自由。</li>
+</ul>
+<hr>
+<h2>一百六十六、PLDST 是比較語言</h2>
+<p>它讓研究者能精確說：</p>
+<ul>
+<li>哪種價值被優先；</li>
+<li>哪種成本被轉移；</li>
+<li>哪種責任被前移；</li>
+<li>哪種歷史被保護；</li>
+<li>哪種證據被接受；</li>
+<li>哪種權力被制度化。</li>
+</ul>
+<hr>
+<h2>一百六十七、PLDST 是設計鏡子</h2>
+<p>研究歷史設計者的目的，不是複製他們，而是讓當代設計者看見自己的隱性取捨。</p>
+<hr>
+<h2>一百六十八、PLDST 是 AI 的限制器</h2>
+<p>AI 可以生成大量設計方案。</p>
+<p>PLDST 要求它同時回答：</p>
+<pre><code class="language-text">來源？
+代價？
+反證？
+時間？
+歸因？
+責任？
+治理？
+</code></pre>
+<hr>
+<h2>一百六十九、第一批完成</h2>
+<h1>$$
+\boxed{
+PLDST\ First\ Batch</h1>
+<p>30/30
+}
+$$</p>
+<hr>
+<h2>一百七十、最終封頂命題</h2>
+<blockquote>
+<p>程式語言設計的真正風格，不存在於設計者最常說出的口號，而存在於他面對無法同時滿足的要求時，反覆選擇讓誰自由、讓誰受限、讓誰承擔複雜度，又願意為哪些歷史與未來負責。</p>
+</blockquote>
+<hr>
+<h1>附錄 A　第一批 30 篇完整索引</h1>
+<h2>第一部　方法論地基</h2>
+<ol>
+<li><strong>PLDST-001</strong>　程式語言設計師風格譜系：從語言特徵分類到設計決策人格  </li>
+<li><strong>PLDST-002</strong>　複雜度配置論：程式語言沒有消滅的複雜度去了哪裡？  </li>
+<li><strong>PLDST-003</strong>　控制責任配置論：使用者、編譯器、Runtime 與工具誰應承擔錯誤？  </li>
+<li><strong>PLDST-004</strong>　設計者共同體與制度：如何避免程式語言史的創始人歸因偏誤  </li>
+<li><strong>PLDST-005</strong>　風格的時間相位：設計師思想、語言演化與社群治理如何分離</li>
+</ol>
+<h2>第二部　核心風格原型</h2>
+<ol start="6">
+<li><strong>PLDST-006</strong>　極簡核心與功能擴張：語言應保持多小，又能成長到多大？  </li>
+<li><strong>PLDST-007</strong>　顯式控制與自動推導：設計者應要求使用者說多少，又替使用者猜多少？  </li>
+<li><strong>PLDST-008</strong>　機器效率與人類可讀性：成本模型應寫在語言表面，還是藏在編譯器之後？  </li>
+<li><strong>PLDST-009</strong>　安全約束與表達自由：語言應禁止多少錯誤，又應允許多少逃生？  </li>
+<li><strong>PLDST-010</strong>　設計一致性、相容性與社群演化：語言何時應堅持原則，何時應接受歷史？</li>
+</ol>
+<h2>第三部　設計師與共同體個案</h2>
+<ol start="11">
+<li><strong>PLDST-011</strong>　John Backus：從 FORTRAN 到函數級程式設計的自我反省  </li>
+<li><strong>PLDST-012</strong>　John McCarthy：極小核心、符號計算與語言可延展性  </li>
+<li><strong>PLDST-013</strong>　Alan Kay：物件、訊息與對物件導向的歷史誤讀  </li>
+<li><strong>PLDST-014</strong>　Niklaus Wirth：簡潔、教育與可實作性的設計倫理  </li>
+<li><strong>PLDST-015</strong>　Dennis Ritchie：可攜式系統語言、機器透明度與克制的抽象  </li>
+<li><strong>PLDST-016</strong>　Bjarne Stroustrup：零額外成本、多範式與相容性政治  </li>
+<li><strong>PLDST-017</strong>　Guido van Rossum：可讀性、實用主義與 BDFL 裁決  </li>
+<li><strong>PLDST-018</strong>　Yukihiro Matsumoto：程式設計者幸福、語言自然性與社群信任  </li>
+<li><strong>PLDST-019</strong>　Larry Wall：語言多義性、後現代實用主義與社群文化  </li>
+<li><strong>PLDST-020</strong>　Anders Hejlsberg：工具驅動設計、漸進型別與平台折衷  </li>
+<li><strong>PLDST-021</strong>　Rich Hickey：價值、身分與簡單性的分離  </li>
+<li><strong>PLDST-022</strong>　Graydon Hoare 與 Rust 共同體：安全系統語言如何從個人原型轉為制度工程</li>
+</ol>
+<h2>第四部　跨設計師比較</h2>
+<ol start="23">
+<li><strong>PLDST-023</strong>　Wirth、Ritchie 與 Stroustrup：簡潔、機器控制與相容性之間的三種系統語言倫理  </li>
+<li><strong>PLDST-024</strong>　Guido、Matz 與 Larry Wall：可讀性、幸福與多義性之間的三種人本語言設計  </li>
+<li><strong>PLDST-025</strong>　Backus、McCarthy 與 Hickey：函數、符號與簡單性的不同道路  </li>
+<li><strong>PLDST-026</strong>　個人設計者、仁慈獨裁者與 RFC 制度：語言治理風格比較</li>
+</ol>
+<h2>第五部　方法落地與封頂</h2>
+<ol start="27">
+<li><strong>PLDST-027</strong>　PLDST 評估矩陣與設計決策語料庫規格  </li>
+<li><strong>PLDST-028</strong>　PLDST SKILL 技術規格：資料搜尋、決策抽取與風格判定  </li>
+<li><strong>PLDST-029</strong>　AI 模擬程式語言設計師風格：混合、轉譯與失真問題  </li>
+<li><strong>PLDST-030</strong>　程式語言設計師風格譜系總論：設計自由、複雜度與代價</li>
+</ol>
+<hr>
+<h1>附錄 B　第一批分部統計</h1>
+<pre><code class="language-text">第一部：5 篇
+第二部：5 篇
+第三部：12 篇
+第四部：4 篇
+第五部：4 篇
+合計：30 篇
+</code></pre>
+<p>$$
+5+5+12+4+4=30
+$$</p>
+<hr>
+<h1>附錄 C　建議成書結構</h1>
+<h2>卷一　為何設計者值得被研究</h2>
+<p>PLDST-001 至 005。</p>
+<h2>卷二　語言設計的五場根本衝突</h2>
+<p>PLDST-006 至 010。</p>
+<h2>卷三　設計語言的人</h2>
+<p>PLDST-011 至 022。</p>
+<h2>卷四　不同道路的正面比較</h2>
+<p>PLDST-023 至 026。</p>
+<h2>卷五　從歷史研究到 AI 設計工具</h2>
+<p>PLDST-027 至 030。</p>
+<hr>
+<h1>附錄 D　核心公式表</h1>
+<h3>設計風格</h3>
+<h1>$$
+DesignStyle</h1>
+<p>RepeatedTradeoffRules
++
+BurdenAllocation
++
+ResponsibilityAllocation
++
+EvidenceStandard
++
+Governance
++
+TemporalRevision
+$$</p>
+<h3>完整決策</h3>
+<h1>$$
+DDR</h1>
+<p>Actor
++
+Time
++
+Problem
++
+Constraints
++
+Options
++
+Decision
++
+Rationale
++
+Implementation
++
+Consequences
++
+Evidence
+$$</p>
+<h3>語言狀態</h3>
+<h1>$$
+L_t</h1>
+<p>Design_t
++
+Implementation_t
++
+Compatibility_{&lt;t}
++
+Ecosystem_t
++
+Governance_t
+$$</p>
+<h3>良好配置</h3>
+<h1>$$
+GoodAllocation</h1>
+<p>CostAtCapableLayer
++
+ResponsibilityWithControl
++
+VisibleTradeoffs
++
+BoundedFailure
++
+RevisableGovernance
+$$</p>
+<h3>最終總論</h3>
+<h1>$$
+ProgrammingLanguageDesign</h1>
+<p>TheConstitutionalAllocation
+\left(
+Freedom,
+Complexity,
+Responsibility,
+Time,
+Authority
+\right)
+$$</p>
+<hr>
+<h1>附錄 E　本輪重新查核的主要外部資料</h1>
+<p><strong>[R1]</strong> John Backus, “Can Programming Be Liberated from the von Neumann Style? A Functional Style and Its Algebra of Programs,” <em>Communications of the ACM</em>, 1978.<br>— 函數級程式設計、馮紐曼風格、程式代數及設計自我批判。</p>
+<p><strong>[R2]</strong> Dennis M. Ritchie, “The Development of the C Language,” HOPL II／ACM.<br>— C、B、BCPL、Unix、PDP-11、實作與共同設計歷史。</p>
+<p><strong>[R3]</strong> Bjarne Stroustrup, <em>The Design and Evolution of C++</em>, official historical description and ACM／HOPL materials.<br>— 真實限制、被拒方案、相容性、抽象與語言演化。</p>
+<p><strong>[R4]</strong> ACM History of Programming Languages proceedings.<br>— 以設計者、歷史限制、實作及演化研究程式語言。</p>
+<p><strong>[R5]</strong> Python Enhancement Proposals, PEP 13: Python Language Governance.<br>— 五人 Steering Council、廣泛但克制的權力、委派、選舉與接班。</p>
+<p><strong>[R6]</strong> Rust official Governance and Leadership Council documentation.<br>— RFC、公開審議、領域團隊、Purview 與跨團隊協調。</p>
+<p><strong>[R7]</strong> Swift.org, Language Steering Group and Swift Evolution documentation.<br>— 公開語言演化、Steering Group、專案權力與社群參與。</p>
+<p><strong>[R8]</strong> ISO C++／WG21, Practices and Procedures and committee participation materials.<br>— 書面提案、工作小組、多實作與共識標準化。</p>
+<p><strong>[R9]</strong> PLDST-001 至 PLDST-029。<br>— 本文的直接理論、個案、比較及工程基礎。</p>
+<p><strong>資料查核日期：</strong> 2026-07-30。</p>
+<hr>
+<h1>附錄 F　第二輪總校對紀錄</h1>
+<h2>F.1 「複雜度配置」不是物理守恆律</h2>
+<p>本文沒有主張所有複雜度永遠等量保存。</p>
+<p>更好的抽象、演算法、工具與介面可以真正消除偶發負擔。</p>
+<p>PLDST 要求追蹤的是：</p>
+<ul>
+<li>未消除的本質負擔；</li>
+<li>被轉移的負擔；</li>
+<li>新加入的負擔；</li>
+<li>延後至未來的負擔。</li>
+</ul>
+<hr>
+<h2>F.2 「自由衝突」不是永恆零和</h2>
+<p>工具、分析、資料結構與制度創新可以同時改善多種自由。</p>
+<p>本文只否定「所有自由與保證可以無條件無成本最大化」。</p>
+<hr>
+<h2>F.3 設計者風格不是心理診斷</h2>
+<p>PLDST 所稱「設計決策人格」是歷史決策模式，不推論私人心理本質、政治立場或道德人格。</p>
+<hr>
+<h2>F.4 成功不能反證所有代價</h2>
+<p>語言廣泛採用可能來自：</p>
+<ul>
+<li>時機；</li>
+<li>公司；</li>
+<li>平台；</li>
+<li>教育；</li>
+<li>Library；</li>
+<li>既有生態；</li>
+<li>市場。</li>
+</ul>
+<p>成功是結果資料，不是所有設計哲學的自動證明。</p>
+<hr>
+<h2>F.5 當代治理已與創始期分離</h2>
+<p>截至 2026-07-30：</p>
+<ul>
+<li>Python 正式治理為 Steering Council；</li>
+<li>Rust 由多個領域團隊與 Leadership Council 構成；</li>
+<li>Swift 的公開演化由 Language Steering Group 引導；</li>
+<li>C++ 正式標準由 WG21 程序形成。</li>
+</ul>
+<p>本文沒有把現代決策全部歸給創始者。</p>
+<hr>
+<h2>F.6 第一批不是終極全集</h2>
+<p>三十篇完成的是第一個可運作閉環：</p>
+<pre><code class="language-text">理論
+→ 個案
+→ 比較
+→ 語料
+→ SKILL
+→ 模擬
+→ 總論
+</code></pre>
+<p>它不是對所有語言與設計者的完整覆蓋。</p>
+<hr>
+<h1>附錄 G　第一批封頂聲明</h1>
+<p>PLDST 第一批 30 篇已完成以下閉環：</p>
+<p>$$
+\boxed{
+Question
+\rightarrow
+Theory
+\rightarrow
+CaseStudy
+\rightarrow
+Comparison
+\rightarrow
+Corpus
+\rightarrow
+Skill
+\rightarrow
+Simulation
+\rightarrow
+GeneralTheory
+}
+$$</p>
+<p>系列第一批至此正式封頂。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-030.html">https://thisoneisneok.com/html/papers/pldst-030.html</a></footer>
+</body>
+</html>

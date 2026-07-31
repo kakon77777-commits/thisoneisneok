@@ -1,0 +1,1561 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>異常即入口 | Neo.K</title>
+<meta name="description" content="具身化 AI 自主研究閉環若只會選擇下一個最佳實驗、提高目標函數或重複成功程序，最終容易形成一個高速但封閉的最佳化機器。真正的研究系統必須能處理那些不符合預期、無法被既有類別解釋、破壞模型假設，甚至無法立即判斷是「新現象」還是「設備壞掉」的事件。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/stdi-11.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / STDI</strong><span>時空域支配智能</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>STDI-11</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>系統架構論文／異常、反例與未知治理規格</span></div><div><b>證據</b><span>E0——形式模型、分類體系、驗證協議與 MVP 路線</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/stdi-11.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>異常即入口</h1>
+<h2>具身自主研究中的反例、失敗、離群事件與未知管理</h2>
+<p><strong>Anomaly as Entrance: Counterexamples, Failures, Outliers, and Unknown Management in Embodied Autonomous Research</strong></p>
+<p><strong>系列：</strong>《時空域支配智能》系列第 11 篇<br><strong>文件編號：</strong> EML-STDI-AEU-2026-v0.1<br><strong>架構名稱：</strong> AEU｜Anomaly–Exception–Unknown Runtime<br><strong>作者：</strong> Neo.K<br><strong>協作整理：</strong> Aletheia（阿萊）<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>日期：</strong> 2026 年 7 月 30 日<br><strong>文件類型：</strong> 系統架構論文／異常、反例與未知治理規格<br><strong>證據成熟度：</strong> E0——形式模型、分類體系、驗證協議與 MVP 路線<br><strong>公開狀態：</strong> 私人研究稿；公開前應經 EML-CF 的 IP Gate、安全、來源與證據審查<br><strong>上位理論：</strong> STDI｜時空域支配智能<br><strong>直接前序：</strong>《具身化 AI 自主研究閉環：從假說生成、物理實驗到證據判定與概念修正》</p>
+<hr>
+<h2>摘要</h2>
+<p>具身化 AI 自主研究閉環若只會選擇下一個最佳實驗、提高目標函數或重複成功程序，最終容易形成一個高速但封閉的最佳化機器。真正的研究系統必須能處理那些不符合預期、無法被既有類別解釋、破壞模型假設，甚至無法立即判斷是「新現象」還是「設備壞掉」的事件。</p>
+<p>本文提出：</p>
+<blockquote>
+<p><strong>異常即入口，但異常不等於發現。</strong></p>
+</blockquote>
+<p>異常的第一個作用，不是替 AI 提供宣稱新理論的理由，而是迫使研究閉環重新檢查世界狀態、樣本身份、儀器健康、程序版本、量測校準、資料管線、模型假設、治理權限與既有假說邊界。只有在排除或量化這些來源後，一個離群結果才有資格從「故障候選」逐步升格為「科學異常候選」。</p>
+<p>本文提出 <strong>AEU｜Anomaly–Exception–Unknown Runtime（異常—例外—未知運行層）</strong>，作為 EARC 的反例與開放世界子系統。其研究狀態為：</p>
+<h1>$$
+\mathcal{U}_t</h1>
+<p>\left(
+O_t,
+B_t,
+A_t,
+C_t,
+R_t,
+H_t,
+E_t,
+Q_t,
+G_t
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$O_t$：觀測、量測、事件與系統遙測；</li>
+<li>$B_t$：基準、預期、模型與合法程序；</li>
+<li>$A_t$：異常候選；</li>
+<li>$C_t$：異常分類、來源與競爭解釋；</li>
+<li>$R_t$：重觀測、重現、隔離與反證計畫；</li>
+<li>$H_t$：被挑戰或新生成的假說；</li>
+<li>$E_t$：證據、校準、來源與負結果；</li>
+<li>$Q_t$：風險、優先級與未知預算；</li>
+<li>$G_t$：安全、權限、IP 和人類治理。</li>
+</ul>
+<p>本文將異常分成八類：</p>
+<ol>
+<li><strong>A0 統計波動與正常噪音</strong>；</li>
+<li><strong>A1 感測、量測與校準異常</strong>；</li>
+<li><strong>A2 設備健康、工具與執行異常</strong>；</li>
+<li><strong>A3 樣本、材料、身份與保管異常</strong>；</li>
+<li><strong>A4 程序、排程與世界狀態異常</strong>；</li>
+<li><strong>A5 資料、模型、AI Agent 與證據異常</strong>；</li>
+<li><strong>A6 權限、安全、治理與對抗性異常</strong>；</li>
+<li><strong>A7 尚無法歸類的開放世界異常</strong>。</li>
+</ol>
+<p>異常分數不只計算統計殘差，而同時考慮物理約束、分布外程度、來源缺口、治理差異與多感測器不一致：</p>
+<p>$$
+\begin{aligned}
+S_{\mathrm{anom}}(o)
+={}&amp;
+w_rS_{\mathrm{residual}}
++
+w_dS_{\mathrm{distribution}}
++
+w_cS_{\mathrm{constraint}}
+\
+&amp;+
+w_mS_{\mathrm{multimodal}}
++
+w_pS_{\mathrm{provenance}}
++
+w_gS_{\mathrm{governance}}
++
+w_uS_{\mathrm{unknown}}.
+\end{aligned}
+$$</p>
+<p>但高分只觸發 <strong>Anomaly Gate</strong>，不直接建立研究結論。完整生命週期為：</p>
+<pre><code class="language-text">DETECTED
+→ QUARANTINED
+→ REOBSERVED
+→ TRIAGED
+→ REPRODUCED／NOT_REPRODUCED
+→ EXPLAINED／OPEN_UNKNOWN
+→ HYPOTHESIS_REVISED／NEW_BRANCH／DISMISSED
+</code></pre>
+<p>本文建立三個核心分離：</p>
+<p>$$
+\boxed{
+\text{異常偵測}
+\neq
+\text{異常解釋}
+\neq
+\text{科學發現}
+}
+$$</p>
+<p>異常偵測只指出觀測偏離基準；異常解釋判斷偏離可能來自何處；科學發現則要求異常可重現、具備正交證據、能排除重要混淆，並使既有模型或假說發生可驗證改變。</p>
+<p>現有研究已顯示此問題的現實性。2025 年的自駕實驗室視覺異常資料工作指出，實驗過程中的非預期事件和故障需要被有效偵測，並建立專門面向實驗流程異常的視覺資料集。CVPR 2025 的 Phys-AD 則以真實機械臂與動態物體建立物理異常資料，顯示靜態外觀異常模型難以處理需要物理推理的事件。自動化 HPLC 研究也已使用機器學習持續辨識分析流程異常與儀器健康。主動異常發現研究則證明，讓模型根據專家回饋主動挑選最值得檢查的異常，可提高真正有科學價值的異常發現效率。對黑箱資訊物理系統的主動反證研究進一步展示，可利用形式化時間性質與主動學習減少尋找違例所需的模擬次數。</p>
+<p>本文將這些能力整合進 EARC，建立：</p>
+<ul>
+<li>Anomaly Contract；</li>
+<li>Unknown Registry；</li>
+<li>Negative Result Graph；</li>
+<li>Failure Triage；</li>
+<li>Active Anomaly Queue；</li>
+<li>Reproduction Gate；</li>
+<li>Orthogonal Evidence Gate；</li>
+<li>Open-World Boundary；</li>
+<li>Anomaly Debt；</li>
+<li>Human Escalation；</li>
+<li>Hypothesis Expansion；</li>
+<li>IP-sensitive anomaly routing。</li>
+</ul>
+<p>本文的核心命題為：</p>
+<blockquote>
+<p>一個成熟的自主研究系統，不是從不出錯，也不是把每一個離群點都叫作突破；它必須能把錯誤、噪音、設備故障、反例與真正未知分開保存，並讓無法解釋的殘差成為下一輪可驗證研究的入口。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> 異常即入口、AEU、具身自主研究、反例、失敗管理、未知管理、開放世界、物理異常、主動異常發現、負結果、反證、異常分流、科學發現、儀器健康、Evaluation Probes</p>
+<hr>
+<h1>0. 版本定位：第十一篇補的是「閉環如何面對預期之外」</h1>
+<p>第十篇 EARC 已經建立：</p>
+<ul>
+<li>可反駁假說；</li>
+<li>競爭解釋；</li>
+<li>實驗組合；</li>
+<li>物理執行；</li>
+<li>證據判定；</li>
+<li>重現；</li>
+<li>停止；</li>
+<li>概念修正。</li>
+</ul>
+<p>但它仍隱含一個相對封閉的假設：</p>
+<blockquote>
+<p>研究結果大致落在系統事先設計的分類、變量與失敗模式中。</p>
+</blockquote>
+<p>真實物理研究中，常出現：</p>
+<ul>
+<li>感測器突然偏移；</li>
+<li>樣本被放錯位置；</li>
+<li>機械臂完成動作但物體沒有移動；</li>
+<li>理論預測與量測差距巨大；</li>
+<li>模型不確定度很低但結果錯誤；</li>
+<li>不同量測手段互相矛盾；</li>
+<li>一個只出現一次、卻非常顯著的事件；</li>
+<li>無法被既有本體命名的物理狀態。</li>
+</ul>
+<p>AEU 的任務不是立即解釋一切，而是讓系統能正式說：</p>
+<blockquote>
+<p>我觀察到偏離，但目前不知道偏離的來源。</p>
+</blockquote>
+<hr>
+<h1>1. 異常、例外、失敗、反例與未知</h1>
+<h2>1.1 異常 Anomaly</h2>
+<p>相對於某個基準或預測的顯著偏離：</p>
+<h1>$$
+a</h1>
+<p>o-\hat{o}.
+$$</p>
+<p>異常依賴基準；沒有基準就沒有異常。</p>
+<h2>1.2 例外 Exception</h2>
+<p>系統已知某類不尋常事件，且已有處理程序。</p>
+<p>例如：</p>
+<ul>
+<li>網路短暫斷線；</li>
+<li>樣本未抓穩；</li>
+<li>儀器暖機逾時；</li>
+<li>校準過期。</li>
+</ul>
+<p>例外不一定挑戰科學模型。</p>
+<h2>1.3 失敗 Failure</h2>
+<p>任務、程序、設備或證據沒有滿足完成條件。</p>
+<p>失敗可能完全符合既有模型。</p>
+<h2>1.4 反例 Counterexample</h2>
+<p>某項觀測或可重現條件，直接違反假說、形式性質或安全主張。</p>
+<h2>1.5 離群值 Outlier</h2>
+<p>在統計空間中偏離大多數資料的點。</p>
+<p>離群值可能是：</p>
+<ul>
+<li>測量錯誤；</li>
+<li>稀有但正常；</li>
+<li>新現象；</li>
+<li>樣本混入；</li>
+<li>資料處理錯誤。</li>
+</ul>
+<h2>1.6 未知 Unknown</h2>
+<p>系統缺少足夠狀態、表示、模型或證據來分類。</p>
+<p>未知不是暫時填入最接近類別的藉口，而是正式研究狀態。</p>
+<hr>
+<h1>2. 八類異常</h1>
+<h2>A0：統計波動與正常噪音</h2>
+<p>特徵：</p>
+<ul>
+<li>落在已知誤差模型內；</li>
+<li>不重現；</li>
+<li>不違反物理或治理約束；</li>
+<li>不需要擴張假說。</li>
+</ul>
+<p>處理：</p>
+<ul>
+<li>保存；</li>
+<li>不升級；</li>
+<li>更新噪音模型。</li>
+</ul>
+<h2>A1：感測、量測與校準異常</h2>
+<p>包括：</p>
+<ul>
+<li>漂移；</li>
+<li>飽和；</li>
+<li>失焦；</li>
+<li>基線偏移；</li>
+<li>時鐘錯誤；</li>
+<li>校準件失效；</li>
+<li>單位或量程錯誤。</li>
+</ul>
+<h2>A2：設備、工具與執行異常</h2>
+<p>包括：</p>
+<ul>
+<li>馬達失步；</li>
+<li>夾具鬆動；</li>
+<li>泵堵塞；</li>
+<li>工具錯裝；</li>
+<li>儀器健康退化；</li>
+<li>指令與實際效果不一致。</li>
+</ul>
+<h2>A3：樣本、材料與身份異常</h2>
+<p>包括：</p>
+<ul>
+<li>樣本交換；</li>
+<li>批次污染；</li>
+<li>材料組成差異；</li>
+<li>容器錯誤；</li>
+<li>保管鏈斷裂；</li>
+<li>未知混入物。</li>
+</ul>
+<h2>A4：程序、排程與世界狀態異常</h2>
+<p>包括：</p>
+<ul>
+<li>步驟順序錯；</li>
+<li>世界紀元過期；</li>
+<li>等待時間不足；</li>
+<li>人類中途介入；</li>
+<li>任務包重放；</li>
+<li>站點對同一物件狀態不一致。</li>
+</ul>
+<h2>A5：資料、模型、Agent 與證據異常</h2>
+<p>包括：</p>
+<ul>
+<li>模型 OOD；</li>
+<li>過度自信；</li>
+<li>資料洩漏；</li>
+<li>分析程式版本錯；</li>
+<li>Agent 幻覺能力；</li>
+<li>引用不支持結論；</li>
+<li>原始資料與報告不一致。</li>
+</ul>
+<h2>A6：治理、安全與對抗性異常</h2>
+<p>包括：</p>
+<ul>
+<li>過期租約仍被接受；</li>
+<li>舊治理紀元命令；</li>
+<li>假站點或假憑證；</li>
+<li>惡意文件注入；</li>
+<li>權限擴張；</li>
+<li>IP 資料被送往未授權站點。</li>
+</ul>
+<h2>A7：開放世界異常</h2>
+<p>在排除重要已知來源後，仍無法以現有類型、模型與假說解釋。</p>
+<p>A7 是研究入口，但不是新理論證明。</p>
+<hr>
+<h1>3. 異常偵測不是發現引擎</h1>
+<h2>3.1 高殘差的多種來源</h2>
+<h1>$$
+r</h1>
+<h2>y_{\mathrm{observed}}</h2>
+<p>y_{\mathrm{predicted}}.
+$$</p>
+<p>大殘差可能意味：</p>
+<ul>
+<li>模型錯；</li>
+<li>量測錯；</li>
+<li>輸入記錄錯；</li>
+<li>樣本錯；</li>
+<li>未觀測干擾；</li>
+<li>真實新現象。</li>
+</ul>
+<h2>3.2 三階段分離</h2>
+<h3>Detection</h3>
+<p>哪裡偏離？</p>
+<h3>Attribution</h3>
+<p>偏離最可能來自哪個層級？</p>
+<h3>Scientific Qualification</h3>
+<p>偏離是否能重現，且能迫使假說或機制模型改變？</p>
+<h2>3.3 異常升格條件</h2>
+<p>至少滿足：</p>
+<ul>
+<li>身份確認；</li>
+<li>校準有效；</li>
+<li>程序版本確認；</li>
+<li>正交感測；</li>
+<li>可重現或有合理稀有事件證據；</li>
+<li>排除主要混淆；</li>
+<li>完整來源；</li>
+<li>人類或授權評估。</li>
+</ul>
+<hr>
+<h1>4. 異常分數</h1>
+<p>定義：</p>
+<p>$$
+\begin{aligned}
+S_{\mathrm{anom}}(o)
+={}&amp;
+w_rS_{\mathrm{residual}}
++
+w_dS_{\mathrm{distribution}}
++
+w_cS_{\mathrm{constraint}}
+\
+&amp;+
+w_mS_{\mathrm{multimodal}}
++
+w_pS_{\mathrm{provenance}}
++
+w_gS_{\mathrm{governance}}
++
+w_uS_{\mathrm{unknown}}.
+\end{aligned}
+$$</p>
+<h2>4.1 Residual</h2>
+<p>與預測、基準或同批樣本差異。</p>
+<h2>4.2 Distribution Shift</h2>
+<p>輸入或狀態是否超出訓練／校準分布。</p>
+<h2>4.3 Constraint Violation</h2>
+<p>是否違反：</p>
+<ul>
+<li>能量；</li>
+<li>守恆；</li>
+<li>幾何；</li>
+<li>時間；</li>
+<li>安全；</li>
+<li>程序。</li>
+</ul>
+<h2>4.4 Multimodal Disagreement</h2>
+<p>例如：</p>
+<ul>
+<li>相機說已抓取；</li>
+<li>重量感測器說仍在原位；</li>
+<li>夾爪力感說沒有物體。</li>
+</ul>
+<h2>4.5 Provenance Gap</h2>
+<p>缺少：</p>
+<ul>
+<li>樣本身份；</li>
+<li>量測來源；</li>
+<li>程式版本；</li>
+<li>校準；</li>
+<li>原始資料。</li>
+</ul>
+<h2>4.6 Governance Divergence</h2>
+<p>觀測或行動是否與租約、世界紀元或治理日誌矛盾。</p>
+<h2>4.7 Unknown Score</h2>
+<p>現有模型對觀測：</p>
+<ul>
+<li>無類別；</li>
+<li>高熵；</li>
+<li>高模型分歧；</li>
+<li>無可用解釋；</li>
+<li>顯著 OOD。</li>
+</ul>
+<hr>
+<h1>5. Anomaly Contract</h1>
+<p>每個異常候選：</p>
+<h1>$$
+\alpha</h1>
+<p>\left(
+o,
+b,
+\delta,
+s,
+c,
+r,
+e,
+g
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$o$：原始觀測；</li>
+<li>$b$：比較基準；</li>
+<li>$\delta$：偏離程度；</li>
+<li>$s$：來源和世界紀元；</li>
+<li>$c$：候選分類和解釋；</li>
+<li>$r$：重觀測／重現計畫；</li>
+<li>$e$：證據要求；</li>
+<li>$g$：安全、權限和 IP 處理。</li>
+</ul>
+<h2>5.1 必須記錄</h2>
+<ul>
+<li>異常出現前狀態；</li>
+<li>異常期間事件；</li>
+<li>感測器和設備版本；</li>
+<li>站點健康；</li>
+<li>人類介入；</li>
+<li>原始資料；</li>
+<li>是否可再現；</li>
+<li>已排除來源；</li>
+<li>未排除來源。</li>
+</ul>
+<hr>
+<h1>6. 生命週期</h1>
+<pre><code class="language-text">DETECTED
+  ↓
+QUARANTINED
+  ↓
+REOBSERVED
+  ↓
+TRIAGED
+  ├── NORMAL_VARIATION
+  ├── MEASUREMENT_FAULT
+  ├── EQUIPMENT_FAULT
+  ├── SAMPLE／PROCEDURE_FAULT
+  ├── MODEL／AGENT_FAULT
+  ├── GOVERNANCE_EVENT
+  └── OPEN_UNKNOWN
+         ↓
+REPRODUCTION_ATTEMPT
+  ├── NOT_REPRODUCED
+  ├── REPRODUCED
+  └── RARE_EVENT_SUPPORTED
+         ↓
+EXPLAINED／HYPOTHESIS_EXPANDED／NEW_RESEARCH_BRANCH
+</code></pre>
+<h2>6.1 Quarantine</h2>
+<p>隔離的可能對象：</p>
+<ul>
+<li>樣本；</li>
+<li>儀器；</li>
+<li>資料；</li>
+<li>模型輸出；</li>
+<li>任務；</li>
+<li>世界主張。</li>
+</ul>
+<p>隔離不是刪除。</p>
+<h2>6.2 Reobserve</h2>
+<p>使用：</p>
+<ul>
+<li>同一感測器重測；</li>
+<li>不同感測器；</li>
+<li>不同站點；</li>
+<li>人工檢查；</li>
+<li>校準件；</li>
+<li>重新定位。</li>
+</ul>
+<h2>6.3 Triage</h2>
+<p>先排安全與基礎設施，再談新現象。</p>
+<h2>6.4 Reproduce</h2>
+<p>重現可以是：</p>
+<ul>
+<li>同一樣本；</li>
+<li>新樣本；</li>
+<li>不同批次；</li>
+<li>不同設備；</li>
+<li>不同環境；</li>
+<li>反向干預。</li>
+</ul>
+<hr>
+<h1>7. Unknown Registry</h1>
+<h2>7.1 未知類型</h2>
+<h3>Epistemic Unknown</h3>
+<p>缺少知識或資料，可透過觀測降低。</p>
+<h3>Aleatoric Uncertainty</h3>
+<p>物理或量測本身具有隨機性。</p>
+<h3>Representational Unknown</h3>
+<p>現有 schema、本體或模型無法表示。</p>
+<h3>Causal Unknown</h3>
+<p>知道相關，但不知道機制和干預結果。</p>
+<h3>Infrastructure Unknown</h3>
+<p>不知道設備、網路或程序是否可靠。</p>
+<h3>Governance Unknown</h3>
+<p>權限、責任、IP 或法律邊界不清楚。</p>
+<h2>7.2 Unknown Record</h2>
+<pre><code class="language-yaml">unknown:
+  id: &quot;&quot;
+  scope: &quot;&quot;
+  description: &quot;&quot;
+  type: &quot;&quot;
+  blocking_decisions: []
+  possible_observations: []
+  estimated_cost_to_reduce: null
+  risk_if_ignored: null
+  owner: &quot;&quot;
+  status: &quot;OPEN&quot;
+</code></pre>
+<h2>7.3 不知道不等於待辦清單全部優先</h2>
+<p>需要依：</p>
+<ul>
+<li>風險；</li>
+<li>資訊價值；</li>
+<li>產品價值；</li>
+<li>可降低程度；</li>
+<li>時間；</li>
+</ul>
+<p>排序。</p>
+<hr>
+<h1>8. Unknown Budget</h1>
+<p>研究系統不能無限追逐每個未知。</p>
+<p>定義未知 $u$ 的優先級：</p>
+<h1>$$
+P(u)</h1>
+<h2>\alpha R(u)
++
+\beta I(u)
++
+\gamma V(u)
++
+\eta B(u)</h2>
+<h2>\lambda C(u)</h2>
+<p>\mu T(u).
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$R$：忽略風險；</li>
+<li>$I$：資訊增益；</li>
+<li>$V$：研究／產品價值；</li>
+<li>$B$：是否阻塞關鍵決策；</li>
+<li>$C$：成本；</li>
+<li>$T$：時間。</li>
+</ul>
+<h2>8.1 未知預算分配</h2>
+<pre><code class="language-text">Safety Unknowns      優先
+Identity／Custody     優先
+Measurement Unknowns 高
+Mechanism Unknowns   依研究價值
+Low-impact Curiosity 有限
+</code></pre>
+<hr>
+<h1>9. Negative Result Graph</h1>
+<h2>9.1 負結果不是空白</h2>
+<p>負結果可能是：</p>
+<ul>
+<li>未觀察到效果；</li>
+<li>效果低於工程門檻；</li>
+<li>條件不可製造；</li>
+<li>儀器不能辨識；</li>
+<li>實驗被安全規則阻止；</li>
+<li>模型預測失敗；</li>
+<li>結果不重現。</li>
+</ul>
+<h2>9.2 圖結構</h2>
+<h1>$$
+G_N</h1>
+<p>\left(
+V_{\mathrm{claim}},
+V_{\mathrm{experiment}},
+V_{\mathrm{failure}},
+E_{\mathrm{tests}},
+E_{\mathrm{blocks}},
+E_{\mathrm{narrows}}
+\right).
+$$</p>
+<h2>9.3 功能</h2>
+<p>負結果可：</p>
+<ul>
+<li>降低重複無效實驗；</li>
+<li>縮小假說範圍；</li>
+<li>校正模型；</li>
+<li>產生失敗模式；</li>
+<li>影響專利和產品路線。</li>
+</ul>
+<h2>9.4 禁止成功偏差</h2>
+<p>報告不可只查詢：</p>
+<pre><code class="language-text">status = SUCCESS
+</code></pre>
+<p>研究總結必須包含：</p>
+<ul>
+<li>全部嘗試；</li>
+<li>排除規則；</li>
+<li>失敗；</li>
+<li>無結果；</li>
+<li>被阻止實驗；</li>
+<li>資料缺失。</li>
+</ul>
+<hr>
+<h1>10. Failure Triage</h1>
+<h2>10.1 快速問題</h2>
+<ol>
+<li>是否有安全風險？</li>
+<li>物理世界和日誌是否一致？</li>
+<li>樣本身份是否正確？</li>
+<li>儀器是否健康和校準？</li>
+<li>程序是否按版本執行？</li>
+<li>資料是否完整？</li>
+<li>模型是否超出適用範圍？</li>
+<li>權限和世界紀元是否有效？</li>
+</ol>
+<h2>10.2 責任分流</h2>
+<table>
+<thead>
+<tr>
+<th>類別</th>
+<th>更新元件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>感測漂移</td>
+<td>Measurement Model</td>
+</tr>
+<tr>
+<td>設備故障</td>
+<td>Capability Certificate／Maintenance</td>
+</tr>
+<tr>
+<td>樣本錯誤</td>
+<td>Custody／Entity Registry</td>
+</tr>
+<tr>
+<td>程序錯誤</td>
+<td>DomainIR Compiler</td>
+</tr>
+<tr>
+<td>世界錯誤</td>
+<td>SWM／Reconciliation</td>
+</tr>
+<tr>
+<td>Agent 錯誤</td>
+<td>Evaluation Probe／Policy</td>
+</tr>
+<tr>
+<td>假說錯誤</td>
+<td>Claim Graph</td>
+</tr>
+<tr>
+<td>未知</td>
+<td>Unknown Registry</td>
+</tr>
+</tbody></table>
+<h2>10.3 不能全部餵給同一模型</h2>
+<p>否則模型可能把治理事故學成新的物理規律。</p>
+<hr>
+<h1>11. 主動異常發現</h1>
+<h2>11.1 靜態排行</h2>
+<p>單純按 anomaly score 排序，可能大量回報：</p>
+<ul>
+<li>感測噪音；</li>
+<li>已知故障；</li>
+<li>重複類型；</li>
+<li>無研究價值事件。</li>
+</ul>
+<h2>11.2 Active Anomaly Queue</h2>
+<p>系統根據人類／驗證 Agent 回饋更新「有價值異常」定義。</p>
+<p>候選效用：</p>
+<h2>$$
+\begin{aligned}
+U_A(a)
+={}&amp;
+\alpha S_{\mathrm{anom}}(a)
++
+\beta V_{\mathrm{novel}}(a)
++
+\gamma V_{\mathrm{discriminate}}(a)
+\
+&amp;+
+\eta V_{\mathrm{reproducible}}(a)
++
+\theta V_{\mathrm{product}}(a)</h2>
+<h2>\lambda C_{\mathrm{inspect}}(a)
+\
+&amp;-
+\mu R_{\mathrm{safety}}(a)</h2>
+<p>\nu P_{\mathrm{artifact}}(a).
+\end{aligned}
+$$</p>
+<h2>11.3 Active Anomaly Discovery 的啟示</h2>
+<p>在天文時間序列研究中，主動異常發現透過專家回饋更新模型，使系統更有效把真正有趣的異常呈現給專家。</p>
+<p>EARC 中可將專家替換或擴展為：</p>
+<ul>
+<li>儀器 Agent；</li>
+<li>安全 Agent；</li>
+<li>領域模型；</li>
+<li>人類研究者；</li>
+<li>反證 Agent。</li>
+</ul>
+<hr>
+<h1>12. 物理異常需要物理推理</h1>
+<h2>12.1 靜態外觀不足</h2>
+<p>一個齒輪看起來正常，但旋轉方向、速度或接觸關係可能錯誤。</p>
+<p>一個液面外觀正常，但注入順序或流速可能違反程序。</p>
+<h2>12.2 Physics-Grounded Anomaly</h2>
+<p>需要比較：</p>
+<ul>
+<li>物體；</li>
+<li>動力；</li>
+<li>接觸；</li>
+<li>預期效果；</li>
+<li>時序；</li>
+<li>能量；</li>
+<li>任務上下文。</li>
+</ul>
+<h2>12.3 多感測器</h2>
+<p>外觀、幾何和內部性質可以互補：</p>
+<ul>
+<li>RGB；</li>
+<li>深度；</li>
+<li>力；</li>
+<li>聲音；</li>
+<li>熱；</li>
+<li>重量；</li>
+<li>光譜；</li>
+<li>X-ray。</li>
+</ul>
+<h2>12.4 異常解釋</h2>
+<p>模型不只輸出「異常」，還應指出：</p>
+<ul>
+<li>哪個物理關係違反；</li>
+<li>哪個時間點開始；</li>
+<li>哪些感測器支持；</li>
+<li>哪些替代解釋仍存在。</li>
+</ul>
+<hr>
+<h1>13. 儀器健康與流程異常</h1>
+<h2>13.1 儀器也是研究對象</h2>
+<p>自動化系統若只監控研究樣本，卻不監控儀器自身，會把：</p>
+<ul>
+<li>柱效下降；</li>
+<li>泵壓異常；</li>
+<li>基線漂移；</li>
+<li>感測器退化；</li>
+</ul>
+<p>誤解成樣本現象。</p>
+<h2>13.2 Health Model</h2>
+<h1>$$
+H_i(t)</h1>
+<p>f(
+telemetry,
+calibration,
+residuals,
+maintenance,
+environment
+).
+$$</p>
+<h2>13.3 Predictive Maintenance 不是科學結論</h2>
+<p>儀器健康模型可：</p>
+<ul>
+<li>阻止錯誤量測；</li>
+<li>提前維護；</li>
+<li>標記資料品質。</li>
+</ul>
+<p>但不能自行決定某個研究假說被支持。</p>
+<hr>
+<h1>14. 反證引擎</h1>
+<h2>14.1 從尋找最好結果轉向尋找違例</h2>
+<p>對形式化性質 $\varphi$：</p>
+<h1>$$
+x^\star</h1>
+<p>\arg\min_x
+\rho_\varphi(x),
+$$</p>
+<p>其中 $\rho_\varphi$ 是性質的 robustness。</p>
+<p>當：</p>
+<p>$$
+\rho_\varphi(x)&lt;0,
+$$</p>
+<p>找到反例。</p>
+<h2>14.2 實驗假說的反證</h2>
+<p>例如：</p>
+<blockquote>
+<p>在整個合法工作區間內，結構 A 的熱阻低於 B。</p>
+</blockquote>
+<p>反證引擎主動搜尋：</p>
+<ul>
+<li>極端環境；</li>
+<li>製造偏差；</li>
+<li>批次；</li>
+<li>老化；</li>
+<li>量測方式；</li>
+<li>邊界參數。</li>
+</ul>
+<h2>14.3 Active Learning</h2>
+<p>利用主動學習將有限實驗集中在最可能暴露失敗的區域，而不是均勻掃描。</p>
+<h2>14.4 反證不等於破壞安全</h2>
+<p>所有反證候選仍須經 DomainIR、安全和人類 Gate。</p>
+<hr>
+<h1>15. Anomaly Probe</h1>
+<p>NIST 的 evaluation probes 思路可以擴展到物理研究閉環。</p>
+<h2>15.1 Agent Probe</h2>
+<p>檢查：</p>
+<ul>
+<li>結論是否支持；</li>
+<li>是否漏報異常；</li>
+<li>是否篡改門檻；</li>
+<li>是否選擇性報告；</li>
+<li>是否把推論寫成量測；</li>
+<li>是否使用不存在的設備能力。</li>
+</ul>
+<h2>15.2 Physical Probe</h2>
+<p>檢查：</p>
+<ul>
+<li>動作效果；</li>
+<li>樣本身份；</li>
+<li>儀器健康；</li>
+<li>世界狀態；</li>
+<li>異常前後事件。</li>
+</ul>
+<h2>15.3 Evidence Probe</h2>
+<p>檢查：</p>
+<ul>
+<li>Faithfulness；</li>
+<li>Completeness；</li>
+<li>Sufficiency；</li>
+<li>Calibration；</li>
+<li>Reproducibility；</li>
+<li>Independence。</li>
+</ul>
+<h2>15.4 Probe Trail</h2>
+<p>所有判定保存為可機器讀取審計鏈。</p>
+<hr>
+<h1>16. 異常債務</h1>
+<h2>16.1 定義</h2>
+<p>尚未解決、但仍影響系統決策的異常集合：</p>
+<h1>$$
+D_A(t)</h1>
+<p>\sum_{a\in A_{\mathrm{open}}}
+w_rR(a)
++
+w_bB(a)
++
+w_tT(a).
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$R$：風險；</li>
+<li>$B$：阻塞決策程度；</li>
+<li>$T$：存在時間。</li>
+</ul>
+<h2>16.2 異常債務的危險</h2>
+<p>若長期忽略：</p>
+<ul>
+<li>模型會學到污染資料；</li>
+<li>能力證書失真；</li>
+<li>世界模型分歧；</li>
+<li>重複事故；</li>
+<li>假說建立在錯誤基礎上。</li>
+</ul>
+<h2>16.3 債務上限</h2>
+<p>當：</p>
+<p>$$
+D_A(t)&gt;\tau_A,
+$$</p>
+<p>系統應：</p>
+<ul>
+<li>暫停擴張；</li>
+<li>降低自主級別；</li>
+<li>集中調和；</li>
+<li>要求人類審查。</li>
+</ul>
+<hr>
+<h1>17. 稀有事件</h1>
+<h2>17.1 不重現不一定等於無價值</h2>
+<p>某些事件本質稀有：</p>
+<ul>
+<li>瞬態故障；</li>
+<li>相變；</li>
+<li>間歇性接觸；</li>
+<li>特定環境組合；</li>
+<li>安全事故。</li>
+</ul>
+<h2>17.2 Rare Event Support</h2>
+<p>若不能直接重現，可使用：</p>
+<ul>
+<li>多感測器同步；</li>
+<li>完整原始資料；</li>
+<li>事件前後狀態；</li>
+<li>模擬；</li>
+<li>類似事件；</li>
+<li>物理機制；</li>
+<li>故障樹。</li>
+</ul>
+<h2>17.3 主張限制</h2>
+<p>單次事件可支持：</p>
+<blockquote>
+<p>事件曾可能發生。</p>
+</blockquote>
+<p>不能直接支持：</p>
+<blockquote>
+<p>事件普遍、穩定且可控制。</p>
+</blockquote>
+<hr>
+<h1>18. 開放世界邊界</h1>
+<h2>18.1 Closed-Set Failure</h2>
+<p>分類器可能被迫把未知事件塞入最近的已知類別。</p>
+<h2>18.2 Reject Option</h2>
+<p>當：</p>
+<p>$$
+\max_k p(y=k\mid x)&lt;\tau
+$$</p>
+<p>或模型分歧過高時：</p>
+<pre><code class="language-text">REJECT_AS_UNKNOWN
+</code></pre>
+<h2>18.3 OOD 不等於有趣</h2>
+<p>OOD 可能只是：</p>
+<ul>
+<li>新相機；</li>
+<li>新光線；</li>
+<li>新容器；</li>
+<li>軟體版本；</li>
+<li>無關環境變化。</li>
+</ul>
+<h2>18.4 Open-World Research Boundary</h2>
+<p>只有當 OOD 同時：</p>
+<ul>
+<li>與研究主張相關；</li>
+<li>經來源確認；</li>
+<li>可重現或有稀有事件證據；</li>
+<li>排除已知系統故障；</li>
+<li>能提出可驗證新問題；</li>
+</ul>
+<p>才建立新研究分支。</p>
+<hr>
+<h1>19. 假說擴張</h1>
+<h2>19.1 不是立即建立新理論</h2>
+<p>順序：</p>
+<pre><code class="language-text">Unknown Observation
+→ Candidate Explanations
+→ Minimal New Variables
+→ New Hypothesis Branch
+→ Discriminating Experiment
+</code></pre>
+<h2>19.2 最小擴張原則</h2>
+<p>先增加最少的：</p>
+<ul>
+<li>變量；</li>
+<li>狀態；</li>
+<li>關係；</li>
+<li>機制；</li>
+</ul>
+<p>解釋異常。</p>
+<h2>19.3 Branch Record</h2>
+<pre><code class="language-yaml">hypothesis_expansion:
+  parent_claim: &quot;&quot;
+  triggering_anomalies: []
+  new_variables: []
+  candidate_mechanisms: []
+  distinguishing_predictions: []
+  falsification_conditions: []
+</code></pre>
+<h2>19.4 不允許敘事補洞</h2>
+<p>若新假說只能事後解釋、沒有新預測，不能升級為正式分支。</p>
+<hr>
+<h1>20. 異常與 IP</h1>
+<h2>20.1 異常可能是高價值智財</h2>
+<p>意外的：</p>
+<ul>
+<li>材料行為；</li>
+<li>製程窗口；</li>
+<li>控制策略；</li>
+<li>故障恢復；</li>
+<li>量測方法；</li>
+</ul>
+<p>可能形成專利或秘密。</p>
+<h2>20.2 自動隔離</h2>
+<p>高新穎性異常先標記：</p>
+<pre><code class="language-yaml">ip_status: private_review
+external_export: false
+</code></pre>
+<h2>20.3 不公開原始異常細節</h2>
+<p>在排除：</p>
+<ul>
+<li>專利；</li>
+<li>合作義務；</li>
+<li>安全；</li>
+<li>雙重用途；</li>
+</ul>
+<p>前，不自動發布。</p>
+<h2>20.4 負結果也可能是秘密</h2>
+<p>無效參數區、失敗模式和製造陷阱可能具有商業價值。</p>
+<hr>
+<h1>21. 人類升級</h1>
+<h2>21.1 必須升級的情況</h2>
+<ul>
+<li>人身安全；</li>
+<li>危險材料；</li>
+<li>無法識別物件；</li>
+<li>高價值樣本；</li>
+<li>重複異常仍無解；</li>
+<li>異常可能是新機制；</li>
+<li>IP／法律邊界；</li>
+<li>Agent 判定互相衝突。</li>
+</ul>
+<h2>21.2 人類輸入不是只給標籤</h2>
+<p>可提供：</p>
+<ul>
+<li>新假說；</li>
+<li>實驗直覺；</li>
+<li>儀器經驗；</li>
+<li>判斷哪個未知值得；</li>
+<li>決定停止或擴張。</li>
+</ul>
+<h2>21.3 保留人類判定來源</h2>
+<p>人類判定同樣進入事件與來源圖。</p>
+<hr>
+<h1>22. AEU 系統元件</h1>
+<h2>22.1 Baseline Registry</h2>
+<p>保存：</p>
+<ul>
+<li>正常分布；</li>
+<li>物理模型；</li>
+<li>程序；</li>
+<li>儀器健康；</li>
+<li>世界紀元；</li>
+<li>安全與治理基準。</li>
+</ul>
+<h2>22.2 Multimodal Anomaly Detector</h2>
+<p>整合視覺、力、熱、聲音、儀器與事件。</p>
+<h2>22.3 Constraint Monitor</h2>
+<p>監控形式性質、物理限制與程序不變量。</p>
+<h2>22.4 Anomaly Gate</h2>
+<p>隔離高分候選，不直接提交結論。</p>
+<h2>22.5 Triage Engine</h2>
+<p>產生異常來源排序。</p>
+<h2>22.6 Reobservation Planner</h2>
+<p>選擇最低成本的確認觀測。</p>
+<h2>22.7 Reproduction Manager</h2>
+<p>安排重現、對照、正交量測和不同站點驗證。</p>
+<h2>22.8 Unknown Registry</h2>
+<p>保存不能解釋的狀態。</p>
+<h2>22.9 Negative Result Graph</h2>
+<p>保存全部失敗和零結果。</p>
+<h2>22.10 Falsification Engine</h2>
+<p>主動尋找假說和安全性質違例。</p>
+<h2>22.11 Evaluation Probe Layer</h2>
+<p>檢查 Agent、證據和主張。</p>
+<h2>22.12 Hypothesis Expansion Manager</h2>
+<p>把 A7 異常轉成候選新分支。</p>
+<h2>22.13 Anomaly Debt Monitor</h2>
+<p>限制未解異常累積。</p>
+<h2>22.14 Human／IP Escalation</h2>
+<p>處理高風險與高價值事件。</p>
+<hr>
+<h1>23. 與 SWM 的整合</h1>
+<h2>23.1 異常不是世界事實</h2>
+<p>先提交：</p>
+<pre><code class="language-text">ANOMALY_ASSERTION
+</code></pre>
+<p>而不是直接修改：</p>
+<pre><code class="language-text">COMMITTED_PHYSICAL_RELATION
+</code></pre>
+<h2>23.2 衝突關係</h2>
+<p>SWM 可以同時保存：</p>
+<ul>
+<li>正常模型預測；</li>
+<li>新觀測；</li>
+<li>儀器健康疑慮；</li>
+<li>候選解釋。</li>
+</ul>
+<h2>23.3 世界紀元</h2>
+<p>高風險異常可能使：</p>
+<p>$$
+WE_k\rightarrow INVALIDATED.
+$$</p>
+<p>依賴該世界狀態的任務必須停止或重新編譯。</p>
+<hr>
+<h1>24. 與 EARC 的整合</h1>
+<p>EARC 每輪增加：</p>
+<pre><code class="language-text">Experiment
+→ Observation
+→ Anomaly Gate
+→ Evidence Adjudication
+→ Normal Update or Unknown Branch
+</code></pre>
+<h2>24.1 正常結果</h2>
+<p>進入原假說更新。</p>
+<h2>24.2 已知失敗</h2>
+<p>更新能力、程序或維護。</p>
+<h2>24.3 反例</h2>
+<p>削弱或反駁主張。</p>
+<h2>24.4 開放未知</h2>
+<p>進入 Unknown Registry，等待最小區分實驗。</p>
+<hr>
+<h1>25. MVP：Unknown-First Thermal Lab 14D</h1>
+<h2>25.1 目的</h2>
+<p>在低風險熱量測研究中，驗證系統能否區分：</p>
+<ol>
+<li>正常噪音；</li>
+<li>感測器異常；</li>
+<li>樣本／程序錯誤；</li>
+<li>真實可重現的物理異常；</li>
+<li>暫時無法解釋的未知。</li>
+</ol>
+<h2>25.2 配置</h2>
+<ul>
+<li>三種表面幾何樣本；</li>
+<li>兩種溫度感測；</li>
+<li>熱像；</li>
+<li>重量或尺寸量測；</li>
+<li>環境感測；</li>
+<li>SWM；</li>
+<li>EARC；</li>
+<li>AEU；</li>
+<li>Evidence Engine。</li>
+</ul>
+<h2>25.3 故障注入</h2>
+<ul>
+<li>一個感測器固定偏移；</li>
+<li>熱像反射造成假熱點；</li>
+<li>樣本標籤交換；</li>
+<li>等待時間不足；</li>
+<li>環境氣流改變；</li>
+<li>資料處理單位錯誤；</li>
+<li>AI 漏報負結果；</li>
+<li>模型 OOD；</li>
+<li>一次性網路延遲；</li>
+<li>一個刻意設計但未告知分析 Agent 的真實幾何效應。</li>
+</ul>
+<h2>25.4 流程</h2>
+<ol>
+<li>建立正常基準；</li>
+<li>注入未知故障；</li>
+<li>偵測異常；</li>
+<li>隔離樣本／資料；</li>
+<li>重新觀測；</li>
+<li>正交量測；</li>
+<li>分類；</li>
+<li>重現；</li>
+<li>更新假說或設備模型；</li>
+<li>保存全部負結果。</li>
+</ol>
+<h2>25.5 成功條件</h2>
+<ul>
+<li>不把所有離群值稱為新現象；</li>
+<li>可識別感測器漂移；</li>
+<li>樣本身份錯誤不進入物理結論；</li>
+<li>未知狀態被正式保存；</li>
+<li>真實效應能在不同量測下重現；</li>
+<li>Agent 漏報被 Probe 發現；</li>
+<li>異常處理可追溯；</li>
+<li>未解異常超過門檻時系統降級；</li>
+<li>高新穎性結果進入 IP 隔離。</li>
+</ul>
+<hr>
+<h1>26. 評估指標</h1>
+<h2>26.1 偵測</h2>
+<ul>
+<li>precision；</li>
+<li>recall；</li>
+<li>detection delay；</li>
+<li>false alarm；</li>
+<li>missed anomaly。</li>
+</ul>
+<h2>26.2 歸因</h2>
+<ul>
+<li>root-cause accuracy；</li>
+<li>top-k explanation recall；</li>
+<li>錯誤升格為科學異常；</li>
+<li>真實異常被當成設備故障。</li>
+</ul>
+<h2>26.3 重現</h2>
+<ul>
+<li>reproduced rate；</li>
+<li>cross-sensor confirmation；</li>
+<li>cross-station confirmation；</li>
+<li>rare-event evidence quality。</li>
+</ul>
+<h2>26.4 未知</h2>
+<ul>
+<li>reject accuracy；</li>
+<li>unknown retention；</li>
+<li>unknown-to-known conversion；</li>
+<li>未知成本；</li>
+<li>異常債務。</li>
+</ul>
+<h2>26.5 科學價值</h2>
+<ul>
+<li>反例數；</li>
+<li>假說縮小；</li>
+<li>新分支；</li>
+<li>無效分支避免；</li>
+<li>資訊增益。</li>
+</ul>
+<h2>26.6 治理</h2>
+<ul>
+<li>異常期間越權；</li>
+<li>安全停止；</li>
+<li>世界紀元失效；</li>
+<li>IP 外洩；</li>
+<li>人類升級時間。</li>
+</ul>
+<hr>
+<h1>27. 可證偽命題</h1>
+<h2>H1：高 anomaly score 不能有效預測科學價值</h2>
+<p>若直接以離群程度排序，將產生大量儀器和資料異常。</p>
+<h2>H2：多模態和程序上下文能降低假陽性</h2>
+<h2>H3：顯式 Unknown 類別降低錯誤強制分類</h2>
+<p>代價是更多暫停和人工審查。</p>
+<h2>H4：正交量測能區分儀器異常與物理異常</h2>
+<h2>H5：Active Anomaly Queue 比靜態排行更有效利用專家時間</h2>
+<h2>H6：Negative Result Graph 降低重複無效實驗</h2>
+<h2>H7：反證引擎提高假說錯誤暴露率，但可能降低表面成功率</h2>
+<h2>H8：Evaluation Probes 能發現選擇性報告和證據過度延伸</h2>
+<h2>H9：異常債務門檻能防止系統在污染世界模型上持續擴張</h2>
+<h2>H10：真實物理異常通過升格流程的比例應遠低於原始異常偵測率</h2>
+<hr>
+<h1>28. 主要限制</h1>
+<h2>28.1 正常基準可能錯誤</h2>
+<p>若訓練資料已包含故障，異常模型會把錯誤視為正常。</p>
+<h2>28.2 新現象和新故障可能高度相似</h2>
+<h2>28.3 重現可能改變稀有事件條件</h2>
+<h2>28.4 多感測器可能共享同一偏差</h2>
+<h2>28.5 高度自動化可能產生大量低價值告警</h2>
+<h2>28.6 開放世界分類沒有完美門檻</h2>
+<h2>28.7 異常解釋模型可能產生合理但錯誤故事</h2>
+<h2>28.8 負結果保存增加儲存、查詢和治理成本</h2>
+<h2>28.9 人類專家時間仍是稀缺資源</h2>
+<h2>28.10 AEU 只能管理未知，不能保證所有未知都可被解決</h2>
+<hr>
+<h1>29. 不能宣稱的內容</h1>
+<p>本篇不主張：</p>
+<ul>
+<li>每個異常都是新發現；</li>
+<li>anomaly score 等同科學新穎性；</li>
+<li>OOD 等同新物理；</li>
+<li>重現一次即可建立普遍理論；</li>
+<li>感測器一致就必然正確；</li>
+<li>多 Agent 就能消除共同偏差；</li>
+<li>AI 可以完全自動判斷研究重要性；</li>
+<li>負結果永遠沒有商業價值；</li>
+<li>模型無法解釋就代表現有科學錯誤；</li>
+<li>異常檢測可取代安全互鎖；</li>
+<li>反證引擎可跳過物理安全；</li>
+<li>Unknown 應被自動填補；</li>
+<li>人類聲明不需要來源；</li>
+<li>AEU 已能自動完成開放世界科學發現。</li>
+</ul>
+<hr>
+<h1>30. 後續系列關係</h1>
+<p>第十一篇完成了 EARC 的未知入口。下一篇可自然進入：</p>
+<h1>《安全憲法即運行時：時空域 AI 的局部否決、權限租約與物理回退》</h1>
+<p>它將把前文分散的安全規則統合成正式 Runtime，處理：</p>
+<ul>
+<li>Safety Invariants；</li>
+<li>Hazard Graph；</li>
+<li>Local Veto；</li>
+<li>Command Lease；</li>
+<li>Runtime Assurance；</li>
+<li>Barrier Functions；</li>
+<li>Safety Case；</li>
+<li>Physical Compensation；</li>
+<li>Irreversible Action Gate；</li>
+<li>Human Emergency Authority。</li>
+</ul>
+<hr>
+<h1>31. 結論</h1>
+<p>自主研究閉環真正成熟的標誌，不是它能連續跑多少實驗，而是它能否在出現不符合預期的結果時，避免兩種極端：</p>
+<ol>
+<li>把異常當成噪音刪除；</li>
+<li>把異常當成突破宣傳。</li>
+</ol>
+<p>本文建立的中間道路是：</p>
+<p>$$
+\boxed{
+\text{偵測}
+\rightarrow
+\text{隔離}
+\rightarrow
+\text{重觀測}
+\rightarrow
+\text{歸因}
+\rightarrow
+\text{重現}
+\rightarrow
+\text{假說擴張}
+}
+$$</p>
+<p>並維持：</p>
+<p>$$
+\boxed{
+\text{異常偵測}
+\neq
+\text{異常解釋}
+\neq
+\text{科學發現}
+}
+$$</p>
+<p>因此：</p>
+<p>$$
+\boxed{
+\text{異常即入口}
+}
+$$</p>
+<p>不是說異常天然通往真理，而是說：</p>
+<blockquote>
+<p>異常迫使系統重新檢查它對世界的描述；當已知故障、程序偏差、量測問題和治理衝突被逐步排除後，剩餘的未知才有資格成為下一個研究問題。</p>
+</blockquote>
+<p>真正的自主科學系統，不應只保存成功結果。它必須保存：</p>
+<ul>
+<li>噪音；</li>
+<li>失敗；</li>
+<li>反例；</li>
+<li>無法重現；</li>
+<li>儀器問題；</li>
+<li>模型錯誤；</li>
+<li>尚未命名的未知。</li>
+</ul>
+<p>因為這些內容共同構成閉環與現實世界接觸的痕跡。</p>
+<p>本文最終命題是：</p>
+<blockquote>
+<p><strong>研究不是讓所有未知快速消失，而是讓每一個未知都有身份、來源、風險、可驗證路線，以及在無法解決時仍不被偽裝成答案的正式位置。</strong></p>
+</blockquote>
+<hr>
+<h1>參考文獻與技術資料</h1>
+<ol>
+<li><p>Lin, S. et al. <strong>A Visual Dataset for Anomaly Detection in Self-Driving Laboratories.</strong> <em>Scientific Data</em> 12 (2025).<br><a href="https://doi.org/10.1038/s41597-025-06060-y">https://doi.org/10.1038/s41597-025-06060-y</a></p>
+</li>
+<li><p>Li, W. et al. <strong>Towards Visual Discrimination and Reasoning of Real-World Physical Dynamics: Physics-Grounded Anomaly Detection.</strong> CVPR 2025, 30409–30419.<br><a href="https://openaccess.thecvf.com/content/CVPR2025/html/Li_Towards_Visual_Discrimination_and_Reasoning_of_Real-World_Physical_Dynamics_Physics-Grounded_CVPR_2025_paper.html">https://openaccess.thecvf.com/content/CVPR2025/html/Li_Towards_Visual_Discrimination_and_Reasoning_of_Real-World_Physical_Dynamics_Physics-Grounded_CVPR_2025_paper.html</a></p>
+</li>
+<li><p>Gusev, F. et al. <strong>Machine learning anomaly detection of automated HPLC experiments in the cloud laboratory.</strong> <em>Digital Discovery</em> 4 (2025), 3445–3457.<br><a href="https://doi.org/10.1039/D5DD00266A">https://doi.org/10.1039/D5DD00266A</a></p>
+</li>
+<li><p>Ishida, E. E. O. et al. <strong>Active Anomaly Detection for time-domain discoveries.</strong> <em>Astronomy and Computing</em> 28, 100306 (2019).<br>arXiv:1909.13260.</p>
+</li>
+<li><p>Silvetti, S., Policriti, A. and Bortolussi, L. <strong>An Active Learning Approach to the Falsification of Black Box Cyber-Physical Systems.</strong> HSB 2017.<br>arXiv:1705.01879.</p>
+</li>
+<li><p>Desai, S. et al. <strong>AutoSciLab: A Self-Driving Laboratory for Interpretable Scientific Discovery.</strong> AAAI／arXiv:2412.12347 (2024–2025).</p>
+</li>
+<li><p>NIST. <strong>Building Evaluation Probes into Agentic AI.</strong> 2026.<br><a href="https://www.nist.gov/programs-projects/building-evaluation-probes-agentic-ai">https://www.nist.gov/programs-projects/building-evaluation-probes-agentic-ai</a></p>
+</li>
+<li><p>Joress, H. et al. <strong>Towards a composable, modular laboratory ecosystem for autonomous materials research and development.</strong> <em>Matter</em> (2026).<br><a href="https://www.nist.gov/publications/towards-composable-modular-laboratory-ecosystem-autonomous-materials-research-and">https://www.nist.gov/publications/towards-composable-modular-laboratory-ecosystem-autonomous-materials-research-and</a></p>
+</li>
+<li><p>NIST. <strong>Development of Standards to Support a Modular and Autonomous Laboratory Ecosystem.</strong><br><a href="https://www.nist.gov/programs-projects/development-standards-support-modular-and-autonomous-laboratory-ecosystem">https://www.nist.gov/programs-projects/development-standards-support-modular-and-autonomous-laboratory-ecosystem</a></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>具身化 AI 自主研究閉環：從假說生成、物理實驗到證據判定與概念修正.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>站點化世界模型：物體、區域、事件、權限與可能行動的共同物理世界表示.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>語義即物理路由：從資料流治理到物料、能源、站點與行動流治理.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>中央主權、地方自治與動態不動點中央.</strong></p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A：Anomaly Contract</h1>
+<pre><code class="language-yaml">anomaly:
+  id: &quot;&quot;
+  campaign_id: &quot;&quot;
+  task_id: &quot;&quot;
+
+  observation:
+    value: null
+    source: &quot;&quot;
+    observed_at: &quot;&quot;
+    world_epoch: &quot;&quot;
+
+  baseline:
+    model: &quot;&quot;
+    expected_range: null
+    model_version: &quot;&quot;
+
+  score:
+    residual: 0
+    distribution_shift: 0
+    constraint_violation: 0
+    multimodal_disagreement: 0
+    provenance_gap: 0
+    governance_divergence: 0
+    unknown: 0
+    total: 0
+
+  initial_class: &quot;A0 | A1 | A2 | A3 | A4 | A5 | A6 | A7&quot;
+  status: &quot;DETECTED&quot;
+  safety_blocking: false
+  quarantined_entities: []
+  evidence: []
+</code></pre>
+<hr>
+<h1>附錄 B：Unknown Record</h1>
+<pre><code class="language-yaml">unknown:
+  id: &quot;&quot;
+  description: &quot;&quot;
+  type: &quot;epistemic | aleatoric | representational |
+         causal | infrastructure | governance&quot;
+
+  scope:
+    entities: []
+    zones: []
+    claims: []
+    tasks: []
+
+  decision_impact:
+    blocking: false
+    risk_if_ignored: null
+    value_if_resolved: null
+
+  reduction_plan:
+    observations: []
+    experiments: []
+    required_stations: []
+    estimated_cost: null
+
+  owner: &quot;&quot;
+  status: &quot;OPEN&quot;
+  created_at: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：Reproduction Plan</h1>
+<pre><code class="language-yaml">reproduction_plan:
+  anomaly_id: &quot;&quot;
+
+  modes:
+    same_sample: false
+    new_sample: false
+    new_batch: false
+    different_instrument: false
+    different_station: false
+    blinded: false
+
+  controlled_conditions: []
+  orthogonal_measurements: []
+  acceptance_criteria: []
+  failure_criteria: []
+  safety_gate: &quot;&quot;
+  ip_policy: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 D：Negative Result</h1>
+<pre><code class="language-yaml">negative_result:
+  id: &quot;&quot;
+  hypothesis_id: &quot;&quot;
+  experiment_id: &quot;&quot;
+
+  category: &quot;NO_EFFECT | BELOW_THRESHOLD | NOT_REPRODUCED |
+             MEASUREMENT_FAILED | MANUFACTURING_FAILED |
+             SAFETY_BLOCKED | INCONCLUSIVE&quot;
+
+  raw_data: []
+  evidence: []
+  excluded_from_primary_analysis: false
+  exclusion_reason: null
+  affected_claims: []
+  model_updates: []
+  prevent_repeat_signature: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 E：Anomaly Triage</h1>
+<pre><code class="language-yaml">triage:
+  anomaly_id: &quot;&quot;
+
+  checks:
+    safety: &quot;&quot;
+    identity: &quot;&quot;
+    custody: &quot;&quot;
+    calibration: &quot;&quot;
+    equipment_health: &quot;&quot;
+    procedure_version: &quot;&quot;
+    data_integrity: &quot;&quot;
+    model_scope: &quot;&quot;
+    governance_epoch: &quot;&quot;
+    world_epoch: &quot;&quot;
+
+  candidate_causes: []
+  required_reobservations: []
+  reproduction_required: false
+  human_escalation: false
+  current_class: &quot;&quot;
+  confidence: 0
+</code></pre>
+<hr>
+<h1>附錄 F：Anomaly Debt Report</h1>
+<pre><code class="language-yaml">anomaly_debt:
+  domain_id: &quot;&quot;
+  generated_at: &quot;&quot;
+
+  open_anomalies: 0
+  safety_critical: 0
+  decision_blocking: 0
+  older_than_threshold: 0
+
+  weighted_debt: 0
+  threshold: 0
+  operating_mode:
+    current: &quot;&quot;
+    recommended: &quot;&quot;
+
+  required_actions:
+    - reconcile_world
+    - inspect_instrument
+    - pause_expansion
+    - human_review
+</code></pre>
+<hr>
+<h1>附錄 G：Hypothesis Expansion</h1>
+<pre><code class="language-yaml">hypothesis_expansion:
+  id: &quot;&quot;
+  parent_hypotheses: []
+  triggering_anomalies: []
+
+  minimal_new_variables: []
+  candidate_mechanisms: []
+  distinguishing_predictions: []
+  falsification_conditions: []
+
+  evidence_level: &quot;E0&quot;
+  domainir_candidates: []
+  human_approval: null
+</code></pre>
+<hr>
+<h1>附錄 H：系列血緣</h1>
+<pre><code class="language-text">EARC
+  假說 → 實驗 → 證據 → 修正
+        ↓
+
+SWM
+  觀測、推論、提交、衝突與未知
+        ↓
+
+AEU
+  異常偵測 → 隔離 → 歸因 → 重現 → 開放未知
+        ↓
+
+下一篇
+  以安全憲法與運行時保證，限制異常和正常狀態下的物理作用
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/stdi-11.html">https://thisoneisneok.com/html/papers/stdi-11.html</a></footer>
+</body>
+</html>

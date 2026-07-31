@@ -1,0 +1,1871 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>站點化世界模型 | Neo.K</title>
+<meta name="description" content="時空域支配智能若要跨越多個固定站、移動站、儀器、虛擬模型與人類參與者持續行動，必須共享某種「世界」。但這個世界不能只是一張三維地圖、一份設備資料庫、一個數位孿生、一段模型記憶，或一個可以生成未來影片的神經網路。三維地圖知道物體位於何處，卻不一定知道其保管者、危險性與可執行動作；設備資料庫知道機器規格，卻不一定知道它是否正在被使用、是否已校準或是否因人類進入而失去作用權；數位孿生可以模擬設備和製程，卻不應被直接視為…">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/stdi-09.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / STDI</strong><span>時空域支配智能</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>STDI-09</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>世界模型架構論文／共同狀態與行動表示規格</span></div><div><b>證據</b><span>E0——形式模型、資料架構與 MVP 驗證路線</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/stdi-09.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>站點化世界模型</h1>
+<h2>物體、區域、事件、權限與可能行動的共同物理世界表示</h2>
+<p><strong>Station-Centric World Model: A Shared Physical-World Representation of Objects, Zones, Events, Authorities, and Possible Actions</strong></p>
+<p><strong>系列：</strong>《時空域支配智能》系列第 9 篇<br><strong>文件編號：</strong> EML-STDI-SWM-2026-v0.1<br><strong>作者：</strong> Neo.K<br><strong>協作整理：</strong> Aletheia（阿萊）<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>日期：</strong> 2026 年 7 月 30 日<br><strong>文件類型：</strong> 世界模型架構論文／共同狀態與行動表示規格<br><strong>證據成熟度：</strong> E0——形式模型、資料架構與 MVP 驗證路線<br><strong>公開狀態：</strong> 私人研究稿；公開前應經 EML-CF 的 IP Gate、來源、安全、隱私與模型可信度審查<br><strong>上位理論：</strong> STDI｜時空域支配智能<br><strong>直接前序：</strong></p>
+<ol>
+<li>《時空間支配型 AI：從單體具身智能到持續性時空域治理》</li>
+<li>《超靈的物理化：從 O-Chip 維度代理人到分布式具身主體》</li>
+<li>《Oversoul Station Fabric：固定站、移動站與虛擬站的分布式具身網路》</li>
+<li>《持續性指揮控制區：AI 如何佔據、維持並安全解除一個物理時空域》</li>
+<li>《語義即物理路由：從資料流治理到物料、能源、站點與行動流治理》</li>
+<li>《具身即佔域，對齊即能力：分布式身體的時序容量、協調稅與規模邊界》</li>
+<li>《中央主權、地方自治與動態不動點中央》</li>
+<li>《連線不是纜線：有線、無線、光學與離線任務包的混合站網》</li>
+</ol>
+<hr>
+<h2>摘要</h2>
+<p>時空域支配智能若要跨越多個固定站、移動站、儀器、虛擬模型與人類參與者持續行動，必須共享某種「世界」。但這個世界不能只是一張三維地圖、一份設備資料庫、一個數位孿生、一段模型記憶，或一個可以生成未來影片的神經網路。三維地圖知道物體位於何處，卻不一定知道其保管者、危險性與可執行動作；設備資料庫知道機器規格，卻不一定知道它是否正在被使用、是否已校準或是否因人類進入而失去作用權；數位孿生可以模擬設備和製程，卻不應被直接視為物理真值；影片世界模型可以生成合理未來，卻可能產生物理上看似自然、治理上不合法或證據上不可採信的結果。</p>
+<p>本文提出 <strong>Station-Centric World Model（SWM，站點化世界模型）</strong>，作為 STDI 的共同物理世界表示。其核心不是將所有資訊集中到一個無所不知的資料庫，而是將來自不同站點、感測器、人類、模型與事件日誌的局部觀點，組合成一個具有：</p>
+<ul>
+<li>幾何；</li>
+<li>語義；</li>
+<li>關係；</li>
+<li>時間；</li>
+<li>保管；</li>
+<li>權限；</li>
+<li>行動可能性；</li>
+<li>不確定性；</li>
+<li>預測；</li>
+<li>因果；</li>
+<li>來源；</li>
+</ul>
+<p>的多層世界模型。</p>
+<p>本文定義：</p>
+<h1>$$
+\mathcal{W}_t</h1>
+<p>\left(
+\mathcal{X}_t,
+\mathcal{Z}_t,
+\mathcal{R}_t,
+\mathcal{E}_t,
+\mathcal{A}_t,
+\mathcal{P}_t,
+\mathcal{U}_t,
+\mathcal{M}_t,
+\mathcal{V}_t
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathcal{X}_t$：物體、站點、代理、樣本、工具與資源；</li>
+<li>$\mathcal{Z}_t$：區域、座標系、邊界與可達空間；</li>
+<li>$\mathcal{R}_t$：空間、功能、保管、任務、因果與治理關係；</li>
+<li>$\mathcal{E}_t$：事件與時間線；</li>
+<li>$\mathcal{A}_t$：可能行動、能力和 affordance；</li>
+<li>$\mathcal{P}_t$：權限、租約、安全與政策；</li>
+<li>$\mathcal{U}_t$：不確定性、衝突、新鮮度與觀測缺口；</li>
+<li>$\mathcal{M}_t$：預測、模擬、反事實和候選未來；</li>
+<li>$\mathcal{V}_t$：來源、版本、證據與世界紀元。</li>
+</ul>
+<p>SWM 採用「多層真值」而非單一布林事實。每一項主張都必須標記其認識狀態：</p>
+<pre><code class="language-text">OBSERVED
+MEASURED
+DECLARED
+INFERRED
+PREDICTED
+SIMULATED
+COMMITTED
+DISPUTED
+REVOKED
+STALE
+</code></pre>
+<p>例如，「樣本 A 位於顯微鏡工作台」可能是相機觀測；「樣本 A 已由顯微鏡站保管」則必須由跨站交接事務正式提交；「如果啟動機械臂，樣本可能被移至量測區」只是候選未來。它們不能被壓縮成相同的資料欄位。</p>
+<p>本文提出九層世界表示：</p>
+<ol>
+<li>座標與幾何層；</li>
+<li>物體與身份層；</li>
+<li>區域與拓撲層；</li>
+<li>語義關係與場景圖層；</li>
+<li>事件、保管與任務層；</li>
+<li>權限、安全與治理層；</li>
+<li>affordance 與可執行性層；</li>
+<li>預測、因果與反事實層；</li>
+<li>不確定性、來源與證據層。</li>
+</ol>
+<p>現有研究與標準提供了重要底座。ROS 2 tf2 可讓分布式元件維護座標框架與變換；Kimera 的 3D Dynamic Scene Graph 將物體、人物、房間、建築與時空關係組織成多層圖；OpenUSD 可組合大型場景、資產、層級與非破壞性覆寫；W3C PROV 以 Entity、Activity 與 Agent 表示資料和工件的來源；NIST 的製造數位孿生工作強調模型可信度、驗證、確認、不確定性量化與可追溯結果；V-JEPA 2、NVIDIA Cosmos 與其他世界模型則展示從視覺預測、物理推理到候選未來生成的能力。</p>
+<p>但 SWM 與上述系統的差異在於：</p>
+<blockquote>
+<p>它不將任何單一表示視為完整世界，而以站點化、分層、帶來源和權限的方式，將「觀測到什麼」「系統承諾什麼」「模型預測什麼」「誰能改變什麼」同時保存在共同世界中。</p>
+</blockquote>
+<p>本文進一步建立 World Entity Record、Relation Assertion、Zone Policy、Event Commit、Affordance Contract、Epistemic State、Perspective View、World Epoch、Reconciliation Proposal 與 Counterfactual Branch 等核心物件，並提出第一個 StationWorld-4 MVP：由感測站、機械臂站、移動站和量測站共同維護三個區域、若干樣本、工具、任務與人員事件，測試身份衝突、位置過期、保管不一致、模型預測錯誤、座標漂移、視野遮擋與人類介入。</p>
+<p>本文的核心命題為：</p>
+<blockquote>
+<p>世界模型不是 AI 對世界的單一想像，而是一套讓多個作用端能區分事實、推論、承諾、權限與可能未來，並在不確定時拒絕越界行動的共同物理記憶。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> 站點化世界模型、Station-Centric World Model、SWM、世界紀元、動態場景圖、數位孿生、affordance、部分可觀測、事件圖、保管鏈、權限、來源、不確定性、反事實、V-JEPA 2、Cosmos、Kimera、OpenUSD、W3C PROV、tf2</p>
+<hr>
+<h1>0. 版本定位：第九篇補的是「系統共同相信什麼，以及相信到什麼程度」</h1>
+<p>前八篇已建立：</p>
+<ul>
+<li>超靈的持續治理主體；</li>
+<li>多身體和站點；</li>
+<li>跨時間持續存在；</li>
+<li>物理流編譯；</li>
+<li>對齊容量；</li>
+<li>中央與地方治理；</li>
+<li>混合鏈路。</li>
+</ul>
+<p>但每一篇都隱含使用了「世界狀態」：</p>
+<ul>
+<li>樣本在哪裡；</li>
+<li>哪台儀器可用；</li>
+<li>人是否進入危險區；</li>
+<li>哪個站點保管物件；</li>
+<li>租約是否有效；</li>
+<li>哪個世界紀元仍可使用；</li>
+<li>哪個行動可能成功。</li>
+</ul>
+<p>若世界狀態只是一組零散資料表，系統將無法可靠回答：</p>
+<ol>
+<li>多個站點看到的是不是同一物體？</li>
+<li>物體位置是現在觀測、過去紀錄還是模型推測？</li>
+<li>數位孿生和真實設備不一致時，哪個具有控制優先權？</li>
+<li>誰有權改變某個物體或區域？</li>
+<li>某個動作在目前狀態下是否真的可執行？</li>
+<li>世界狀態發生衝突時，是覆蓋、保留還是停止？</li>
+<li>模型想像出的未來如何與已提交的物理事實隔離？</li>
+</ol>
+<p>本文建立 SWM，回答這些問題。</p>
+<hr>
+<h1>1. 世界模型不是單一模型</h1>
+<h2>1.1 地圖不是世界</h2>
+<p>地圖主要表示：</p>
+<ul>
+<li>座標；</li>
+<li>障礙；</li>
+<li>路徑；</li>
+<li>幾何。</li>
+</ul>
+<p>它不一定表示：</p>
+<ul>
+<li>樣本身份；</li>
+<li>保管責任；</li>
+<li>區域政策；</li>
+<li>可使用工具；</li>
+<li>行動後果；</li>
+<li>來源與不確定性。</li>
+</ul>
+<h2>1.2 場景圖不是全部世界</h2>
+<p>場景圖可以表示：</p>
+<ul>
+<li>物體；</li>
+<li>房間；</li>
+<li>人；</li>
+<li>包含；</li>
+<li>鄰接；</li>
+<li>支撐；</li>
+<li>空間關係。</li>
+</ul>
+<p>但若沒有事件、權限和證據，它仍不能決定物理操作是否合法。</p>
+<h2>1.3 數位孿生不是物理真值</h2>
+<p>數位孿生可以：</p>
+<ul>
+<li>映射設備；</li>
+<li>模擬；</li>
+<li>預測；</li>
+<li>最佳化；</li>
+<li>支援決策。</li>
+</ul>
+<p>但它仍是模型：</p>
+<p>$$
+\hat{W}<em>{\mathrm{twin}}
+\approx
+W</em>{\mathrm{physical}},
+$$</p>
+<p>不是：</p>
+<h1>$$
+\hat{W}_{\mathrm{twin}}</h1>
+<p>W_{\mathrm{physical}}.
+$$</p>
+<h2>1.4 生成式世界模型不是共同記錄</h2>
+<p>影片或潛在空間世界模型擅長：</p>
+<ul>
+<li>預測運動；</li>
+<li>生成候選未來；</li>
+<li>估計行動後果；</li>
+<li>提供規劃 rollout。</li>
+</ul>
+<p>但生成合理畫面不表示：</p>
+<ul>
+<li>物件身份正確；</li>
+<li>權限合法；</li>
+<li>保管鏈成立；</li>
+<li>儀器已校準；</li>
+<li>結果可作證據。</li>
+</ul>
+<h2>1.5 SWM 是組合世界模型</h2>
+<p>$$
+\begin{aligned}
+\text{SWM}
+={}&amp;
+\text{Metric Map}
++
+\text{Scene Graph}
++
+\text{Event Graph}
+\
+&amp;+
+\text{Governance Graph}
++
+\text{Affordance Model}
++
+\text{Predictive Models}
+\
+&amp;+
+\text{Epistemic State}
++
+\text{Provenance}.
+\end{aligned}
+$$</p>
+<hr>
+<h1>2. 九層世界模型</h1>
+<h2>L0：座標與幾何層</h2>
+<p>包含：</p>
+<ul>
+<li>座標框架；</li>
+<li>變換；</li>
+<li>位置；</li>
+<li>姿態；</li>
+<li>速度；</li>
+<li>尺寸；</li>
+<li>網格；</li>
+<li>occupancy；</li>
+<li>可達空間。</li>
+</ul>
+<p>ROS 2 tf2 提供分布式座標變換資料庫的現實底座，可讓不同元件發布和查詢座標框架之間的關係。</p>
+<h2>L1：物體與身份層</h2>
+<p>包含：</p>
+<ul>
+<li>唯一身份；</li>
+<li>類型；</li>
+<li>物理屬性；</li>
+<li>批次；</li>
+<li>序號；</li>
+<li>組件；</li>
+<li>狀態；</li>
+<li>是否為同一實體。</li>
+</ul>
+<h2>L2：區域與拓撲層</h2>
+<p>包含：</p>
+<ul>
+<li>房間；</li>
+<li>工作單元；</li>
+<li>緩衝區；</li>
+<li>危險區；</li>
+<li>交接區；</li>
+<li>人類區；</li>
+<li>路徑；</li>
+<li>鄰接；</li>
+<li>包含；</li>
+<li>入口。</li>
+</ul>
+<h2>L3：語義關係與場景圖層</h2>
+<p>包含：</p>
+<ul>
+<li>在……上；</li>
+<li>在……內；</li>
+<li>連接；</li>
+<li>支撐；</li>
+<li>遮擋；</li>
+<li>接近；</li>
+<li>屬於；</li>
+<li>使用；</li>
+<li>依賴；</li>
+<li>相容；</li>
+<li>不相容。</li>
+</ul>
+<h2>L4：事件、保管與任務層</h2>
+<p>包含：</p>
+<ul>
+<li>誰做了什麼；</li>
+<li>何時發生；</li>
+<li>哪個樣本被移動；</li>
+<li>保管如何轉移；</li>
+<li>任務進度；</li>
+<li>未完成義務；</li>
+<li>事故；</li>
+<li>補償。</li>
+</ul>
+<h2>L5：權限、安全與治理層</h2>
+<p>包含：</p>
+<ul>
+<li>域憲法；</li>
+<li>身體租約；</li>
+<li>區域權限；</li>
+<li>人類批准；</li>
+<li>治理紀元；</li>
+<li>fencing；</li>
+<li>禁止動作；</li>
+<li>安全模式。</li>
+</ul>
+<h2>L6：Affordance 與可執行性層</h2>
+<p>包含：</p>
+<ul>
+<li>什麼物體可抓；</li>
+<li>哪個站點能量測；</li>
+<li>哪個區域可進入；</li>
+<li>哪些前置條件已成立；</li>
+<li>哪些動作會破壞未來能力；</li>
+<li>哪些工具能增加能力。</li>
+</ul>
+<h2>L7：預測、因果與反事實層</h2>
+<p>包含：</p>
+<ul>
+<li>行動後可能世界；</li>
+<li>預期物理效果；</li>
+<li>失敗概率；</li>
+<li>因果依賴；</li>
+<li>替代計畫；</li>
+<li>「若不做」的結果；</li>
+<li>模擬與 rollout。</li>
+</ul>
+<h2>L8：不確定性、來源與證據層</h2>
+<p>每一項世界主張都必須攜帶：</p>
+<ul>
+<li>來源；</li>
+<li>時間；</li>
+<li>可信度；</li>
+<li>誤差；</li>
+<li>新鮮度；</li>
+<li>模型版本；</li>
+<li>支持證據；</li>
+<li>衝突；</li>
+<li>撤銷記錄。</li>
+</ul>
+<hr>
+<h1>3. 世界實體</h1>
+<h2>3.1 Entity</h2>
+<p>所有可被世界模型引用的對象：</p>
+<h1>$$
+x</h1>
+<p>\left(
+id,
+type,
+state,
+geometry,
+policy,
+provenance
+\right).
+$$</p>
+<h2>3.2 主要類型</h2>
+<pre><code class="language-text">PhysicalObject
+Sample
+Material
+Container
+Tool
+Instrument
+Station
+RobotBody
+Human
+AIInstance
+Zone
+Path
+Resource
+Task
+Obligation
+Policy
+Lease
+Event
+Evidence
+Hypothesis
+Model
+Prediction
+</code></pre>
+<h2>3.3 實體與描述分離</h2>
+<p>物理樣本 A 與其：</p>
+<ul>
+<li>CAD；</li>
+<li>數位孿生；</li>
+<li>照片；</li>
+<li>模型 embedding；</li>
+<li>分析結果；</li>
+</ul>
+<p>是不同實體，透過關係連接。</p>
+<p>不能把「樣本本體」和「樣本的數位描述」視為同一物件。</p>
+<hr>
+<h1>4. 身份解析</h1>
+<h2>4.1 身份不是只靠名稱</h2>
+<p>同名物體可能不同；同一物體也可能有：</p>
+<ul>
+<li>QR code；</li>
+<li>RFID；</li>
+<li>視覺特徵；</li>
+<li>批次號；</li>
+<li>容器位置；</li>
+<li>手工標籤。</li>
+</ul>
+<h2>4.2 身份假說</h2>
+<p>觀測 $o$ 對應實體 $x$ 的概率：</p>
+<p>$$
+p(x\mid o)
+\propto
+p(o\mid x)p(x).
+$$</p>
+<h2>4.3 身份狀態</h2>
+<pre><code class="language-text">CONFIRMED
+PROBABLE
+AMBIGUOUS
+CONFLICTED
+LOST
+RETIRED
+</code></pre>
+<h2>4.4 高風險物件禁止模糊合併</h2>
+<p>樣本、工具、危險材料與校準件若身份不確定：</p>
+<ul>
+<li>不自動合併；</li>
+<li>不執行破壞性動作；</li>
+<li>重新觀測；</li>
+<li>人工確認；</li>
+<li>保留衝突證據。</li>
+</ul>
+<hr>
+<h1>5. 座標框架與空間真值</h1>
+<h2>5.1 多框架</h2>
+<p>同一物體可同時位於：</p>
+<ul>
+<li>世界座標；</li>
+<li>房間座標；</li>
+<li>站點座標；</li>
+<li>機器人 base；</li>
+<li>工具座標；</li>
+<li>相機座標；</li>
+<li>樣本局部座標。</li>
+</ul>
+<h2>5.2 變換</h2>
+<h1>$$
+{}^{A}T_{C}</h1>
+<p>{}^{A}T_{B}
+{}^{B}T_{C}.
+$$</p>
+<h2>5.3 變換也有時間與不確定性</h2>
+<h1>$$
+T_{AB}</h1>
+<p>\left(
+\hat{T}<em>{AB},
+\Sigma</em>{AB},
+t,
+source
+\right).
+$$</p>
+<h2>5.4 座標漂移</h2>
+<p>長時間運作可能因：</p>
+<ul>
+<li>SLAM 漂移；</li>
+<li>相機移動；</li>
+<li>工作台震動；</li>
+<li>重新校準；</li>
+<li>人類搬動設備；</li>
+</ul>
+<p>使舊位置失效。</p>
+<h2>5.5 幾何不一致時</h2>
+<p>系統不能只採用最後寫入者。</p>
+<p>應比較：</p>
+<ul>
+<li>感測來源；</li>
+<li>誤差；</li>
+<li>時間；</li>
+<li>校準；</li>
+<li>世界紀元；</li>
+<li>物理可行性。</li>
+</ul>
+<hr>
+<h1>6. 區域模型</h1>
+<h2>6.1 Zone</h2>
+<h1>$$
+z</h1>
+<p>\left(
+geometry,
+topology,
+policy,
+occupancy,
+resources,
+risk
+\right).
+$$</p>
+<h2>6.2 區域類型</h2>
+<ul>
+<li>Storage Zone；</li>
+<li>Handoff Zone；</li>
+<li>Measurement Zone；</li>
+<li>Human Zone；</li>
+<li>Safety Exclusion Zone；</li>
+<li>Clean Zone；</li>
+<li>Contamination Zone；</li>
+<li>Charging Zone；</li>
+<li>Quarantine Zone；</li>
+<li>Virtual Zone。</li>
+</ul>
+<h2>6.3 區域是治理物件</h2>
+<p>區域不只是一個 polygon，還決定：</p>
+<ul>
+<li>哪些站點可進入；</li>
+<li>哪些物件可放置；</li>
+<li>哪些能源可啟動；</li>
+<li>人員進入時如何降級；</li>
+<li>哪個感測器具有權威；</li>
+<li>是否允許拍攝；</li>
+<li>是否可外傳資料。</li>
+</ul>
+<h2>6.4 動態區域</h2>
+<p>移動設備可形成臨時安全區：</p>
+<h1>$$
+Z_{\mathrm{dynamic}}(t)</h1>
+<p>f(
+pose,
+speed,
+load,
+risk
+).
+$$</p>
+<hr>
+<h1>7. 關係圖</h1>
+<h2>7.1 空間關係</h2>
+<pre><code class="language-text">inside
+contains
+on
+supports
+adjacent_to
+connected_to
+reachable_from
+occludes
+near
+intersects
+</code></pre>
+<h2>7.2 功能關係</h2>
+<pre><code class="language-text">uses
+requires
+compatible_with
+calibrated_by
+powered_by
+controlled_by
+observed_by
+</code></pre>
+<h2>7.3 保管與治理關係</h2>
+<pre><code class="language-text">custodied_by
+owned_by
+leased_to
+authorized_by
+forbidden_in
+governed_by
+approved_by
+</code></pre>
+<h2>7.4 任務與因果關係</h2>
+<pre><code class="language-text">precedes
+enables
+blocks
+causes
+contributes_to
+evidences
+invalidates
+compensates
+</code></pre>
+<h2>7.5 關係也是主張</h2>
+<p>每一條邊：</p>
+<h1>$$
+r</h1>
+<p>\left(
+subject,
+predicate,
+object,
+epistemic,
+time,
+source
+\right).
+$$</p>
+<p>不能因為圖中有一條邊，就假設它是永恆真理。</p>
+<hr>
+<h1>8. 3D Dynamic Scene Graph 的位置</h1>
+<p>Kimera 的 3D Dynamic Scene Graph 提供：</p>
+<ul>
+<li>metric-semantic mesh；</li>
+<li>物體；</li>
+<li>人；</li>
+<li>places；</li>
+<li>rooms；</li>
+<li>buildings；</li>
+<li>多層關係；</li>
+<li>動態場景。</li>
+</ul>
+<p>這是 SWM 的空間—語義骨架。</p>
+<p>但 SWM 額外加入：</p>
+<ul>
+<li>保管；</li>
+<li>任務；</li>
+<li>能源；</li>
+<li>租約；</li>
+<li>世界紀元；</li>
+<li>證據；</li>
+<li>預測分支；</li>
+<li>IP 與隱私。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+\text{DSG}
+\subset
+\text{SWM},
+$$</p>
+<p>而不是完整等價。</p>
+<hr>
+<h1>9. OpenUSD 的位置</h1>
+<p>OpenUSD 提供：</p>
+<ul>
+<li>大型場景組合；</li>
+<li>prim 階層；</li>
+<li>references；</li>
+<li>variants；</li>
+<li>layers；</li>
+<li>non-destructive overrides；</li>
+<li>instancing。</li>
+</ul>
+<p>SWM 可以使用 OpenUSD 表示：</p>
+<ul>
+<li>靜態資產；</li>
+<li>幾何；</li>
+<li>虛擬場景；</li>
+<li>組件；</li>
+<li>不同配置；</li>
+<li>數位孿生視圖。</li>
+</ul>
+<p>但 OpenUSD Stage 不應直接成為控制真值。</p>
+<h2>9.1 Layer 的治理映射</h2>
+<p>可建立：</p>
+<pre><code class="language-text">base_asset_layer
+survey_layer
+live_observation_layer
+operator_override_layer
+simulation_layer
+policy_annotation_layer
+</code></pre>
+<h2>9.2 強覆寫不等於真實</h2>
+<p>USD 中較強的 layer 可以覆寫較弱 layer；SWM 中的權威順序必須由：</p>
+<ul>
+<li>來源；</li>
+<li>時間；</li>
+<li>權限；</li>
+<li>證據；</li>
+<li>狀態類型；</li>
+</ul>
+<p>決定，不能只用檔案 layer strength。</p>
+<hr>
+<h1>10. 事件世界</h1>
+<h2>10.1 狀態是事件累積結果</h2>
+<h1>$$
+W_t</h1>
+<p>\operatorname{Fold}
+\left(
+W_{t_0},
+e_{t_0+1},
+\ldots,
+e_t
+\right).
+$$</p>
+<h2>10.2 Event</h2>
+<h1>$$
+e</h1>
+<p>\left(
+actor,
+action,
+object,
+time,
+location,
+effect,
+authority,
+evidence
+\right).
+$$</p>
+<h2>10.3 事件類型</h2>
+<ul>
+<li>Observed；</li>
+<li>Measured；</li>
+<li>Moved；</li>
+<li>Handoff Prepared；</li>
+<li>Handoff Committed；</li>
+<li>Calibrated；</li>
+<li>Lease Issued；</li>
+<li>Lease Revoked；</li>
+<li>Human Entered；</li>
+<li>Task Started；</li>
+<li>Task Failed；</li>
+<li>Model Predicted；</li>
+<li>World Reconciled。</li>
+</ul>
+<h2>10.4 W3C PROV</h2>
+<p>可將：</p>
+<ul>
+<li>Entity：樣本、資料、模型、結果；</li>
+<li>Activity：量測、移動、分析、製造；</li>
+<li>Agent：人類、AI、站點、組織；</li>
+</ul>
+<p>映射至來源圖。</p>
+<hr>
+<h1>11. 認識狀態</h1>
+<h2>11.1 世界主張不是只有真／假</h2>
+<p>定義：</p>
+<p>$$
+\epsilon
+\in
+{
+O,M,D,I,P,S,C,X,R
+}.
+$$</p>
+<p>對應：</p>
+<ul>
+<li>$O$：Observed；</li>
+<li>$M$：Measured；</li>
+<li>$D$：Declared；</li>
+<li>$I$：Inferred；</li>
+<li>$P$：Predicted；</li>
+<li>$S$：Simulated；</li>
+<li>$C$：Committed；</li>
+<li>$X$：Disputed；</li>
+<li>$R$：Revoked／Stale。</li>
+</ul>
+<h2>11.2 例子</h2>
+<pre><code class="language-yaml">assertion:
+  subject: &quot;sample-17&quot;
+  predicate: &quot;located_in&quot;
+  object: &quot;microscope-zone&quot;
+
+  epistemic_state: &quot;OBSERVED&quot;
+  confidence: 0.96
+  observed_at: &quot;&quot;
+  valid_until: &quot;&quot;
+  source: &quot;camera-02&quot;
+</code></pre>
+<p>保管關係則需要：</p>
+<pre><code class="language-yaml">epistemic_state: &quot;COMMITTED&quot;
+source: &quot;handoff-transaction-42&quot;
+</code></pre>
+<h2>11.3 推論不能自動升級為提交</h2>
+<p>$$
+\text{INFERRED}
+\not\Rightarrow
+\text{COMMITTED}.
+$$</p>
+<p>模型可以推測樣本已被拿走，但在身份與保管驗證前，不能正式轉移責任。</p>
+<hr>
+<h1>12. 不確定性與新鮮度</h1>
+<h2>12.1 狀態</h2>
+<h1>$$
+x_t</h1>
+<p>\left(
+\hat{x},
+\Sigma,
+t_{\mathrm{obs}},
+t_{\mathrm{valid}},
+source,
+status
+\right).
+$$</p>
+<h2>12.2 不確定性類型</h2>
+<ul>
+<li>幾何；</li>
+<li>身份；</li>
+<li>類別；</li>
+<li>狀態；</li>
+<li>因果；</li>
+<li>權限；</li>
+<li>模型；</li>
+<li>時間。</li>
+</ul>
+<h2>12.3 新鮮度</h2>
+<h1>$$
+\operatorname{Fresh}(x,t)</h1>
+<p>\mathbb{1}
+\left[
+t-t_{\mathrm{obs}}
+\leq
+\Delta_x^{\max}
+\right].
+$$</p>
+<h2>12.4 不知道也是正式狀態</h2>
+<pre><code class="language-text">UNKNOWN
+UNOBSERVABLE
+OCCLUDED
+NOT_INSTRUMENTED
+CONFLICTED
+</code></pre>
+<p>系統不得用模型補全把「未知」靜默轉成「已知」。</p>
+<hr>
+<h1>13. 站點觀點</h1>
+<h2>13.1 局部世界</h2>
+<p>每個站點維護：</p>
+<h1>$$
+W_i(t)</h1>
+<p>\left(
+X_i,
+Z_i,
+R_i,
+E_i,
+U_i
+\right).
+$$</p>
+<h2>13.2 Perspective View</h2>
+<p>同一世界對不同站點可見內容不同：</p>
+<ul>
+<li>感測範圍；</li>
+<li>權限；</li>
+<li>隱私；</li>
+<li>任務；</li>
+<li>網路；</li>
+<li>資料授權。</li>
+</ul>
+<h2>13.3 中央不是全知</h2>
+<p>全局模型：</p>
+<h1>$$
+\hat{W}(t)</h1>
+<p>\operatorname{Fuse}
+\left(
+W_1(t-\delta_1),
+\ldots,
+W_n(t-\delta_n)
+\right).
+$$</p>
+<p>它仍是估計。</p>
+<h2>13.4 最小披露</h2>
+<p>地方站點不必向所有其他站點公開：</p>
+<ul>
+<li>人員影像；</li>
+<li>私人資料；</li>
+<li>專利候選；</li>
+<li>完整模型；</li>
+<li>外部合作資料。</li>
+</ul>
+<p>可分享任務需要的最小世界切片。</p>
+<hr>
+<h1>14. 權限與世界模型</h1>
+<h2>14.1 權限不是外部 ACL 附件</h2>
+<p>世界模型必須知道：</p>
+<ul>
+<li>誰能看；</li>
+<li>誰能改；</li>
+<li>誰能批准；</li>
+<li>誰能進入；</li>
+<li>誰能保管；</li>
+<li>誰能公開。</li>
+</ul>
+<h2>14.2 Policy Assertion</h2>
+<pre><code class="language-yaml">policy:
+  subject: &quot;robot-arm-04&quot;
+  action: &quot;grasp&quot;
+  object_class: &quot;clean_sample&quot;
+  zone: &quot;cell-B&quot;
+  governance_epoch: 12
+  valid_until: &quot;&quot;
+  constraints:
+    max_force_n: 5
+</code></pre>
+<h2>14.3 權限也有不確定性</h2>
+<p>若中央與地方對租約狀態不同：</p>
+<ul>
+<li>採最保守狀態；</li>
+<li>暫停高風險動作；</li>
+<li>驗證 fencing；</li>
+<li>不以最後寫入者勝出。</li>
+</ul>
+<hr>
+<h1>15. Affordance：可能行動</h1>
+<h2>15.1 Affordance</h2>
+<p>Affordance 不是物體的永恆屬性，而是：</p>
+<p>$$
+\operatorname{Afford}(a,x,N_i,W_t)
+$$</p>
+<p>表示在當前世界、特定站點與作用域下，動作 $a$ 是否可行。</p>
+<h2>15.2 例子</h2>
+<p>同一杯子：</p>
+<ul>
+<li>對夾爪 A 可抓；</li>
+<li>對夾爪 B 太大；</li>
+<li>在人類手中不可抓；</li>
+<li>在危險區不可進入；</li>
+<li>裝有液體時不可翻轉。</li>
+</ul>
+<h2>15.3 Affordance Contract</h2>
+<h1>$$
+\alpha</h1>
+<p>\left(
+actor,
+action,
+target,
+preconditions,
+effects,
+risks,
+evidence
+\right).
+$$</p>
+<h2>15.4 可執行性</h2>
+<h1>$$
+\operatorname{Executable}(a,t)</h1>
+<p>\operatorname{Capable}
+\land
+\operatorname{Reachable}
+\land
+\operatorname{Permitted}
+\land
+\operatorname{Safe}
+\land
+\operatorname{Fresh}
+\land
+\operatorname{EvidenceReady}.
+$$</p>
+<h2>15.5 Partial World Model</h2>
+<p>系統不需要模擬世界全部細節，只需對與當前意圖相關的 affordance 和後果形成高品質局部模型。</p>
+<p>這可以降低搜索分支與模型負擔。</p>
+<hr>
+<h1>16. 預測世界模型</h1>
+<h2>16.1 Predictive Branch</h2>
+<p>對候選行動序列 $\pi$：</p>
+<h1>$$
+\hat{W}_{t+h}^{(\pi)}</h1>
+<p>F_\theta(W_t,\pi).
+$$</p>
+<h2>16.2 多種預測器</h2>
+<ul>
+<li>物理模擬；</li>
+<li>規則；</li>
+<li>因果圖；</li>
+<li>occupancy model；</li>
+<li>video world model；</li>
+<li>大型世界基礎模型；</li>
+<li>經驗統計。</li>
+</ul>
+<h2>16.3 V-JEPA 2</h2>
+<p>可從影片與影像學習抽象的物理理解、預測和規劃表示，並展示零樣本機器人規劃。</p>
+<h2>16.4 Cosmos</h2>
+<p>世界基礎模型可以生成、理解和模擬物理場景，支援 Physical AI 的資料生成、預測和推理。</p>
+<h2>16.5 預測分支隔離</h2>
+<pre><code class="language-text">COMMITTED WORLD
+    ├── branch A: simulation
+    ├── branch B: video prediction
+    ├── branch C: rule-based estimate
+    └── branch D: counterfactual
+</code></pre>
+<p>任何分支都不能直接寫回 committed world。</p>
+<h2>16.6 提交條件</h2>
+<p>只有：</p>
+<ul>
+<li>行動真正執行；</li>
+<li>物理觀測；</li>
+<li>事件驗證；</li>
+<li>權限與保管提交；</li>
+</ul>
+<p>才能更新已提交世界。</p>
+<hr>
+<h1>17. 因果與反事實</h1>
+<h2>17.1 相關不等於可干預</h2>
+<p>世界模型若只學到：</p>
+<p>$$
+a_t
+\rightarrow
+o_{t+1}
+$$</p>
+<p>的統計關係，可能忽略：</p>
+<ul>
+<li>前置條件；</li>
+<li>工具；</li>
+<li>接觸；</li>
+<li>隱藏變量；</li>
+<li>政策；</li>
+<li>行動是否真的可執行。</li>
+</ul>
+<h2>17.2 因果邊</h2>
+<pre><code class="language-text">action → physical_effect
+calibration_error → measurement_bias
+human_entry → safety_mode_change
+tool_change → capability_change
+lease_revocation → action_forbidden
+</code></pre>
+<h2>17.3 反事實</h2>
+<p>系統可問：</p>
+<ul>
+<li>若不加熱會如何？</li>
+<li>若改用站點 B 是否降低風險？</li>
+<li>若延後量測是否使樣本失效？</li>
+<li>若世界紀元已變更，原計畫是否仍成立？</li>
+</ul>
+<h2>17.4 因果模型也需證據</h2>
+<p>不能因 AI 產生一個合理因果故事，就將其寫成世界事實。</p>
+<hr>
+<h1>18. 數位孿生邊界與模型可信度</h1>
+<h2>18.1 Twin Record</h2>
+<p>每個孿生模型需標記：</p>
+<ul>
+<li>對應實體；</li>
+<li>模型目的；</li>
+<li>有效範圍；</li>
+<li>參數來源；</li>
+<li>校準；</li>
+<li>驗證；</li>
+<li>不確定性；</li>
+<li>最近更新。</li>
+</ul>
+<h2>18.2 VVUQ</h2>
+<p>包括：</p>
+<ul>
+<li>Verification：實作是否符合模型；</li>
+<li>Validation：模型是否適合真實用途；</li>
+<li>Uncertainty Quantification：不確定性多大。</li>
+</ul>
+<h2>18.3 用途限制</h2>
+<p>同一孿生可能適合：</p>
+<ul>
+<li>視覺展示；</li>
+<li>低速碰撞檢查；</li>
+</ul>
+<p>但不適合：</p>
+<ul>
+<li>精密熱預測；</li>
+<li>高速控制；</li>
+<li>安全認證。</li>
+</ul>
+<h2>18.4 Twin Authority</h2>
+<p>數位孿生可以：</p>
+<ul>
+<li>提出；</li>
+<li>預測；</li>
+<li>檢查；</li>
+<li>最佳化。</li>
+</ul>
+<p>它不能在與物理觀測衝突時自動覆蓋物理世界。</p>
+<hr>
+<h1>19. 來源與證據</h1>
+<h2>19.1 Provenance</h2>
+<p>每個重要主張可映射至：</p>
+<p>$$
+\text{Entity}
+\leftarrow
+\text{Activity}
+\leftarrow
+\text{Agent}.
+$$</p>
+<h2>19.2 來源鏈</h2>
+<p>例如：</p>
+<pre><code class="language-text">sample-17 temperature result
+← analysis activity
+← raw sensor file
+← thermal rig measurement
+← calibration artifact
+← task and lease
+</code></pre>
+<h2>19.3 來源影響權威</h2>
+<p>優先級不能固定為「感測器高於模型」或「人類高於感測器」。</p>
+<p>應依主張類型：</p>
+<ul>
+<li>人員批准：人類與治理記錄；</li>
+<li>即時位置：校準感測；</li>
+<li>設備能力：能力證書；</li>
+<li>預期未來：模型；</li>
+<li>保管：交接事務；</li>
+<li>公開狀態：EML-CF 發布記錄。</li>
+</ul>
+<hr>
+<h1>20. 世界紀元</h1>
+<h2>20.1 定義</h2>
+<h1>$$
+WE_k</h1>
+<p>\left(
+k,
+h_k,
+t_k,
+scope_k,
+dependencies_k,
+signature_k
+\right).
+$$</p>
+<h2>20.2 紀元不代表全世界快照</h2>
+<p>它表示：</p>
+<ul>
+<li>一組關鍵世界主張；</li>
+<li>在特定作用域；</li>
+<li>被提交為任務可依賴的版本。</li>
+</ul>
+<h2>20.3 紀元失效</h2>
+<p>可能由：</p>
+<ul>
+<li>人類進入；</li>
+<li>樣本移動；</li>
+<li>工具更換；</li>
+<li>校準過期；</li>
+<li>中央轉移；</li>
+<li>站點隔離；</li>
+<li>區域政策改變；</li>
+</ul>
+<p>觸發。</p>
+<h2>20.4 任務依賴</h2>
+<pre><code class="language-yaml">world_dependency:
+  epoch: &quot;WE-0042&quot;
+  strong:
+    - &quot;custody:sample-17&quot;
+    - &quot;human_presence:cell-B&quot;
+  bounded:
+    - &quot;health:microscope-01&quot;
+  eventual:
+    - &quot;long_term_statistics&quot;
+</code></pre>
+<hr>
+<h1>21. 世界調和</h1>
+<h2>21.1 衝突來源</h2>
+<ul>
+<li>多感測器；</li>
+<li>斷線站點；</li>
+<li>人類操作；</li>
+<li>時鐘；</li>
+<li>身份；</li>
+<li>模型；</li>
+<li>事件延遲。</li>
+</ul>
+<h2>21.2 衝突不靜默覆蓋</h2>
+<pre><code class="language-yaml">world_conflict:
+  subject: &quot;sample-17&quot;
+  predicate: &quot;located_in&quot;
+  assertions:
+    - value: &quot;storage-A&quot;
+      source: &quot;central-log&quot;
+    - value: &quot;microscope-zone&quot;
+      source: &quot;camera-02&quot;
+  status: &quot;DISPUTED&quot;
+</code></pre>
+<h2>21.3 Reconciliation Proposal</h2>
+<p>調和器可以：</p>
+<ul>
+<li>重新觀測；</li>
+<li>檢查交接；</li>
+<li>檢查時間；</li>
+<li>比較來源；</li>
+<li>保留兩個假說；</li>
+<li>要求人類。</li>
+</ul>
+<h2>21.4 提交權</h2>
+<p>調和建議必須經相應的：</p>
+<ul>
+<li>地方確認；</li>
+<li>域級中央；</li>
+<li>或人類；</li>
+</ul>
+<p>才改變 committed world。</p>
+<hr>
+<h1>22. 記憶與世界模型分離</h1>
+<h2>22.1 AI 記憶不是世界真值</h2>
+<p>模型的對話記憶、向量記憶和經驗摘要可能：</p>
+<ul>
+<li>過時；</li>
+<li>壓縮；</li>
+<li>缺少來源；</li>
+<li>混入推論。</li>
+</ul>
+<h2>22.2 World Claim API</h2>
+<p>AI 不能自由寫入世界，只能提交：</p>
+<pre><code class="language-text">Observation Proposal
+Inference Proposal
+Prediction Branch
+Action Proposal
+Reconciliation Proposal
+</code></pre>
+<h2>22.3 Commit API</h2>
+<p>只有具備權限的服務可提交：</p>
+<ul>
+<li>物理事件；</li>
+<li>保管轉移；</li>
+<li>租約；</li>
+<li>世界紀元；</li>
+<li>人類批准。</li>
+</ul>
+<hr>
+<h1>23. 人類在世界模型中的位置</h1>
+<h2>23.1 人類不是一般障礙物</h2>
+<p>必須表示：</p>
+<ul>
+<li>是否存在；</li>
+<li>角色；</li>
+<li>授權；</li>
+<li>隱私；</li>
+<li>安全；</li>
+<li>接管；</li>
+<li>不確定意圖。</li>
+</ul>
+<h2>23.2 最小必要表示</h2>
+<p>通常不需要保存：</p>
+<ul>
+<li>生物特徵；</li>
+<li>詳細人格；</li>
+<li>不相關活動。</li>
+</ul>
+<p>只保存：</p>
+<ul>
+<li>現場安全所需；</li>
+<li>任務分工所需；</li>
+<li>法律與事故所需；</li>
+<li>經同意的資訊。</li>
+</ul>
+<h2>23.3 人類觀點</h2>
+<p>人類可以：</p>
+<ul>
+<li>修正錯誤身份；</li>
+<li>宣布設備已搬動；</li>
+<li>接管；</li>
+<li>拒絕；</li>
+<li>提供領域判斷。</li>
+</ul>
+<p>但人類聲明也應保存來源與時間，不應不留痕地改寫歷史。</p>
+<hr>
+<h1>24. 模型更新管線</h1>
+<h2>24.1 感知更新</h2>
+<ul>
+<li>感測；</li>
+<li>特徵；</li>
+<li>物體；</li>
+<li>姿態；</li>
+<li>關係；</li>
+<li>不確定性。</li>
+</ul>
+<h2>24.2 事件更新</h2>
+<ul>
+<li>任務；</li>
+<li>控制；</li>
+<li>交接；</li>
+<li>權限；</li>
+<li>人類。</li>
+</ul>
+<h2>24.3 預測更新</h2>
+<p>建立候選分支，不修改提交世界。</p>
+<h2>24.4 調和更新</h2>
+<p>解決衝突、撤銷過期主張。</p>
+<h2>24.5 紀元提交</h2>
+<p>對關鍵作用域產生新的可引用版本。</p>
+<hr>
+<h1>25. SWM 系統架構</h1>
+<h2>25.1 Frame and Geometry Service</h2>
+<p>管理：</p>
+<ul>
+<li>tf；</li>
+<li>mesh；</li>
+<li>occupancy；</li>
+<li>pose；</li>
+<li>covariance。</li>
+</ul>
+<h2>25.2 Entity Registry</h2>
+<p>管理：</p>
+<ul>
+<li>身份；</li>
+<li>型別；</li>
+<li>批次；</li>
+<li>實體與描述關係。</li>
+</ul>
+<h2>25.3 Zone and Topology Service</h2>
+<p>管理：</p>
+<ul>
+<li>區域；</li>
+<li>路徑；</li>
+<li>邊界；</li>
+<li>動態安全區。</li>
+</ul>
+<h2>25.4 Relation／Scene Graph Store</h2>
+<p>管理多層圖。</p>
+<h2>25.5 Event and Provenance Journal</h2>
+<p>append-only 事件與來源。</p>
+<h2>25.6 Governance Graph</h2>
+<p>權限、租約、紀元、政策和 fencing。</p>
+<h2>25.7 Affordance Engine</h2>
+<p>根據：</p>
+<ul>
+<li>身體；</li>
+<li>工具；</li>
+<li>物件；</li>
+<li>世界；</li>
+<li>權限；</li>
+</ul>
+<p>計算可能行動。</p>
+<h2>25.8 Prediction Branch Manager</h2>
+<p>管理模擬、世界模型和反事實分支。</p>
+<h2>25.9 Epistemic and Conflict Manager</h2>
+<p>管理：</p>
+<ul>
+<li>可信度；</li>
+<li>新鮮度；</li>
+<li>衝突；</li>
+<li>未知；</li>
+<li>調和。</li>
+</ul>
+<h2>25.10 World Epoch Authority</h2>
+<p>提交任務可依賴的世界版本。</p>
+<h2>25.11 Perspective and Access Service</h2>
+<p>根據站點、任務、隱私和 IP 產生最小世界切片。</p>
+<hr>
+<h1>26. SWM 查詢</h1>
+<h2>26.1 狀態查詢</h2>
+<blockquote>
+<p>樣本 17 現在在哪裡？信心多少？誰保管？</p>
+</blockquote>
+<h2>26.2 能力查詢</h2>
+<blockquote>
+<p>哪個已校準站點能在不破壞樣本的條件下量測尺寸？</p>
+</blockquote>
+<h2>26.3 治理查詢</h2>
+<blockquote>
+<p>哪個中央和租約允許機械臂在 cell-B 抓取？</p>
+</blockquote>
+<h2>26.4 證據查詢</h2>
+<blockquote>
+<p>這個研究結果依賴哪些量測、校準和樣本事件？</p>
+</blockquote>
+<h2>26.5 反事實查詢</h2>
+<blockquote>
+<p>如果 microscope-01 離線，哪些任務可改走 microscope-02？</p>
+</blockquote>
+<h2>26.6 不確定查詢</h2>
+<blockquote>
+<p>哪些高風險物件的位置已超過新鮮度期限？</p>
+</blockquote>
+<hr>
+<h1>27. MVP：StationWorld-4</h1>
+<h2>27.1 配置</h2>
+<ul>
+<li>一個感測站；</li>
+<li>一個固定機械臂站；</li>
+<li>一個移動站；</li>
+<li>一個量測站；</li>
+<li>三個區域；</li>
+<li>五至十個樣本和工具；</li>
+<li>一名人類操作員；</li>
+<li>一個虛擬預測站。</li>
+</ul>
+<h2>27.2 世界層</h2>
+<ul>
+<li>ROS 2 tf2／模擬座標；</li>
+<li>簡化 3D scene graph；</li>
+<li>Entity Registry；</li>
+<li>Event Journal；</li>
+<li>Governance Graph；</li>
+<li>Affordance Engine；</li>
+<li>Prediction Branch；</li>
+<li>World Epoch。</li>
+</ul>
+<h2>27.3 任務</h2>
+<ol>
+<li>樣本入庫；</li>
+<li>身份辨識；</li>
+<li>機械臂抓取；</li>
+<li>跨站交接；</li>
+<li>移動至量測區；</li>
+<li>量測；</li>
+<li>人類中途移動一個物件；</li>
+<li>模型預測下一步；</li>
+<li>調和；</li>
+<li>回寫 EML-CF 證據。</li>
+</ol>
+<h2>27.4 故障注入</h2>
+<ul>
+<li>相機遮擋；</li>
+<li>tf 漂移；</li>
+<li>QR 與視覺身份衝突；</li>
+<li>中央日誌與實際位置不符；</li>
+<li>租約過期；</li>
+<li>人類進入；</li>
+<li>數位孿生未更新；</li>
+<li>模型生成不可能的物體關係；</li>
+<li>交接事件遲到；</li>
+<li>世界紀元失效。</li>
+</ul>
+<h2>27.5 成功條件</h2>
+<ul>
+<li>觀測、推論、模擬和提交狀態不混淆；</li>
+<li>高風險身份衝突時停止；</li>
+<li>權限與區域參與可執行性；</li>
+<li>世界模型可表示未知；</li>
+<li>預測分支不覆蓋物理事實；</li>
+<li>數位孿生衝突時要求實測；</li>
+<li>事件可重建保管與任務歷史；</li>
+<li>人類介入後重新提交世界紀元。</li>
+</ul>
+<hr>
+<h1>28. 評估指標</h1>
+<h2>28.1 幾何</h2>
+<ul>
+<li>定位誤差；</li>
+<li>transform 一致性；</li>
+<li>漂移；</li>
+<li>可達性錯誤。</li>
+</ul>
+<h2>28.2 身份</h2>
+<ul>
+<li>identity precision／recall；</li>
+<li>錯誤合併；</li>
+<li>重複實體；</li>
+<li>身份恢復時間。</li>
+</ul>
+<h2>28.3 關係</h2>
+<ul>
+<li>scene graph relation accuracy；</li>
+<li>空間一致；</li>
+<li>保管一致；</li>
+<li>任務依賴正確。</li>
+</ul>
+<h2>28.4 認識狀態</h2>
+<ul>
+<li>推論誤標為事實；</li>
+<li>模擬誤標為實測；</li>
+<li>過期主張仍被使用；</li>
+<li>未知被錯誤補全。</li>
+</ul>
+<h2>28.5 Affordance</h2>
+<ul>
+<li>可執行性預測；</li>
+<li>錯誤允許；</li>
+<li>錯誤拒絕；</li>
+<li>前置條件遺失。</li>
+</ul>
+<h2>28.6 預測</h2>
+<ul>
+<li>多步預測誤差；</li>
+<li>物理一致性；</li>
+<li>任務相關性；</li>
+<li>不確定性校準。</li>
+</ul>
+<h2>28.7 調和</h2>
+<ul>
+<li>衝突發現率；</li>
+<li>調和時間；</li>
+<li>錯誤覆蓋；</li>
+<li>人工介入量。</li>
+</ul>
+<h2>28.8 來源</h2>
+<ul>
+<li>事件可重建率；</li>
+<li>主張—來源覆蓋；</li>
+<li>證據缺失；</li>
+<li>撤銷傳播。</li>
+</ul>
+<hr>
+<h1>29. 可證偽命題</h1>
+<h2>H1：多層世界模型比單一場景圖更能降低治理錯誤</h2>
+<p>加入保管、權限、事件和認識狀態後，錯誤物理動作應下降。</p>
+<h2>H2：顯式未知優於模型自動補全</h2>
+<p>在遮擋與身份不確定場景中，保留 UNKNOWN 應降低高風險誤操作，但增加暫停。</p>
+<h2>H3：Affordance 層可降低規劃分支</h2>
+<p>只建模任務相關可行行動，應比搜索完整世界動作空間更有效。</p>
+<h2>H4：預測分支隔離降低生成模型污染真實世界</h2>
+<p>模型錯誤不應直接寫入 committed world。</p>
+<h2>H5：數位孿生 VVUQ 提高模型使用邊界清晰度</h2>
+<p>未經驗證的孿生不應被用於高風險決策。</p>
+<h2>H6：來源圖提高事故與研究重建能力</h2>
+<h2>H7：站點局部觀點與最小披露可降低不必要資料共享</h2>
+<p>代價是調和與查詢複雜度。</p>
+<h2>H8：世界紀元能阻止依賴舊狀態的任務執行</h2>
+<h2>H9：生成式世界模型提高候選規劃，但不能取代 committed state</h2>
+<h2>H10：同時使用幾何、語義與治理關係，會提高模型成本</h2>
+<p>若完全沒有成本，代表實驗未真實計入儲存、延遲與維護。</p>
+<hr>
+<h1>30. 主要限制</h1>
+<h2>30.1 世界不可能被完整建模</h2>
+<p>SWM 只能保存任務相關、可觀測和被授權的部分。</p>
+<h2>30.2 多層模型增加複雜度</h2>
+<p>需要：</p>
+<ul>
+<li>schema；</li>
+<li>本體；</li>
+<li>版本；</li>
+<li>查詢；</li>
+<li>同步；</li>
+<li>儲存。</li>
+</ul>
+<h2>30.3 關係語義難以統一</h2>
+<p>不同領域對「安全」「接近」「乾淨」「可抓」定義不同。</p>
+<h2>30.4 神經世界模型難以完全解釋</h2>
+<h2>30.5 事件和來源不保證內容真實</h2>
+<p>來源可信度仍需判斷。</p>
+<h2>30.6 物理真值也可能不可直接觀測</h2>
+<p>需要估計與多假說。</p>
+<h2>30.7 人類隱私與持續感知有張力</h2>
+<h2>30.8 即時性能</h2>
+<p>大型圖、預測和來源查詢可能不適合硬即時控制。</p>
+<hr>
+<h1>31. 不能宣稱的內容</h1>
+<p>本篇不主張：</p>
+<ul>
+<li>SWM 是完整世界；</li>
+<li>中央世界模型是全知真值；</li>
+<li>數位孿生等同實體；</li>
+<li>場景圖可取代幾何控制；</li>
+<li>生成影片等於物理預測正確；</li>
+<li>模型高信心等於可直接執行；</li>
+<li>所有不確定性都能精確量化；</li>
+<li>W3C PROV 能自動證明資料真實；</li>
+<li>OpenUSD 可直接成為安全控制資料庫；</li>
+<li>tf2 可解決身份、保管與治理；</li>
+<li>Affordance 是物體固定屬性；</li>
+<li>最後寫入者應覆蓋所有衝突；</li>
+<li>人類聲明永遠比感測器正確；</li>
+<li>世界模型可以無限制保存人類活動；</li>
+<li>預測分支可以自動提交為物理事實。</li>
+</ul>
+<hr>
+<h1>32. 與後續系列的關係</h1>
+<p>本文建立共同世界表示後，下一篇將處理：</p>
+<blockquote>
+<p>EML-CF 產生的概念產品，如何在 SWM、SPR、OSF 和 PCD 上形成假說—實驗—證據—修正的具身自主研究閉環？</p>
+</blockquote>
+<p>因此第 10 篇為：</p>
+<h1>《具身化 AI 自主研究閉環：從假說生成到物理驗證》</h1>
+<p>將建立：</p>
+<ul>
+<li>Hypothesis Contract；</li>
+<li>Experimental Design Agent；</li>
+<li>Feasibility Compilation；</li>
+<li>Simulation Gate；</li>
+<li>Physical Execution；</li>
+<li>Evidence Evaluation；</li>
+<li>Failure Learning；</li>
+<li>Concept Revision；</li>
+<li>IP Routing；</li>
+<li>Human Scientific Oversight。</li>
+</ul>
+<hr>
+<h1>33. 結論</h1>
+<p>世界模型最危險的錯誤，不一定是完全看不見世界，而是：</p>
+<blockquote>
+<p>系統無法區分自己看見的、被告知的、推論的、想像的，以及正式承諾的世界。</p>
+</blockquote>
+<p>站點化世界模型因此不追求把所有資訊壓成單一神經表示，而建立：</p>
+<p>$$
+\boxed{
+\text{幾何}
++
+\text{身份}
++
+\text{區域}
++
+\text{關係}
++
+\text{事件}
++
+\text{權限}
++
+\text{Affordance}
++
+\text{預測}
++
+\text{來源}
+}
+$$</p>
+<p>共同構成的混合世界。</p>
+<p>其核心規律是：</p>
+<p>$$
+\boxed{
+\text{觀測不等於提交}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{推論不等於事實}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{模擬不等於驗證}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{可到達不等於有權行動}
+}
+$$</p>
+<p>真正可供超靈使用的世界模型，不只要回答「世界是什麼樣子」，還必須回答：</p>
+<ul>
+<li>我為何相信它；</li>
+<li>它還新鮮嗎；</li>
+<li>誰看到的；</li>
+<li>誰承諾的；</li>
+<li>哪些地方未知；</li>
+<li>誰能改變它；</li>
+<li>哪些行動現在可行；</li>
+<li>做完後需要什麼證據。</li>
+</ul>
+<p>因此：</p>
+<h1>$$
+\boxed{
+\text{世界模型}</h1>
+<p>\text{可被多站點共同引用、質疑、預測與提交的物理世界契約}
+}
+$$</p>
+<hr>
+<h1>參考文獻與官方技術資料</h1>
+<ol>
+<li><p>Rosinol, A. et al. <strong>3D Dynamic Scene Graphs: Actionable Spatial Perception with Places, Objects, and Humans.</strong> Robotics: Science and Systems, 2020.<br>arXiv:2002.06289.</p>
+</li>
+<li><p>Rosinol, A. et al. <strong>Kimera: From SLAM to Spatial Perception with 3D Dynamic Scene Graphs.</strong> <em>The International Journal of Robotics Research</em>, 2021.<br>arXiv:2101.06894.</p>
+</li>
+<li><p>Chang, Y. et al. <strong>Kimera-Multi: A System for Distributed Multi-Robot Metric-Semantic Simultaneous Localization and Mapping.</strong> 2020.<br>arXiv:2011.04087.</p>
+</li>
+<li><p>ROS 2 Documentation. <strong>About tf2.</strong><br><a href="https://docs.ros.org/en/galactic/Concepts/About-Tf2.html">https://docs.ros.org/en/galactic/Concepts/About-Tf2.html</a></p>
+</li>
+<li><p>Pixar Animation Studios. <strong>Universal Scene Description／OpenUSD.</strong><br><a href="https://openusd.org/">https://openusd.org/</a></p>
+</li>
+<li><p>OpenUSD. <strong>Introduction, Core Specification, Terms and Concepts.</strong><br><a href="https://openusd.org/release/intro.html">https://openusd.org/release/intro.html</a></p>
+</li>
+<li><p>W3C. <strong>PROV-O: The PROV Ontology.</strong> W3C Recommendation, 2013.<br><a href="https://www.w3.org/TR/prov-o/">https://www.w3.org/TR/prov-o/</a></p>
+</li>
+<li><p>W3C. <strong>PROV-DM: The PROV Data Model.</strong> W3C Recommendation, 2013.<br><a href="https://www.w3.org/TR/prov-dm/">https://www.w3.org/TR/prov-dm/</a></p>
+</li>
+<li><p>NIST. <strong>Digital Twins for Advanced Manufacturing.</strong><br><a href="https://www.nist.gov/programs-projects/digital-twins-advanced-manufacturing">https://www.nist.gov/programs-projects/digital-twins-advanced-manufacturing</a></p>
+</li>
+<li><p>Lu, Y. et al. <strong>Manufacturing Digital Twin Standards.</strong> NIST, 2024.</p>
+</li>
+<li><p>NIST. <strong>Towards a Digital Twin of a Robot Workcell: Standards and Methods.</strong> 2024.</p>
+</li>
+<li><p>Assran, M. et al. <strong>V-JEPA 2: Self-Supervised Video Models Enable Understanding, Prediction and Planning.</strong> Meta AI, 2025.</p>
+</li>
+<li><p>NVIDIA. <strong>Cosmos World Foundation Model Platform for Physical AI.</strong> 2025.</p>
+</li>
+<li><p>NVIDIA Cosmos Lab. <strong>Cosmos 3: Omnimodal World Models for Physical AI.</strong> Technical Report, 2026.</p>
+</li>
+<li><p>Khetarpal, K. et al. <strong>Affordances Enable Partial World Modeling with LLMs.</strong> 2026.<br>arXiv:2602.10390.</p>
+</li>
+<li><p>Zhang, Q. et al. <strong>AGWM: Affordance-Grounded World Models for Environments with Compositional Prerequisites.</strong> 2026.<br>arXiv:2605.06841.</p>
+</li>
+<li><p>Zhang, Z. et al. <strong>Occupancy World Model for Robots.</strong> 2025.<br>arXiv:2505.05512.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>Oversoul Station Fabric：固定站、移動站與虛擬站的分布式具身網路.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>持續性指揮控制區：AI 如何佔據、維持並安全解除一個物理時空域.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>語義即物理路由：從資料流治理到物料、能源、站點與行動流治理.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>中央主權、地方自治與動態不動點中央.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>連線不是纜線：有線、無線、光學與離線任務包的混合站網.</strong></p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A：World Entity Record</h1>
+<pre><code class="language-yaml">entity:
+  id: &quot;&quot;
+  type: &quot;&quot;
+  names: []
+  physical: true
+
+  geometry:
+    frame: &quot;&quot;
+    pose: null
+    covariance: null
+    mesh: null
+
+  state: {}
+  policy_tags: []
+  digital_representations: []
+
+  identity:
+    status: &quot;PROBABLE&quot;
+    identifiers: []
+    confidence: 0
+
+  provenance:
+    created_by: &quot;&quot;
+    created_at: &quot;&quot;
+    evidence: []
+</code></pre>
+<hr>
+<h1>附錄 B：Relation Assertion</h1>
+<pre><code class="language-yaml">relation_assertion:
+  id: &quot;&quot;
+  subject: &quot;&quot;
+  predicate: &quot;&quot;
+  object: &quot;&quot;
+
+  epistemic:
+    state: &quot;OBSERVED | MEASURED | DECLARED | INFERRED |
+            PREDICTED | SIMULATED | COMMITTED | DISPUTED | STALE&quot;
+    confidence: 0
+    uncertainty: null
+
+  timing:
+    asserted_at: &quot;&quot;
+    valid_from: &quot;&quot;
+    valid_until: null
+
+  world:
+    epoch: &quot;&quot;
+    scope: &quot;&quot;
+
+  provenance:
+    source_agent: &quot;&quot;
+    source_activity: &quot;&quot;
+    evidence: []
+</code></pre>
+<hr>
+<h1>附錄 C：Affordance Contract</h1>
+<pre><code class="language-yaml">affordance:
+  id: &quot;&quot;
+  actor: &quot;&quot;
+  action: &quot;&quot;
+  target: &quot;&quot;
+
+  preconditions:
+    capability: []
+    geometry: []
+    material: []
+    authority: []
+    safety: []
+    world_freshness: []
+
+  effects:
+    expected: []
+    forbidden: []
+
+  evidence_required: []
+  confidence: 0
+  prediction_model: &quot;&quot;
+  valid_until: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 D：Counterfactual Branch</h1>
+<pre><code class="language-yaml">counterfactual_branch:
+  id: &quot;&quot;
+  parent_world_epoch: &quot;&quot;
+  action_sequence: []
+  model:
+    id: &quot;&quot;
+    version: &quot;&quot;
+    class: &quot;physics | video_world_model | rule | causal | statistical&quot;
+
+  predicted_world_delta: []
+  uncertainty: {}
+  failure_modes: []
+  evidence_status: &quot;SIMULATED&quot;
+  committable: false
+</code></pre>
+<hr>
+<h1>附錄 E：World Conflict</h1>
+<pre><code class="language-yaml">world_conflict:
+  id: &quot;&quot;
+  subject: &quot;&quot;
+  predicate: &quot;&quot;
+  assertions: []
+
+  risk:
+    decision_blocking: true
+    affected_tasks: []
+    affected_zones: []
+
+  reconciliation:
+    required_observations: []
+    proposed_resolution: null
+    authority_required: &quot;&quot;
+    status: &quot;OPEN&quot;
+
+  evidence: []
+</code></pre>
+<hr>
+<h1>附錄 F：World Epoch</h1>
+<pre><code class="language-yaml">world_epoch:
+  id: &quot;&quot;
+  domain_id: &quot;&quot;
+  sequence: 0
+  created_at: &quot;&quot;
+  governance_epoch: 0
+
+  committed_assertions: []
+  revoked_assertions: []
+  unresolved_conflicts: []
+  scope: []
+  dependency_hash: &quot;&quot;
+  signature: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 G：Perspective View</h1>
+<pre><code class="language-yaml">perspective_view:
+  consumer: &quot;&quot;
+  task_id: &quot;&quot;
+  world_epoch: &quot;&quot;
+
+  visible_layers:
+    - geometry
+    - entities
+    - relations
+    - affordances
+
+  hidden:
+    - personal_data
+    - restricted_ip
+    - unrelated_zones
+
+  freshness_requirements: {}
+  authority_scope: []
+</code></pre>
+<hr>
+<h1>附錄 H：系列血緣</h1>
+<pre><code class="language-text">OSF
+  站點、能力與局部觀測
+        ↓
+
+PCD
+  跨時間狀態與義務
+        ↓
+
+SPR
+  世界狀態作為物理程序前置條件
+        ↓
+
+DFC
+  權限、治理紀元與提交權
+        ↓
+
+HLF
+  不同鏈路上的狀態新鮮度與調和
+        ↓
+
+本篇 SWM
+  幾何、物體、區域、事件、權限、Affordance、預測與來源的共同世界
+        ↓
+
+第 10 篇
+  以共同世界模型支撐具身自主研究閉環
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/stdi-09.html">https://thisoneisneok.com/html/papers/stdi-09.html</a></footer>
+</body>
+</html>

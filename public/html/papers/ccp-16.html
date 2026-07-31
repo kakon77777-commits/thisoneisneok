@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SynCore v2.1：可重構融合—流動運算架構 | Neo.K</title>
+<meta name="description" content="本文提出 SynCore v2.1，一種將可組合單執行緒資源、數位資料流加速、物理耦合振盪運算、精確狀態提交與跨層控制納入同一系統的異質運算架構。此版本不是對「多個核心可以無條件融合成數倍單核效能」的再次宣告，也不把 Kuramoto 同步視為可替代一切布林運算的宇宙原生計算。它重新界定 SynCore 的研究問題：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/ccp-16.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / CCP</strong><span>計算機概念產品系列</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>CCP-16</span></div><div><b>版本</b><span>v2.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K（許筌崴）</span></div><div><b>狀態</b><span>公開概念技術論文／可驗證架構提案</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ccp-16.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>SynCore v2.1：可重構融合—流動運算架構</h1>
+<h2>從可組合超純量、數位資料流到耦合振盪加速器的統一設計</h2>
+<p><strong>英文題名：</strong> SynCore v2.1: A Reconfigurable Fusion–Flow Computing Architecture<br><strong>文件編號：</strong> EML-SYNCORE-2026-v2.1<br><strong>作者：</strong> Neo.K（許筌崴）<br><strong>協作修訂：</strong> Aletheia<br><strong>機構：</strong> 一言諾科技有限公司（EveMissLab）<br><strong>日期：</strong> 2026年7月30日<br><strong>文件性質：</strong> 公開概念技術論文／可驗證架構提案<br><strong>證據等級：</strong> E0（尚未完成專用晶片、FPGA 原型或可重現基準）<br><strong>前版：</strong> SynCore v1.0（神核融合引擎）；SynCore v2.0（流動融合統一版）<br><strong>授權：</strong> 公開發布前由作者確認最終授權條款</p>
+<hr>
+<h2>摘要</h2>
+<p>本文提出 SynCore v2.1，一種將<strong>可組合單執行緒資源、數位資料流加速、物理耦合振盪運算、精確狀態提交與跨層控制</strong>納入同一系統的異質運算架構。此版本不是對「多個核心可以無條件融合成數倍單核效能」的再次宣告，也不把 Kuramoto 同步視為可替代一切布林運算的宇宙原生計算。它重新界定 SynCore 的研究問題：</p>
+<blockquote>
+<p>在功率、熱、互連、正確性、重組成本與工作負載結構的共同約束下，如何讓計算資源在獨立核心、融合叢集、數位資料流與物理流動加速之間，進行可驗證的模式選擇與協同？</p>
+</blockquote>
+<p>SynCore v2.1 包含五類核心元件：</p>
+<ol>
+<li><strong>Scalar Tile（純量執行晶粒）</strong>：提供相容的通用指令執行；</li>
+<li><strong>Fusion Cluster（融合叢集）</strong>：以共享或分散式前端、執行視窗、暫存器與執行單元提高單執行緒的指令級與記憶體級並行；</li>
+<li><strong>Digital Flow Array（數位流動陣列）</strong>：以顯式資料依賴與空間映射執行規則、張量、圖、串流和迭代核心；</li>
+<li><strong>Oscillator Compute Tile（振盪器運算晶粒）</strong>：針對可映射到相位耦合、能量最小化或同步動力學的特殊問題提供近似解；</li>
+<li><strong>Verification and Commit Engine（驗證與提交引擎）</strong>：負責精確狀態、檢查點、重放、錯誤隔離與結果資格判定。</li>
+</ol>
+<p>新版明確區分三種互連尺度：片上 SynFabric 用於低延遲資源協同；封裝內 UCIe 類介面用於晶粒間高頻寬傳輸；CXL 類介面用於系統級一致性記憶體、設備與資源池化。CXL 不再被描述為「無限互連」，也不承擔單週期跨晶片核心融合。</p>
+<p>本文提出 SynIR 中介表示、模式切換狀態機、多目標編排模型、五項可證偽命題，以及從模擬、FPGA、RISC-V 叢集、振盪器電路到 chiplet 原型的分階段驗證路線。SynCore 的可公開技術主張因此被縮減為：<strong>它是一個融合既有可重構微架構、資料流計算與特殊物理加速器的統一研究框架；其價值必須由端到端基準、重組成本、精確度與能效證據共同決定。</strong></p>
+<p><strong>關鍵詞：</strong> 可組合核心、核心融合、資料流架構、CGRA、耦合振盪器、Kuramoto 模型、chiplet、UCIe、CXL、異質運算、可重構微架構</p>
+<hr>
+<h2>1. 問題重新定義</h2>
+<h3>1.1 多核心並沒有消除單執行緒瓶頸</h3>
+<p>增加核心數量可以提高吞吐量，但不會自動縮短一條依賴鏈。對指令依賴圖</p>
+<p>$$
+\mathcal{G}_I=(V_I,E_I),
+$$</p>
+<p>若一條路徑上的每個節點都依賴前一節點，增加更多執行單元並不能把該路徑任意壓縮。單執行緒性能受到至少五類因素共同限制：</p>
+<ul>
+<li>可被揭露的指令級並行度；</li>
+<li>分支與控制依賴；</li>
+<li>記憶體延遲與記憶體級並行度；</li>
+<li>前端取指、解碼與指令視窗容量；</li>
+<li>功率、熱與時序裕度。</li>
+</ul>
+<p>因此，「其他核心閒置」不等於「那些核心的全部硬體都能直接轉化為單執行緒加速」。真正問題是：</p>
+<blockquote>
+<p>哪些資源可以共享、借用、重組或專用化？其協同成本是否低於收益？</p>
+</blockquote>
+<h3>1.2 核心融合並非全新概念</h3>
+<p>Core Fusion、Composable Lightweight Processors、MorphCore 等研究已探索過將多個簡單核心組合成較大的邏輯處理器，或讓同一微架構在高單執行緒性能與高吞吐量模式間轉換。SynCore 不應宣稱首次提出「多核融合為大核」。</p>
+<p>新版 SynCore 的差異性只能建立在更具體的統合問題上：</p>
+<ol>
+<li>融合模式如何與數位資料流加速器共存；</li>
+<li>物理振盪器計算如何被限制在合法問題類別；</li>
+<li>如何由 O-Chip、DEO、DPCPS 與 DryCore 提供跨層承諾；</li>
+<li>如何以精確狀態、回退與證據制度管理重組風險；</li>
+<li>如何用同一個軟體中介表示描述不同執行域。</li>
+</ol>
+<h3>1.3 「流動」不是對布林計算的否定</h3>
+<p>數位邏輯、資料流機器與耦合振盪器是不同抽象層：</p>
+<ul>
+<li>布林邏輯描述離散數位電路；</li>
+<li>資料流描述運算何時因輸入就緒而觸發；</li>
+<li>振盪器計算利用連續時間物理動力學搜尋穩定態或近似解。</li>
+</ul>
+<p>它們可以共同存在，但不能由「宇宙是流動的」推出「NOT 閘不存在」或「通用 CPU 應被振盪器取代」。SynCore v2.1 將「流動模式」重新分成：</p>
+<ul>
+<li><strong>數位流動模式</strong>：可精確、可重放的資料流或空間運算；</li>
+<li><strong>物理流動模式</strong>：帶有噪聲、校準與近似性的特殊用途運算。</li>
+</ul>
+<hr>
+<h2>2. 設計原則</h2>
+<h3>原則一：先辨識工作負載結構，再選擇硬體模式</h3>
+<p>系統不以應用名稱判定模式，而使用可量測特徵：</p>
+<h1>$$
+\mathbf{w}</h1>
+<p>\left(
+p_{\mathrm{ILP}},
+p_{\mathrm{TLP}},
+p_{\mathrm{MLP}},
+b_{\mathrm{branch}},
+m_{\mathrm{reuse}},
+d_{\mathrm{graph}},
+q_{\mathrm{precision}},
+r_{\mathrm{regularity}},
+s_{\mathrm{state}}
+\right).
+$$</p>
+<p>它們分別表示可揭露的指令級、執行緒級與記憶體級並行，分支行為、資料重用、圖結構、精度要求、規則性與狀態大小。</p>
+<h3>原則二：融合不能消除真實依賴</h3>
+<p>融合模式可以擴大指令視窗、執行單元池和記憶體請求容量，但不能令因果依賴消失。性能提升應以臨界路徑、前端、後端與記憶體限制共同估算。</p>
+<h3>原則三：物理流動只服務可合法映射的問題</h3>
+<p>只有當問題可映射到相位耦合、能量函數、儲備池動力學或其他已定義物理模型時，才允許送入 Oscillator Compute Tile。任何通用程式若沒有合法映射，必須留在純量或數位資料流域。</p>
+<h3>原則四：精確狀態與安全否決不可被類比計算取代</h3>
+<p>類比或近似加速器的輸出必須經過資格判定。記憶體保護、精確例外、ECC、熱關機、電壓護欄與安全邊界仍由數位硬體控制。</p>
+<h3>原則五：重組本身是一項成本</h3>
+<p>模式切換不是免費的一個 bit。它可能包括排空流水線、保存狀態、重設路由、載入配置、暖機、校準與驗證。</p>
+<hr>
+<h2>3. SynCore v2.1 頂層架構</h2>
+<h3>3.1 五類計算與控制元件</h3>
+<h4>3.1.1 Scalar Tile</h4>
+<p>Scalar Tile 是相容性基線，包含：</p>
+<ul>
+<li>取指、解碼與分支預測；</li>
+<li>亂序或順序執行後端；</li>
+<li>暫存器重命名；</li>
+<li>L1 快取與 TLB；</li>
+<li>精確例外；</li>
+<li>向量或矩陣擴展。</li>
+</ul>
+<p>它可以獨立執行，也可以加入 Fusion Cluster。每個 Scalar Tile 不必同時攜帶完整振盪器路徑。</p>
+<h4>3.1.2 Fusion Cluster</h4>
+<p>Fusion Cluster 不是把多顆現成 CPU 的 L1、暫存器與 ALU 在執行中「接線合併」，而是製造時就設計為可組合叢集。可選結構包括：</p>
+<ul>
+<li>一個共享前端配多個後端；</li>
+<li>分散式前端配統一重命名和提交；</li>
+<li>分散式執行視窗與 banked physical register file；</li>
+<li>clustered execution；</li>
+<li>helper engine；</li>
+<li>runahead 或資料存取／執行解耦；</li>
+<li>banked cache 與明確資料擁有權。</li>
+</ul>
+<p>邏輯上，Fusion Cluster 可形成一個較寬的執行域，但物理延遲、旁路網路、喚醒—選擇複雜度和導線功耗仍限制規模。</p>
+<h4>3.1.3 Digital Flow Array</h4>
+<p>Digital Flow Array（DFA）是一組可重構空間單元，適合：</p>
+<ul>
+<li>規則迴圈；</li>
+<li>stencil；</li>
+<li>張量與矩陣核心；</li>
+<li>DSP；</li>
+<li>串流；</li>
+<li>圖子結構；</li>
+<li>可靜態或半靜態排程的運算圖。</li>
+</ul>
+<p>對節點 $v$，觸發條件可表示為：</p>
+<h1>$$
+\operatorname{fire}(v,t)</h1>
+<p>\mathbb{1}
+\left[
+\bigwedge_{u\in\operatorname{pred}(v)}
+\operatorname{valid}_{u\rightarrow v}(t)
+\land
+\operatorname{resource}_v(t)
+\right].
+$$</p>
+<p>當輸入 token 與執行資源均就緒時，節點執行：</p>
+<h1>$$
+\mathbf{y}_v</h1>
+<p>f_v
+\left(
+{\mathbf{x}_{u\rightarrow v}},
+\boldsymbol{\theta}_v
+\right).
+$$</p>
+<p>這是一種數位資料流語義，不需要把它描述成量子或非布林本體。</p>
+<h4>3.1.4 Oscillator Compute Tile</h4>
+<p>Oscillator Compute Tile（OCT）是選配的特殊加速器。其基本動力學可採耦合相位模型：</p>
+<h1>$$
+\frac{d\theta_i}{dt}</h1>
+<p>\omega_i
++
+\sum_{j=1}^{N}
+K_{ij}\sin(\theta_j-\theta_i)
++
+u_i(t)
++
+\xi_i(t),
+$$</p>
+<p>其中 $\omega_i$ 是本徵頻率，$K_{ij}$ 是耦合，$u_i$ 是控制或注入訊號，$\xi_i$ 表示噪聲與製程擾動。</p>
+<p>OCT 可能服務：</p>
+<ul>
+<li>Ising／QUBO 類組合最佳化；</li>
+<li>相位聚類與同步偵測；</li>
+<li>某些儲備池計算；</li>
+<li>可證明具有穩定吸引子的特定注意力或關係計算；</li>
+<li>物理系統模擬的代理模型。</li>
+</ul>
+<p>它不承諾全域最優，也不等同通用計算機。</p>
+<h4>3.1.5 Verification and Commit Engine</h4>
+<p>原稿的 Settlement Core 改為 Verification and Commit Engine（VCE）。它負責：</p>
+<ul>
+<li>精確架構狀態；</li>
+<li>retirement／commit；</li>
+<li>檢查點與回滾；</li>
+<li>跨域資料格式與精度檢查；</li>
+<li>類比結果的可接受性判定；</li>
+<li>錯誤重放；</li>
+<li>安全與權限；</li>
+<li>證據日誌。</li>
+</ul>
+<p>VCE 不是固定只佔 $3%$ 面積且大部分時間睡眠的帳本核心；其規模取決於提交寬度、可靠度、安全需求與加速器數量。</p>
+<h3>3.2 三層互連</h3>
+<h4>片上 SynFabric</h4>
+<p>片上低延遲網路用於：</p>
+<ul>
+<li>Scalar Tile 之間的融合控制；</li>
+<li>banked register／cache；</li>
+<li>DFA token 傳遞；</li>
+<li>VCE 提交與回退；</li>
+<li>OCT 設定與讀出。</li>
+</ul>
+<p>片上路徑必須使用實際 NoC、crossbar、mesh、ring、hierarchical bus 或專用短距離鏈路評估，不能以「拓撲連接不等於物理距離」取消導線延遲。</p>
+<h4>封裝內晶粒互連</h4>
+<p>封裝內可使用 UCIe 類 die-to-die 介面或自訂短距離鏈路。UCIe 3.0 已支援更高資料率與管理功能，適合作為異質晶粒整合的介面基礎；但其通訊仍有 PHY、協議、緩衝與錯誤處理成本，不能視為單週期共享暫存器。</p>
+<h4>系統級 CXL</h4>
+<p>CXL 適合：</p>
+<ul>
+<li>記憶體擴展與池化；</li>
+<li>一致性設備；</li>
+<li>加速器與主機資料交換；</li>
+<li>系統級資源組合。</li>
+</ul>
+<p>截至 2026 年，CXL 4.0 已提高資料率並增強連接與 RAS，但它仍是系統級互連。SynCore 不再以 CXL 實現跨機箱或任意距離的單一超寬 CPU 後端。</p>
+<hr>
+<h2>4. 四種執行模式</h2>
+<h3>4.1 I-Mode：獨立核心模式</h3>
+<p>各 Scalar Tile 獨立執行不同執行緒，DFA 與 OCT 依需求休眠或服務其他任務。此模式提供最穩定的通用吞吐量與軟體相容性。</p>
+<h3>4.2 F-Mode：彈性融合模式</h3>
+<p>數個 Scalar Tile 形成 Fusion Cluster，共同服務一條或少數高優先級執行緒。</p>
+<p>可組合的資源包括：</p>
+<ul>
+<li>指令視窗容量；</li>
+<li>執行單元；</li>
+<li>load/store queue；</li>
+<li>MSHR；</li>
+<li>cache bank；</li>
+<li>預取器；</li>
+<li>分支或 runahead 輔助資源；</li>
+<li>功率與熱預算。</li>
+</ul>
+<p>不一定可組合的資源包括：</p>
+<ul>
+<li>距離過遠的單週期旁路；</li>
+<li>任意核心私有 L1 的瞬間統一；</li>
+<li>跨封裝的精細喚醒—選擇；</li>
+<li>不受依賴約束的 IPC。</li>
+</ul>
+<h3>4.3 D-Mode：數位流動模式</h3>
+<p>編譯器將可提取區域映射到 DFA。通用核心處理控制、不規則部分與例外，DFA 處理規則資料流。</p>
+<h3>4.4 P-Mode：物理流動模式</h3>
+<p>可映射的最佳化、同步或類比計算被送入 OCT。VCE 必須檢查：</p>
+<ul>
+<li>映射是否有效；</li>
+<li>讀出是否收斂；</li>
+<li>解的品質；</li>
+<li>重複執行一致性；</li>
+<li>是否需要數位精修；</li>
+<li>是否超出校準域。</li>
+</ul>
+<h3>4.5 H-Mode：混合管線模式</h3>
+<p>真實工作負載可同時使用多個執行域。例如：</p>
+<p>$$
+\text{控制與序列邏輯}
+\rightarrow
+\text{DFA 張量／串流核心}
+\rightarrow
+\text{OCT 近似最佳化}
+\rightarrow
+\text{Scalar／VCE 驗證}.
+$$</p>
+<p>混合模式的性能必須用端到端延遲與資料搬移成本判定，不能把各子模組的最佳倍率直接相乘。</p>
+<hr>
+<h2>5. 融合模式的性能邊界</h2>
+<h3>5.1 指令依賴圖與臨界路徑</h3>
+<p>令單執行緒包含 $N$ 個動態指令，有效發射寬度為 $W_{\mathrm{eff}}$，依賴圖臨界路徑長度為 $C(\mathcal{G}<em>I)$，記憶體瓶頸下界為 $T</em>{\mathrm{mem}}$，則融合模式執行時間至少滿足：</p>
+<p>$$
+T_F
+\ge
+\max
+\left(
+C(\mathcal{G}<em>I),
+\frac{N}{W</em>{\mathrm{eff}}},
+T_{\mathrm{mem}},
+T_{\mathrm{front}}
+\right)
++
+T_{\mathrm{coord}}
++
+T_{\mathrm{reconfig}}.
+$$</p>
+<p>因此：</p>
+<h1>$$
+S_F</h1>
+<p>\frac{T_{\mathrm{base}}}{T_F}
+$$</p>
+<p>受到依賴、前端、記憶體、協同和重組共同限制。</p>
+<h3>5.2 為什麼 $4$ 核融合不等於 $4$ 倍 IPC</h3>
+<p>喚醒—選擇邏輯、暫存器讀寫埠、旁路網路與線路延遲通常隨寬度非線性增加。可用執行單元多於就緒指令時，增加資源沒有收益。</p>
+<p>只有在以下條件同時成立時，融合才可能顯著受益：</p>
+<ol>
+<li>工作負載具有足夠 ILP 或 MLP；</li>
+<li>指令視窗能揭露這些並行；</li>
+<li>前端與分支不成為主要瓶頸；</li>
+<li>記憶體系統能支撐額外請求；</li>
+<li>重組與協同成本可被工作區間攤銷；</li>
+<li>功率與熱允許額外單元活化。</li>
+</ol>
+<h3>5.3 多路徑推測的限制</h3>
+<p>同時執行多個分支路徑會消耗：</p>
+<ul>
+<li>取指與解碼頻寬；</li>
+<li>rename／ROB 容量；</li>
+<li>cache 和 TLB；</li>
+<li>記憶體頻寬；</li>
+<li>功率。</li>
+</ul>
+<p>因此它只適合高代價、低分支扇出的特定區域。新版不再宣稱遇到 if-else 就同時執行所有可能路徑。</p>
+<h3>5.4 動態指令融合的合法位置</h3>
+<p>把</p>
+<p>$$
+(a+b)(c-d)
+$$</p>
+<p>變成一個內部複合操作，可能透過：</p>
+<ul>
+<li>編譯器 pattern；</li>
+<li>macro-op fusion；</li>
+<li>micro-op fusion；</li>
+<li>JIT；</li>
+<li>dataflow region；</li>
+<li>自訂指令；</li>
+</ul>
+<p>實現。但硬體仍要處理依賴、例外、溢位、精度與退休語義。SynCore 的貢獻應是提供可映射區域與資源，不是宣稱任意指令序列可免費融合。</p>
+<hr>
+<h2>6. 流動模式的兩條技術路線</h2>
+<h3>6.1 數位資料流：可重現與可程式化</h3>
+<p>TRIPS、EDGE、CGRA 與 Plasticine 等工作顯示，將運算圖空間映射到硬體，可降低集中式暫存器、動態調度與資料搬移成本。SynCore 的 DFA 可以借鑑這些路線，但必須處理：</p>
+<ul>
+<li>不規則控制；</li>
+<li>動態記憶體別名；</li>
+<li>配置容量；</li>
+<li>路由壅塞；</li>
+<li>中間資料儲存；</li>
+<li>例外；</li>
+<li>編譯器映射時間；</li>
+<li>與通用核心一致性。</li>
+</ul>
+<h3>6.2 耦合振盪器：特殊問題的物理求解器</h3>
+<p>耦合振盪器硬體已有 Ising 機、最佳化晶片與多種 CMOS／奈米振盪器原型。它們證明「相位與耦合可以承載計算」，但同時也揭示：</p>
+<ul>
+<li>問題嵌入成本；</li>
+<li>耦合矩陣可程式化；</li>
+<li>製程變異；</li>
+<li>噪聲；</li>
+<li>局部最小值；</li>
+<li>讀出與校準；</li>
+<li>數位基線比較；</li>
+</ul>
+<p>是不可省略的部分。</p>
+<p>對目標函數 $E(\mathbf{s})$，只有存在明確映射</p>
+<p>$$
+\mathcal{M}:
+E(\mathbf{s})
+\mapsto
+\left(
+\boldsymbol{\omega},
+\mathbf{K},
+\mathbf{u},
+\mathcal{R}
+\right)
+$$</p>
+<p>時，OCT 才是合法後端。$\mathcal{R}$ 是讀出規則。</p>
+<h3>6.3 Phase-LM 的地位</h3>
+<p>Phase-LM 或「以同步取代部分注意力」可保留為應用研究方向，但不能作為 SynCore 成立的前提。近期有研究探索 Kuramoto 類動力學與注意力、圖神經網路或物理基底的關係，但其適用資料集、模型品質、硬體映射和端到端能耗仍需要獨立驗證。</p>
+<p>SynCore 的商業價值不能建立在「$10^7$ 個相位單元等效 $10^{11}$ 個參數」這種未定義等價上。</p>
+<hr>
+<h2>7. 模式切換與狀態管理</h2>
+<h3>7.1 切換不是單一 bit</h3>
+<p>完整模式切換採用狀態機：</p>
+<p>$$
+\text{Observe}
+\rightarrow
+\text{Decide}
+\rightarrow
+\text{Quiesce}
+\rightarrow
+\text{Checkpoint}
+\rightarrow
+\text{Drain}
+\rightarrow
+\text{Reconfigure}
+\rightarrow
+\text{Warm}
+\rightarrow
+\text{Validate}
+\rightarrow
+\text{Run}.
+$$</p>
+<p>切換時間：</p>
+<h1>$$
+T_{\mathrm{switch}}</h1>
+<p>T_{\mathrm{quiesce}}
++
+T_{\mathrm{checkpoint}}
++
+T_{\mathrm{drain}}
++
+T_{\mathrm{route}}
++
+T_{\mathrm{load}}
++
+T_{\mathrm{warm}}
++
+T_{\mathrm{validate}}.
+$$</p>
+<p>只有 clock gating、局部單元喚醒等低階動作可能非常快速；完整語義模式切換可能落在微秒至毫秒尺度，視狀態量與配置而定。</p>
+<h3>7.2 Context Vault</h3>
+<p>原 Q-Storage 改為 Context Vault，儲存：</p>
+<ul>
+<li>架構暫存器；</li>
+<li>rename map；</li>
+<li>PC 與控制狀態；</li>
+<li>必要的執行視窗摘要；</li>
+<li>TLB／cache hint；</li>
+<li>加速器配置；</li>
+<li>檢查點與版本；</li>
+<li>可信度與錯誤資訊。</li>
+</ul>
+<p>它不承諾在外部記憶體中保存完整 L1 的所有時序語義，也不以「量子態」命名。</p>
+<h3>7.3 精確狀態</h3>
+<p>VCE 保證：</p>
+<ul>
+<li>例外看見一致的架構狀態；</li>
+<li>錯誤的推測不外洩；</li>
+<li>類比結果不直接覆寫關鍵狀態；</li>
+<li>模式失敗可回到安全檢查點；</li>
+<li>加速器間的數值格式與捨入可追蹤。</li>
+</ul>
+<hr>
+<h2>8. SynIR：統一中介表示</h2>
+<h3>8.1 區域標註</h3>
+<p>SynIR 將程式切分為區域：</p>
+<pre><code class="language-text">@scalar
+@fusion_candidate
+@dataflow
+@oscillator_approx
+@verify
+</code></pre>
+<p>每個區域攜帶：</p>
+<ul>
+<li>輸入與輸出；</li>
+<li>依賴圖；</li>
+<li>精度；</li>
+<li>容錯；</li>
+<li>時限；</li>
+<li>可重放性；</li>
+<li>狀態大小；</li>
+<li>預估搬移量；</li>
+<li>合法後端。</li>
+</ul>
+<h3>8.2 執行合約</h3>
+<p>對區域 $r$，定義合約：</p>
+<h1>$$
+\mathcal{C}_r</h1>
+<p>\left(
+\varepsilon_r,
+\tau_r,
+P_r,
+T_r,
+\rho_r,
+\chi_r
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\varepsilon_r$：誤差容忍；</li>
+<li>$\tau_r$：期限；</li>
+<li>$P_r$：功率上限；</li>
+<li>$T_r$：熱上限；</li>
+<li>$\rho_r$：可靠度；</li>
+<li>$\chi_r$：可回退性。</li>
+</ul>
+<p>O-Chip 根據合約與即時資源選擇執行域。</p>
+<h3>8.3 舊二進位相容性</h3>
+<p>既有二進位預設在 Scalar Tile 執行。只有經過：</p>
+<ul>
+<li>profile；</li>
+<li>JIT；</li>
+<li>動態二進位翻譯；</li>
+<li>明確 API；</li>
+<li>編譯器分析；</li>
+</ul>
+<p>確認的區域，才可進入融合或流動模式。新版不保證未修改的老遊戲自動獲得 $4$–$6$ 倍幀率。</p>
+<hr>
+<h2>9. 多目標編排模型</h2>
+<p>工作負載圖為：</p>
+<h1>$$
+\mathcal{G}_W</h1>
+<p>(V_W,E_W,\mathbf{a}_W),
+$$</p>
+<p>資源圖為：</p>
+<h1>$$
+\mathcal{G}_R</h1>
+<p>(V_R,E_R,\mathbf{a}_R).
+$$</p>
+<p>模式映射 $\Pi$ 同時指定：</p>
+<ul>
+<li>區域到執行域；</li>
+<li>資料位置；</li>
+<li>Fusion Cluster 規模；</li>
+<li>DFA 配置；</li>
+<li>OCT 耦合；</li>
+<li>DEO 包絡；</li>
+<li>DPCPS 功率承諾；</li>
+<li>DryCore 熱承諾；</li>
+<li>回退路徑。</li>
+</ul>
+<p>目標函數：</p>
+<h1>$$
+\min_{\Pi}
+J(\Pi)</h1>
+<p>\alpha L_{\mathrm{end}}
++
+\beta E_{\mathrm{sys}}
++
+\gamma A_{\mathrm{active}}
++
+\delta D_{\mathrm{move}}
++
+\eta C_{\mathrm{reconfig}}
++
+\zeta R_{\mathrm{failure}}
++
+\xi U_{\mathrm{uncertainty}}.
+$$</p>
+<p>約束包括：</p>
+<p>$$
+P(t)\le P_{\mathrm{cert}}(t),
+$$</p>
+<p>$$
+T_i(t)\le T_{i,\max},
+$$</p>
+<p>$$
+B_{\ell}(t)\le B_{\ell,\max},
+$$</p>
+<p>$$
+\operatorname{err}(r)\le\varepsilon_r,
+$$</p>
+<p>$$
+\operatorname{state}<em>{\mathrm{commit}}
+\in
+\mathcal{S}</em>{\mathrm{precise}}.
+$$</p>
+<hr>
+<h2>10. 與 EveMissLab 計算架構系列的關係</h2>
+<h3>10.1 O-Chip</h3>
+<p>O-Chip 觀察任務、系統遙測與應用意圖，建立跨域計畫。SynCore 不自己承擔整個系統級意圖推斷。</p>
+<h3>10.2 DEO</h3>
+<p>DEO 決定當前可以合法啟用的運作包絡。Fusion Cluster 的寬度、DFA 活化範圍與 OCT 迭代時間都必須服從 DEO。</p>
+<h3>10.3 DPCPS</h3>
+<p>DPCPS 提供局部功率、電流瞬變與 PDN 證書。SynCore 不能因「融合功率預算」而假設可以突破供電限制。</p>
+<h3>10.4 DryCore</h3>
+<p>DryCore 提供熱阻、冷卻容量、露點與失效狀態。熱輪換不能創造額外冷卻能力，只能重新分配時空熱負載。</p>
+<h3>10.5 SDMCA</h3>
+<p>SDMCA 提供封裝外模組、機箱與互連拓撲。片內融合仍需專門的物理設計；樓梯或環形機箱不能直接縮短核心旁路路徑。</p>
+<h3>10.6 統一資料流</h3>
+<p>$$
+\text{應用／SynIR}
+\rightarrow
+\text{O-Chip 編排}
+\rightarrow
+\text{DEO／DPCPS／DryCore 證書}
+\rightarrow
+\text{SynCore 執行域}
+\rightarrow
+\text{VCE 驗證與提交}.
+$$</p>
+<hr>
+<h2>11. 失效模式與安全</h2>
+<table>
+<thead>
+<tr>
+<th>失效模式</th>
+<th>可能後果</th>
+<th>偵測</th>
+<th>回退</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fusion 協同延遲過高</td>
+<td>IPC 下降、功耗增加</td>
+<td>硬體計數器</td>
+<td>拆回獨立核心</td>
+</tr>
+<tr>
+<td>DFA 路由壅塞</td>
+<td>延遲與能耗惡化</td>
+<td>token queue</td>
+<td>重映射或 CPU</td>
+</tr>
+<tr>
+<td>OCT 不收斂</td>
+<td>錯誤或不穩定解</td>
+<td>order parameter／殘差</td>
+<td>數位求解器</td>
+</tr>
+<tr>
+<td>OCT 校準漂移</td>
+<td>解品質降低</td>
+<td>calibration test</td>
+<td>重校準／停用</td>
+</tr>
+<tr>
+<td>Context Vault 損壞</td>
+<td>無法恢復</td>
+<td>ECC／checksum</td>
+<td>最近安全檢查點</td>
+</tr>
+<tr>
+<td>VCE 壅塞</td>
+<td>提交停頓</td>
+<td>commit queue</td>
+<td>降低加速器併發</td>
+</tr>
+<tr>
+<td>UCIe link 降級</td>
+<td>晶粒頻寬下降</td>
+<td>link health</td>
+<td>降速、繞路、隔離</td>
+</tr>
+<tr>
+<td>CXL 不可用</td>
+<td>遠端記憶體失聯</td>
+<td>fabric manager</td>
+<td>本地副本或中止</td>
+</tr>
+<tr>
+<td>功率證書失效</td>
+<td>droop／降頻</td>
+<td>DPCPS 遙測</td>
+<td>縮小包絡</td>
+</tr>
+<tr>
+<td>熱證書失效</td>
+<td>過熱</td>
+<td>DryCore 遙測</td>
+<td>降載或關機</td>
+</tr>
+</tbody></table>
+<p>類比與近似模式不得用於未經資格化的安全關鍵控制路徑。</p>
+<hr>
+<h2>12. 驗證方法</h2>
+<h3>12.1 證據等級</h3>
+<ul>
+<li><strong>E0：</strong> 架構與可證偽假說；</li>
+<li><strong>E1：</strong> 分析模型與軟體模擬；</li>
+<li><strong>E2：</strong> FPGA／電路板子系統原型；</li>
+<li><strong>E3：</strong> 多子系統硬體在迴路；</li>
+<li><strong>E4：</strong> 專用晶片或 chiplet 原型；</li>
+<li><strong>E5：</strong> 跨批次、跨實驗室與真實工作負載重現。</li>
+</ul>
+<p>本篇為 E0。</p>
+<h3>12.2 V0：軟體與微架構模擬</h3>
+<p>工具候選：</p>
+<ul>
+<li>gem5；</li>
+<li>Sniper；</li>
+<li>LLVM／MLIR；</li>
+<li>CGRA mapper；</li>
+<li>SPICE／Verilog-A；</li>
+<li>熱與 PDN 模型。</li>
+</ul>
+<p>比較：</p>
+<ol>
+<li>一般 out-of-order 核心；</li>
+<li>多個獨立核心；</li>
+<li>Core Fusion 類基線；</li>
+<li>SynCore Fusion Cluster；</li>
+<li>GPU／CGRA；</li>
+<li>SynCore DFA；</li>
+<li>數位 Ising／最佳化基線；</li>
+<li>OCT 模型。</li>
+</ol>
+<h3>12.3 V1：FPGA 數位流動原型</h3>
+<p>實作：</p>
+<ul>
+<li>RISC-V 控制核；</li>
+<li>小型 DFA；</li>
+<li>SynIR runtime；</li>
+<li>VCE；</li>
+<li>Context Vault；</li>
+<li>部分重配置。</li>
+</ul>
+<p>量測：</p>
+<ul>
+<li>kernel latency；</li>
+<li>energy estimate；</li>
+<li>route utilization；</li>
+<li>configuration time；</li>
+<li>end-to-end speedup；</li>
+<li>回退正確性。</li>
+</ul>
+<h3>12.4 V2：可組合 RISC-V 叢集</h3>
+<p>設計兩至四個簡單 Scalar Tile，逐步加入：</p>
+<ul>
+<li>共享 instruction window；</li>
+<li>banked register file；</li>
+<li>分散式 load/store queue；</li>
+<li>helper／runahead；</li>
+<li>統一 commit。</li>
+</ul>
+<p>目標不是先追求極寬 IPC，而是測出：</p>
+<h2>$$
+\text{收益}</h2>
+<p>\text{協同成本}
+$$</p>
+<p>隨融合規模的曲線。</p>
+<h3>12.5 V3：振盪器板級原型</h3>
+<p>建立可程式耦合振盪器陣列，選擇小型 QUBO／Max-Cut／聚類問題，比較：</p>
+<ul>
+<li>time-to-solution；</li>
+<li>solution quality；</li>
+<li>energy-to-solution；</li>
+<li>重複性；</li>
+<li>校準時間；</li>
+<li>問題嵌入成本；</li>
+<li>數位精修成本。</li>
+</ul>
+<h3>12.6 V4：chiplet 原型</h3>
+<p>只在 V0–V3 顯示明確收益後，才進入：</p>
+<ul>
+<li>Scalar／Fusion die；</li>
+<li>DFA die；</li>
+<li>OCT die；</li>
+<li>VCE／I/O die；</li>
+<li>UCIe 封裝；</li>
+<li>CXL 系統連接。</li>
+</ul>
+<hr>
+<h2>13. 基準工作負載</h2>
+<h3>融合模式</h3>
+<ul>
+<li>SPEC CPU 類單執行緒工作；</li>
+<li>編譯器前端；</li>
+<li>模擬器核心；</li>
+<li>pointer chasing；</li>
+<li>branch-heavy kernel；</li>
+<li>memory-level-parallel microbenchmark；</li>
+<li>JIT／腳本執行。</li>
+</ul>
+<h3>數位流動模式</h3>
+<ul>
+<li>GEMM；</li>
+<li>stencil；</li>
+<li>FFT；</li>
+<li>sparse linear algebra；</li>
+<li>graph traversal；</li>
+<li>DSP；</li>
+<li>packet／stream processing。</li>
+</ul>
+<h3>物理流動模式</h3>
+<ul>
+<li>Max-Cut；</li>
+<li>QUBO；</li>
+<li>graph coloring；</li>
+<li>相位聚類；</li>
+<li>小型同步注意力研究模型；</li>
+<li>reservoir computing。</li>
+</ul>
+<h3>混合模式</h3>
+<ul>
+<li>遊戲或模擬器的控制＋AI／物理子系統；</li>
+<li>圖形前處理＋張量推論＋最佳化；</li>
+<li>compiler／database pipeline；</li>
+<li>agentic workload 中的控制、檢索、推論與排程。</li>
+</ul>
+<p>所有比較必須包含資料搬移、配置、校準、讀出與驗證，不得只比較核心運算時間。</p>
+<hr>
+<h2>14. 可證偽命題</h2>
+<h3>H1：融合收益存在但非線性</h3>
+<p>對具有足夠 ILP／MLP 且工作區間可攤銷重組成本的負載，Fusion Cluster 的端到端性能優於等面積獨立小核；但增益隨融合規模呈飽和或下降。</p>
+<h3>H2：數位流動適合規則圖</h3>
+<p>對可靜態或半靜態映射的規則運算，DFA 的能量—延遲積優於通用 out-of-order 核心；對不規則控制或高動態別名工作負載，優勢下降或消失。</p>
+<h3>H3：振盪器只在特定映射下有優勢</h3>
+<p>對可直接映射到耦合振盪能量景觀的問題，OCT 在相同解品質下可能降低 time-to-solution 或 energy-to-solution；若包含嵌入、校準與數位精修後仍無優勢，則 P-Mode 不成立。</p>
+<h3>H4：混合模式不保證乘法增益</h3>
+<p>H-Mode 只有在跨域搬移、模式切換與驗證成本低於專用域收益時，才優於最佳單一後端。</p>
+<h3>H5：跨晶粒融合存在明確邊界</h3>
+<p>封裝內互連可以支援粗粒度或階層式融合，但當協同延遲接近核心喚醒—選擇或旁路時間尺度時，精細單執行緒融合失去收益。CXL 更適合記憶體與設備組合，而非細粒度超純量後端。</p>
+<hr>
+<h2>15. 近期 MVP</h2>
+<h3>MVP 1：SynIR 與成本模型</h3>
+<p>先完成：</p>
+<ul>
+<li>SynIR 區域標註；</li>
+<li>workload feature extractor；</li>
+<li>backend cost model；</li>
+<li>mode selector；</li>
+<li>trace replay；</li>
+<li>可視化報告。</li>
+</ul>
+<p>輸出每個區域的：</p>
+<ul>
+<li>合法後端；</li>
+<li>預估延遲；</li>
+<li>資料搬移；</li>
+<li>重組成本；</li>
+<li>能耗；</li>
+<li>不確定性；</li>
+<li>回退策略。</li>
+</ul>
+<h3>MVP 2：Fusion 模擬器</h3>
+<p>在 gem5 或自建 trace simulator 中實作：</p>
+<ul>
+<li>$2$／$4$ tile cluster；</li>
+<li>banked execution units；</li>
+<li>distributed instruction window；</li>
+<li>variable fusion size；</li>
+<li>Context Vault；</li>
+<li>VCE。</li>
+</ul>
+<h3>MVP 3：FPGA DFA</h3>
+<p>將一組 MLIR／LLVM kernel 映射到 FPGA CGRA，與 CPU／GPU 比較端到端性能。</p>
+<h3>MVP 4：OCT 電路板</h3>
+<p>以可程式耦合振盪器板驗證小型最佳化問題，建立公開校準與重現資料。</p>
+<p>這四個 MVP 可以平行推進，不需要先製造完整 SynCore 晶片。</p>
+<hr>
+<h2>16. 技術地位與公開聲明</h2>
+<p>SynCore v2.1 不宣稱：</p>
+<ul>
+<li>首次發明核心融合；</li>
+<li>多核融合必然線性提升 IPC；</li>
+<li>未修改舊遊戲必然提升數倍幀率；</li>
+<li>CXL 可建立無限、單週期或跨機櫃超級核心；</li>
+<li>Hybrid Core 只用一個 bit 就能完整切換語義；</li>
+<li>Flow Path 固定只耗 Boolean Path 的十分之一；</li>
+<li>Kuramoto 同步可替代任意 CPU／GPU 工作；</li>
+<li>類比運算自然比數位精確；</li>
+<li>Phase-LM 已證明可以取代 Transformer；</li>
+<li>流動本體論已被硬體證明。</li>
+</ul>
+<p>SynCore v2.1 的公開主張是：</p>
+<blockquote>
+<p><strong>把可組合單執行緒資源、數位資料流與特殊物理加速器納入同一個可回退、可量測、可證偽的異質架構，是一條值得工程驗證的研究路線。</strong></p>
+</blockquote>
+<hr>
+<h2>17. 結論</h2>
+<p>SynCore 的早期版本包含兩個有價值但彼此不同的直覺：</p>
+<ol>
+<li>閒置或分散的硬體資源，能否在需要時組合成更適合單執行緒的執行域；</li>
+<li>某些問題能否不經完整的通用指令序列，而直接映射到資料流或物理動力學。</li>
+</ol>
+<p>v2.1 不再用「同一個吸引子」證明兩者必然是同一種核心，而是以工程分層使它們能夠共存：</p>
+<p>$$
+\text{通用純量}
++
+\text{彈性融合}
++
+\text{數位資料流}
++
+\text{物理流動}
++
+\text{精確驗證}.
+$$</p>
+<p>這個架構的成敗不取決於宣言是否宏大，而取決於五個問題：</p>
+<ul>
+<li>融合後真正揭露了多少 ILP／MLP；</li>
+<li>資料流映射是否降低了搬移與調度成本；</li>
+<li>振盪器的解品質是否值得校準與讀出代價；</li>
+<li>混合管線是否優於最佳單一後端；</li>
+<li>系統能否在失效時安全、快速、可追蹤地回退。</li>
+</ul>
+<p>SynCore 因此從「單核至尊」與「流動本體論晶片」轉為一個更嚴格的研究計畫：<strong>同步不是神秘名稱，融合也不是倍率承諾；它們是必須被時序、功率、互連、編譯器與證據共同約束的系統能力。</strong></p>
+<hr>
+<h2>參考文獻</h2>
+<ol>
+<li><p>E. İpek, M. Kırman, N. Kırman, J. F. Martínez, “Core Fusion: Accommodating Software Diversity in Chip Multiprocessors,” ISCA, 2007.<br><a href="https://people.ece.cornell.edu/martinez/doc/isca07.pdf">https://people.ece.cornell.edu/martinez/doc/isca07.pdf</a></p>
+</li>
+<li><p>C. Kim et al., “Composable Lightweight Processors,” MICRO, 2007.<br><a href="https://www.cs.utexas.edu/ftp/dburger/papers/MICRO07.pdf">https://www.cs.utexas.edu/ftp/dburger/papers/MICRO07.pdf</a></p>
+</li>
+<li><p>Khubaib et al., “MorphCore: An Energy-Efficient Microarchitecture for High Performance ILP and High Throughput TLP,” MICRO, 2012.<br><a href="https://hps.ece.utexas.edu/people/miladh/pub/morphcore_micro2012.pdf">https://hps.ece.utexas.edu/people/miladh/pub/morphcore_micro2012.pdf</a></p>
+</li>
+<li><p>The TRIPS Project, “Explicit Data Graph Execution Architecture and Prototype.”<br><a href="https://www.cs.utexas.edu/~cart/trips/overview.html">https://www.cs.utexas.edu/~cart/trips/overview.html</a></p>
+</li>
+<li><p>R. Prabhakar et al., “Plasticine: A Reconfigurable Architecture for Parallel Patterns,” ISCA, 2017.<br><a href="https://csl.stanford.edu/~christos/publications/2017.plasticine.isca.pdf">https://csl.stanford.edu/~christos/publications/2017.plasticine.isca.pdf</a></p>
+</li>
+<li><p>G. Csaba, W. Porod, “Coupled Oscillators for Computing: A Review and Perspective,” Applied Physics Reviews, 2020.<br><a href="https://pubs.aip.org/aip/apr/article/7/1/011302/997386/">https://pubs.aip.org/aip/apr/article/7/1/011302/997386/</a></p>
+</li>
+<li><p>T. Wang, J. Roychowdhury, “Oscillator-based Ising Machine,” 2017.<br><a href="https://arxiv.org/abs/1709.08102">https://arxiv.org/abs/1709.08102</a></p>
+</li>
+<li><p>“An Ising Solver Chip Based on Coupled Ring Oscillators with a 48-node All-to-all Connected Array Architecture,” Nature Electronics, 2023.<br><a href="https://www.nature.com/articles/s41928-023-01021-y">https://www.nature.com/articles/s41928-023-01021-y</a></p>
+</li>
+<li><p>“A Coupled-Oscillator-Based Ising Chip for Combinatorial Optimization,” Nature Electronics, 2025.<br><a href="https://www.nature.com/articles/s41928-025-01393-3">https://www.nature.com/articles/s41928-025-01393-3</a></p>
+</li>
+<li><p>UCIe Consortium, “UCIe 3.0 Specification,” 2025.<br><a href="https://www.uciexpress.org/specifications">https://www.uciexpress.org/specifications</a></p>
+</li>
+<li><p>CXL Consortium, “CXL 4.0 Specification,” 2025.<br><a href="https://computeexpresslink.org/">https://computeexpresslink.org/</a></p>
+</li>
+<li><p>J. A. Acebrón et al., “The Kuramoto Model: A Simple Paradigm for Synchronization Phenomena,” Reviews of Modern Physics, 2005.<br><a href="https://scala.uc3m.es/publications_MANS/PDF/finalKura.pdf">https://scala.uc3m.es/publications_MANS/PDF/finalKura.pdf</a></p>
+</li>
+<li><p>F. Pasqualetti, T. Guo, “Attention by Synchronization in Coupled Oscillator Networks,” preprint, 2026.<br><a href="https://arxiv.org/abs/2606.12059">https://arxiv.org/abs/2606.12059</a></p>
+</li>
+</ol>
+<hr>
+<p><strong>文件結束</strong></p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/ccp-16.html">https://thisoneisneok.com/html/papers/ccp-16.html</a></footer>
+</body>
+</html>

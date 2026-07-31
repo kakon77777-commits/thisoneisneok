@@ -1,0 +1,1289 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>風格的時間相位：設計師思想、語言演化與社群治理如何分離 | Neo.K</title>
+<meta name="description" content="這些標籤可以作為初步索引，卻容易將數十年的思想、技術與制度演化壓縮為一個靜態人格。設計者可能改變觀點；語言可能在創始者離開後繼續演化；共同體可能把創始原則制度化，也可能以相同口號支持與原意不同的決策；向後相容可能把早期偶然選擇固定成永久表面；工具與生態還可能建立一套規格之外的「事實語言」。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-005.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-005</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第一部封頂論文</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-005.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>風格的時間相位：設計師思想、語言演化與社群治理如何分離</h1>
+<h2>摘要</h2>
+<p>程式語言設計師常被賦予一個看似穩定的終身標籤：</p>
+<ul>
+<li>Wirth 代表極簡；</li>
+<li>Stroustrup 代表相容性與零額外成本；</li>
+<li>Guido 代表可讀性；</li>
+<li>Matz 代表程式設計者愉悅；</li>
+<li>Rust 代表安全；</li>
+<li>Go 代表簡潔。</li>
+</ul>
+<p>這些標籤可以作為初步索引，卻容易將數十年的思想、技術與制度演化壓縮為一個靜態人格。設計者可能改變觀點；語言可能在創始者離開後繼續演化；共同體可能把創始原則制度化，也可能以相同口號支持與原意不同的決策；向後相容可能把早期偶然選擇固定成永久表面；工具與生態還可能建立一套規格之外的「事實語言」。</p>
+<p>Niklaus Wirth 從 Pascal 走向 Modula-2 時，曾為修正 Pascal 的缺陷而犧牲向上相容；到了 Oberon，他又依新硬體、系統實作經驗與對軟體膨脹的反思進一步縮減語言。Python 從 Guido van Rossum 的 BDFL 裁決轉為 Steering Council 治理。Rust 使用 Edition 機制，讓部分不向後相容的語法與解析變更採明確 opt-in，同時允許不同 Edition 的 crate 互操作。Go 透過 Go 1 Compatibility Promise 將穩定性變成長期制度承諾，並在 Go 1.21 進一步建立與語言版本相關的相容行為。C++ 的創始設計進入 WG21 後，演化受到多國標準化、既有程式與提案制度共同塑造。ECMAScript 新功能則經 TC39 的 Champion、階段成熟、實作與共識流程進入年度規格。[R1][R2][R3][R4][R5][R6]</p>
+<p>本文提出 <strong>設計風格時間相位模型</strong>（Temporal Phase Model of Design Style, TPM-PL），將下列三條時間線分離：</p>
+<p>$$
+\boxed{
+\Sigma_{designer}(t)
+\neq
+L_{language}(t)
+\neq
+G_{governance}(t)
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\Sigma_{designer}(t)$：設計師思想與直接決策風格；</li>
+<li>$L_{language}(t)$：語言規格、實作、工具與生態的實際狀態；</li>
+<li>$G_{governance}(t)$：誰能提出、批准、否決與維護變更。</li>
+</ul>
+<p>本文進一步定義七個時間相位，以及八種風格流變：</p>
+<ul>
+<li>保留；</li>
+<li>放大；</li>
+<li>弱化；</li>
+<li>反轉；</li>
+<li>化石化；</li>
+<li>分岔；</li>
+<li>制度化；</li>
+<li>回顧性重構。</li>
+</ul>
+<p>核心命題為：</p>
+<p>$$
+\boxed{
+\text{早期設計原則的延續}
+\not\Rightarrow
+\text{創始者仍在做決定}
+}
+$$</p>
+<p>以及：</p>
+<p>$$
+\boxed{
+\text{語言今天呈現某種風格}
+\not\Rightarrow
+\text{創始者在所有時期都持有相同觀點}
+}
+$$</p>
+<p>PLDST 對一位設計師的正確輸出，不應是一個跨越終身的固定分數，而應是一組具有時間、決策範圍、治理背景、證據與信心的風格相位：</p>
+<h1>$$
+\Sigma_d</h1>
+<p>{
+\Sigma_{d,t_1},
+\Sigma_{d,t_2},
+\dots,
+\Sigma_{d,t_n}
+}
+$$</p>
+<p><strong>關鍵詞：</strong> 程式語言設計、時間相位、語言演化、設計師思想、社群治理、向後相容、Edition、標準化、PLDST</p>
+<hr>
+<h1>第一部分　為何風格需要時間維度</h1>
+<h2>一、靜態標籤的便利與危險</h2>
+<p>靜態標籤很方便：</p>
+<pre><code class="language-text">某人＝極簡
+某語言＝安全
+某共同體＝保守
+某委員會＝功能擴張
+</code></pre>
+<p>但它會隱藏四個問題：</p>
+<ol>
+<li>設計師在不同年代可能面對不同問題；</li>
+<li>同一原則在不同規模下可能導致相反決策；</li>
+<li>語言進入制度後，決策者已經改變；</li>
+<li>今日特徵可能只是歷史相容性，而不是當代偏好。</li>
+</ol>
+<hr>
+<h2>二、個人思想不等於語言狀態</h2>
+<p>設計者可以：</p>
+<ul>
+<li>後悔早期選擇；</li>
+<li>提倡新的方向；</li>
+<li>不再具有正式權力；</li>
+<li>離開專案；</li>
+<li>轉向另一種語言；</li>
+<li>以回顧方式重新解釋過去。</li>
+</ul>
+<p>但語言中的既有程式與相容承諾不會因此消失。</p>
+<p>因此：</p>
+<p>$$
+\Delta\Sigma_{designer}
+\not\Rightarrow
+\Delta L_{language}
+$$</p>
+<p>設計者改變思想，不代表語言能同步改變。</p>
+<hr>
+<h2>三、語言狀態不等於治理偏好</h2>
+<p>某個歷史特徵被保留，可能是因為：</p>
+<ul>
+<li>委員會仍然喜歡它；</li>
+<li>不能破壞既有程式；</li>
+<li>缺乏遷移工具；</li>
+<li>多實作無法同步；</li>
+<li>生態成本過高；</li>
+<li>沒有人願意投入修改；</li>
+<li>正在等待下一個 Edition 或 major version。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+FeaturePresent(t)
+\not\Rightarrow
+FeaturePreferred(t)
+$$</p>
+<hr>
+<h2>四、治理制度不等於社群結果</h2>
+<p>正式制度可能批准某功能，但生態：</p>
+<ul>
+<li>不採用；</li>
+<li>只在特定領域採用；</li>
+<li>建立 Linter 禁止；</li>
+<li>以 Framework 包裝；</li>
+<li>形成不同慣例。</li>
+</ul>
+<p>反之，一個未進入核心的模式也可能因程式庫與工具而成為事實標準。</p>
+<hr>
+<h1>第二部分　三條獨立時間線</h1>
+<h2>五、設計師思想軌跡</h2>
+<p>定義：</p>
+<h1>$$
+\Sigma_d(t)</h1>
+<p>(
+Problems,
+Values,
+Tradeoffs,
+RejectedChoices,
+Responsibility,
+Complexity,
+GovernancePreference
+)_t
+$$</p>
+<p>它只涵蓋能合理歸因於設計者本人的材料：</p>
+<ul>
+<li>原始文章；</li>
+<li>演講；</li>
+<li>訪談；</li>
+<li>直接設計；</li>
+<li>親自拒絕；</li>
+<li>具有裁決權時的決定。</li>
+</ul>
+<hr>
+<h2>六、語言技術軌跡</h2>
+<p>定義：</p>
+<h1>$$
+L(t)</h1>
+<p>(
+Syntax,
+Semantics,
+TypeSystem,
+Runtime,
+Libraries,
+Tools,
+Implementations,
+Compatibility
+)_t
+$$</p>
+<p>它回答：</p>
+<blockquote>
+<p>某個時間點，使用者實際面對的是什麼語言？</p>
+</blockquote>
+<hr>
+<h2>七、治理權力軌跡</h2>
+<p>定義：</p>
+<h1>$$
+G(t)</h1>
+<p>(
+Proposal,
+Review,
+Approval,
+Veto,
+Release,
+Maintenance,
+Representation
+)_t
+$$</p>
+<p>它回答：</p>
+<ul>
+<li>誰能提案？</li>
+<li>誰能要求修改？</li>
+<li>誰能接受？</li>
+<li>誰能阻止？</li>
+<li>誰控制 Release？</li>
+<li>誰維護規格與實作？</li>
+</ul>
+<hr>
+<h2>八、生態使用軌跡</h2>
+<p>雖然核心模型以三線為主，完整研究還應保存：</p>
+<h1>$$
+E(t)</h1>
+<p>(
+Adoption,
+Idioms,
+Libraries,
+Frameworks,
+Education,
+Organizations,
+Constraints
+)_t
+$$</p>
+<p>因為語言的有效風格常由生態而非規格單獨決定。</p>
+<hr>
+<h2>九、觀察到的風格</h2>
+<p>某時間點外界感受到的語言風格可表示為：</p>
+<h1>$$
+O_L(t)</h1>
+<p>\alpha_t\Sigma_d(t)
++
+\beta_tL(t)
++
+\gamma_tG(t)
++
+\delta_tE(t)
++
+\epsilon_tX(t)
+$$</p>
+<p>其中 $X(t)$ 是硬體、平台、公司與時代限制。</p>
+<p>各權重會隨時間改變。創始期通常 $\alpha_t$ 高；制度成熟後，$\gamma_t$ 與 $\delta_t$ 可能上升。</p>
+<hr>
+<h1>第三部分　七個時間相位</h1>
+<h2>十、相位一：問題孕育期</h2>
+<p>特徵：</p>
+<ul>
+<li>尚無正式語言；</li>
+<li>設計者批判既有工具；</li>
+<li>問題 framing 尚在形成；</li>
+<li>設計替代方案多；</li>
+<li>後來核心原則可能尚未明說。</li>
+</ul>
+<p>主要資料：</p>
+<ul>
+<li>早期備忘錄；</li>
+<li>前代專案；</li>
+<li>實驗；</li>
+<li>組織問題；</li>
+<li>個人回憶。</li>
+</ul>
+<p>風險：</p>
+<ul>
+<li>以後來成功敘事回寫早期動機。</li>
+</ul>
+<hr>
+<h2>十一、相位二：創始凝結期</h2>
+<p>特徵：</p>
+<ul>
+<li>核心語法與語義形成；</li>
+<li>第一個實作；</li>
+<li>小型團隊；</li>
+<li>個人裁決權高；</li>
+<li>變更成本低；</li>
+<li>可接受大幅重寫。</li>
+</ul>
+<p>此時最適合研究個人設計風格，但仍需列出共同設計者與實作者。</p>
+<hr>
+<h2>十二、相位三：公開擴張期</h2>
+<p>特徵：</p>
+<ul>
+<li>外部使用者加入；</li>
+<li>新領域採用；</li>
+<li>程式庫與工具增加；</li>
+<li>Bug 與邊界案例暴露；</li>
+<li>原始原則接受壓力測試。</li>
+</ul>
+<p>此時可能發生：</p>
+<ul>
+<li>原則被放大；</li>
+<li>原則被修正；</li>
+<li>功能快速加入；</li>
+<li>核心團隊擴張；</li>
+<li>實作者權重上升。</li>
+</ul>
+<hr>
+<h2>十三、相位四：制度化期</h2>
+<p>特徵：</p>
+<ul>
+<li>PEP／RFC／Proposal；</li>
+<li>Core Team；</li>
+<li>Council；</li>
+<li>Committee；</li>
+<li>正式 Release；</li>
+<li>Stability process；</li>
+<li>Feature gate。</li>
+</ul>
+<p>個人偏好開始被轉譯成可重複制度。</p>
+<hr>
+<h2>十四、相位五：相容性鎖定期</h2>
+<p>當程式、生態與組織大量依賴既有行為後：</p>
+<p>$$
+Freedom_{design}(t)\downarrow
+$$</p>
+<p>$$
+Cost_{change}(t)\uparrow
+$$</p>
+<p>此時保留舊特徵不一定表示贊同，而可能是：</p>
+<ul>
+<li>相容承諾；</li>
+<li>遷移成本；</li>
+<li>多實作；</li>
+<li>教材；</li>
+<li>信任。</li>
+</ul>
+<hr>
+<h2>十五、相位六：後創始者期</h2>
+<p>創始者不再具有最終裁決權，可能：</p>
+<ul>
+<li>退出；</li>
+<li>退休；</li>
+<li>轉為顧問；</li>
+<li>只保留象徵性影響；</li>
+<li>與現行制度意見不同。</li>
+</ul>
+<p>研究此相位時應主要分析制度與共同體，而不是持續替創始者記帳。</p>
+<hr>
+<h2>十六、相位七：反身重構期</h2>
+<p>成熟共同體開始主動管理自己的歷史：</p>
+<ul>
+<li>Edition；</li>
+<li>Migration；</li>
+<li>Deprecation；</li>
+<li>Compatibility mode；</li>
+<li>Retrospective；</li>
+<li>Governance reform；</li>
+<li>Style reform；</li>
+<li>Tool-assisted rewrite。</li>
+</ul>
+<p>語言不再只是演化，而是建立「如何演化」的二階機制。</p>
+<hr>
+<h1>第四部分　八種風格流變</h1>
+<h2>十七、保留 Conservation</h2>
+<p>創始原則在後續制度中持續被支持。</p>
+<p>例如：</p>
+<ul>
+<li>小型核心；</li>
+<li>可讀性；</li>
+<li>向後相容；</li>
+<li>零額外成本。</li>
+</ul>
+<p>保留需要證據：</p>
+<ul>
+<li>後期正式文件；</li>
+<li>重複決策；</li>
+<li>反例處理；</li>
+<li>制度化規則。</li>
+</ul>
+<hr>
+<h2>十八、放大 Amplification</h2>
+<p>共同體把原始傾向推得更遠。</p>
+<p>例如：</p>
+<ul>
+<li>原始設計只偏好安全，後來加入更完整的 Lint、Proof 或 Supply-chain policy；</li>
+<li>原始語言重視可讀，後來 Formatter 與 Style guide 將其制度化。</li>
+</ul>
+<p>放大後的結果不能完全回寫成創始者本人主張。</p>
+<hr>
+<h2>十九、弱化 Attenuation</h2>
+<p>原始原則仍存在，但因生態與相容性而降低優先級。</p>
+<p>例如：</p>
+<ul>
+<li>小型語言核心在大型程式庫與 Framework 下不再等同簡單使用經驗；</li>
+<li>自由表達在大型組織 Style guide 中受到限制。</li>
+</ul>
+<hr>
+<h2>二十、反轉 Inversion</h2>
+<p>後來制度採取與創始期相反的方向。</p>
+<p>可能原因：</p>
+<ul>
+<li>規模改變；</li>
+<li>安全事故；</li>
+<li>新硬體；</li>
+<li>新使用者；</li>
+<li>公司策略；</li>
+<li>創始者離開。</li>
+</ul>
+<p>反轉不應被勉強解釋成「其實仍符合原始精神」，除非有明確證據。</p>
+<hr>
+<h2>二十一、化石化 Fossilization</h2>
+<p>一個早期選擇因相容性被永久保存，即使現代設計者不再偏好。</p>
+<p>化石特徵：</p>
+<pre><code class="language-text">存在
+但不推薦
+不能移除
+工具警告
+新程式避免
+舊程式依賴
+</code></pre>
+<hr>
+<h2>二十二、分岔 Bifurcation</h2>
+<p>同一語言或共同體形成兩條路線：</p>
+<ul>
+<li>核心與生態；</li>
+<li>Stable 與 Experimental；</li>
+<li>Strict 與 Dynamic；</li>
+<li>Edition A 與 Edition B；</li>
+<li>標準與方言；</li>
+<li>原專案與 Fork。</li>
+</ul>
+<p>此時不應輸出單一風格。</p>
+<hr>
+<h2>二十三、制度化 Institutionalization</h2>
+<p>原本依賴個人判斷的原則，被轉化為：</p>
+<ul>
+<li>Proposal template；</li>
+<li>Compatibility policy；</li>
+<li>Feature gate；</li>
+<li>Review team；</li>
+<li>Test requirement；</li>
+<li>Release cadence；</li>
+<li>Council charter。</li>
+</ul>
+<p>制度化是原則的程序化，不代表程序能完全保存原始價值。</p>
+<hr>
+<h2>二十四、回顧性重構 Retrospective Reconstruction</h2>
+<p>後來的成功、失敗與身份認同會重新敘述早期歷史。</p>
+<p>常見形式：</p>
+<ul>
+<li>將偶然限制寫成有意原則；</li>
+<li>將多方共同設計寫成個人願景；</li>
+<li>將後期價值回寫到第一版；</li>
+<li>將被淘汰路線從歷史中刪除。</li>
+</ul>
+<p>PLDST 必須分開：</p>
+<pre><code class="language-text">contemporary evidence
+later recollection
+institutional narrative
+current interpretation
+</code></pre>
+<hr>
+<h1>第五部分　相位邊界判定</h1>
+<h2>二十五、不能只按版本號分期</h2>
+<p>版本號未必代表權力或思想轉換。</p>
+<p>真正相位邊界可能是：</p>
+<ul>
+<li>核心成員改變；</li>
+<li>創始者離開；</li>
+<li>第一個正式標準；</li>
+<li>相容承諾；</li>
+<li>RFC 制度；</li>
+<li>多實作；</li>
+<li>重大事故；</li>
+<li>公司收購；</li>
+<li>Edition；</li>
+<li>Governance reform。</li>
+</ul>
+<hr>
+<h2>二十六、相位轉換指標</h2>
+<p>定義事件集合：</p>
+<p>$$
+B=
+{
+b_{authority},
+b_{compatibility},
+b_{implementation},
+b_{community},
+b_{specification},
+b_{ecosystem}
+}
+$$</p>
+<p>若多項指標同時改變，可判定相位轉換。</p>
+<hr>
+<h2>二十七、權力轉換</h2>
+<p>當下列主體改變時：</p>
+<ul>
+<li>最終裁決者；</li>
+<li>Release owner；</li>
+<li>Spec editor；</li>
+<li>Core team；</li>
+<li>Committee；</li>
+<li>Council；</li>
+</ul>
+<p>治理相位可能已變。</p>
+<hr>
+<h2>二十八、相容性轉換</h2>
+<p>當專案首次承諾：</p>
+<ul>
+<li>1.x compatibility；</li>
+<li>Semantic Versioning；</li>
+<li>Stable ABI；</li>
+<li>Edition interoperability；</li>
+<li>Deprecation period；</li>
+</ul>
+<p>設計自由的時間結構已改變。</p>
+<hr>
+<h2>二十九、實作轉換</h2>
+<p>第一個實作與多個獨立實作之間，語言規格的地位會改變。</p>
+<p>單一實作時：</p>
+<p>$$
+Implementation\approx Specification
+$$</p>
+<p>多實作時必須更清楚區分：</p>
+<p>$$
+Specification
+\neq
+Implementation
+$$</p>
+<hr>
+<h1>第六部分　代表案例</h1>
+<h2>三十、Wirth：相位不是單純維持極簡</h2>
+<p>Wirth 的語言歷程至少包含：</p>
+<pre><code class="language-text">ALGOL W
+→ Pascal
+→ Modula／Modula-2
+→ Oberon
+→ Oberon-07
+</code></pre>
+<p>ETH 的專案回顧指出，他從 Pascal 轉向 Modula-2 時，願意犧牲向上相容以避免 Pascal 的缺陷；其後又因大型系統、模組、併行與硬體經驗持續修正設計。[R1]</p>
+<p>在 Modula-2 到 Oberon 的回顧中，Wirth 也具體說明硬體變化如何改變程式碼密度、指令選擇與編譯器設計考量。[R1]</p>
+<p>因此他的風格不是靜態的「永遠刪功能」，而更接近：</p>
+<pre><code class="language-text">持續尋找最小且足以支撐當前系統的機制
+願意以新語言修正舊語言
+讓硬體與完整系統實作反饋語言設計
+</code></pre>
+<p>這是一種相位化極簡，而非固定功能數量。</p>
+<hr>
+<h2>三十一、Python：思想延續與治理權轉移</h2>
+<p>Python 的可讀性、實用性與開放整合原則在多個時期仍可觀察，但治理已發生根本轉換。</p>
+<p>PEP 13 記錄：</p>
+<ul>
+<li>Guido van Rossum 啟動 Python；</li>
+<li>自創始至 2018 年 7 月擔任 BDFL；</li>
+<li>現代治理以五人 Steering Council 為核心；</li>
+<li>Council 傾向透過程序與委任而非頻繁直接裁決。[R2]</li>
+</ul>
+<p>因此：</p>
+<p>$$
+StyleContinuity
+\land
+AuthorityDiscontinuity
+$$</p>
+<p>可以同時成立。</p>
+<p>今日 Python 仍可能延續早期風格，但新決策的正式歸因需放在 PEP、Delegate、Core Team 與 Steering Council。</p>
+<hr>
+<h2>三十二、Rust Edition：將斷裂限制在明確相位</h2>
+<p>Rust Edition Guide 說明：</p>
+<ul>
+<li>不向後相容變更會放入下一 Edition；</li>
+<li>Edition 採 opt-in；</li>
+<li>既有 crate 不會自動改變；</li>
+<li>不同 Edition crate 可以互相連結；</li>
+<li>新 Compiler 支援其發布前存在的 Edition。[R3]</li>
+</ul>
+<p>這建立：</p>
+<p>$$
+LanguageVersion
+\neq
+Edition
+$$</p>
+<p>Edition 不是傳統 major-version 全面斷裂，而是局部管理解析、關鍵字與部分語言變更的時間邊界。Rust Book 將 Edition 差異概括為編譯器初始解析方式的差異；本文採此官方相容模型，但不將它擴張為「所有 Rust 語義演化都只涉及 Parser」的普遍斷言。</p>
+<p>其制度風格為：</p>
+<pre><code class="language-text">允許修正
+但限制跨代破壞
+提供遷移工具
+維持生態互操作
+</code></pre>
+<p>Rust 2024 的相容 Lint 與 <code>cargo fix --edition</code> 進一步把相位轉換工具化。[R7]</p>
+<hr>
+<h2>三十三、Go：相容承諾形成演化重力</h2>
+<p>Go 1 Compatibility Promise 的基本期待是：為 Go 1 撰寫的程式應在後續 Go 1 版本中持續編譯與正確運行，但官方文件也列出安全、未指定行為、工具與 Bug 修正等邊界。[R4]</p>
+<p>這使 Go 語言設計進入相容性鎖定期。</p>
+<p>後續語言變更需通過提案與語言審查；Go Team 對 Go 2 的討論也明確傾向拒絕尚未充分發展、收益不足以支付永久成本的功能。[R8]</p>
+<p>Go 1.21 又透過版本與 GODEBUG 相容行為，強化新工具鏈對舊版本語義的支援。[R4]</p>
+<p>因此 Go 的「簡潔」在後期不只是創始者審美，而是：</p>
+<ul>
+<li>相容承諾；</li>
+<li>高語言變更門檻；</li>
+<li>提案成本；</li>
+<li>實作與經驗要求；</li>
+</ul>
+<p>共同維持的制度結果。</p>
+<hr>
+<h2>三十四、C++：創始原則與標準化疊加</h2>
+<p>Stroustrup 的原始設計持續影響：</p>
+<ul>
+<li>C 相容；</li>
+<li>硬體映射；</li>
+<li>一般化抽象；</li>
+<li>零額外成本。</li>
+</ul>
+<p>但 C++ 的現代演化由 WG21 多國專家、Working Groups、Papers、實作者與既有程式共同塑造。WG21 成立於 1990–1991 年，現代語言已經歷多次標準版本。[R5]</p>
+<p>因此 C++ 應至少分為：</p>
+<pre><code class="language-text">C with Classes 創始期
+早期 C++ 擴張期
+ARM／標準化前期
+C++98 制度定型
+C++11 現代化
+後續週期性標準演化
+</code></pre>
+<p>「C++ 風格」在後期是個人原則、委員會制度與相容性歷史的疊加，而非單一意志。</p>
+<hr>
+<h2>三十五、ECMAScript：從快速創始到年度制度演化</h2>
+<p>JavaScript 的早期形成與今日 ECMAScript 規格制度具有完全不同的時間條件。</p>
+<p>TC39 Process 要求 Stage 1 以上提案由委員會擁有，並透過逐階成熟處理問題、規格文字、實作、測試與共識；完成 Stage 4 的提案會進入後續年度規格。[R6]</p>
+<p>因此今日 ECMAScript 功能應描述為：</p>
+<pre><code class="language-text">某 Champion 推動
+TC39 共同體審查
+引擎實作者提供回饋
+Test262 與規格編輯驗證
+共識後進入規格
+</code></pre>
+<p>它不是創始者風格的直接延伸。</p>
+<hr>
+<h1>第七部分　思想變化的判定</h1>
+<h2>三十六、何謂設計者真正改變觀點</h2>
+<p>不能只因某語言新增功能就說設計者改變思想。</p>
+<p>至少需要：</p>
+<ol>
+<li>本人後期明確陳述；</li>
+<li>由本人直接控制的後期決策；</li>
+<li>多項決策呈現一致方向；</li>
+<li>排除相容性與制度強迫；</li>
+<li>與早期材料比較。</li>
+</ol>
+<hr>
+<h2>三十七、觀點修正與問題改變</h2>
+<p>設計者可能沒有改變價值，而是問題尺度改變。</p>
+<p>例如：</p>
+<ul>
+<li>個人程式轉為大型團隊；</li>
+<li>單機轉為分散式；</li>
+<li>研究原型轉為生產平台；</li>
+<li>單一實作轉為標準；</li>
+<li>小型生態轉為全球生態。</li>
+</ul>
+<p>相同原則在新尺度下可能產生不同機制。</p>
+<hr>
+<h2>三十八、工具改變可行選項</h2>
+<p>新技術可能讓過去昂貴的設計變得可行：</p>
+<ul>
+<li>增量編譯；</li>
+<li>IDE；</li>
+<li>SMT；</li>
+<li>JIT；</li>
+<li>GC；</li>
+<li>LSP；</li>
+<li>自動遷移；</li>
+<li>AI 輔助。</li>
+</ul>
+<p>因此後期決策不同，不必然表示價值反轉。</p>
+<hr>
+<h2>三十九、沉默不等於同意</h2>
+<p>創始者沒有公開反對某項後期功能，不代表：</p>
+<ul>
+<li>贊成；</li>
+<li>參與；</li>
+<li>應被歸因；</li>
+<li>功能符合原始風格。</li>
+</ul>
+<p>PLDST 只依可確認決策。</p>
+<hr>
+<h1>第八部分　時間相位資料模型</h1>
+<h2>四十、相位記錄</h2>
+<pre><code class="language-text">phase_id
+designer_or_body
+language
+start_date
+end_date
+trigger_events
+decision_authority
+active_constraints
+core_values
+representative_decisions
+rejected_decisions
+compatibility_regime
+implementation_regime
+ecosystem_scale
+evidence
+confidence
+</code></pre>
+<hr>
+<h2>四十一、決策時間標記</h2>
+<p>每筆決策 $q$ 保存：</p>
+<p>$$
+q=
+(
+t_{proposal},
+t_{decision},
+t_{implementation},
+t_{stabilization},
+t_{adoption},
+t_{deprecation}
+)
+$$</p>
+<p>同一功能的提出、接受、實作與廣泛採用可能相隔多年。</p>
+<hr>
+<h2>四十二、風格相位向量</h2>
+<h1>$$
+\Sigma_{a,p}</h1>
+<p>(
+V,
+C,
+R,
+E,
+G,
+X
+)
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$V$：價值優先序；</li>
+<li>$C$：複雜度配置；</li>
+<li>$R$：責任配置；</li>
+<li>$E$：演化偏好；</li>
+<li>$G$：治理偏好；</li>
+<li>$X$：外部限制。</li>
+</ul>
+<hr>
+<h2>四十三、相位差</h2>
+<p>比較兩相位：</p>
+<h1>$$
+\Delta\Sigma_{p_i\rightarrow p_j}</h1>
+<p>\Sigma_{p_j}-\Sigma_{p_i}
+$$</p>
+<p>輸出不只顯示數值，還要分類：</p>
+<pre><code class="language-text">保留
+放大
+弱化
+反轉
+化石化
+分岔
+制度化
+不可判定
+</code></pre>
+<hr>
+<h1>第九部分　PLDST 個案研究規則</h1>
+<h2>四十四、不得使用終身平均</h2>
+<p>錯誤格式：</p>
+<pre><code class="language-text">Guido 的治理集中度：8/10
+</code></pre>
+<p>因為 BDFL 與 Steering Council 時期完全不同。</p>
+<p>正確格式：</p>
+<pre><code class="language-text">創始／BDFL 期：最終裁決高度集中
+後 BDFL 期：個人創始影響仍在，但正式權力轉移至 Council
+</code></pre>
+<hr>
+<h2>四十五、人物與語言同時分期</h2>
+<p>每個人物個案至少建立兩張表：</p>
+<h3>設計師思想相位</h3>
+<pre><code class="language-text">早期問題
+核心形成
+公開回顧
+後期修正
+退出後觀點
+</code></pre>
+<h3>語言演化相位</h3>
+<pre><code class="language-text">原型
+首次發布
+穩定版本
+治理制度
+相容鎖定
+後創始者
+</code></pre>
+<p>兩張表不得強制一一對齊。</p>
+<hr>
+<h2>四十六、制度變更必須單獨成段</h2>
+<p>若出現：</p>
+<ul>
+<li>BDFL 退出；</li>
+<li>Council；</li>
+<li>RFC；</li>
+<li>Edition；</li>
+<li>ISO；</li>
+<li>Stage process；</li>
+<li>Compatibility promise；</li>
+</ul>
+<p>必須說明它如何改變決策權重。</p>
+<hr>
+<h2>四十七、歷史特徵分類</h2>
+<p>每個現存特徵標記為：</p>
+<pre><code class="language-text">active preference
+compatibility fossil
+institutional compromise
+ecosystem convention
+implementation constraint
+deprecated legacy
+</code></pre>
+<hr>
+<h1>第十部分　時間相位下的風格比較</h1>
+<h2>四十八、同時期比較</h2>
+<p>比較設計者應優先選擇相近時期與規模：</p>
+<ul>
+<li>1970 年代研究語言；</li>
+<li>1990 年代商業物件語言；</li>
+<li>2010 年代系統語言；</li>
+<li>成熟標準化語言。</li>
+</ul>
+<p>避免以現代工具要求早期設計。</p>
+<hr>
+<h2>四十九、跨時期比較</h2>
+<p>跨時期比較應問：</p>
+<ul>
+<li>哪些問題已被工具消除？</li>
+<li>哪些相容成本不同？</li>
+<li>硬體有何變化？</li>
+<li>使用者規模有何變化？</li>
+<li>治理制度有何變化？</li>
+</ul>
+<hr>
+<h2>五十、同一設計者跨作品比較</h2>
+<p>這是辨識深層風格的重要方法。</p>
+<p>例如 Wirth：</p>
+<pre><code class="language-text">若特徵改變但取捨規則重複
+→ 深層風格可能保留
+</code></pre>
+<p>若取捨規則也改變：</p>
+<pre><code class="language-text">→ 思想相位可能轉換
+</code></pre>
+<hr>
+<h1>第十一部分　PLDST SKILL 規格</h1>
+<h2>五十一、輸入</h2>
+<pre><code class="language-text">designer
+language
+time_range
+decision
+version
+governance_event
+source_documents
+</code></pre>
+<hr>
+<h2>五十二、處理管線</h2>
+<pre><code class="language-text">重新網路搜尋
+→ 時間線建立
+→ 人物／語言／治理三線分離
+→ 相位邊界偵測
+→ 決策歸因
+→ 風格流變分類
+→ 相容性化石檢查
+→ 回顧性重構檢查
+→ 反例搜尋
+→ 第二輪事實校對
+→ 報告
+</code></pre>
+<hr>
+<h2>五十三、相位邊界演算法雛形</h2>
+<pre><code class="language-text">for each event:
+    if authority changed:
+        add governance boundary
+    if compatibility regime changed:
+        add compatibility boundary
+    if implementation count changed materially:
+        add implementation boundary
+    if founder exited:
+        add post-founder boundary
+    if edition/major migration introduced:
+        add reflexive-evolution boundary
+
+merge nearby boundaries
+require source evidence
+assign confidence
+</code></pre>
+<hr>
+<h2>五十四、輸出 JSON 雛形</h2>
+<pre><code class="language-json">{
+  &quot;subject&quot;: &quot;Python governance style&quot;,
+  &quot;phases&quot;: [
+    {
+      &quot;name&quot;: &quot;BDFL phase&quot;,
+      &quot;authority&quot;: [&quot;Guido van Rossum&quot;],
+      &quot;style&quot;: {
+        &quot;decision_centralization&quot;: &quot;high&quot;,
+        &quot;delegation&quot;: &quot;present&quot;
+      }
+    },
+    {
+      &quot;name&quot;: &quot;Steering Council phase&quot;,
+      &quot;authority&quot;: [&quot;elected steering council&quot;],
+      &quot;style&quot;: {
+        &quot;decision_centralization&quot;: &quot;collective&quot;,
+        &quot;delegation&quot;: &quot;high&quot;,
+        &quot;formal_process&quot;: &quot;high&quot;
+      }
+    }
+  ],
+  &quot;continuities&quot;: [&quot;PEP-based public design&quot;],
+  &quot;discontinuities&quot;: [&quot;final authority&quot;],
+  &quot;founder_attribution_limit&quot;: &quot;post-2018 decisions require separate attribution&quot;
+}
+</code></pre>
+<hr>
+<h2>五十五、SKILL 禁止事項</h2>
+<p>不得：</p>
+<ul>
+<li>用目前語言狀態代表創始期；</li>
+<li>用創始期思想代表現代制度；</li>
+<li>用版本號自動判斷思想轉變；</li>
+<li>把相容保留寫成現代偏好；</li>
+<li>把創始者沉默寫成支持；</li>
+<li>把制度口號直接當實際權力；</li>
+<li>把回顧文章當唯一歷史來源；</li>
+<li>用一個終身分數覆蓋多相位；</li>
+<li>忽略硬體、公司與實作變化。</li>
+</ul>
+<hr>
+<h1>第十二部分　對第一部方法論的整合</h1>
+<h2>五十六、PLDST-001：決策風格</h2>
+<p>第一篇建立：</p>
+<h1>$$
+\Sigma_{d,t}</h1>
+<p>(
+Context,
+Problem,
+Values,
+Complexity,
+Responsibility,
+Evolution
+)
+$$</p>
+<p>本篇正式將 $t$ 從標記提升為核心分析維度。</p>
+<hr>
+<h2>五十七、PLDST-002：複雜度配置</h2>
+<p>複雜度配置會隨相位改變：</p>
+<ul>
+<li>創始期願意破壞相容；</li>
+<li>成熟期把成本移入治理；</li>
+<li>Edition 把成本分期；</li>
+<li>工具把遷移成本攤銷。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+\mathbf{C}(d,t)
+\neq
+\mathbf{C}(d)
+$$</p>
+<hr>
+<h2>五十八、PLDST-003：責任配置</h2>
+<p>責任也會隨制度轉移：</p>
+<pre><code class="language-text">創始者裁決
+→ Core team
+→ Council／Committee
+→ Tool／Migration／Compatibility policy
+</code></pre>
+<p>所以：</p>
+<p>$$
+Resp(a,k,t)
+$$</p>
+<p>必須帶時間索引。</p>
+<hr>
+<h2>五十九、PLDST-004：多主體歸因</h2>
+<p>上一文建立：</p>
+<p>$$
+Credit
+\neq
+Causality
+\neq
+Authority
+\neq
+Accountability
+\neq
+Maintenance
+$$</p>
+<p>本篇補充：這五種歸因都會隨時間改變。</p>
+<hr>
+<h2>六十、第一部統一模型</h2>
+<p>PLDST 第一部的完整分析單位為：</p>
+<h1>$$
+\boxed{
+\mathfrak{D}</h1>
+<p>(
+Actor,
+Decision,
+Context,
+Time,
+Style,
+Complexity,
+Responsibility,
+Attribution,
+Governance,
+Evidence
+)
+}
+$$</p>
+<p>這將成為第二部風格原型與第三部人物個案的共同方法。</p>
+<hr>
+<h1>第十三部分　限制</h1>
+<h2>六十一、相位邊界不是自然唯一</h2>
+<p>歷史是連續的，研究者畫出的相位是分析工具。</p>
+<p>不同研究問題可能需要不同分期。</p>
+<hr>
+<h2>六十二、文件日期不等於思想形成日期</h2>
+<p>文章發布時間只證明觀點最晚在該時可被確認，不保證觀點在那天才形成。</p>
+<hr>
+<h2>六十三、制度規則不等於實際行為</h2>
+<p>正式文件可能與實際權力、公司資源與非正式影響不同。</p>
+<p>需要結合：</p>
+<ul>
+<li>決議；</li>
+<li>實作；</li>
+<li>會議；</li>
+<li>Release；</li>
+<li>參與者證詞。</li>
+</ul>
+<hr>
+<h2>六十四、相容性化石難以判定</h2>
+<p>一個舊特徵也可能仍受部分使用者喜愛。除非有：</p>
+<ul>
+<li>正式棄用；</li>
+<li>明確反對；</li>
+<li>替代機制；</li>
+<li>新程式不建議；</li>
+</ul>
+<p>否則不應武斷稱為化石。</p>
+<hr>
+<h2>六十五、創始者思想可能多線並存</h2>
+<p>設計者可以同時：</p>
+<ul>
+<li>重視簡潔；</li>
+<li>接受某些複雜機制；</li>
+<li>反對某種相容；</li>
+<li>保護另一種相容。</li>
+</ul>
+<p>相位分析不能把人變成單一方向向量。</p>
+<hr>
+<h1>第十四部分　第二輪事實校對紀錄</h1>
+<h2>六十六、Wirth 的相容性與硬體回饋</h2>
+<p>已核對 ETH 官方專案回顧與〈The History of Modula-2 and Oberon〉：</p>
+<ul>
+<li>Wirth 從 Pascal 轉向 Modula-2 時，確實選擇犧牲 upward compatibility 以避免 Pascal 缺陷；</li>
+<li>Oberon 的設計與完整系統實作相關；</li>
+<li>硬體指令與記憶體特性變化確實改變了編譯器與程式碼密度考量。</li>
+</ul>
+<p>本文沒有把他的思想簡化成永遠拒絕所有新功能。</p>
+<hr>
+<h2>六十七、Python 治理</h2>
+<p>已核對 PEP 13：</p>
+<ul>
+<li>Guido 至 2018 年 7 月為 BDFL；</li>
+<li>當前治理以五人 Steering Council 為核心；</li>
+<li>Council 具有廣泛權力，但傾向建立流程與委任。</li>
+</ul>
+<p>因此本文將風格延續與權力斷裂分開。</p>
+<hr>
+<h2>六十八、Rust Edition</h2>
+<p>已核對 Rust Edition Guide、Rust Book 與 Edition RFC：</p>
+<ul>
+<li>Edition 是 opt-in；</li>
+<li>不向後相容變更可放入下一 Edition；</li>
+<li>不同 Edition crate 可互操作；</li>
+<li>Compiler 支援其發布前既有 Edition；</li>
+<li>Rust 2024 具有遷移 Lint 與 <code>cargo fix --edition</code> 支援。</li>
+</ul>
+<p>本文沒有把 Edition 說成完全獨立語言或傳統 major version。</p>
+<hr>
+<h2>六十九、Go 相容性</h2>
+<p>已核對 Go 1 Compatibility Promise 與 Go 官方相容性文章：</p>
+<ul>
+<li>Go 1 對多數既有程式提供長期相容期待；</li>
+<li>官方明確列出有限例外；</li>
+<li>Go 1.21 加強了工具鏈、語言版本與 GODEBUG 的相容模型。</li>
+</ul>
+<p>本文沒有將承諾誇張為任何程式永不破壞的絕對保證。</p>
+<hr>
+<h2>七十、C++ WG21</h2>
+<p>已核對 WG21 官方頁面：</p>
+<ul>
+<li>WG21 於 1990–1991 年成立；</li>
+<li>是 C++ 的國際標準化 Working Group；</li>
+<li>現代演化涉及 Papers、分組、專家與標準程序。</li>
+</ul>
+<p>本文保留 Stroustrup 創始原則的持續影響，但未將全部後期標準決策歸於個人。</p>
+<hr>
+<h2>七十一、TC39</h2>
+<p>已核對 TC39 Process 與 ECMAScript 規格頁：</p>
+<ul>
+<li>Stage 1 以上提案由 Committee 擁有；</li>
+<li>提案採分階段成熟；</li>
+<li>Stage 4 完成後進入後續年度規格；</li>
+<li>現行規格頁會整合年度快照與已完成提案。</li>
+</ul>
+<p>本文沒有把現代 ECMAScript 功能回寫成 JavaScript 創始者的直接決策。</p>
+<hr>
+<h1>第十五部分　結論</h1>
+<p>程式語言設計風格不是一張永久貼在人物身上的標籤。它是在特定時期、問題、權力、實作與相容條件下，透過一連串決策呈現的模式。</p>
+<p>本文將三條時間線正式分離：</p>
+<p>$$
+\boxed{
+\Sigma_{designer}(t)
+\neq
+L_{language}(t)
+\neq
+G_{governance}(t)
+}
+$$</p>
+<p>並加入生態與外部條件：</p>
+<h1>$$
+O_L(t)</h1>
+<p>\alpha_t\Sigma_d(t)
++
+\beta_tL(t)
++
+\gamma_tG(t)
++
+\delta_tE(t)
++
+\epsilon_tX(t)
+$$</p>
+<p>語言風格可能經歷：</p>
+<p>$$
+\boxed{
+\text{保留}
++
+\text{放大}
++
+\text{弱化}
++
+\text{反轉}
++
+\text{化石化}
++
+\text{分岔}
++
+\text{制度化}
++
+\text{回顧性重構}
+}
+$$</p>
+<p>因此，PLDST 不再輸出：</p>
+<pre><code class="language-text">某設計師一生都是某一派。
+</code></pre>
+<p>而輸出：</p>
+<blockquote>
+<p>在某一時間相位、某組可直接歸因的決策與某種治理結構下，該設計者呈現何種優先序；後續語言與制度如何保留、修正、放大或反轉這些選擇。</p>
+</blockquote>
+<p>第一部至此建立了完整方法論：</p>
+<ol>
+<li>從語言特徵轉向設計決策；</li>
+<li>分析複雜度被如何配置；</li>
+<li>分析錯誤與控制責任由誰承擔；</li>
+<li>分離創始者、共同體與制度；</li>
+<li>以時間相位防止靜態人格化。</li>
+</ol>
+<p>其統一分析物件為：</p>
+<h1>$$
+\boxed{
+\mathfrak{D}</h1>
+<p>(
+Actor,
+Decision,
+Context,
+Time,
+Style,
+Complexity,
+Responsibility,
+Attribution,
+Governance,
+Evidence
+)
+}
+$$</p>
+<p>後續第二部將不再只列出「極簡、實用、安全、表達力」等抽象原型，而會用這套方法分析每一種風格在什麼情境形成、把複雜度與責任放到哪裡、如何隨時間演化，以及在何種條件下從優勢轉為負債。</p>
+<hr>
+<h1>附錄 A　時間相位速查</h1>
+<table>
+<thead>
+<tr>
+<th>相位</th>
+<th>主要特徵</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>問題孕育期</td>
+<td>問題 framing、前代批判、實驗</td>
+</tr>
+<tr>
+<td>創始凝結期</td>
+<td>核心設計、第一實作、個人權重高</td>
+</tr>
+<tr>
+<td>公開擴張期</td>
+<td>使用者、工具、程式庫與壓力測試</td>
+</tr>
+<tr>
+<td>制度化期</td>
+<td>PEP／RFC／Council／Committee</td>
+</tr>
+<tr>
+<td>相容性鎖定期</td>
+<td>變更成本、既有程式與承諾</td>
+</tr>
+<tr>
+<td>後創始者期</td>
+<td>正式權力轉移、制度與共同體主導</td>
+</tr>
+<tr>
+<td>反身重構期</td>
+<td>Edition、遷移、治理改革、歷史修正</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>附錄 B　風格流變速查</h1>
+<pre><code class="language-text">Conservation
+Amplification
+Attenuation
+Inversion
+Fossilization
+Bifurcation
+Institutionalization
+Retrospective Reconstruction
+</code></pre>
+<hr>
+<h1>附錄 C　來源與參考文獻</h1>
+<p><strong>[R1]</strong> Niklaus Wirth, “The History of Modula-2 and Oberon,” revised manuscript, 2006; ETH Zürich project history and Oberon language reports.<br>— Pascal、Modula-2、Oberon 的設計演化、相容選擇、系統實作與硬體回饋。</p>
+<p><strong>[R2]</strong> Python Enhancement Proposals, “PEP 13 – Python Language Governance,” and related PEP 8000-series governance records.<br>— BDFL 時期、2018 年治理轉換與 Steering Council。</p>
+<p><strong>[R3]</strong> Rust Project, <em>The Rust Edition Guide</em>, <em>The Rust Programming Language</em>, RFC 2052, RFC 3085, and RFC 3501.<br>— Edition 的 opt-in、跨 Edition 互操作、遷移與週期制度。</p>
+<p><strong>[R4]</strong> Go Project, “Go 1 and the Future of Go Programs,” “Backward Compatibility, Go 1.21, and Go 2,” and Go language proposal documentation.<br>— Go 1 相容承諾、例外、語言版本與 GODEBUG 相容機制。</p>
+<p><strong>[R5]</strong> ISO/IEC JTC1/SC22/WG21 official committee pages and Bjarne Stroustrup, <em>The Design and Evolution of C++</em>.<br>— C++ 創始設計、標準化與多階段演化。</p>
+<p><strong>[R6]</strong> Ecma TC39, “The TC39 Process,” and the ECMAScript specification repository.<br>— Champion、提案階段、委員會所有、實作與年度規格。</p>
+<p><strong>[R7]</strong> Rust Edition Guide, Rust 2024 migration chapters and compatibility lint documentation.<br>— <code>cargo fix --edition</code> 與 Edition migration。</p>
+<p><strong>[R8]</strong> Go Project, “Go 2, here we come!,” “Toward Go 2,” “Proposals for Go 1.15,” and Contribution Guide.<br>— 語言提案門檻、功能成本、經驗與受控演化。</p>
+<hr>
+<h1>附錄 D　PLDST 時間標記</h1>
+<pre><code class="language-text">[T-F] Founder phase
+[T-C] Core formation
+[T-E] Expansion
+[T-I] Institutionalization
+[T-L] Compatibility lock-in
+[T-P] Post-founder
+[T-R] Reflexive reconstruction
+
+[S-C] Conservation
+[S-A] Amplification
+[S-W] Attenuation
+[S-I] Inversion
+[S-F] Fossilization
+[S-B] Bifurcation
+[S-N] Institutionalization
+[S-R] Retrospective reconstruction
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-005.html">https://thisoneisneok.com/html/papers/pldst-005.html</a></footer>
+</body>
+</html>

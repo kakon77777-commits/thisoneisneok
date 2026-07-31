@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guido van Rossum：可讀性、實用主義與 BDFL 裁決 | Neo.K</title>
+<meta name="description" content="Guido van Rossum 常被描述為 Python 的創造者、可讀性語言的設計者，以及長期擔任 Benevolent Dictator For Life（BDFL）的開源領導者。這些標籤指出了三個重要事實，卻也容易造成三種誤讀：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-017.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-017</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第三部設計師個案正式研究</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-017.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>Guido van Rossum：可讀性、實用主義與 BDFL 裁決</h1>
+<h2>摘要</h2>
+<p>Guido van Rossum 常被描述為 Python 的創造者、可讀性語言的設計者，以及長期擔任 Benevolent Dictator For Life（BDFL）的開源領導者。這些標籤指出了三個重要事實，卻也容易造成三種誤讀：</p>
+<ol>
+<li>把 Python 的可讀性簡化成縮排語法；</li>
+<li>把 Python 的實用主義誤解成沒有一致原則；</li>
+<li>把 BDFL 描述成個人任意決策，而忽略提案、實作、社群說服與最終責任之間的制度配置。</li>
+</ol>
+<p>Python 源自 Guido 在 CWI 的 ABC 經驗、Amoeba 分散式作業系統工具需求、Modula-3 的模組與例外觀念，以及 Unix／C 的可擴展實作環境。ABC 強調清楚、教學和精練表面，但較封閉，難以連接作業系統與外部程式庫；Python 保留可讀性與互動性，同時加入模組、例外、類別、可擴展 C 介面和真實系統腳本能力。[R1][R2][R3]</p>
+<p>Guido 的核心設計不是追求最小語法，而是建立一套讓程式「適合被其他人閱讀、修改、重用和維護」的預設。官方前言明確把 Readability 視為 Python 特徵的共同方向，並將 ABC 的清楚價值與 Modula-3 的語言影響列為主要來源。[R2] PEP 20 所整理的 Python 指導原則亦同時包含：</p>
+<ul>
+<li>Readability counts；</li>
+<li>Explicit is better than implicit；</li>
+<li>Simple is better than complex；</li>
+<li>Although practicality beats purity；</li>
+<li>In the face of ambiguity, refuse the temptation to guess；</li>
+<li>There should be one—and preferably only one—obvious way to do it。[R4]</li>
+</ul>
+<p>這些原則並非完全一致。明示可能增加樣板；唯一明顯做法可能與多範式衝突；實用性又可能突破簡潔。Guido 的真正作用，正是對這些衝突作出品味判斷，而不是套用單一演算法。</p>
+<p>本文將 Guido 的設計生涯分成六個相位：</p>
+<ol>
+<li><strong>ABC 吸收與反省期</strong>：可讀教學語言的優點與封閉系統缺陷；</li>
+<li><strong>Amoeba 實用工具期</strong>：互動腳本、例外、模組及 C 擴展；</li>
+<li><strong>早期社群與 BDFL 形成期</strong>：創始者最終裁決、開放貢獻與一致品味；</li>
+<li><strong>PEP 制度化期</strong>：把口頭領導轉成公開提案、理由、實作及歷史記錄；</li>
+<li><strong>Python 3 修正歷史期</strong>：為語言一致性與 Unicode／資料模型修正承擔不相容遷移；</li>
+<li><strong>PEP 572 與後 BDFL 治理期</strong>：個人裁決的社會成本顯現，權力轉移至選舉產生的 Steering Council。</li>
+</ol>
+<p>本文核心判斷為：</p>
+<p>$$
+\boxed{
+\text{Guido 的風格不是「少功能」，}
+\quad
+\text{而是讓常見、正確、可讀的路徑成為阻力最低的路徑。}
+}
+$$</p>
+<p>其深層配置可表示為：</p>
+<p>$$
+\boxed{
+\text{可讀表面}
++
+\text{少量明顯慣例}
++
+\text{動態實用能力}
++
+\text{可擴展實作}
++
+\text{集中品味裁決}
+}
+$$</p>
+<p>但 Python 的歷史也顯示這種模型的限制。創始者的品味可防止委員會式功能聯合體，卻會把高爭議決策的情緒、說服和責任集中到個人；Python 3 證明 Guido 願意為一致性破壞相容，PEP 572 則證明單人最終裁決在全球社群中具有不可持續的社會成本。</p>
+<p>因此，Guido 的後期最重要設計可能不再是某項語法，而是接受：</p>
+<p>$$
+\boxed{
+\text{語言風格可以制度化，}
+\quad
+\text{但創始者本人不必永久成為制度。}
+}
+$$</p>
+<p><strong>關鍵詞：</strong> Guido van Rossum、Python、可讀性、實用主義、BDFL、PEP、Python 3、Assignment Expressions、治理、PLDST</p>
+<hr>
+<h1>第一部分　研究邊界與多主體歸因</h1>
+<h2>一、本文研究範圍</h2>
+<p>本文主要分析：</p>
+<ul>
+<li>ABC 對 Python 的影響；</li>
+<li>Amoeba 系統工具需求；</li>
+<li>1989–1991 年 Python 起源；</li>
+<li>CPython 的早期架構；</li>
+<li>Python 社群、PEP 與 BDFL；</li>
+<li>Python 2／3 的歷史修正；</li>
+<li>PEP 572 及 Guido 退任；</li>
+<li>PEP 13 的後 BDFL 制度。</li>
+</ul>
+<p>本文不把下列成果全部歸於 Guido：</p>
+<ul>
+<li>CPython 所有模組；</li>
+<li>Standard Library；</li>
+<li>NumPy、Django、PyTorch 等生態；</li>
+<li>所有 PEP；</li>
+<li>Python 3 的所有具體功能；</li>
+<li>現代 Steering Council 決策；</li>
+<li>PyPy、Jython、IronPython 等實作。</li>
+</ul>
+<hr>
+<h2>二、Python 的創始權重</h2>
+<p>Guido 對下列事項具有高度直接權重：</p>
+<ul>
+<li>原始問題設定；</li>
+<li>第一版語言和 Interpreter；</li>
+<li>早期語法與資料模型；</li>
+<li>C 擴展介面；</li>
+<li>模組、例外、類別等整體組合；</li>
+<li>長期 BDFL 裁決；</li>
+<li>Python 3 的總體方向；</li>
+<li>多項個別 PEP。</li>
+</ul>
+<p>因此稱其為 Python 創造者和主要早期作者合理。</p>
+<hr>
+<h2>三、Python 是社群語言</h2>
+<p>Python 官方 License 歷史明確寫道：Python 由 Guido 在 CWI 建立，他是 Principal author，但語言包含許多其他人的貢獻。[R5]</p>
+<p>重要共同主體包括：</p>
+<ul>
+<li>ABC 團隊；</li>
+<li>CWI 與 Amoeba 研究者；</li>
+<li>Tim Peters；</li>
+<li>Barry Warsaw；</li>
+<li>Paul Prescod；</li>
+<li>Greg Stein；</li>
+<li>Fred Drake；</li>
+<li>Marc-André Lemburg；</li>
+<li>Brett Cannon；</li>
+<li>Raymond Hettinger；</li>
+<li>Nick Coghlan；</li>
+<li>Core developers；</li>
+<li>PEP authors；</li>
+<li>PSF；</li>
+<li>實作者和使用者。</li>
+</ul>
+<p>PEP 20 本身即由 Tim Peters 撰寫，用 19 條格言濃縮 Guido 的設計原則，而不是 Guido 自己起草的憲法。[R4]</p>
+<hr>
+<h1>第二部分　相位一：ABC 的吸收與反省</h1>
+<h2>四、ABC 的優點</h2>
+<p>ABC 追求：</p>
+<ul>
+<li>初學者可學；</li>
+<li>互動式；</li>
+<li>高階資料型別；</li>
+<li>清楚語法；</li>
+<li>少量概念；</li>
+<li>不暴露機器細節。</li>
+</ul>
+<p>Guido 在 Python 官方前言中指出，Python 對可讀性的重視直接反映 ABC 的哲學。[R2]</p>
+<hr>
+<h2>五、ABC 的不足</h2>
+<p>ABC 的問題包括：</p>
+<ul>
+<li>封閉環境；</li>
+<li>難以接入 OS；</li>
+<li>難以擴展 C Library；</li>
+<li>不適合作為一般 Unix 工具語言；</li>
+<li>缺少真實大型系統所需的模組和整合能力。</li>
+</ul>
+<p>因此 Guido 沒有直接延續 ABC，而是保留其人本表面，移除其封閉邊界。</p>
+<hr>
+<h2>六、第一個深層風格：保留體驗，重建邊界</h2>
+<p>Python 對 ABC 的繼承可表示為：</p>
+<p>$$
+Keep(
+Readability,
+Interactivity,
+HighLevelData,
+TeachingClarity
+)
+$$</p>
+<p>$$
+Replace(
+ClosedWorld,
+LimitedInterop,
+WeakSystemAccess
+)
+$$</p>
+<p>這是實用主義，不是無原則折衷。</p>
+<hr>
+<h1>第三部分　相位二：Amoeba 與可擴展腳本語言</h1>
+<h2>七、Amoeba 的工具問題</h2>
+<p>Guido 在 CWI 參與 Amoeba 分散式作業系統時，需要快速建立：</p>
+<ul>
+<li>系統管理工具；</li>
+<li>測試；</li>
+<li>檔案和程序操作；</li>
+<li>分散式服務介面；</li>
+<li>可由非 C 專家修改的程式。</li>
+</ul>
+<p>Shell 太弱，C 太慢於開發，ABC 又難以接入系統。</p>
+<hr>
+<h2>八、Python 的問題定位</h2>
+<p>Python 被設計為：</p>
+<pre><code class="language-text">比 Shell 更適合大型程式
+比 C 更快速開發
+比 ABC 更可連接現實系統
+</code></pre>
+<p>這種中間定位成為長期優勢。</p>
+<hr>
+<h2>九、Modula-3 影響</h2>
+<p>Guido 在官方前言中把 Modula-3 稱為除 ABC 外的主要影響來源之一。[R2]</p>
+<p>重要方向包括：</p>
+<ul>
+<li>Module；</li>
+<li>Exception；</li>
+<li>Clean structured design；</li>
+<li>Object-oriented ideas；</li>
+<li>清楚 Interface。</li>
+</ul>
+<p>Python 沒有複製 Modula-3 的靜態型別，而是吸收部分結構觀念。</p>
+<hr>
+<h2>十、C 擴展與雙層責任</h2>
+<p>Python 讓：</p>
+<ul>
+<li>常見控制和資料操作以高階動態語言完成；</li>
+<li>性能敏感或系統專屬部分以 C 實作；</li>
+<li>第三方模組可進入 Interpreter；</li>
+<li>Python 作為 Glue language。</li>
+</ul>
+<p>複雜度配置為：</p>
+<p>$$
+C_{\text{application development}}\downarrow
+$$</p>
+<p>$$
+C_{\text{interpreter}}
++
+C_{\text{extension boundary}}
+\uparrow
+$$</p>
+<hr>
+<h2>十一、縮排是結構，不只是美學</h2>
+<p>Python 使用縮排表達 Block，使：</p>
+<ul>
+<li>視覺結構與語法結構一致；</li>
+<li>不允許花括號與縮排互相欺騙；</li>
+<li>Code review 更直接；</li>
+<li>省略 End marker。</li>
+</ul>
+<p>但可讀性並不只來自縮排，還包括：</p>
+<ul>
+<li>命名；</li>
+<li>Statement／Expression 分工；</li>
+<li>少量特殊符號；</li>
+<li>一致 Protocol；</li>
+<li>清楚 Exception；</li>
+<li>Module；</li>
+<li>Standard Library 慣例。</li>
+</ul>
+<hr>
+<h1>第四部分　可讀性作為公共介面</h1>
+<h2>十二、程式首先是給人讀的</h2>
+<p>Guido 的設計假設：</p>
+<p>$$
+ReadFrequency</p>
+<blockquote>
+</blockquote>
+<p>WriteFrequency
+$$</p>
+<p>尤其在：</p>
+<ul>
+<li>開源；</li>
+<li>團隊；</li>
+<li>維護；</li>
+<li>教學；</li>
+<li>Library；</li>
+<li>長期系統。</li>
+</ul>
+<p>因此語言不能只優化輸入速度。</p>
+<hr>
+<h2>十三、可讀性不是冗長</h2>
+<p>Python 經常允許：</p>
+<ul>
+<li>Dynamic typing；</li>
+<li>Type inference by runtime；</li>
+<li>List comprehension；</li>
+<li>Iterator；</li>
+<li>Context manager；</li>
+<li>Decorator；</li>
+<li>Generator。</li>
+</ul>
+<p>這些都能縮短程式。</p>
+<p>關鍵不是字數，而是：</p>
+<blockquote>
+<p>省略後是否仍能從局部結構清楚推斷意圖？</p>
+</blockquote>
+<hr>
+<h2>十四、明示與實用的衝突</h2>
+<p>PEP 20 同時說：</p>
+<pre><code class="language-text">Explicit is better than implicit
+Although practicality beats purity
+</code></pre>
+<p>Python 因此仍有：</p>
+<ul>
+<li>Duck typing；</li>
+<li>Implicit protocol；</li>
+<li>Truthiness；</li>
+<li>Context management；</li>
+<li>Descriptor；</li>
+<li>Import behavior；</li>
+<li>Dynamic attribute lookup。</li>
+</ul>
+<p>Guido 並非拒絕隱式，而是拒絕不可預測且難解釋的隱式。</p>
+<hr>
+<h2>十五、唯一明顯做法的真正含義</h2>
+<p>「最好只有一個明顯做法」不是：</p>
+<ul>
+<li>每個問題只能有一個 Algorithm；</li>
+<li>禁止多範式；</li>
+<li>Library 不得競爭；</li>
+<li>語言永不增加替代語法。</li>
+</ul>
+<p>較合理的解讀是：</p>
+<blockquote>
+<p>對常見語言動作，避免讓使用者在多套等價且互不相容的核心構造間選擇。</p>
+</blockquote>
+<hr>
+<h1>第五部分　BDFL：品味的集中裁決</h1>
+<h2>十六、BDFL 的功能</h2>
+<p>Python 早期需要有人：</p>
+<ul>
+<li>接受或拒絕功能；</li>
+<li>維持整體風格；</li>
+<li>解決無法共識的爭議；</li>
+<li>承擔最後決策；</li>
+<li>防止功能聯合體；</li>
+<li>對不完整提案說不。</li>
+</ul>
+<p>Guido 的權力不是只來自稱號，而來自：</p>
+<ul>
+<li>原始實作；</li>
+<li>歷史知識；</li>
+<li>社群信任；</li>
+<li>持續工作；</li>
+<li>最終維護責任。</li>
+</ul>
+<hr>
+<h2>十七、BDFL 不是無程序獨裁</h2>
+<p>在 PEP 制度形成後，一項功能通常需要：</p>
+<ul>
+<li>問題描述；</li>
+<li>規格；</li>
+<li>理由；</li>
+<li>替代方案；</li>
+<li>參考實作；</li>
+<li>社群討論；</li>
+<li>BDFL 或 Delegate 決定。</li>
+</ul>
+<p>Guido 可以裁決，但裁決需進入公共歷史。</p>
+<hr>
+<h2>十八、品味裁決的優勢</h2>
+<p>集中品味可以：</p>
+<ul>
+<li>保持一致；</li>
+<li>快速結束爭議；</li>
+<li>拒絕局部便利；</li>
+<li>在資料不足時作整體判斷；</li>
+<li>承認設計不能完全形式化。</li>
+</ul>
+<hr>
+<h2>十九、品味裁決的風險</h2>
+<p>它也可能造成：</p>
+<ul>
+<li>Bus factor；</li>
+<li>個人情緒成本；</li>
+<li>社群依賴；</li>
+<li>難以反駁的主觀判斷；</li>
+<li>創始者偏誤；</li>
+<li>權力接班問題；</li>
+<li>反對者將技術爭議人格化。</li>
+</ul>
+<hr>
+<h1>第六部分　PEP：把品味轉成制度記憶</h1>
+<h2>二十、PEP 的作用</h2>
+<p>PEP 不只收錄成功功能，也保存：</p>
+<ul>
+<li>Rejected；</li>
+<li>Deferred；</li>
+<li>Withdrawn；</li>
+<li>Process；</li>
+<li>Informational；</li>
+<li>Governance。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+Decision
+\rightarrow
+PublicReasoning
+\rightarrow
+HistoricalRecord
+$$</p>
+<hr>
+<h2>二十一、PEP 讓作者和裁決者分離</h2>
+<p>許多 Python 功能由社群成員提出，Guido：</p>
+<ul>
+<li>評估；</li>
+<li>指定 Delegate；</li>
+<li>要求修訂；</li>
+<li>接受或拒絕。</li>
+</ul>
+<p>這降低「Guido 設計所有功能」的錯誤歸因。</p>
+<hr>
+<h2>二十二、PEP 20 的制度地位</h2>
+<p>PEP 20 是 Informational、Non-normative 指引，由 Tim Peters 撰寫。[R4]</p>
+<p>因此它：</p>
+<ul>
+<li>不是形式規格；</li>
+<li>不是自動決策器；</li>
+<li>格言彼此具有張力；</li>
+<li>需要依案例解釋。</li>
+</ul>
+<hr>
+<h1>第七部分　Python 3：實用主義也會破壞相容</h1>
+<h2>二十三、為何需要 Python 3</h2>
+<p>Python 2 累積：</p>
+<ul>
+<li>Text／Bytes 混淆；</li>
+<li>舊式類別；</li>
+<li>Integer division；</li>
+<li><code>print</code> Statement；</li>
+<li>Iterator／Collection 不一致；</li>
+<li>Exception syntax；</li>
+<li>Library 歷史負擔。</li>
+</ul>
+<p>若只保持相容，語言核心難以徹底修正。</p>
+<hr>
+<h2>二十四、Python 3 的責任判斷</h2>
+<p>Guido 接受：</p>
+<p>$$
+Coherence_{future}</p>
+<blockquote>
+</blockquote>
+<p>Compatibility_{short-term}
+$$</p>
+<p>但這不是輕率重寫，因為：</p>
+<ul>
+<li>Python 2 長期並行；</li>
+<li>多項功能提前 Backport；</li>
+<li>提供 2to3 等工具；</li>
+<li>進行多年遷移；</li>
+<li>最終生態承擔巨大成本。</li>
+</ul>
+<hr>
+<h2>二十五、Python 3 的成功與代價</h2>
+<p>成功：</p>
+<ul>
+<li>Text／Bytes 更清楚；</li>
+<li>語言規則更一致；</li>
+<li>清除部分歷史化石；</li>
+<li>建立長期現代基線。</li>
+</ul>
+<p>代價：</p>
+<ul>
+<li>Library 分裂；</li>
+<li>使用者延後升級；</li>
+<li>教材混亂；</li>
+<li>雙版本維護；</li>
+<li>Python 2 壽命超出早期預期。</li>
+</ul>
+<p>這證明「更乾淨」不等於低遷移成本。</p>
+<hr>
+<h2>二十六、Guido 並非絕對相容主義者</h2>
+<p>其風格是：</p>
+<ul>
+<li>日常演化高度保守；</li>
+<li>若歷史阻塞核心一致性，可建立明確重大斷點；</li>
+<li>破壞必須服務長期公共語言，而非個人美學。</li>
+</ul>
+<hr>
+<h1>第八部分　PEP 572：裁決成本的臨界點</h1>
+<h2>二十七、Assignment Expressions 的問題</h2>
+<p>PEP 572 提議 <code>NAME := expr</code>，讓表達式中可命名中間結果。[R6]</p>
+<p>其理由包括：</p>
+<ul>
+<li>避免重複計算；</li>
+<li>改善真實程式；</li>
+<li>支援 Debug；</li>
+<li>減少額外縮排；</li>
+<li>命名子表達式。</li>
+</ul>
+<hr>
+<h2>二十八、實用證據</h2>
+<p>PEP 572 強調真實程式，而不是只用玩具例子。</p>
+<p>Guido 搜尋 Dropbox Code base，發現程式設計者為節省行數或縮排，會：</p>
+<ul>
+<li>重複昂貴表達式；</li>
+<li>提前執行不必要操作；</li>
+<li>寫出不理想結構。[R6]</li>
+</ul>
+<p>這是典型 Guido 風格：</p>
+<blockquote>
+<p>語言設計不只根據理想 Style，也要觀察人實際如何逃避阻力。</p>
+</blockquote>
+<hr>
+<h2>二十九、可讀性爭議</h2>
+<p>反對者認為：</p>
+<ul>
+<li>賦值進入表達式會增加密度；</li>
+<li>容易濫用；</li>
+<li>破壞 Statement／Expression 分工；</li>
+<li>產生類 C 風格錯誤。</li>
+</ul>
+<p>PEP 最終以：</p>
+<ul>
+<li>新運算子；</li>
+<li>低優先序；</li>
+<li>括號限制；</li>
+<li>Style guidance；</li>
+<li>特定禁止位置；</li>
+</ul>
+<p>控制風險。[R6]</p>
+<hr>
+<h2>三十、從技術爭議到治理危機</h2>
+<p>Guido 在接受 PEP 572 後不久退任 BDFL。</p>
+<p>PEP 13 的歷史記錄確認：他自 Python 創始起擔任 BDFL，至 2018 年 7 月退任；之後社群提出多套治理方案，最後建立五人 Steering Council。[R7]</p>
+<p>不能簡化為：</p>
+<pre><code class="language-text">Walrus operator 單獨導致退任
+</code></pre>
+<p>但該爭議集中呈現：</p>
+<ul>
+<li>討論負荷；</li>
+<li>社群敵意；</li>
+<li>反覆說服；</li>
+<li>個人最終責任；</li>
+<li>BDFL 接班不可持續。</li>
+</ul>
+<hr>
+<h1>第九部分　後 BDFL 制度</h1>
+<h2>三十一、Steering Council</h2>
+<p>PEP 13 規定：</p>
+<ul>
+<li>五人委員會；</li>
+<li>由 Core team 選舉；</li>
+<li>維持語言及 CPython 品質和穩定；</li>
+<li>尋求共識；</li>
+<li>作最終上訴機關；</li>
+<li>具有廣泛權力，但應盡量少直接使用；</li>
+<li>決策盡可能公開。[R7]</li>
+</ul>
+<hr>
+<h2>三十二、權力由人格轉成程序</h2>
+<p>轉換為：</p>
+<p>$$
+PersonalLegitimacy
+\rightarrow
+ElectedInstitution
+$$</p>
+<p>最終權威不再依：</p>
+<ul>
+<li>創始者身分；</li>
+<li>終身稱號；</li>
+<li>單一品味。</li>
+</ul>
+<p>而依：</p>
+<ul>
+<li>Core team 信任；</li>
+<li>定期選舉；</li>
+<li>多人表決；</li>
+<li>利益衝突限制；</li>
+<li>No-confidence mechanism。</li>
+</ul>
+<hr>
+<h2>三十三、Guido 的後期位置</h2>
+<p>Guido 之後仍：</p>
+<ul>
+<li>參與 Python；</li>
+<li>提出技術方向；</li>
+<li>擔任 Core developer；</li>
+<li>曾參選和加入 Steering Council；</li>
+<li>推進性能與型別等工作。</li>
+</ul>
+<p>但不再使用 BDFL 身分作最後裁決。</p>
+<p>這是一種創始者退場而不退出知識共同體的模式。</p>
+<hr>
+<h1>第十部分　風格時間相位</h1>
+<h2>三十四、ABC 反省期</h2>
+<pre><code class="language-text">問題：清楚教學語言過於封閉
+策略：保留可讀性，增加真實系統邊界
+</code></pre>
+<hr>
+<h2>三十五、Amoeba／早期 Python 期</h2>
+<pre><code class="language-text">問題：Shell 太弱、C 開發太慢
+策略：動態高階語言＋C 擴展
+</code></pre>
+<hr>
+<h2>三十六、BDFL 社群期</h2>
+<pre><code class="language-text">問題：開放貢獻可能失去一致品味
+策略：創始者最終裁決
+</code></pre>
+<hr>
+<h2>三十七、PEP 制度期</h2>
+<pre><code class="language-text">問題：口頭決策無法支撐大型社群
+策略：公開提案、替代與歷史記錄
+</code></pre>
+<hr>
+<h2>三十八、Python 3 修正期</h2>
+<pre><code class="language-text">問題：歷史相容阻塞核心一致性
+策略：重大版本斷點與長期遷移
+</code></pre>
+<hr>
+<h2>三十九、後 BDFL 期</h2>
+<pre><code class="language-text">問題：個人裁決的社會成本不可持續
+策略：選舉 Steering Council
+</code></pre>
+<hr>
+<h1>第十一部分　PLDST 風格指紋</h1>
+<h2>四十、問題 framing</h2>
+<p>Guido 的核心問題是：</p>
+<blockquote>
+<p>如何讓一般程式設計者快速寫出真實系統程式，同時讓後來的讀者不必重建作者腦中的隱藏規則？</p>
+</blockquote>
+<hr>
+<h2>四十一、價值優先序</h2>
+<p>$$
+V_{\text{Guido}}
+\approx
+(
+Readability,
+Practicality,
+Consistency,
+Approachability,
+Extensibility,
+Maintainability,
+CommunityUsability
+)
+$$</p>
+<hr>
+<h2>四十二、核心—擴張偏好</h2>
+<p>偏好：</p>
+<ul>
+<li>小而清楚語法；</li>
+<li>Protocol；</li>
+<li>Standard Library；</li>
+<li>C Extension；</li>
+<li>PEP 漸進增加；</li>
+<li>拒絕多套等價核心機制。</li>
+</ul>
+<hr>
+<h2>四十三、顯式—推導偏好</h2>
+<p>偏好：</p>
+<ul>
+<li>名稱清楚；</li>
+<li>Block 明示於縮排；</li>
+<li>Ambiguity 時拒絕猜測；</li>
+<li>允許動態 Protocol 與 Duck typing；</li>
+<li>後期接受 Optional typing，不使 Runtime 強制靜態化。</li>
+</ul>
+<hr>
+<h2>四十四、效率—可讀性偏好</h2>
+<p>Python 優先：</p>
+<ul>
+<li>人類開發速度；</li>
+<li>清楚意圖；</li>
+<li>快速組合。</li>
+</ul>
+<p>性能可由：</p>
+<ul>
+<li>C Extension；</li>
+<li>Interpreter improvement；</li>
+<li>Alternative implementation；</li>
+<li>Vectorized Library；</li>
+</ul>
+<p>補足。</p>
+<hr>
+<h2>四十五、安全—自由偏好</h2>
+<p>Python 提供：</p>
+<ul>
+<li>Memory-managed runtime；</li>
+<li>Exception；</li>
+<li>高階資料；</li>
+<li>一般安全預設。</li>
+</ul>
+<p>但動態執行、Monkey patch、Native extension、<code>eval</code> 等仍保留高自由。</p>
+<hr>
+<h2>四十六、相容性偏好</h2>
+<p>日常保守，但願意在稀有重大版本中修正歷史。</p>
+<p>Python 3 是最強反例，證明 Guido 並非「相容永遠高於一致」。</p>
+<hr>
+<h2>四十七、治理偏好</h2>
+<p>早期：</p>
+<ul>
+<li>Benevolent central judgment。</li>
+</ul>
+<p>中期：</p>
+<ul>
+<li>Central judgment＋PEP procedure。</li>
+</ul>
+<p>後期：</p>
+<ul>
+<li>Elected council＋Delegated decisions＋Public process。</li>
+</ul>
+<hr>
+<h1>第十二部分　反例與限制</h1>
+<h2>四十八、Python 不是只有一種做法</h2>
+<p>語言中仍有：</p>
+<ul>
+<li>Class／Function；</li>
+<li>Comprehension／Loop；</li>
+<li>Format styles；</li>
+<li>Async models；</li>
+<li>Error handling alternatives；</li>
+<li>多種 Packaging tool。</li>
+</ul>
+<p>PEP 20 是方向，不是現況描述。</p>
+<hr>
+<h2>四十九、可讀性具有社群與工具前提</h2>
+<p>Python 的動態特徵可能使：</p>
+<ul>
+<li>大型程式型別不明；</li>
+<li>Runtime Error 延後；</li>
+<li>Monkey patch 非局部；</li>
+<li>Decorator／Metaclass 難追蹤。</li>
+</ul>
+<p>Optional typing 和工具是後期補強。</p>
+<hr>
+<h2>五十、Python 3 不是純成功敘事</h2>
+<p>它產生真實長期分裂。評價須同時保存：</p>
+<ul>
+<li>核心修正收益；</li>
+<li>生態遷移代價；</li>
+<li>規劃低估；</li>
+<li>社群投入。</li>
+</ul>
+<hr>
+<h2>五十一、BDFL 不是所有社群都可複製</h2>
+<p>它需要：</p>
+<ul>
+<li>創始者能力；</li>
+<li>長期信任；</li>
+<li>持續投入；</li>
+<li>願意承擔情緒成本；</li>
+<li>合法退場。</li>
+</ul>
+<p>缺一項就可能成為任意權力。</p>
+<hr>
+<h2>五十二、Guido 的後期回顧有創始者視角</h2>
+<p>Python History Blog 和訪談極重要，但需與：</p>
+<ul>
+<li>PEP；</li>
+<li>Commit；</li>
+<li>Release；</li>
+<li>其他 Core developer；</li>
+<li>治理文件；</li>
+</ul>
+<p>交叉校對。</p>
+<hr>
+<h1>第十三部分　設計決策語料</h1>
+<table>
+<thead>
+<tr>
+<th>時期</th>
+<th>問題</th>
+<th>決策</th>
+<th>複雜度去向</th>
+<th>風格</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1980s</td>
+<td>ABC 清楚但封閉</td>
+<td>保留可讀性、開放 OS／C</td>
+<td>Interpreter／FFI</td>
+<td>實用重建</td>
+</tr>
+<tr>
+<td>1989–91</td>
+<td>Shell 與 C 中間缺口</td>
+<td>Python</td>
+<td>Runtime</td>
+<td>高階腳本</td>
+</tr>
+<tr>
+<td>1990s</td>
+<td>社群擴大</td>
+<td>BDFL 裁決</td>
+<td>創始者</td>
+<td>品味集中</td>
+</tr>
+<tr>
+<td>2000s</td>
+<td>決策需可追蹤</td>
+<td>PEP</td>
+<td>公開程序</td>
+<td>制度記憶</td>
+</tr>
+<tr>
+<td>2008</td>
+<td>歷史不一致</td>
+<td>Python 3</td>
+<td>生態遷移</td>
+<td>原則修正</td>
+</tr>
+<tr>
+<td>2018</td>
+<td>Assignment expression 爭議</td>
+<td>接受受限 <code>:=</code></td>
+<td>語言／Style</td>
+<td>真實程式實用主義</td>
+</tr>
+<tr>
+<td>2018–19</td>
+<td>BDFL 不可持續</td>
+<td>Steering Council</td>
+<td>選舉制度</td>
+<td>權力退場</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>第十四部分　人物原型判定</h1>
+<h2>五十三、主要原型</h2>
+<p>Guido van Rossum 同時屬於：</p>
+<ul>
+<li><strong>可讀實用主義語言設計者</strong>；</li>
+<li><strong>常用路徑塑形者</strong>；</li>
+<li><strong>創始者品味裁決者</strong>；</li>
+<li><strong>PEP 制度建設者</strong>；</li>
+<li><strong>可退場的開源治理者</strong>。</li>
+</ul>
+<hr>
+<h2>五十四、不適合的簡單標籤</h2>
+<p>不應只稱：</p>
+<pre><code class="language-text">縮排語言發明者
+簡單語言設計者
+一種做法教條者
+永久獨裁者
+Walrus operator 作者
+</code></pre>
+<p>較精確的描述是：</p>
+<blockquote>
+<p>以可讀性和常見使用行為塑造語言表面，透過 BDFL 品味維持一致，又在個人裁決不可持續時將語言交還制度的設計者。</p>
+</blockquote>
+<hr>
+<h1>第十五部分　統一評價</h1>
+<h2>五十五、最重要的連續性</h2>
+<p>ABC 到 Python 3 的共同方向：</p>
+<p>$$
+\boxed{
+\text{讓程式結構與人類可理解結構一致}
+}
+$$</p>
+<hr>
+<h2>五十六、最重要的不連續性</h2>
+<p>Guido 願意在 Python 3：</p>
+<pre><code class="language-text">破壞來源相容
+</code></pre>
+<p>以換取：</p>
+<pre><code class="language-text">未來語義一致
+</code></pre>
+<hr>
+<h2>五十七、最重要的治理修正</h2>
+<p>由：</p>
+<pre><code class="language-text">語言需要一個最終品味
+</code></pre>
+<p>修正為：</p>
+<pre><code class="language-text">語言需要最終決策，但不必永遠由同一個人承擔
+</code></pre>
+<hr>
+<h1>第十六部分　結論</h1>
+<p>Guido van Rossum 的設計價值不只在 Python 看起來像偽程式碼，也不只在縮排。</p>
+<p>他建立的是一套完整配置：</p>
+<ul>
+<li>語言表面優先服務閱讀；</li>
+<li>動態模型優先服務快速實作；</li>
+<li>C 邊界服務性能和系統整合；</li>
+<li>Standard Library 服務常見任務；</li>
+<li>PEP 保存公共理由；</li>
+<li>BDFL 維持長期風格；</li>
+<li>Python 3 提供修正歷史的例外；</li>
+<li>Steering Council 讓創始者權力可以退場。</li>
+</ul>
+<p>本文對 Guido 的 PLDST 判定為：</p>
+<p>$$
+\boxed{
+\text{Readable Pragmatic Language Designer}
+\rightarrow
+\text{BDFL Taste Arbiter}
+\rightarrow
+\text{Post-Founder Governance Transitioner}
+}
+$$</p>
+<p>其核心優勢是：</p>
+<ul>
+<li>可讀性具有跨語法、資料、錯誤及模組的一致方向；</li>
+<li>常見工作阻力低；</li>
+<li>動態語言與 C 生態互補；</li>
+<li>PEP 形成高品質制度記憶；</li>
+<li>創始者品味能拒絕局部功能堆疊；</li>
+<li>最終願意將權力制度化。</li>
+</ul>
+<p>其核心代價是：</p>
+<ul>
+<li>動態性增加大型系統推理成本；</li>
+<li>「可讀」帶有共同體慣例；</li>
+<li>BDFL 集中情緒及政治責任；</li>
+<li>Python 3 造成長期生態分裂；</li>
+<li>實用例外會逐步增加語言表面；</li>
+<li>全球社群已不可能只依創始者個人直覺治理。</li>
+</ul>
+<p>最終原則為：</p>
+<p>$$
+\boxed{
+\text{可讀性不是外觀}
+\quad
+\land
+\text{實用主義不是無原則}
+\quad
+\land
+\text{最終裁決不是終身人格依賴}
+}
+$$</p>
+<p>Guido 的歷史最值得保留的，不只是「程式應容易閱讀」，而是：</p>
+<blockquote>
+<p>語言設計者必須觀察真實程式設計者如何工作，讓良好行為成為自然行為；當個人品味無法再承擔全球共同體時，還必須設計一個能繼承品味、卻不繼承終身權力的制度。</p>
+</blockquote>
+<hr>
+<h1>附錄 A　PLDST 個案卡</h1>
+<pre><code class="language-text">人物：Guido van Rossum
+主要語言／制度：Python、CPython、PEP、BDFL／Steering Council transition
+核心時期：1989–2019
+主要問題：清楚語言與真實系統能力分裂
+主要策略：可讀語法、動態資料、模組、例外、C 擴展
+複雜度去向：Interpreter、Library、PEP、社群治理
+責任去向：常見路徑由語言塑形，最終風格由治理裁決
+主要保護對象：一般程式設計者、讀者、Library 使用者
+主要限制：動態推理、BDFL 負荷、Python 3 遷移、品味主觀性
+歸因信心：高
+</code></pre>
+<hr>
+<h1>附錄 B　來源與參考文獻</h1>
+<p><strong>[R1]</strong> Guido van Rossum, <em>The History of Python</em> essays, 2009–2018 archive.<br>— Python 功能、ABC、Indentation、Class、Functional features 及社群歷史。</p>
+<p><strong>[R2]</strong> Guido van Rossum, “Foreword for Programming Python,” Python.org.<br>— Readability、ABC、Modula-3 及 Python 的重用方向。</p>
+<p><strong>[R3]</strong> Charles Severance, “Guido van Rossum: The Early Years of Python,” <em>Computer</em>, 2015, based on interviews with Guido.<br>— CWI、Amoeba、1989 起源、第一版和開源授權。</p>
+<p><strong>[R4]</strong> Tim Peters, “PEP 20 – The Zen of Python.”<br>— Python 設計格言、可讀性、明示、實用及拒絕猜測；Informational、非規範性。</p>
+<p><strong>[R5]</strong> Python official License and History notices.<br>— CWI 起源、Guido principal author 及多方貢獻。</p>
+<p><strong>[R6]</strong> Chris Angelico, Tim Peters and Guido van Rossum, “PEP 572 – Assignment Expressions.”<br>— 真實程式證據、Named expression、限制位置及 Style guidance。</p>
+<p><strong>[R7]</strong> Python core team and community, “PEP 13 – Python Language Governance”; PEP 8000／8016.<br>— BDFL 退任、五人 Steering Council、選舉、權力及共識原則。</p>
+<p><strong>[R8]</strong> Python Enhancement Proposal index and relevant Python 3 PEPs, including PEP 3100.<br>— Python 3 不相容修正及多作者制度。</p>
+<p><strong>[R9]</strong> Computer History Museum, Guido van Rossum Fellow profile and oral-history materials.<br>— Python 創建、社群領導及長期演化。</p>
+<hr>
+<h1>附錄 C　PLDST 標記</h1>
+<pre><code class="language-text">[T-A] ABC reflection phase
+[T-M] Amoeba／early Python phase
+[T-B] BDFL community phase
+[T-P] PEP institutional phase
+[T-3] Python 3 correction phase
+[T-G] Post-BDFL governance phase
+
+[S-R] Readability
+[S-P] Pragmatism
+[S-O] Obvious-path design
+[S-E] Extensibility
+[S-B] BDFL taste arbitration
+[S-I] Institutional succession
+
+
+---
+
+# 附錄 D　第二輪史實與歸因校對紀錄
+
+## D.1 Python 起源與「聖誕假期」敘事
+
+第二輪重新核對 Python 官方歷史、Guido 的歷史文章及 2015 年訪談：
+
+- Python 的第一批工作確實在 1989 年末開始；
+- 但它不是一個假期內突然完成的語言；
+- Guido 在此之前已累積數年 ABC、Interpreter、CWI 和 Amoeba 經驗；
+- 第一個公開版本於 1991 年出現；
+- Python 官方資料將它描述為 ABC 的後繼，但也有 Modula-3、C／Unix、Smalltalk 等影響。
+
+本文因此使用「1989–1991 起源期」，而不採用單一假期天才神話。
+
+---
+
+## D.2 Readability 與 Indentation
+
+已重新核對 Python.org 的 Guido 前言：
+
+- Guido 明確說 Python 的縮排直接來自 ABC；
+- 他認為縮排同時減少 Visual clutter、縮短程式，並限制格式自由，使不同作者程式更一致；
+- 他又明確表示，可讀性的重視不是偶然，而是可重用程式的必要條件；
+- 除 ABC 外，Modula-3 被他稱為主要影響來源。
+
+因此本文沒有把 Readability 只歸結為縮排，而把它定位成跨語法、模組、例外和重用的設計方向。
+
+---
+
+## D.3 PEP 20 的作者與規範地位
+
+第二輪直接核對 PEP 20：
+
+- 作者是 Tim Peters；
+- 建立於 2004 年；
+- 狀態為 Active；
+- 類型為 Informational；
+- PEP 自稱是 Tim Peters 對 BDFL 指導原則的濃縮；
+- 它不是 Python 語言的 Normative specification。
+
+本文因此把「Zen of Python」視為共同體對 Guido 品味的文化編碼，而不是 Guido 單人發布的形式憲法。
+
+---
+
+## D.4 PEP 572 的作者、證據與限制
+
+第二輪直接核對 PEP 572：
+
+- 作者是 Chris Angelico、Tim Peters 和 Guido van Rossum；
+- 目標版本為 Python 3.8；
+- 最終狀態為 Final；
+- PEP 強調真實程式碼，而非只用玩具例子；
+- Guido 搜尋 Dropbox Code base 的觀察，是支持提案的經驗材料之一；
+- 最終語法禁止或限制多個可能造成視覺歧義的位置；
+- Assignment Expression 並未把一般 Assignment Statement 直接變成可任意使用的 Expression。
+
+本文因此沒有把 Walrus Operator 歸為 Guido 單人設計，也沒有把它寫成不受限制的 C 式賦值表達式。
+
+---
+
+## D.5 BDFL 退任的因果邊界
+
+PEP 13 確認：
+
+- Guido 自 Python 創始起擔任 BDFL；
+- 於 2018 年 7 月退任；
+- 之後社群提出並投票選擇多套治理方案；
+- Steering Council 模型最終成為正式制度。
+
+PEP 572 爭議與退任時間緊密相連，但正式文件不支持「Walrus 是唯一原因」這種單因敘事。
+
+本文採用：
+
+```text
+PEP 572 是治理壓力的集中事件
+≠
+它單獨解釋所有退任動機
+</code></pre>
+<hr>
+<h2>D.6 Python 3 的多作者性</h2>
+<p>Python 3 的變更分布在大量 PEP 和實作工作中：</p>
+<ul>
+<li><code>print</code> Function；</li>
+<li>Text／Bytes；</li>
+<li>Iterator；</li>
+<li>Exception；</li>
+<li>Class model；</li>
+<li>I/O；</li>
+<li>Standard Library；</li>
+<li>Annotation；</li>
+<li>Numeric behavior。</li>
+</ul>
+<p>Guido 對重大方向和最終裁決具有高權重，但各功能有獨立 PEP 作者、實作者和 Reviewers。</p>
+<p>本文因此把「Python 3 修正歷史」歸為 Guido 主導方向與整個 Core community 的共同工程。</p>
+<hr>
+<h2>D.7 2026 年 Python 治理狀態</h2>
+<p>截至 2026 年 7 月重新核對 PEP 13：</p>
+<ul>
+<li>Python 仍由五人 Steering Council 治理；</li>
+<li>Council 由 Core team 定期選舉；</li>
+<li>其權力廣泛，但文件要求盡量少直接使用，優先尋求共識與建立標準程序；</li>
+<li>Council 是其他方法失敗後的 Final appeal；</li>
+<li>PEP 13 包含利益衝突、No-confidence 和 Core-team membership 機制；</li>
+<li>Guido 不再具有 BDFL 制度權力。</li>
+</ul>
+<p>目前官方 Python 穩定版主線為 Python 3.14，Python.org 在校對時列出 3.14.6；這是時間敏感資訊，只記於校對附錄，不作人物風格核心證據。</p>
+<hr>
+<h2>D.8 「一個明顯做法」的解釋邊界</h2>
+<p>本文將 PEP 20 的格言解釋為：</p>
+<ul>
+<li>減少核心層級的等價機制競爭；</li>
+<li>讓常見操作有可辨識慣用法。</li>
+</ul>
+<p>它不表示 Python 生態真的只有一個 Framework、Algorithm、Packaging tool 或 Error style。</p>
+<p>這是 PLDST 分析推論，信心為中高。</p>
+<hr>
+<h2>D.9 PLDST 原型邊界</h2>
+<p>下列名稱是本文分析原型，不是 Guido 自稱的正式學派：</p>
+<pre><code class="language-text">可讀實用主義語言設計者
+常用路徑塑形者
+BDFL 品味裁決者
+可退場的開源治理者
+</code></pre>
+<p>其中最後一項描述的是「從個人最終權力轉至可選舉制度」的歷史行動，不表示 Guido 單人設計了 PEP 13。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-017.html">https://thisoneisneok.com/html/papers/pldst-017.html</a></footer>
+</body>
+</html>

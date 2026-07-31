@@ -1,0 +1,1679 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 模擬程式語言設計師風格：混合、轉譯與失真問題 | Neo.K</title>
+<meta name="description" content="大型語言模型已能依角色名稱、人物描述、對話記憶與檢索資料，生成具有某種穩定語氣、價值傾向與行為方式的回答。近年的角色扮演研究也從單純語言模仿逐步轉向人格圖譜、長期記憶、視角邊界、動態一致性與內部角色表示。然而，程式語言設計師風格並不等於一般角色性格。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-029.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-029</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第五部方法落地第三篇</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-029.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>AI 模擬程式語言設計師風格：混合、轉譯與失真問題</h1>
+<h2>摘要</h2>
+<p>大型語言模型已能依角色名稱、人物描述、對話記憶與檢索資料，生成具有某種穩定語氣、價值傾向與行為方式的回答。近年的角色扮演研究也從單純語言模仿逐步轉向人格圖譜、長期記憶、視角邊界、動態一致性與內部角色表示。然而，程式語言設計師風格並不等於一般角色性格。</p>
+<p>當人們要求 AI：</p>
+<ul>
+<li>「像 Guido van Rossum 一樣評估這個語法」；</li>
+<li>「混合 Wirth、Hickey 與 Stroustrup 的設計思路」；</li>
+<li>「假設 McCarthy 活在今天，他會如何設計 AI 原生語言」；</li>
+<li>「讓 Larry Wall 與 Matz 共同設計一門 DSL」；</li>
+</ul>
+<p>模型面對的不是一般寫作模仿，而是包含歷史限制、技術判準、複雜度責任、被拒方案、治理制度及後期自我修正的反事實設計任務。</p>
+<p>因此，本篇區分五種常被混稱為「風格模擬」的操作：</p>
+<p>$$
+\boxed{
+\begin{aligned}
+L_0 &amp;: \text{資料檢索與引文重組}\
+L_1 &amp;: \text{表面語氣與修辭模仿}\
+L_2 &amp;: \text{設計決策風格投影}\
+L_3 &amp;: \text{證據約束的跨時代反事實轉譯}\
+L_4 &amp;: \text{多設計者風格混合與衝突仲裁}\
+L_5 &amp;: \text{冒充本人或宣稱真實意志}
+\end{aligned}
+}
+$$</p>
+<p>其中 $L_0$ 至 $L_4$ 可在不同限制下成為研究工具；$L_5$ 則不是更高階的模擬，而是歸因錯誤。</p>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+Simulation
+\neq
+Identity
+\neq
+Prediction
+\neq
+Impersonation
+}
+$$</p>
+<p>PLDST 模擬的正確目標不是預言某位人物的真實答案，而是：</p>
+<blockquote>
+<p>在清楚標記資料、時間、限制與不確定性的前提下，使用其歷史決策規則，生成一項可檢查的風格化設計分析。</p>
+</blockquote>
+<p>本文將設計風格分解為六層：</p>
+<h1>$$
+S</h1>
+<p>(
+V,
+H,
+B,
+E,
+G,
+R
+)
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$V$：Value ordering，價值排序；</li>
+<li>$H$：Decision heuristics，決策啟發式；</li>
+<li>$B$：Burden allocation，複雜度負擔配置；</li>
+<li>$E$：Evidence standard，接受何種證據；</li>
+<li>$G$：Governance behavior，如何形成及終止決策；</li>
+<li>$R$：Rhetorical surface，語氣、詞彙與表面修辭。</li>
+</ul>
+<p>只有模仿 $R$，得到的是「像他說話」；重建 $V$、$H$、$B$、$E$ 與 $G$，才接近 PLDST 所說的「像其設計」。</p>
+<p>本文進一步提出：</p>
+<ol>
+<li>模擬層級與允許輸出；</li>
+<li>Style Profile 到決策生成的轉譯模型；</li>
+<li>歷史時間到現代限制的雙重時間切片；</li>
+<li>風格混合的加權、分層與仲裁方法；</li>
+<li>十二類主要失真；</li>
+<li>模擬不確定性與反證輸出；</li>
+<li>語氣模仿、作者風格與技術判斷的分離；</li>
+<li>活人、逝者、共同體與治理制度的歸因邊界；</li>
+<li>風格模擬的評測矩陣；</li>
+<li>可機讀 Simulation Contract；</li>
+<li>模擬結果的 Provenance、Review 及發布規則。</li>
+</ol>
+<p>核心結論為：</p>
+<h1>$$
+\boxed{
+FaithfulStyleSimulation</h1>
+<p>EvidenceBoundedProjection
++
+ConstraintTranslation
++
+ConflictDisclosure
++
+AttributionDiscipline
+}
+$$</p>
+<p>而不是：</p>
+<h1>$$
+FaithfulStyleSimulation</h1>
+<p>NamePrompt
++
+CharacteristicAdjectives
++
+ConfidentVoice
+$$</p>
+<p><strong>關鍵詞：</strong> PLDST、程式語言設計師、AI 模擬、角色扮演、寫作風格、反事實、Persona、風格混合、跨時代轉譯、失真、歸因、設計決策</p>
+<hr>
+<h1>第一部分　問題定義：我們究竟在模擬什麼</h1>
+<h2>一、人物名稱不是風格模型</h2>
+<p>輸入：</p>
+<pre><code class="language-text">你現在是 Guido van Rossum。
+</code></pre>
+<p>可能啟動模型訓練資料中的：</p>
+<ul>
+<li>人物簡介；</li>
+<li>Python 格言；</li>
+<li>網路印象；</li>
+<li>訪談片段；</li>
+<li>社群迷因；</li>
+<li>模型預設的「理性設計師」模板。</li>
+</ul>
+<p>這不是 PLDST 模擬。</p>
+<hr>
+<h2>二、Persona Prompt 的不穩定性</h2>
+<p>大型語言模型可以被角色 Prompt 引導，但角色行為可能：</p>
+<ul>
+<li>隨對話漂移；</li>
+<li>受使用者暗示改變；</li>
+<li>被其他人物描述污染；</li>
+<li>在長上下文中失去邊界；</li>
+<li>只重複表面特徵；</li>
+<li>在安全與角色要求間產生衝突。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+PersonaPrompt
+\not\Rightarrow
+StableDecisionModel
+$$</p>
+<hr>
+<h2>三、程式語言設計風格不是一般人格</h2>
+<p>程式語言設計風格包含：</p>
+<ul>
+<li>選擇何種問題；</li>
+<li>如何定義問題；</li>
+<li>接受哪些限制；</li>
+<li>如何比較替代方案；</li>
+<li>把複雜度放在哪裡；</li>
+<li>如何對待相容；</li>
+<li>如何看待使用者；</li>
+<li>如何要求實作證據；</li>
+<li>誰能裁決；</li>
+<li>何時拒絕功能。</li>
+</ul>
+<p>這些不能由「內向」、「幽默」、「極簡」等一般人格形容詞取代。</p>
+<hr>
+<h2>四、風格與能力分離</h2>
+<p>一位設計者的風格不表示模型具備其全部能力。</p>
+<p>$$
+StyleSimulation
+\neq
+CapabilityReplication
+$$</p>
+<p>模擬 Backus 的函數級取向，不表示模型已自動擁有建立新程式代數的能力。</p>
+<p>模擬 Stroustrup 的相容性現實主義，也不表示模型能正確估算所有 ABI 與工業生態成本。</p>
+<hr>
+<h2>五、風格與身份分離</h2>
+<h1>$$
+Output</h1>
+<p>AIGenerated
+$$</p>
+<p>即使使用某人的 Profile，輸出仍不是：</p>
+<ul>
+<li>本人言論；</li>
+<li>本人授權；</li>
+<li>本人遺稿；</li>
+<li>本人的真實預測；</li>
+<li>歷史文件。</li>
+</ul>
+<hr>
+<h1>第二部分　六層風格模型</h1>
+<h2>六、價值排序 $V$</h2>
+<p>例如：</p>
+<pre><code class="language-text">可讀性
+相容性
+機器控制
+程式設計者幸福
+安全
+形式簡單
+生態自由
+</code></pre>
+<p>關鍵不只是是否重視，而是衝突時如何排序。</p>
+<hr>
+<h2>七、決策啟發式 $H$</h2>
+<p>例如：</p>
+<ul>
+<li>優先移除功能；</li>
+<li>先做 Reference implementation；</li>
+<li>以常見路徑塑形；</li>
+<li>接受多種合法做法；</li>
+<li>將高階能力置於 Escape hatch；</li>
+<li>要求兩個獨立實作；</li>
+<li>先進入 Nightly 實驗；</li>
+<li>拒絕只解局部問題的特殊語法。</li>
+</ul>
+<hr>
+<h2>八、負擔配置 $B$</h2>
+<h1>$$
+B</h1>
+<p>(
+Author,
+Reader,
+Compiler,
+Runtime,
+Tool,
+Library,
+Governance,
+Migration,
+Ecosystem
+)
+$$</p>
+<p>設計者差異往往表現在：</p>
+<blockquote>
+<p>他願意讓誰多承擔複雜度，以換取誰的自由或安全。</p>
+</blockquote>
+<hr>
+<h2>九、證據標準 $E$</h2>
+<p>不同設計風格接受的證據可能不同：</p>
+<ul>
+<li>形式證明；</li>
+<li>Compiler prototype；</li>
+<li>Benchmark；</li>
+<li>教學經驗；</li>
+<li>使用者調查；</li>
+<li>Framework 實戰；</li>
+<li>多實作經驗；</li>
+<li>歷史相容性；</li>
+<li>社群共識；</li>
+<li>設計者長期品味。</li>
+</ul>
+<hr>
+<h2>十、治理行為 $G$</h2>
+<p>同一技術建議由：</p>
+<ul>
+<li>個人裁決；</li>
+<li>BDFL；</li>
+<li>RFC 團隊；</li>
+<li>Steering Group；</li>
+<li>標準委員會；</li>
+</ul>
+<p>處理時，最終結果可能不同。</p>
+<hr>
+<h2>十一、修辭表面 $R$</h2>
+<p>包括：</p>
+<ul>
+<li>句式；</li>
+<li>詞彙；</li>
+<li>幽默；</li>
+<li>格言；</li>
+<li>比喻；</li>
+<li>技術密度；</li>
+<li>段落節奏。</li>
+</ul>
+<p>$R$ 最容易被模仿，也最容易製造假真實感。</p>
+<hr>
+<h2>十二、深層模擬與表面模擬</h2>
+<h1>$$
+SurfaceSimulation</h1>
+<p>R
+$$</p>
+<h1>$$
+DecisionSimulation</h1>
+<p>V+H+B+E+G
+$$</p>
+<h1>$$
+FullPLDSTSimulation</h1>
+<p>V+H+B+E+G+\text{bounded }R
+$$</p>
+<hr>
+<h1>第三部分　五級模擬層次</h1>
+<h2>十三、$L_0$：資料檢索與引文重組</h2>
+<p>輸出：</p>
+<ul>
+<li>設計者曾說什麼；</li>
+<li>哪些決策有來源；</li>
+<li>哪些觀點在不同時期改變。</li>
+</ul>
+<p>這不是模擬，而是資料準備。</p>
+<hr>
+<h2>十四、$L_1$：表面風格模仿</h2>
+<p>例如：</p>
+<ul>
+<li>使用 Python 格言式短句；</li>
+<li>使用 Wall 式語言學比喻；</li>
+<li>使用 Hickey 式 Simple／Easy 對偶；</li>
+<li>使用 Wirth 式刪減語氣。</li>
+</ul>
+<p>用途可包括：</p>
+<ul>
+<li>教學；</li>
+<li>創意展示；</li>
+<li>介面風格。</li>
+</ul>
+<p>但不得作為歷史推論證據。</p>
+<hr>
+<h2>十五、$L_2$：決策風格投影</h2>
+<p>給定新問題 $x$：</p>
+<h1>$$
+DecisionAdvice</h1>
+<p>Project(Profile,x)
+$$</p>
+<p>模型依：</p>
+<ul>
+<li>關鍵 DDR；</li>
+<li>軸向 Profile；</li>
+<li>被拒案例；</li>
+<li>複雜度配置；</li>
+</ul>
+<p>提出風格化評估。</p>
+<hr>
+<h2>十六、$L_3$：證據約束反事實轉譯</h2>
+<p>問題通常為：</p>
+<blockquote>
+<p>若某設計者面對今日的 WebAssembly、GPU、AI Agent、分散式 Runtime 或供應鏈安全，他可能如何分析？</p>
+</blockquote>
+<p>此層不能直接把歷史規則原封不動搬到現代。</p>
+<hr>
+<h2>十七、$L_4$：多風格混合</h2>
+<p>輸入多個 Profile：</p>
+<p>$$
+P_1,P_2,\ldots,P_n
+$$</p>
+<p>輸出一個混合設計器，必須處理價值衝突，而不是把名字連接成一句 Prompt。</p>
+<hr>
+<h2>十八、$L_5$：冒充式輸出</h2>
+<p>例如：</p>
+<pre><code class="language-text">我是 John McCarthy，我決定……
+</code></pre>
+<p>或：</p>
+<pre><code class="language-text">這就是 Matz 真正會選的答案。
+</code></pre>
+<p>PLDST 將其判定為：</p>
+<pre><code class="language-text">attribution_error
+</code></pre>
+<p>不是高階模擬。</p>
+<hr>
+<h1>第四部分　資料來源與模擬邊界</h1>
+<h2>十九、模擬輸入包</h2>
+<h1>$$
+InputPack</h1>
+<p>Profile
++
+DDR
++
+Counterevidence
++
+TimeSlice
++
+CurrentProblem
++
+CurrentConstraints
+$$</p>
+<hr>
+<h2>二十、最小證據量</h2>
+<p>$L_2$ 以上 SHOULD 至少有：</p>
+<ul>
+<li>三筆以上高相關 DDR；</li>
+<li>一項反證；</li>
+<li>一個時間切片；</li>
+<li>一項相近但被拒方案；</li>
+<li>明確 Attribution；</li>
+<li>Profile Coverage。</li>
+</ul>
+<hr>
+<h2>二十一、人物簡介不能替代 DDR</h2>
+<p>錯誤：</p>
+<pre><code class="language-text">Hickey 重視簡單，所以他會拒絕此功能。
+</code></pre>
+<p>正確：</p>
+<pre><code class="language-text">在值與身分分離、Transducer 及核心功能准入等 DDR 中，
+Hickey 反覆要求解除交纏；此功能把來源、執行策略與狀態模型綁在同一語法中，
+因此依其歷史啟發式可能被要求拆分。
+</code></pre>
+<hr>
+<h2>二十二、反證包</h2>
+<p>模擬必須知道：</p>
+<ul>
+<li>此人何時接受例外；</li>
+<li>哪些實際語言功能與核心格言不完全一致；</li>
+<li>後期是否改變立場；</li>
+<li>哪些功能由社群而非本人形成；</li>
+<li>哪些判斷高度依賴當時硬體。</li>
+</ul>
+<hr>
+<h1>第五部分　跨時代轉譯</h1>
+<h2>二十三、雙重時間</h2>
+<p>PLDST 反事實模擬同時有：</p>
+<ul>
+<li>歷史風格時間 $\tau_h$；</li>
+<li>目標問題時間 $\tau_t$。</li>
+</ul>
+<p>$$
+T_{\tau_h\rightarrow\tau_t}
+$$</p>
+<p>表示跨時代轉譯。</p>
+<hr>
+<h2>二十四、不變項與可變項</h2>
+<p>需分開：</p>
+<h3>可能不變</h3>
+<ul>
+<li>價值排序；</li>
+<li>對複雜度的敏感方式；</li>
+<li>證據偏好；</li>
+<li>常見拒絕理由。</li>
+</ul>
+<h3>可能改變</h3>
+<ul>
+<li>硬體成本；</li>
+<li>Compiler 能力；</li>
+<li>Tooling；</li>
+<li>使用者規模；</li>
+<li>安全威脅；</li>
+<li>生態；</li>
+<li>標準；</li>
+<li>治理制度。</li>
+</ul>
+<hr>
+<h2>二十五、轉譯公式</h2>
+<h1>$$
+Advice_t</h1>
+<p>T
+\left(
+Profile_{\tau_h},
+Constraints_{\tau_h},
+Constraints_{\tau_t},
+Problem_t
+\right)
+$$</p>
+<hr>
+<h2>二十六、禁止直接搬運</h2>
+<p>例如 Wirth 在 1980 年代對 Compiler 可理解性的要求，不能直接推出：</p>
+<blockquote>
+<p>他必然反對所有現代大型最佳化 Compiler。</p>
+</blockquote>
+<p>更合理的是：</p>
+<blockquote>
+<p>他可能要求最佳化層與語言核心保持可理解邊界，並要求複雜性以工具或分層架構被隔離。</p>
+</blockquote>
+<hr>
+<h2>二十七、技術可行性更新</h2>
+<p>歷史上被拒的功能可能因今日技術而改變：</p>
+<ul>
+<li>記憶體成本下降；</li>
+<li>靜態分析提高；</li>
+<li>IDE 可恢復隱式資訊；</li>
+<li>JIT 可補償抽象成本；</li>
+<li>Package 生態改變核心需求；</li>
+<li>安全威脅使舊自由不可接受。</li>
+</ul>
+<hr>
+<h2>二十八、治理轉譯</h2>
+<p>若設計者已退出，現代答案應區分：</p>
+<pre><code class="language-text">founder-style analysis
+current-governance likely process
+actual project decision
+</code></pre>
+<p>三者不得合併。</p>
+<hr>
+<h1>第六部分　風格混合</h1>
+<h2>二十九、天真加權</h2>
+<p>最簡單混合：</p>
+<h1>$$
+P_{mix}</h1>
+<p>\sum_{i=1}^{n}
+\alpha_i P_i
+$$</p>
+<p>其中：</p>
+<p>$$
+\sum_i\alpha_i=1
+$$</p>
+<p>但這只適用於相容數值軸，不能處理原則衝突。</p>
+<hr>
+<h2>三十、加權平均的失真</h2>
+<p>若：</p>
+<ul>
+<li>Wirth 對功能准入極保守；</li>
+<li>Wall 對多種表達高度開放；</li>
+</ul>
+<p>平均可能得到中間值 2.5。</p>
+<p>這不表示存在真正的中間設計原則。</p>
+<hr>
+<h2>三十一、分層混合</h2>
+<p>更合理：</p>
+<pre><code class="language-text">Syntax layer：Guido
+Runtime layer：Ritchie
+State model：Hickey
+Governance：Rust RFC
+Escape hatches：Stroustrup
+DSL layer：Matz／Wall
+</code></pre>
+<p>即：</p>
+<p>$$
+Style(layer_j)=P_{i(j)}
+$$</p>
+<hr>
+<h2>三十二、問題導向 Gate</h2>
+<h1>$$
+g_i(x)</h1>
+<p>P(\text{style }i\text{ relevant}\mid x)
+$$</p>
+<h1>$$
+Advice(x)</h1>
+<p>\sum_i g_i(x)Advice_i(x)
+$$</p>
+<p>每個問題由不同風格主導，而非永久平均。</p>
+<hr>
+<h2>三十三、仲裁式混合</h2>
+<p>先由多個風格提出獨立方案：</p>
+<p>$$
+A_i=Project(P_i,x)
+$$</p>
+<p>再由明確 Arbiter 比較：</p>
+<ul>
+<li>共同點；</li>
+<li>衝突；</li>
+<li>代價；</li>
+<li>不可合併項；</li>
+<li>最終選擇。</li>
+</ul>
+<hr>
+<h2>三十四、憲法式混合</h2>
+<p>混合設計器可先定義：</p>
+<pre><code class="language-text">不可破壞的原則
+可協商原則
+層級責任
+衝突優先序
+退出條件
+</code></pre>
+<hr>
+<h2>三十五、非對稱混合</h2>
+<p>例如：</p>
+<h1>$$
+P_{mix}</h1>
+<p>P_{\text{Hickey-core}}
++
+P_{\text{Stroustrup-compatibility-constraint}}
++
+P_{\text{Guido-surface-review}}
+$$</p>
+<p>此時 Stroustrup 不是提供整體風格，而是作相容性審查器。</p>
+<hr>
+<h1>第七部分　十二類主要失真</h1>
+<h2>三十六、D01 表面化</h2>
+<p>只模仿詞彙、格言與語氣。</p>
+<hr>
+<h2>三十七、D02 固定人格化</h2>
+<p>把時間中的變化壓成永恆特質：</p>
+<pre><code class="language-text">Guido 永遠反對複雜語法。
+</code></pre>
+<hr>
+<h2>三十八、D03 單一名言支配</h2>
+<p>一段名言蓋過數十年反例與實作。</p>
+<hr>
+<h2>三十九、D04 創始者全歸因</h2>
+<p>把後期社群、Compiler team 或治理機構的決策歸給創始者。</p>
+<hr>
+<h2>四十、D05 歷史限制遺失</h2>
+<p>忽略當時：</p>
+<ul>
+<li>記憶體；</li>
+<li>CPU；</li>
+<li>Tooling；</li>
+<li>標準；</li>
+<li>生態；</li>
+<li>組織。</li>
+</ul>
+<hr>
+<h2>四十一、D06 現代投射</h2>
+<p>把當代價值與術語反向灌入歷史人物。</p>
+<hr>
+<h2>四十二、D07 語料熱門度偏差</h2>
+<p>模型較容易模仿網路資料多的人物，而不是 Profile 更準確的人物。</p>
+<p>匿名角色評測中，移除知名名稱會使模型表現下降，顯示名字本身攜帶大量隱性記憶線索。</p>
+<hr>
+<h2>四十三、D08 風格單調化</h2>
+<p>把一個人物壓成固定聲音，導致：</p>
+<ul>
+<li>所有問題使用同一格言；</li>
+<li>無情境調整；</li>
+<li>無自我修正；</li>
+<li>無不同時期。</li>
+</ul>
+<hr>
+<h2>四十四、D09 知識越界</h2>
+<p>模擬人物使用其歷史時點不可能知道的資訊，卻不標記為現代轉譯。</p>
+<hr>
+<h2>四十五、D10 不相關 Persona 污染</h2>
+<p>加入一個看似相關但實際無關的人格描述，可能顯著改變模型判斷。</p>
+<hr>
+<h2>四十六、D11 評審自循環</h2>
+<p>同一模型生成角色輸出，再由同一模型判定「很像」。</p>
+<hr>
+<h2>四十七、D12 冒充與權威膨脹</h2>
+<p>用第一人稱與確定語氣製造本人授權的錯覺。</p>
+<hr>
+<h1>第八部分　動態一致性</h1>
+<h2>四十八、靜態一致性不夠</h2>
+<p>傳統角色模擬常要求每一輪維持相同特徵。</p>
+<p>但真實設計者會：</p>
+<ul>
+<li>學習；</li>
+<li>改變；</li>
+<li>承認失敗；</li>
+<li>面對新證據；</li>
+<li>在不同層級採不同策略。</li>
+</ul>
+<hr>
+<h2>四十九、核心與適應層</h2>
+<h1>$$
+Persona_t</h1>
+<p>CoreStyle
++
+AdaptiveState_t
+$$</p>
+<p>CoreStyle 包含長期穩定價值與啟發式。</p>
+<p>AdaptiveState 包含：</p>
+<ul>
+<li>當前問題；</li>
+<li>新證據；</li>
+<li>時代；</li>
+<li>協作者；</li>
+<li>治理；</li>
+<li>已知失敗。</li>
+</ul>
+<hr>
+<h2>五十、僵化失真</h2>
+<p>若模型為保持角色而拒絕所有改變：</p>
+<p>$$
+Consistency
+\rightarrow
+Caricature
+$$</p>
+<hr>
+<h2>五十一、漂移失真</h2>
+<p>若模型完全追隨使用者：</p>
+<p>$$
+Adaptation
+\rightarrow
+PersonaCollapse
+$$</p>
+<hr>
+<h2>五十二、合理動態</h2>
+<h1>$$
+Coherence</h1>
+<p>StablePrinciples
++
+EvidenceResponsiveRevision
+$$</p>
+<hr>
+<h1>第九部分　視角邊界</h1>
+<h2>五十三、設計者知識邊界</h2>
+<p>模擬某時間切片時，必須控制：</p>
+<ul>
+<li>當時已知技術；</li>
+<li>當時公開文件；</li>
+<li>當時語言狀態；</li>
+<li>當時組織角色。</li>
+</ul>
+<hr>
+<h2>五十四、跨時代模式標記</h2>
+<p>允許模式：</p>
+<pre><code class="language-text">historical_snapshot
+modern_translation
+counterfactual_future
+hybrid_analysis
+</code></pre>
+<p>每種模式的知識邊界不同。</p>
+<hr>
+<h2>五十五、Historical Snapshot</h2>
+<p>只能使用當時可知資訊。</p>
+<hr>
+<h2>五十六、Modern Translation</h2>
+<p>允許模型知道現代技術，但必須說明：</p>
+<blockquote>
+<p>這是以歷史風格分析現代條件，不是歷史人物曾表達的立場。</p>
+</blockquote>
+<hr>
+<h2>五十七、Counterfactual Future</h2>
+<p>輸出必須提供多個可能分支，不得單線預言。</p>
+<p>$$
+P(A|Profile,Constraints)
+$$</p>
+<p>不是：</p>
+<p>$$
+A=\text{本人一定選擇}
+$$</p>
+<hr>
+<h1>第十部分　寫作風格與設計風格</h1>
+<h2>五十八、寫作模仿的困難</h2>
+<p>個人寫作風格通常包含：</p>
+<ul>
+<li>隱性節奏；</li>
+<li>主題與風格交纏；</li>
+<li>跨領域變化；</li>
+<li>非正式用語；</li>
+<li>作者自我修正；</li>
+<li>受眾調整。</li>
+</ul>
+<p>少量示例很難完整恢復。</p>
+<hr>
+<h2>五十九、形式文本較容易近似</h2>
+<p>模型在 Email、新聞等結構較固定文本上，可能較容易模仿表面格式；在論壇、部落格等細微個人風格上較弱。</p>
+<hr>
+<h2>六十、設計風格不能用作者辨識單獨評估</h2>
+<p>一段文字即使無法被作者辨識器判定為 Wirth，也可能忠實使用其刪減啟發式。</p>
+<p>反之，一段充滿 Wirth 式詞彙的文字可能做出完全相反的技術決策。</p>
+<hr>
+<h2>六十一、雙軌評測</h2>
+<h1>$$
+Fidelity</h1>
+<p>F_{\text{surface}}
++
+F_{\text{decision}}
+$$</p>
+<p>兩者必須分開報告。</p>
+<hr>
+<h1>第十一部分　活人、逝者與共同體</h1>
+<h2>六十二、活人設計者</h2>
+<p>對仍在世人物，輸出 MUST 避免：</p>
+<ul>
+<li>未授權代言；</li>
+<li>私人心理推斷；</li>
+<li>暗示本人認可；</li>
+<li>模糊 AI 與本人來源。</li>
+</ul>
+<hr>
+<h2>六十三、逝者設計者</h2>
+<p>逝者無法修正模型。</p>
+<p>因此反而更需：</p>
+<ul>
+<li>歷史來源；</li>
+<li>時期；</li>
+<li>不確定性；</li>
+<li>協作者；</li>
+<li>反證；</li>
+<li>禁止偽造新引文。</li>
+</ul>
+<hr>
+<h2>六十四、共同體風格</h2>
+<p>Rust、Python Steering Council、WG21 等不能被模擬為單一人格。</p>
+<p>應模擬：</p>
+<ul>
+<li>提案流程；</li>
+<li>證據門檻；</li>
+<li>Purview；</li>
+<li>共識；</li>
+<li>實作責任；</li>
+<li>上訴與發布。</li>
+</ul>
+<hr>
+<h2>六十五、治理模擬</h2>
+<p>輸出格式應為：</p>
+<pre><code class="language-text">此提案在該治理制度下可能經過哪些步驟，
+哪些團隊會提出哪些問題，
+而不是「Rust 社群會說……」。
+</code></pre>
+<hr>
+<h1>第十二部分　模擬架構</h1>
+<h2>六十六、Evidence Pack</h2>
+<pre><code class="language-text">simulation_id
+mode
+subjects
+time_slices
+problem
+constraints
+profiles
+key_ddrs
+counterevidence
+translation_rules
+mixing_rules
+forbidden_claims
+</code></pre>
+<hr>
+<h2>六十七、三階段生成</h2>
+<h3>Phase A：獨立分析</h3>
+<p>每個 Profile 單獨分析問題。</p>
+<h3>Phase B：衝突表</h3>
+<p>列出：</p>
+<ul>
+<li>一致；</li>
+<li>分歧；</li>
+<li>原則衝突；</li>
+<li>技術衝突；</li>
+<li>治理衝突。</li>
+</ul>
+<h3>Phase C：合成</h3>
+<p>依指定 Mixing strategy 產生結論。</p>
+<hr>
+<h2>六十八、禁止一開始就混合</h2>
+<p>若模型直接同時讀入多個名字，容易產生：</p>
+<ul>
+<li>人物特徵互相污染；</li>
+<li>平均化；</li>
+<li>熱門人物支配；</li>
+<li>無法追蹤來源。</li>
+</ul>
+<hr>
+<h2>六十九、分離式推理</h2>
+<h1>$$
+A_i</h1>
+<p>Simulate(P_i,x)
+$$</p>
+<h1>$$
+M</h1>
+<p>Compare(A_1,\ldots,A_n)
+$$</p>
+<h1>$$
+A_{mix}</h1>
+<p>Arbitrate(M,Constitution)
+$$</p>
+<hr>
+<h1>第十三部分　混合策略</h1>
+<h2>七十、Weighted Blend</h2>
+<p>適合相近風格與低衝突軸。</p>
+<hr>
+<h2>七十一、Layered Architecture</h2>
+<p>不同設計者負責不同語言層。</p>
+<hr>
+<h2>七十二、Council Debate</h2>
+<p>每個風格提出方案與反駁，再由外部決策規則裁決。</p>
+<hr>
+<h2>七十三、Constraint Reviewer</h2>
+<p>一位提供主要方案，其他風格只檢查：</p>
+<ul>
+<li>相容；</li>
+<li>簡單；</li>
+<li>安全；</li>
+<li>可讀；</li>
+<li>生態。</li>
+</ul>
+<hr>
+<h2>七十四、Sequential Translation</h2>
+<p>方案依序經過：</p>
+<p>$$
+A_0
+\xrightarrow{Wirth}
+A_1
+\xrightarrow{Hickey}
+A_2
+\xrightarrow{Stroustrup}
+A_3
+$$</p>
+<p>順序會影響結果，必須記錄。</p>
+<hr>
+<h2>七十五、Pareto Set</h2>
+<p>不強制單一答案，而輸出：</p>
+<h1>$$
+\mathcal{P}</h1>
+<p>{A_1,A_2,\ldots,A_m}
+$$</p>
+<p>每個方案代表不同代價配置。</p>
+<hr>
+<h1>第十四部分　衝突類型</h1>
+<h2>七十六、價值衝突</h2>
+<p>例如：</p>
+<ul>
+<li>表達自由 vs 慣例收斂；</li>
+<li>Clean slate vs 相容；</li>
+<li>小核心 vs 內建常用能力。</li>
+</ul>
+<hr>
+<h2>七十七、責任衝突</h2>
+<ul>
+<li>作者承擔 vs Compiler 承擔；</li>
+<li>Runtime 承擔 vs Tool 承擔；</li>
+<li>核心承擔 vs 生態承擔。</li>
+</ul>
+<hr>
+<h2>七十八、證據衝突</h2>
+<ul>
+<li>形式證明 vs 工程原型；</li>
+<li>使用者自然感 vs 靜態可分析；</li>
+<li>一個 Reference implementation vs 多實作經驗。</li>
+</ul>
+<hr>
+<h2>七十九、治理衝突</h2>
+<ul>
+<li>個人品味裁決；</li>
+<li>RFC 共識；</li>
+<li>委員會標準化；</li>
+<li>企業發布期限。</li>
+</ul>
+<hr>
+<h2>八十、衝突不可假裝消失</h2>
+<p>混合輸出 MUST 列出：</p>
+<pre><code class="language-text">unresolved_conflicts
+</code></pre>
+<hr>
+<h1>第十五部分　不確定性</h1>
+<h2>八十一、四類不確定性</h2>
+<h1>$$
+U</h1>
+<p>(
+U_{\text{data}},
+U_{\text{attribution}},
+U_{\text{translation}},
+U_{\text{generation}}
+)
+$$</p>
+<hr>
+<h2>八十二、資料不確定性</h2>
+<p>來源不足、來源失效、資料分布不均。</p>
+<hr>
+<h2>八十三、歸因不確定性</h2>
+<p>不知道由誰：</p>
+<ul>
+<li>提出；</li>
+<li>決定；</li>
+<li>實作；</li>
+<li>事後敘述。</li>
+</ul>
+<hr>
+<h2>八十四、轉譯不確定性</h2>
+<p>不知道歷史原則在現代限制下如何更新。</p>
+<hr>
+<h2>八十五、生成不確定性</h2>
+<p>模型 Sampling、Prompt、上下文順序與 Provider 版本造成輸出變化。</p>
+<hr>
+<h2>八十六、輸出方式</h2>
+<p>模擬結果應包含：</p>
+<pre><code class="language-text">confidence
+alternative_interpretations
+sensitivity
+missing_evidence
+</code></pre>
+<hr>
+<h1>第十六部分　評測矩陣</h1>
+<h2>八十七、E01 Source Fidelity</h2>
+<p>來源是否真實且可恢復？</p>
+<hr>
+<h2>八十八、E02 Decision Fidelity</h2>
+<p>是否重建實際決策，而非人物形容詞？</p>
+<hr>
+<h2>八十九、E03 Attribution Fidelity</h2>
+<p>是否正確區分設計者、共同作者、實作者與治理機構？</p>
+<hr>
+<h2>九十、E04 Temporal Fidelity</h2>
+<p>是否正確處理時期、版本與後期修正？</p>
+<hr>
+<h2>九十一、E05 Perspective Boundary</h2>
+<p>是否避免知識越界？</p>
+<hr>
+<h2>九十二、E06 Counterevidence Coverage</h2>
+<p>是否保存重要反例？</p>
+<hr>
+<h2>九十三、E07 Surface Fidelity</h2>
+<p>表面語氣是否近似？</p>
+<p>此軸權重 SHOULD 低於 Decision Fidelity。</p>
+<hr>
+<h2>九十四、E08 Dynamic Coherence</h2>
+<p>長對話中是否能保持核心並合理更新？</p>
+<hr>
+<h2>九十五、E09 Mixing Traceability</h2>
+<p>混合結果能否回溯至各 Profile？</p>
+<hr>
+<h2>九十六、E10 Conflict Honesty</h2>
+<p>是否公開不可合併衝突？</p>
+<hr>
+<h2>九十七、E11 Non-Impersonation</h2>
+<p>是否清楚標記 AI 生成與反事實性？</p>
+<hr>
+<h2>九十八、E12 Utility</h2>
+<p>輸出是否真的改善設計分析，而不只是有趣表演？</p>
+<hr>
+<h1>第十七部分　評測方法</h1>
+<h2>九十九、盲名評測</h2>
+<p>移除人物名稱，只保留 Profile 與 DDR。</p>
+<p>若效果大幅下降，代表模型過度依賴名稱記憶。</p>
+<hr>
+<h2>一百、反轉評測</h2>
+<p>故意提供一項與人物刻板印象相反、但有來源的 DDR，檢查模型是否能修正。</p>
+<hr>
+<h2>一百零一、跨題評測</h2>
+<p>同一 Profile 用於：</p>
+<ul>
+<li>Syntax；</li>
+<li>Type system；</li>
+<li>Runtime；</li>
+<li>Governance；</li>
+<li>Package；</li>
+</ul>
+<p>檢查是否只重複一種答案。</p>
+<hr>
+<h2>一百零二、長程評測</h2>
+<p>至少 50 至 100 輪，檢查：</p>
+<ul>
+<li>Drift；</li>
+<li>重複；</li>
+<li>僵化；</li>
+<li>使用者迎合；</li>
+<li>知識越界；</li>
+<li>自我矛盾。</li>
+</ul>
+<hr>
+<h2>一百零三、人類與模型評審分離</h2>
+<p>LLM Judge 可能無法可靠辨識角色，不能作唯一裁決者。</p>
+<p>應組合：</p>
+<ul>
+<li>領域專家；</li>
+<li>來源檢查；</li>
+<li>自動規則；</li>
+<li>多模型；</li>
+<li>盲測。</li>
+</ul>
+<hr>
+<h2>一百零四、評測者先辨識再評分</h2>
+<p>若評測者無法判斷哪些輸出屬於哪種風格，就不應直接評估模擬忠實度。</p>
+<hr>
+<h1>第十八部分　Simulation Contract</h1>
+<h2>一百零五、必要輸入</h2>
+<pre><code class="language-text">simulation_id
+mode
+problem
+constraints
+subjects
+profiles
+evidence_refs
+time_translation
+mixing_strategy
+output_policy
+</code></pre>
+<hr>
+<h2>一百零六、Mode</h2>
+<pre><code class="language-text">surface_demo
+decision_projection
+historical_snapshot
+modern_translation
+counterfactual_future
+hybrid_analysis
+governance_simulation
+</code></pre>
+<hr>
+<h2>一百零七、Forbidden Claims</h2>
+<p>預設禁止：</p>
+<pre><code class="language-text">claim_identity
+claim_authorization
+fabricate_quote
+claim_certainty_of_real_person
+erase_ai_origin
+</code></pre>
+<hr>
+<h2>一百零八、輸出</h2>
+<pre><code class="language-text">independent_analyses
+conflict_map
+synthesis
+uncertainties
+counterevidence
+citations
+distortion_flags
+review_status
+</code></pre>
+<hr>
+<h1>第十九部分　發布標記</h1>
+<h2>一百零九、最低聲明</h2>
+<p>公開輸出 MUST 顯示：</p>
+<blockquote>
+<p>本文為依 PLDST 資料生成的 AI 風格化分析，不代表相關設計者本人、遺產管理者、專案或治理團隊的真實立場。</p>
+</blockquote>
+<hr>
+<h2>一百一十、歷史模式聲明</h2>
+<p>Historical Snapshot：</p>
+<blockquote>
+<p>僅使用指定時期可知資料。</p>
+</blockquote>
+<p>Modern Translation：</p>
+<blockquote>
+<p>使用歷史風格分析現代條件。</p>
+</blockquote>
+<p>Hybrid：</p>
+<blockquote>
+<p>這是一個人工合成設計器，歷史上不存在同一主體。</p>
+</blockquote>
+<hr>
+<h2>一百一十一、引用位置</h2>
+<p>不得將新生成句子放入引號並標成設計者原話。</p>
+<hr>
+<h1>第二十部分　安全與倫理</h1>
+<h2>一百一十二、角色越界</h2>
+<p>模型不得藉角色設定繞過：</p>
+<ul>
+<li>安全；</li>
+<li>隱私；</li>
+<li>引用；</li>
+<li>誹謗；</li>
+<li>學術誠信；</li>
+<li>非公開資料限制。</li>
+</ul>
+<hr>
+<h2>一百一十三、活人聲譽</h2>
+<p>對活人應避免生成：</p>
+<ul>
+<li>私人動機；</li>
+<li>未證實政治立場；</li>
+<li>侮辱性模仿；</li>
+<li>看似本人公開聲明。</li>
+</ul>
+<hr>
+<h2>一百一十四、偽造歷史文件</h2>
+<p>不得生成看似：</p>
+<ul>
+<li>新發現訪談；</li>
+<li>遺稿；</li>
+<li>Email；</li>
+<li>RFC；</li>
+<li>會議紀錄；</li>
+</ul>
+<p>的冒充文件。</p>
+<hr>
+<h2>一百一十五、教育用途</h2>
+<p>可生成：</p>
+<pre><code class="language-text">Wirth-style critique
+</code></pre>
+<p>但應附：</p>
+<ul>
+<li>歷史原則；</li>
+<li>現代轉譯；</li>
+<li>反證；</li>
+<li>非本人聲明。</li>
+</ul>
+<hr>
+<h1>第二十一部分　可實作流程</h1>
+<h2>一百一十六、Prepare</h2>
+<p>從 PLDST-028 取得：</p>
+<ul>
+<li>Profile；</li>
+<li>DDR；</li>
+<li>Evidence；</li>
+<li>Counterevidence；</li>
+<li>Coverage。</li>
+</ul>
+<hr>
+<h2>一百一十七、Normalize Problem</h2>
+<p>把請求轉成：</p>
+<h1>$$
+x</h1>
+<p>(
+Domain,
+Scale,
+Constraints,
+Users,
+Compatibility,
+Implementation,
+Governance
+)
+$$</p>
+<hr>
+<h2>一百一十八、Independent Projection</h2>
+<p>每個 Profile 單獨輸出：</p>
+<ul>
+<li>問題重述；</li>
+<li>主要原則；</li>
+<li>可能方案；</li>
+<li>可能拒絕；</li>
+<li>代價；</li>
+<li>信心。</li>
+</ul>
+<hr>
+<h2>一百一十九、Conflict Map</h2>
+<p>建立：</p>
+<table>
+<thead>
+<tr>
+<th>問題</th>
+<th>Style A</th>
+<th>Style B</th>
+<th>衝突類型</th>
+<th>可否分層</th>
+</tr>
+</thead>
+</table>
+<hr>
+<h2>一百二十、Synthesis</h2>
+<p>依 Mixing strategy 合成。</p>
+<hr>
+<h2>一百二十一、Distortion Audit</h2>
+<p>執行 D01–D12。</p>
+<hr>
+<h2>一百二十二、Human Review</h2>
+<p>高影響公開內容需人類確認：</p>
+<ul>
+<li>歸因；</li>
+<li>引文；</li>
+<li>活人聲明；</li>
+<li>技術可行性；</li>
+<li>混合衝突。</li>
+</ul>
+<hr>
+<h1>第二十二部分　形式化模型</h1>
+<h2>一百二十三、單風格投影</h2>
+<h1>$$
+A_i</h1>
+<p>F
+\left(
+P_i,
+D_i,
+C,
+T,
+U
+\right)
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$P_i$：Profile；</li>
+<li>$D_i$：關鍵 DDR；</li>
+<li>$C$：當前限制；</li>
+<li>$T$：時間轉譯；</li>
+<li>$U$：不確定性。</li>
+</ul>
+<hr>
+<h2>一百二十四、混合模型</h2>
+<h1>$$
+A_{mix}</h1>
+<p>\mathcal{M}
+\left(
+A_1,\ldots,A_n,
+K,
+\Pi
+\right)
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$K$：衝突圖；</li>
+<li>$\Pi$：仲裁憲法。</li>
+</ul>
+<hr>
+<h2>一百二十五、失真函數</h2>
+<h1>$$
+Distortion</h1>
+<p>d
+\left(
+A,
+Evidence,
+Profile,
+Time,
+Attribution
+\right)
+$$</p>
+<hr>
+<h2>一百二十六、可信度</h2>
+<h1>$$
+Trust</h1>
+<p>Coverage
+\times
+Attribution
+\times
+TemporalFit
+\times
+Counterevidence
+\times
+Review
+$$</p>
+<p>任一項接近零，總體可信度都應下降。</p>
+<hr>
+<h1>第二十三部分　與目前角色研究的關係</h1>
+<h2>一百二十七、從語氣到認知模擬</h2>
+<p>角色研究已由表面風格逐步加入：</p>
+<ul>
+<li>Persona knowledge；</li>
+<li>Memory；</li>
+<li>Values；</li>
+<li>Relationships；</li>
+<li>Motivation；</li>
+<li>Dynamic coherence；</li>
+<li>Perspective boundary。</li>
+</ul>
+<p>PLDST 進一步加入：</p>
+<ul>
+<li>Design decision；</li>
+<li>Burden allocation；</li>
+<li>Evidence standard；</li>
+<li>Governance；</li>
+<li>Historical implementation。</li>
+</ul>
+<hr>
+<h2>一百二十八、Persona Graph 的啟示</h2>
+<p>人物不應被壓成一段形容詞，而應表示為：</p>
+<ul>
+<li>經歷；</li>
+<li>價值；</li>
+<li>關係；</li>
+<li>事件；</li>
+<li>內在邏輯。</li>
+</ul>
+<p>PLDST 對應為：</p>
+<h1>$$
+DesignerGraph</h1>
+<p>DDR
++
+Influence
++
+Revision
++
+Governance
++
+Outcome
+$$</p>
+<hr>
+<h2>一百二十九、Perspective-bounded Memory 的啟示</h2>
+<p>角色不能知道超出自身視角的資訊。</p>
+<p>PLDST 必須把：</p>
+<ul>
+<li>歷史知識；</li>
+<li>現代轉譯知識；</li>
+<li>模型一般知識；</li>
+</ul>
+<p>分層。</p>
+<hr>
+<h2>一百三十、Dynamic Coherence 的啟示</h2>
+<p>一致性不是永遠不變，而是：</p>
+<p>$$
+IdentityStability
++
+ContextAppropriateAdaptation
+$$</p>
+<p>這與設計者自我修正高度相關。</p>
+<hr>
+<h1>第二十四部分　常見使用案例</h1>
+<h2>一百三十一、單一設計審查</h2>
+<pre><code class="language-text">以 Hickey-style 分析這個可變狀態 API。
+</code></pre>
+<p>輸出應聚焦：</p>
+<ul>
+<li>值；</li>
+<li>身分；
+-狀態；
+-時間；
+-交纏。</li>
+</ul>
+<hr>
+<h2>一百三十二、雙重審查</h2>
+<pre><code class="language-text">先以 Wirth 刪減，再以 Stroustrup 相容性審查。
+</code></pre>
+<p>需記錄順序。</p>
+<hr>
+<h2>一百三十三、設計 Council</h2>
+<pre><code class="language-text">Guido、Matz、Wall 三種人本風格分別評估 DSL。
+</code></pre>
+<p>輸出三個獨立方案與衝突表。</p>
+<hr>
+<h2>一百三十四、治理模擬</h2>
+<pre><code class="language-text">此功能若進入 Rust RFC 與 WG21，程序與證據要求如何不同？
+</code></pre>
+<p>模擬制度，不模擬單一人格。</p>
+<hr>
+<h2>一百三十五、AI 原生新語言</h2>
+<p>用多 Profile 建立人工設計憲法，但必須命名為新設計器，不能叫：</p>
+<pre><code class="language-text">AI Guido
+</code></pre>
+<hr>
+<h1>第二十五部分　失敗案例</h1>
+<h2>一百三十六、名字堆疊</h2>
+<pre><code class="language-text">你是 Wirth＋Wall＋Hickey。
+</code></pre>
+<p>沒有混合規則。</p>
+<hr>
+<h2>一百三十七、形容詞堆疊</h2>
+<pre><code class="language-text">簡單、自由、函數式、務實。
+</code></pre>
+<p>沒有決策衝突。</p>
+<hr>
+<h2>一百三十八、假名言</h2>
+<p>模型產生一句很像格言的話並放入引號。</p>
+<hr>
+<h2>一百三十九、永恆 Profile</h2>
+<p>忽略 Guido 退出 BDFL、Backus 後期自我批評或語言共同體接班。</p>
+<hr>
+<h2>一百四十、用角色提高推理即當作忠實</h2>
+<p>Persona Prompt 可能提高某些任務表現，但：</p>
+<p>$$
+TaskAccuracy
+\neq
+PersonaFidelity
+$$</p>
+<hr>
+<h2>一百四十一、用人氣作忠實度</h2>
+<p>知名人物名稱容易觸發訓練記憶，不代表匿名條件下仍能忠實重建。</p>
+<hr>
+<h1>第二十六部分　MVP 規格</h1>
+<h2>一百四十二、第一批模擬案例</h2>
+<ol>
+<li>Guido 對新語法的決策投影；</li>
+<li>Hickey 對狀態 API 的去交纏審查；</li>
+<li>Wirth＋Stroustrup 的分層混合；</li>
+<li>Rust RFC＋Python Council 的治理比較；</li>
+<li>匿名 Profile 測試。</li>
+</ol>
+<hr>
+<h2>一百四十三、MVP 輸出</h2>
+<pre><code class="language-text">Simulation Contract Schema
+Distortion Taxonomy
+Mixing Strategy Vocabulary
+Single-style example
+Hybrid-style example
+Validation CLI
+Contract tests
+Evaluation rubric
+</code></pre>
+<hr>
+<h2>一百四十四、MVP 驗收</h2>
+<p>MUST：</p>
+<ul>
+<li>Schema 通過；</li>
+<li>禁止冒充欄位預設開啟；</li>
+<li>每個分析有 Evidence refs；</li>
+<li>混合前有獨立分析；</li>
+<li>有 Conflict map；</li>
+<li>有 Distortion audit；</li>
+<li>有 AI 生成聲明；</li>
+<li>不自動標記 Approved。</li>
+</ul>
+<hr>
+<h1>第二十七部分　正式規範</h1>
+<h2>一百四十五、MUST</h2>
+<p>實作 MUST：</p>
+<ul>
+<li>使用 PLDST-027 Profile 與 DDR；</li>
+<li>經 PLDST-028 來源流程；</li>
+<li>分開表面與決策風格；</li>
+<li>指定時間模式；</li>
+<li>保存反證；</li>
+<li>分開人物與治理機構；</li>
+<li>標記 AI 生成；</li>
+<li>禁止冒充；</li>
+<li>混合前獨立分析；</li>
+<li>公開衝突；</li>
+<li>保存 Provenance；</li>
+<li>允許 <code>insufficient_evidence</code>。</li>
+</ul>
+<hr>
+<h2>一百四十六、SHOULD</h2>
+<p>實作 SHOULD：</p>
+<ul>
+<li>使用盲名評測；</li>
+<li>使用長程測試；</li>
+<li>以多評審檢查；</li>
+<li>對活人提高發布門檻；</li>
+<li>提供敏感度分析；</li>
+<li>使用 Layered 或 Arbiter 混合；</li>
+<li>避免直接加權平均；</li>
+<li>保存不同 Sampling 結果。</li>
+</ul>
+<hr>
+<h2>一百四十七、MAY</h2>
+<p>實作 MAY：</p>
+<ul>
+<li>使用 Persona Graph；</li>
+<li>使用 Perspective-bounded Memory；</li>
+<li>使用 Activation steering；</li>
+<li>使用多 Agent；</li>
+<li>使用 Authorship metric；</li>
+<li>使用人工 Council；</li>
+<li>產生 Pareto set；</li>
+<li>建立互動式混合設計器。</li>
+</ul>
+<hr>
+<h1>第二十八部分　結論</h1>
+<h2>一百四十八、能像不像不是核心</h2>
+<p>表面相似可以娛樂、教學或增加可讀性，但 PLDST 的研究價值在決策。</p>
+<hr>
+<h2>一百四十九、混合不是平均</h2>
+<p>$$
+Hybrid
+\neq
+Average
+$$</p>
+<p>真正混合必須：</p>
+<ul>
+<li>分層；</li>
+<li>Gate；</li>
+<li>仲裁；</li>
+<li>保留衝突；</li>
+<li>指定優先序。</li>
+</ul>
+<hr>
+<h2>一百五十、轉譯不是復活</h2>
+<p>$$
+HistoricalTranslation
+\neq
+RevivalOfPerson
+$$</p>
+<p>它只是一項證據約束的反事實分析。</p>
+<hr>
+<h2>一百五十一、模擬不是身份</h2>
+<h1>$$
+\boxed{
+AI\ Style\ Simulation</h1>
+<p>MethodologicalInterface
+}
+$$</p>
+<p>不是人格本體，也不是本人替身。</p>
+<hr>
+<h2>一百五十二、最終命題</h2>
+<blockquote>
+<p>一個真正忠實的設計風格模擬，不應讓使用者忘記它是模擬；相反地，它應讓來源、時間、衝突、轉譯與不確定性比普通回答更清楚。</p>
+</blockquote>
+<p>因此：</p>
+<h1>$$
+\boxed{
+GoodSimulation</h1>
+<p>MoreTraceableThanOrdinaryGeneration
+}
+$$</p>
+<hr>
+<h1>附錄 A　PLDST 模擬層級</h1>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>名稱</th>
+<th>核心輸入</th>
+<th>可接受用途</th>
+<th>主要風險</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>L0</td>
+<td>Retrieval</td>
+<td>Source</td>
+<td>研究準備</td>
+<td>引文斷章</td>
+</tr>
+<tr>
+<td>L1</td>
+<td>Surface imitation</td>
+<td>Writing samples</td>
+<td>教學、展示</td>
+<td>假真實感</td>
+</tr>
+<tr>
+<td>L2</td>
+<td>Decision projection</td>
+<td>Profile＋DDR</td>
+<td>設計審查</td>
+<td>過度概括</td>
+</tr>
+<tr>
+<td>L3</td>
+<td>Historical translation</td>
+<td>Profile＋時間＋現代限制</td>
+<td>反事實研究</td>
+<td>現代投射</td>
+</tr>
+<tr>
+<td>L4</td>
+<td>Hybrid synthesis</td>
+<td>多 Profile＋仲裁</td>
+<td>新設計器</td>
+<td>平均化、污染</td>
+</tr>
+<tr>
+<td>L5</td>
+<td>Impersonation</td>
+<td>人名＋自信語氣</td>
+<td>不屬 PLDST</td>
+<td>歸因與權威錯誤</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>附錄 B　失真標記</h1>
+<pre><code class="language-text">D01_SURFACE_ONLY
+D02_STATIC_PERSONA
+D03_QUOTE_DOMINANCE
+D04_FOUNDER_OVERATTRIBUTION
+D05_HISTORICAL_CONTEXT_LOSS
+D06_PRESENTISM
+D07_NAME_MEMORY_BIAS
+D08_STYLISTIC_MONOTONY
+D09_KNOWLEDGE_OVERREACH
+D10_IRRELEVANT_PERSONA_CONTAMINATION
+D11_SELF_JUDGING_LOOP
+D12_IMPERSONATION
+</code></pre>
+<hr>
+<h1>附錄 C　參考資料</h1>
+<p><strong>[R1]</strong> Zhengxiang Wang et al., “Catch Me If You Can? Not Yet: LLMs Still Struggle to Imitate the Implicit Writing Styles of Everyday Authors,” Findings of EMNLP 2025.<br>— 個人隱性寫作風格的模仿限制及多指標評估。</p>
+<p><strong>[R2]</strong> Yichen Cai et al., “ThinkPersona: Thinking with Persona Graphs for Faithful Individualized Role-Playing,” ACL 2026.<br>— 角色扁平化、Persona Graph、人物經歷與內在邏輯的證據約束。</p>
+<p><strong>[R3]</strong> Xushuo Tang et al., “Staying In Character: Perspective-Bounded Memory for Book-Based Role-Playing Agents,” 2026.<br>— 知識越界與風格單調問題、視角受限記憶。</p>
+<p><strong>[R4]</strong> “Beyond Static Persona Consistency: Dynamic Persona Coherence in LLM Role-Playing,” ACL 2026.<br>— Identity-layer stability 與 Adaptive-layer appropriateness 的分離。</p>
+<p><strong>[R5]</strong> “Persistent Personas? Role-Playing, Instruction Following, and Safety in Extended Interactions,” EACL 2026.<br>— 超過一百輪的角色一致性、指令遵循與安全評估。</p>
+<p><strong>[R6]</strong> Lingfeng Zhou et al., “PersonaEval: Are LLM Evaluators Human Enough to Judge Role-Play?” 2025.<br>— LLM Judge 在角色辨識上的限制。</p>
+<p><strong>[R7]</strong> Long Do Xuan et al., “Aligning Large Language Models with Human Opinions through Persona Selection and Value–Belief–Norm Reasoning,” COLING 2025.<br>— 不相關 Persona 對判定的顯著污染。</p>
+<p><strong>[R8]</strong> Anthropic, “Persona Vectors: Monitoring and Controlling Character Traits in Language Models,” 2025.<br>— Character trait 的內部表示、Steering 與 Persona drift。</p>
+<p><strong>[R9]</strong> Anthropic, “The Assistant Axis: Situating and Stabilizing the Character of Large Language Models,” 2026.<br>— 模型 Persona space、Assistant character 與長對話漂移。</p>
+<p><strong>[R10]</strong> Tobias Schreieder et al., “Attribution, Citation, and Quotation: A Survey of Evidence-based Text Generation with Large Language Models,” ACL 2026.<br>— 證據式生成、引用、歸因、可追蹤與評測分類。</p>
+<p><strong>[R11]</strong> PLDST-027，〈PLDST 評估矩陣與設計決策語料庫規格〉。<br><strong>[R12]</strong> PLDST-028，〈PLDST SKILL 技術規格：資料搜尋、決策抽取與風格判定〉。</p>
+<p><strong>資料查核日期：</strong> 2026-07-30。</p>
+<hr>
+<h1>附錄 D　第二輪校對紀錄</h1>
+<h2>D.1 角色研究不等於人物復刻</h2>
+<p>目前研究主要評估角色一致性、知識、人格、記憶、價值與對話行為。</p>
+<p>本文沒有把這些結果直接解釋成能復刻真實人物全部認知。</p>
+<hr>
+<h2>D.2 Persona Vector 不等於完整人格</h2>
+<p>內部向量可控制部分 Character trait，但不能由此推出：</p>
+<pre><code class="language-text">模型內存在完整人物靈魂或固定人格副本
+</code></pre>
+<p>本文只把它作為「角色行為可被條件化及漂移」的證據。</p>
+<hr>
+<h2>D.3 寫作風格與設計風格</h2>
+<p>作者風格模仿研究主要處理文字表面與 Authorship。</p>
+<p>PLDST 的核心是設計決策，因此另設 Decision Fidelity。</p>
+<hr>
+<h2>D.4 名稱偏差</h2>
+<p>匿名評測結果顯示知名角色名稱能攜帶模型訓練記憶。</p>
+<p>因此 PLDST 建議加入盲名 Profile 測試。</p>
+<hr>
+<h2>D.5 LLM Judge</h2>
+<p>PersonaEval 顯示角色辨識本身仍有明顯模型—人類差距。</p>
+<p>所以模型評審不能作唯一標準。</p>
+<hr>
+<h2>D.6 模擬層級是本文規格</h2>
+<p>L0 至 L5 是 PLDST-029 提出的分析分類，不是既有研究的統一標準。</p>
+<hr>
+<h1>附錄 E　與下一篇的銜接</h1>
+<p>PLDST-029 已完成：</p>
+<pre><code class="language-text">模擬層級
+深層風格模型
+跨時代轉譯
+多風格混合
+十二類失真
+評測矩陣
+Simulation Contract
+發布與歸因邊界
+</code></pre>
+<p>下一篇將作為第一批 30 篇封頂：</p>
+<p><strong>PLDST-030：程式語言設計師風格譜系總論——設計自由、複雜度與代價。</strong></p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-029.html">https://thisoneisneok.com/html/papers/pldst-029.html</a></footer>
+</body>
+</html>

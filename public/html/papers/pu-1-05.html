@@ -1,0 +1,1800 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>可視化作為外部結構記憶：多角色、多尺度的程式理解 | Neo.K</title>
+<meta name="description" content="前四篇已依序建立程式作為可執行問題模型、問題世界建模、資料—狀態—事件—行動四元動力，以及責任模組與跨邊界契約。然而，若這些結構只存在於原作者腦中、散落於來源碼、文件、會議紀錄與 Runtime，團隊仍無法形成共同系統理解。大型程式系統的核心瓶頸，往往不是缺少資料，而是缺少可被不同角色在不同尺度理解的外部結構記憶。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pu-1-05.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PU</strong><span>程式宇宙基礎</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PU-1-05</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-27</span></div><div><b>作者</b><span>Neo.K with Aletheia</span></div><div><b>狀態</b><span>初版完成</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pu-1-05.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>可視化作為外部結構記憶：多角色、多尺度的程式理解</h1>
+<h2>Visualization as External Structural Memory: Multi-Role and Multi-Scale Program Understanding</h2>
+<p><strong>論文編號：</strong> PU-1-05<br><strong>系列：</strong>「程式宇宙書系」第 1 冊《系統性程式設計》<br><strong>作者：</strong> Neo.K with Aletheia<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>版本：</strong> v0.1<br><strong>日期：</strong> 2026 年 7 月 27 日  </p>
+<hr>
+<h2>摘要</h2>
+<p>前四篇已依序建立程式作為可執行問題模型、問題世界建模、資料—狀態—事件—行動四元動力，以及責任模組與跨邊界契約。然而，若這些結構只存在於原作者腦中、散落於來源碼、文件、會議紀錄與 Runtime，團隊仍無法形成共同系統理解。大型程式系統的核心瓶頸，往往不是缺少資料，而是缺少可被不同角色在不同尺度理解的外部結構記憶。</p>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+\text{Visualization}
+\neq
+\text{Decoration}
+}
+$$</p>
+<p>並將程式可視化定義為：</p>
+<blockquote>
+<p><strong>把問題世界、狀態、事件、行動、責任、契約、依賴、權限、時間、失敗與證據，投影為可被特定角色在特定任務與尺度下理解、核查與追蹤的外部結構記憶。</strong></p>
+</blockquote>
+<p>形式上，設完整系統本體為 $\Omega$，則某一視圖為：</p>
+<h1>$$
+\boxed{
+V_i</h1>
+<p>\pi_i
+\left(
+\Omega
+\mid
+Role_i,
+Task_i,
+Scale_i,
+Time_i
+\right)
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\Omega$：系統問題世界與執行結構；</li>
+<li>$Role_i$：觀看者角色；</li>
+<li>$Task_i$：當前理解或決策任務；</li>
+<li>$Scale_i$：觀看尺度；</li>
+<li>$Time_i$：視圖所對應時間或版本；</li>
+<li>$V_i$：角色化、任務化、尺度化投影。</li>
+</ul>
+<p>本文核心命題是：</p>
+<p>$$
+\boxed{
+\text{No Single View Can Represent the Whole System}
+}
+$$</p>
+<p>單一架構圖、ER 圖、流程圖、程式碼瀏覽器、服務拓撲或儀表板，都只能表示系統的一部分。成熟可視化不追求一張全知總圖，而應建立可互相連接、具有來源與版本的多投影視圖族：</p>
+<h1>$$
+\mathcal V</h1>
+<p>\left{
+V_W,
+V_E,
+V_S,
+V_A,
+V_R,
+V_C,
+V_D,
+V_T,
+V_F,
+V_H
+\right}
+$$</p>
+<p>包括：</p>
+<ul>
+<li>問題世界圖；</li>
+<li>實體—關係圖；</li>
+<li>狀態—事件—行動圖；</li>
+<li>責任與模組圖；</li>
+<li>契約圖；</li>
+<li>資料與證據流圖；</li>
+<li>依賴與部署圖；</li>
+<li>時間與歷史圖；</li>
+<li>失敗與恢復圖；</li>
+<li>權限與治理圖。</li>
+</ul>
+<p>本文提出「外部結構記憶」概念。傳統文件主要保存文字敘述；來源碼主要保存可執行表示；外部結構記憶則保存跨檔案、跨角色、跨模組與跨時間的關係。它使團隊不必每次都從大量局部資訊重新推導整體結構。</p>
+<p>本文區分：</p>
+<ul>
+<li><strong>靜態視圖</strong>：某一版本下的世界、關係與責任結構；</li>
+<li><strong>動態視圖</strong>：狀態、事件、工作流與時間演化；</li>
+<li><strong>Runtime 視圖</strong>：真實流量、呼叫、延遲、錯誤與資源；</li>
+<li><strong>歷史視圖</strong>：架構、規則、狀態與事故如何演化；</li>
+<li><strong>規範視圖</strong>：權限、責任、受影響主體與非保證。</li>
+</ul>
+<p>本文也提出「視圖契約」：</p>
+<h1>$$
+\boxed{
+\mathcal C_V</h1>
+<p>\left\langle
+Purpose,
+Audience,
+Source,
+Scope,
+Omission,
+Authority,
+Freshness,
+Trace,
+Update,
+Version
+\right\rangle
+}
+$$</p>
+<p>每個視圖必須說明：</p>
+<ul>
+<li>為何存在；</li>
+<li>給誰使用；</li>
+<li>由哪些資料與模型生成；</li>
+<li>表示哪些範圍；</li>
+<li>刻意省略什麼；</li>
+<li>是否為權威視圖；</li>
+<li>新鮮度與延遲；</li>
+<li>如何追蹤到來源碼、契約與 Runtime；</li>
+<li>由誰更新；</li>
+<li>對應哪個版本。</li>
+</ul>
+<p>若缺少視圖契約，圖表容易成為沒有責任的靜態裝飾。</p>
+<p>本文進一步建立「語意縮放」：觀看者可以從整體問題世界逐層展開到模組、契約、狀態機、事件、來源碼與 Runtime 證據，而不在縮放過程中失去語意身份。形式上：</p>
+<p>$$
+V^{(0)}
+\xrightarrow{\operatorname{zoom}}
+V^{(1)}
+\xrightarrow{\operatorname{zoom}}
+\cdots
+\xrightarrow{\operatorname{zoom}}
+V^{(n)}
+$$</p>
+<p>且每層之間應保持可追蹤映射：</p>
+<p>$$
+Trace
+\left(
+x^{(k)},
+x^{(k+1)}
+\right)
+$$</p>
+<p>本文主張，縮放不是把圖放大，而是轉換問題尺度。例如從「訂單系統」縮放到「付款責任」，再到「AuthorizePayment 契約」、事件、狀態變化、程式實作與執行證據。</p>
+<p>本文亦處理多角色理解。使用者關心目的、狀態與可恢復操作；產品角色關心流程與受影響主體；領域專家關心規則與例外；工程師關心責任、契約與依賴；維運者關心 Runtime、失敗與恢復；安全與稽核角色關心權限、證據與規則版本；AI Agent 則需要機器可讀、可查詢、具有語意身份與來源的結構投影。</p>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+\text{Same System}
+\neq
+\text{Same View for Every Role}
+}
+$$</p>
+<p>但多角色視圖不能彼此斷裂。所有重要視圖都應連回共同語意本體或可追蹤中介表示，避免每個團隊各畫一套互不相容的世界。</p>
+<p>本文進一步分析視圖漂移：當來源碼、規則、契約、部署或 Runtime 改變，但視圖未更新，視圖便成為錯誤外部記憶。成熟系統應盡可能由結構化來源生成視圖，並建立差異檢查、版本、更新責任與過期標記。</p>
+<p>本文使用訂單付款、網站部署、AI Agent、醫療工作流、研究系統與多團隊平台等案例，展示多視圖如何降低認知負荷、責任模糊與知識集中。本文最後提出可證偽研究綱領，包括視圖漂移率、角色理解差異、語意縮放成功率、事故定位時間、交接時間、單點知識依賴、多投影一致性、AI Agent 導航效率與視圖生成自動化效果。</p>
+<p>本文為第 1 冊最後一篇〈失敗也是程式〉建立理解與觀測地基：只有系統結構能被看見，失敗、驗證、恢復與長期維護才不會淪為事故發生後的臨時追查。</p>
+<p><strong>關鍵詞：</strong> 程式可視化、外部結構記憶、多角色視圖、語意縮放、多尺度理解、視圖契約、架構漂移、AI 原生可視化</p>
+<hr>
+<h2>Abstract</h2>
+<p>This paper defines visualization as external structural memory rather than decoration.</p>
+<p>Given a system ontology $\Omega$, a view is a role-, task-, scale-, and time-specific projection:</p>
+<h1>$$
+V_i</h1>
+<p>\pi_i
+\left(
+\Omega
+\mid
+Role_i,
+Task_i,
+Scale_i,
+Time_i
+\right)
+$$</p>
+<p>No single diagram can represent the whole system. Mature systems require a connected family of views covering the problem world, entities, state transitions, responsibilities, contracts, data, dependencies, time, failures, permissions, and runtime evidence.</p>
+<p>The paper introduces view contracts, semantic zoom, role-specific projections, traceability, view drift, machine-readable visualization, and AI-native navigation.</p>
+<p><strong>Keywords:</strong> software visualization, external structural memory, semantic zoom, multi-role views, architecture drift, traceability</p>
+<hr>
+<h1>一、問題的提出：大型系統為何只能由少數人理解</h1>
+<p>當專案很小，作者可以在腦中同時維持：</p>
+<ul>
+<li>問題世界；</li>
+<li>檔案位置；</li>
+<li>狀態流；</li>
+<li>模組責任；</li>
+<li>外部依賴；</li>
+<li>失敗路徑。</li>
+</ul>
+<p>但專案成長後，這些結構會散布於：</p>
+<ul>
+<li>原始碼；</li>
+<li>資料庫；</li>
+<li>API；</li>
+<li>事件；</li>
+<li>部署設定；</li>
+<li>文件；</li>
+<li>Issue；</li>
+<li>事故紀錄；</li>
+<li>團隊口述。</li>
+</ul>
+<p>此時團隊缺少的不是更多文字，而是一種能把關係重新外部化的結構記憶。</p>
+<p>如果整體結構只存在於少數資深工程師腦中，系統便形成認知單點故障。</p>
+<hr>
+<h1>二、可視化不是裝飾</h1>
+<h2>2.1 裝飾性圖表</h2>
+<p>裝飾性圖表通常：</p>
+<ul>
+<li>美觀；</li>
+<li>適合簡報；</li>
+<li>缺少來源；</li>
+<li>不標示版本；</li>
+<li>無法追蹤；</li>
+<li>很快過時。</li>
+</ul>
+<h2>2.2 結構性視圖</h2>
+<p>結構性視圖必須能支援：</p>
+<ul>
+<li>理解；</li>
+<li>決策；</li>
+<li>驗證；</li>
+<li>除錯；</li>
+<li>交接；</li>
+<li>稽核；</li>
+<li>變更影響分析。</li>
+</ul>
+<h2>2.3 圖片不等於可視化系統</h2>
+<p>PNG 或白板截圖只是靜態輸出。</p>
+<p>成熟可視化更接近：</p>
+<ul>
+<li>可查詢圖；</li>
+<li>可縮放模型；</li>
+<li>可連結節點；</li>
+<li>可切換角色；</li>
+<li>可比較版本；</li>
+<li>可追蹤來源；</li>
+<li>可連接 Runtime。</li>
+</ul>
+<hr>
+<h1>三、外部結構記憶</h1>
+<p>本文定義：</p>
+<blockquote>
+<p><strong>外部結構記憶是由團隊共同維持、可被多角色查詢，並保存系統跨對象、跨模組、跨時間關係的外部化認知結構。</strong></p>
+</blockquote>
+<p>它不同於：</p>
+<ul>
+<li>原始碼：主要保存可執行表示；</li>
+<li>文件：主要保存敘述；</li>
+<li>日誌：主要保存執行紀錄；</li>
+<li>資料庫：主要保存世界或投影資料。</li>
+</ul>
+<p>外部結構記憶主要保存：</p>
+<ul>
+<li>誰與誰相關；</li>
+<li>誰擁有什麼；</li>
+<li>哪個事件改變什麼；</li>
+<li>哪個契約連接哪些模組；</li>
+<li>哪些失敗沿何路徑傳播；</li>
+<li>某一視圖從何而來；</li>
+<li>某一結構在哪個版本成立。</li>
+</ul>
+<hr>
+<h1>四、視圖的正式定義</h1>
+<p>設系統本體為：</p>
+<h1>$$
+\Omega</h1>
+<p>\left\langle
+W,
+E,
+S,
+A,
+V,
+R,
+M,
+C,
+D,
+F,
+H,
+P,
+T
+\right\rangle
+$$</p>
+<p>其中包含問題世界、實體、狀態、行動、事件、規則、模組、契約、資料、失敗、歷史、權限與時間。</p>
+<p>某一視圖定義為：</p>
+<h1>$$
+\boxed{
+V_i</h1>
+<p>\pi_i
+\left(
+\Omega
+\mid
+Role_i,
+Task_i,
+Scale_i,
+Time_i
+\right)
+}
+$$</p>
+<h2>4.1 Role</h2>
+<p>誰正在觀看：</p>
+<ul>
+<li>使用者；</li>
+<li>產品設計者；</li>
+<li>領域專家；</li>
+<li>工程師；</li>
+<li>維運者；</li>
+<li>安全人員；</li>
+<li>稽核者；</li>
+<li>AI Agent。</li>
+</ul>
+<h2>4.2 Task</h2>
+<p>觀看者要完成什麼：</p>
+<ul>
+<li>理解流程；</li>
+<li>修改功能；</li>
+<li>定位事故；</li>
+<li>審核權限；</li>
+<li>判斷影響；</li>
+<li>驗證契約；</li>
+<li>規劃遷移。</li>
+</ul>
+<h2>4.3 Scale</h2>
+<p>從哪個尺度觀看：</p>
+<ul>
+<li>整體問題世界；</li>
+<li>領域；</li>
+<li>模組；</li>
+<li>工作流；</li>
+<li>實體；</li>
+<li>狀態；</li>
+<li>函式；</li>
+<li>Runtime 實例。</li>
+</ul>
+<h2>4.4 Time</h2>
+<p>視圖對應：</p>
+<ul>
+<li>當前版本；</li>
+<li>過去版本；</li>
+<li>計畫版本；</li>
+<li>事故時間；</li>
+<li>Runtime 時間窗；</li>
+<li>規則生效區間。</li>
+</ul>
+<h2>4.5 Projection</h2>
+<p>投影必然包含選擇與省略，因此視圖不是系統本身。</p>
+<hr>
+<h1>五、為何不存在單一全知視圖</h1>
+<h2>5.1 資訊過量</h2>
+<p>若把所有實體、函式、資料表、服務、事件與呼叫放在同一張圖中，結果通常不可理解。</p>
+<h2>5.2 關係種類不同</h2>
+<p>下列關係不能用同一箭頭無差別表示：</p>
+<ul>
+<li>呼叫；</li>
+<li>狀態擁有；</li>
+<li>資料讀取；</li>
+<li>事件訂閱；</li>
+<li>權限授予；</li>
+<li>失敗傳播；</li>
+<li>物理部署；</li>
+<li>歷史依賴。</li>
+</ul>
+<h2>5.3 角色目的不同</h2>
+<p>維運者需要知道事故與 Runtime。</p>
+<p>領域專家需要知道規則與例外。</p>
+<p>使用者需要知道可做什麼與如何恢復。</p>
+<h2>5.4 尺度衝突</h2>
+<p>高階視圖需要壓縮細節。</p>
+<p>低階視圖需要保存具體結構。</p>
+<h2>5.5 核心命題</h2>
+<p>$$
+\boxed{
+\text{One System}
+\rightarrow
+\text{Many Valid Views}
+}
+$$</p>
+<p>而不是：</p>
+<h1>$$
+\text{One Perfect Diagram}</h1>
+<p>\text{The System}
+$$</p>
+<hr>
+<h1>六、多投影視圖族</h1>
+<p>本文提出：</p>
+<h1>$$
+\mathcal V</h1>
+<p>\left{
+V_W,
+V_E,
+V_S,
+V_R,
+V_C,
+V_D,
+V_T,
+V_F,
+V_P,
+V_H
+\right}
+$$</p>
+<h2>6.1 問題世界圖 $V_W$</h2>
+<p>表示：</p>
+<ul>
+<li>目的；</li>
+<li>主體；</li>
+<li>核心實體；</li>
+<li>外部世界；</li>
+<li>系統邊界；</li>
+<li>非保證。</li>
+</ul>
+<h2>6.2 實體—關係圖 $V_E$</h2>
+<p>表示：</p>
+<ul>
+<li>身份；</li>
+<li>屬性；</li>
+<li>組成；</li>
+<li>擁有；</li>
+<li>委任；</li>
+<li>規範關係。</li>
+</ul>
+<h2>6.3 狀態—事件—行動圖 $V_S$</h2>
+<p>表示：</p>
+<ul>
+<li>合法狀態；</li>
+<li>行動；</li>
+<li>事件；</li>
+<li>前置條件；</li>
+<li>轉移；</li>
+<li>爭議與恢復。</li>
+</ul>
+<h2>6.4 責任模組圖 $V_R$</h2>
+<p>表示：</p>
+<ul>
+<li>狀態擁有者；</li>
+<li>不變量；</li>
+<li>決策權；</li>
+<li>失敗所有者；</li>
+<li>非責任。</li>
+</ul>
+<h2>6.5 契約圖 $V_C$</h2>
+<p>表示：</p>
+<ul>
+<li>Query；</li>
+<li>Command；</li>
+<li>Event；</li>
+<li>Evidence；</li>
+<li>Shared State；</li>
+<li>版本與時間承諾。</li>
+</ul>
+<h2>6.6 資料與證據流圖 $V_D$</h2>
+<p>表示：</p>
+<ul>
+<li>權威資料；</li>
+<li>投影；</li>
+<li>快取；</li>
+<li>來源；</li>
+<li>轉換；</li>
+<li>證據；</li>
+<li>敏感資料。</li>
+</ul>
+<h2>6.7 依賴與部署圖 $V_T$</h2>
+<p>表示：</p>
+<ul>
+<li>程序；</li>
+<li>服務；
+-節點；</li>
+<li>網路；</li>
+<li>Runtime；</li>
+<li>資源；</li>
+<li>外部服務。</li>
+</ul>
+<h2>6.8 失敗與恢復圖 $V_F$</h2>
+<p>表示：</p>
+<ul>
+<li>失敗來源；</li>
+<li>傳播；</li>
+<li>重試；</li>
+<li>降級；</li>
+<li>補償；</li>
+<li>人工接管；</li>
+<li>回復路徑。</li>
+</ul>
+<h2>6.9 權限與治理圖 $V_P$</h2>
+<p>表示：</p>
+<ul>
+<li>誰能讀；</li>
+<li>誰能寫；</li>
+<li>誰能批准；</li>
+<li>誰能改規則；</li>
+<li>誰能看歷史；</li>
+<li>誰能申訴。</li>
+</ul>
+<h2>6.10 歷史與演化圖 $V_H$</h2>
+<p>表示：</p>
+<ul>
+<li>版本；</li>
+<li>決策；</li>
+<li>架構變更；</li>
+<li>契約棄用；</li>
+<li>事故；</li>
+<li>遷移；</li>
+<li>技術債。</li>
+</ul>
+<hr>
+<h1>七、視圖契約</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+\mathcal C_V</h1>
+<p>\left\langle
+Purpose,
+Audience,
+Source,
+Scope,
+Omission,
+Authority,
+Freshness,
+Trace,
+Update,
+Version
+\right\rangle
+}
+$$</p>
+<h2>7.1 Purpose</h2>
+<p>視圖支援哪一類理解或決策。</p>
+<h2>7.2 Audience</h2>
+<p>哪些角色可正確解讀此視圖。</p>
+<h2>7.3 Source</h2>
+<p>視圖由哪些權威模型、程式、事件、Runtime 或人工決策生成。</p>
+<h2>7.4 Scope</h2>
+<p>表示哪些領域、模組、時間與環境。</p>
+<h2>7.5 Omission</h2>
+<p>刻意不表示哪些內容。</p>
+<h2>7.6 Authority</h2>
+<p>視圖是：</p>
+<ul>
+<li>權威；</li>
+<li>衍生；</li>
+<li>草稿；</li>
+<li>規劃；</li>
+<li>說明；</li>
+<li>Runtime 觀測。</li>
+</ul>
+<h2>7.7 Freshness</h2>
+<p>多久更新，允許多大延遲。</p>
+<h2>7.8 Trace</h2>
+<p>如何連回：</p>
+<ul>
+<li>問題世界；</li>
+<li>契約；</li>
+<li>原始碼；</li>
+<li>部署；</li>
+<li>執行證據。</li>
+</ul>
+<h2>7.9 Update</h2>
+<p>誰或哪個流程負責更新。</p>
+<h2>7.10 Version</h2>
+<p>視圖對應的模型與系統版本。</p>
+<hr>
+<h1>八、視圖不是權威狀態本身</h1>
+<h2>8.1 圖可能過時</h2>
+<p>圖上顯示模組 A 擁有狀態，但實際程式可能已移轉至模組 B。</p>
+<h2>8.2 Runtime 視圖也有限</h2>
+<p>監控拓撲顯示真實呼叫，但不自動知道領域責任與規範意義。</p>
+<h2>8.3 規格視圖也有限</h2>
+<p>規格描述應然結構，Runtime 可能偏離。</p>
+<h2>8.4 雙重核查</h2>
+<p>成熟系統應同時比較：</p>
+<p>$$
+V_{\mathrm{declared}}
+\quad
+\text{and}
+\quad
+V_{\mathrm{observed}}
+$$</p>
+<p>並標記差異：</p>
+<h1>$$
+\Delta V</h1>
+<h2>V_{\mathrm{observed}}</h2>
+<p>V_{\mathrm{declared}}
+$$</p>
+<h2>8.5 視圖差異本身是重要資料</h2>
+<p>宣稱架構與實際執行不一致，可能代表：</p>
+<ul>
+<li>漂移；</li>
+<li>隱藏依賴；</li>
+<li>未文件化變更；</li>
+<li>異常；</li>
+<li>侵權或越權。</li>
+</ul>
+<hr>
+<h1>九、語意縮放</h1>
+<h2>9.1 放大不等於縮放</h2>
+<p>把同一張圖放大，只是增加視覺尺寸。</p>
+<p>語意縮放是改變問題層級。</p>
+<h2>9.2 縮放鏈</h2>
+<p>例如：</p>
+<pre><code class="language-text">電商世界
+→ 訂單責任
+→ 付款工作流
+→ AuthorizePayment 契約
+→ PaymentAuthorized 事件
+→ 訂單狀態轉移
+→ 實作函式
+→ Runtime 證據
+</code></pre>
+<p>形式上：</p>
+<p>$$
+V^{(0)}
+\xrightarrow{\operatorname{zoom}}
+V^{(1)}
+\xrightarrow{\operatorname{zoom}}
+\cdots
+\xrightarrow{\operatorname{zoom}}
+V^{(n)}
+$$</p>
+<h2>9.3 身份保持</h2>
+<p>同一概念在不同尺度必須保留可追蹤身份：</p>
+<p>$$
+Trace
+\left(
+x^{(k)},
+x^{(k+1)}
+\right)
+$$</p>
+<h2>9.4 摘要與展開</h2>
+<p>高階節點應顯示：</p>
+<ul>
+<li>責任；</li>
+<li>重要狀態；</li>
+<li>對外契約；</li>
+<li>主要失敗；</li>
+<li>風險。</li>
+</ul>
+<p>展開後再顯示內部細節。</p>
+<h2>9.5 語意跳躍失敗</h2>
+<p>若從高階「付款模組」跳到低階檔案列表，卻無法知道哪段程式維持哪條不變量，就不是有效縮放。</p>
+<hr>
+<h1>十、多角色視圖</h1>
+<h2>10.1 使用者視圖</h2>
+<p>關心：</p>
+<ul>
+<li>現在發生什麼；</li>
+<li>可以做什麼；</li>
+<li>哪些狀態等待外部；</li>
+<li>如何撤回、申訴或恢復。</li>
+</ul>
+<h2>10.2 產品視圖</h2>
+<p>關心：</p>
+<ul>
+<li>目的；</li>
+<li>使用流程；</li>
+<li>角色；</li>
+<li>受影響者；</li>
+<li>完成與失敗；</li>
+<li>指標與非目標。</li>
+</ul>
+<h2>10.3 領域專家視圖</h2>
+<p>關心：</p>
+<ul>
+<li>實體；</li>
+<li>規則；</li>
+<li>例外；</li>
+<li>不變量；</li>
+<li>歷史承諾；</li>
+<li>人工判斷。</li>
+</ul>
+<h2>10.4 工程師視圖</h2>
+<p>關心：</p>
+<ul>
+<li>模組；</li>
+<li>契約；</li>
+<li>狀態擁有；</li>
+<li>依賴；</li>
+<li>資料流；</li>
+<li>版本；</li>
+<li>測試。</li>
+</ul>
+<h2>10.5 維運者視圖</h2>
+<p>關心：</p>
+<ul>
+<li>Runtime；</li>
+<li>流量；</li>
+<li>延遲；</li>
+<li>錯誤；</li>
+<li>資源；</li>
+<li>部署；</li>
+<li>回復。</li>
+</ul>
+<h2>10.6 安全與稽核視圖</h2>
+<p>關心：</p>
+<ul>
+<li>權限；</li>
+<li>敏感資料；</li>
+<li>規則版本；</li>
+<li>操作證據；</li>
+<li>越權；</li>
+<li>例外；</li>
+<li>責任鏈。</li>
+</ul>
+<h2>10.7 AI Agent 視圖</h2>
+<p>需要：</p>
+<ul>
+<li>機器可讀語意；</li>
+<li>節點身份；</li>
+<li>關係型別；</li>
+<li>查詢接口；</li>
+<li>來源；</li>
+<li>版本；</li>
+<li>權限；</li>
+<li>允許行動與禁止行動。</li>
+</ul>
+<h2>10.8 共同本體</h2>
+<p>角色視圖雖不同，仍應連回共同語意：</p>
+<p>$$
+V_i
+\xrightarrow{trace}
+\Omega
+\xleftarrow{trace}
+V_j
+$$</p>
+<hr>
+<h1>十一、認知負荷與結構壓縮</h1>
+<h2>11.1 人類工作記憶有限</h2>
+<p>大型系統可能包含數千個檔案、服務與事件，無法同時被單一人腦維持。</p>
+<h2>11.2 視圖的目的不是顯示最多</h2>
+<p>好的視圖應顯示完成任務所需的最少充分結構。</p>
+<h2>11.3 結構壓縮</h2>
+<p>可定義某視圖的壓縮：</p>
+<h1>$$
+Compression(V)</h1>
+<p>\frac{
+|\Omega|
+}{
+|V|
+}
+$$</p>
+<p>但壓縮率高不代表品質高。</p>
+<p>若關鍵關係被省略，視圖會誤導。</p>
+<h2>11.4 任務充分性</h2>
+<h1>$$
+Sufficiency(V,T)</h1>
+<p>\text{view }V
+\text{ contains enough structure for task }T
+$$</p>
+<h2>11.5 分層揭露</h2>
+<p>先顯示：</p>
+<ul>
+<li>核心責任；</li>
+<li>主要狀態；</li>
+<li>關鍵契約；</li>
+<li>高風險失敗；</li>
+</ul>
+<p>再按需展開細節。</p>
+<hr>
+<h1>十二、靜態、動態、Runtime 與歷史視圖</h1>
+<h2>12.1 靜態視圖</h2>
+<p>表示某一版本的：</p>
+<ul>
+<li>實體；</li>
+<li>模組；</li>
+<li>契約；</li>
+<li>權限；</li>
+<li>部署計畫。</li>
+</ul>
+<h2>12.2 動態視圖</h2>
+<p>表示：</p>
+<ul>
+<li>行動；</li>
+<li>事件；</li>
+<li>狀態轉移；</li>
+<li>工作流；</li>
+<li>競爭；</li>
+<li>補償。</li>
+</ul>
+<h2>12.3 Runtime 視圖</h2>
+<p>表示真實運行中的：</p>
+<ul>
+<li>呼叫；</li>
+<li>延遲；</li>
+<li>錯誤；</li>
+<li>佇列；</li>
+<li>資源；</li>
+<li>流量；</li>
+<li>版本。</li>
+</ul>
+<h2>12.4 歷史視圖</h2>
+<p>表示：</p>
+<ul>
+<li>架構何時改變；</li>
+<li>規則何時生效；</li>
+<li>契約如何遷移；</li>
+<li>事故如何形成；</li>
+<li>責任如何轉移。</li>
+</ul>
+<h2>12.5 四者需要對照</h2>
+<p>規格正確但 Runtime 偏離，或 Runtime 正常但規範責任錯誤，都可能造成系統失敗。</p>
+<hr>
+<h1>十三、時間視圖</h1>
+<h2>13.1 時間軸</h2>
+<p>把事件依：</p>
+<ul>
+<li>發生時間；</li>
+<li>接收時間；</li>
+<li>處理時間；</li>
+<li>生效時間；</li>
+</ul>
+<p>分開呈現。</p>
+<h2>13.2 長時工作流</h2>
+<p>需要顯示：</p>
+<ul>
+<li>當前階段；</li>
+<li>等待對象；</li>
+<li>超時；</li>
+<li>重試；</li>
+<li>補償；</li>
+<li>人工節點；</li>
+<li>完成證據。</li>
+</ul>
+<h2>13.3 版本時間</h2>
+<p>架構圖應能回答：</p>
+<pre><code class="language-text">這個邊界在哪個版本成立？
+事故發生時使用哪個契約？
+規則改變前後差在哪裡？
+</code></pre>
+<h2>13.4 視圖回放</h2>
+<p>歷史回放可協助：</p>
+<ul>
+<li>事故分析；</li>
+<li>責任判定；</li>
+<li>狀態重建；</li>
+<li>變更理解。</li>
+</ul>
+<hr>
+<h1>十四、失敗視圖</h1>
+<h2>14.1 成功流程不足</h2>
+<p>只畫正常流程會隱藏真正維護成本。</p>
+<h2>14.2 失敗節點</h2>
+<p>每個重大步驟應顯示：</p>
+<ul>
+<li>可能失敗；</li>
+<li>是否可重試；</li>
+<li>是否冪等；</li>
+<li>是否部分成功；</li>
+<li>是否需要補償；</li>
+<li>誰負責；</li>
+<li>需要什麼證據。</li>
+</ul>
+<h2>14.3 失敗傳播圖</h2>
+<p>$$
+F_i
+\rightarrow
+F_j
+\rightarrow
+F_k
+$$</p>
+<p>顯示局部故障如何影響流程、使用者與外部世界。</p>
+<h2>14.4 回復圖</h2>
+<p>顯示：</p>
+<ul>
+<li>重啟；</li>
+<li>重試；</li>
+<li>降級；</li>
+<li>切換；</li>
+<li>回滾；</li>
+<li>補償；</li>
+<li>人工接管。</li>
+</ul>
+<h2>14.5 失敗作為一等視圖</h2>
+<p>失敗不是架構圖旁的註解，而應與成功流程具有同等結構地位。</p>
+<hr>
+<h1>十五、權限與治理視圖</h1>
+<h2>15.1 權限不能只看角色名稱</h2>
+<p>需要看到：</p>
+<ul>
+<li>主體；</li>
+<li>情境；</li>
+<li>資源；</li>
+<li>行動；</li>
+<li>時間；</li>
+<li>委任；</li>
+<li>批准；</li>
+<li>撤銷。</li>
+</ul>
+<h2>15.2 世界修改能力</h2>
+<p>視圖應標示誰能：</p>
+<ul>
+<li>建立身份；</li>
+<li>修改狀態；</li>
+<li>發布事件；</li>
+<li>改規則；</li>
+<li>刪歷史；</li>
+<li>修改視圖本身。</li>
+</ul>
+<h2>15.3 超級權限</h2>
+<p>高權限節點應顯示：</p>
+<ul>
+<li>使用條件；</li>
+<li>稽核；</li>
+<li>雙重批准；</li>
+<li>緊急程序；</li>
+<li>風險。</li>
+</ul>
+<h2>15.4 規則治理</h2>
+<p>視圖也需標示：</p>
+<ul>
+<li>規則所有者；</li>
+<li>版本；</li>
+<li>生效時間；</li>
+<li>受影響者；</li>
+<li>異議與申訴路徑。</li>
+</ul>
+<hr>
+<h1>十六、視圖漂移</h1>
+<h2>16.1 定義</h2>
+<p>視圖漂移是指：</p>
+<p>$$
+V_t
+\neq
+\pi
+\left(
+\Omega_t
+\right)
+$$</p>
+<p>也就是視圖已不再正確表示當前系統。</p>
+<h2>16.2 漂移來源</h2>
+<ul>
+<li>原始碼改變；</li>
+<li>契約改變；</li>
+<li>狀態擁有者轉移；</li>
+<li>服務拆分；</li>
+<li>權限修改；</li>
+<li>Runtime 新增隱藏依賴；</li>
+<li>文件未更新；</li>
+<li>人工流程改變。</li>
+</ul>
+<h2>16.3 漂移風險</h2>
+<p>過時視圖可能導致：</p>
+<ul>
+<li>修改錯誤模組；</li>
+<li>依賴不存在的契約；</li>
+<li>遺漏真正故障路徑；</li>
+<li>誤判權限；</li>
+<li>錯誤事故回復；</li>
+<li>交接失敗。</li>
+</ul>
+<h2>16.4 過期標記</h2>
+<p>若無法確認視圖新鮮度，應明示：</p>
+<pre><code class="language-text">stale
+unverified
+planning-only
+runtime-diverged
+</code></pre>
+<h2>16.5 漂移檢查</h2>
+<p>可比較：</p>
+<ul>
+<li>宣告契約與實際呼叫；</li>
+<li>模組責任與資料寫入；</li>
+<li>部署圖與 Runtime 拓撲；</li>
+<li>權限規格與稽核紀錄；</li>
+<li>狀態圖與真實事件序列。</li>
+</ul>
+<hr>
+<h1>十七、視圖生成與手工視圖</h1>
+<h2>17.1 自動生成視圖</h2>
+<p>可由：</p>
+<ul>
+<li>程式碼；</li>
+<li>schema；</li>
+<li>API 規格；</li>
+<li>事件定義；</li>
+<li>Runtime tracing；</li>
+<li>部署設定；</li>
+<li>權限政策；</li>
+</ul>
+<p>自動生成。</p>
+<h2>17.2 自動生成的限制</h2>
+<p>工具能看見技術結構，但未必知道：</p>
+<ul>
+<li>世界目的；</li>
+<li>語意責任；</li>
+<li>非目標；</li>
+<li>受影響主體；</li>
+<li>人工流程；</li>
+<li>規範邊界。</li>
+</ul>
+<h2>17.3 手工視圖</h2>
+<p>人類可表達：</p>
+<ul>
+<li>設計理由；</li>
+<li>領域規則；</li>
+<li>例外；</li>
+<li>預期架構；</li>
+<li>價值與治理。</li>
+</ul>
+<p>但手工視圖較容易漂移。</p>
+<h2>17.4 混合策略</h2>
+<p>理想方式是：</p>
+<h1>$$
+\boxed{
+V</h1>
+<p>V_{\mathrm{generated}}
++
+V_{\mathrm{curated}}
++
+\Delta V_{\mathrm{checked}}
+}
+$$</p>
+<p>即由機器生成可驗證基礎，再由人類補充語意，最後持續比較差異。</p>
+<hr>
+<h1>十八、雙向可追蹤性</h1>
+<h2>18.1 從目的到執行</h2>
+<p>應能追蹤：</p>
+<pre><code class="language-text">目的
+→ 問題世界
+→ 責任模組
+→ 契約
+→ 狀態／事件
+→ 原始碼
+→ 部署
+→ Runtime 證據
+</code></pre>
+<h2>18.2 從事故回到目的</h2>
+<p>也應能反向追蹤：</p>
+<pre><code class="language-text">錯誤指標
+→ Runtime 實例
+→ 契約
+→ 模組責任
+→ 世界狀態
+→ 使用者影響
+→ 原始目的
+</code></pre>
+<h2>18.3 追蹤身份</h2>
+<p>每個重要節點需要穩定識別：</p>
+<pre><code class="language-yaml">trace_id:
+  world_concept: &quot;payment.authorization&quot;
+  module: &quot;payment&quot;
+  contract: &quot;authorize-payment-v2&quot;
+  event: &quot;PaymentAuthorized&quot;
+  code_symbol: &quot;PaymentAuthorizer.authorize&quot;
+  runtime_service: &quot;payments-prod&quot;
+</code></pre>
+<h2>18.4 追蹤不等於字串搜尋</h2>
+<p>名稱可能改變，真正追蹤需要：</p>
+<ul>
+<li>身份；</li>
+<li>版本；</li>
+<li>關係；</li>
+<li>來源；</li>
+<li>遷移歷史。</li>
+</ul>
+<hr>
+<h1>十九、AI 原生外部結構記憶</h1>
+<h2>19.1 AI 不能只讀長文件</h2>
+<p>長文件可提供內容，但 AI 若要可靠操作系統，需要可查詢的結構。</p>
+<h2>19.2 機器可讀視圖</h2>
+<p>節點與邊應具有：</p>
+<ul>
+<li>類型；</li>
+<li>身份；</li>
+<li>語意；</li>
+<li>來源；</li>
+<li>版本；</li>
+<li>權限；</li>
+<li>新鮮度；</li>
+<li>可用操作。</li>
+</ul>
+<h2>19.3 Agent 導航</h2>
+<p>Agent 可依任務查詢：</p>
+<pre><code class="language-text">哪個模組擁有訂單付款狀態？
+部署失敗後由誰補償？
+這個 API 成功代表哪一層完成？
+修改此規則會影響哪些角色？
+</code></pre>
+<h2>19.4 視圖作為行動約束</h2>
+<p>結構記憶不只協助回答，也可限制 Agent：</p>
+<ul>
+<li>不得直接寫入非擁有狀態；</li>
+<li>不得跳過契約；</li>
+<li>不得執行未授權操作；</li>
+<li>高風險節點需要人工批准。</li>
+</ul>
+<h2>19.5 AI 生成視圖的風險</h2>
+<p>AI 可能：</p>
+<ul>
+<li>錯誤推斷關係；</li>
+<li>把命名相似視為同一責任；</li>
+<li>混淆宣告與 Runtime；</li>
+<li>生成看似完整但缺少來源的圖。</li>
+</ul>
+<p>所以 AI 產生的關係需標示：</p>
+<pre><code class="language-text">declared
+observed
+inferred
+unverified
+</code></pre>
+<hr>
+<h1>二十、視圖治理</h1>
+<h2>20.1 視圖所有者</h2>
+<p>每個關鍵視圖應有維護責任。</p>
+<h2>20.2 修改權</h2>
+<p>需要知道誰能：</p>
+<ul>
+<li>新增節點；</li>
+<li>修改關係；</li>
+<li>改變權威標記；</li>
+<li>刪除歷史；</li>
+<li>批准新版本。</li>
+</ul>
+<h2>20.3 視圖審查</h2>
+<p>重大架構、規則與權限變更應觸發視圖審查。</p>
+<h2>20.4 視圖保留</h2>
+<p>歷史視圖可用於：</p>
+<ul>
+<li>事故回放；</li>
+<li>遷移；</li>
+<li>法規稽核；</li>
+<li>設計決策；</li>
+<li>技術債追蹤。</li>
+</ul>
+<h2>20.5 視圖退出</h2>
+<p>過時視圖應被：</p>
+<ul>
+<li>棄用；</li>
+<li>封存；</li>
+<li>加警告；</li>
+<li>連至替代版本；</li>
+</ul>
+<p>而不是繼續與新視圖並列。</p>
+<hr>
+<h1>二十一、案例一：訂單與付款</h1>
+<h2>21.1 問題世界圖</h2>
+<p>顯示：</p>
+<ul>
+<li>客戶；</li>
+<li>商家；</li>
+<li>訂單；</li>
+<li>付款；</li>
+<li>履約；</li>
+<li>爭議；</li>
+<li>外部支付與物流。</li>
+</ul>
+<h2>21.2 責任圖</h2>
+<p>顯示：</p>
+<ul>
+<li>訂單模組擁有訂單生命週期；</li>
+<li>付款模組擁有付款嘗試與授權；</li>
+<li>物流模組擁有配送主張；</li>
+<li>流程協調責任仍由訂單模組承擔。</li>
+</ul>
+<h2>21.3 狀態圖</h2>
+<p>區分：</p>
+<pre><code class="language-text">payment-pending
+authorized
+paid
+settlement-pending
+refunded
+outcome-unknown
+</code></pre>
+<h2>21.4 Runtime 視圖</h2>
+<p>顯示付款回呼重複、延遲、失敗率與佇列。</p>
+<h2>21.5 使用者視圖</h2>
+<p>只需顯示：</p>
+<ul>
+<li>目前付款狀態；</li>
+<li>是否需要操作；</li>
+<li>是否可重試；</li>
+<li>何時聯絡支援。</li>
+</ul>
+<p>同一系統需要不同視圖，但狀態語意必須一致。</p>
+<hr>
+<h1>二十二、案例二：網站部署</h1>
+<h2>22.1 計畫視圖</h2>
+<p>顯示：</p>
+<pre><code class="language-text">Release
+→ Approval
+→ Deployment
+→ Verification
+→ Traffic Shift
+</code></pre>
+<h2>22.2 依賴視圖</h2>
+<p>顯示：</p>
+<ul>
+<li>建置系統；</li>
+<li>Artifact 儲存；</li>
+<li>部署平台；</li>
+<li>DNS；</li>
+<li>監控；</li>
+<li>外部服務。</li>
+</ul>
+<h2>22.3 Runtime 視圖</h2>
+<p>顯示：</p>
+<ul>
+<li>實際版本；</li>
+<li>流量比例；</li>
+<li>錯誤；</li>
+<li>延遲；</li>
+<li>資源；</li>
+<li>健康檢查。</li>
+</ul>
+<h2>22.4 漂移檢查</h2>
+<p>若宣告版本與實際執行版本不同，立即標記。</p>
+<h2>22.5 失敗視圖</h2>
+<p>顯示：</p>
+<ul>
+<li>哪一步失敗；</li>
+<li>是否部分完成；</li>
+<li>能否回滾；</li>
+<li>外部 DNS 是否已改變；</li>
+<li>誰負責驗收。</li>
+</ul>
+<hr>
+<h1>二十三、案例三：AI Agent</h1>
+<h2>23.1 目標視圖</h2>
+<p>顯示 Agent 的：</p>
+<ul>
+<li>委任；</li>
+<li>目標；</li>
+<li>非目標；</li>
+<li>停止條件；</li>
+<li>人類保留選擇。</li>
+</ul>
+<h2>23.2 能力與權限視圖</h2>
+<p>區分：</p>
+<ul>
+<li>可使用工具；</li>
+<li>已授權工具；</li>
+<li>需要批准的工具；</li>
+<li>禁止操作。</li>
+</ul>
+<h2>23.3 計畫與執行視圖</h2>
+<p>顯示：</p>
+<pre><code class="language-text">Goal
+→ Plan
+→ Action
+→ Tool
+→ Evidence
+→ State Update
+</code></pre>
+<h2>23.4 記憶視圖</h2>
+<p>區分：</p>
+<ul>
+<li>當前工作記憶；</li>
+<li>長期記憶；</li>
+<li>外部文件；</li>
+<li>推論；</li>
+<li>未驗證主張。</li>
+</ul>
+<h2>23.5 事故視圖</h2>
+<p>若 Agent 重複寄信，可追蹤：</p>
+<ul>
+<li>原始行動身份；</li>
+<li>工具回覆；</li>
+<li>重試原因；</li>
+<li>冪等契約；</li>
+<li>誰批准；</li>
+<li>外部影響。</li>
+</ul>
+<hr>
+<h1>二十四、案例四：醫療工作流</h1>
+<h2>24.1 角色視圖</h2>
+<p>病人、醫師、護理師、行政人員看到不同內容。</p>
+<h2>24.2 規則視圖</h2>
+<p>顯示：</p>
+<ul>
+<li>哪些狀態需要專業批准；</li>
+<li>哪些資料只是模型建議；</li>
+<li>哪些操作需病人同意；</li>
+<li>哪些例外需要人工覆核。</li>
+</ul>
+<h2>24.3 時間視圖</h2>
+<p>顯示檢驗發生時間、結果回報時間、醫師閱讀時間與處置生效時間。</p>
+<h2>24.4 權限視圖</h2>
+<p>敏感資料與高風險操作必須具有明示存取與稽核鏈。</p>
+<h2>24.5 不確定性視圖</h2>
+<p>應顯示：</p>
+<ul>
+<li>資料不足；</li>
+<li>模型適用域外；</li>
+<li>專業意見不一致；</li>
+<li>等待病人選擇。</li>
+</ul>
+<hr>
+<h1>二十五、案例五：研究系統</h1>
+<h2>25.1 問題圖</h2>
+<p>顯示研究問題、定義、命題與前置依賴。</p>
+<h2>25.2 證據圖</h2>
+<p>連接：</p>
+<ul>
+<li>文獻；</li>
+<li>計算；</li>
+<li>實驗；</li>
+<li>反例；</li>
+<li>證書；</li>
+<li>失敗紀錄。</li>
+</ul>
+<h2>25.3 狀態視圖</h2>
+<p>區分：</p>
+<pre><code class="language-text">proposed
+open
+partially-supported
+contradicted
+verified
+published
+</code></pre>
+<h2>25.4 歷史視圖</h2>
+<p>保留命題如何改變、失敗路徑與版本分支。</p>
+<h2>25.5 AI 研究 Agent</h2>
+<p>Agent 應能沿證據圖查詢，而不是只從最終論文文字猜測研究狀態。</p>
+<hr>
+<h1>二十六、案例六：多團隊平台</h1>
+<h2>26.1 高階世界圖</h2>
+<p>顯示身份、內容、搜尋、推薦、計費、通知與稽核等責任域。</p>
+<h2>26.2 團隊視圖</h2>
+<p>顯示團隊擁有模組、契約與值班責任。</p>
+<h2>26.3 依賴圖</h2>
+<p>顯示同步、非同步、共享資料與外部服務。</p>
+<h2>26.4 事故視圖</h2>
+<p>將技術錯誤映射到：</p>
+<ul>
+<li>哪個責任；</li>
+<li>哪些使用者；</li>
+<li>哪個契約；</li>
+<li>哪個團隊；</li>
+<li>哪個恢復路徑。</li>
+</ul>
+<h2>26.5 管理視圖</h2>
+<p>不只顯示服務數量，也顯示：</p>
+<ul>
+<li>責任孤島；</li>
+<li>契約爆炸；</li>
+<li>狀態無主；</li>
+<li>高權限集中；</li>
+<li>知識單點風險。</li>
+</ul>
+<hr>
+<h1>二十七、主要失敗模式</h1>
+<ol>
+<li><strong>圖即系統：</strong> 把單一圖表視為完整本體。</li>
+<li><strong>可視化即裝飾：</strong> 圖只服務簡報，不服務理解與驗證。</li>
+<li><strong>一張總圖：</strong> 所有節點與關係塞進同一畫面。</li>
+<li><strong>箭頭同義化：</strong> 呼叫、事件、權限、依賴與失敗使用同一箭頭。</li>
+<li><strong>無角色視圖：</strong> 所有人被迫看同一技術投影。</li>
+<li><strong>縮放只是放大：</strong> 沒有問題尺度轉換與身份追蹤。</li>
+<li><strong>無來源：</strong> 圖中節點無法連回規格、程式或 Runtime。</li>
+<li><strong>無省略聲明：</strong> 觀看者不知道視圖沒畫什麼。</li>
+<li><strong>規格即現況：</strong> 宣告架構被當成 Runtime 真實。</li>
+<li><strong>Runtime 即責任：</strong> 真實呼叫拓撲被誤認為領域邊界。</li>
+<li><strong>視圖漂移：</strong> 系統改變但圖未更新。</li>
+<li><strong>過時不標記：</strong> 舊圖與新圖並列，無版本與新鮮度。</li>
+<li><strong>自動生成全知迷思：</strong> 工具拓撲被當成完整世界語意。</li>
+<li><strong>手工圖永久化：</strong> 白板決策沒有進入結構化來源。</li>
+<li><strong>投影互相矛盾：</strong> 狀態圖、契約圖與 UI 使用不同語意。</li>
+<li><strong>只畫成功：</strong> 失敗、補償與人工接管缺席。</li>
+<li><strong>權限不可見：</strong> 世界修改能力未進入視圖。</li>
+<li><strong>時間被壓平：</strong> 當前、歷史、規劃與事故版本混合。</li>
+<li><strong>AI 推論無標記：</strong> 推測關係被呈現為已驗證事實。</li>
+<li><strong>知識單點：</strong> 圖仍需資深作者口頭解釋才能理解。</li>
+<li><strong>視圖無治理：</strong> 沒有所有者、審查、棄用與遷移。</li>
+<li><strong>視覺複雜度崇拜：</strong> 圖越複雜被誤認為越專業。</li>
+</ol>
+<hr>
+<h1>二十八、可證偽研究綱領</h1>
+<h2>28.1 視圖漂移率</h2>
+<p>比較視圖宣告與來源碼、契約、部署及 Runtime 的差異：</p>
+<h1>$$
+R_{\mathrm{drift}}</h1>
+<p>\frac{
+|\text{incorrect or stale view relations}|
+}{
+|\text{sampled view relations}|
+}
+$$</p>
+<h2>28.2 角色理解差異</h2>
+<p>給不同角色同一張圖與角色化視圖，測量其對：</p>
+<ul>
+<li>目的；</li>
+<li>狀態；</li>
+<li>責任；</li>
+<li>失敗；</li>
+<li>權限；</li>
+</ul>
+<p>的理解準確率。</p>
+<h2>28.3 語意縮放成功率</h2>
+<p>測量觀看者能否從高階概念正確追蹤至低階契約、程式與 Runtime，並反向回到世界目的。</p>
+<h2>28.4 事故定位時間</h2>
+<p>比較只有日誌與來源碼，以及具有責任、失敗、Runtime 多視圖的團隊，定位事故所需時間。</p>
+<h2>28.5 交接時間</h2>
+<p>測量新成員在多視圖外部結構記憶輔助下，達到可安全修改系統所需時間。</p>
+<h2>28.6 知識單點依賴</h2>
+<p>統計必須詢問特定資深成員才能理解的關鍵結構比例。</p>
+<h2>28.7 多投影一致性</h2>
+<p>比較：</p>
+<ul>
+<li>問題世界圖；</li>
+<li>狀態圖；</li>
+<li>契約；</li>
+<li>原始碼；</li>
+<li>UI；</li>
+<li>Runtime；</li>
+</ul>
+<p>之間的語意差異。</p>
+<h2>28.8 視圖任務充分性</h2>
+<p>對特定任務 $T$，測量視圖是否包含足夠且不過量的資訊：</p>
+<h1>$$
+Q_V</h1>
+<h2>Sufficiency(V,T)</h2>
+<p>Overload(V,T)
+$$</p>
+<h2>28.9 過期視圖誤導率</h2>
+<p>統計事故、錯誤修改與溝通失敗中，有多少受到過時視圖影響。</p>
+<h2>28.10 自動生成效益</h2>
+<p>比較手工、全自動及混合視圖在：</p>
+<ul>
+<li>新鮮度；</li>
+<li>語意完整；</li>
+<li>維護成本；</li>
+<li>漂移；</li>
+</ul>
+<p>上的差異。</p>
+<h2>28.11 AI Agent 導航效率</h2>
+<p>比較 Agent 僅使用來源碼搜尋，以及使用機器可讀責任、契約與狀態圖時，完成系統理解與修改任務的準確率。</p>
+<h2>28.12 推論關係錯誤率</h2>
+<p>測量 AI 自動推導之責任、依賴與語意關係中，經人工驗證後的錯誤比例。</p>
+<h2>28.13 失敗視圖覆蓋率</h2>
+<p>檢查重大工作流是否正式表示重試、補償、超時、部分成功與人工接管。</p>
+<h2>28.14 權限可見率</h2>
+<p>測量系統中的高風險世界修改能力，有多少能在權限與治理視圖中被識別。</p>
+<hr>
+<h1>二十九、本文的二十二項命題</h1>
+<ol>
+<li>可視化不是裝飾，而是系統外部結構記憶。</li>
+<li>任何視圖都是角色、任務、尺度與時間條件下的部分投影。</li>
+<li>不存在能完整代表大型程式系統的單一全知視圖。</li>
+<li>同一系統需要問題世界、實體、狀態、責任、契約、資料、部署、失敗、權限與歷史等多種視圖。</li>
+<li>每個視圖都必須明示目的、受眾、來源、範圍、省略、權威、新鮮度、追蹤、更新與版本。</li>
+<li>圖表本身不自動具有權威地位。</li>
+<li>宣告視圖與 Runtime 觀測視圖必須分離並持續比較。</li>
+<li>語意縮放不是視覺放大，而是問題尺度轉換。</li>
+<li>縮放過程必須保持概念身份與追蹤關係。</li>
+<li>不同角色需要不同視圖，但所有視圖應連回共同語意本體。</li>
+<li>好視圖追求任務所需的最少充分結構，而非最大資訊量。</li>
+<li>靜態、動態、Runtime 與歷史視圖不能互相取代。</li>
+<li>失敗、補償與恢復應與成功流程具有同等可視地位。</li>
+<li>權限圖必須呈現世界修改能力，而不只是角色名稱。</li>
+<li>視圖漂移會把外部記憶轉化為錯誤記憶。</li>
+<li>自動生成視圖擅長技術事實，但不能自動取得完整領域語意。</li>
+<li>手工視圖擅長設計意圖，但需要版本與漂移治理。</li>
+<li>成熟視圖應由機器生成基礎、人類補充語意並持續差異核查。</li>
+<li>雙向可追蹤性應連接目的、世界、責任、契約、程式、部署與證據。</li>
+<li>AI Agent 需要機器可讀、具來源、版本與權限的結構視圖。</li>
+<li>AI 推導的視圖關係必須區分宣告、觀測、推論與未驗證。</li>
+<li></li>
+</ol>
+<p>$$
+\boxed{
+\text{可理解的系統，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{不是把所有細節同時展示，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是讓每個角色都能在適當尺度看見}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{自己需要理解的世界，並能追蹤回共同結構。}
+}
+$$</p>
+<hr>
+<h1>三十、與前後篇的關係</h1>
+<h2>30.1 承接 PU-1-01</h2>
+<p>PU-1-01 將程式定義為可執行問題模型。</p>
+<p>本篇指出，可執行問題模型不能只存在於來源碼，而應具有多重可理解投影。</p>
+<h2>30.2 承接 PU-1-02</h2>
+<p>PU-1-02 建立實體、關係、規則、邊界、未知與歷史。</p>
+<p>本篇把這些結構外部化為問題世界圖、關係圖、規則圖與時間圖。</p>
+<h2>30.3 承接 PU-1-03</h2>
+<p>PU-1-03 建立資料、狀態、事件與行動四元動力。</p>
+<p>本篇將動力投影為狀態圖、事件時間線、工作流與 Runtime 回放。</p>
+<h2>30.4 承接 PU-1-04</h2>
+<p>PU-1-04 建立責任模組與契約。</p>
+<p>本篇使狀態擁有、不變量、契約、失敗所有權與非責任可被多角色共同看見。</p>
+<h2>30.5 銜接 PU-1-06</h2>
+<p>下一篇將完成第 1 冊，集中處理：</p>
+<ul>
+<li>驗證；</li>
+<li>可觀測性；</li>
+<li>錯誤與失敗；</li>
+<li>重試與補償；</li>
+<li>回復；</li>
+<li>事故；</li>
+<li>長期維護；</li>
+<li>系統演化。</li>
+</ul>
+<p>而本篇的外部結構記憶，將成為定位失敗、理解影響與保存維護知識的基礎。</p>
+<hr>
+<h1>三十一、結論：程式理解不能只依靠閱讀程式碼</h1>
+<p>程式碼是精確且必要的投影。</p>
+<p>但來源碼通常依檔案、語言與實作順序組織，並不自然呈現：</p>
+<ul>
+<li>問題世界全貌；</li>
+<li>狀態擁有權；</li>
+<li>跨模組契約；</li>
+<li>失敗傳播；</li>
+<li>權限；</li>
+<li>歷史；</li>
+<li>使用者與受影響者。</li>
+</ul>
+<p>因此，只靠閱讀程式碼理解大型系統，等於要求每個觀看者從局部表示重新推導整體世界。</p>
+<p>這種推導成本會隨系統規模、時間與團隊變動持續上升，最終使少數長期維護者成為唯一架構記憶。</p>
+<p>本文提出另一種結構：</p>
+<h1>$$
+\boxed{
+\text{Program Understanding}</h1>
+<p>\text{Executable Representations}
++
+\text{Connected External Views}
++
+\text{Runtime Evidence}
++
+\text{Historical Trace}
+}
+$$</p>
+<p>外部結構記憶不是要取代程式碼，也不是為所有人建立同一張巨大圖。</p>
+<p>它的目的，是讓不同角色能夠回答不同但相連的問題：</p>
+<pre><code class="language-text">這個系統希望改變什麼？
+世界裡有哪些對象？
+誰擁有哪個狀態？
+哪個事件使它改變？
+哪個契約跨越邊界？
+哪些資料只是投影？
+哪些權限能修改世界？
+失敗會傳到哪裡？
+目前 Runtime 是否符合宣告架構？
+這個結構在哪個版本成立？
+</code></pre>
+<p>真正成熟的可視化也不應停留在圖片。</p>
+<p>它應該是：</p>
+<ul>
+<li>可查詢；</li>
+<li>可縮放；</li>
+<li>可比較；</li>
+<li>可追蹤；</li>
+<li>可版本化；</li>
+<li>可由 Runtime 校驗；</li>
+<li>可供人類與 AI 共同使用。</li>
+</ul>
+<p>本文將其收束為：</p>
+<h1>$$
+\boxed{
+\text{External Structural Memory}</h1>
+<p>\text{Multi-View Projection}
++
+\text{Semantic Identity}
++
+\text{Bidirectional Traceability}
++
+\text{View Governance}
+}
+$$</p>
+<p>最終命題是：</p>
+<p>$$
+\boxed{
+\text{系統不應只被機器執行，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{也必須能被不同主體共同看見。}
+}
+$$</p>
+<p>只有當結構能被共同看見、核查、反駁與更新，程式才不再是少數天才腦中的隱性世界，而能成為可教學、可協作、可維護與可治理的公共工程結構。</p>
+<hr>
+<h1>附錄 A：視圖契約格式</h1>
+<pre><code class="language-yaml">view_contract:
+  view_id: &quot;payment-responsibility-view&quot;
+  purpose:
+    - &quot;show state ownership and cross-module contracts&quot;
+  audience:
+    - &quot;engineer&quot;
+    - &quot;incident-commander&quot;
+    - &quot;AI-agent&quot;
+
+  source:
+    declared:
+      - &quot;module-registry&quot;
+      - &quot;contract-registry&quot;
+    observed:
+      - &quot;runtime-traces&quot;
+
+  scope:
+    domain: &quot;payment&quot;
+    environment: &quot;production&quot;
+    version: &quot;2026.07&quot;
+
+  omissions:
+    - &quot;internal function call graph&quot;
+    - &quot;non-critical metrics&quot;
+
+  authority:
+    responsibility: &quot;declared-authoritative&quot;
+    runtime_edges: &quot;observed&quot;
+
+  freshness:
+    declared: &quot;on-merge&quot;
+    runtime: &quot;5m&quot;
+
+  trace:
+    enabled: true
+    targets:
+      - &quot;contract&quot;
+      - &quot;code-symbol&quot;
+      - &quot;deployment&quot;
+      - &quot;incident&quot;
+
+  owner: &quot;payments-team&quot;
+</code></pre>
+<hr>
+<h1>附錄 B：機器可讀視圖節點</h1>
+<pre><code class="language-yaml">view_node:
+  node_id: &quot;payment.authorization&quot;
+  node_type: &quot;world-state&quot;
+  label: &quot;Payment Authorization&quot;
+
+  ownership:
+    module: &quot;payment&quot;
+
+  relations:
+    - type: &quot;changed-by&quot;
+      target: &quot;AuthorizePayment&quot;
+    - type: &quot;produces&quot;
+      target: &quot;PaymentAuthorized&quot;
+    - type: &quot;projected-as&quot;
+      target: &quot;order-payment-status&quot;
+
+  provenance:
+    source: &quot;payment-domain-model-v2&quot;
+    status: &quot;declared&quot;
+    verified_at: &quot;2026-07-27&quot;
+
+  permissions:
+    writable_by:
+      - &quot;payment-module&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：語意縮放鏈</h1>
+<pre><code class="language-yaml">semantic_zoom:
+  root: &quot;commerce-world&quot;
+
+  levels:
+    - level: 0
+      node: &quot;commerce-world&quot;
+      view: &quot;problem-world&quot;
+
+    - level: 1
+      node: &quot;payment-responsibility&quot;
+      view: &quot;responsibility&quot;
+
+    - level: 2
+      node: &quot;authorize-payment-v2&quot;
+      view: &quot;contract&quot;
+
+    - level: 3
+      node: &quot;PaymentAuthorized&quot;
+      view: &quot;event-state&quot;
+
+    - level: 4
+      node: &quot;PaymentAuthorizer.authorize&quot;
+      view: &quot;code&quot;
+
+    - level: 5
+      node: &quot;payments-prod-trace&quot;
+      view: &quot;runtime&quot;
+</code></pre>
+<hr>
+<h1>附錄 D：視圖漂移紀錄</h1>
+<pre><code class="language-yaml">view_drift:
+  view_id: &quot;deployment-topology&quot;
+  detected_at: &quot;2026-07-27T15:00:00+08:00&quot;
+
+  declared:
+    edge: &quot;gateway -&gt; deployment-service&quot;
+
+  observed:
+    edge: &quot;gateway -&gt; legacy-deployer&quot;
+
+  classification: &quot;runtime-diverged&quot;
+  severity: &quot;high&quot;
+
+  impact:
+    - &quot;incident runbook may route to wrong owner&quot;
+
+  owner: &quot;platform-team&quot;
+  resolution:
+    status: &quot;open&quot;
+</code></pre>
+<hr>
+<h1>附錄 E：第 1 冊六篇位置</h1>
+<ol>
+<li>PU-1-01　程式不等於程式碼：可執行問題模型的基本定義</li>
+<li>PU-1-02　問題世界建模：實體、關係、規則與系統邊界</li>
+<li>PU-1-03　資料—狀態—事件—行動：程式系統的四元動力結構</li>
+<li>PU-1-04　責任、模組與契約：從檔案分類到系統邊界</li>
+<li><strong>PU-1-05　可視化作為外部結構記憶：多角色、多尺度的程式理解</strong></li>
+<li>PU-1-06　失敗也是程式：驗證、可觀測、恢復與長期維護</li>
+</ol>
+<hr>
+<h1>參考文獻</h1>
+<h2>Neo.K／EveMissLab 相關理論</h2>
+<ol>
+<li>Neo.K with Aletheia，《程式不等於程式碼：可執行問題模型的基本定義》，2026。</li>
+<li>Neo.K with Aletheia，《問題世界建模：實體、關係、規則與系統邊界》，2026。</li>
+<li>Neo.K with Aletheia，《資料—狀態—事件—行動：程式系統的四元動力結構》，2026。</li>
+<li>Neo.K with Aletheia，《責任、模組與契約：從檔案分類到系統邊界》，2026。</li>
+<li>Neo.K with Aletheia，《人類可見狀態：意圖程式系統的稽核、解釋與可逆治理》，2026。</li>
+<li>Neo.K with Aletheia，《可編譯世界：從程式執行到世界狀態演化》，2026。</li>
+</ol>
+<h2>一般理論背景</h2>
+<ol start="7">
+<li>Tufte, E. R., <em>The Visual Display of Quantitative Information</em>, 1983.</li>
+<li>Shneiderman, B., “The Eyes Have It: A Task by Data Type Taxonomy for Information Visualizations,” 1996.</li>
+<li>Card, S. K., Mackinlay, J. D., and Shneiderman, B., <em>Readings in Information Visualization</em>, 1999.</li>
+<li>Ware, C., <em>Information Visualization: Perception for Design</em>, 2000.</li>
+<li>Larkin, J. H. and Simon, H. A., “Why a Diagram Is Sometimes Worth Ten Thousand Words,” 1987.</li>
+<li>Hutchins, E., <em>Cognition in the Wild</em>, 1995.</li>
+<li>Norman, D. A., <em>Things That Make Us Smart</em>, 1993.</li>
+<li>Clements, P. et al., <em>Documenting Software Architectures</em>, 2002.</li>
+<li>Rozanski, N. and Woods, E., <em>Software Systems Architecture</em>, 2005.</li>
+<li>Harel, D., “Statecharts: A Visual Formalism for Complex Systems,” 1987.</li>
+<li>Bass, L., Clements, P., and Kazman, R., <em>Software Architecture in Practice</em>, 2012.</li>
+<li>Storey, M.-A., “Theories, Methods and Tools in Program Comprehension,” 2005.</li>
+</ol>
+<hr>
+<h1>版本紀錄</h1>
+<h2>v0.1 — 2026-07-27</h2>
+<ul>
+<li>完成十八篇地基論文第十一篇。</li>
+<li>將程式可視化定義為外部結構記憶。</li>
+<li>建立角色、任務、尺度與時間條件下的視圖投影模型。</li>
+<li>提出不存在單一全知系統視圖。</li>
+<li>建立問題世界、關係、狀態、責任、契約、資料、部署、失敗、權限與歷史視圖族。</li>
+<li>建立十元視圖契約。</li>
+<li>提出語意縮放與跨尺度身份保持。</li>
+<li>區分使用者、產品、領域、工程、維運、安全、稽核與 AI Agent 視圖。</li>
+<li>分析認知負荷、最少充分結構與分層揭露。</li>
+<li>區分靜態、動態、Runtime 與歷史視圖。</li>
+<li>建立失敗視圖、權限治理視圖與時間回放。</li>
+<li>提出視圖漂移、過期標記與宣告—觀測差異。</li>
+<li>建立自動生成、人類補充與差異核查混合策略。</li>
+<li>建立雙向可追蹤與 AI 原生機器可讀視圖。</li>
+<li>加入訂單付款、網站部署、AI Agent、醫療、研究系統與多團隊平台案例。</li>
+<li>提出二十二類失敗模式與十四項可證偽研究方向。</li>
+<li>完成與 PU-1-06《失敗也是程式》的銜接。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pu-1-05.html">https://thisoneisneok.com/html/papers/pu-1-05.html</a></footer>
+</body>
+</html>

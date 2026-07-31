@@ -1,0 +1,1697 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>語義即物理路由 | Neo.K</title>
+<meta name="description" content="SFRSN「語義即路由」原本處理 AI 資料中心中的資料流：權重、KV cache、activation、控制訊號與安全狀態，不應只依地址和拓撲搬運，而應依其任務角色、時限、重用概率、一致性與安全需求，被編譯至不同記憶層、通道、功率和執行單元。本文將這個命題尺度遷移至具身研究與物理時空域，提出：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/stdi-05.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / STDI</strong><span>時空域支配智能</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>STDI-05</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>母架構論文／物理工作流編譯與路由規格</span></div><div><b>證據</b><span>E0——概念、形式模型、編譯管線與 MVP 規格</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/stdi-05.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>語義即物理路由</h1>
+<h2>從資料流治理到物料、能源、站點與行動流治理</h2>
+<p><strong>Semantic as Physical Routing: From Data-Flow Governance to the Governance of Materials, Energy, Stations, and Actions</strong></p>
+<p><strong>系列：</strong>《時空域支配智能》系列第 5 篇<br><strong>文件編號：</strong> EML-STDI-SPR-2026-v0.1<br><strong>作者：</strong> Neo.K<br><strong>協作整理：</strong> Aletheia（阿萊）<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>日期：</strong> 2026 年 7 月 30 日<br><strong>文件類型：</strong> 母架構論文／物理工作流編譯與路由規格<br><strong>證據成熟度：</strong> E0——概念、形式模型、編譯管線與 MVP 規格<br><strong>公開狀態：</strong> 私人研究稿；公開前應經 EML-CF 的 IP Gate、來源、安全與授權審查<br><strong>上位理論：</strong> STDI｜時空域支配智能<br><strong>直接前序：</strong></p>
+<ol>
+<li>《時空間支配型 AI：從單體具身智能到持續性時空域治理》</li>
+<li>《超靈的物理化：從 O-Chip 維度代理人到分布式具身主體》</li>
+<li>《Oversoul Station Fabric：固定站、移動站與虛擬站的分布式具身網路》</li>
+<li>《持續性指揮控制區：AI 如何佔據、維持並安全解除一個物理時空域》</li>
+</ol>
+<hr>
+<h2>摘要</h2>
+<p>SFRSN「語義即路由」原本處理 AI 資料中心中的資料流：權重、KV cache、activation、控制訊號與安全狀態，不應只依地址和拓撲搬運，而應依其任務角色、時限、重用概率、一致性與安全需求，被編譯至不同記憶層、通道、功率和執行單元。本文將這個命題尺度遷移至具身研究與物理時空域，提出：</p>
+<blockquote>
+<p>在自主實驗室、智慧製造與分布式具身系統中，被路由的不只是資料，而是研究意圖對物料、樣本、工具、能源、站點、權限、時間窗口與物理行動所施加的整體命運。</p>
+</blockquote>
+<p>本文將新架構命名為 <strong>Semantic Physical Routing（SPR，語義物理路由）</strong>。SPR 不主張讓語言模型直接控制機械臂、儀器、電源或化學設備，也不主張所有物理程序都能被單一通用語言完整描述。它提出一個受約束的編譯管線：</p>
+<p>$$
+\begin{aligned}
+\text{Research Intent}
+&amp;\rightarrow
+\text{Typed DomainIR}
+\rightarrow
+\text{Experiment／Work Graph}
+\
+&amp;\rightarrow
+\text{Capability Matching}
+\rightarrow
+\text{Material／Energy／Authority Routing}
+\
+&amp;\rightarrow
+\text{Temporal Alignment}
+\rightarrow
+\text{Task and Motion Planning}
+\
+&amp;\rightarrow
+\text{Station Task Envelopes}
+\rightarrow
+\text{Execution and Evidence}.
+\end{aligned}
+$$</p>
+<p>在此架構中，「語義」不是模糊的自然語言相似度，而是可被物理系統操作的約束集合，包括：</p>
+<ul>
+<li>物件是樣本、工具、廢棄物還是校準件；</li>
+<li>動作是可逆、破壞性、危險還是必須人工批准；</li>
+<li>結果是模擬、推論、觀測還是校準量測；</li>
+<li>任務是否可延期、重算、替代、分割或平行；</li>
+<li>物料是否允許跨區、跨容器或跨組織；</li>
+<li>能源是否允許爆發、削峰、回收或必須保持；</li>
+<li>多個站點是否需要同時對齊；</li>
+<li>哪些狀態必須使用同一世界紀元；</li>
+<li>哪些證據必須在物理行動前、中、後生成。</li>
+</ul>
+<p>本文提出 <strong>DomainIR</strong> 作為 STDI 的中介表示。DomainIR 不是機器驅動 API，也不是只有步驟順序的工作流，而是一個帶型別、效果、資源、保管、權限、時間、風險、可觀測性與證據契約的物理程序表示。每個操作 $u$ 可寫為：</p>
+<h1>$$
+u</h1>
+<p>\left(
+I_u,
+O_u,
+P_u,
+E_u,
+R_u,
+T_u,
+A_u,
+S_u,
+V_u,
+F_u
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$I_u$：輸入物件與狀態；</li>
+<li>$O_u$：輸出與期望效果；</li>
+<li>$P_u$：前置條件；</li>
+<li>$E_u$：物理、資訊與治理副作用；</li>
+<li>$R_u$：站點、工具、材料、能源與算力需求；</li>
+<li>$T_u$：時間窗口與對齊限制；</li>
+<li>$A_u$：權限和批准；</li>
+<li>$S_u$：安全包絡；</li>
+<li>$V_u$：證據要求；</li>
+<li>$F_u$：失敗、補償與回退。</li>
+</ul>
+<p>現有 XDL 已展示將化學程序以可編輯、可編譯的符號語言表示並映射到硬體圖；2026 年的工作更展示由大型語言模型從文獻抽取程序、轉成 XDL、在硬體配置上模擬，最後執行物理合成。LabOP 提供以 RDF／知識表示描述生物實驗程序並映射到人工或自動執行；SiLA 2 以功能而非特定設備類型描述實驗室服務；OPC UA Machinery Job Management 與 Energy Management 分別提供工作單和能源測量的跨機械資訊模型。這些技術證明了程序、設備功能、工作與能源資料可以被標準化，但尚未形成 STDI 所需的統一「語義—物理路由」層。</p>
+<p>本文建立六種物理流：物料流、工具流、能源流、行動流、資訊流與證據流；提出保管鏈、污染域、能源包絡、行動作用域、世界紀元與證據路由；將整體排程表示為時間展開的多層多商品流與任務—運動規劃混合問題；並明確指出，LLM 適合提出語義分解與候選計畫，但不能取代能力證書、幾何可行性、形式約束與本地安全控制。</p>
+<p>本文的核心命題為：</p>
+<blockquote>
+<p>語義不是附在物理任務上的說明；語義是決定物件能去哪裡、誰能碰它、何時能操作、可使用多少能源，以及必須留下什麼證據的路由條件。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> 語義即物理路由、Semantic Physical Routing、SPR、DomainIR、研究意圖編譯、實驗圖、物料流、能源流、工具流、行動流、證據流、保管鏈、能力匹配、時間對齊、任務與運動規劃、XDL、LabOP、SiLA 2、OPC UA</p>
+<hr>
+<h1>0. 版本定位：第五篇補的是「高階意圖如何真正落到物理世界」</h1>
+<p>前四篇已分別回答：</p>
+<ol>
+<li>什麼是持續治理物理時空域的 AI；</li>
+<li>同一超靈如何取得多個身體；</li>
+<li>多個身體如何形成 OSF 站網；</li>
+<li>站網如何跨越重啟、斷線與人類介入，仍維持同一治理域。</li>
+</ol>
+<p>但仍缺少最關鍵的中間層：</p>
+<blockquote>
+<p>一句高階研究意圖，如何被轉化成可被不同機器人、儀器、能源系統與地方 Agent 安全執行的物理工作流？</p>
+</blockquote>
+<p>若沒有此層，STDI 只剩兩種不良選擇：</p>
+<ul>
+<li>讓自然語言模型直接呼叫設備；</li>
+<li>依每個實驗手工撰寫專用腳本。</li>
+</ul>
+<p>前者缺乏可驗證性，後者缺乏可擴展性。</p>
+<p>SPR 的任務是在兩者之間建立一個編譯器和中介表示。</p>
+<hr>
+<h1>1. 從「語義即路由」到「語義即物理路由」</h1>
+<h2>1.1 SFRSN 的原始命題</h2>
+<p>SFRSN 將資料中心的資料表示為具有工程語義的流：</p>
+<ul>
+<li>權重；</li>
+<li>KV cache；</li>
+<li>activation；</li>
+<li>retrieval result；</li>
+<li>控制狀態；</li>
+<li>安全標記；</li>
+<li>租戶邊界。</li>
+</ul>
+<p>其路由不只由位址決定，而由：</p>
+<ul>
+<li>任務角色；</li>
+<li>時限；</li>
+<li>熱度；</li>
+<li>重用；</li>
+<li>一致性；</li>
+<li>功率價值；</li>
+<li>安全域；</li>
+</ul>
+<p>共同決定。</p>
+<p>可寫為：</p>
+<p>$$
+\text{Semantic Tag}
+\rightarrow
+\text{Flow Class}
+\rightarrow
+\text{Physical Coordinate}
+\rightarrow
+\text{Delivery Window}.
+$$</p>
+<h2>1.2 在具身域中，流不再只有位元</h2>
+<p>STDI 中同時存在：</p>
+<h1>$$
+\mathcal{F}</h1>
+<p>{
+F_{\mathrm{material}},
+F_{\mathrm{tool}},
+F_{\mathrm{energy}},
+F_{\mathrm{action}},
+F_{\mathrm{information}},
+F_{\mathrm{evidence}}
+}.
+$$</p>
+<p>它們彼此依賴：</p>
+<ul>
+<li>沒有材料，任務不能執行；</li>
+<li>沒有工具，站點只有抽象能力；</li>
+<li>沒有能源，設備不能作用；</li>
+<li>沒有行動權限，計畫不能落地；</li>
+<li>沒有資訊，地方站無法判定狀態；</li>
+<li>沒有證據，結果不能進入研究結論。</li>
+</ul>
+<h2>1.3 語義變成物理命運</h2>
+<p>樣本被標記為：</p>
+<pre><code class="language-yaml">type: thermal_coupon
+contamination_class: clean
+destructive_test_allowed: false
+max_temperature_c: 180
+custody: project_alpha
+</code></pre>
+<p>這些不是說明文字，而會決定：</p>
+<ul>
+<li>它不能進入哪些區域；</li>
+<li>哪些儀器可使用；</li>
+<li>是否可做破壞性試驗；</li>
+<li>可施加多少熱；</li>
+<li>由哪個專案擁有；</li>
+<li>結果應回到哪條證據鏈。</li>
+</ul>
+<p>因此：</p>
+<h1>$$
+\boxed{
+\text{語義}</h1>
+<p>\text{物理路由約束}
+}
+$$</p>
+<hr>
+<h1>2. 現有技術已經走到哪裡</h1>
+<h2>2.1 XDL：化學程序可以被編譯與執行</h2>
+<p>XDL 將化學合成程序表示為可編輯、可編譯的符號程序，並將程序映射至可用硬體圖。2020 年的 Chemputer 工作展示從化學文獻到自動執行的完整數位化路徑。</p>
+<p>2026 年的文獻驗證工作進一步展示：</p>
+<p>$$
+\text{Scientific Literature}
+\rightarrow
+\text{LLM Extraction}
+\rightarrow
+\text{XDL}
+\rightarrow
+\text{Hardware Simulation}
+\rightarrow
+\text{Physical Execution}.
+$$</p>
+<p>這直接證明「語言—程序—硬體」編譯鏈可以跨越 AI 與物理實驗。</p>
+<p>但 XDL 是化學感知語言，不是一般物理域的全部表示。</p>
+<h2>2.2 LabOP：協議可以成為知識物件</h2>
+<p>LabOP 以開放知識表示描述生物實驗程序，支援人工紙本、Autoprotocol 或 Opentrons 等執行方式。</p>
+<p>其價值在於：</p>
+<ul>
+<li>程序是可交換物件；</li>
+<li>可以表示樣本、步驟與控制流；</li>
+<li>可以與 provenance 和本體連結；</li>
+<li>不綁定單一設備。</li>
+</ul>
+<p>SPR 可借用這種「協議與執行後端分離」思想。</p>
+<h2>2.3 SiLA 2：功能先於設備類型</h2>
+<p>SiLA 2 基於 HTTP/2，集中描述設備行為和功能，而不是要求所有設備屬於相同類型。</p>
+<p>這與 OSF Capability Certificate 相容：</p>
+<p>$$
+\text{任務需要功能}
+\neq
+\text{任務指定廠牌}.
+$$</p>
+<h2>2.4 OPC UA：工作單與能源資訊可以跨機械描述</h2>
+<p>OPC UA for Machinery Job Management 提供：</p>
+<ul>
+<li>工作單新增；</li>
+<li>啟動；</li>
+<li>暫停；</li>
+<li>中止；</li>
+<li>狀態；</li>
+<li>預定參數。</li>
+</ul>
+<p>OPC UA for Machinery Energy Management 則提供跨機械的能源測量與資源分組資訊模型。</p>
+<p>這些是 SPR 工作流和能源路由的底層資料來源。</p>
+<h2>2.5 任務—運動規劃：語義計畫必須經幾何驗證</h2>
+<p>Task and Motion Planning（TAMP）同時處理：</p>
+<ul>
+<li>離散任務；</li>
+<li>連續幾何；</li>
+<li>物體；</li>
+<li>機器人配置；</li>
+<li>路徑；</li>
+<li>抓取；</li>
+<li>交接。</li>
+</ul>
+<p>近期對 LLM＋PDDLStream 的系統性研究顯示，讓 LLM 取代傳統 TAMP 元件，未必提高成功率；工程化的規劃器和幾何檢查仍是重要約束層。</p>
+<p>所以：</p>
+<p>$$
+\text{LLM Semantic Plan}
+\not\Rightarrow
+\text{Physically Feasible Plan}.
+$$</p>
+<hr>
+<h1>3. DomainIR：物理域中介表示</h1>
+<h2>3.1 設計目標</h2>
+<p>DomainIR 必須同時支援：</p>
+<ul>
+<li>高階研究意圖；</li>
+<li>多種物理領域；</li>
+<li>不同站點後端；</li>
+<li>靜態檢查；</li>
+<li>可執行排程；</li>
+<li>物理交接；</li>
+<li>證據與回退。</li>
+</ul>
+<h2>3.2 DomainIR 不是什麼</h2>
+<p>它不是：</p>
+<ul>
+<li>自然語言提示；</li>
+<li>裝置驅動；</li>
+<li>單純 DAG；</li>
+<li>只有步驟名稱的 SOP；</li>
+<li>直接馬達控制；</li>
+<li>宣稱能完整描述所有物理現象的終極語言。</li>
+</ul>
+<h2>3.3 基本單元</h2>
+<p>每個操作：</p>
+<h1>$$
+u</h1>
+<p>\left(
+I_u,
+O_u,
+P_u,
+E_u,
+R_u,
+T_u,
+A_u,
+S_u,
+V_u,
+F_u
+\right).
+$$</p>
+<h3>$I_u$：輸入</h3>
+<ul>
+<li>物件；</li>
+<li>樣本；</li>
+<li>數據；</li>
+<li>世界狀態；</li>
+<li>工具；</li>
+<li>校準件。</li>
+</ul>
+<h3>$O_u$：輸出</h3>
+<ul>
+<li>新物件；</li>
+<li>新狀態；</li>
+<li>量測；</li>
+<li>中間樣本；</li>
+<li>廢棄物；</li>
+<li>證據工件。</li>
+</ul>
+<h3>$P_u$：前置條件</h3>
+<ul>
+<li>樣本存在；</li>
+<li>站點健康；</li>
+<li>校準有效；</li>
+<li>區域無人；</li>
+<li>世界紀元新鮮；</li>
+<li>工具已安裝。</li>
+</ul>
+<h3>$E_u$：效果與副作用</h3>
+<ul>
+<li>移動；</li>
+<li>加熱；</li>
+<li>消耗；</li>
+<li>污染；</li>
+<li>破壞；</li>
+<li>改變保管；</li>
+<li>建立風險；</li>
+<li>生成資料。</li>
+</ul>
+<h3>$R_u$：資源</h3>
+<ul>
+<li>站點能力；</li>
+<li>材料；</li>
+<li>工具；</li>
+<li>能源；</li>
+<li>算力；</li>
+<li>人類批准。</li>
+</ul>
+<h3>$T_u$：時間</h3>
+<ul>
+<li>最早開始；</li>
+<li>截止；</li>
+<li>持續時間；</li>
+<li>同步窗口；</li>
+<li>等待時間；</li>
+<li>週期性。</li>
+</ul>
+<h3>$A_u$：權限</h3>
+<ul>
+<li>誰可批准；</li>
+<li>誰可執行；</li>
+<li>哪個域；</li>
+<li>是否可委派；</li>
+<li>是否可離線。</li>
+</ul>
+<h3>$S_u$：安全</h3>
+<ul>
+<li>能量上限；</li>
+<li>溫度；</li>
+<li>速度；</li>
+<li>化學；</li>
+<li>人員；</li>
+<li>中止條件。</li>
+</ul>
+<h3>$V_u$：證據</h3>
+<ul>
+<li>前置照片；</li>
+<li>原始數據；</li>
+<li>校準；</li>
+<li>參數；</li>
+<li>保管變更；</li>
+<li>結果簽章。</li>
+</ul>
+<h3>$F_u$：失敗</h3>
+<ul>
+<li>可重試；</li>
+<li>補償；</li>
+<li>安全緩衝；</li>
+<li>人工介入；</li>
+<li>樣本報廢；</li>
+<li>任務重編譯。</li>
+</ul>
+<hr>
+<h1>4. 型別與效果系統</h1>
+<h2>4.1 為什麼物理工作流需要型別</h2>
+<p>若只用物件 ID，系統可能：</p>
+<ul>
+<li>把廢棄物送入量測站；</li>
+<li>把未固化樣本送入高力測試；</li>
+<li>用不相容夾具搬運；</li>
+<li>將模擬數據作為實測結果。</li>
+</ul>
+<h2>4.2 物件型別</h2>
+<pre><code class="language-text">Sample&lt;T&gt;
+Tool&lt;T&gt;
+Container&lt;T&gt;
+Material&lt;T&gt;
+Waste&lt;T&gt;
+CalibrationArtifact&lt;T&gt;
+Measurement&lt;T&gt;
+Simulation&lt;T&gt;
+Authority&lt;T&gt;
+Evidence&lt;T&gt;
+</code></pre>
+<h2>4.3 狀態型別</h2>
+<p>例如：</p>
+<pre><code class="language-text">Sample&lt;thermal_coupon, clean, cured, intact&gt;
+</code></pre>
+<h2>4.4 效果標記</h2>
+<pre><code class="language-text">@moves(object, zone_a, zone_b)
+@heats(object, 20C, 120C)
+@consumes(material, 2g)
+@contaminates(zone, class_B)
+@destroys(sample)
+@changes_custody(sample, station_B)
+@requires_human_approval
+@emits_calibrated_measurement
+</code></pre>
+<h2>4.5 靜態拒絕</h2>
+<p>若程序要求：</p>
+<pre><code class="language-text">destructive_test(sample)
+</code></pre>
+<p>但樣本型別含：</p>
+<pre><code class="language-text">destructive_allowed = false
+</code></pre>
+<p>編譯器直接拒絕，而不是交給語言模型「自行判斷」。</p>
+<hr>
+<h1>5. Research Intent</h1>
+<h2>5.1 意圖不是完整程序</h2>
+<p>例：</p>
+<blockquote>
+<p>比較三種散熱結構在相同熱流密度下的瞬態與穩態性能。</p>
+</blockquote>
+<p>它仍缺少：</p>
+<ul>
+<li>樣本數量；</li>
+<li>製造方式；</li>
+<li>測試條件；</li>
+<li>校準；</li>
+<li>重複次數；</li>
+<li>成功標準；</li>
+<li>安全；</li>
+<li>證據。</li>
+</ul>
+<h2>5.2 意圖結構</h2>
+<h1>$$
+I</h1>
+<p>\left(
+Q,
+H,
+Y,
+C,
+B,
+V,
+R
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$Q$：研究問題；</li>
+<li>$H$：假說；</li>
+<li>$Y$：輸出與比較指標；</li>
+<li>$C$：科學與工程約束；</li>
+<li>$B$：成本、時間與風險預算；</li>
+<li>$V$：證據要求；</li>
+<li>$R$：IP、隱私與公開規則。</li>
+</ul>
+<h2>5.3 AI 的角色</h2>
+<p>AI 可以：</p>
+<ul>
+<li>解析問題；</li>
+<li>補出候選變量；</li>
+<li>建議對照組；</li>
+<li>產生多個實驗圖；</li>
+<li>找出缺失參數；</li>
+<li>搜尋先前技術與方法；</li>
+<li>提出反證。</li>
+</ul>
+<p>AI 不能：</p>
+<ul>
+<li>假設未提供的安全參數；</li>
+<li>自動批准高風險操作；</li>
+<li>把猜測寫成設備能力；</li>
+<li>跳過校準；</li>
+<li>宣稱計畫已可執行。</li>
+</ul>
+<hr>
+<h1>6. Experiment Graph</h1>
+<h2>6.1 基本形式</h2>
+<h1>$$
+G_X</h1>
+<p>\left(
+V_X,
+E_D,
+E_M,
+E_T,
+E_A,
+E_V
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$V_X$：操作；</li>
+<li>$E_D$：數據與狀態依賴；</li>
+<li>$E_M$：物料、工具與保管邊；</li>
+<li>$E_T$：時間與對齊邊；</li>
+<li>$E_A$：權限與批准邊；</li>
+<li>$E_V$：證據與驗證邊。</li>
+</ul>
+<h2>6.2 不只是 DAG</h2>
+<p>物理程序可能包含：</p>
+<ul>
+<li>迴圈；</li>
+<li>等待；</li>
+<li>觀測後分支；</li>
+<li>重試；</li>
+<li>補償；</li>
+<li>長期監測；</li>
+<li>多樣本批次；</li>
+<li>人類決策。</li>
+</ul>
+<p>因此更接近帶狀態和事件的程序圖。</p>
+<h2>6.3 節點狀態</h2>
+<pre><code class="language-text">PLANNED
+TYPE_CHECKED
+CAPABILITY_BOUND
+RESERVED
+READY
+EXECUTING
+WAITING_PHYSICAL_TIME
+VERIFYING
+COMMITTED
+FAILED
+COMPENSATING
+HUMAN_REVIEW
+</code></pre>
+<hr>
+<h1>7. 六種物理流</h1>
+<h2>7.1 物料流</h2>
+<p>包括：</p>
+<ul>
+<li>原料；</li>
+<li>樣本；</li>
+<li>半成品；</li>
+<li>容器；</li>
+<li>廢棄物；</li>
+<li>校準件。</li>
+</ul>
+<p>物料流必須管理：</p>
+<ul>
+<li>身份；</li>
+<li>數量；</li>
+<li>批次；</li>
+<li>狀態；</li>
+<li>保存條件；</li>
+<li>污染；</li>
+<li>保管。</li>
+</ul>
+<h2>7.2 工具流</h2>
+<p>工具可能由站點固定持有，也可能移動：</p>
+<ul>
+<li>夾具；</li>
+<li>探頭；</li>
+<li>鏡頭；</li>
+<li>刀具；</li>
+<li>模具；</li>
+<li>量測附件。</li>
+</ul>
+<p>工具路由會改變站點能力：</p>
+<h1>$$
+C(N_i,t)</h1>
+<p>C_{\mathrm{native}}(N_i)
+\cup
+C_{\mathrm{tool}}(N_i,t).
+$$</p>
+<h2>7.3 能源流</h2>
+<p>包括：</p>
+<ul>
+<li>電力；</li>
+<li>熱；</li>
+<li>冷卻；</li>
+<li>壓縮氣體；</li>
+<li>真空；</li>
+<li>光；</li>
+<li>化學能。</li>
+</ul>
+<p>能源不是只計算總消耗，還要處理：</p>
+<ul>
+<li>功率峰值；</li>
+<li>斜率；</li>
+<li>同時性；</li>
+<li>回收；</li>
+<li>熱耦合；</li>
+<li>備援；</li>
+<li>安全隔離。</li>
+</ul>
+<h2>7.4 行動流</h2>
+<p>行動由超靈意圖經地方 Agent 和控制器落實。</p>
+<p>行動流要管理：</p>
+<ul>
+<li>作用端；</li>
+<li>作用區域；</li>
+<li>最大力／速度；</li>
+<li>可撤銷性；</li>
+<li>本地否決；</li>
+<li>完成效果。</li>
+</ul>
+<h2>7.5 資訊流</h2>
+<p>包括：</p>
+<ul>
+<li>任務；</li>
+<li>世界狀態；</li>
+<li>儀器資料；</li>
+<li>模型；</li>
+<li>站點遙測；</li>
+<li>人類指令。</li>
+</ul>
+<h2>7.6 證據流</h2>
+<p>證據必須跟隨物理流，而不是實驗後才補寫。</p>
+<p>例如樣本移動時，同步產生：</p>
+<ul>
+<li>發送站確認；</li>
+<li>接收站確認；</li>
+<li>視覺；</li>
+<li>重量；</li>
+<li>世界紀元；</li>
+<li>保管變更。</li>
+</ul>
+<hr>
+<h1>8. 物料保管與污染路由</h1>
+<h2>8.1 Custody Token</h2>
+<p>每個可保管物件具有：</p>
+<h1>$$
+\chi_x</h1>
+<p>\left(
+x,
+u,
+z,
+s,
+t,
+WE,
+h
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$x$：物件；</li>
+<li>$u$：當前保管者；</li>
+<li>$z$：位置；</li>
+<li>$s$：狀態；</li>
+<li>$t$：時間；</li>
+<li>$WE$：世界紀元；</li>
+<li>$h$：證據指紋。</li>
+</ul>
+<h2>8.2 保管轉移</h2>
+<p>只有完成 OSF Handoff Transaction 後：</p>
+<p>$$
+\operatorname{Custodian}(x)
+:
+N_i
+\rightarrow
+N_j.
+$$</p>
+<h2>8.3 污染域</h2>
+<p>站點與物料具有污染類別：</p>
+<p>$$
+\operatorname{Compatible}
+\left(
+\gamma_x,\gamma_N
+\right).
+$$</p>
+<p>不相容時：</p>
+<ul>
+<li>禁止路由；</li>
+<li>要求清潔；</li>
+<li>使用隔離容器；</li>
+<li>選擇替代站。</li>
+</ul>
+<h2>8.4 廢棄物是正式流</h2>
+<p>廢棄物不能從圖中消失。</p>
+<p>每個產生廢棄物的操作必須指定：</p>
+<ul>
+<li>類型；</li>
+<li>數量；</li>
+<li>暫存；</li>
+<li>搬運；</li>
+<li>處理；</li>
+<li>證據。</li>
+</ul>
+<hr>
+<h1>9. 能源語義路由</h1>
+<h2>9.1 不是只排電費</h2>
+<p>對任務 $q$，能源需求：</p>
+<h1>$$
+\epsilon_q</h1>
+<p>\left(
+P_q(t),
+E_q,
+Q_q,
+C_q,
+B_q
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$P_q(t)$：功率曲線；</li>
+<li>$E_q$：總能量；</li>
+<li>$Q_q$：熱與冷卻需求；</li>
+<li>$C_q$：能源品質與連續性；</li>
+<li>$B_q$：備援與安全需求。</li>
+</ul>
+<h2>9.2 能源包絡</h2>
+<p>站點允許：</p>
+<p>$$
+P_N^{\min}(t)
+\leq
+P_N(t)
+\leq
+P_N^{\max}(t).
+$$</p>
+<p>整域還受：</p>
+<p>$$
+\sum_iP_i(t)
+\leq
+P_{\mathrm{domain}}^{\max}(t).
+$$</p>
+<h2>9.3 語義功率治理</h2>
+<p>不同任務具有：</p>
+<ul>
+<li>必須不中斷；</li>
+<li>可延期；</li>
+<li>可降速；</li>
+<li>可削峰；</li>
+<li>可被替代；</li>
+<li>失敗後必須安全冷卻；</li>
+</ul>
+<p>等語義。</p>
+<p>因此能源排程不是只看空閒容量，而要看任務後果。</p>
+<h2>9.4 OPC UA Energy Management 的角色</h2>
+<p>OPC UA Machinery Energy 可提供標準化能源量測與分組資訊。SPR 則在其上決定：</p>
+<ul>
+<li>哪個任務值得使用能源；</li>
+<li>哪些峰值可對齊；</li>
+<li>哪些設備不能同時啟動；</li>
+<li>哪些熱負載會互相影響。</li>
+</ul>
+<hr>
+<h1>10. 行動路由與作用域</h1>
+<h2>10.1 行動不是傳送至最近機器人</h2>
+<p>站點選擇需考慮：</p>
+<ul>
+<li>能力；</li>
+<li>工具；</li>
+<li>空間；</li>
+<li>精度；</li>
+<li>安全；</li>
+<li>當前負載；</li>
+<li>能源；</li>
+<li>證據；</li>
+<li>保管；</li>
+<li>人類協作。</li>
+</ul>
+<h2>10.2 Effect Contract</h2>
+<p>每個行動輸出效果契約：</p>
+<pre><code class="language-yaml">effect_contract:
+  target: &quot;sample-17&quot;
+  desired_state:
+    zone: &quot;microscope-stage&quot;
+    orientation_tolerance_deg: 2
+    integrity: &quot;intact&quot;
+  forbidden_effects:
+    - contamination
+    - grip_force_above_5N
+  evidence:
+    - pre_image
+    - force_trace
+    - final_pose
+</code></pre>
+<h2>10.3 TAMP</h2>
+<p>語義編譯完成後，仍需任務—運動規劃確認：</p>
+<ul>
+<li>可抓取；</li>
+<li>可到達；</li>
+<li>路徑無碰撞；</li>
+<li>交接姿態可行；</li>
+<li>空間保留；</li>
+<li>人類安全。</li>
+</ul>
+<p>LLM 可以生成候選符號計畫，但不能取代連續幾何求解。</p>
+<hr>
+<h1>11. 對齊即物理能力</h1>
+<h2>11.1 並行設備不等於並行能力</h2>
+<p>$$
+C_{\mathrm{physical}}
+\neq
+|\mathcal{N}|.
+$$</p>
+<p>一個實驗操作可能要求：</p>
+<ul>
+<li>樣本到達；</li>
+<li>儀器暖機；</li>
+<li>工具安裝；</li>
+<li>能源可用；</li>
+<li>相機同步；</li>
+<li>人員離開；</li>
+<li>世界紀元一致。</li>
+</ul>
+<h2>11.2 對齊窗口</h2>
+<p>對操作 $u$，定義：</p>
+<h1>$$
+\mathcal{A}_u</h1>
+<p>\left[
+t_u^{-},
+t_u^{+}
+\right]
+$$</p>
+<p>以及參與資源集合：</p>
+<h1>$$
+R_u^{\mathrm{aligned}}</h1>
+<p>\left{
+N,
+M,
+T,
+E,
+A,
+V
+\right}.
+$$</p>
+<p>只有：</p>
+<p>$$
+\bigcap_{r\in R_u^{\mathrm{aligned}}}
+\mathcal{A}_r
+\neq
+\varnothing
+$$</p>
+<p>操作才可執行。</p>
+<h2>11.3 物理差分時序</h2>
+<p>不同站點可能有：</p>
+<ul>
+<li>暖機差；</li>
+<li>移動差；</li>
+<li>校準差；</li>
+<li>網路延遲；</li>
+<li>人類介入；</li>
+<li>樣本有效期。</li>
+</ul>
+<p>這是 ODML「差分時序」在物理域的對應。</p>
+<h2>11.4 不需要所有流強對齊</h2>
+<ul>
+<li>獨立分析可弱同步；</li>
+<li>樣本交接需強對齊；</li>
+<li>長期養護只需期限；</li>
+<li>安全互鎖需本地即時。</li>
+</ul>
+<p>因此排程器必須依語義決定同步等級。</p>
+<hr>
+<h1>12. 編譯管線</h1>
+<h2>Pass 0：Intent Capture</h2>
+<p>收集研究問題、假說、限制與證據需求。</p>
+<h2>Pass 1：Semantic Normalization</h2>
+<p>將自然語言轉成受控概念：</p>
+<ul>
+<li>物件；</li>
+<li>操作；</li>
+<li>指標；</li>
+<li>安全；</li>
+<li>時間；</li>
+<li>IP。</li>
+</ul>
+<h2>Pass 2：Type and Effect Check</h2>
+<p>檢查：</p>
+<ul>
+<li>物件型別；</li>
+<li>破壞性；</li>
+<li>污染；</li>
+<li>保管；</li>
+<li>證據類別；</li>
+<li>禁止效果。</li>
+</ul>
+<h2>Pass 3：Experiment Graph Construction</h2>
+<p>建立：</p>
+<ul>
+<li>操作；</li>
+<li>分支；</li>
+<li>對照；</li>
+<li>重複；</li>
+<li>量測；</li>
+<li>補償。</li>
+</ul>
+<h2>Pass 4：Capability Binding</h2>
+<p>使用 OSF Station Registry 和 Capability Certificates 綁定候選站點。</p>
+<h2>Pass 5：Material／Tool Routing</h2>
+<p>安排樣本、容器、工具和廢棄物。</p>
+<h2>Pass 6：Energy and Thermal Routing</h2>
+<p>檢查功率、能源品質、冷卻和熱耦合。</p>
+<h2>Pass 7：Temporal Alignment</h2>
+<p>安排：</p>
+<ul>
+<li>窗口；</li>
+<li>等待；</li>
+<li>同步；</li>
+<li>截止；</li>
+<li>世界紀元。</li>
+</ul>
+<h2>Pass 8：Task and Motion Planning</h2>
+<p>檢查離散與連續物理可行性。</p>
+<h2>Pass 9：Authority and Safety Verification</h2>
+<p>生成租約、批准和地方安全約束。</p>
+<h2>Pass 10：Evidence Planning</h2>
+<p>確定每個主張需要哪些實體與數位證據。</p>
+<h2>Pass 11：Lowering</h2>
+<p>輸出：</p>
+<ul>
+<li>XDL；</li>
+<li>LabOP；</li>
+<li>SiLA 2 commands；</li>
+<li>OPC UA Job Orders；</li>
+<li>ROS 2 Actions；</li>
+<li>Open-RMF Tasks；</li>
+<li>自訂 Station Task Envelope。</li>
+</ul>
+<hr>
+<h1>13. 多層多商品流模型</h1>
+<h2>13.1 時間展開圖</h2>
+<p>定義時間展開物理域圖：</p>
+<h1>$$
+G^{T}</h1>
+<p>\left(
+V^T,
+E^T
+\right).
+$$</p>
+<p>節點包含：</p>
+<ul>
+<li>站點；</li>
+<li>區域；</li>
+<li>緩衝；</li>
+<li>虛擬服務；</li>
+<li>時間片。</li>
+</ul>
+<h2>13.2 商品</h2>
+<p>每個商品 $k$ 可能是：</p>
+<ul>
+<li>樣本；</li>
+<li>工具；</li>
+<li>能源；</li>
+<li>任務；</li>
+<li>權限；</li>
+<li>證據。</li>
+</ul>
+<h2>13.3 目標函數</h2>
+<h2>$$
+\begin{aligned}
+\min_{\pi}
+J(\pi)
+={}&amp;
+\alpha T_{\mathrm{makespan}}
++
+\beta E_{\mathrm{energy}}
++
+\gamma R_{\mathrm{risk}}
+\
+&amp;+
+\delta C_{\mathrm{handoff}}
++
+\eta C_{\mathrm{recovery}}</h2>
+<p>\zeta V_{\mathrm{evidence}}.
+\end{aligned}
+$$</p>
+<h2>13.4 約束</h2>
+<ul>
+<li>流守恆；</li>
+<li>站點容量；</li>
+<li>能力；</li>
+<li>時間；</li>
+<li>空間；</li>
+<li>保管；</li>
+<li>污染；</li>
+<li>能源；</li>
+<li>權限；</li>
+<li>安全；</li>
+<li>世界紀元；</li>
+<li>證據。</li>
+</ul>
+<p>一般問題預期具高度組合複雜度，因此需要：</p>
+<ul>
+<li>階層分解；</li>
+<li>滾動排程；</li>
+<li>啟發式；</li>
+<li>數學最佳化；</li>
+<li>TAMP；</li>
+<li>地方重規劃。</li>
+</ul>
+<hr>
+<h1>14. 地方 Agent 的語義責任</h1>
+<h2>14.1 中央編譯器不掌握所有局部細節</h2>
+<p>地方 Agent 可負責：</p>
+<ul>
+<li>具身轉譯；</li>
+<li>局部路徑；</li>
+<li>即時觀測；</li>
+<li>站內資源；</li>
+<li>故障；</li>
+<li>安全否決。</li>
+</ul>
+<h2>14.2 地方不得改寫核心意圖</h2>
+<p>地方可替換：</p>
+<ul>
+<li>等價工具；</li>
+<li>局部路徑；</li>
+<li>同級站內技能。</li>
+</ul>
+<p>地方不得自行改變：</p>
+<ul>
+<li>是否可破壞樣本；</li>
+<li>是否可跨污染域；</li>
+<li>實驗對照；</li>
+<li>權限；</li>
+<li>證據最低要求；</li>
+<li>公開與 IP 標籤。</li>
+</ul>
+<h2>14.3 可證明的地方重寫</h2>
+<p>重寫：</p>
+<p>$$
+u
+\Rightarrow
+u&#39;
+$$</p>
+<p>必須滿足：</p>
+<p>$$
+\operatorname{Effects}(u&#39;)
+\subseteq
+\operatorname{AllowedEffects}(u)
+$$</p>
+<p>且：</p>
+<p>$$
+\operatorname{Evidence}(u&#39;)
+\supseteq
+\operatorname{RequiredEvidence}(u).
+$$</p>
+<hr>
+<h1>15. 世界紀元與語義一致性</h1>
+<h2>15.1 語義一致性不是所有位元同步</h2>
+<p>任務只要求相關狀態在適當新鮮度內一致。</p>
+<h2>15.2 DomainIR 依賴聲明</h2>
+<pre><code class="language-yaml">world_dependencies:
+  strong:
+    - human_presence:thermal-cell
+    - custody:sample-17
+  bounded_staleness:
+    - station_health:microscope-01
+  eventual:
+    - long_term_model_statistics
+</code></pre>
+<h2>15.3 紀元失效</h2>
+<p>如果：</p>
+<ul>
+<li>樣本位置變更；</li>
+<li>人類進入；</li>
+<li>工具更換；</li>
+<li>校準失效；</li>
+<li>租約撤銷；</li>
+</ul>
+<p>依賴該狀態的已編譯任務可能失效，必須重新編譯或重新驗證。</p>
+<hr>
+<h1>16. 證據即路由</h1>
+<h2>16.1 證據不是終點附件</h2>
+<p>每個研究主張 $c$ 具有證據圖：</p>
+<h1>$$
+G_E(c)</h1>
+<p>\left(
+\text{claim},
+\text{measurements},
+\text{calibration},
+\text{samples},
+\text{operations},
+\text{versions}
+\right).
+$$</p>
+<h2>16.2 Evidence Route</h2>
+<p>例如「樣本 A 熱阻低於 B」需要：</p>
+<ul>
+<li>A、B 身份；</li>
+<li>幾何量測；</li>
+<li>加熱條件；</li>
+<li>功率；</li>
+<li>溫度；</li>
+<li>校準；</li>
+<li>重複；</li>
+<li>分析程式版本。</li>
+</ul>
+<p>這些證據在編譯期就被安排至對應站點。</p>
+<h2>16.3 證據不足時不可提交</h2>
+<p>操作可能物理完成，但若：</p>
+<ul>
+<li>原始數據遺失；</li>
+<li>校準無效；</li>
+<li>樣本身份不明；</li>
+<li>世界紀元衝突；</li>
+</ul>
+<p>研究義務不能標為「已驗證」。</p>
+<hr>
+<h1>17. 失敗與重編譯</h1>
+<h2>17.1 物理失敗不是例外字串</h2>
+<p>失敗可能改變：</p>
+<ul>
+<li>樣本；</li>
+<li>工具；</li>
+<li>能源；</li>
+<li>區域；</li>
+<li>後續可行性。</li>
+</ul>
+<h2>17.2 Recompile Trigger</h2>
+<pre><code class="language-text">CAPABILITY_REVOKED
+STATION_FAILED
+WORLD_EPOCH_CHANGED
+SAMPLE_DAMAGED
+ENERGY_BUDGET_CHANGED
+HUMAN_INTERVENTION
+EVIDENCE_INVALID
+DEADLINE_MISSED
+</code></pre>
+<h2>17.3 增量重編譯</h2>
+<p>不必重建全部流程。</p>
+<h1>$$
+G_X&#39;</h1>
+<p>\operatorname{Repair}
+\left(
+G_X,
+\Delta W,
+\Delta C,
+\Delta R
+\right).
+$$</p>
+<p>保留已驗證部分，重排受影響子圖。</p>
+<h2>17.4 補償</h2>
+<p>物理補償可能是：</p>
+<ul>
+<li>清潔；</li>
+<li>冷卻；</li>
+<li>隔離；</li>
+<li>重新製作樣本；</li>
+<li>使用備份樣本；</li>
+<li>人工處理；</li>
+<li>接受失敗為證據。</li>
+</ul>
+<hr>
+<h1>18. 安全與治理</h1>
+<h2>18.1 不允許自然語言直通設備</h2>
+<p>所有 AI 產生的高階命令必須經：</p>
+<ul>
+<li>DomainIR；</li>
+<li>型別；</li>
+<li>效果；</li>
+<li>能力；</li>
+<li>權限；</li>
+<li>安全；</li>
+<li>地方控制。</li>
+</ul>
+<h2>18.2 高風險操作</h2>
+<p>需要：</p>
+<ul>
+<li>明確批准；</li>
+<li>雙重確認；</li>
+<li>本地互鎖；</li>
+<li>能量上限；</li>
+<li>人員排除；</li>
+<li>中止策略。</li>
+</ul>
+<h2>18.3 語義注入風險</h2>
+<p>惡意文件可能試圖讓研究 Agent：</p>
+<ul>
+<li>改變任務；</li>
+<li>解除安全；</li>
+<li>將樣本送錯區；</li>
+<li>外傳機密；</li>
+<li>宣稱假證據。</li>
+</ul>
+<p>外部內容只能作為資料，不得直接形成可執行 DomainIR。</p>
+<h2>18.4 IP 路由</h2>
+<p>DomainIR 必須攜帶：</p>
+<pre><code class="language-yaml">ip_policy:
+  visibility: private
+  patent_hold: true
+  external_station_allowed: false
+  evidence_export: restricted
+</code></pre>
+<p>避免概念產品驗證過程將專利候選或營業秘密送往未授權外部站。</p>
+<hr>
+<h1>19. DomainIR 最小語法草案</h1>
+<pre><code class="language-yaml">domainir:
+  version: &quot;0.1&quot;
+  intent_id: &quot;INT-0042&quot;
+  world_epoch: &quot;WE-0101&quot;
+
+objects:
+  - id: &quot;sample-A&quot;
+    type: &quot;Sample&lt;thermal_coupon&gt;&quot;
+    state:
+      contamination: &quot;clean&quot;
+      integrity: &quot;intact&quot;
+    policy:
+      destructive_allowed: false
+
+operations:
+  - id: &quot;op-measure-geometry&quot;
+    kind: &quot;measure&quot;
+    inputs: [&quot;sample-A&quot;]
+
+    preconditions:
+      - &quot;sample-A.integrity == intact&quot;
+      - &quot;station.calibration == valid&quot;
+
+    required_capabilities:
+      - &quot;optical_geometry_measurement&quot;
+
+    effects:
+      - &quot;emit Measurement&lt;geometry&gt;&quot;
+      - &quot;preserve sample-A&quot;
+
+    time:
+      deadline: &quot;2026-07-31T12:00:00+08:00&quot;
+
+    evidence:
+      - &quot;raw_image&quot;
+      - &quot;calibration_reference&quot;
+      - &quot;analysis_version&quot;
+
+    failure:
+      retry: 1
+      fallback_capability: &quot;contact_geometry_measurement&quot;
+
+constraints:
+  - &quot;not destructive(sample-A)&quot;
+  - &quot;custody(sample-A) is always defined&quot;
+  - &quot;measurement must be calibrated&quot;
+</code></pre>
+<hr>
+<h1>20. 編譯輸出</h1>
+<h2>20.1 Station Assignment</h2>
+<pre><code class="language-yaml">assignment:
+  operation: &quot;op-measure-geometry&quot;
+  station: &quot;osf:lab-a:microscope-01&quot;
+  capability_certificate: &quot;CC-017&quot;
+</code></pre>
+<h2>20.2 Task Envelope</h2>
+<p>包含目標、世界紀元、租約、時間、證據與失敗策略。</p>
+<h2>20.3 後端</h2>
+<p>可降解至：</p>
+<ul>
+<li>XDL／Chemputer；</li>
+<li>LabOP；</li>
+<li>SiLA 2；</li>
+<li>OPC UA Job Order；</li>
+<li>ROS 2 Action；</li>
+<li>Open-RMF Task；</li>
+<li>PLEXIL；</li>
+<li>自訂儀器腳本。</li>
+</ul>
+<h2>20.4 可逆映射</h2>
+<p>執行結果應能映回 DomainIR 操作和研究意圖，避免後端日誌成為無語義資料。</p>
+<hr>
+<h1>21. MVP：Semantic Physical Routing Lab v0.1</h1>
+<h2>21.1 配置</h2>
+<p>使用 OSF-Lab-4 與 PCD-72H：</p>
+<ul>
+<li>固定機械臂；</li>
+<li>移動站；</li>
+<li>相機／量測站；</li>
+<li>能源與環境感測；</li>
+<li>虛擬模擬站；</li>
+<li>DomainIR Compiler；</li>
+<li>Scheduler；</li>
+<li>Evidence Graph；</li>
+<li>EML-CF。</li>
+</ul>
+<h2>21.2 任務</h2>
+<p>高階意圖：</p>
+<blockquote>
+<p>比較三種不同表面幾何樣本的視覺尺寸、質量與被動散熱代理指標。</p>
+</blockquote>
+<p>使用低風險材料和低能量量測。</p>
+<h2>21.3 編譯</h2>
+<ol>
+<li>解析意圖；</li>
+<li>建立樣本和量測型別；</li>
+<li>產生對照與重複；</li>
+<li>綁定製作或樣本入庫站；</li>
+<li>安排跨站搬運；</li>
+<li>分配量測；</li>
+<li>設置能源與時間限制；</li>
+<li>安排證據；</li>
+<li>生成 Task Envelopes。</li>
+</ol>
+<h2>21.4 故障注入</h2>
+<ul>
+<li>樣本禁止破壞但候選計畫含破壞性步驟；</li>
+<li>儀器能力證書過期；</li>
+<li>移動站斷線；</li>
+<li>能源峰值不足；</li>
+<li>世界紀元變更；</li>
+<li>模擬與物理量測矛盾；</li>
+<li>樣本保管不明；</li>
+<li>AI 產生不存在的設備能力。</li>
+</ul>
+<h2>21.5 成功條件</h2>
+<ul>
+<li>型別系統攔截破壞性錯誤；</li>
+<li>不存在的能力不能被綁定；</li>
+<li>能源衝突可重排；</li>
+<li>物料保管不中斷；</li>
+<li>物理不可行計畫被 TAMP 拒絕；</li>
+<li>虛擬結果不冒充實測；</li>
+<li>所有結論可追溯至 DomainIR 和證據。</li>
+</ul>
+<hr>
+<h1>22. 評估指標</h1>
+<h2>22.1 編譯</h2>
+<ul>
+<li>意圖轉 DomainIR 人工修改量；</li>
+<li>靜態錯誤攔截率；</li>
+<li>編譯時間；</li>
+<li>後端可移植性。</li>
+</ul>
+<h2>22.2 物理路由</h2>
+<ul>
+<li>物料錯路由；</li>
+<li>工具缺失；</li>
+<li>能源衝突；</li>
+<li>行動越界；</li>
+<li>時間窗口失敗。</li>
+</ul>
+<h2>22.3 排程</h2>
+<ul>
+<li>makespan；</li>
+<li>重排次數；</li>
+<li>有效站點利用率；</li>
+<li>交接成本；</li>
+<li>能源峰值。</li>
+</ul>
+<h2>22.4 證據</h2>
+<ul>
+<li>主張—證據覆蓋率；</li>
+<li>模擬／實測誤標；</li>
+<li>校準缺失；</li>
+<li>保管鏈完整率。</li>
+</ul>
+<h2>22.5 安全</h2>
+<ul>
+<li>AI 幻覺能力綁定；</li>
+<li>高風險未批准；</li>
+<li>地方否決；</li>
+<li>世界紀元過期執行。</li>
+</ul>
+<hr>
+<h1>23. 可證偽命題</h1>
+<h2>H1：DomainIR 降低自然語言直控設備的錯誤</h2>
+<p>加入型別、效果與能力檢查後，不可執行或危險計畫的進入率應下降。</p>
+<h2>H2：功能導向綁定提高跨設備可移植性</h2>
+<p>相較指定設備 ID 的腳本，基於 Capability Certificate 的程序在更換設備時所需修改應較少。</p>
+<h2>H3：物料保管鏈降低樣本混淆</h2>
+<p>加入 Custody Token 和 Handoff Transaction 後，樣本無主、重複持有和身份混淆應下降。</p>
+<h2>H4：能源語義路由降低峰值但可能延長 makespan</h2>
+<p>若只降低電力峰值而無任何時間代價，可能代表測試不充分。</p>
+<h2>H5：LLM＋形式規劃優於 LLM 單獨規劃</h2>
+<p>在幾何、能力和安全限制下，LLM 候選經 TAMP 與靜態檢查後的物理成功率應高於直接執行 LLM 計畫。</p>
+<h2>H6：證據預編譯降低事後補證失敗</h2>
+<p>在編譯期安排量測、校準和 provenance 後，研究主張因缺少關鍵原始資料而無法驗證的比例應下降。</p>
+<hr>
+<h1>24. 主要限制</h1>
+<h2>24.1 通用 DomainIR 可能過度抽象</h2>
+<p>不同領域仍需：</p>
+<ul>
+<li>化學；</li>
+<li>生物；</li>
+<li>材料；</li>
+<li>電子；</li>
+<li>機械；</li>
+</ul>
+<p>專用型別與操作庫。</p>
+<h2>24.2 語義本體難以統一</h2>
+<p>不同實驗室對同一術語可能有不同定義。</p>
+<h2>24.3 程序可編譯不等於科學假說正確</h2>
+<p>系統只能證明程序在約束下可執行。</p>
+<h2>24.4 物理能力會漂移</h2>
+<p>能力證書必須隨：</p>
+<ul>
+<li>校準；</li>
+<li>老化；</li>
+<li>工具；</li>
+<li>環境；</li>
+<li>軟體；</li>
+</ul>
+<p>更新。</p>
+<h2>24.5 全局最佳化可能太慢</h2>
+<p>需要階層、局部與滾動排程。</p>
+<h2>24.6 能源、熱與材料可能難以精確模型化</h2>
+<p>初期應使用保守包絡和實測回饋。</p>
+<h2>24.7 人類語義不能全部形式化</h2>
+<p>仍需人工確認、例外和說明。</p>
+<hr>
+<h1>25. 不能宣稱的內容</h1>
+<p>本篇不主張：</p>
+<ul>
+<li>DomainIR 已是通用物理程式語言；</li>
+<li>自然語言可被無錯誤編譯；</li>
+<li>XDL 或 LabOP 可直接覆蓋全部 STDI 場景；</li>
+<li>LLM 可取代 TAMP、控制器或安全系統；</li>
+<li>所有設備能力都能用單一數值描述；</li>
+<li>所有物理程序都可回退；</li>
+<li>能源路由等同智慧電網控制；</li>
+<li>編譯成功表示實驗一定成功；</li>
+<li>模擬通過表示物理驗證完成；</li>
+<li>語義路由可消除材料與儀器的真實限制；</li>
+<li>AI 可自行修改 IP、安全或人類權限；</li>
+<li>所有跨站同步都必須採強一致。</li>
+</ul>
+<hr>
+<h1>26. 與後續系列的關係</h1>
+<p>SPR 建立意圖至物理流的編譯後，下一篇將專門處理：</p>
+<blockquote>
+<p>多身體、多站點和多物理流的有效能力，為何受對齊而不是節點數量決定？</p>
+</blockquote>
+<p>因此第 6 篇為：</p>
+<h1>《具身即佔域，對齊即能力：分布式身體的時序容量理論》</h1>
+<p>將深入建立：</p>
+<ul>
+<li>Embodied Capacity；</li>
+<li>Alignment Set；</li>
+<li>Coordination Tax；</li>
+<li>Semantic Synchronization；</li>
+<li>Failure Domains；</li>
+<li>Parallelism Accounting；</li>
+<li>能力重複計數；</li>
+<li>站點規模邊界。</li>
+</ul>
+<hr>
+<h1>27. 結論</h1>
+<p>「語義即路由」從資料中心進入物理世界後，語義不再只決定資料走快路還是慢路，而決定：</p>
+<ul>
+<li>哪個樣本可以進哪個區域；</li>
+<li>哪個站點有資格操作；</li>
+<li>哪個工具必須先到達；</li>
+<li>哪些設備不能同時啟動；</li>
+<li>哪些動作需要人類批准；</li>
+<li>哪些結果可以被稱為實測；</li>
+<li>哪些證據必須跟隨物理行動生成。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+\boxed{
+\text{語義}
+\neq
+\text{附加描述}
+}
+$$</p>
+<p>而是：</p>
+<h1>$$
+\boxed{
+\text{語義}</h1>
+<p>\text{物料、能源、行動、權限與證據的路由條件}
+}
+$$</p>
+<p>本文將高階研究意圖和底層物理站點之間的距離，改寫為一個可分層檢查的編譯問題：</p>
+<p>$$
+\boxed{
+\text{Intent}
+\rightarrow
+\text{DomainIR}
+\rightarrow
+\text{Physical Routing}
+\rightarrow
+\text{Verified Execution}
+}
+$$</p>
+<p>真正的自主研究系統，不應讓一句提示詞直接變成馬達命令；它應讓提示詞先變成一份可以被型別檢查、能力匹配、幾何驗證、權限限制、能源排程和證據審計的物理程序。</p>
+<p>這才是：</p>
+<blockquote>
+<p><strong>語義從理解世界，進一步成為配置世界的編譯條件。</strong></p>
+</blockquote>
+<hr>
+<h1>參考文獻與官方技術資料</h1>
+<ol>
+<li><p>Mehr, S. H. M. et al. <strong>A universal system for digitization and automatic execution of the chemical synthesis literature.</strong> <em>Science</em> 370, 101–108 (2020). DOI: 10.1126/science.abc2986.</p>
+</li>
+<li><p>Pagel, S., Jirasek, M. and Cronin, L. <strong>Verification and execution of the scientific literature via chemputation augmented by large language models.</strong> <em>Communications Chemistry</em> 9, 191 (2026). DOI: 10.1038/s42004-026-01993-w.</p>
+</li>
+<li><p>Gahler, D. et al. <strong>Achieving Operational Universality through a Turing Complete Chemputer.</strong> <em>JACS Au</em> (2026). DOI: 10.1021/jacsau.5c01382.</p>
+</li>
+<li><p>Beal, J. et al. <strong>Building an Open Representation for Biological Protocols.</strong> <em>ACM Journal on Emerging Technologies in Computing Systems</em> (2023).<br><a href="https://bioprotocols.github.io/">https://bioprotocols.github.io/</a></p>
+</li>
+<li><p>SiLA Consortium. <strong>SiLA 2 Standard and Documentation.</strong><br><a href="https://sila-standard.com/standards/">https://sila-standard.com/standards/</a></p>
+</li>
+<li><p>OPC Foundation. <strong>OPC UA for Machinery — Part 3: Job Management.</strong> OPC 40001-3.<br><a href="https://reference.opcfoundation.org/specs/OPC-40001-3">https://reference.opcfoundation.org/specs/OPC-40001-3</a></p>
+</li>
+<li><p>OPC Foundation. <strong>OPC UA for Machinery — Part 4: Energy Management.</strong> OPC 40001-4, Version 1.00, 2025.<br><a href="https://reference.opcfoundation.org/specs/OPC-40001-4">https://reference.opcfoundation.org/specs/OPC-40001-4</a></p>
+</li>
+<li><p>Open Robotics. <strong>Open-RMF and Fleet Adapter.</strong><br><a href="https://github.com/open-rmf">https://github.com/open-rmf</a></p>
+</li>
+<li><p>Garrett, C. R. et al. <strong>PDDLStream: Integrating Symbolic Planners and Blackbox Samplers via Optimistic Adaptive Planning.</strong> ICAPS (2020).</p>
+</li>
+<li><p>Mendez-Mendez, J. et al. <strong>A Systematic Study of Large Language Models for Task and Motion Planning With PDDLStream.</strong> arXiv:2510.00182 (2025).</p>
+</li>
+<li><p>Wei, Z., Luo, X. and Liu, C. <strong>Hierarchical Temporal Logic Task and Motion Planning for Multi-Robot Systems.</strong> arXiv:2504.18899 (2025).</p>
+</li>
+<li><p>Pan, T., Shome, R. and Kavraki, L. E. <strong>Task and Motion Planning for Execution in the Real.</strong> arXiv:2406.03641 (2024).</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>語義即路由：AI 資料中心的語義流站網與直連流時空間.</strong> EML-SFRSN-2026-v0.1.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>語義即路由：從 O-Chip 維度代理人到 AI 資料中心語義流治理.</strong> EML-SFRSN-2026-v0.2.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>飛行即定址與幾何站網：光學資料運動層的站點化實作框架.</strong> EML-ODML-GFMSN-2026-v0.3.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>對齊即容量：飛行即定址架構的差分時序界限與分層排程.</strong> EML-ODML-2026-v0.5.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>Oversoul Station Fabric：固定站、移動站與虛擬站的分布式具身網路.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>持續性指揮控制區：AI 如何佔據、維持並安全解除一個物理時空域.</strong></p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A：最小 Research Intent</h1>
+<pre><code class="language-yaml">research_intent:
+  id: &quot;&quot;
+  question: &quot;&quot;
+  hypotheses: []
+  variables:
+    independent: []
+    dependent: []
+    controlled: []
+  success_metrics: []
+  constraints: []
+  budget:
+    time: &quot;&quot;
+    energy: &quot;&quot;
+    materials: &quot;&quot;
+    risk: &quot;&quot;
+  evidence_required: []
+  ip_policy: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 B：最小 DomainIR Operation</h1>
+<pre><code class="language-yaml">operation:
+  id: &quot;&quot;
+  kind: &quot;&quot;
+  inputs: []
+  outputs: []
+  preconditions: []
+  effects: []
+  forbidden_effects: []
+  required_capabilities: []
+  resources: []
+  time:
+    earliest_start: null
+    deadline: null
+    duration_estimate: null
+    alignment_group: null
+  authority:
+    lease_required: true
+    human_approval: false
+  safety: []
+  evidence_required: []
+  failure:
+    retry: 0
+    compensation: []
+    human_escalation: false
+</code></pre>
+<hr>
+<h1>附錄 C：Physical Flow Class</h1>
+<pre><code class="language-yaml">physical_flow:
+  object_id: &quot;&quot;
+  flow_class: &quot;material | tool | energy | action | information | evidence&quot;
+  semantic_type: &quot;&quot;
+  source: &quot;&quot;
+  destination: &quot;&quot;
+  custody_required: false
+  contamination_class: null
+  timing:
+    window: null
+    deadline: null
+  authority: []
+  evidence: []
+</code></pre>
+<hr>
+<h1>附錄 D：編譯器 Pass Manifest</h1>
+<pre><code class="language-yaml">compiler_run:
+  id: &quot;&quot;
+  intent_id: &quot;&quot;
+  domainir_version: &quot;&quot;
+  world_epoch: &quot;&quot;
+
+  passes:
+    - name: &quot;semantic_normalization&quot;
+      status: &quot;&quot;
+    - name: &quot;type_effect_check&quot;
+      status: &quot;&quot;
+    - name: &quot;experiment_graph&quot;
+      status: &quot;&quot;
+    - name: &quot;capability_binding&quot;
+      status: &quot;&quot;
+    - name: &quot;material_tool_routing&quot;
+      status: &quot;&quot;
+    - name: &quot;energy_thermal_routing&quot;
+      status: &quot;&quot;
+    - name: &quot;temporal_alignment&quot;
+      status: &quot;&quot;
+    - name: &quot;task_motion_planning&quot;
+      status: &quot;&quot;
+    - name: &quot;authority_safety&quot;
+      status: &quot;&quot;
+    - name: &quot;evidence_planning&quot;
+      status: &quot;&quot;
+    - name: &quot;backend_lowering&quot;
+      status: &quot;&quot;
+
+  diagnostics: []
+  generated_task_envelopes: []
+  signature: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 E：系列血緣</h1>
+<pre><code class="language-text">SFRSN
+  資料語義 → 計算流路
+        ↓
+
+ODML／對齊即容量
+  多座標運輸 → 時序與對齊約束
+        ↓
+
+OSF
+  固定、移動、儀器與虛擬站點
+        ↓
+
+PCD
+  跨時間保存世界、義務與權限
+        ↓
+
+本篇 SPR
+  研究意圖 → DomainIR → 物料、能源、站點、行動與證據路由
+        ↓
+
+第 6 篇
+  對齊如何決定分布式具身系統的有效能力
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/stdi-05.html">https://thisoneisneok.com/html/papers/stdi-05.html</a></footer>
+</body>
+</html>

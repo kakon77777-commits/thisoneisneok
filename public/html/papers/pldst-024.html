@@ -1,0 +1,2062 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guido、Matz 與 Larry Wall：可讀性、幸福與多義性之間的三種人本語言設計 | Neo.K</title>
+<meta name="description" content="Guido van Rossum、Yukihiro “Matz” Matsumoto 與 Larry Wall 都曾把程式語言設計從「機器能否執行」推向「人如何使用、閱讀、感受與表達」。Python、Ruby 與 Perl 也經常被共同歸入動態語言、腳本語言、膠水語言或高生產力語言。然而，只用「三者都重視人」概括其設計，會掩蓋三套幾乎相反的人本模型。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-024.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-024</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第四部跨設計師正式比較研究</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-024.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>Guido、Matz 與 Larry Wall：可讀性、幸福與多義性之間的三種人本語言設計</h1>
+<h2>摘要</h2>
+<p>Guido van Rossum、Yukihiro “Matz” Matsumoto 與 Larry Wall 都曾把程式語言設計從「機器能否執行」推向「人如何使用、閱讀、感受與表達」。Python、Ruby 與 Perl 也經常被共同歸入動態語言、腳本語言、膠水語言或高生產力語言。然而，只用「三者都重視人」概括其設計，會掩蓋三套幾乎相反的人本模型。</p>
+<p>Guido 的首要保護對象是<strong>程式的下一位讀者以及需要共同維護程式的團隊</strong>。Python 透過可見結構、相對稀疏的表面、明示慣例與「最好有一個明顯做法」壓縮等價表達空間，使不同作者的程式較容易進入共同閱讀協定。PEP 20 同時保留實用主義，但將可讀性、明示性、拒絕猜測與可解釋實作置於核心。[R1][R2][R3][R4]</p>
+<p>Matz 的首要保護對象是<strong>正在編程的人及其持續性的認知流動</strong>。Ruby 不追求形式最小，而追求自然、和諧、可表達與「使用時感覺良好」。Matz 明確區分語言「能做什麼」與人「使用它時感覺如何」，並承認自己首先設計的是一門符合自身長期品味的語言，而不是對所有人都完美的語言。[R7][R8][R9][R10]</p>
+<p>Wall 的首要保護對象則是<strong>背景、任務與表達習慣彼此不同的問題解決者</strong>。Perl 將自然語言的 Context、省略、冗餘、多種慣用法與高頻短形式帶入程式語言，拒絕假設所有真實問題只有一個最佳表示。其人本主義不是收斂，而是容納；不是消除方言，而是以文件、文化、工具與社群規範治理方言。[R12][R13][R14][R15][R16]</p>
+<p>本文提出三種人本語言設計原型：</p>
+<p>$$
+\boxed{
+\begin{aligned}
+Guido &amp;: \text{Reader-Centered Convergent Humanism}\
+Matz &amp;: \text{Programmer-Centered Experiential Humanism}\
+Wall &amp;: \text{Pluralist Expressive Humanism}
+\end{aligned}
+}
+$$</p>
+<p>三者對「自由」的理解也不同：</p>
+<p>$$
+\boxed{
+\begin{aligned}
+Python &amp;: \text{減少不必要選擇，使共同理解更自由}\
+Ruby &amp;: \text{移除表達摩擦，使程式設計過程更自由}\
+Perl &amp;: \text{保留多種慣用法，使異質問題求解更自由}
+\end{aligned}
+}
+$$</p>
+<p>本文以十二個共同軸比較三人：</p>
+<ol>
+<li>人本對象；</li>
+<li>可讀性定義；</li>
+<li>表達變異；</li>
+<li>明示與隱式；</li>
+<li>語法密度；</li>
+<li>常見路徑；</li>
+<li>物件與抽象；</li>
+<li>錯誤與安全；</li>
+<li>工具與慣例；</li>
+<li>生態擴張；</li>
+<li>治理；</li>
+<li>長期複雜度配置。</li>
+</ol>
+<p>核心結論是：</p>
+<blockquote>
+<p>「以人為中心」不是一項單一價值，而是一場關於究竟保護作者、讀者、團隊、初學者、專家、領域社群或異質問題解決者的責任分配。</p>
+</blockquote>
+<p>Python、Ruby 與 Perl 不是同一條人本語言路線上的優劣排序，而是三種不同的人類模型、三種不同的表達政治，以及三種不同的複雜度搬運方式。</p>
+<p><strong>關鍵詞：</strong> Guido van Rossum、Yukihiro Matsumoto、Matz、Larry Wall、Python、Ruby、Perl、人本語言設計、可讀性、程式設計者幸福、多義性、TIMTOWTDI、PLDST</p>
+<hr>
+<h1>第一部分　比較方法：人本並不是單一方向</h1>
+<h2>一、人本語言的最低定義</h2>
+<p>本文將人本語言設計定義為：</p>
+<blockquote>
+<p>語言設計者不只評估機器可執行性與理論表達力，也把人的學習、閱讀、撰寫、記憶、協作、感受、創造與文化差異列為一級設計成本。</p>
+</blockquote>
+<p>這一定義不表示：</p>
+<ul>
+<li>效能不重要；</li>
+<li>形式語義不重要；</li>
+<li>實作可以不精確；</li>
+<li>使用者喜歡什麼就全部加入；</li>
+<li>語言設計等同介面美化。</li>
+</ul>
+<p>人本設計仍須回答：</p>
+<p>$$
+Who\ benefits?
+\qquad
+Who\ pays?
+\qquad
+When\ is\ the\ cost\ paid?
+$$</p>
+<hr>
+<h2>二、不能只問「是否友善」</h2>
+<p>「友善」至少包含不同方向：</p>
+<ul>
+<li>對初學者友善；</li>
+<li>對熟練作者友善；</li>
+<li>對陌生讀者友善；</li>
+<li>對大型團隊友善；</li>
+<li>對工具友善；</li>
+<li>對領域專家友善；</li>
+<li>對歷史程式友善；</li>
+<li>對不同文化與表達習慣友善。</li>
+</ul>
+<p>一項設計可能同時提高其中兩項，卻降低另外三項。</p>
+<hr>
+<h2>三、人本對象向量</h2>
+<p>定義：</p>
+<p>$$
+\mathcal{H}(L)=
+(
+H_{\text{novice}},
+H_{\text{author}},
+H_{\text{reader}},
+H_{\text{team}},
+H_{\text{expert}},
+H_{\text{domain}},
+H_{\text{community}}
+)
+$$</p>
+<p>其中每一項不是主觀滿意度，而是語言對該類使用者降低或增加的實際成本。</p>
+<hr>
+<h2>四、人本價值向量</h2>
+<p>再定義：</p>
+<p>$$
+\mathcal{V}_{H}(L)=
+(
+R,
+F,
+E,
+C,
+P,
+L,
+T
+)
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$R$：Readability，可讀性；</li>
+<li>$F$：Flow，持續編程流；</li>
+<li>$E$：Expressiveness，表達力；</li>
+<li>$C$：Convergence，慣例收斂；</li>
+<li>$P$：Plurality，表達多元；</li>
+<li>$L$：Learnability，可學習性；</li>
+<li>$T$：Toolability，可工具化程度。</li>
+</ul>
+<p>Guido、Matz 與 Wall 都重視這些量，但排序與定義不同。</p>
+<hr>
+<h2>五、複雜度責任向量</h2>
+<p>語言降低使用者表面成本時，複雜度通常被搬到其他位置。</p>
+<p>$$
+\mathcal{B}(L)=
+(
+B_{\text{author}},
+B_{\text{reader}},
+B_{\text{runtime}},
+B_{\text{parser}},
+B_{\text{tool}},
+B_{\text{library}},
+B_{\text{governance}}
+)
+$$</p>
+<p>因此：</p>
+<p>$$
+HumanFriendlySurface
+\not\Rightarrow
+TotalComplexity\downarrow
+$$</p>
+<p>更常見的是：</p>
+<p>$$
+HumanFriendlySurface
+\Rightarrow
+ComplexityRelocation
+$$</p>
+<hr>
+<h2>六、本文所稱「設計者」</h2>
+<p>本文比較的是三位設計者在可直接歸因材料中反覆展現的決策風格，不把現代 Python、Ruby、Perl 的所有結果歸於個人。</p>
+<p>需要區分：</p>
+<pre><code class="language-text">創始設計者的原始問題
+創始設計者的長期品味
+核心實作者的工程選擇
+社群形成的慣例
+生態套件形成的事實語言
+現代治理制度
+</code></pre>
+<p>PLDST 比較的是前兩者如何與後四者互動。</p>
+<hr>
+<h1>第二部分　共同基底：三者為何容易被放在一起</h1>
+<h2>七、都不是純理論語言起步</h2>
+<p>三者的原始動機都包含真實工作：</p>
+<ul>
+<li>Python 要成為 ABC 的後繼，同時吸引 Unix／C 使用者並接入現實系統；</li>
+<li>Ruby 要成為 Matz 自己願意使用的物件導向腳本語言；</li>
+<li>Perl 要整合文字處理、系統管理與多個 Unix 工具的工作流。[R1][R7][R8][R12]</li>
+</ul>
+<p>因此三者都不是先建立封閉公理，再尋找應用。</p>
+<hr>
+<h2>八、都接受動態性</h2>
+<p>三者都使用動態機制降低前期宣告成本，但目的不同：</p>
+<ul>
+<li>Python：讓常見程式保持直接，同時維持可讀協定；</li>
+<li>Ruby：讓物件、Block 與 Metaprogramming 支撐自然表達；</li>
+<li>Perl：讓 Context、轉換、Regex 與多種慣用法快速映射異質資料。</li>
+</ul>
+<p>「動態語言」只是執行與型別機制分類，不能代替風格分類。</p>
+<hr>
+<h2>九、都接受實用性超過純度</h2>
+<p>Guido 的 Python 格言明確保留「實用性勝過純度」；Matz 拒絕為形式完美犧牲使用感；Wall 則公開反對單一理論大敘事。[R3][R9][R13]</p>
+<p>但三者不是同一種實用主義：</p>
+<p>$$
+\begin{aligned}
+Guido &amp;: Practicality\ under\ readable\ convention\
+Matz &amp;: Practicality\ under\ experiential\ harmony\
+Wall &amp;: Practicality\ under\ expressive\ plurality
+\end{aligned}
+$$</p>
+<hr>
+<h2>十、都由強創始品味啟動</h2>
+<p>三者早期都不是匿名委員會設計：</p>
+<ul>
+<li>Python 長期由 Guido 作最終語言裁決；</li>
+<li>Ruby 長期由 Matz 調整整體語言感；</li>
+<li>Perl 早期核心與文化強烈受 Wall 影響。</li>
+</ul>
+<p>這使語言具有可辨識氣質，也產生權力集中問題。</p>
+<hr>
+<h2>十一、都超出創始者</h2>
+<p>三種語言都形成：</p>
+<ul>
+<li>核心實作者；</li>
+<li>Library／Package 生態；</li>
+<li>教學傳統；</li>
+<li>Style guide；</li>
+<li>Framework；</li>
+<li>替代實作；</li>
+<li>正式或半正式治理。</li>
+</ul>
+<p>因此現代語言結果不能反向全部歸因於創始者。</p>
+<hr>
+<h2>十二、比較的真正問題</h2>
+<p>本文不問：</p>
+<blockquote>
+<p>Python、Ruby、Perl 哪一門最好？</p>
+</blockquote>
+<p>而問：</p>
+<blockquote>
+<p>當三位設計者都說自己在為人設計時，他們心中的「人」究竟是誰？</p>
+</blockquote>
+<hr>
+<h1>第三部分　Guido：以共同閱讀收斂表達空間</h1>
+<h2>十三、首要人本對象：下一位讀者</h2>
+<p>Python 的核心不是單純「容易寫」，而是程式在離開作者之後仍容易被辨認。</p>
+<p>PEP 8 將 Guido 的一項核心洞見概括為：</p>
+<blockquote>
+<p>程式被閱讀的次數遠多於被撰寫的次數。[R4]</p>
+</blockquote>
+<p>因此 Python 的人本單位不是孤立作者，而是跨時間的作者—讀者鏈。</p>
+<hr>
+<h2>十四、可讀性不是漂亮排版</h2>
+<p>Python 的可讀性包含：</p>
+<ul>
+<li>視覺結構與語法結構一致；</li>
+<li>名稱與 Namespace 清楚；</li>
+<li>明示 <code>self</code>；</li>
+<li>Statement 與 Expression 保持可辨識分工；</li>
+<li>錯誤不默默通過；</li>
+<li>避免過密特殊符號；</li>
+<li>常見任務形成共享慣用法。</li>
+</ul>
+<p>縮排只是其中最可見的一項。</p>
+<hr>
+<h2>十五、明示性</h2>
+<p>PEP 20 的重要對偶為：</p>
+<p>$$
+Explicit &gt; Implicit
+$$</p>
+<p>這不是禁止所有隱式行為。Python 仍有：</p>
+<ul>
+<li>Duck typing；</li>
+<li>Protocol；</li>
+<li>Iterator；</li>
+<li>Context manager；</li>
+<li>Descriptor；</li>
+<li>Import machinery；</li>
+<li>Dynamic dispatch。</li>
+</ul>
+<p>真正限制的是：</p>
+<blockquote>
+<p>不要讓讀者必須依靠過多隱藏狀態，才能知道局部程式正在做什麼。</p>
+</blockquote>
+<hr>
+<h2>十六、一個明顯做法</h2>
+<p>Python 的「最好只有一個明顯做法」主要是慣例收斂原則，而非數學唯一性。</p>
+<p>可形式化為：</p>
+<p>$$
+|W_{\text{idiomatic}}(T)|
+\ll
+|W_{\text{possible}}(T)|
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$W_{\text{possible}}(T)$：語言允許的所有做法；</li>
+<li>$W_{\text{idiomatic}}(T)$：社群預期且容易辨認的做法。</li>
+</ul>
+<p>Python 不是移除所有自由，而是縮小「正統常見路徑」集合。</p>
+<hr>
+<h2>十七、稀疏表面</h2>
+<p>PEP 20 偏好 Sparse 而非 Dense。</p>
+<p>這種稀疏性讓：</p>
+<ul>
+<li>控制流容易掃描；</li>
+<li>一行承載的語義較少；</li>
+<li>陌生讀者可由結構推斷；</li>
+<li>工具較容易建立一致格式。</li>
+</ul>
+<p>代價是某些熟練作者覺得冗長或缺乏壓縮力。</p>
+<hr>
+<h2>十八、縮排作為共同協定</h2>
+<p>Python 以縮排表示 Block，使：</p>
+<h1>$$
+VisualStructure</h1>
+<p>ParserStructure
+$$</p>
+<p>這減少花括號風格分裂，卻也把空白從排版偏好提升為語法責任。[R5]</p>
+<p>這是一種典型 Guido 風格：</p>
+<blockquote>
+<p>讓原本由團隊 Style guide 管理的問題，進入語言本身。</p>
+</blockquote>
+<hr>
+<h2>十九、常見路徑塑形</h2>
+<p>Guido 的人本設計常不是禁止替代方案，而是讓一條路：</p>
+<ul>
+<li>最短；</li>
+<li>最清楚；</li>
+<li>最容易查到；</li>
+<li>最符合 Standard Library；</li>
+<li>最能被 Linter／Formatter 辨識。</li>
+</ul>
+<p>因此：</p>
+<h1>$$
+Humanism_{\text{Guido}}</h1>
+<p>ChoiceArchitecture
+$$</p>
+<hr>
+<h2>二十、逃生口仍存在</h2>
+<p>Python 仍允許：</p>
+<ul>
+<li>Metaclass；</li>
+<li>Descriptor；</li>
+<li>Monkey patching；</li>
+<li>Dynamic import；</li>
+<li>Native extension；</li>
+<li>Introspection；</li>
+<li>Dunder protocol。</li>
+</ul>
+<p>這說明 Python 不是封閉最小語言。</p>
+<p>Guido 的典型策略是：</p>
+<pre><code class="language-text">常見能力保持清楚
+高階能力放入可辨識的特殊區域
+</code></pre>
+<hr>
+<h2>二十一、複雜度去向</h2>
+<p>Python 降低表面變異後，複雜度移至：</p>
+<ul>
+<li>Interpreter；</li>
+<li>Standard Library；</li>
+<li>Object protocol；</li>
+<li>Packaging；</li>
+<li>Tooling；</li>
+<li>PEP 與社群慣例；</li>
+<li>版本遷移。</li>
+</ul>
+<p>因此 Python 的「簡單」是經過制度支撐的簡單。</p>
+<hr>
+<h2>二十二、團隊作為設計尺度</h2>
+<p>Python 特別適合將個人程式轉成團隊程式，因為：</p>
+<ul>
+<li>Style 收斂；</li>
+<li>命名慣例清楚；</li>
+<li>Formatter 可統一表面；</li>
+<li>常見模式容易被辨認；</li>
+<li>錯誤訊息與 Traceback 可共享；</li>
+<li>教學資料容易建立共同語彙。</li>
+</ul>
+<p>這不是所有領域都最佳，但它明確保護協作。</p>
+<hr>
+<h2>二十三、Guido 原型</h2>
+<p>本文將 Guido 的人本原型判定為：</p>
+<p>$$
+\boxed{
+\text{Reader-Centered Convergent Humanist}
+}
+$$</p>
+<p>其核心命題為：</p>
+<blockquote>
+<p>使用者最大的自由，不一定來自最多語法選項，也可能來自能迅速理解別人程式的共同語言。</p>
+</blockquote>
+<hr>
+<h1>第四部分　Matz：以程式設計者感受調音語言</h1>
+<h2>二十四、首要人本對象：正在編程的人</h2>
+<p>Matz 明確區分：</p>
+<ol>
+<li>語言能做什麼；</li>
+<li>人使用語言時感覺如何。[R9]</li>
+</ol>
+<p>Ruby 的差異主要不在可計算性，而在：</p>
+<ul>
+<li>摩擦；</li>
+<li>節奏；</li>
+<li>直覺；</li>
+<li>創造感；</li>
+<li>注意力是否被機械細節打斷。</li>
+</ul>
+<hr>
+<h2>二十五、自然而非簡單</h2>
+<p>Ruby 官方資料引用 Matz：</p>
+<pre><code class="language-text">natural, not simple
+</code></pre>
+<p>並指出 Ruby 可表面簡單、內部複雜，如同人體。[R7]</p>
+<p>這表示 Ruby 接受：</p>
+<p>$$
+SurfaceNaturalness\uparrow
+\Rightarrow
+InternalComplexity\uparrow
+$$</p>
+<p>只要內部複雜度能持續換取人類表達流暢。</p>
+<hr>
+<h2>二十六、幸福成本函數</h2>
+<p>可將 Matz 的設計目標寫成：</p>
+<h1>$$
+H_{\text{programmer}}</h1>
+<h2>Flow
++
+Expressiveness
++
+Feedback
++
+AestheticCoherence</h2>
+<h2>Boilerplate</h2>
+<h2>MechanicalFriction</h2>
+<p>ContextSwitch
+$$</p>
+<p>「幸福」不是娛樂化，而是讓人把注意力留給問題、創造與抽象。</p>
+<hr>
+<h2>二十七、和諧高於完全正交</h2>
+<p>Matz 警告形式正交性可能要求使用者在腦中組合太多機制。[R9]</p>
+<p>完全正交的設計假設：</p>
+<p>$$
+Feature_i
+\times
+Feature_j
+$$</p>
+<p>都應自由組合。</p>
+<p>Ruby 更偏好：</p>
+<p>$$
+Harmony(Feature_i,Feature_j)
+$$</p>
+<p>也就是功能在實際語言感中相處自然，即使不是最一般、最對稱的形式。</p>
+<hr>
+<h2>二十八、一切皆物件的感受價值</h2>
+<p>Ruby 的一致物件觀不只是一項範式標籤。</p>
+<p>它讓使用者可以用相近方式理解：</p>
+<ul>
+<li>數字；</li>
+<li>字串；</li>
+<li>Class；</li>
+<li>Module；</li>
+<li>Method call；</li>
+<li><code>nil</code>；</li>
+<li>Metaprogramming。</li>
+</ul>
+<p>這降低概念切換，增強「語言是一個可對話世界」的感受。</p>
+<hr>
+<h2>二十九、Block 與 Iterator</h2>
+<p>Ruby 常把：</p>
+<pre><code class="language-text">對集合做什麼
+</code></pre>
+<p>寫成由集合接收方法，再將行為以 Block 傳入。</p>
+<p>這使操作接近：</p>
+<blockquote>
+<p>讓這個物件，以這段行為處理自身元素。</p>
+</blockquote>
+<p>它不一定比所有形式更短，卻符合 Ruby 的物件—訊息—Block 節奏。</p>
+<hr>
+<h2>三十、適量隱式性</h2>
+<p>Ruby 接受：</p>
+<ul>
+<li>省略 Parentheses；</li>
+<li>最後一個 Expression 自動成為回傳值；</li>
+<li>Block 與 Method 協作；</li>
+<li><code>self</code> 在常見呼叫中的省略；</li>
+<li>開放類別；</li>
+<li>動態方法；</li>
+<li>Symbol／String 慣例；</li>
+<li>DSL 式呼叫。</li>
+</ul>
+<p>這些設計提高自然性，也增加讀者必須掌握的語境。</p>
+<hr>
+<h2>三十一、Metaprogramming 的定位</h2>
+<p>Matz 指出動態新增方法等能力主要服務適應環境的 Library 與 Metaprogramming，而非鼓勵所有程式任意改寫自己。[R10]</p>
+<p>因此 Ruby 的自由是：</p>
+<pre><code class="language-text">語言提供強能力
+社群以品味區分日常使用與高階使用
+</code></pre>
+<hr>
+<h2>三十二、自由與引導</h2>
+<p>Matz 並不是取消規則，而是相信：</p>
+<ul>
+<li>語言應提供多種自然表達；</li>
+<li>設計者應維持整體和諧；</li>
+<li>社群可發展慣例；</li>
+<li>不自然功能即使理論漂亮，也可被拒絕；</li>
+<li>強大能力應由成熟使用者謹慎使用。</li>
+</ul>
+<p>這是一種「調音式治理」。</p>
+<hr>
+<h2>三十三、複雜度去向</h2>
+<p>Ruby 的人本表面把複雜度移至：</p>
+<ul>
+<li>Parser；</li>
+<li>Object model；</li>
+<li>Method lookup；</li>
+<li>Block／Closure；</li>
+<li>Metaprogramming；</li>
+<li>Runtime；</li>
+<li>Tooling；</li>
+<li>效能最佳化；</li>
+<li>團隊 Style。</li>
+</ul>
+<p>Ruby 的自然感由大量不可見機制支撐。</p>
+<hr>
+<h2>三十四、設計者作為語言調音師</h2>
+<p>Guido 常像共同慣例的裁決者；Matz 更像語言感的長期調音者。</p>
+<p>他不是只問：</p>
+<blockquote>
+<p>此功能是否一致？</p>
+</blockquote>
+<p>而是問：</p>
+<blockquote>
+<p>此功能加入後，整門 Ruby 是否仍像 Ruby？</p>
+</blockquote>
+<p>這種判斷難以完全形式化，也難由純投票取代。</p>
+<hr>
+<h2>三十五、Matz 原型</h2>
+<p>本文將 Matz 的人本原型判定為：</p>
+<p>$$
+\boxed{
+\text{Programmer-Centered Experiential Humanist}
+}
+$$</p>
+<p>其核心命題為：</p>
+<blockquote>
+<p>語言不只是一套正確規則，也是一種長時間停留其中的認知環境；設計者必須為人在其中的感受負責。</p>
+</blockquote>
+<hr>
+<h1>第五部分　Wall：以多義性容納異質問題解決者</h1>
+<h2>三十六、首要人本對象：不同背景的人</h2>
+<p>Wall 不假設所有人都具有同一種自然思考方式。</p>
+<p>Perl 面向：</p>
+<ul>
+<li>系統管理者；</li>
+<li>文字處理者；</li>
+<li>Unix 使用者；</li>
+<li>報告生成者；</li>
+<li>Web 開發者；</li>
+<li>生物資訊工作者；</li>
+<li>一次性腳本作者；</li>
+<li>長期模組維護者。</li>
+</ul>
+<p>其人本主義從差異開始。</p>
+<hr>
+<h2>三十七、問題先於語言純度</h2>
+<p>Perl 最初整合：</p>
+<ul>
+<li>Shell 程序能力；</li>
+<li><code>awk</code> 資料處理；</li>
+<li><code>sed</code> 轉換；</li>
+<li><code>grep</code> 模式匹配；</li>
+<li>C 系統接入；</li>
+<li>一般程式結構。</li>
+</ul>
+<p>Wall 的起點是：</p>
+<blockquote>
+<p>真實任務已經跨越多個工具，語言應把工作流帶回一個可操作空間。</p>
+</blockquote>
+<hr>
+<h2>三十八、自然語言不是仿英文</h2>
+<p>Wall 的自然語言類比主要涉及：</p>
+<ul>
+<li>Context；</li>
+<li>省略；</li>
+<li>冗餘；</li>
+<li>詞類線索；</li>
+<li>常見形式較短；</li>
+<li>同義與多種語氣；</li>
+<li>由簡到繁的學習層次。</li>
+</ul>
+<p>Perl 並不是要讓程式像普通英文，而是把人類語言的表達彈性帶入人工語言。</p>
+<hr>
+<h2>三十九、Context 作為語義資源</h2>
+<p>Perl 的 Scalar、List、Boolean、Void 等 Context 使同一構造能依周圍需求產生不同結果。[R15]</p>
+<p>這降低作者重複，卻提高讀者對周圍語境的依賴。</p>
+<h1>$$
+LocalExpressionMeaning</h1>
+<p>Expression
++
+Context
+$$</p>
+<hr>
+<h2>四十、高頻操作壓縮</h2>
+<p>Wall 的表面常近似 Huffman coding：</p>
+<p>$$
+SyntaxLength(operation)
+\propto
+\frac{1}{Frequency(operation)}
+$$</p>
+<p>高頻文字處理、Regex、預設主題和管線操作可以很短。</p>
+<p>這保護熟練作者的速度，但擴大新讀者的符號詞彙。</p>
+<hr>
+<h2>四十一、TIMTOWTDI</h2>
+<p>“There’s more than one way to do it” 不表示任何寫法同樣好。</p>
+<p>其較精確形式為：</p>
+<p>$$
+|W_{\text{legitimate}}(T)| &gt; 1
+$$</p>
+<p>因為：</p>
+<ul>
+<li>問題不同；</li>
+<li>背景不同；</li>
+<li>程式生命週期不同；</li>
+<li>一次性腳本與大型模組不同；</li>
+<li>不同領域具有不同慣用語。</li>
+</ul>
+<hr>
+<h2>四十二、作者自由與讀者成本</h2>
+<p>Perl 最清楚展示：</p>
+<p>$$
+AuthorChoice\uparrow
+\Rightarrow
+ReaderVocabulary\uparrow
+$$</p>
+<p>多種寫法讓作者更容易貼近問題，卻要求讀者辨認更多方言。</p>
+<p>這不是意外副作用，而是多元人本主義的結構性代價。</p>
+<hr>
+<h2>四十三、Sigil、Regex 與預設主題</h2>
+<p>Perl 透過：</p>
+<ul>
+<li>Sigil 提示資料角色；</li>
+<li>Regex 作為第一級文字語言；</li>
+<li><code>$_</code> 省略明顯主題；</li>
+<li>Statement modifier；</li>
+<li>Contextual conversion；</li>
+</ul>
+<p>建立高密度表達。</p>
+<p>這些機制對熟練者可形成清晰壓縮，對陌生者則可能像另一套文字系統。</p>
+<hr>
+<h2>四十四、文化是語言第二層</h2>
+<p>Perl 依靠：</p>
+<ul>
+<li><code>perldoc</code>；</li>
+<li>Style guide；</li>
+<li><code>strict</code>；</li>
+<li><code>warnings</code>；</li>
+<li>書籍；</li>
+<li>測試文化；</li>
+<li>CPAN 慣例；</li>
+<li>社群格言；</li>
+<li>幽默與演講；</li>
+</ul>
+<p>治理語言自由。</p>
+<p>官方 <code>perlstyle</code> 甚至明確提醒：既然語言提供多種方法，就應選擇最可讀的一種。[R16]</p>
+<hr>
+<h2>四十五、CPAN 與表達分權</h2>
+<p>CPAN 讓領域社群自行建立：</p>
+<ul>
+<li>Module；</li>
+<li>Interface；</li>
+<li>Object system；</li>
+<li>Testing convention；</li>
+<li>DSL；</li>
+<li>Distribution practice。</li>
+</ul>
+<p>這使語言核心不必預先理解所有人類需求。</p>
+<p>但它也可能產生：</p>
+<ul>
+<li>多套框架；</li>
+<li>品質差異；</li>
+<li>相依治理；</li>
+<li>慣例分裂。</li>
+</ul>
+<hr>
+<h2>四十六、平行重寫</h2>
+<p>當 Perl 5 歷史負擔過大時，Wall 沒有只要求永久相容，也發起 Perl 6 的社群式重設。</p>
+<p>State of the Onion 2000 將 Perl 5 比作較由單一作曲者完成的作品，而 Perl 6 則改採社群即興與 RFC 式提案，同時保留 Wall 的藝術控制。[R17]</p>
+<p>這顯示 Wall 的多元主義也會在更高層級重新組織。</p>
+<hr>
+<h2>四十七、Wall 原型</h2>
+<p>本文將 Wall 的人本原型判定為：</p>
+<p>$$
+\boxed{
+\text{Pluralist Expressive Humanist}
+}
+$$</p>
+<p>其核心命題為：</p>
+<blockquote>
+<p>真實世界與人類背景本來就不整齊；語言若為了形式純度消除差異，可能只是把複雜度退回使用者。</p>
+</blockquote>
+<hr>
+<h1>第六部分　第一比較軸：他們保護的是哪一種人</h1>
+<h2>四十八、Guido 保護讀者</h2>
+<p>Guido 的核心人本問題是：</p>
+<blockquote>
+<p>一段程式離開原作者後，另一個人能否快速辨認其結構與意圖？</p>
+</blockquote>
+<p>其保護對象偏向：</p>
+<ul>
+<li>維護者；</li>
+<li>團隊；</li>
+<li>初學者；</li>
+<li>跨專案讀者；</li>
+<li>未來的自己。</li>
+</ul>
+<hr>
+<h2>四十九、Matz 保護作者的持續感</h2>
+<p>Matz 的核心人本問題是：</p>
+<blockquote>
+<p>人在編程時，是否被不必要的機械摩擦打斷？</p>
+</blockquote>
+<p>其保護對象偏向：</p>
+<ul>
+<li>創作者；</li>
+<li>應用程式作者；</li>
+<li>DSL 設計者；</li>
+<li>動態物件使用者；</li>
+<li>重視語言感的人。</li>
+</ul>
+<hr>
+<h2>五十、Wall 保護異質求解者</h2>
+<p>Wall 的核心人本問題是：</p>
+<blockquote>
+<p>語言是否強迫背景不同的人，先放棄自己的問題慣用法，才能開始工作？</p>
+</blockquote>
+<p>其保護對象偏向：</p>
+<ul>
+<li>領域社群；</li>
+<li>Unix 工具使用者；</li>
+<li>文字與資料工作者；</li>
+<li>熟練壓縮型作者；</li>
+<li>需要逐層深入能力的人。</li>
+</ul>
+<hr>
+<h2>五十一、三種人類模型</h2>
+<p>$$
+\boxed{
+\begin{aligned}
+Guido &amp;: Human\ as\ reader\ and\ collaborator\
+Matz &amp;: Human\ as\ experiencing\ creator\
+Wall &amp;: Human\ as\ culturally\ diverse\ problem\ solver
+\end{aligned}
+}
+$$</p>
+<p>這是三者最根本差異。</p>
+<hr>
+<h1>第七部分　第二比較軸：可讀性究竟是什麼</h1>
+<h2>五十二、Python：跨作者可預測性</h2>
+<p>Python 的可讀性主要是：</p>
+<h1>$$
+Readability_{\text{Python}}</h1>
+<p>StructuralVisibility
++
+ConventionConvergence
++
+LowSymbolDensity
++
+ExplicitIntent
+$$</p>
+<p>它偏向公共可讀性。</p>
+<hr>
+<h2>五十三、Ruby：語意接近作者意圖</h2>
+<p>Ruby 的可讀性主要是：</p>
+<h1>$$
+Readability_{\text{Ruby}}</h1>
+<p>NaturalFlow
++
+ObjectMessageRhythm
++
+ExpressiveCloseness
++
+AestheticCoherence
+$$</p>
+<p>它偏向意圖與表面的接近。</p>
+<hr>
+<h2>五十四、Perl：熟練語境中的資訊壓縮</h2>
+<p>Perl 的可讀性主要可能是：</p>
+<h1>$$
+Readability_{\text{Perl}}</h1>
+<p>DomainFit
++
+ContextualCompression
++
+VisibleDataRole
++
+IdiomRecognition
+$$</p>
+<p>它高度依賴共享語境與專業詞彙。</p>
+<hr>
+<h2>五十五、可讀性不是單一標尺</h2>
+<p>一段 Perl One-liner 對熟練文字處理者可能比展開的 Python 程式更直接。</p>
+<p>一段 Python 程式對跨背景團隊可能比高度 DSL 化 Ruby 更容易接手。</p>
+<p>一段 Ruby DSL 對領域使用者可能比一般函式呼叫更接近問題語言。</p>
+<p>因此：</p>
+<h1>$$
+Readability</h1>
+<p>f(Reader,Task,Context,Time)
+$$</p>
+<hr>
+<h1>第八部分　第三比較軸：表達變異</h1>
+<h2>五十六、Python：收斂</h2>
+<p>Python 傾向：</p>
+<p>$$
+Variation\downarrow
+\Rightarrow
+SharedRecognition\uparrow
+$$</p>
+<p>它以語言、PEP、Style guide、Formatter 與社群慣例共同壓縮變異。</p>
+<hr>
+<h2>五十七、Ruby：受品味約束的多樣性</h2>
+<p>Ruby 容許：</p>
+<ul>
+<li>多種呼叫形式；</li>
+<li>多種 Iterator；</li>
+<li>DSL；</li>
+<li>Metaprogramming；</li>
+<li>開放類別。</li>
+</ul>
+<p>但 Matz 的長期品味與 Ruby 社群慣例會排除「不像 Ruby」的設計。</p>
+<p>因此：</p>
+<h1>$$
+Variation_{\text{Ruby}}</h1>
+<p>Freedom
+\cap
+Harmony
+$$</p>
+<hr>
+<h2>五十八、Perl：合法多義性</h2>
+<p>Perl 對多種寫法更寬容，並讓領域社群形成方言。</p>
+<h1>$$
+Variation_{\text{Perl}}</h1>
+<p>ProblemDiversity
++
+UserDiversity
++
+HistoricalLayering
+$$</p>
+<p>其治理主要依靠 Style、文件、工具與社群，而非全部由語法消除。</p>
+<hr>
+<h2>五十九、三種自由</h2>
+<pre><code class="language-text">Python：從不必要差異中解放讀者
+Ruby：從機械摩擦中解放作者
+Perl：從單一表達模型中解放異質使用者
+</code></pre>
+<hr>
+<h1>第九部分　第四比較軸：明示與隱式</h1>
+<h2>六十、Python 的明示</h2>
+<p>Python 偏好：</p>
+<ul>
+<li>明示 Block；</li>
+<li>明示 <code>self</code>；</li>
+<li>明示 Import；</li>
+<li>明示 Exception；</li>
+<li>明示 Namespace；</li>
+<li>明示資源範圍。</li>
+</ul>
+<p>但以 Protocol 保留高階動態性。</p>
+<hr>
+<h2>六十一、Ruby 的自然省略</h2>
+<p>Ruby 允許省略：</p>
+<ul>
+<li>Parentheses；</li>
+<li><code>return</code>；</li>
+<li>常見 <code>self</code>；</li>
+<li>部分 Block 細節。</li>
+</ul>
+<p>其判準不是「越隱式越好」，而是：</p>
+<blockquote>
+<p>省略是否符合整體語言感，並讓意圖更直接？</p>
+</blockquote>
+<hr>
+<h2>六十二、Perl 的 Context 省略</h2>
+<p>Perl 更積極使用：</p>
+<ul>
+<li>預設變數；</li>
+<li>Scalar／List context；</li>
+<li>隱式轉換；</li>
+<li>Statement modifier；</li>
+<li>特殊變數；</li>
+<li>Regex 狀態。</li>
+</ul>
+<p>這使熟練者可高度壓縮，也最依賴語境。</p>
+<hr>
+<h2>六十三、隱式性的成本公式</h2>
+<h1>$$
+Benefit_{\text{implicit}}</h1>
+<p>RepetitionRemoved
++
+FlowPreserved
++
+CommonCaseCompressed
+$$</p>
+<h1>$$
+Cost_{\text{implicit}}</h1>
+<p>HiddenDependency
++
+ReaderInference
++
+ToolAmbiguity
++
+DebuggingDistance
+$$</p>
+<p>三者的差異是對兩式權重不同。</p>
+<hr>
+<h1>第十部分　第五比較軸：語法密度與常見路徑</h1>
+<h2>六十四、Python 的稀疏</h2>
+<p>Python 通常願意多寫幾個可辨識單詞，以換取：</p>
+<ul>
+<li>較低符號負擔；</li>
+<li>較穩定掃描；</li>
+<li>容易教學；</li>
+<li>容易格式化；</li>
+<li>跨領域可讀。</li>
+</ul>
+<hr>
+<h2>六十五、Ruby 的節奏</h2>
+<p>Ruby 的密度介於 Python 與 Perl 的典型風格之間。</p>
+<p>它可以：</p>
+<ul>
+<li>接近自然語句；</li>
+<li>使用 Block；</li>
+<li>省略部分標點；</li>
+<li>建立 DSL；</li>
+<li>保持物件訊息節奏。</li>
+</ul>
+<p>密度服務的是流動感，而不是單純最短。</p>
+<hr>
+<h2>六十六、Perl 的壓縮</h2>
+<p>Perl 願意用：</p>
+<ul>
+<li>Sigil；</li>
+<li>Regex；</li>
+<li>預設主題；</li>
+<li>特殊運算子；</li>
+<li>Context；</li>
+</ul>
+<p>壓縮高頻操作。</p>
+<p>其表面更像專業速記系統。</p>
+<hr>
+<h2>六十七、最短不等於最人本</h2>
+<p>人本設計應區分：</p>
+<p>$$
+KeystrokeCost
+\neq
+CognitiveCost
+\neq
+MaintenanceCost
+$$</p>
+<p>Python 常增加第一項以降低第三項。</p>
+<p>Ruby 常降低第二項的摩擦感。</p>
+<p>Perl 常降低熟練作者在高頻任務中的第一項與第二項。</p>
+<hr>
+<h1>第十一部分　第六比較軸：物件、抽象與 Metaprogramming</h1>
+<h2>六十八、Python 的 Protocol 人本主義</h2>
+<p>Python 不要求所有抽象都由繼承完成，而以：</p>
+<ul>
+<li>Iterator protocol；</li>
+<li>Context manager；</li>
+<li>Callable；</li>
+<li>Descriptor；</li>
+<li>Dunder method；</li>
+<li>Duck typing；</li>
+</ul>
+<p>建立可組合行為。</p>
+<p>但特殊能力通常以明顯命名區隔。</p>
+<hr>
+<h2>六十九、Ruby 的物件世界</h2>
+<p>Ruby 將物件模型提升為語言感核心：</p>
+<p>$$
+Everything\ responds
+\quad\Rightarrow\quad
+Programming\ as\ message\ composition
+$$</p>
+<p>Block、Mixin、Open class 與 Metaprogramming 使語言可塑，但也提高 Runtime 與工具負擔。</p>
+<hr>
+<h2>七十、Perl 的多模型整合</h2>
+<p>Perl 不要求所有問題進入單一物件模型。</p>
+<p>它可同時使用：</p>
+<ul>
+<li>Procedural；</li>
+<li>Functional idiom；</li>
+<li>Package／Object；</li>
+<li>Regex DSL；</li>
+<li>Data transformation；</li>
+<li>Shell-like orchestration。</li>
+</ul>
+<p>這符合 Wall 對多種局部真理的接受。</p>
+<hr>
+<h2>七十一、抽象的三種人本判準</h2>
+<p>$$
+\begin{aligned}
+Python &amp;: \text{抽象是否容易被共同辨認？}\
+Ruby &amp;: \text{抽象是否自然地承載意圖？}\
+Perl &amp;: \text{抽象是否適合此問題與此社群？}
+\end{aligned}
+$$</p>
+<hr>
+<h1>第十二部分　第七比較軸：錯誤、安全與責任</h1>
+<h2>七十二、Python：拒絕猜測</h2>
+<p>PEP 20 強調：</p>
+<ul>
+<li>錯誤不應默默通過；</li>
+<li>面對歧義不要猜測。[R3]</li>
+</ul>
+<p>Python 仍是動態語言，但錯誤哲學偏向：</p>
+<blockquote>
+<p>當系統不能合理確定意圖時，應讓問題顯現。</p>
+</blockquote>
+<hr>
+<h2>七十三、Ruby：快速成形後測試</h2>
+<p>Matz 在訪談中將 Ruby 的動態性與快速測試連結，並指出 Interpreter 應保持穩健，而應用可靠性仍需測試與工程實踐。[R10]</p>
+<p>其配置偏向：</p>
+<p>$$
+PrototypeFast
++
+RunEarly
++
+TestBehavior
+$$</p>
+<p>而不是在語言表面強迫所有正確性證明。</p>
+<hr>
+<h2>七十四、Perl：自由加警告文化</h2>
+<p>Perl 提供強大能力，也以：</p>
+<ul>
+<li><code>strict</code>；</li>
+<li><code>warnings</code>；</li>
+<li>Taint 歷史；</li>
+<li>Test culture；</li>
+<li>Module convention；</li>
+<li>Style guide；</li>
+</ul>
+<p>補充自由。</p>
+<p>其安全責任較多由作者、團隊與文化承擔。</p>
+<hr>
+<h2>七十五、人本不等於無約束</h2>
+<p>三者都證明：</p>
+<h1>$$
+HumanFreedom
++
+NoFeedback</h1>
+<p>DeferredFailure
+$$</p>
+<p>真正差異在於回饋放在哪一層：</p>
+<ul>
+<li>Python：較多放入語言規則與一致慣例；</li>
+<li>Ruby：較多放入 Runtime、測試與社群品味；</li>
+<li>Perl：較多放入 Warning、工具、文件與局部文化。</li>
+</ul>
+<hr>
+<h1>第十三部分　第八比較軸：工具、文件與生態</h1>
+<h2>七十六、Python：工具放大收斂</h2>
+<p>Python 的 Style、Formatter、Linter、Type checker、Test framework 與 Packaging 共同形成：</p>
+<h1>$$
+Language
++
+Convention
++
+Tool</h1>
+<p>PracticalPython
+$$</p>
+<p>工具不是外加裝飾，而是可讀性制度的一部分。</p>
+<hr>
+<h2>七十七、Ruby：工具補足動態可塑性</h2>
+<p>Ruby 的 Formatter、Linter、Test、RBS／Type tools、Profiler、JIT 與 Framework 慣例，負責處理語言自由造成的部分成本。</p>
+<p>Ruby 的實際人本體驗高度依賴成熟 Library 與 Framework。</p>
+<hr>
+<h2>七十八、Perl：文件與 CPAN 作為第二核心</h2>
+<p>Perl 的實際語言由：</p>
+<ul>
+<li>Core；</li>
+<li><code>perldoc</code>；</li>
+<li>CPAN；</li>
+<li>Module author；</li>
+<li>Style；</li>
+<li>Test；</li>
+<li>社群文化；</li>
+</ul>
+<p>共同構成。</p>
+<p>對 Perl 而言，文件與文化不是補充，而是多義性得以運作的必要條件。</p>
+<hr>
+<h2>七十九、生態不是設計者個人作品</h2>
+<p>Python 的科學計算、Ruby 的 Rails、Perl 的 CPAN 都不能全部歸於創始者。</p>
+<p>較精確的因果鏈是：</p>
+<p>$$
+FounderStyle
+\rightarrow
+Affordance
+\rightarrow
+CommunitySelection
+\rightarrow
+EcosystemAmplification
+$$</p>
+<p>創始者提供可能空間，社群決定哪些可能成為歷史現實。</p>
+<hr>
+<h1>第十四部分　第九比較軸：治理與創始者權力</h1>
+<h2>八十、Guido：品味制度化後退出</h2>
+<p>Python 從 BDFL 逐步建立 PEP，再在 Guido 退任後轉為五人 Steering Council。PEP 13 賦予 Council 廣泛權力，同時要求盡量少直接使用，優先建立正常程序與共識。[R6]</p>
+<p>這表示：</p>
+<p>$$
+FounderTaste
+\rightarrow
+RecordedProcess
+\rightarrow
+ElectiveGovernance
+$$</p>
+<hr>
+<h2>八十一、Matz：長期調音中心</h2>
+<p>Ruby 的核心方向長期仍以 Matz 的語言感作重要最終參照，但：</p>
+<ul>
+<li>Interpreter；</li>
+<li>VM；</li>
+<li>JIT；</li>
+<li>Type tools；</li>
+<li>Libraries；</li>
+<li>Framework；</li>
+<li>替代實作；</li>
+</ul>
+<p>已是多團隊成果。</p>
+<p>PLDST 將其判定為：</p>
+<pre><code class="language-text">創始者品味中心
++
+多團隊工程實作
++
+社群信任治理
+</code></pre>
+<p>而不是「Matz 單人控制全部 Ruby」。</p>
+<hr>
+<h2>八十二、Wall：文化權威、社群重寫與後創始制度</h2>
+<p>Perl 早期由 Wall 強烈塑形；Perl 6／Raku 開放 RFC 與多人實作；現代 Perl 又建立 Core Team 與 Steering Council 的正式治理。[R17][R18]</p>
+<p>因此：</p>
+<p>$$
+WallCulturalAuthority
+\neq
+CurrentFormalAuthority
+$$</p>
+<hr>
+<h2>八十三、治理風格與語言風格一致</h2>
+<p>三人的治理史與語言哲學具有同構性：</p>
+<ul>
+<li>Guido：由個人品味收斂，最後把收斂程序制度化；</li>
+<li>Matz：長期保留調音中心，以信任維持語言感；</li>
+<li>Wall：鼓勵多元提案與文化表達，再以綜合、分流和制度治理差異。</li>
+</ul>
+<p>這不是完全因果，但具有高度風格連續性。</p>
+<hr>
+<h1>第十五部分　複雜度配置比較</h1>
+<h2>八十四、總體守恆</h2>
+<p>定義總人本成本：</p>
+<h1>$$
+C_H</h1>
+<p>C_{\text{write}}
++
+C_{\text{read}}
++
+C_{\text{learn}}
++
+C_{\text{debug}}
++
+C_{\text{coordinate}}
++
+C_{\text{tool}}
++
+C_{\text{evolve}}
+$$</p>
+<p>沒有三者中的任何一門語言把 $C_H$ 降為零。</p>
+<hr>
+<h2>八十五、Python 的配置</h2>
+<p>Python 傾向：</p>
+<p>$$
+C_{\text{write}}\uparrow_{\text{slightly}}
+\qquad
+C_{\text{read}}\downarrow
+\qquad
+C_{\text{coordinate}}\downarrow
+$$</p>
+<p>同時：</p>
+<p>$$
+C_{\text{tool}}
++
+C_{\text{governance}}
++
+C_{\text{library}}
+\uparrow
+$$</p>
+<p>以維持公共一致性。</p>
+<hr>
+<h2>八十六、Ruby 的配置</h2>
+<p>Ruby 傾向：</p>
+<p>$$
+C_{\text{write-friction}}\downarrow
+\qquad
+C_{\text{expression}}\downarrow
+$$</p>
+<p>但：</p>
+<p>$$
+C_{\text{runtime}}
++
+C_{\text{tool}}
++
+C_{\text{metaprogram-understanding}}
++
+C_{\text{performance}}
+\uparrow
+$$</p>
+<hr>
+<h2>八十七、Perl 的配置</h2>
+<p>Perl 傾向：</p>
+<p>$$
+C_{\text{common-task-authoring}}\downarrow
+\qquad
+C_{\text{domain-fit}}\downarrow
+$$</p>
+<p>但：</p>
+<p>$$
+C_{\text{reader-vocabulary}}
++
+C_{\text{context-inference}}
++
+C_{\text{style-coordination}}
++
+C_{\text{historical-layering}}
+\uparrow
+$$</p>
+<hr>
+<h2>八十八、作者—讀者不對稱</h2>
+<p>三者可放在一條作者—讀者負擔軸上，但不能簡化成單線排名。</p>
+<pre><code class="language-text">Python：較主動限制作者表達變異，以降低陌生讀者成本
+Ruby：讓作者意圖自然流出，以社群品味控制讀者成本
+Perl：讓作者依任務選擇方言，以文化與專業共享承擔讀者成本
+</code></pre>
+<hr>
+<h2>八十九、專業化梯度</h2>
+<p>人本設計還需考慮專業化。</p>
+<p>$$
+C_{\text{novice}}
+\neq
+C_{\text{expert}}
+$$</p>
+<p>Perl 的高密度可能對新手昂貴，對熟練文字處理者便宜。</p>
+<p>Ruby 的 DSL 可能對 Framework 作者複雜，對領域使用者自然。</p>
+<p>Python 的一致表面可能對團隊便宜，對追求極端語言可塑性的專家形成限制。</p>
+<hr>
+<h2>九十、規模效應</h2>
+<p>令 $n$ 為：</p>
+<ul>
+<li>程式大小；</li>
+<li>團隊人數；</li>
+<li>維護年限；</li>
+<li>套件數；</li>
+<li>參與社群數。</li>
+</ul>
+<p>則：</p>
+<p>$$
+C_H = C_H(n)
+$$</p>
+<p>某設計在小腳本中非常人本，在大型長期系統中可能需要額外制度。</p>
+<hr>
+<h1>第十六部分　具體語法對照的正確用途</h1>
+<h2>九十一、迭代範例</h2>
+<p>Python：</p>
+<pre><code class="language-python">for item in items:
+    process(item)
+</code></pre>
+<p>Ruby：</p>
+<pre><code class="language-ruby">items.each do |item|
+  process(item)
+end
+</code></pre>
+<p>Perl：</p>
+<pre><code class="language-perl">for my $item (@items) {
+    process($item);
+}
+</code></pre>
+<p>三者都清楚，不能由此簡單判定誰更人本。</p>
+<p>真正差異在更大語境：</p>
+<ul>
+<li>Python 強調共同控制流形式；</li>
+<li>Ruby 強調集合接收行為 Block；</li>
+<li>Perl 保留資料角色 Sigil 與多種迴圈寫法。</li>
+</ul>
+<hr>
+<h2>九十二、隱式主題範例</h2>
+<p>Perl 可使用預設主題壓縮：</p>
+<pre><code class="language-perl">while (&lt;&gt;) {
+    chomp;
+    print if /error/;
+}
+</code></pre>
+<p>這對熟悉者接近文字管線，對陌生者則必須補出：</p>
+<ul>
+<li>輸入來自何處；</li>
+<li><code>chomp</code> 作用於誰；</li>
+<li>Regex 比對誰；</li>
+<li><code>print</code> 輸出誰。</li>
+</ul>
+<p>這正是作者壓縮與讀者推理的交換。</p>
+<hr>
+<h2>九十三、Ruby DSL 範例</h2>
+<p>Ruby 可利用省略括號、Block 與方法呼叫建立：</p>
+<pre><code class="language-ruby">route &quot;/users&quot; do
+  authorize :admin
+  render :index
+end
+</code></pre>
+<p>這可能對領域使用者非常自然，但其可讀性依賴：</p>
+<ul>
+<li>方法解析；</li>
+<li>Block scope；</li>
+<li>Framework convention；</li>
+<li>Runtime Metaprogramming。</li>
+</ul>
+<hr>
+<h2>九十四、Python 慣例範例</h2>
+<p>Python 常把 Framework 能力約束為較明示的物件、Decorator、Context manager 或函式呼叫。</p>
+<p>這通常增加可見結構，但不代表內部沒有 Reflection 或 Dynamic dispatch。</p>
+<hr>
+<h2>九十五、範例不能取代歷史</h2>
+<p>幾行程式只能顯示表面。</p>
+<p>PLDST 必須同時追蹤：</p>
+<ul>
+<li>為何選擇此表面；</li>
+<li>哪些替代方案被拒絕；</li>
+<li>誰負責實作；</li>
+<li>社群如何使用；</li>
+<li>工具如何補足；</li>
+<li>長期演化造成什麼代價。</li>
+</ul>
+<hr>
+<h1>第十七部分　反例與去神話</h1>
+<h2>九十六、Python 並非真的只有一種做法</h2>
+<p>Python 仍有：</p>
+<ul>
+<li>Loop／Comprehension／Generator；</li>
+<li>Class／Closure／Callable object；</li>
+<li>Decorator／Context manager；</li>
+<li>多種 Web、Packaging、Async 與 Type 工具。</li>
+</ul>
+<p>因此「一個明顯做法」是核心慣例理想，不是生態事實的絕對描述。</p>
+<hr>
+<h2>九十七、Ruby 並非只憑主觀感覺</h2>
+<p>Matz 的品味長期受到：</p>
+<ul>
+<li>相容性；</li>
+<li>實作可能；</li>
+<li>效能；</li>
+<li>社群使用；</li>
+<li>工具；</li>
+<li>真實程式；</li>
+</ul>
+<p>約束。</p>
+<p>「感覺」是設計證據的一類，不是唯一證據。</p>
+<hr>
+<h2>九十八、Perl 並非以不可讀為目標</h2>
+<p>Perl 官方 Style guide 明確重視：</p>
+<ul>
+<li>可讀；</li>
+<li>可理解；</li>
+<li>可維護；</li>
+<li><code>strict</code>；</li>
+<li><code>warnings</code>；</li>
+<li>合理命名；</li>
+<li>選擇較清楚寫法。[R16]</li>
+</ul>
+<p>TIMTOWTDI 不等於所有寫法同樣好。</p>
+<hr>
+<h2>九十九、人本不等於心理人格診斷</h2>
+<p>本文不主張：</p>
+<ul>
+<li>Guido 天生控制；</li>
+<li>Matz 天生感性；</li>
+<li>Wall 天生混亂。</li>
+</ul>
+<p>PLDST 分析的是公開決策中的穩定模式，不推斷私人心理本質。</p>
+<hr>
+<h2>一百、語言成功不能直接證明哲學正確</h2>
+<p>Python 的廣泛採用、Ruby 的 Framework 生產力、Perl 的歷史影響，都由多種因素共同造成：</p>
+<ul>
+<li>時機；</li>
+<li>Library；</li>
+<li>教育；</li>
+<li>Web；</li>
+<li>組織採用；</li>
+<li>Package 生態；</li>
+<li>既有系統；</li>
+<li>社群；</li>
+<li>替代語言狀態。</li>
+</ul>
+<p>成功是證據之一，不是唯一因果證明。</p>
+<hr>
+<h2>一百零一、三者都有時間相位</h2>
+<p>Guido、Matz 與 Wall 的風格不是靜止標籤。</p>
+<ul>
+<li>Python 從個人 Interpreter 走向 PEP 與 Council；</li>
+<li>Ruby 從個人語言走向全球多團隊實作；</li>
+<li>Perl 從創始者核心走向 Porters、CPAN、Perl 6／Raku 與正式治理。</li>
+</ul>
+<p>比較必須標記時間。</p>
+<hr>
+<h1>第十八部分　PLDST 評估矩陣</h1>
+<h2>一百零二、十二軸矩陣</h2>
+<table>
+<thead>
+<tr>
+<th>軸</th>
+<th>Guido／Python</th>
+<th>Matz／Ruby</th>
+<th>Wall／Perl</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>首要人本對象</td>
+<td>讀者、團隊、未來維護者</td>
+<td>正在編程的人、創作者</td>
+<td>異質問題解決者、領域社群</td>
+</tr>
+<tr>
+<td>核心價值</td>
+<td>可讀、明示、慣例收斂</td>
+<td>幸福、自然、和諧</td>
+<td>實用、多義、表達自由</td>
+</tr>
+<tr>
+<td>變異態度</td>
+<td>壓縮正統做法集合</td>
+<td>容許多樣，但需像 Ruby</td>
+<td>接受多種合法慣用法</td>
+</tr>
+<tr>
+<td>明示／隱式</td>
+<td>偏明示</td>
+<td>自然省略</td>
+<td>Contextual implicitness</td>
+</tr>
+<tr>
+<td>表面密度</td>
+<td>稀疏</td>
+<td>節奏化、中度壓縮</td>
+<td>高頻短碼、可高度密集</td>
+</tr>
+<tr>
+<td>抽象模型</td>
+<td>Protocol 與共享慣例</td>
+<td>物件、Block、Metaprogramming</td>
+<td>多模型與工具整合</td>
+</tr>
+<tr>
+<td>常見路徑</td>
+<td>一個明顯慣用路徑</td>
+<td>一組和諧自然路徑</td>
+<td>多個任務適配路徑</td>
+</tr>
+<tr>
+<td>錯誤責任</td>
+<td>顯性錯誤、拒絕猜測</td>
+<td>快速執行、測試、Runtime</td>
+<td><code>strict</code>、Warning、文化</td>
+</tr>
+<tr>
+<td>複雜度去向</td>
+<td>Interpreter、Library、工具、治理</td>
+<td>Runtime、物件模型、工具、效能</td>
+<td>Parser、Context、讀者詞彙、文化</td>
+</tr>
+<tr>
+<td>治理原型</td>
+<td>BDFL→PEP→Council</td>
+<td>創始品味＋多團隊</td>
+<td>創始文化→RFC／分流→Council</td>
+</tr>
+<tr>
+<td>主要優勢</td>
+<td>公共可讀與團隊協作</td>
+<td>表達流與 DSL 創造力</td>
+<td>異質任務整合與熟練壓縮</td>
+</tr>
+<tr>
+<td>主要風險</td>
+<td>慣例僵化、隱藏複雜度</td>
+<td>Magic、工具與追蹤成本</td>
+<td>方言、非局部理解、歷史負擔</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>一百零三、三種風格公式</h2>
+<p>Guido：</p>
+<h1>$$
+J_G</h1>
+<h2>\alpha R_{\text{reader}}
++
+\beta C_{\text{convention}}
++
+\gamma P_{\text{practical}}</h2>
+<h2>\lambda V_{\text{surface}}</h2>
+<p>\mu I_{\text{hidden}}
+$$</p>
+<p>Matz：</p>
+<h1>$$
+J_M</h1>
+<h2>\alpha F_{\text{programmer}}
++
+\beta N_{\text{natural}}
++
+\gamma E_{\text{expression}}</h2>
+<h2>\lambda Friction</h2>
+<p>\mu Disharmony
+$$</p>
+<p>Wall：</p>
+<h1>$$
+J_W</h1>
+<h2>\alpha Fit_{\text{task}}
++
+\beta P_{\text{plurality}}
++
+\gamma C_{\text{context}}</h2>
+<p>\lambda Imposition_{\text{single-model}}
+$$</p>
+<p>這些是本文分析模型，不是三位設計者提出的量化公式。</p>
+<hr>
+<h2>一百零四、風格距離</h2>
+<p>可定義：</p>
+<h1>$$
+D(i,j)</h1>
+<p>\sum_k
+w_k
+\left|
+v_{i,k}-v_{j,k}
+\right|
+$$</p>
+<p>但實際比較必須附上：</p>
+<ul>
+<li>原始資料；</li>
+<li>決策案例；</li>
+<li>時期；</li>
+<li>實作條件；</li>
+<li>社群結果；</li>
+<li>反例。</li>
+</ul>
+<p>數值不能替代歷史證據。</p>
+<hr>
+<h1>第十九部分　對新語言設計的實際啟示</h1>
+<h2>一百零五、先定義「人」</h2>
+<p>任何宣稱 Human-centered 的新語言，都應先回答：</p>
+<pre><code class="language-text">主要保護誰？
+作者還是讀者？
+個人還是團隊？
+初學者還是專家？
+一般程式設計者還是領域使用者？
+短期原型還是二十年維護？
+</code></pre>
+<hr>
+<h2>一百零六、不要同時宣稱所有自由</h2>
+<p>新語言不能無代價地同時保證：</p>
+<ul>
+<li>一種明顯做法；</li>
+<li>完全自由表達；</li>
+<li>極短語法；</li>
+<li>陌生讀者立即理解；</li>
+<li>強 Metaprogramming；</li>
+<li>完美工具推斷；</li>
+<li>永久相容。</li>
+</ul>
+<p>必須公開優先序。</p>
+<hr>
+<h2>一百零七、建立表達變異預算</h2>
+<p>定義：</p>
+<h1>$$
+Budget_{\text{variation}}</h1>
+<p>CoreAlternatives
++
+SyntaxAliases
++
+ImplicitContexts
++
+MetaprogrammingEscape
++
+LibraryDSL
+$$</p>
+<p>若變異預算過高，需增加：</p>
+<ul>
+<li>Style；</li>
+<li>Linter；</li>
+<li>Typed interface；</li>
+<li>Documentation；</li>
+<li>Scope restriction；</li>
+<li>Migration rule。</li>
+</ul>
+<hr>
+<h2>一百零八、建立人本負擔表</h2>
+<p>每項功能應記錄：</p>
+<pre><code class="language-text">主要受益者：
+主要受損者：
+降低的撰寫成本：
+增加的閱讀成本：
+新增的 Runtime 負擔：
+Tooling 是否可恢復資訊：
+團隊是否需要額外慣例：
+長期相容成本：
+</code></pre>
+<hr>
+<h2>一百零九、設計共同路徑與逃生口</h2>
+<p>三人的共同教訓是：</p>
+<blockquote>
+<p>人本語言既需要日常路徑，也需要高階逃生口。</p>
+</blockquote>
+<p>差異在於：</p>
+<ul>
+<li>Python 把逃生口標記得更特殊；</li>
+<li>Ruby 把逃生口融入物件與 Metaprogramming；</li>
+<li>Perl 讓多種路徑本身成為語言文化。</li>
+</ul>
+<p>新語言應明示自己的選擇。</p>
+<hr>
+<h2>一百一十、工具不能事後補救一切</h2>
+<p>若語言允許高隱式性、動態改寫與多種方言，Tooling 必須在設計早期介入。</p>
+<p>否則：</p>
+<h2>$$
+LanguageFreedom</h2>
+<h1>ToolRecovery</h1>
+<p>MaintenanceDebt
+$$</p>
+<hr>
+<h2>一百一十一、治理也是人本介面</h2>
+<p>使用者不只與語法互動，也與以下制度互動：</p>
+<ul>
+<li>提案；</li>
+<li>拒絕理由；</li>
+<li>版本；</li>
+<li>遷移；</li>
+<li>相容承諾；</li>
+<li>創始者權力；</li>
+<li>社群申訴；</li>
+<li>接班。</li>
+</ul>
+<p>治理決定誰能改變語言，因此也是人本設計的一部分。</p>
+<hr>
+<h1>第二十部分　統一結論</h1>
+<h2>一百一十二、三者不是同一條線</h2>
+<p>Guido、Matz 與 Wall 不能排列為：</p>
+<pre><code class="language-text">最可讀 → 次可讀 → 最混亂
+</code></pre>
+<p>也不能排列為：</p>
+<pre><code class="language-text">最理性 → 最感性 → 最自由
+</code></pre>
+<p>這些線性排序忽略了人本對象差異。</p>
+<hr>
+<h2>一百一十三、三種人本憲法</h2>
+<p>Guido 的憲法：</p>
+<blockquote>
+<p>語言應限制不必要的表達分歧，使程式成為可跨作者流通的公共文本。</p>
+</blockquote>
+<p>Matz 的憲法：</p>
+<blockquote>
+<p>語言應承擔足夠內部複雜度，讓程式設計者保持自然、創造與持續流動。</p>
+</blockquote>
+<p>Wall 的憲法：</p>
+<blockquote>
+<p>語言應承認問題與人類背景的異質性，提供多種可用慣用法，再以文化、文件與工具治理自由。</p>
+</blockquote>
+<hr>
+<h2>一百一十四、三種複雜度政治</h2>
+<p>$$
+\boxed{
+\begin{aligned}
+Guido &amp;: \text{把選擇複雜度移出日常表面}\
+Matz &amp;: \text{把表達摩擦移入 Runtime 與語言內部}\
+Wall &amp;: \text{把異質性保留在語言與文化之中}
+\end{aligned}
+}
+$$</p>
+<hr>
+<h2>一百一十五、三種自由的不可合併性</h2>
+<p>Python 式自由：</p>
+<p>$$
+Freedom_{\text{shared understanding}}
+$$</p>
+<p>Ruby 式自由：</p>
+<p>$$
+Freedom_{\text{creative flow}}
+$$</p>
+<p>Perl 式自由：</p>
+<p>$$
+Freedom_{\text{plural expression}}
+$$</p>
+<p>三者可以混合，但混合時必須支付交互成本。</p>
+<hr>
+<h2>一百一十六、最終 PLDST 判定</h2>
+<p>$$
+\boxed{
+\begin{aligned}
+Guido\ van\ Rossum
+&amp;:
+\text{Reader-Centered Convergent Humanist}\
+Yukihiro\ Matsumoto
+&amp;:
+\text{Programmer-Centered Experiential Humanist}\
+Larry\ Wall
+&amp;:
+\text{Pluralist Expressive Humanist}
+\end{aligned}
+}
+$$</p>
+<hr>
+<h2>一百一十七、本文最後命題</h2>
+<blockquote>
+<p>程式語言的「人本性」不在於是否讓人感到容易，而在於它是否誠實說明：它正在替哪一種人降低哪一種成本，又把代價交給誰。</p>
+</blockquote>
+<p>Guido、Matz 與 Wall 的重要性，不只是創造 Python、Ruby 與 Perl。</p>
+<p>他們共同證明：</p>
+<h1>$$
+\boxed{
+HumanCenteredLanguageDesign</h1>
+<p>HumanModel
++
+BurdenAllocation
++
+ExpressionPolitics
++
+Governance
+}
+$$</p>
+<p>只有把這四項同時展開，PLDST 才能超越人物傳記與語言功能比較，進入可重複使用的設計方法。</p>
+<hr>
+<h1>附錄 A　PLDST 比較卡</h1>
+<pre><code class="language-text">比較組：Guido van Rossum／Yukihiro Matsumoto／Larry Wall
+主要語言：Python／Ruby／Perl
+共同類型：動態、高階、腳本／一般用途、開源社群語言
+
+共同命題：
+把人類使用成本提升為語言設計的一級問題
+
+Guido：
+主要人本對象＝讀者與團隊
+主要策略＝明示、稀疏、慣例收斂、共同路徑
+複雜度去向＝Interpreter、Library、Tooling、PEP
+主要風險＝慣例僵化、表面簡單掩蓋底層複雜
+
+Matz：
+主要人本對象＝正在編程的人
+主要策略＝自然、和諧、Block、物件、Metaprogramming
+複雜度去向＝Runtime、Object model、Tooling、效能工程
+主要風險＝Magic、追蹤困難、團隊 Style 分裂
+
+Wall：
+主要人本對象＝異質問題解決者
+主要策略＝Context、TIMTOWTDI、Regex、Sigil、文化
+複雜度去向＝Parser、Reader vocabulary、文件、社群
+主要風險＝方言、非局部理解、歷史層累積
+
+核心比較：
+Python＝收斂型人本
+Ruby＝體驗型人本
+Perl＝多元型人本
+
+歸因信心：高
+</code></pre>
+<hr>
+<h1>附錄 B　設計決策語料</h1>
+<table>
+<thead>
+<tr>
+<th>人物</th>
+<th>問題</th>
+<th>決策</th>
+<th>主要受益者</th>
+<th>複雜度去向</th>
+<th>PLDST 標記</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Guido</td>
+<td>視覺與語法 Block 可能不一致</td>
+<td>縮排成為語法</td>
+<td>讀者、團隊</td>
+<td>Parser、格式責任</td>
+<td>G-R</td>
+</tr>
+<tr>
+<td>Guido</td>
+<td>等價做法過多</td>
+<td>明顯慣用路徑</td>
+<td>維護者、初學者</td>
+<td>Style、治理</td>
+<td>G-C</td>
+</tr>
+<tr>
+<td>Guido</td>
+<td>動態語言仍需系統接入</td>
+<td>C Extension／Protocol</td>
+<td>應用作者</td>
+<td>Interpreter、邊界</td>
+<td>G-P</td>
+</tr>
+<tr>
+<td>Matz</td>
+<td>語言能做事但使用感差</td>
+<td>幸福與自然性優先</td>
+<td>作者</td>
+<td>Runtime</td>
+<td>M-H</td>
+</tr>
+<tr>
+<td>Matz</td>
+<td>完全正交增加腦內組合</td>
+<td>和諧高於正交</td>
+<td>一般使用者</td>
+<td>設計者裁決</td>
+<td>M-A</td>
+</tr>
+<tr>
+<td>Matz</td>
+<td>樣板打斷意圖</td>
+<td>Block、省略、DSL</td>
+<td>作者、領域使用者</td>
+<td>Tooling、追蹤</td>
+<td>M-F</td>
+</tr>
+<tr>
+<td>Wall</td>
+<td>Unix 工具碎片化</td>
+<td>Perl 整合工作流</td>
+<td>系統與文字工作者</td>
+<td>Interpreter</td>
+<td>W-U</td>
+</tr>
+<tr>
+<td>Wall</td>
+<td>不同問題需要不同慣用法</td>
+<td>TIMTOWTDI</td>
+<td>異質使用者</td>
+<td>Reader、Style</td>
+<td>W-M</td>
+</tr>
+<tr>
+<td>Wall</td>
+<td>常見文字操作過長</td>
+<td>Regex、Context、預設主題</td>
+<td>熟練作者</td>
+<td>Parser、讀者詞彙</td>
+<td>W-C</td>
+</tr>
+<tr>
+<td>Wall</td>
+<td>歷史負擔難以局部修補</td>
+<td>Perl 6／Raku 平行重設</td>
+<td>未來社群</td>
+<td>多實作、分流</td>
+<td>W-R</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>附錄 C　來源與參考文獻</h1>
+<p><strong>[R1]</strong> Guido van Rossum, “Foreword for <em>Programming Python</em>,” Python.org, 1996.<br>— Python 起源、ABC 後繼、Unix／C 使用者、創始哲學。</p>
+<p><strong>[R2]</strong> Guido van Rossum, “Comparing Python to Other Languages,” Python.org, 1997.<br>— Python 可讀／可維護表面、與 Perl、Smalltalk、C++ 等比較；官方標記為歷史材料。</p>
+<p><strong>[R3]</strong> Tim Peters, “PEP 20 – The Zen of Python,” Python Enhancement Proposals.<br>— 明示、簡單、稀疏、可讀、實用、拒絕猜測與明顯做法。</p>
+<p><strong>[R4]</strong> Guido van Rossum, Barry Warsaw, Alyssa Coghlan, “PEP 8 – Style Guide for Python Code.”<br>— 程式閱讀高於撰寫、跨 Python 程式的一致可讀性。</p>
+<p><strong>[R5]</strong> Python Documentation, “Design and History FAQ.”<br>— 縮排、<code>self</code>、方法／函式等設計理由。</p>
+<p><strong>[R6]</strong> Python Enhancement Proposals, “PEP 13 – Python Language Governance.”<br>— Steering Council、權力、共識、選舉及後 BDFL 治理。</p>
+<p><strong>[R7]</strong> Ruby-lang.org, “About Ruby.”<br>— 語言來源、Careful balance、Natural not simple、表面簡單而內部複雜。</p>
+<p><strong>[R8]</strong> Ruby-lang.org, “Official Ruby FAQ.”<br>— 1993 年起源、物件導向腳本目標、Perl／Python 背景及多作者文件。</p>
+<p><strong>[R9]</strong> Bill Venners, “The Philosophy of Ruby: A Conversation with Yukihiro Matsumoto, Part I,” Artima, 2003.<br>— 使用感、無完美語言、正交性風險、自由與引導、人本優先。</p>
+<p><strong>[R10]</strong> Bill Venners, “Dynamic Productivity with Ruby: A Conversation with Yukihiro Matsumoto, Part II,” Artima, 2003.<br>— Metaprogramming、Mixin、動態生產力、Runtime 與測試責任。</p>
+<p><strong>[R11]</strong> Ruby-lang.org, “Ruby From Other Languages,” including Python／Perl transition guides.<br>— Ruby、Python、Perl 的表面與物件慣例對照。</p>
+<p><strong>[R12]</strong> Perl official documentation, <code>perlhist</code>.<br>— Perl 發布歷史、多作者維護與長期共同體演化。</p>
+<p><strong>[R13]</strong> Larry Wall, “Perl, the First Postmodern Computer Language,” Perl.com, 1999.<br>— 多來源重組、使用者創造力、反單一理論與後現代實用主義。</p>
+<p><strong>[R14]</strong> Larry Wall, “The Culture of Perl,” Perl Conference keynote, 1997.<br>— Perl 文化、矛盾價值、創始者比喻與共同體。</p>
+<p><strong>[R15]</strong> Perl official documentation, <code>perldata</code>, <code>perlsyn</code>, <code>perlop</code>.<br>— Scalar／List context、自由格式、資料角色與實際語義。</p>
+<p><strong>[R16]</strong> Perl official documentation, <code>perlstyle</code>.<br>— 多種做法下的可讀、可理解、可維護、<code>strict</code> 與 <code>warnings</code>。</p>
+<p><strong>[R17]</strong> Larry Wall, “State of the Onion 2000,” Perl.com.<br>— Perl 6 社群設計、RFC、創始者藝術控制與實作分工。</p>
+<p><strong>[R18]</strong> Perl official documentation, <code>perlgov</code> and <code>perlpolicy</code>.<br>— Core Team、Steering Council、治理邊界及正式權力配置。</p>
+<p><strong>[R19]</strong> PLDST-017, <em>Guido van Rossum：可讀性、實用主義與 BDFL 裁決</em>.<br>— 本系列前置個案研究。</p>
+<p><strong>[R20]</strong> PLDST-018, <em>Yukihiro Matsumoto：程式設計者幸福、語言自然性與社群信任</em>.<br>— 本系列前置個案研究。</p>
+<p><strong>[R21]</strong> PLDST-019, <em>Larry Wall：語言多義性、後現代實用主義與社群文化</em>.<br>— 本系列前置個案研究。</p>
+<p><strong>資料查核日期：</strong> 2026-07-30。</p>
+<hr>
+<h1>附錄 D　PLDST 比較標記</h1>
+<pre><code class="language-text">[G-R] Guido: reader-centered readability
+[G-C] Guido: convention convergence
+[G-E] Guido: explicitness
+[G-P] Guido: pragmatic escape hatch
+[G-G] Guido: governance institutionalization
+
+[M-H] Matz: programmer happiness
+[M-N] Matz: naturalness
+[M-A] Matz: harmony over orthogonality
+[M-F] Matz: flow-preserving expression
+[M-T] Matz: taste-centered governance
+
+[W-U] Wall: Unix problem integration
+[W-C] Wall: context-sensitive expression
+[W-M] Wall: multiple legitimate idioms
+[W-P] Wall: postmodern pragmatism
+[W-K] Wall: culture as governance
+[W-R] Wall: parallel rewrite
+
+[C-H] comparative human model
+[C-B] burden allocation
+[C-V] variation politics
+[C-R] reader-author asymmetry
+[C-G] governance continuity
+</code></pre>
+<hr>
+<h1>附錄 E　第二輪史實、概念與比較校對紀錄</h1>
+<h2>E.1 PEP 20 的作者歸因</h2>
+<p>PEP 20 作者是 Tim Peters，文件表示其內容濃縮 BDFL 的 Python 設計原則。</p>
+<p>因此本文採用：</p>
+<pre><code class="language-text">格言文本作者：Tim Peters
+被濃縮的設計風格：Guido／Python 傳統
+</code></pre>
+<p>不把 PEP 20 誤寫為 Guido 親自起草。</p>
+<hr>
+<h2>E.2 Python 的「一種做法」不是絕對唯一</h2>
+<p>第二輪核對 PEP 20、PEP 8 與 Python 實際語言能力後，本文將其限定為：</p>
+<ul>
+<li>核心常見任務的慣例收斂；</li>
+<li>降低無必要的等價表面競爭；</li>
+<li>不代表整個生態只有一個 Framework、Algorithm 或 Architecture。</li>
+</ul>
+<hr>
+<h2>E.3 Matz 的「最小驚訝」邊界</h2>
+<p>Matz 在第一手訪談中指出，不同人具有不同驚訝來源，Ruby 無法滿足所有背景的既有直覺。</p>
+<p>因此本文不把 Ruby 寫成：</p>
+<pre><code class="language-text">符合每個人的直覺
+</code></pre>
+<p>而寫成：</p>
+<pre><code class="language-text">在理解 Ruby 整體品味後，局部設計應維持自然與和諧
+</code></pre>
+<hr>
+<h2>E.4 Ruby 的內部複雜不是缺陷承認</h2>
+<p>Ruby 官方「表面簡單、內部複雜」不是說內部品質可以混亂，而是承認：</p>
+<ul>
+<li>Parser；</li>
+<li>Runtime；</li>
+<li>Object model；</li>
+<li>Metaprogramming；</li>
+<li>VM；</li>
+</ul>
+<p>可承擔較多機制，以降低程式設計者表面摩擦。</p>
+<hr>
+<h2>E.5 Wall 的多義性不是無確定語義</h2>
+<p>Perl 可以有：</p>
+<ul>
+<li>Context；</li>
+<li>省略；</li>
+<li>多種慣用法；</li>
+<li>高密度符號。</li>
+</ul>
+<p>但每一段可執行程式仍需由 Parser 與 Runtime 決定精確行為。</p>
+<p>因此：</p>
+<p>$$
+LinguisticPolysemy
+\neq
+UndefinedSemantics
+$$</p>
+<hr>
+<h2>E.6 TIMTOWTDI 與 Perl Style</h2>
+<p>第二輪核對 <code>perlstyle</code>：</p>
+<ul>
+<li>官方文件承認個人格式偏好；</li>
+<li>同時要求選擇可讀、可理解、可維護的寫法；</li>
+<li>現代建議強調 <code>strict</code> 與 <code>warnings</code>。</li>
+</ul>
+<p>所以本文沒有把 TIMTOWTDI 解釋成反對 Coding standard。</p>
+<hr>
+<h2>E.7 Perl 6 的社群設計仍有 Wall 裁決</h2>
+<p>State of the Onion 2000 同時包含：</p>
+<ul>
+<li>社群即興；</li>
+<li>RFC；</li>
+<li>多人實作；</li>
+<li>Wall 保留藝術控制。</li>
+</ul>
+<p>因此 Perl 6 既不是 Wall 單人設計，也不是所有 RFC 直接民主加入。</p>
+<hr>
+<h2>E.8 現代治理分離</h2>
+<p>截至查核日：</p>
+<ul>
+<li>Python 正式治理由 PEP 13 Steering Council 承擔；</li>
+<li>Perl 正式治理由 Core Team 與 Steering Council 架構承擔；</li>
+<li>Ruby 的核心方向仍高度依賴 Matz 品味，但實作、生態與工具為多團隊成果。</li>
+</ul>
+<p>本文已分開：</p>
+<p>$$
+FounderInfluence
+\neq
+SoleCurrentControl
+$$</p>
+<hr>
+<h2>E.9 「人本」不是道德優越排序</h2>
+<p>本文的三種 Humanism 是分析原型，不表示：</p>
+<ul>
+<li>Python 比 Ruby 更理性；</li>
+<li>Ruby 比 Perl 更幸福；</li>
+<li>Perl 比 Python 更尊重自由；</li>
+<li>任一語言對所有人都更友善。</li>
+</ul>
+<p>每種風格只在特定人類模型與條件下成立。</p>
+<hr>
+<h2>E.10 PLDST 推論邊界</h2>
+<p>下列名稱是本文提出的比較原型，不是三位設計者自稱的正式學派：</p>
+<pre><code class="language-text">Reader-Centered Convergent Humanist
+Programmer-Centered Experiential Humanist
+Pluralist Expressive Humanist
+</code></pre>
+<p>其用途是建立可重複比較的設計風格索引。</p>
+<hr>
+<h1>附錄 F　與下一篇的銜接</h1>
+<p>PLDST-024 比較的是三種人本語言設計：</p>
+<pre><code class="language-text">讀者收斂
+程式設計者體驗
+異質表達多元
+</code></pre>
+<p>PLDST-025 將轉向另一組更基礎的問題：</p>
+<blockquote>
+<p>當設計者把計算理解為函數、符號操作、資料轉換或極簡值模型時，語言的「簡單性」究竟指什麼？</p>
+</blockquote>
+<p>下一篇預定為：</p>
+<p><strong>PLDST-025：Backus、McCarthy 與 Hickey——函數、符號與簡單性的不同道路。</strong></p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-024.html">https://thisoneisneok.com/html/papers/pldst-024.html</a></footer>
+</body>
+</html>

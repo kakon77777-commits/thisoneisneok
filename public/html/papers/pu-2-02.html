@@ -1,0 +1,1654 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>符號作為算子：從靜態字元到可組合計算閉包 | Neo.K</title>
+<meta name="description" content="前篇指出程式語言不等於文字，文字只是程式結構的一種線性序列化投影。本篇進一步追問：若語言不以文字為本體，那麼構成語言的「符號」究竟是什麼？">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pu-2-02.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PU</strong><span>程式宇宙基礎</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PU-2-02</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-27</span></div><div><b>作者</b><span>Neo.K with Aletheia</span></div><div><b>狀態</b><span>初版完成</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pu-2-02.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>符號作為算子：從靜態字元到可組合計算閉包</h1>
+<h2>Symbols as Operators: From Static Characters to Composable Computational Closure</h2>
+<p><strong>論文編號：</strong> PU-2-02<br><strong>系列：</strong>「程式宇宙書系」第 2 冊《程式語言的本質》<br><strong>作者：</strong> Neo.K with Aletheia<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>版本：</strong> v0.1<br><strong>日期：</strong> 2026 年 7 月 27 日  </p>
+<hr>
+<h2>摘要</h2>
+<p>前篇指出程式語言不等於文字，文字只是程式結構的一種線性序列化投影。本篇進一步追問：若語言不以文字為本體，那麼構成語言的「符號」究竟是什麼？</p>
+<p>傳統語言學與程式語言實作常將符號理解為字元、token、關鍵字、操作符或語法節點。然而，這種理解只描述符號的表面辨識方式，沒有完整描述其在程式世界中的可執行角色。本文提出：</p>
+<p>$$
+\boxed{
+\text{Symbol}
+\neq
+\text{Character}
+\neq
+\text{Token}
+}
+$$</p>
+<p>並將可執行符號定義為：</p>
+<blockquote>
+<p><strong>帶有輸入域、輸出域、前置條件、後置條件、效果、權限、證據與組合規則的語意算子。</strong></p>
+</blockquote>
+<p>形式上：</p>
+<h1>$$
+\boxed{
+\omega</h1>
+<p>\left\langle
+I,
+O,
+P,
+Q,
+E,
+A,
+V,
+C
+\right\rangle
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$I$：Input Domain，輸入域；</li>
+<li>$O$：Output Domain，輸出域；</li>
+<li>$P$：Precondition，前置條件；</li>
+<li>$Q$：Postcondition，後置條件；</li>
+<li>$E$：Effect，效果；</li>
+<li>$A$：Authorization，授權；</li>
+<li>$V$：Verification，驗證；</li>
+<li>$C$：Composition，組合規則。</li>
+</ul>
+<p>本文核心命題是：</p>
+<h1>$$
+\boxed{
+\text{Executable Symbol}</h1>
+<p>\text{Operator with Governed Meaning}
+}
+$$</p>
+<p>一個符號不因被寫成 <code>+</code>、<code>send</code>、<code>approve</code>、圖形節點或自然語言片語而自動具有完整算子地位。真正決定其身份的是：</p>
+<ul>
+<li>它作用於什麼；</li>
+<li>它產生什麼；</li>
+<li>它要求哪些世界條件；</li>
+<li>它可能造成哪些狀態與外部效果；</li>
+<li>誰有權使用；</li>
+<li>如何驗證；</li>
+<li>能否與其他算子合法組合。</li>
+</ul>
+<p>本文進一步建立三層符號觀：</p>
+<ol>
+<li><strong>表面符號</strong>：字元、圖示、詞彙或節點外觀；</li>
+<li><strong>語意符號</strong>：連接問題世界概念與關係；</li>
+<li><strong>算子符號</strong>：可對值、狀態、事件、權限或世界執行受約束變換。</li>
+</ol>
+<p>形式上：</p>
+<p>$$
+\sigma_{\mathrm{surface}}
+\xrightarrow{\operatorname{bind}}
+\sigma_{\mathrm{semantic}}
+\xrightarrow{\operatorname{operationalize}}
+\omega
+$$</p>
+<p>同一算子可以擁有多種表面符號：</p>
+<p>$$
+\pi_{\mathrm{text}}(\omega),
+\quad
+\pi_{\mathrm{visual}}(\omega),
+\quad
+\pi_{\mathrm{speech}}(\omega),
+\quad
+\pi_{\mathrm{machine}}(\omega)
+$$</p>
+<p>因此，表面表示不同，不代表算子不同。反之，兩個外觀相同的符號若具有不同輸入域、效果、權限或 Runtime，也可能是不同算子。</p>
+<p>本文提出「算子身份」：</p>
+<h1>$$
+Identity(\omega)</h1>
+<p>\left(
+SemanticRole,
+InputType,
+OutputType,
+EffectSignature,
+Invariant,
+Version
+\right)
+$$</p>
+<p>而非單純依靠名稱或字元。</p>
+<p>本文區分六類基礎算子：</p>
+<ol>
+<li><strong>值算子</strong>：對值進行轉換；</li>
+<li><strong>結構算子</strong>：建立、連接、分解或重組結構；</li>
+<li><strong>狀態算子</strong>：改變權威狀態；</li>
+<li><strong>事件算子</strong>：形成或轉譯已發生事實；</li>
+<li><strong>效果算子</strong>：作用於外部數位或物理世界；</li>
+<li><strong>治理算子</strong>：授權、撤銷、批准、申訴、暫停或改變規則。</li>
+</ol>
+<p>本文指出，傳統語言往往高度形式化值算子與結構算子，卻把狀態、事件、效果與治理算子隱藏在函式命名、框架、API、middleware 與人工流程中。這使語言能精確描述「怎麼算」，卻難以直接描述「誰能改變什麼世界、如何證明、失敗如何恢復」。</p>
+<p>本文進一步建立算子組合：</p>
+<p>$$
+\omega_2
+\circ
+\omega_1
+$$</p>
+<p>只有在輸出—輸入相容、前後條件可接合、效果不衝突、權限合法、證據可傳遞時，組合才成立。</p>
+<p>本文將組合合法性形式化為：</p>
+<p>$$
+Composable
+\left(
+\omega_1,\omega_2
+\right)
+\iff
+O_1\subseteq I_2
+\land
+Q_1\models P_2
+\land
+Compatible(E_1,E_2)
+\land
+Authorized(A_1,A_2)
+\land
+Traceable(V_1,V_2)
+$$</p>
+<p>這表示型別相容只是組合的第一層。若兩個函式型別吻合，但一個會產生不可逆付款效果，另一個假設可回滾，則語意上仍不可安全組合。</p>
+<p>本文提出「計算閉包」概念。給定一組基礎算子 $\Omega_0$ 與組合規則 $\mathcal C$，可生成：</p>
+<p>$$
+\boxed{
+\operatorname{Closure}
+\left(
+\Omega_0,
+\mathcal C
+\right)
+}
+$$</p>
+<p>閉包中的每一複合算子都應仍具有可推導的：</p>
+<ul>
+<li>輸入與輸出；</li>
+<li>前後條件；</li>
+<li>效果；</li>
+<li>權限；</li>
+<li>失敗；</li>
+<li>證據；</li>
+<li>可恢復性。</li>
+</ul>
+<p>如果組合後這些資訊遺失，就只形成語法閉包，而非可治理計算閉包。</p>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+\text{Syntactic Closure}
+\neq
+\text{Semantic Closure}
+\neq
+\text{Operational Closure}
+\neq
+\text{Governed Closure}
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>語法閉包：可形成合法結構；</li>
+<li>語意閉包：組合後仍有可理解意義；</li>
+<li>操作閉包：可被 Runtime 執行；</li>
+<li>治理閉包：權限、責任、證據與恢復仍完整。</li>
+</ul>
+<p>本文進一步分析算子的純度、效果、可逆性、冪等性、交換性、結合性、分配性與時序依賴。傳統代數律在涉及狀態、外部效果與權限後，不能無條件沿用。例如：</p>
+<p>$$
+\omega_a\circ\omega_b
+\neq
+\omega_b\circ\omega_a
+$$</p>
+<p>寄信後再撤銷權限，與先撤銷權限再嘗試寄信，顯然不同。</p>
+<p>本文使用算術、資料轉換、狀態更新、工作流、AI Agent 工具、醫療批准與物理裝置控制等案例，說明如何將靜態符號提升為帶有世界責任的算子。本文最後提出可證偽研究綱領，包括表面符號—算子身份錯配、組合合法性檢查、效果簽章完整度、閉包保持、AI 算子選擇、可逆性推導、治理算子建模、跨投影算子同一性與算子圖對事故預防的效果。</p>
+<p>本文為下一篇〈語法—語意—效果〉建立算子地基：語法將被重新理解為算子形成規則，語意是算子所指向的世界關係，效果則是算子對數位與物理世界產生的差分。</p>
+<p><strong>關鍵詞：</strong> 符號、算子、計算閉包、組合、效果簽章、治理算子、程式語言本體論、後文本語言</p>
+<hr>
+<h2>Abstract</h2>
+<p>This paper argues that executable symbols are not merely characters or tokens. They are semantic operators with governed meaning.</p>
+<p>An operator is modeled as:</p>
+<h1>$$
+\omega</h1>
+<p>\left\langle
+I,
+O,
+P,
+Q,
+E,
+A,
+V,
+C
+\right\rangle
+$$</p>
+<p>The paper distinguishes surface symbols, semantic symbols, and operator symbols; defines operator identity; develops six classes of operators; and formalizes composability beyond type compatibility.</p>
+<p>It distinguishes syntactic, semantic, operational, and governed closure, and argues that a mature programming language should preserve effects, authorization, evidence, failure, and recovery through composition.</p>
+<p><strong>Keywords:</strong> symbols, operators, computational closure, composition, effect signatures, governed computation</p>
+<hr>
+<h1>一、問題的提出：符號何時才真正「能做事」</h1>
+<p>字元 <code>+</code> 本身不會加法。</p>
+<p>單字 <code>send</code> 本身不會寄信。</p>
+<p>圖形中的箭頭本身不會建立流程。</p>
+<p>只有當符號被連接到：</p>
+<ul>
+<li>輸入；</li>
+<li>輸出；</li>
+<li>世界語意；</li>
+<li>Runtime；</li>
+<li>效果；</li>
+<li>權限；</li>
+<li>驗證；</li>
+</ul>
+<p>它才成為可執行算子。</p>
+<p>所以：</p>
+<p>$$
+\boxed{
+\text{Visible Symbol}
+\not\Rightarrow
+\text{Executable Operator}
+}
+$$</p>
+<p>語言設計不能只問符號看起來像什麼，而必須問符號在世界中能做什麼。</p>
+<hr>
+<h1>二、算子的八元結構</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+\omega</h1>
+<p>\left\langle
+I,
+O,
+P,
+Q,
+E,
+A,
+V,
+C
+\right\rangle
+}
+$$</p>
+<h2>2.1 輸入域 $I$</h2>
+<p>算子能接受什麼值、狀態、事件或世界實體。</p>
+<h2>2.2 輸出域 $O$</h2>
+<p>算子會產生什麼值、狀態、事件或證據。</p>
+<h2>2.3 前置條件 $P$</h2>
+<p>執行前世界必須滿足什麼。</p>
+<h2>2.4 後置條件 $Q$</h2>
+<p>成功後應保證什麼。</p>
+<h2>2.5 效果 $E$</h2>
+<p>算子可能：</p>
+<ul>
+<li>讀取；</li>
+<li>寫入；</li>
+<li>發布；</li>
+<li>呼叫外部系統；</li>
+<li>修改權限；</li>
+<li>改變物理世界。</li>
+</ul>
+<h2>2.6 授權 $A$</h2>
+<p>誰可以在何種情境使用此算子。</p>
+<h2>2.7 驗證 $V$</h2>
+<p>如何證明輸入、執行與結果合法。</p>
+<h2>2.8 組合規則 $C$</h2>
+<p>算子可以與哪些算子、以何種順序與條件組合。</p>
+<hr>
+<h1>三、三層符號觀</h1>
+<h2>3.1 表面符號</h2>
+<p>可以是：</p>
+<ul>
+<li>字元；</li>
+<li>關鍵字；</li>
+<li>圖示；</li>
+<li>按鈕；</li>
+<li>節點；</li>
+<li>語音；</li>
+<li>自然語言片語。</li>
+</ul>
+<h2>3.2 語意符號</h2>
+<p>指向：</p>
+<ul>
+<li>問題世界概念；</li>
+<li>實體；</li>
+<li>關係；</li>
+<li>狀態；</li>
+<li>規則；</li>
+<li>角色。</li>
+</ul>
+<h2>3.3 算子符號</h2>
+<p>能對世界或計算結構執行受規則約束的變換。</p>
+<h2>3.4 形成鏈</h2>
+<p>$$
+\sigma_{\mathrm{surface}}
+\xrightarrow{\operatorname{bind}}
+\sigma_{\mathrm{semantic}}
+\xrightarrow{\operatorname{operationalize}}
+\omega
+$$</p>
+<h2>3.5 多表面投影</h2>
+<p>同一算子可投影為：</p>
+<ul>
+<li><code>+</code>；</li>
+<li><code>add(a,b)</code>；</li>
+<li>視覺加法節點；</li>
+<li>語音「將兩數相加」；</li>
+<li>AST <code>Add(lhs,rhs)</code>。</li>
+</ul>
+<p>表面不同，不代表算子不同。</p>
+<hr>
+<h1>四、算子身份</h1>
+<p>本文提出：</p>
+<h1>$$
+Identity(\omega)</h1>
+<p>\left(
+SemanticRole,
+InputType,
+OutputType,
+EffectSignature,
+Invariant,
+Version
+\right)
+$$</p>
+<h2>4.1 名稱不足</h2>
+<p>兩個算子都叫 <code>save</code>，可能分別表示：</p>
+<ul>
+<li>儲存草稿；</li>
+<li>提交正式狀態；</li>
+<li>寫入外部資料庫；</li>
+<li>發布不可逆內容。</li>
+</ul>
+<p>名稱相同不代表身份相同。</p>
+<h2>4.2 字元不足</h2>
+<p>符號 <code>+</code> 在不同語言中可能表示：</p>
+<ul>
+<li>數值加法；</li>
+<li>字串連接；</li>
+<li>集合聯集；</li>
+<li>型別組合；</li>
+<li>路徑拼接。</li>
+</ul>
+<h2>4.3 語意角色</h2>
+<p>算子必須綁定其問題世界角色，例如：</p>
+<pre><code class="language-text">Money.Add
+String.Concat
+Set.Union
+Permission.Grant
+</code></pre>
+<h2>4.4 效果簽章</h2>
+<p>算子身份還應包含：</p>
+<pre><code class="language-text">pure
+reads-state
+writes-state
+emits-event
+external-effect
+physical-effect
+governance-effect
+</code></pre>
+<h2>4.5 版本</h2>
+<p>算子語意改變時，即使名稱不變，也可能成為新版本算子。</p>
+<hr>
+<h1>五、六類基礎算子</h1>
+<h2>5.1 值算子</h2>
+<p>對值進行轉換：</p>
+<p>$$
+\omega_v
+:
+X
+\rightarrow
+Y
+$$</p>
+<p>例如：</p>
+<ul>
+<li>加法；</li>
+<li>比較；</li>
+<li>格式轉換；</li>
+<li>編碼；</li>
+<li>聚合。</li>
+</ul>
+<h2>5.2 結構算子</h2>
+<p>建立、連接、分解或重組結構：</p>
+<ul>
+<li>建立節點；</li>
+<li>連接關係；</li>
+<li>合併集合；</li>
+<li>展開樹；</li>
+<li>建立模組；</li>
+<li>形成工作流。</li>
+</ul>
+<h2>5.3 狀態算子</h2>
+<p>改變權威狀態：</p>
+<p>$$
+\omega_s
+:
+S_t
+\rightarrow
+S_{t+1}
+$$</p>
+<p>例如：</p>
+<ul>
+<li>啟用帳號；</li>
+<li>完成任務；</li>
+<li>更新訂單；</li>
+<li>撤銷權限。</li>
+</ul>
+<h2>5.4 事件算子</h2>
+<p>形成、驗證、轉譯或路由事件：</p>
+<ul>
+<li>建立事件；</li>
+<li>去重；</li>
+<li>排序；</li>
+<li>聚合；</li>
+<li>轉換事件版本；</li>
+<li>將外部主張提升為領域事件。</li>
+</ul>
+<h2>5.5 效果算子</h2>
+<p>作用於外部數位或物理世界：</p>
+<ul>
+<li>寄信；</li>
+<li>付款；</li>
+<li>發布；</li>
+<li>刪除；</li>
+<li>控制設備；</li>
+<li>呼叫外部服務。</li>
+</ul>
+<h2>5.6 治理算子</h2>
+<p>改變誰能做什麼，以及規則如何生效：</p>
+<ul>
+<li>授權；</li>
+<li>撤銷；</li>
+<li>批准；</li>
+<li>申訴；</li>
+<li>暫停；</li>
+<li>改規則；</li>
+<li>轉移責任；</li>
+<li>啟動人工覆核。</li>
+</ul>
+<hr>
+<h1>六、傳統語言的算子偏置</h1>
+<h2>6.1 值算子高度成熟</h2>
+<p>傳統語言擅長：</p>
+<ul>
+<li>算術；</li>
+<li>邏輯；</li>
+<li>集合；</li>
+<li>字串；</li>
+<li>型別；</li>
+<li>資料結構。</li>
+</ul>
+<h2>6.2 狀態算子部分顯式</h2>
+<p>狀態改變通常以：</p>
+<ul>
+<li>賦值；</li>
+<li>方法呼叫；</li>
+<li>資料庫寫入；</li>
+</ul>
+<p>表達，但其世界語意常被隱藏。</p>
+<h2>6.3 效果算子外掛化</h2>
+<p>寄信、付款、發布等效果通常只是一般函式呼叫，語言本身不知道其不可逆性與風險。</p>
+<h2>6.4 治理算子隱形</h2>
+<p>權限、批准與申訴常散落於：</p>
+<ul>
+<li>middleware；</li>
+<li>policy；</li>
+<li>UI；</li>
+<li>人工流程；</li>
+<li>組織制度。</li>
+</ul>
+<h2>6.5 算子語言的擴展</h2>
+<p>未來語言應把狀態、事件、效果與治理算子提升為一等結構，而非只靠命名慣例。</p>
+<hr>
+<h1>七、算子簽章</h1>
+<p>傳統函式簽章：</p>
+<p>$$
+f
+:
+X
+\rightarrow
+Y
+$$</p>
+<p>只描述輸入與輸出。</p>
+<p>本文提出擴展算子簽章：</p>
+<p>$$
+\boxed{
+\omega
+:
+I
+\xrightarrow[
+A,V
+]{P,E,Q}
+O
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$P$：前置條件；</li>
+<li>$E$：效果；</li>
+<li>$Q$：後置條件；</li>
+<li>$A$：授權；</li>
+<li>$V$：驗證。</li>
+</ul>
+<h2>7.1 失敗簽章</h2>
+<p>還可加入：</p>
+<h1>$$
+F_\omega</h1>
+<p>\left{
+rejected,
+retryable,
+unknown,
+partial,
+irreversible
+\right}
+$$</p>
+<h2>7.2 時間簽章</h2>
+<h1>$$
+T_\omega</h1>
+<p>\left\langle
+deadline,
+timeout,
+effectiveTime,
+latency
+\right\rangle
+$$</p>
+<h2>7.3 可恢復性簽章</h2>
+<pre><code class="language-text">reversible
+compensatable
+idempotent
+reconstructable
+irreversible
+</code></pre>
+<hr>
+<h1>八、算子組合</h1>
+<p>給定：</p>
+<p>$$
+\omega_1
+:
+I_1
+\rightarrow
+O_1
+$$</p>
+<p>以及：</p>
+<p>$$
+\omega_2
+:
+I_2
+\rightarrow
+O_2
+$$</p>
+<p>若 $O_1$ 可作為 $I_2$，則可考慮：</p>
+<p>$$
+\omega_2
+\circ
+\omega_1
+$$</p>
+<p>但型別相容只是最低條件。</p>
+<h2>8.1 完整組合判準</h2>
+<p>$$
+Composable
+\left(
+\omega_1,\omega_2
+\right)
+\iff
+O_1\subseteq I_2
+\land
+Q_1\models P_2
+\land
+Compatible(E_1,E_2)
+\land
+Authorized(A_1,A_2)
+\land
+Traceable(V_1,V_2)
+$$</p>
+<h2>8.2 輸出—輸入相容</h2>
+<p>前一算子產物必須能被下一算子理解。</p>
+<h2>8.3 後置—前置接合</h2>
+<p>前一算子的保證，必須足以滿足下一算子的要求。</p>
+<h2>8.4 效果相容</h2>
+<p>效果不能破壞彼此假設。</p>
+<h2>8.5 授權可傳遞性</h2>
+<p>有權執行第一步，不代表有權執行第二步。</p>
+<h2>8.6 證據可追蹤</h2>
+<p>組合後應保留每一步的身份、事件與證據鏈。</p>
+<hr>
+<h1>九、型別相容不等於世界相容</h1>
+<p>例如：</p>
+<pre><code class="language-text">chargeCard : PaymentRequest -&gt; Receipt
+sendReceipt : Receipt -&gt; Message
+</code></pre>
+<p>型別上可組合。</p>
+<p>但仍需知道：</p>
+<ul>
+<li><code>Receipt</code> 是否代表授權或最終結算；</li>
+<li>是否有權向此收件人寄送；</li>
+<li>是否含敏感資料；</li>
+<li>付款結果未知時是否可寄信；</li>
+<li>重試是否會重複扣款或寄信。</li>
+</ul>
+<p>所以：</p>
+<p>$$
+\boxed{
+TypeCompatible
+\not\Rightarrow
+WorldCompatible
+}
+$$</p>
+<p>完整語言需檢查世界語意與效果。</p>
+<hr>
+<h1>十、純算子與效果算子</h1>
+<h2>10.1 純算子</h2>
+<p>純算子在相同輸入下產生相同輸出，且不修改外部狀態：</p>
+<p>$$
+\omega_p(x)=y
+$$</p>
+<h2>10.2 效果算子</h2>
+<p>效果算子依賴或改變世界：</p>
+<h1>$$
+\omega_e
+\left(
+x,S_t
+\right)</h1>
+<p>\left(
+y,S_{t+1},E
+\right)
+$$</p>
+<h2>10.3 純度的價值</h2>
+<p>純算子較容易：</p>
+<ul>
+<li>測試；</li>
+<li>重排；</li>
+<li>快取；</li>
+<li>並行；</li>
+<li>推理；</li>
+<li>重現。</li>
+</ul>
+<h2>10.4 效果不可消失</h2>
+<p>效果算子不能被偽裝成純值函式。</p>
+<h2>10.5 效果邊界</h2>
+<p>可將純計算集中於內部，把外部效果集中於明示邊界，使責任與恢復更清楚。</p>
+<hr>
+<h1>十一、代數律在效果世界中的限制</h1>
+<h2>11.1 結合律</h2>
+<p>若：</p>
+<h1>$$
+(\omega_3\circ\omega_2)\circ\omega_1</h1>
+<p>\omega_3\circ(\omega_2\circ\omega_1)
+$$</p>
+<p>則組合順序的括號可改變而不改變結果。</p>
+<p>但涉及：</p>
+<ul>
+<li>交易邊界；</li>
+<li>超時；</li>
+<li>資源；</li>
+<li>補償；</li>
+<li>權限；</li>
+</ul>
+<p>時，不一定成立。</p>
+<h2>11.2 交換律</h2>
+<h1>$$
+\omega_a\circ\omega_b</h1>
+<p>\omega_b\circ\omega_a
+$$</p>
+<p>對許多效果算子不成立。</p>
+<p>例如先撤銷權限再寄信，與先寄信再撤銷權限不同。</p>
+<h2>11.3 冪等律</h2>
+<h1>$$
+\omega\circ\omega</h1>
+<p>\omega
+$$</p>
+<p>對讀取、設定狀態等算子可能成立；對付款、寄信與累加通常不成立。</p>
+<h2>11.4 分配律</h2>
+<p>效果、錯誤與時序可能使分配律失效。</p>
+<h2>11.5 語言責任</h2>
+<p>語言與型別系統應標示哪些律可安全使用，而不是把純數學直覺無條件帶入世界效果。</p>
+<hr>
+<h1>十二、可逆性</h1>
+<h2>12.1 可逆算子</h2>
+<p>若存在 $\omega^{-1}$：</p>
+<h1>$$
+\omega^{-1}
+\circ
+\omega</h1>
+<p>id
+$$</p>
+<p>則稱其在特定域內可逆。</p>
+<h2>12.2 數位可逆</h2>
+<p>值轉換、局部狀態或未發布草稿可能可逆。</p>
+<h2>12.3 補償可逆</h2>
+<p>某些世界效果不能真正逆轉，只能透過補償接近原狀。</p>
+<h2>12.4 不可逆</h2>
+<p>例如：</p>
+<ul>
+<li>已閱讀訊息；</li>
+<li>已公開資料；</li>
+<li>已造成物理傷害；</li>
+<li>已影響人類決策；</li>
+<li>已洩漏秘密。</li>
+</ul>
+<h2>12.5 可逆性簽章</h2>
+<p>算子應明示：</p>
+<pre><code class="language-text">exactly-reversible
+state-reversible
+compensatable
+explainable-only
+irreversible
+</code></pre>
+<h2>12.6 組合後可逆性</h2>
+<p>即使每個局部算子可逆，複合後也可能因外部觀測與時間而不可逆。</p>
+<hr>
+<h1>十三、冪等性</h1>
+<h2>13.1 冪等算子</h2>
+<h1>$$
+\omega(\omega(x))</h1>
+<p>\omega(x)
+$$</p>
+<h2>13.2 世界冪等</h2>
+<p>世界冪等關心重複行動是否產生重複世界效果。</p>
+<h2>13.3 身份</h2>
+<p>冪等通常需要行動身份，而不只是相同資料。</p>
+<h2>13.4 條件冪等</h2>
+<p>算子可能只在：</p>
+<ul>
+<li>相同目標；</li>
+<li>相同行動 ID；</li>
+<li>相同版本；</li>
+<li>時限內；</li>
+</ul>
+<p>冪等。</p>
+<h2>13.5 冪等性推導</h2>
+<p>複合算子是否冪等，不能只看單一算子，還需考慮順序與外部效果。</p>
+<hr>
+<h1>十四、時序算子</h1>
+<h2>14.1 時間是算子條件</h2>
+<p>某些算子只在期限、窗口或狀態階段中合法。</p>
+<h2>14.2 等待算子</h2>
+<pre><code class="language-text">wait-until
+wait-for-event
+wait-for-human
+wait-with-timeout
+</code></pre>
+<p>等待不是沒有執行，而是正式時間狀態。</p>
+<h2>14.3 超時算子</h2>
+<p>超時可產生：</p>
+<ul>
+<li>取消；</li>
+<li>結果未知；</li>
+<li>升級；</li>
+<li>補償；</li>
+<li>降級。</li>
+</ul>
+<h2>14.4 排程算子</h2>
+<p>排程需保存：</p>
+<ul>
+<li>執行時間；</li>
+<li>時區；</li>
+<li>重複；</li>
+<li>過期；</li>
+<li>權限；</li>
+<li>任務身份。</li>
+</ul>
+<h2>14.5 時序組合</h2>
+<p>先後、並行、競爭、選擇與匯合應成為語言的一等組合方式。</p>
+<hr>
+<h1>十五、失敗算子</h1>
+<h2>15.1 失敗不是無結果</h2>
+<p>算子可能產生正式失敗：</p>
+<p>$$
+\omega(x)
+\rightarrow
+Failure(f)
+$$</p>
+<h2>15.2 失敗處理算子</h2>
+<p>例如：</p>
+<ul>
+<li>retry；</li>
+<li>catch；</li>
+<li>compensate；</li>
+<li>escalate；</li>
+<li>fallback；</li>
+<li>request-human-review。</li>
+</ul>
+<h2>15.3 錯誤值與世界失敗</h2>
+<p>回傳 <code>Error</code> 是資料表示；真正世界失敗還包含：</p>
+<ul>
+<li>影響；</li>
+<li>已完成效果；</li>
+<li>所有者；</li>
+<li>可恢復性；</li>
+<li>證據。</li>
+</ul>
+<h2>15.4 組合中的失敗傳播</h2>
+<p>語言應明示：</p>
+<ul>
+<li>向上傳播；</li>
+<li>局部吸收；</li>
+<li>轉換；</li>
+<li>補償；</li>
+<li>合併；</li>
+<li>終止。</li>
+</ul>
+<h2>15.5 失敗閉包</h2>
+<p>複合算子的失敗集合應可從子算子推導，而不是在 Runtime 才意外出現。</p>
+<hr>
+<h1>十六、治理算子</h1>
+<h2>16.1 授權</h2>
+<pre><code class="language-text">grant(actor, capability, scope, time)
+</code></pre>
+<h2>16.2 撤銷</h2>
+<pre><code class="language-text">revoke(actor, capability)
+</code></pre>
+<h2>16.3 批准</h2>
+<p>把待定行動轉入可執行狀態。</p>
+<h2>16.4 申訴</h2>
+<p>對分類、拒絕或結果提出正式異議。</p>
+<h2>16.5 暫停</h2>
+<p>停止某主體或流程繼續產生效果。</p>
+<h2>16.6 修改規則</h2>
+<p>改變其他算子的合法性與效果。</p>
+<h2>16.7 高階性</h2>
+<p>治理算子是作用於算子、權限與規則之上的高階算子。</p>
+<p>$$
+\omega_g
+:
+\Omega
+\rightarrow
+\Omega&#39;
+$$</p>
+<p>因此需更高層的版本、審核與證據。</p>
+<hr>
+<h1>十七、高階算子</h1>
+<h2>17.1 算子接受算子</h2>
+<p>$$
+H
+:
+\Omega
+\rightarrow
+\Omega
+$$</p>
+<p>例如：</p>
+<ul>
+<li>map；</li>
+<li>filter；</li>
+<li>retry；</li>
+<li>authorize；</li>
+<li>audit；</li>
+<li>parallelize。</li>
+</ul>
+<h2>17.2 高階效果</h2>
+<p>高階算子可能改變：</p>
+<ul>
+<li>執行次數；</li>
+<li>並行方式；</li>
+<li>錯誤傳播；</li>
+<li>權限；</li>
+<li>可觀測性；</li>
+<li>恢復策略。</li>
+</ul>
+<h2>17.3 retry 作為高階算子</h2>
+<p>$$
+Retry_n(\omega)
+$$</p>
+<p>不能只重複呼叫，還需知道 $\omega$ 是否安全重試。</p>
+<h2>17.4 authorize 作為高階算子</h2>
+<p>$$
+Authorize_A(\omega)
+$$</p>
+<p>將授權條件附加於算子。</p>
+<h2>17.5 audit 作為高階算子</h2>
+<p>$$
+Audit(\omega)
+$$</p>
+<p>應保存行動、事件、效果與證據，而不是只列印文字日誌。</p>
+<hr>
+<h1>十八、算子圖</h1>
+<h2>18.1 定義</h2>
+<p>算子圖：</p>
+<h1>$$
+G_\Omega</h1>
+<p>\left(
+\Omega,
+E_C,
+E_D,
+E_F,
+E_A
+\right)
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$E_C$：組合邊；</li>
+<li>$E_D$：資料與狀態依賴；</li>
+<li>$E_F$：效果與失敗傳播；</li>
+<li>$E_A$：授權與治理關係。</li>
+</ul>
+<h2>18.2 不只是呼叫圖</h2>
+<p>呼叫圖只表示誰呼叫誰。</p>
+<p>算子圖還表示：</p>
+<ul>
+<li>為何可組合；</li>
+<li>誰有權；</li>
+<li>效果如何累積；</li>
+<li>哪些失敗可傳播；</li>
+<li>哪些證據可連接。</li>
+</ul>
+<h2>18.3 算子圖驗證</h2>
+<p>可檢查：</p>
+<ul>
+<li>無擁有者效果；</li>
+<li>不可逆效果未批准；</li>
+<li>無安全重試；</li>
+<li>權限提升；</li>
+<li>不可滿足前置條件；</li>
+<li>證據鏈中斷。</li>
+</ul>
+<h2>18.4 多尺度</h2>
+<p>高階算子可封裝子圖，並保留摘要簽章。</p>
+<hr>
+<h1>十九、計算閉包</h1>
+<h2>19.1 基礎算子集合</h2>
+<p>給定：</p>
+<h1>$$
+\Omega_0</h1>
+<p>\left{
+\omega_1,\omega_2,\ldots,\omega_n
+\right}
+$$</p>
+<p>與組合規則 $\mathcal C$。</p>
+<h2>19.2 閉包</h2>
+<p>$$
+\boxed{
+\operatorname{Closure}
+\left(
+\Omega_0,
+\mathcal C
+\right)
+}
+$$</p>
+<p>表示所有可由基礎算子合法組成的複合算子。</p>
+<h2>19.3 語法閉包</h2>
+<p>只保證組合結果仍是合法語法結構。</p>
+<h2>19.4 語意閉包</h2>
+<p>組合後仍具有可理解的世界語意。</p>
+<h2>19.5 操作閉包</h2>
+<p>組合後能被 Runtime 執行。</p>
+<h2>19.6 治理閉包</h2>
+<p>組合後仍能推導：</p>
+<ul>
+<li>權限；</li>
+<li>責任；</li>
+<li>效果；</li>
+<li>失敗；</li>
+<li>證據；</li>
+<li>恢復。</li>
+</ul>
+<h2>19.7 四層不等價</h2>
+<p>$$
+\boxed{
+\text{Syntactic Closure}
+\neq
+\text{Semantic Closure}
+\neq
+\text{Operational Closure}
+\neq
+\text{Governed Closure}
+}
+$$</p>
+<p>能編譯不代表能合法、安全、可追責地改變世界。</p>
+<hr>
+<h1>二十、閉包的保持條件</h1>
+<p>複合算子 $\Omega^\ast$ 應保持：</p>
+<h2>20.1 型別可推導</h2>
+<p>輸入與輸出仍可被判定。</p>
+<h2>20.2 條件可推導</h2>
+<p>整體前置與後置條件可由子算子合成。</p>
+<h2>20.3 效果可推導</h2>
+<p>能知道整體：</p>
+<ul>
+<li>讀取；</li>
+<li>寫入；</li>
+<li>外部呼叫；</li>
+<li>不可逆效果；</li>
+<li>世界範圍。</li>
+</ul>
+<h2>20.4 失敗可推導</h2>
+<p>失敗集合與傳播方式可見。</p>
+<h2>20.5 權限可推導</h2>
+<p>整體所需權限不應低於子算子要求。</p>
+<h2>20.6 證據可推導</h2>
+<p>能從複合結果追蹤回每個重要子效果。</p>
+<h2>20.7 恢復可推導</h2>
+<p>能知道：</p>
+<ul>
+<li>哪些步驟可重試；</li>
+<li>哪些可回滾；</li>
+<li>哪些需補償；</li>
+<li>哪些不可逆。</li>
+</ul>
+<hr>
+<h1>二十一、封裝與抽象</h1>
+<h2>21.1 封裝複合算子</h2>
+<p>一個複合子圖可以被封裝為高階算子。</p>
+<h2>21.2 摘要簽章</h2>
+<p>封裝後仍需對外揭露：</p>
+<ul>
+<li>輸入；</li>
+<li>輸出；</li>
+<li>前置條件；</li>
+<li>效果；</li>
+<li>失敗；</li>
+<li>權限；</li>
+<li>證據；</li>
+<li>版本。</li>
+</ul>
+<h2>21.3 隱藏實作，不隱藏責任</h2>
+<p>抽象可以隱藏內部步驟，但不能隱藏外部效果與失敗責任。</p>
+<h2>21.4 洩漏抽象</h2>
+<p>若使用者必須知道大量內部細節才能正確使用算子，摘要簽章不完整。</p>
+<h2>21.5 危險抽象</h2>
+<p>把付款、刪除與發布包裝成普通 <code>execute()</code>，是把世界風險隱藏在名稱之下。</p>
+<hr>
+<h1>二十二、案例一：算術算子</h1>
+<h2>22.1 加法</h2>
+<p>$$
++
+:
+\mathbb R\times\mathbb R
+\rightarrow
+\mathbb R
+$$</p>
+<h2>22.2 前置條件</h2>
+<p>在有限機器中仍需考慮：</p>
+<ul>
+<li>溢位；</li>
+<li>精度；</li>
+<li>單位；</li>
+<li>空值；</li>
+<li>數值域。</li>
+</ul>
+<h2>22.3 單位算子</h2>
+<p><code>3 公尺 + 2 秒</code> 在一般物理語意下不可組合。</p>
+<p>型別系統可把量綱納入算子簽章。</p>
+<h2>22.4 金額</h2>
+<p>金額加法還需要相同幣別、精度與會計規則。</p>
+<p>因此，即使最基本的 <code>+</code> 也不是脫離語意域的普遍靜態字元。</p>
+<hr>
+<h1>二十三、案例二：資料轉換</h1>
+<h2>23.1 解析算子</h2>
+<pre><code class="language-text">ParseDate : Text -&gt; Date
+</code></pre>
+<h2>23.2 隱藏條件</h2>
+<p>仍需：</p>
+<ul>
+<li>地區格式；</li>
+<li>時區；</li>
+<li>曆法；</li>
+<li>無效日期；</li>
+<li>模糊日期。</li>
+</ul>
+<h2>23.3 組合</h2>
+<pre><code class="language-text">Text
+→ ParseDate
+→ ConvertTimezone
+→ ScheduleEvent
+</code></pre>
+<p>最後一步產生世界效果，不能因前兩步純計算而把整條鏈視為純算子。</p>
+<h2>23.4 證據</h2>
+<p>排程成功還需保存：</p>
+<ul>
+<li>原始文字；</li>
+<li>解析結果；</li>
+<li>時區；</li>
+<li>使用者確認；</li>
+<li>事件 ID。</li>
+</ul>
+<hr>
+<h1>二十四、案例三：狀態更新</h1>
+<p>算子：</p>
+<pre><code class="language-text">CompleteTask
+</code></pre>
+<p>其完整簽章應包含：</p>
+<ul>
+<li>輸入：任務、行動者、證據；</li>
+<li>前置：任務仍可完成；</li>
+<li>權限：行動者有權主張完成；</li>
+<li>效果：任務進入完成待核或已完成；</li>
+<li>事件：TaskCompletionClaimed；</li>
+<li>失敗：已取消、版本衝突、證據不足；</li>
+<li>恢復：撤回或爭議程序。</li>
+</ul>
+<p>它不是單純：</p>
+<pre><code class="language-python">task.completed = True
+</code></pre>
+<hr>
+<h1>二十五、案例四：工作流組合</h1>
+<p>工作流：</p>
+<pre><code class="language-text">ApproveRelease
+→ DeployRelease
+→ VerifyRelease
+→ ShiftTraffic
+</code></pre>
+<h2>25.1 組合條件</h2>
+<ul>
+<li>批准對應相同版本；</li>
+<li>部署環境正確；</li>
+<li>驗證證據滿足流量切換前置；</li>
+<li>切換權限存在。</li>
+</ul>
+<h2>25.2 失敗</h2>
+<p>若部署成功但驗證失敗，需要：</p>
+<ul>
+<li>保留部署狀態；</li>
+<li>禁止流量切換；</li>
+<li>回滾或人工檢查。</li>
+</ul>
+<h2>25.3 閉包</h2>
+<p>整體 <code>PublishRelease</code> 算子必須暴露所有重要效果與失敗，而不能只回傳布林值。</p>
+<hr>
+<h1>二十六、案例五：AI Agent 工具</h1>
+<h2>26.1 工具不是名稱集合</h2>
+<p>Agent 看見 <code>send_email</code>，還需知道：</p>
+<ul>
+<li>收件人作用域；</li>
+<li>是否不可逆；</li>
+<li>是否冪等；</li>
+<li>是否需要批准；</li>
+<li>成功證據；</li>
+<li>結果未知處理。</li>
+</ul>
+<h2>26.2 算子選擇</h2>
+<p>Agent 應根據算子簽章與世界狀態選擇工具，而非只依自然語言名稱相似度。</p>
+<h2>26.3 組合計畫</h2>
+<p>計畫必須在執行前檢查：</p>
+<ul>
+<li>效果總和；</li>
+<li>權限總和；</li>
+<li>不可逆節點；</li>
+<li>失敗與補償；</li>
+<li>證據鏈。</li>
+</ul>
+<h2>26.4 高階治理</h2>
+<p>可使用：</p>
+<pre><code class="language-text">RequireApproval(SendEmail)
+Audit(DeleteFile)
+RetrySafe(ReadWebPage)
+</code></pre>
+<p>將治理與恢復策略附加於工具算子。</p>
+<hr>
+<h1>二十七、案例六：醫療批准</h1>
+<p>算子：</p>
+<pre><code class="language-text">ApproveTreatment
+</code></pre>
+<p>不是普通布林更新。</p>
+<p>它包含：</p>
+<ul>
+<li>合格專業者；</li>
+<li>病人身份；</li>
+<li>資料新鮮度；</li>
+<li>治療風險；</li>
+<li>同意；</li>
+<li>時效；</li>
+<li>替代方案；</li>
+<li>撤回；</li>
+<li>稽核證據。</li>
+</ul>
+<p>這是治理算子與狀態算子的組合。</p>
+<hr>
+<h1>二十八、案例七：物理裝置控制</h1>
+<p>算子：</p>
+<pre><code class="language-text">StartMotor
+</code></pre>
+<p>應具有：</p>
+<ul>
+<li>裝置身份；</li>
+<li>感測狀態；</li>
+<li>安全區域；</li>
+<li>操作者權限；</li>
+<li>轉速限制；</li>
+<li>緊急停止；</li>
+<li>命令回執；</li>
+<li>物理效果確認。</li>
+</ul>
+<p>若感測器無法確認，結果應是：</p>
+<pre><code class="language-text">command-sent
+physical-outcome-unverified
+</code></pre>
+<p>而非直接宣稱馬達已啟動。</p>
+<hr>
+<h1>二十九、主要失敗模式</h1>
+<ol>
+<li><strong>字元即算子：</strong> 只憑外觀判定符號身份。</li>
+<li><strong>名稱即語意：</strong> 同名函式被假定具有相同世界角色。</li>
+<li><strong>型別即完整簽章：</strong> 只有輸入輸出，缺少條件、效果與權限。</li>
+<li><strong>型別相容即世界相容：</strong> 忽略後置—前置、效果與證據。</li>
+<li><strong>純度偽裝：</strong> 外部效果被隱藏在普通函式中。</li>
+<li><strong>效果外掛化：</strong> 語言無法直接表示付款、發布、權限與物理作用。</li>
+<li><strong>治理缺席：</strong> 批准、申訴與規則修改只存在於人工流程。</li>
+<li><strong>代數律濫用：</strong> 對效果算子錯誤假定交換、結合或冪等。</li>
+<li><strong>可逆性誤判：</strong> 數位狀態可回復便宣稱世界效果可逆。</li>
+<li><strong>補償等同逆算子：</strong> 忽略殘差、時間與人類影響。</li>
+<li><strong>冪等只看 payload：</strong> 不保存行動身份與作用域。</li>
+<li><strong>等待非狀態化：</strong> 長時等待只由執行緒或臨時記憶維持。</li>
+<li><strong>超時即失敗：</strong> 結果未知被誤判並盲目重試。</li>
+<li><strong>失敗集合隱藏：</strong> 複合算子可能失敗方式無法推導。</li>
+<li><strong>高階算子改變語意：</strong> retry、parallel 等包裝器未反映效果變化。</li>
+<li><strong>呼叫圖即算子圖：</strong> 缺少權限、效果、失敗與證據邊。</li>
+<li><strong>語法閉包冒充治理閉包：</strong> 能組合與編譯便宣稱可安全執行。</li>
+<li><strong>抽象隱藏責任：</strong> 封裝同時隱藏不可逆效果與失敗所有者。</li>
+<li><strong>AI 依名稱選工具：</strong> 不檢查算子簽章與當前世界狀態。</li>
+<li><strong>物理命令僭位：</strong> 命令送出被當成物理效果成立。</li>
+<li><strong>算子版本無身份：</strong> 語意改變卻沿用舊名稱與契約。</li>
+<li><strong>多投影身份分裂：</strong> 文字、圖形與機器節點無法確認是否為同一算子。</li>
+</ol>
+<hr>
+<h1>三十、可證偽研究綱領</h1>
+<h2>30.1 表面符號—算子身份錯配</h2>
+<p>統計同名、同字元或同圖示在不同上下文中實際對應不同算子的比例。</p>
+<h2>30.2 算子簽章完整度</h2>
+<p>對八元算子結構評分：</p>
+<h1>$$
+C_\omega</h1>
+<p>\frac{
+|\text{declared operator dimensions}|
+}{
+8
+}
+$$</p>
+<p>研究其與事故率、重構成本、AI 工具誤用率的關係。</p>
+<h2>30.3 組合合法性檢查</h2>
+<p>比較只做型別檢查，以及同時檢查條件、效果、權限與證據的系統，對錯誤組合的檢出能力。</p>
+<h2>30.4 效果簽章完整率</h2>
+<p>統計高風險函式中，有多少能明示：</p>
+<ul>
+<li>外部效果；</li>
+<li>不可逆性；</li>
+<li>權限；</li>
+<li>冪等；</li>
+<li>補償；</li>
+<li>證據。</li>
+</ul>
+<h2>30.5 代數律有效域</h2>
+<p>對實際算子測量結合、交換、冪等與分配性成立的條件與失效範圍。</p>
+<h2>30.6 可逆性推導</h2>
+<p>比較人工判斷與結構化算子簽章，對複合工作流可逆、可補償與不可逆的判定準確率。</p>
+<h2>30.7 閉包保持率</h2>
+<p>檢查複合算子是否仍能推導：</p>
+<ul>
+<li>型別；</li>
+<li>條件；</li>
+<li>效果；</li>
+<li>失敗；</li>
+<li>權限；</li>
+<li>證據；</li>
+<li>恢復。</li>
+</ul>
+<h2>30.8 語法閉包—治理閉包差異</h2>
+<p>統計可編譯工作流中，有多少缺少合法授權、責任或恢復結構。</p>
+<h2>30.9 算子圖事故預防</h2>
+<p>比較呼叫圖與完整算子圖，在發現越權、不可逆效果、失敗中斷與無擁有者責任上的能力。</p>
+<h2>30.10 AI 算子選擇</h2>
+<p>比較 AI 只依名稱與描述選工具，以及依完整算子簽章與世界狀態選擇工具的正確率。</p>
+<h2>30.11 高階算子安全性</h2>
+<p>測量 retry、parallelize、cache、authorize、audit 等高階算子是否正確保持原算子的效果與失敗語意。</p>
+<h2>30.12 治理算子可見性</h2>
+<p>統計批准、撤銷、申訴、暫停與規則修改在系統中有多少被正式建模，而非隱藏於人工作業。</p>
+<h2>30.13 跨投影算子同一性</h2>
+<p>將同一算子投影為文字、圖形、語音與機器節點，測量身份、語意與版本保持。</p>
+<h2>30.14 物理算子驗證</h2>
+<p>比較只記錄命令送出與同時記錄感測確認、安全不變量及物理證據的控制系統。</p>
+<hr>
+<h1>三十一、本文的二十二項命題</h1>
+<ol>
+<li>符號不等於字元或 token。</li>
+<li>可執行符號是具有受治理語意的算子。</li>
+<li>算子至少包含輸入、輸出、前置、後置、效果、授權、驗證與組合。</li>
+<li>同一算子可以具有文字、圖形、語音與機器等多種表面投影。</li>
+<li>表面符號相同不保證算子身份相同。</li>
+<li>算子身份應由語意角色、型別、效果、不變量與版本共同決定。</li>
+<li>程式語言需要值、結構、狀態、事件、效果與治理等多類算子。</li>
+<li>傳統語言高度形式化值算子，卻常隱藏效果與治理算子。</li>
+<li>型別簽章不足以描述世界算子。</li>
+<li>算子組合需要輸出—輸入、前後條件、效果、授權與證據同時相容。</li>
+<li></li>
+</ol>
+<p>$$
+TypeCompatible
+\not\Rightarrow
+WorldCompatible
+$$
+12. 純算子與效果算子應在語言中明確區分。
+13. 交換、結合、冪等與分配等代數律只在明示條件域內成立。
+14. 數位可逆、可補償與世界不可逆是不同性質。
+15. 時間、等待、超時與結果未知應成為正式算子結構。
+16. 失敗集合與失敗傳播應能由複合算子推導。
+17. 治理算子是作用於權限、規則與其他算子的高階算子。
+18. 算子圖比呼叫圖多保存效果、權限、失敗與證據。
+19. 語法閉包、語意閉包、操作閉包與治理閉包互不等同。
+20. 抽象可以隱藏實作，但不能隱藏外部責任與不可逆效果。
+21. AI 應根據算子簽章與世界狀態選擇工具，而非只依名稱相似度。
+22. 
+$$
+\boxed{
+\text{程式語言中的符號，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{不是靜止地代表某個意思，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是在明示條件與責任下，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{對可計算世界施加可組合變換。}
+}
+$$</p>
+<hr>
+<h1>三十二、與前後篇的關係</h1>
+<h2>32.1 承接 PU-2-01</h2>
+<p>PU-2-01 將文字降為程式結構的一種投影。</p>
+<p>本篇進一步把表面符號與權威算子分開，說明同一算子可以擁有多種投影。</p>
+<h2>32.2 承接第 1 冊</h2>
+<p>第 1 冊建立了狀態、事件、責任、契約、失敗與恢復。</p>
+<p>本篇把這些結構納入算子簽章，使語言中的操作不再只是值轉換，而能承載世界責任。</p>
+<h2>32.3 銜接 PU-2-03</h2>
+<p>下一篇將建立：</p>
+<p>$$
+\boxed{
+\text{Syntax}
+\rightarrow
+\text{Semantics}
+\rightarrow
+\text{Effects}
+}
+$$</p>
+<p>並回答：</p>
+<ul>
+<li>語法如何形成合法算子結構；</li>
+<li>語意如何把結構綁定到問題世界；</li>
+<li>效果如何描述實際世界差分；</li>
+<li>型別與效果系統如何共同驗證；</li>
+<li>相同語法為何可能具有不同語意與效果。</li>
+</ul>
+<hr>
+<h1>三十三、結論：符號不是被閱讀的標記，而是被治理的變換</h1>
+<p>人類看到符號時，容易先注意它的外觀。</p>
+<p>機器處理符號時，容易先辨認它的 token 與語法位置。</p>
+<p>但對真正的程式語言而言，符號的核心不在於它長什麼樣，而在於它能對什麼施加何種合法變換。</p>
+<p>因此：</p>
+<p>$$
+\boxed{
+\text{Symbol Identity}
+\neq
+\text{Visual Identity}
+}
+$$</p>
+<p>符號需要被提升為算子，並保存：</p>
+<ul>
+<li>輸入與輸出；</li>
+<li>前置與後置；</li>
+<li>世界效果；</li>
+<li>權限；</li>
+<li>失敗；</li>
+<li>證據；</li>
+<li>組合規則；</li>
+<li>版本與責任。</li>
+</ul>
+<p>這會使程式語言從「操作文字」進一步轉化為「組合世界變換」。</p>
+<p>本文將算子語言收束為：</p>
+<h1>$$
+\boxed{
+\text{Operator Language}</h1>
+<p>\text{Typed Transformation}
++
+\text{World Preconditions}
++
+\text{Effect Signature}
++
+\text{Authorization}
++
+\text{Evidence}
++
+\text{Composition Law}
+}
+$$</p>
+<p>當多個算子被組合時，真正需要保持的不只是型別，也包括：</p>
+<ul>
+<li>語意；</li>
+<li>效果；</li>
+<li>權限；</li>
+<li>失敗；</li>
+<li>恢復；</li>
+<li>證據。</li>
+</ul>
+<p>因此，計算閉包也不應只表示「還能形成更多合法式子」，而應表示：</p>
+<blockquote>
+<p><strong>由一組基礎算子生成的所有複合結構，仍可被理解、執行、驗證、追責與恢復。</strong></p>
+</blockquote>
+<p>本文最終命題是：</p>
+<p>$$
+\boxed{
+\text{語言的力量，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{不只來自它擁有多少符號，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而來自它能否讓符號在組合後，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{仍保存世界語意與責任。}
+}
+$$</p>
+<hr>
+<h1>附錄 A：算子描述格式</h1>
+<pre><code class="language-yaml">operator:
+  operator_id: &quot;send-message-v2&quot;
+  semantic_role: &quot;external-message-delivery&quot;
+
+  input:
+    - &quot;recipient&quot;
+    - &quot;message-content&quot;
+
+  output:
+    - &quot;delivery-attempt&quot;
+
+  preconditions:
+    - &quot;recipient is resolved&quot;
+    - &quot;content policy passed&quot;
+
+  postconditions:
+    - &quot;delivery attempt is recorded&quot;
+
+  effects:
+    external:
+      - &quot;message may become visible to recipient&quot;
+    irreversible: true
+
+  authorization:
+    required:
+      - &quot;message-send-capability&quot;
+
+  verification:
+    evidence:
+      - &quot;provider receipt&quot;
+
+  composition:
+    retry:
+      safe: &quot;only-with-same-action-id&quot;
+    compensation:
+      available: false
+</code></pre>
+<hr>
+<h1>附錄 B：算子組合檢查</h1>
+<pre><code class="language-yaml">composition_check:
+  first: &quot;AuthorizePayment&quot;
+  second: &quot;MarkOrderPaid&quot;
+
+  compatibility:
+    output_input: true
+    post_precondition: true
+    effects: true
+    authorization: true
+    evidence_trace: true
+
+  composed_effects:
+    - &quot;external-bank-authorization&quot;
+    - &quot;order-state-write&quot;
+
+  failure_union:
+    - &quot;PaymentDeclined&quot;
+    - &quot;PaymentOutcomeUnknown&quot;
+    - &quot;OrderVersionConflict&quot;
+
+  reversible: false
+  compensatable: true
+</code></pre>
+<hr>
+<h1>附錄 C：計算閉包層級</h1>
+<pre><code class="language-yaml">closure:
+  base_operators:
+    - &quot;ValidateOrder&quot;
+    - &quot;AuthorizePayment&quot;
+    - &quot;RecordPayment&quot;
+    - &quot;NotifyCustomer&quot;
+
+  levels:
+    syntactic:
+      closed: true
+
+    semantic:
+      closed: true
+
+    operational:
+      closed: true
+
+    governed:
+      closed: false
+      missing:
+        - &quot;human approval for high-value payment&quot;
+        - &quot;compensation owner for duplicate charge&quot;
+</code></pre>
+<hr>
+<h1>附錄 D：算子圖節點</h1>
+<pre><code class="language-yaml">operator_node:
+  id: &quot;DeployRelease&quot;
+  class: &quot;effect-operator&quot;
+
+  signature:
+    input: &quot;ApprovedRelease&quot;
+    output: &quot;DeploymentState&quot;
+
+  effects:
+    - &quot;writes deployment state&quot;
+    - &quot;calls infrastructure&quot;
+    - &quot;may shift physical compute resources&quot;
+
+  failures:
+    - &quot;DeploymentRejected&quot;
+    - &quot;DeploymentPartial&quot;
+    - &quot;OutcomeUnknown&quot;
+
+  governance:
+    authorization: &quot;production-deploy&quot;
+    approval_required: true
+
+  recovery:
+    rollback: &quot;conditional&quot;
+    compensation: &quot;traffic-shift-back&quot;
+</code></pre>
+<hr>
+<h1>附錄 E：第 2 冊六篇位置</h1>
+<ol>
+<li>PU-2-01　程式語言不等於文字：結構、語意與執行的基本分離</li>
+<li><strong>PU-2-02　符號作為算子：從靜態字元到可組合計算閉包</strong></li>
+<li>PU-2-03　語法—語意—效果：程式語言的三層存在結構</li>
+<li>PU-2-04　意圖中介表示：從自然意圖到多重可執行投影</li>
+<li>PU-2-05　可編譯世界：程式執行作為世界狀態差分</li>
+<li>PU-2-06　後文本程式語言：意圖、結構、驗證與物理耦合的統一框架</li>
+</ol>
+<hr>
+<h1>參考文獻</h1>
+<h2>Neo.K／EveMissLab 相關理論</h2>
+<ol>
+<li>Neo.K with Aletheia，《程式語言不等於文字：結構、語意與執行的基本分離》，2026。</li>
+<li>Neo.K with Aletheia，《程式不等於程式碼：可執行問題模型的基本定義》，2026。</li>
+<li>Neo.K with Aletheia，《資料—狀態—事件—行動：程式系統的四元動力結構》，2026。</li>
+<li>Neo.K with Aletheia，《責任、模組與契約：從檔案分類到系統邊界》，2026。</li>
+<li>Neo.K with Aletheia，《失敗也是程式：驗證、可觀測、恢復與長期維護》，2026。</li>
+<li>Neo.K with Aletheia，《分域結構論》，2026。</li>
+<li>Neo.K with Aletheia，《算子本體論》，2026。</li>
+</ol>
+<h2>一般理論背景</h2>
+<ol start="8">
+<li>Church, A., “An Unsolvable Problem of Elementary Number Theory,” 1936.</li>
+<li>Turing, A. M., “On Computable Numbers, with an Application to the Entscheidungsproblem,” 1936.</li>
+<li>Curry, H. B. and Feys, R., <em>Combinatory Logic</em>, 1958.</li>
+<li>Mac Lane, S., <em>Categories for the Working Mathematician</em>, 1971.</li>
+<li>Scott, D. and Strachey, C., “Toward a Mathematical Semantics for Computer Languages,” 1971.</li>
+<li>Moggi, E., “Notions of Computation and Monads,” 1991.</li>
+<li>Wadler, P., “The Essence of Functional Programming,” 1992.</li>
+<li>Plotkin, G. D. and Power, J., “Algebraic Operations and Generic Effects,” 2003.</li>
+<li>Pierce, B. C., <em>Types and Programming Languages</em>, 2002.</li>
+<li>Hoare, C. A. R., “An Axiomatic Basis for Computer Programming,” 1969.</li>
+<li>Milner, R., <em>Communicating and Mobile Systems: The Pi-Calculus</em>, 1999.</li>
+<li>Reynolds, J. C., <em>Theories of Programming Languages</em>, 1998.</li>
+<li>Backus, J., “Can Programming Be Liberated from the von Neumann Style?”, 1978.</li>
+</ol>
+<hr>
+<h1>版本紀錄</h1>
+<h2>v0.1 — 2026-07-27</h2>
+<ul>
+<li>完成十八篇地基論文第十四篇。</li>
+<li>將可執行符號定義為具有受治理語意的算子。</li>
+<li>建立算子八元模型。</li>
+<li>區分表面符號、語意符號與算子符號。</li>
+<li>建立算子身份與多表面投影。</li>
+<li>建立值、結構、狀態、事件、效果與治理六類算子。</li>
+<li>擴展輸入輸出簽章為前置、後置、效果、授權與驗證簽章。</li>
+<li>形式化完整算子組合判準。</li>
+<li>區分型別相容與世界相容。</li>
+<li>分析純度、代數律、可逆性、冪等性與時序。</li>
+<li>建立失敗算子、治理算子與高階算子。</li>
+<li>建立算子圖及多尺度摘要。</li>
+<li>區分語法、語意、操作與治理四層計算閉包。</li>
+<li>建立閉包保持條件與責任保留抽象。</li>
+<li>加入算術、資料轉換、狀態、工作流、AI Agent、醫療與物理裝置案例。</li>
+<li>提出二十二類失敗模式與十四項可證偽研究方向。</li>
+<li>完成與 PU-2-03《語法—語意—效果》的銜接。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pu-2-02.html">https://thisoneisneok.com/html/papers/pu-2-02.html</a></footer>
+</body>
+</html>

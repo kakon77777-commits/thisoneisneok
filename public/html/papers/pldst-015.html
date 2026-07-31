@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dennis Ritchie：可攜式系統語言、機器透明度與克制的抽象 | Neo.K</title>
+<meta name="description" content="Dennis Ritchie 經常被描述為 C 語言的創造者與 Unix 的共同開發者。這個描述正確，卻不足以說明他的設計風格，也容易產生兩種相反誤讀：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-015.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-015</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第三部設計師個案正式研究</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-015.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>Dennis Ritchie：可攜式系統語言、機器透明度與克制的抽象</h1>
+<h2>摘要</h2>
+<p>Dennis Ritchie 經常被描述為 C 語言的創造者與 Unix 的共同開發者。這個描述正確，卻不足以說明他的設計風格，也容易產生兩種相反誤讀：</p>
+<ul>
+<li>把 C 描述成幾乎等同組合語言的低階工具；</li>
+<li>把 C 的長期成功解釋成一套預先完整設計的普遍語言哲學。</li>
+</ul>
+<p>Ritchie 自己對 C 的歷史回顧顯示，C 並不是從空白紙上建立的純理論系統，而是在 BCPL、B、PDP-11、Unix 與實際編譯器之間反覆調整的工程結果。Ken Thompson 由 Martin Richards 的 BCPL 發展 B；Ritchie 在 1971 至 1973 年間保留 B 的大部分表面形式，加入型別、結構與適合 PDP-11 的資料表示，寫出第一個 C Compiler；其後 Alan Snyder、Steven C. Johnson、Michael Lesk、Thompson 等人也對語言與實作提供重要意見和工具。[R1]</p>
+<p>C 的設計價值不只在「接近機器」，而在於提供一個足夠薄、足夠可預測、又足以描述大型系統資料與控制結構的可攜層。它讓 Unix 可以由組合語言轉移到高階語言，使作業系統及其工具不再永久綁定單一處理器；同時，它沒有建立大型 Runtime、封閉物件世界或完整應用環境，而是接受作業系統、Linker、Library 與其他語言共同存在。[R1][R2][R3]</p>
+<p>本文以 PLDST 方法將 Ritchie 的設計生涯分成五個相位：</p>
+<ol>
+<li><strong>Multics／BCPL 學習期</strong>：大型系統、語言與作業系統的共同背景；</li>
+<li><strong>B 到 C 的型別化重建期</strong>：PDP-11、Byte addressing、資料型別與 Compiler；</li>
+<li><strong>Unix 共演化與可攜驗證期</strong>：以 C 重寫系統、跨機器移植及工具生態；</li>
+<li><strong>K&amp;R 與公共語言制度期</strong>：語言由研究小組慣例變成可教、可傳播的公共文本；</li>
+<li><strong>標準化與後創始者期</strong>：ANSI／ISO 委員會以現有實踐為基礎建立公共規格，C 不再由 Ritchie 個人治理。</li>
+</ol>
+<p>本文核心判斷為：</p>
+<p>$$
+\boxed{
+\text{Ritchie 的主要抽象策略不是隱藏機器，}
+\quad
+\text{而是只隱藏那些會妨礙系統跨機器重建的偶然細節。}
+}
+$$</p>
+<p>C 的深層配置可表示為：</p>
+<p>$$
+\boxed{
+\text{具體資料表示}
++
+\text{直接資源存取}
++
+\text{小型語義核心}
++
+\text{可攜編譯}
++
+\text{外部系統互操作}
+}
+$$</p>
+<p>這種設計的成功與代價來自同一來源。C 讓程式設計者能建立 Kernel、Compiler、Runtime、Driver 和跨語言介面；但它也把陣列邊界、物件生命期、表示有效性、別名、整數轉換和大量資源正確性留給程式設計者、Library、工具與組織。後來標準化又將多種實作自由與未定義行為制度化，使 Compiler 能適應不同機器，也使安全分析承擔長期複雜度。</p>
+<p>因此，Ritchie 不應只被分類為「低階語言設計者」。更精確的判定是：</p>
+<blockquote>
+<p>他以克制的抽象把真實機器提升到可攜系統程式設計的最低充分層級，並以完整 Unix 系統證明這一層級足以支撐大型軟體。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> Dennis Ritchie、C、Unix、BCPL、B、系統程式設計、可攜性、機器透明度、K&amp;R、標準化、PLDST</p>
+<hr>
+<h1>第一部分　研究邊界與多主體歸因</h1>
+<h2>一、本文研究範圍</h2>
+<p>本文主要分析：</p>
+<ul>
+<li>Multics 與早期 Bell Labs 系統背景；</li>
+<li>BCPL、B 與 C 的直接演化；</li>
+<li>1971–1977 年間 C 的核心形成；</li>
+<li>C 與 Research Unix 的共同演化；</li>
+<li>《The C Programming Language》；</li>
+<li>C89／C90 標準化前後的權力轉移；</li>
+<li>Ritchie 對軟體研究環境及 Unix 演化的回顧。</li>
+</ul>
+<p>本文不把下列內容全部歸入 Ritchie：</p>
+<ul>
+<li>BCPL；</li>
+<li>B；</li>
+<li>Unix 的全部命令、工具與架構；</li>
+<li>PCC；</li>
+<li>ANSI C／ISO C 的全部決策；</li>
+<li>POSIX；</li>
+<li>C99、C11、C17、C23；</li>
+<li>Linux、BSD 及其他 Unix-like 系統；</li>
+<li>所有 C Compiler 與 Library。</li>
+</ul>
+<hr>
+<h2>二、C 的直接先行者</h2>
+<p>Ritchie 對 C 歷史的總結清楚區分：</p>
+<pre><code class="language-text">Martin Richards：BCPL
+Ken Thompson：B
+Dennis Ritchie：由 B 發展 C、加入型別並寫第一 Compiler
+</code></pre>
+<p>BCPL 與 B 提供：</p>
+<ul>
+<li>簡潔語法；</li>
+<li>表達式導向；</li>
+<li>Pointer-like 操作；</li>
+<li>系統程式傳統；</li>
+<li>Compiler portability 經驗。</li>
+</ul>
+<p>C 並不是將這些全部捨棄，而是針對 PDP-11 與 Unix 的需求進行型別化重建。[R1]</p>
+<hr>
+<h2>三、C 不是完全單人完成</h2>
+<p>Ritchie 將 1972–1977 年間的直接語言貢獻者列為：</p>
+<ul>
+<li>Dennis Ritchie；</li>
+<li>Ken Thompson；</li>
+<li>Alan Snyder；</li>
+<li>Steven C. Johnson；</li>
+<li>Michael Lesk。</li>
+</ul>
+<p>其中：</p>
+<ul>
+<li>Johnson 的 Portable C Compiler 對 C 的跨平台傳播極為重要；</li>
+<li>Thompson 的 B 與 Unix 需求直接塑造 C；</li>
+<li>Unix 使用者和系統工具持續暴露語言缺陷；</li>
+<li>Brian Kernighan 在教學、文件、命名、範例及 K&amp;R 公共化方面具有獨立作用。[R1][R4][R5]</li>
+</ul>
+<p>因此：</p>
+<pre><code class="language-text">C 核心創始設計：Ritchie 極高
+第一 Compiler：Ritchie 高
+前代語言：Richards、Thompson
+語言細節與早期實踐：Bell Labs 小組共同
+Portable Compiler：Johnson 關鍵
+公共教學與 Reference：Kernighan＋Ritchie
+標準化後演化：X3J11／WG14
+</code></pre>
+<hr>
+<h2>四、Unix 也不是雙人神話</h2>
+<p>Ken Thompson 是早期 Unix 的主要創建者；Ritchie 很快加入，並對語言、Kernel、工具、可攜和系統演化作出核心貢獻。</p>
+<p>但 Research Unix 還包括：</p>
+<ul>
+<li>Douglas McIlroy；</li>
+<li>Joe Ossanna；</li>
+<li>Brian Kernighan；</li>
+<li>Robert Morris；</li>
+<li>Steven Johnson；</li>
+<li>Michael Lesk；</li>
+<li>Lee McMahon；</li>
+<li>其他 Bell Labs 研究者與使用者。</li>
+</ul>
+<p>Pipe、Shell、Text processing、Tool philosophy、Library、Port 等成果需逐項歸因。</p>
+<hr>
+<h1>第二部分　相位一：Multics、BCPL 與大型系統背景</h1>
+<h2>五、Multics 的雙重影響</h2>
+<p>Multics 提供：</p>
+<ul>
+<li>Time-sharing；</li>
+<li>Hierarchical file system；</li>
+<li>Security；</li>
+<li>Dynamic linking；</li>
+<li>大型系統模組；</li>
+<li>高階語言實作作業系統的經驗。</li>
+</ul>
+<p>Bell Labs 退出 Multics 並不表示研究者拒絕其全部目標。Ritchie 的 Unix 歷史回顧顯示，早期 Unix 同時受到：</p>
+<ul>
+<li>對 Multics 延遲與規模的失望；</li>
+<li>對互動式計算環境的持續追求；</li>
+</ul>
+<p>兩種力量影響。[R2]</p>
+<hr>
+<h2>六、BCPL 的吸引力</h2>
+<p>BCPL 是：</p>
+<ul>
+<li>小型；</li>
+<li>可自舉；</li>
+<li>適合 Compiler 與系統工具；</li>
+<li>對機器表示保持接近；</li>
+<li>較容易移植。</li>
+</ul>
+<p>其弱點也很清楚：</p>
+<ul>
+<li>單一 Word-oriented representation；</li>
+<li>缺乏適合 PDP-11 Byte-addressed memory 的型別；</li>
+<li>資料結構及對齊需人工處理；</li>
+<li>新硬體特性無法自然表達。</li>
+</ul>
+<hr>
+<h2>七、設計問題來自使用而非分類學</h2>
+<p>Ritchie 的問題不是：</p>
+<blockquote>
+<p>應建立一門低階還是高階語言？</p>
+</blockquote>
+<p>而是：</p>
+<blockquote>
+<p>如何保留 B 的小型、Compiler 友善與系統能力，同時讓它能有效表示 PDP-11 上的 Character、Word、Pointer、Array、Structure，並用於重寫 Unix？</p>
+</blockquote>
+<p>這是一個具體工程約束集合。</p>
+<hr>
+<h1>第三部分　相位二：從 B 到 C</h1>
+<h2>八、PDP-11 改變了語言</h2>
+<p>PDP-11 提供：</p>
+<ul>
+<li>Byte addressing；</li>
+<li>不同大小的資料單位；</li>
+<li>適合系統程式的 Addressing mode；</li>
+<li>較好的 Stack 與 Procedure 支援。</li>
+</ul>
+<p>B 的無型別 Word model 無法自然利用這些特性。</p>
+<p>因此，C 的型別不是純粹安全工程，而同時是：</p>
+<h1>$$
+Type</h1>
+<p>Representation
++
+OperationSet
++
+MachineMapping
+$$</p>
+<hr>
+<h2>九、型別化重建</h2>
+<p>C 逐步加入：</p>
+<ul>
+<li><code>char</code>；</li>
+<li><code>int</code>；</li>
+<li>Pointer；</li>
+<li>Array；</li>
+<li>Structure；</li>
+<li>Union；</li>
+<li>Function type；</li>
+<li>更完整 Declaration。</li>
+</ul>
+<p>這些機制使程式能描述：</p>
+<ul>
+<li>Byte buffer；</li>
+<li>Device register；</li>
+<li>File structure；</li>
+<li>Process table；</li>
+<li>Tree；</li>
+<li>Linked structure；</li>
+<li>Compiler syntax object。</li>
+</ul>
+<hr>
+<h2>十、Array 與 Pointer 的結合</h2>
+<p>C 將 Array indexing 與 Pointer arithmetic 緊密連接：</p>
+<p>$$
+a[i]
+\equiv
+*(a+i)
+$$</p>
+<p>這提供：</p>
+<ul>
+<li>接近機器的資料遍歷；</li>
+<li>小型語言規則；</li>
+<li>高效實作；</li>
+<li>Array／Pointer API 互操作。</li>
+</ul>
+<p>但也造成長期代價：</p>
+<ul>
+<li>Array parameter 容易退化成 Pointer；</li>
+<li>Bounds 不在一般 Pointer 型別中；</li>
+<li>Length 與地址分離；</li>
+<li>安全責任落在呼叫者與 Library。</li>
+</ul>
+<hr>
+<h2>十一、Structure：比組合語言高出關鍵一層</h2>
+<p>C 的真正提升不只是語法簡短，而是允許程式設計者為系統中的概念建立結構化表示：</p>
+<pre><code class="language-c">struct inode
+struct process
+struct buffer
+</code></pre>
+<p>這讓大型系統不必只由無名 Offset 和 Word 組成。</p>
+<p>因此：</p>
+<p>$$
+MachineTransparency
+\neq
+RepresentationAnonymity
+$$</p>
+<p>接近機器不表示拒絕資料抽象。</p>
+<hr>
+<h2>十二、Declaration 與表達式的妥協</h2>
+<p>C 的 Declaration syntax 受到「Declaration mirrors use」的思想影響：</p>
+<pre><code class="language-c">int *p;
+int a[10];
+int (*f)(int);
+</code></pre>
+<p>它使型別構造與使用形式有直接關係，但複雜型別會形成高解析成本。</p>
+<p>這種設計代表：</p>
+<ul>
+<li>優先保持表面規則與使用相近；</li>
+<li>接受複雜 Declaration 的教學負擔；</li>
+<li>沒有建立完全獨立的型別表達語法。</li>
+</ul>
+<hr>
+<h1>第四部分　C 與 Unix 的共同演化</h1>
+<h2>十三、語言由真實系統壓力塑形</h2>
+<p>C 不是完成後才用於 Unix。</p>
+<p>更接近：</p>
+<h1>$$
+C_{t+1}</h1>
+<p>Refine(
+C_t,
+UnixNeeds_t,
+CompilerExperience_t,
+Hardware_t
+)
+$$</p>
+<p>Unix 需要：</p>
+<ul>
+<li>Character handling；</li>
+<li>File system structure；</li>
+<li>Process；</li>
+<li>Device；</li>
+<li>Pointer；</li>
+<li>Bit operation；</li>
+<li>Separate compilation；</li>
+<li>Assembly interoperation。</li>
+</ul>
+<p>這些需求反覆測試 C。</p>
+<hr>
+<h2>十四、以 C 重寫 Unix</h2>
+<p>Unix 早期以 Assembly 為主。1973 年前後，大部分 Kernel 被改寫為 C，只保留少數硬體相關部分。</p>
+<p>此舉的重要性是：</p>
+<ul>
+<li>系統邏輯與單一處理器指令分離；</li>
+<li>Compiler 成為硬體遷移層；</li>
+<li>作業系統可跨機器重建；</li>
+<li>系統來源更容易閱讀與修改；</li>
+<li>語言本身得到完整壓力測試。[R2][R3]</li>
+</ul>
+<hr>
+<h2>十五、可攜不是「零修改」</h2>
+<p>早期 Unix Port 仍需要處理：</p>
+<ul>
+<li>Word size；</li>
+<li>Byte order；</li>
+<li>Device；</li>
+<li>Assembly startup；</li>
+<li>Memory management；</li>
+<li>Compiler；</li>
+<li>ABI；</li>
+<li>Alignment。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+Portable
+\neq
+MachineIndependent
+$$</p>
+<p>C 所提供的是：</p>
+<blockquote>
+<p>把大多數系統邏輯移出硬體專屬 Assembly，只把不可避免差異保留在受限區域。</p>
+</blockquote>
+<hr>
+<h2>十六、C 的可攜性是成本分區</h2>
+<p>令系統程式為：</p>
+<h1>$$
+Program</h1>
+<p>PortableCore
++
+MachineSpecificBoundary
+$$</p>
+<p>C 的價值在於使：</p>
+<p>$$
+|PortableCore|
+\gg
+|MachineSpecificBoundary|
+$$</p>
+<p>而不是完全消除後者。</p>
+<hr>
+<h1>第五部分　機器透明度與克制抽象</h1>
+<h2>十七、何謂機器透明</h2>
+<p>C 讓使用者相對容易推理：</p>
+<ul>
+<li>Object representation；</li>
+<li>Pointer；</li>
+<li>Integer size；</li>
+<li>Memory layout；</li>
+<li>Function call；</li>
+<li>Bit；</li>
+<li>Address；</li>
+<li>Control flow。</li>
+</ul>
+<p>但規格仍描述抽象機器，Compiler 可以：</p>
+<ul>
+<li>Register allocate；</li>
+<li>Reorder；</li>
+<li>Fold；</li>
+<li>Inline；</li>
+<li>Eliminate；</li>
+<li>使用不同指令。</li>
+</ul>
+<p>所以來源不是 Assembly 的逐字轉錄。</p>
+<hr>
+<h2>十八、克制抽象</h2>
+<p>Ritchie 的抽象策略通常避免：</p>
+<ul>
+<li>大型隱式 Runtime；</li>
+<li>強制物件系統；</li>
+<li>單一封閉環境；</li>
+<li>語言內建所有 OS 能力；</li>
+<li>將特定應用模型寫入核心。</li>
+</ul>
+<p>C 提供：</p>
+<ul>
+<li>Function；</li>
+<li>Structure；</li>
+<li>Pointer；</li>
+<li>Arithmetic；</li>
+<li>Control；</li>
+<li>Separate translation；</li>
+<li>Library boundary。</li>
+</ul>
+<p>其餘由系統和 Library 建立。</p>
+<hr>
+<h2>十九、語言只是系統的一部分</h2>
+<p>C 接受：</p>
+<ul>
+<li>Linker；</li>
+<li>Assembly；</li>
+<li>OS；</li>
+<li>Library；</li>
+<li>Foreign code；</li>
+<li>Toolchain；</li>
+</ul>
+<p>共同存在。</p>
+<p>這種設計與 Smalltalk／Lisp 式完整環境不同：</p>
+<p>$$
+Language
+\subset
+System
+$$</p>
+<p>而不是：</p>
+<p>$$
+LanguageRuntime
+\approx
+WholeSystem
+$$</p>
+<hr>
+<h2>二十、核心小不代表實際系統小</h2>
+<p>C 的核心相對小，但真實開發需要：</p>
+<ul>
+<li>Preprocessor；</li>
+<li>Header；</li>
+<li>Linker；</li>
+<li>Build；</li>
+<li>ABI；</li>
+<li>libc；</li>
+<li>OS API；</li>
+<li>Debugger；</li>
+<li>Static analyzer；</li>
+<li>Coding standard。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+SmallLanguageCore
+\not\Rightarrow
+SmallEffectiveEnvironment
+$$</p>
+<hr>
+<h1>第六部分　安全與自由的責任配置</h1>
+<h2>二十一、C 禁止的錯誤有限</h2>
+<p>C 的型別系統能檢查：</p>
+<ul>
+<li>基本 Declaration；</li>
+<li>Function type；</li>
+<li>Structure member；</li>
+<li>部分轉換；</li>
+<li>表達式合法性。</li>
+</ul>
+<p>但一般不保證：</p>
+<ul>
+<li>Bounds；</li>
+<li>Lifetime；</li>
+<li>Null absence；</li>
+<li>Integer overflow safety；</li>
+<li>Data-race freedom；</li>
+<li>Initialization；</li>
+<li>Pointer provenance 可由使用者直接理解；</li>
+<li>Resource release。</li>
+</ul>
+<hr>
+<h2>二十二、低階能力的必要性</h2>
+<p>系統語言需要：</p>
+<ul>
+<li>Memory-mapped I/O；</li>
+<li>ABI；</li>
+<li>Device register；</li>
+<li>Allocator；</li>
+<li>Kernel data；</li>
+<li>Foreign interface；</li>
+<li>Runtime implementation。</li>
+</ul>
+<p>完全禁止 Raw operation 會使語言無法實作自己的基礎。</p>
+<p>Ritchie 的配置是保留能力，並將正確性責任放給：</p>
+<ul>
+<li>程式設計者；</li>
+<li>API；</li>
+<li>Review；</li>
+<li>Tool；</li>
+<li>Platform convention。</li>
+</ul>
+<hr>
+<h2>二十三、自由不是免費</h2>
+<p>此配置的長期代價包括：</p>
+<ul>
+<li>Buffer overflow；</li>
+<li>Use-after-free；</li>
+<li>Invalid conversion；</li>
+<li>Data race；</li>
+<li>Uninitialized data；</li>
+<li>Security exploit；</li>
+<li>Platform-dependent behavior。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+Freedom_{\text{representation}}
+\uparrow
+\Rightarrow
+ProofObligation_{\text{human}}
+\uparrow
+$$</p>
+<hr>
+<h2>二十四、不能把後來標準全部回寫給 Ritchie</h2>
+<p>「Undefined behavior」的完整現代制度由：</p>
+<ul>
+<li>早期實作；</li>
+<li>K&amp;R；</li>
+<li>ANSI C；</li>
+<li>ISO C；</li>
+<li>Compiler optimization；</li>
+<li>Defect reports；</li>
+</ul>
+<p>共同形成。</p>
+<p>Ritchie 的原始設計保留大量實作自由，但今天 Pointer provenance、Sequence、Effective type 等複雜標準問題不能全部視為他的直接個人選擇。</p>
+<hr>
+<h1>第七部分　K&amp;R：從小組語言到公共文本</h1>
+<h2>二十五、Brian Kernighan 的作用</h2>
+<p>Brian Kernighan：</p>
+<ul>
+<li>撰寫早期 Tutorial；</li>
+<li>以清楚範例整理慣用法；</li>
+<li>與 Ritchie 共同撰寫《The C Programming Language》；</li>
+<li>使語言具有可傳播的公共敘述；</li>
+<li>將 Language、Library 與 Style 一起教給外部使用者。[R4][R5]</li>
+</ul>
+<hr>
+<h2>二十六、K&amp;R 不只是教材</h2>
+<p>第一版 K&amp;R 的附錄長期充當：</p>
+<ul>
+<li>語言 Reference；</li>
+<li>Compiler 共同基線；</li>
+<li>使用者預期；</li>
+<li>標準化 Base document。</li>
+</ul>
+<p>C89 Rationale 說明，C89 大部分語言與 K&amp;R 第一版附錄及當時大多數 Translator 的共同實踐一致。[R6]</p>
+<hr>
+<h2>二十七、文體也是設計介面</h2>
+<p>K&amp;R 的短小、範例導向與逐步展示，強化 C 的文化風格：</p>
+<ul>
+<li>小範例；</li>
+<li>可直接執行；</li>
+<li>少量核心；</li>
+<li>不依巨大框架；</li>
+<li>以真實程式解釋規則。</li>
+</ul>
+<p>但「K&amp;R 風格」是 Kernighan 與 Ritchie 的共同公共成果，不應全歸 Ritchie。</p>
+<hr>
+<h1>第八部分　標準化與權力轉移</h1>
+<h2>二十八、從 De facto 到 De jure</h2>
+<p>早期 C 的主要事實來源是：</p>
+<ul>
+<li>Bell Labs Compiler；</li>
+<li>K&amp;R；</li>
+<li>Unix code；</li>
+<li>不同 Vendor implementation。</li>
+</ul>
+<p>方言增長後，需要：</p>
+<ul>
+<li>清楚規格；</li>
+<li>跨 Compiler 一致；</li>
+<li>Library 定義；</li>
+<li>可攜承諾；</li>
+<li>Defect resolution。</li>
+</ul>
+<hr>
+<h2>二十九、X3J11／WG14 的任務</h2>
+<p>C89 委員會的基本任務是：</p>
+<ul>
+<li>編碼共同現有實踐；</li>
+<li>在既有先例清楚時尊重先例；</li>
+<li>正式化已證明有價值的改進；</li>
+<li>促進不同 C 環境的程式可攜性。[R6]</li>
+</ul>
+<p>這不是讓委員會自由重新設計一門理想語言。</p>
+<hr>
+<h2>三十、Ritchie 不再是唯一決策者</h2>
+<p>標準化後：</p>
+<p>$$
+Authority_{\text{Ritchie}}
+\downarrow
+\qquad
+Authority_{\text{Committee}}
+\uparrow
+$$</p>
+<p>Ritchie 的原始設計與 K&amp;R 仍具有歷史權重，但：</p>
+<ul>
+<li>新型別；</li>
+<li>Library；</li>
+<li>Memory model；</li>
+<li>Atomics；</li>
+<li>Unicode；</li>
+<li>Defect interpretation；</li>
+</ul>
+<p>由後續制度決定。</p>
+<hr>
+<h2>三十一、相容性政治</h2>
+<p>委員會面對：</p>
+<ul>
+<li>已有 Source；</li>
+<li>Compiler；</li>
+<li>Hardware；</li>
+<li>ABI；</li>
+<li>Vendor extension；</li>
+<li>K&amp;R code；</li>
+<li>效能需求。</li>
+</ul>
+<p>因此，C 的現代不一致往往是：</p>
+<p>$$
+OriginalCore
++
+ExistingPractice
++
+Compatibility
++
+Optimization
++
+CommitteeCompromise
+$$</p>
+<p>共同結果。</p>
+<hr>
+<h1>第九部分　軟體研究風格</h1>
+<h2>三十二、Ritchie 對 Bell Labs 環境的回顧</h2>
+<p>在圖靈獎演講中，Ritchie 把 Unix 的形成與下列條件連結：</p>
+<ul>
+<li>小型互信團隊；</li>
+<li>使用者與開發者重疊；</li>
+<li>可以使用真實系統；</li>
+<li>可自行選擇問題；</li>
+<li>同事具有互補能力；</li>
+<li>系統逐步形成而非依巨大預先計畫。[R7]</li>
+</ul>
+<hr>
+<h2>三十三、實際使用者回饋</h2>
+<p>Unix 小組自己每天使用系統。</p>
+<p>因此：</p>
+<p>$$
+Design
+\rightarrow
+Use
+\rightarrow
+Irritation
+\rightarrow
+Revision
+$$</p>
+<p>循環很短。</p>
+<p>這與先完成巨大規格、再交給外部使用者不同。</p>
+<hr>
+<h2>三十四、克制不是沒有理想</h2>
+<p>Unix 與 C 具有強烈方向：</p>
+<ul>
+<li>小型工具；</li>
+<li>可組合；</li>
+<li>文字介面；</li>
+<li>可重寫；</li>
+<li>可移植；</li>
+<li>清楚資料表示。</li>
+</ul>
+<p>但它們不是透過完整形式藍圖一次完成，而由實作與使用逐步收斂。</p>
+<hr>
+<h1>第十部分　風格時間相位</h1>
+<h2>三十五、Multics／BCPL 期</h2>
+<pre><code class="language-text">問題：大型互動系統如何由高階語言建造
+所得：系統願景、Compiler 與語言經驗
+</code></pre>
+<hr>
+<h2>三十六、B→C 期</h2>
+<pre><code class="language-text">問題：B 無法自然映射 PDP-11 資料
+策略：加入型別、Structure、Byte 與新 Compiler
+</code></pre>
+<hr>
+<h2>三十七、Unix 共演化期</h2>
+<pre><code class="language-text">問題：作業系統綁定 Assembly
+策略：以 C 重寫大部分 Kernel
+</code></pre>
+<hr>
+<h2>三十八、K&amp;R 公共化期</h2>
+<pre><code class="language-text">問題：語言靠口傳與單一實作傳播
+策略：教程、範例、Reference manual
+</code></pre>
+<hr>
+<h2>三十九、標準化期</h2>
+<pre><code class="language-text">問題：方言、Vendor 和既有實踐分裂
+策略：委員會編碼共同實踐
+</code></pre>
+<hr>
+<h2>四十、後期系統研究期</h2>
+<p>Ritchie 後來參與：</p>
+<ul>
+<li>Streams；</li>
+<li>Plan 9；</li>
+<li>Inferno 相關系統研究；</li>
+<li>軟體研究管理。</li>
+</ul>
+<p>這些工作延續：</p>
+<ul>
+<li>分散式系統；</li>
+<li>簡化界面；</li>
+<li>系統可組合；</li>
+<li>研究原型。</li>
+</ul>
+<p>但各專案具有新的主要設計者和團隊，不能直接歸為 Ritchie 的個人語言作品。</p>
+<hr>
+<h1>第十一部分　PLDST 風格指紋</h1>
+<h2>四十一、問題 framing</h2>
+<p>Ritchie 的核心問題可表述為：</p>
+<blockquote>
+<p>如何用一門足夠接近機器、又足以表達大型資料結構的語言，讓系統軟體從單一硬體中解放？</p>
+</blockquote>
+<hr>
+<h2>四十二、價值優先序</h2>
+<p>$$
+V_{\text{Ritchie}}
+\approx
+(
+Portability,
+Implementability,
+MachineAccess,
+Compactness,
+Interoperability,
+SystemUsefulness,
+Clarity
+)
+$$</p>
+<hr>
+<h2>四十三、核心—擴張偏好</h2>
+<p>核心偏好：</p>
+<ul>
+<li>小；</li>
+<li>一般；</li>
+<li>與機器表示相容；</li>
+<li>不建立封閉系統；</li>
+<li>以 Library 和 Tool 擴張。</li>
+</ul>
+<hr>
+<h2>四十四、顯式—推導偏好</h2>
+<p>偏好明示：</p>
+<ul>
+<li>Pointer；</li>
+<li>Type；</li>
+<li>Layout；</li>
+<li>Control；</li>
+<li>Conversion；</li>
+<li>Resource operation。</li>
+</ul>
+<p>Compiler 自動處理：</p>
+<ul>
+<li>Register；</li>
+<li>Instruction selection；</li>
+<li>Calling detail；</li>
+<li>大部分機器映射。</li>
+</ul>
+<hr>
+<h2>四十五、效率—可讀性偏好</h2>
+<p>理想是：</p>
+<p>$$
+ReadableSystemStructure
++
+PredictableMachineCost
+$$</p>
+<p>而不是：</p>
+<ul>
+<li>完全隱藏成本；</li>
+<li>每行等同 Assembly。</li>
+</ul>
+<hr>
+<h2>四十六、安全—自由偏好</h2>
+<p>C 保留高度表示自由，安全主要不是由語言全面保證。</p>
+<p>因此 Ritchie 的風格不是現代安全優先，而是：</p>
+<blockquote>
+<p>以最低抽象成本保留系統實作能力，並接受使用者必須理解機器和表示。</p>
+</blockquote>
+<hr>
+<h2>四十七、相容性偏好</h2>
+<p>早期 C 可以快速修改；K&amp;R 後，既有實踐迅速形成相容負擔。</p>
+<p>標準化後的強相容性主要是制度結果，不能全部回寫為 Ritchie 的終身個人風格。</p>
+<hr>
+<h1>第十二部分　反例與限制</h1>
+<h2>四十八、C 不是「可攜 Assembly」</h2>
+<p>C 提供：</p>
+<ul>
+<li>型別；</li>
+<li>Structure；</li>
+<li>Expression；</li>
+<li>Function；</li>
+<li>Abstract machine。</li>
+</ul>
+<p>Compiler 並不保證逐句映射。</p>
+<p>「可攜 Assembly」可作隱喻，不能作精確技術定義。</p>
+<hr>
+<h2>四十九、C 的成功不只來自語言品質</h2>
+<p>還包括：</p>
+<ul>
+<li>Unix source dissemination；</li>
+<li>Bell Labs 研究文化；</li>
+<li>K&amp;R；</li>
+<li>PCC；</li>
+<li>大學採用；</li>
+<li>Hardware vendor；</li>
+<li>標準化；</li>
+<li>ABI；</li>
+<li>Compiler availability。</li>
+</ul>
+<hr>
+<h2>五十、小核心不等於低複雜度</h2>
+<p>C 將大量複雜度移到：</p>
+<ul>
+<li>Preprocessor；</li>
+<li>Header；</li>
+<li>Linker；</li>
+<li>Build；</li>
+<li>Undefined／implementation-defined behavior；</li>
+<li>Library；</li>
+<li>Coding standard；</li>
+<li>Static analysis；</li>
+<li>Human review。</li>
+</ul>
+<hr>
+<h2>五十一、機器接近性不是安全理由</h2>
+<p>能理解 Hardware 並不表示能避免所有：</p>
+<ul>
+<li>Alias；</li>
+<li>Lifetime；</li>
+<li>Concurrency；</li>
+<li>Optimizer；</li>
+<li>Spec ambiguity。</li>
+</ul>
+<p>現代 Compiler 和 Hardware 使「憑直覺理解 C」比早期更困難。</p>
+<hr>
+<h2>五十二、Ritchie 的簡潔不應浪漫化</h2>
+<p>C 的某些歷史設計：</p>
+<ul>
+<li>Null-terminated string；</li>
+<li>Array／Pointer boundary；</li>
+<li>Declaration；</li>
+<li>Preprocessor；</li>
+<li>Implicit conversion；</li>
+</ul>
+<p>確實形成長期工程成本。</p>
+<p>成功不表示所有設計都應被複製。</p>
+<hr>
+<h2>五十三、現代 C 不等於 1973 C</h2>
+<p>現代 C 包含：</p>
+<ul>
+<li>標準 Library；</li>
+<li>Prototype；</li>
+<li><code>const</code>；</li>
+<li>Wider integer model；</li>
+<li>Atomics；</li>
+<li>Thread memory model；</li>
+<li>新語法及屬性；</li>
+<li>大量 Defect interpretation。</li>
+</ul>
+<p>人物分析必須分期。</p>
+<hr>
+<h1>第十三部分　設計決策語料</h1>
+<table>
+<thead>
+<tr>
+<th>時期</th>
+<th>問題</th>
+<th>決策</th>
+<th>複雜度去向</th>
+<th>風格</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1960s</td>
+<td>大型系統語言與 Compiler</td>
+<td>參與 Multics／學習 BCPL</td>
+<td>語言與系統研究</td>
+<td>系統導向</td>
+</tr>
+<tr>
+<td>1969–70</td>
+<td>Unix 需要較高階工具</td>
+<td>Thompson 建立 B</td>
+<td>Compiler</td>
+<td>小型系統語言</td>
+</tr>
+<tr>
+<td>1971–73</td>
+<td>B 無法映射 PDP-11 資料</td>
+<td>C 型別化與第一 Compiler</td>
+<td>Type／Compiler</td>
+<td>表示導向</td>
+</tr>
+<tr>
+<td>1973</td>
+<td>Unix 綁定 Assembly</td>
+<td>大部分 Kernel 改寫 C</td>
+<td>Compiler／邊界 Assembly</td>
+<td>可攜分區</td>
+</tr>
+<tr>
+<td>1970s</td>
+<td>語言靠小組傳播</td>
+<td>K&amp;R</td>
+<td>公共文件</td>
+<td>制度化</td>
+</tr>
+<tr>
+<td>1980s</td>
+<td>方言與實作分裂</td>
+<td>ANSI C</td>
+<td>委員會</td>
+<td>相容標準</td>
+</tr>
+<tr>
+<td>後期</td>
+<td>Unix 模型需再研究</td>
+<td>Plan 9 等團隊研究</td>
+<td>新系統團隊</td>
+<td>持續實驗</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>第十四部分　人物原型判定</h1>
+<h2>五十四、主要原型</h2>
+<p>Dennis Ritchie 同時屬於：</p>
+<ul>
+<li><strong>可攜系統語言建築師</strong>；</li>
+<li><strong>機器透明抽象設計者</strong>；</li>
+<li><strong>語言—作業系統共演化工程師</strong>；</li>
+<li><strong>小型研究系統實作者</strong>；</li>
+<li><strong>克制式語言核心設計者</strong>。</li>
+</ul>
+<hr>
+<h2>五十五、不適合的簡單標籤</h2>
+<p>不應只稱：</p>
+<pre><code class="language-text">低階語言設計者
+可攜 Assembly 發明者
+Unix 唯二作者之一
+K&amp;R 單一作者
+現代 ISO C 的唯一設計者
+</code></pre>
+<p>較精確的描述是：</p>
+<blockquote>
+<p>將 B 的簡潔系統傳統重新型別化，使它足以表達 Unix，又不把機器和外部系統完全藏起來的設計者。</p>
+</blockquote>
+<hr>
+<h1>第十五部分　統一評價</h1>
+<h2>五十六、最重要的連續性</h2>
+<p>從 C 到 Unix 可攜：</p>
+<p>$$
+\boxed{
+\text{保留必要機器控制}
+\quad
+\text{移除不必要硬體綁定}
+}
+$$</p>
+<hr>
+<h2>五十七、最重要的制度轉換</h2>
+<p>C 從：</p>
+<pre><code class="language-text">Ritchie 與 Bell Labs 小組的實作語言
+</code></pre>
+<p>轉為：</p>
+<pre><code class="language-text">K&amp;R 定義的公共實踐
+</code></pre>
+<p>再轉為：</p>
+<pre><code class="language-text">ANSI／ISO 委員會治理的標準語言
+</code></pre>
+<hr>
+<h2>五十八、最重要的責任代價</h2>
+<p>C 把低階能力普遍化，也把大量安全證明義務普遍化。</p>
+<p>這是其力量與長期風險的共同來源。</p>
+<hr>
+<h1>第十六部分　結論</h1>
+<p>Dennis Ritchie 的設計生涯顯示，一門系統語言可以同時：</p>
+<ul>
+<li>對機器保持誠實；</li>
+<li>對不同機器保持可攜；</li>
+<li>具有足以組織大型系統的資料抽象；</li>
+<li>不建立巨大 Runtime；</li>
+<li>與 Assembly、Library、OS 及其他語言共存；</li>
+<li>由真實完整系統反覆驗證。</li>
+</ul>
+<p>本文對 Ritchie 的 PLDST 判定為：</p>
+<p>$$
+\boxed{
+\text{Machine-Aware Language Engineer}
+\rightarrow
+\text{Portable Systems Architect}
+\rightarrow
+\text{Restrained Abstraction Designer}
+}
+$$</p>
+<p>其核心優勢是：</p>
+<ul>
+<li>型別與資料表示緊密連接；</li>
+<li>語言核心小而可自舉；</li>
+<li>Compiler 承擔大部分硬體差異；</li>
+<li>C 與 Unix 形成極強共演化證據；</li>
+<li>語言不壟斷完整系統；</li>
+<li>公共文件清楚、易於實作和傳播。</li>
+</ul>
+<p>其核心代價是：</p>
+<ul>
+<li>安全責任高度外移；</li>
+<li>Array、Pointer、Length 與 Lifetime 缺少統一保證；</li>
+<li>小核心催生龐大工具及規範層；</li>
+<li>相容性保留早期折衷；</li>
+<li>現代最佳化使機器透明度不再完全直觀；</li>
+<li>標準語言的複雜性已遠超早期個人設計。</li>
+</ul>
+<p>最終原則為：</p>
+<p>$$
+\boxed{
+\text{抽象只提升到足以獲得可攜和結構的高度}
+\quad
+\land
+\text{不隱藏系統實作者必須控制的資源}
+}
+$$</p>
+<p>但今天重新採用此原則時，還必須補上一條早期 C 未完整提供的要求：</p>
+<blockquote>
+<p>若語言把低階能力交給一般使用者，就必須同步提供更強的邊界型別、診斷、分析與安全封裝制度，而不能只依靠熟練者的直覺。</p>
+</blockquote>
+<hr>
+<h1>附錄 A　PLDST 個案卡</h1>
+<pre><code class="language-text">人物：Dennis Ritchie
+主要語言／系統：C、Unix
+核心時期：1968–1980s
+主要問題：系統軟體綁定 Assembly 與單一機器
+主要策略：小型 Typed system language、Compiler、可攜邊界
+複雜度去向：Compiler、Library、Programmer、Toolchain
+責任去向：機器映射交給 Compiler，安全大量交給使用者
+主要保護對象：OS／Compiler／Tool 實作者
+主要限制：Memory safety、Undefined behavior、工具鏈與相容負擔
+歸因信心：高
+</code></pre>
+<hr>
+<h1>附錄 B　來源與參考文獻</h1>
+<p><strong>[R1]</strong> Dennis M. Ritchie, “The Development of the C Language,” HOPL II／Bell Labs, 1993.<br>— BCPL、B、C、PDP-11、型別、Compiler 及直接貢獻者。</p>
+<p><strong>[R2]</strong> Dennis M. Ritchie, “The Evolution of the Unix Time-sharing System,” 1984.<br>— Multics 退出、PDP-7／PDP-11、Unix 技術與社會演化。</p>
+<p><strong>[R3]</strong> Dennis M. Ritchie and Ken Thompson, “The UNIX Time-Sharing System,” <em>Bell System Technical Journal</em>, 1974／1978 editions.<br>— Unix 架構、系統功能、C 實作與可攜性。</p>
+<p><strong>[R4]</strong> Brian W. Kernighan and Dennis M. Ritchie, <em>The C Programming Language</em>, 1978／1988.<br>— 公共教程、語言 Reference、Library 及 K&amp;R 實踐。</p>
+<p><strong>[R5]</strong> Computer History Museum, Oral History of Brian Kernighan, 2017; Dennis Ritchie memorial materials.<br>— K&amp;R 形成、早期 Tutorial、Bell Labs 團隊與公共傳播。</p>
+<p><strong>[R6]</strong> ANSI X3J11／ISO WG14, <em>Rationale for the C89／C99 International Standard</em>.<br>— K&amp;R、共同現有實踐、相容、標準化與委員會治理。</p>
+<p><strong>[R7]</strong> Dennis M. Ritchie, “Reflections on Software Research,” ACM Turing Award Lecture, 1984.<br>— Bell Labs 研究條件、Unix 團隊、小型使用者—開發者循環及軟體研究制度。</p>
+<p><strong>[R8]</strong> ACM, Dennis M. Ritchie A.M. Turing Award materials.<br>— C、Unix 及泛用作業系統的歷史定位。</p>
+<p><strong>[R9]</strong> Nokia Bell Labs, Dennis Ritchie archive and biography.<br>— 原始歷史文件、職業資料及 Bell Labs 保存版本。</p>
+<hr>
+<h1>附錄 C　PLDST 標記</h1>
+<pre><code class="language-text">[T-M] Multics／BCPL learning phase
+[T-C] B-to-C reconstruction phase
+[T-U] Unix co-evolution phase
+[T-K] K&amp;R public-language phase
+[T-S] Standards／post-founder phase
+
+[S-P] Portability
+[S-M] Machine transparency
+[S-R] Restrained abstraction
+[S-I] Implementability
+[S-X] External-system interoperability
+[S-C] Compiler-centered hardware mapping
+
+
+---
+
+# 附錄 D　第二輪史實與歸因校對紀錄
+
+## D.1 BCPL、B 與 C 的直接繼承
+
+第二輪重新核對 Ritchie 的〈The Development of the C Language〉：
+
+- Martin Richards 設計 BCPL；
+- Ken Thompson 從 BCPL 發展 B；
+- Ritchie 在 1971 至 1973 年間將 B 逐步改造成 C；
+- 主要改動包括型別、資料表示、Structure 與適合 PDP-11 的編譯器；
+- Ritchie 明確把 1972 至 1977 年間對語言細節有直接影響的人列為自己、Ken Thompson、Alan Snyder、Steven C. Johnson 與 Michael Lesk。
+
+本文因此沒有使用「C 完全由 Ritchie 從零發明」的敘述。
+
+---
+
+## D.2 Unix 以 C 重寫的時間與範圍
+
+已重新核對 Ritchie 的 Unix 歷史回顧及 Ritchie／Thompson 的系統論文：
+
+- Unix 早期主要以 PDP-11 組合語言實作；
+- 1973 年前後，Kernel 的大部分被改寫為 C；
+- 仍需保留啟動、陷阱、設備及其他機器專屬邊界；
+- 當時 C 版本的系統體積約比原本組合語言版本大三分之一，但可理解性、可修改性及後續可攜性收益被認為值得；
+- 「以 C 重寫」不等於作業系統從此完全不含組合語言。
+
+本文因此將可攜性表述為「擴大可攜核心、縮小機器專屬邊界」，而不是機器獨立。
+
+---
+
+## D.3 C 與抽象機器
+
+第二輪核對 WG14 Rationale：
+
+- C 標準定義的是抽象機器及可觀察行為；
+- 實作可依 as-if 原則選擇指令、暫存器配置及轉換；
+- 來源中的 Pointer、Object、Integer 與控制結構比許多高階語言更接近機器成本，但仍不是固定硬體指令序列；
+- 「Portable assembly」只能作歷史隱喻，不能作精確規格描述。
+
+---
+
+## D.4 K&amp;R 的共同作者與公共化作用
+
+已重新核對 Brian Kernighan 的口述歷史與 K&amp;R：
+
+- Kernighan 曾撰寫早期 C Tutorial；
+- 《The C Programming Language》是 Kernighan 與 Ritchie 的共同作品；
+- 書中的範例、文體、Library 教學與 Reference appendix 共同塑造公共 C；
+- 第一版附錄長期成為標準化前的 De facto 參考；
+- 因此「K&amp;R 風格」與語言公共傳播不能只歸於 Ritchie。
+
+---
+
+## D.5 ANSI／ISO 標準化的目標
+
+第二輪核對 C89／C99 Rationale：
+
+- 委員會目標是建立清楚、一致且無歧義的標準；
+- 主要基礎是 K&amp;R Appendix A 與當時大多數 Translator 的共同現有實踐；
+- 同時允許把已被證明有價值、具有先例的改進正式化；
+- 委員會明確追求跨環境的程式可攜；
+- 這不是重新設計一門與既有 C 無關的理想語言。
+
+本文將標準化描述為從小組語言到公共制度的權力轉移。
+
+---
+
+## D.6 現代 C 的治理邊界
+
+截至本文日期：
+
+- 現行 ISO C 版本為 C23，於 2024 年完成國際標準採納；
+- C23 與後續 Defect report、Implementation 和 Library 工作由 WG14 及各國標準機構治理；
+- Ritchie 已不可能對這些後期功能、記憶體模型或解釋擁有直接裁決權；
+- 現代 C 的安全、Pointer provenance、Atomic、Unicode 及屬性等議題不能全部回寫成 Ritchie 的個人設計。
+
+---
+
+## D.7 未定義行為的歸因邊界
+
+C 從早期即保留大量實作自由，以適應不同硬體和高效 Compiler。
+
+但現代 Undefined behavior 制度由下列因素共同形成：
+
+```text
+早期實作慣例
+K&amp;R
+ANSI／ISO 規格
+Compiler 最佳化
+Defect report
+硬體與 ABI
+</code></pre>
+<p>本文因此只將「保留機器與實作自由」歸為 Ritchie 的深層傾向，不把每一項現代 UB 規則視為他的直接決策。</p>
+<hr>
+<h2>D.8 Bell Labs 團隊與研究環境</h2>
+<p>第二輪核對 Ritchie 的圖靈獎演講及 Unix 歷史：</p>
+<ul>
+<li>Unix 的形成仰賴小型、互信、使用者與開發者重疊的研究環境；</li>
+<li>Ken Thompson 對早期 Unix 和 B 的權重極高；</li>
+<li>Douglas McIlroy、Joe Ossanna、Brian Kernighan、Steven Johnson、Michael Lesk 等人對工具、系統及公共文化具有獨立貢獻；</li>
+<li>本文把「語言—作業系統共演化」視為 Ritchie 的風格證據，不把全部 Unix philosophy 歸於個人。</li>
+</ul>
+<hr>
+<h2>D.9 PLDST 推論邊界</h2>
+<p>下列名稱是本文分析原型，而非 Ritchie 自稱的正式學派：</p>
+<pre><code class="language-text">可攜系統語言建築師
+機器透明抽象設計者
+克制式語言核心設計者
+</code></pre>
+<p>它們由 C 的型別化、Unix 重寫、外部互操作與小型核心等跨決策證據推導。<br>「克制」不表示 C 沒有歷史缺陷，也不表示所有省略的安全機制在今日仍然合理。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-015.html">https://thisoneisneok.com/html/papers/pldst-015.html</a></footer>
+</body>
+</html>

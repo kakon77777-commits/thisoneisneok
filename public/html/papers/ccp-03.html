@@ -1,0 +1,1392 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>拓撲約束執行引擎 v2.0 | Neo.K</title>
+<meta name="description" content="現代計算系統已不再是單一 CPU 上的線性指令序列。機器學習模型、資料庫查詢、圖分析、科學計算、編譯工作流與分散式服務，通常以有向無環圖、控制流圖、資料流圖、稀疏張量、超圖、狀態機或多階段管線表示；執行資源也同時包含 CPU、GPU、NPU、DPU、chiplet、近端與遠端記憶體、CXL 資源池、可重構資料流陣列、光子或物理計算後端。真正的最佳化問題不只是「把某個 kernel 跑得更快」，而是決定：哪一種等價…">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/ccp-03.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / CCP</strong><span>計算機概念產品系列</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>CCP-03</span></div><div><b>版本</b><span>2026 年 7 月 30 日</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K（許筌崴）</span></div><div><b>狀態</b><span>公開概念技術論文／系列統合總綱／可驗證編譯—執行架構提案</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ccp-03.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>拓撲約束執行引擎 v2.0</h1>
+<h2>從「無限維計算流形」到圖重寫、需求導向躍遷與異質資源映射</h2>
+<p><strong>英文題名：</strong> Topology-Constrained Execution Engine v2.0: Graph Rewriting, Demand-Directed Leap Execution, and Heterogeneous Resource Mapping<br><strong>文件編號：</strong> EML-TCE-2026-v2.0<br><strong>作者：</strong> Neo.K（許筌崴）<br><strong>協作修訂：</strong> Aletheia<br><strong>機構：</strong> 一言諾科技有限公司（EveMissLab），台灣<br><strong>原始版本：</strong> 2026 年 4 月 4 日<br><strong>公開修訂版：</strong> 2026 年 7 月 30 日<br><strong>文件性質：</strong> 公開概念技術論文／系列統合總綱／可驗證編譯—執行架構提案<br><strong>建議縮寫：</strong> TCE（Topology-Constrained Execution Engine，拓撲約束執行引擎）<br><strong>證據等級：</strong> E0——架構與形式模型；尚未完成 TCE 軟體原型、硬體後端或第三方重現<br><strong>系列定位：</strong> O-Chip、SynCore、DEO、DPCPS、DryCore、SDMCA、AetherGlass–LaserCPU 與 RMC/LRTC 之上的計算表示、重寫、映射與驗證層<br><strong>授權建議：</strong> 正文與形式模型可採 CC BY-SA 4.0；程式碼、測試資料、硬體描述及後端介面於實際釋出時另行指定授權</p>
+<hr>
+<h2>修訂聲明</h2>
+<p>本文由《拓撲計算引擎：無限維幾何約束下的計算本體論革命》重構而來。原稿最有價值的洞察，是拒絕把計算只理解為「依固定順序在固定處理器上執行一串指令」，並提出三個值得保留的問題：</p>
+<ol>
+<li>同一項語義工作是否可以具有多種等價的計算結構？</li>
+<li>計算圖、資料佈局與硬體互連拓撲是否應共同最佳化？</li>
+<li>面對局部查詢時，系統是否可以只啟動與結果相關的因果閉包，而不執行整個全域圖？</li>
+</ol>
+<p>這三個問題分別對應<strong>程式重寫空間、拓撲感知映射、需求導向局部執行</strong>，確實構成一個可以實作的編譯—執行研究方向。</p>
+<p>然而，原稿同時將數學隱喻、物理量子論、編譯器、運行時與硬體互連混合成單一「終極架構」，並提出多項未建立的定理與性能結論：</p>
+<ul>
+<li>將序列、並行、拓撲與「概念空間」指定為固定的 $1$、$3$、$5$、無限維階梯；</li>
+<li>宣稱可操作維度越多，計算能力必然越高；</li>
+<li>將點、線、弦、歪線、波、場、面、體直接對應到 $O(n)$、$O(\log n)$ 或 $O(1)$；</li>
+<li>將所有計算表示成么正量子演化，並引入沒有物理或形式語義的「計算普朗克常數」；</li>
+<li>宣稱「插隊計算」可以把一般 DAG 的計算由 $O(n)$ 降至 $O(\text{Query})$ 或 $O(\log D)$；</li>
+<li>將二分取樣誤認為完成所有離散點計算，或將解集的符號表示誤認為已枚舉所有元素；</li>
+<li>將 AI 描述成可直接選出唯一最優計算流形的「幾何雕塑家」；</li>
+<li>將 CXL 延伸成無限維、無限頻寬、可單週期融合任意 CPU、GPU 與記憶體的 CXL$_\infty$；</li>
+<li>將跨裝置連通誤寫成共享暫存器、算力與記憶體可以無代價相加；</li>
+<li>宣稱同一任務可獲得 $10^3$ 至 $10^6$ 倍普遍加速，並將這些推演視為「不同維度」而非需要基準驗證的性能主張。</li>
+</ul>
+<p>v2.0 因此進行以下根本重構：</p>
+<ol>
+<li><strong>將 TCE 從 Topological Computing Engine 改為 Topology-Constrained Execution Engine。</strong> 「拓撲」指程式、資料、資源、互連與故障域之間的有限關係結構，不指超越圖靈計算的神秘無限維物理。</li>
+<li><strong>將無限維改為有限可表示的高維約束空間。</strong> 任務可具有很多語義、形狀、佈局、精度、功率與可靠度特徵，但任何實際編譯與控制都使用有限資料結構、有限精度與有限搜尋預算。</li>
+<li><strong>將幾何約束譜改為計算形態庫。</strong> 點、路徑、DAG、圖、超圖、網格、張量、胞腔複形、場與狀態空間是可選表示；它們不自動決定複雜度，也不存在普遍的維度—性能單調律。</li>
+<li><strong>將「AI 拓撲塑形」改為受約束的等價重寫與成本模型。</strong> 系統可用規則、e-graph、搜尋、整數規劃、啟發式或學習模型提出候選方案，但每個方案必須通過語義合法性、記憶體一致性、資源與安全驗證。</li>
+<li><strong>將「插隊計算」正式改寫為需求導向躍遷執行。</strong> 系統只執行查詢輸出的祖先閉包、稀疏前沿或事件觸發區域；它可以減少實際工作量，但不能跨越真實資料依賴、不可忽略的副作用或資訊理論下界。</li>
+<li><strong>將 CXL$_\infty$ 改為有限資源織網。</strong> CXL 提供系統級記憶體與裝置互連、池化及一致性能力；其頻寬、延遲、拓撲、交換、RAS 與擁塞均有限，不能取代片上旁路、暫存器網路或低延遲核心融合互連。</li>
+<li><strong>將 SynCore 降為執行後端之一。</strong> TCE 可將不同子圖映射到 CPU、GPU、SynCore Fusion Cluster、Digital Flow Array、光子線性單元、物理儲備池或遠端資源，但不假定所有後端可以任意融合。</li>
+<li><strong>正式區分編譯期、部署期與運行期。</strong> 等價重寫、資料格式選擇和大規模佈局通常在編譯或部署階段完成；運行期只在決策時限允許時執行局部映射、躍遷、遷移與回退。</li>
+<li><strong>加入證明義務、確定性重播、版本化索引、模型不確定性與安全回退。</strong> AI 只能提出計畫，不能免除正確性檢查。</li>
+<li><strong>刪除所有固定加速倍率與「後圖靈」宣稱。</strong> TCE 在一般情況下仍受相同可計算性、依賴鏈、通訊與資訊下界約束；其價值必須來自避免無效工作、探索更好等價表示、降低資料移動與提高異質硬體利用率。</li>
+</ol>
+<p>因此，新版保留的核心不再是「計算即存在，幾何即命運」，而是更精確且可證偽的命題：</p>
+<blockquote>
+<p><strong>程式語義、資料結構、依賴關係與硬體拓撲可以被共同表示與重寫；若系統能在有限成本內找出更適合當前查詢與資源狀態的等價拓撲，便可能減少實際執行工作、資料搬移與控制衝突。</strong></p>
+</blockquote>
+<hr>
+<h2>摘要</h2>
+<p>現代計算系統已不再是單一 CPU 上的線性指令序列。機器學習模型、資料庫查詢、圖分析、科學計算、編譯工作流與分散式服務，通常以有向無環圖、控制流圖、資料流圖、稀疏張量、超圖、狀態機或多階段管線表示；執行資源也同時包含 CPU、GPU、NPU、DPU、chiplet、近端與遠端記憶體、CXL 資源池、可重構資料流陣列、光子或物理計算後端。真正的最佳化問題不只是「把某個 kernel 跑得更快」，而是決定：哪一種等價程式表示、哪一種資料格式、哪一個依賴切分、哪一個資源映射、哪一條資料移動路徑，以及哪一個運作包絡，能在正確性、延遲、能耗、容量、可靠度與重組成本之間取得可驗證的平衡。</p>
+<p>本文提出拓撲約束執行引擎 TCE。TCE 將工作負載表示為具有資料、控制、副作用、形狀、精度與品質約束的多關係計算圖，將硬體表示為具有頻寬、延遲、容量、功率、溫度、健康度與故障域的資源圖，再建立候選等價重寫空間。系統可使用規則式圖重寫、e-graph 等式飽和、稀疏張量格式變換、資料流切分、算子融合、重計算、快取與遠端資源選擇，產生多個合法執行拓撲；之後由成本模型與驗證器共同選擇計畫。</p>
+<p>本文重新定義原稿的「插隊計算」為<strong>需求導向躍遷執行</strong>（Demand-Directed Leap Execution, DDLE）。對一組查詢輸出 $Q$，系統先計算其依賴祖先閉包 $A(Q)$，再只啟動該閉包內尚未物化且確實需要的節點。若計算是純函數式、依賴圖完整、外部副作用已被顯式建模，則執行 $A(Q)$ 足以產生與全圖執行相同的 $Q$；其工作量上界由查詢相關子圖大小決定，而不是由全圖大小決定。但索引建置、快取維護、依賴分析與失效重算仍有成本，且在 $A(Q)$ 接近全圖、存在全局副作用或依賴鏈很長時，DDLE 不提供漸近優勢。</p>
+<p>TCE 使用 TopoIR 作為多層中介表示，包含語義圖、等價重寫圖、部署圖、運行時前沿與證據圖。其七層架構依序為：語義與效果層、等價重寫層、依賴與局部性層、拓撲映射層、需求導向運行時層、異質執行與精確提交層，以及證據與治理層。O-Chip 負責部署後的意圖與跨層編排；SynCore、CPU、GPU、AetherGlass–LaserCPU 或 RMC/LRTC 提供受限的執行域；DEO、DPCPS、DryCore 與 SDMCA 分別提供運作、功率、熱與空間資源證書。</p>
+<p>本文不宣稱 TCE 可以把任意 $O(n)$ 問題變成 $O(1)$，不宣稱更高表示維度必然帶來更高計算能力，也不宣稱 CXL 可建立無限頻寬拓撲。TCE 的可檢驗主張是：對具有多種等價表示、稀疏依賴、局部查詢、昂貴資料移動與異質後端的工作負載，圖重寫、查詢閉包、拓撲感知映射與證據化回退可能降低實際執行節點數、資料搬移、尾端延遲或牆插能耗。若在嚴格基線、完整成本與第三方重現下不能獲得優勢，則相應機制應被否證或縮減。</p>
+<p><strong>關鍵詞：</strong> 圖重寫、e-graph、等式飽和、多層中介表示、需求導向執行、稀疏計算、拓撲感知映射、異質運算、CXL、資源圖、資料流、可驗證編譯、O-Chip、SynCore</p>
+<hr>
+<h1>第一章　問題重述：計算不是只有一張圖，但也不是無限維魔法</h1>
+<h2>1.1 從指令序列到多關係計算結構</h2>
+<p>一段程式可以同時具有多種結構：</p>
+<ul>
+<li>語法樹描述語言構造；</li>
+<li>控制流圖描述可能的執行路徑；</li>
+<li>資料依賴圖描述 producer–consumer 關係；</li>
+<li>記憶體圖描述別名、生命週期與一致性；</li>
+<li>任務圖描述粗粒度階段；</li>
+<li>張量與稀疏格式描述資料形態；</li>
+<li>部署圖描述算子、資料與裝置位置；</li>
+<li>遙測圖描述功率、熱、健康與故障關係。</li>
+</ul>
+<p>因此，比「計算究竟是線、面或場」更有用的問題是：</p>
+<blockquote>
+<p>在哪一層、對哪一種語義與成本，我們應該使用哪一種有限表示？</p>
+</blockquote>
+<p>TCE 不把這些表示視為同一物件的神秘維度，而視為互相投影、保留不同不變量的多層 IR。</p>
+<h2>1.2 三種不應混淆的維度</h2>
+<p>新版區分三種維度。</p>
+<h3>物理維度</h3>
+<p>元件與互連實際存在於一維、二維或三維空間，並受有限傳播速度、寄生、熱與製造約束。</p>
+<h3>表示維度</h3>
+<p>一個節點可以具有 $d$ 個有限特徵：</p>
+<h1>$$
+\mathbf{z}_v</h1>
+<p>(z_{v1},z_{v2},\ldots,z_{vd}).
+$$</p>
+<p>$d$ 可以很大，但仍是模型設計與資料結構選擇，不代表硬體進入額外物理維度。</p>
+<h3>組合維度</h3>
+<p>當系統允許多種切分、佈局、格式、排程與後端時，候選計畫數可能呈組合爆炸：</p>
+<h1>$$
+|\Omega|</h1>
+<p>|\Omega_{\mathrm{rewrite}}|
+|\Omega_{\mathrm{layout}}|
+|\Omega_{\mathrm{mapping}}|
+|\Omega_{\mathrm{schedule}}|.
+$$</p>
+<p>原稿所感受到的「高維」更接近這種大規模離散搜尋空間，而不是可直接提供 $O(1)$ 解答的無限維流形。</p>
+<h2>1.3 維度不等於能力</h2>
+<p>對同一項任務，增加特徵、連接或自由度可能擴大可搜尋方案，也可能增加：</p>
+<ul>
+<li>訓練與搜尋成本；</li>
+<li>校準負擔；</li>
+<li>噪聲和串擾；</li>
+<li>過擬合；</li>
+<li>可驗證性困難；</li>
+<li>執行時控制成本。</li>
+</ul>
+<p>因此不存在普遍關係：</p>
+<p>$$
+\text{計算能力}
+\propto
+\text{表示維度}.
+$$</p>
+<p>更合理的是：</p>
+<h1>$$
+U</h1>
+<h2>B_{\mathrm{task}}</h2>
+<h2>C_{\mathrm{search}}</h2>
+<h2>C_{\mathrm{execute}}</h2>
+<h2>C_{\mathrm{verify}}</h2>
+<p>R_{\mathrm{failure}},
+$$</p>
+<p>其中 $B_{\mathrm{task}}$ 是表示自由度對特定任務帶來的收益。</p>
+<h2>1.4 TCE 不改變可計算性類別</h2>
+<p>TCE 是編譯、部署和運行時架構，不宣稱超越圖靈可計算性。它可以：</p>
+<ul>
+<li>用符號形式取代不必要的枚舉；</li>
+<li>只執行查詢相關子圖；</li>
+<li>利用稀疏性與等價重寫；</li>
+<li>將工作映射到適合的異質後端；</li>
+<li>以近似方法換取可量化誤差；</li>
+<li>重用已物化結果。</li>
+</ul>
+<p>但它不能：</p>
+<ul>
+<li>無代價解決不可判定問題；</li>
+<li>省略輸出本身要求的資訊量；</li>
+<li>跨越真實因果依賴；</li>
+<li>將所有組合搜尋壓成常數時間；</li>
+<li>用表示上的「高維」取消物理通訊與記憶體成本。</li>
+</ul>
+<hr>
+<h1>第二章　TopoIR：工作負載、資源與證據的多層中介表示</h1>
+<h2>2.1 工作負載圖</h2>
+<p>TCE 將工作負載表示為多關係有向超圖：</p>
+<h1>$$
+\mathcal{G}_W</h1>
+<p>\left(
+V_W,
+E_D,
+E_C,
+E_M,
+E_S,
+\mathbf{a},
+\mathbf{q}
+\right).
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$V_W$：算子、任務、狀態轉移或外部動作；</li>
+<li>$E_D$：資料依賴；</li>
+<li>$E_C$：控制依賴；</li>
+<li>$E_M$：記憶體、別名與一致性關係；</li>
+<li>$E_S$：副作用與順序關係；</li>
+<li>$\mathbf{a}$：形狀、型別、稀疏度、精度、估計成本等屬性；</li>
+<li>$\mathbf{q}$：期限、品質、隱私、安全與可重現要求。</li>
+</ul>
+<p>只用普通 DAG 不足以表達循環、可變狀態與副作用，因此 TopoIR 允許區域、迭代、狀態端口和效果 token。</p>
+<h2>2.2 資源圖</h2>
+<p>硬體與系統資源表示為：</p>
+<h1>$$
+\mathcal{G}_R(t)</h1>
+<p>\left(
+V_R,
+E_R,
+\mathbf{m}_R(t),
+\mathbf{f}_R(t)
+\right).
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$V_R$：CPU 核心、GPU、NPU、SynCore 執行域、記憶體、CXL 裝置、網路、儲存與控制器；</li>
+<li>$E_R$：互連及可達關係；</li>
+<li>$\mathbf{m}_R(t)$：頻寬、延遲、容量、功率、溫度、健康度與佔用；</li>
+<li>$\mathbf{f}_R(t)$：故障域、隔離邊界與信任等級。</li>
+</ul>
+<p>TCE 只映射到當下被證書允許的資源集合：</p>
+<p>$$
+V_R^{\mathrm{safe}}(t)
+\subseteq
+V_R.
+$$</p>
+<h2>2.3 等價重寫圖</h2>
+<p>對一個語義區域 $p$，系統建立候選表示集合：</p>
+<h1>$$
+[p]_{\equiv}</h1>
+<p>{p&#39;\mid p&#39;\equiv p}.
+$$</p>
+<p>這些等價式可以由：</p>
+<ul>
+<li>代數律；</li>
+<li>算子融合與分解；</li>
+<li>迴圈交換、分塊和向量化；</li>
+<li>稀疏格式等價；</li>
+<li>張量重排；</li>
+<li>重計算與物化；</li>
+<li>查詢下推；</li>
+<li>圖演算法的 semiring 表示；</li>
+<li>受控近似規則；</li>
+</ul>
+<p>產生。</p>
+<p>TCE 可用 e-graph 壓縮表示大量等價式，而不是每次立即承諾一條局部最佳化路徑。</p>
+<h2>2.4 執行計畫</h2>
+<p>一個候選計畫定義為：</p>
+<h1>$$
+\Pi</h1>
+<p>(\rho,\mu,\lambda,\sigma,\delta,\phi),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\rho$：選定的重寫與分解；</li>
+<li>$\mu:V_W\rightarrow V_R$：任務—資源映射；</li>
+<li>$\lambda$：資料格式、佈局與位置；</li>
+<li>$\sigma$：排程、同步與前沿策略；</li>
+<li>$\delta$：DEO 運作包絡與功率—熱請求；</li>
+<li>$\phi$：失敗、回退與結果驗證計畫。</li>
+</ul>
+<p>成本函數不是只有時間：</p>
+<p>$$
+\begin{aligned}
+J(\Pi)
+={}&amp;
+\alpha L_{\mathrm{end}}
++\beta L_{\mathrm{p99}}
++\gamma E_{\mathrm{wall}}
++\delta D_{\mathrm{move}}
+\
+&amp;+\eta C_{\mathrm{reconf}}
++\zeta R_{\mathrm{failure}}
++\xi U_{\mathrm{model}}
++\rho C_{\mathrm{verify}}.
+\end{aligned}
+$$</p>
+<h2>2.5 證據圖</h2>
+<p>每次計畫必須連接到證據：</p>
+<h1>$$
+\mathcal{G}_E</h1>
+<p>(V_E,E_E),
+$$</p>
+<p>其節點包含：</p>
+<ul>
+<li>重寫規則版本；</li>
+<li>型別、形狀與效果證明；</li>
+<li>成本模型版本；</li>
+<li>校準資料；</li>
+<li>基準結果；</li>
+<li>硬體與韌體版本；</li>
+<li>執行日誌；</li>
+<li>失敗與回退紀錄。</li>
+</ul>
+<p>沒有證據血統的 AI 計畫不能被當成可重現編譯成果。</p>
+<hr>
+<h1>第三章　計算形態庫：從幾何隱喻到可編譯表示</h1>
+<h2>3.1 形態不是複雜度類別</h2>
+<p>新版保留「點、線、波、場」作為設計語彙，但取消它們與複雜度的一對一對應。更合理的形態庫如下。</p>
+<table>
+<thead>
+<tr>
+<th>形態</th>
+<th>正式表示</th>
+<th>適合問題</th>
+<th>常見限制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>點</td>
+<td>純量算子／狀態</td>
+<td>局部轉換、標量控制</td>
+<td>並行度有限</td>
+</tr>
+<tr>
+<td>路徑</td>
+<td>pipeline／sequence</td>
+<td>串流、協議、階段式工作</td>
+<td>受最慢階段限制</td>
+</tr>
+<tr>
+<td>DAG</td>
+<td>dataflow／task graph</td>
+<td>模型推論、編譯、科學工作流</td>
+<td>關鍵路徑與排程開銷</td>
+</tr>
+<tr>
+<td>圖</td>
+<td>adjacency／incidence</td>
+<td>網路、稀疏關係、遍歷</td>
+<td>不規則訪存與負載不均</td>
+</tr>
+<tr>
+<td>超圖</td>
+<td>多輸入多輸出關係</td>
+<td>編譯、資料庫、張量 contraction</td>
+<td>分割與映射困難</td>
+</tr>
+<tr>
+<td>網格／張量</td>
+<td>index space</td>
+<td>密集線性代數、stencil、影像</td>
+<td>資料搬移與維度爆炸</td>
+</tr>
+<tr>
+<td>胞腔／單純複形</td>
+<td>cells／simplices</td>
+<td>高階關係、拓撲特徵</td>
+<td>工具與後端有限</td>
+</tr>
+<tr>
+<td>場／算子</td>
+<td>PDE／operator</td>
+<td>物理模擬、神經算子、光學</td>
+<td>離散化與穩定性</td>
+</tr>
+<tr>
+<td>狀態空間</td>
+<td>transition system</td>
+<td>控制、協議、動力系統</td>
+<td>狀態爆炸</td>
+</tr>
+<tr>
+<td>語義空間</td>
+<td>typed symbolic IR</td>
+<td>推理、規則與程式變換</td>
+<td>等價判定與搜索成本</td>
+</tr>
+</tbody></table>
+<h2>3.2 形態轉換</h2>
+<p>TCE 關心的不是「哪個形態比較高維」，而是轉換是否保留所需語義。</p>
+<p>例如，圖演算法可以映射到稀疏矩陣與 semiring 運算：</p>
+<p>$$
+\mathcal{G}<em>{\mathrm{graph}}
+\xrightarrow{\mathcal{T}</em>{\mathrm{GB}}}
+(A,\oplus,\otimes).
+$$</p>
+<p>張量表達式可以映射到不同儲存格式和迭代空間：</p>
+<p>$$
+\mathcal{E}<em>{\mathrm{tensor}}
+\xrightarrow{\mathcal{T}</em>{\mathrm{format}}}
+(\lambda_{\mathrm{CSR}},\lambda_{\mathrm{COO}},\lambda_{\mathrm{CSF}},\ldots).
+$$</p>
+<p>控制流區域也可以在特定條件下轉成資料流或 predication；但若轉換改變例外、I/O、副作用或浮點誤差，就必須在語義合約中顯式說明。</p>
+<h2>3.3 形態選擇不是唯一解</h2>
+<p>原稿假設每個任務存在唯一最優流形。實際上，成本模型通常非凸、硬體狀態會改變、量測有噪聲，且多個計畫可能位於 Pareto 前沿。</p>
+<p>定義：</p>
+<p>$$
+\Pi_1\prec\Pi_2
+$$</p>
+<p>表示 $\Pi_1$ 在所有關鍵指標不差於 $\Pi_2$，且至少一項更好。TCE 尋找的是：</p>
+<h1>$$
+\mathcal{P}^{\star}</h1>
+<p>{\Pi\mid \nexists \Pi&#39;\prec\Pi},
+$$</p>
+<p>而不是假裝存在可由 AI 一次找出的宇宙唯一解。</p>
+<h2>3.4 形態與後端的多對多關係</h2>
+<p>同一 DAG 可以在 CPU、GPU、FPGA、SynCore Digital Flow Array 或分散式 runtime 上執行；同一 GPU 也能執行張量、圖與部分控制流。形態是表示，後端是實現，兩者是多對多映射：</p>
+<p>$$
+\mathcal{M}:\mathcal{F}<em>{\mathrm{form}}\times\mathcal{R}
+\rightarrow
+\mathcal{P}</em>{\mathrm{plan}}.
+$$</p>
+<hr>
+<h1>第四章　等價重寫：AI「塑形」的可驗證工程版本</h1>
+<h2>4.1 從單一路徑最佳化到等式飽和</h2>
+<p>傳統編譯器常依固定 pass 順序執行變換；某個早期決策可能阻止後續更好的方案。等式飽和的思想是：</p>
+<ol>
+<li>把等價表達式加入 e-graph；</li>
+<li>在預算內擴展重寫空間；</li>
+<li>最後依成本模型抽取候選。</li>
+</ol>
+<p>形式上：</p>
+<h1>$$
+\mathcal{E}_{k+1}</h1>
+<p>\operatorname{Saturate}
+(\mathcal{E}<em>k,\mathcal{R}</em>{\mathrm{rewrite}}),
+$$</p>
+<p>直到達到固定點、時間、記憶體或節點數預算。</p>
+<h2>4.2 重寫規則的四級信任</h2>
+<table>
+<thead>
+<tr>
+<th>等級</th>
+<th>規則</th>
+<th>例子</th>
+<th>驗證要求</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R0</td>
+<td>完全等價</td>
+<td>整數代數、純算子融合</td>
+<td>型別與等價證明</td>
+</tr>
+<tr>
+<td>R1</td>
+<td>條件等價</td>
+<td>無別名、無溢位、形狀條件</td>
+<td>守衛條件</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>數值近似</td>
+<td>低精度、重排浮點 reduction</td>
+<td>誤差預算</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>任務近似</td>
+<td>剪枝、早退、代理模型</td>
+<td>品質與風險證書</td>
+</tr>
+</tbody></table>
+<p>AI 生成的重寫預設為未信任候選，必須被降解到上述某一級並完成驗證。</p>
+<h2>4.3 搜尋與抽取</h2>
+<p>候選抽取可以使用：</p>
+<ul>
+<li>動態規劃；</li>
+<li>整數線性規劃；</li>
+<li>beam search；</li>
+<li>Monte Carlo tree search；</li>
+<li>貝葉斯最佳化；</li>
+<li>學習成本模型；</li>
+<li>人工規則和 profile-guided 搜尋。</li>
+</ul>
+<p>但搜尋本身有成本：</p>
+<h1>$$
+C_{\mathrm{opt}}</h1>
+<p>C_{\mathrm{analysis}}
++C_{\mathrm{rewrite}}
++C_{\mathrm{measure}}
++C_{\mathrm{compile}}.
+$$</p>
+<p>只有當：</p>
+<p>$$
+C_{\mathrm{opt}}
+&lt;
+N_{\mathrm{reuse}}
+\cdot
+\Delta C_{\mathrm{run}},
+$$</p>
+<p>深度搜尋才具有整體收益。</p>
+<h2>4.4 高維語義的有限表示</h2>
+<p>「概念空間」在 TCE 中不再是可直接訪問的無限維世界，而是由有限符號、型別、效果、形狀與嵌入共同描述：</p>
+<h1>$$
+\mathbf{s}(p)</h1>
+<p>(\mathbf{s}<em>{\mathrm{symbolic}},
+\mathbf{s}</em>{\mathrm{type}},
+\mathbf{s}<em>{\mathrm{effect}},
+\mathbf{s}</em>{\mathrm{shape}},
+\mathbf{s}_{\mathrm{learned}}).
+$$</p>
+<p>學習嵌入只能幫助檢索或排序，不構成語義等價證明。</p>
+<hr>
+<h1>第五章　需求導向躍遷執行：插隊計算的合法形式</h1>
+<h2>5.1 問題定義</h2>
+<p>設計算圖：</p>
+<p>$$
+\mathcal{G}=(V,E)
+$$</p>
+<p>以及查詢輸出集合：</p>
+<p>$$
+Q\subseteq V.
+$$</p>
+<p>定義 $Q$ 的祖先閉包：</p>
+<h1>$$
+A(Q)</h1>
+<p>{v\in V\mid v\leadsto q,\ q\in Q}\cup Q.
+$$</p>
+<p>需求導向躍遷執行 DDLE 只執行 $A(Q)$ 中尚未有效物化的節點。</p>
+<h2>5.2 查詢閉包正確性命題</h2>
+<p><strong>命題 5.1（純計算閉包充分性）</strong><br>若：</p>
+<ol>
+<li>$\mathcal{G}$ 完整表示所有資料與控制依賴；</li>
+<li>$A(Q)$ 中的節點為確定性純函數，或其副作用已被效果邊顯式納入；</li>
+<li>所有輸入版本一致；</li>
+<li>被重用的物化結果未失效；</li>
+</ol>
+<p>則執行誘導子圖 $\mathcal{G}[A(Q)]$ 產生的 $Q$，與執行整個 $\mathcal{G}$ 後讀取 $Q$ 相同。</p>
+<p>此命題並未跨越依賴；它只是拒絕執行對 $Q$ 無因果貢獻的節點。</p>
+<h2>5.3 複雜度</h2>
+<p>若祖先索引已建立，單次查詢的圖遍歷與執行開銷可表示為：</p>
+<h1>$$
+T_{\mathrm{query}}</h1>
+<p>O(|A(Q)|+|E[A(Q)]|)
++
+T_{\mathrm{compute}}(A(Q)).
+$$</p>
+<p>完整成本則為：</p>
+<h1>$$
+T_{\mathrm{total}}</h1>
+<p>T_{\mathrm{index}}
++T_{\mathrm{invalidation}}
++T_{\mathrm{query}}
++T_{\mathrm{verify}}.
+$$</p>
+<p>因此不能普遍寫成 $O(|Q|)$，因為一個輸出可能依賴整個圖。</p>
+<h2>5.4 二分取樣不等於完成所有點</h2>
+<p>對函數 $f$ 在區間中的自適應取樣，二分可以用較少樣本建立近似：</p>
+<p>$$
+\hat f_k
+\approx
+f,
+$$</p>
+<p>但若任務要求輸出每個離散點：</p>
+<p>$$
+{f(0),f(1),\ldots,f(N)},
+$$</p>
+<p>輸出本身含有 $N+1$ 個值，不能只靠 $O(\log N)$ 次取樣完成精確枚舉。</p>
+<p>原稿中的 $X+Y=1000$ 例子真正的改善，是以符號關係：</p>
+<p>$$
+Y=1000-X,
+\qquad
+X\in{0,1,\ldots,1000}
+$$</p>
+<p>壓縮表示解集；若使用者要求逐項列出 1001 組解，輸出成本仍為 $\Omega(N)$。</p>
+<h2>5.5 四種 DDLE 模式</h2>
+<h3>DDLE-Q：查詢閉包</h3>
+<p>只計算查詢祖先，適合試算表、資料管線、建置系統與互動式模型。</p>
+<h3>DDLE-F：稀疏前沿</h3>
+<p>只啟動目前活躍 frontier：</p>
+<h1>$$
+F_{t+1}</h1>
+<p>\Gamma(F_t)\setminus V_{\mathrm{visited}},
+$$</p>
+<p>適合 BFS、稀疏圖、事件模擬與訊息傳遞。</p>
+<h3>DDLE-M：物化與增量更新</h3>
+<p>重用已物化節點，只重算受變更影響的後代閉包：</p>
+<h1>$$
+D(\Delta)</h1>
+<p>{v\mid \Delta\leadsto v}.
+$$</p>
+<h3>DDLE-P：預測式預取</h3>
+<p>根據查詢機率 $P(q)$ 提前物化候選，但需最小化：</p>
+<h1>$$
+J_{\mathrm{prefetch}}</h1>
+<p>\mathbb{E}[L]
++\lambda E_{\mathrm{waste}}
++\mu C_{\mathrm{evict}}.
+$$</p>
+<h2>5.6 失效條件</h2>
+<p>DDLE 在以下情況可能沒有優勢或產生錯誤：</p>
+<ul>
+<li>查詢祖先接近全圖；</li>
+<li>全域 reduction 或全局約束不可分解；</li>
+<li>隱藏副作用未建模；</li>
+<li>快取失效頻繁；</li>
+<li>索引建置大於節省；</li>
+<li>預測預取誤判；</li>
+<li>動態圖使依賴快速改變；</li>
+<li>查詢需要完整枚舉或完整證明。</li>
+</ul>
+<hr>
+<h1>第六章　拓撲感知映射：把工作圖放到真實資源圖上</h1>
+<h2>6.1 映射不是只選 GPU 編號</h2>
+<p>對任務節點 $u,v$，若資料量為 $d_{uv}$，映射後的通訊成本為：</p>
+<h1>$$
+C_{uv}</h1>
+<p>\frac{d_{uv}}{B_{\mu(u),\mu(v)}}
++L_{\mu(u),\mu(v)}
++C_{\mathrm{protocol}}
++C_{\mathrm{queue}}.
+$$</p>
+<p>總資料移動成本：</p>
+<h1>$$
+D_{\mathrm{move}}(\mu)</h1>
+<p>\sum_{(u,v)\in E_D}C_{uv}.
+$$</p>
+<p>因此，將兩個高互動節點放到不同 CXL 節點、遠端記憶體或不同 NUMA 域，可能比在較慢但近端的裝置上執行更差。</p>
+<h2>6.2 圖分割與超圖分割</h2>
+<p>普通圖分割只計算成對邊；對多個消費者共享資料的情況，超圖更能表示一次資料物件被多個任務存取。</p>
+<p>TCE 可最小化 cut：</p>
+<h1>$$
+\operatorname{cut}(\mu)</h1>
+<p>\sum_{e\in E_H}
+w_e
+\cdot
+\mathbf{1}[e\text{ 跨越多個資源域}].
+$$</p>
+<p>但還要同時滿足容量、功率、熱、可信度和期限約束。</p>
+<h2>6.3 關鍵路徑下界</h2>
+<p>對 DAG $\mathcal{G}$，即使有無限處理器，完成時間仍受關鍵路徑限制：</p>
+<p>$$
+T_{\mathrm{end}}
+\ge
+\operatorname{CP}(\mathcal{G}).
+$$</p>
+<p>若再考慮通訊：</p>
+<p>$$
+T_{\mathrm{end}}
+\ge
+\operatorname{CP}(\mathcal{G},\mu).
+$$</p>
+<p>TCE 可以縮短通訊、找到等價低深度圖，或把部分運算替換為符號／近似形式，但不能以「拓撲躍遷」忽略真實依賴鏈。</p>
+<h2>6.4 多尺度拓撲</h2>
+<table>
+<thead>
+<tr>
+<th>尺度</th>
+<th>主要機制</th>
+<th>TCE 可控制內容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>核心內</td>
+<td>pipeline、cache、OoO</td>
+<td>通常不直接控制</td>
+</tr>
+<tr>
+<td>片上</td>
+<td>NoC、共享快取</td>
+<td>kernel 與局部映射</td>
+</tr>
+<tr>
+<td>封裝內</td>
+<td>UCIe／專用 die-to-die</td>
+<td>chiplet 放置、資料分區</td>
+</tr>
+<tr>
+<td>主機內</td>
+<td>NUMA、PCIe、CXL</td>
+<td>記憶體與裝置映射</td>
+</tr>
+<tr>
+<td>機箱／機櫃</td>
+<td>SDMCA、網路、儲存</td>
+<td>粗粒度任務與故障域</td>
+</tr>
+<tr>
+<td>分散式</td>
+<td>fabric／cluster</td>
+<td>工作流、複本與資料局部性</td>
+</tr>
+</tbody></table>
+<p>在越細的尺度，控制時限越短，TCE 越需要預先編譯或硬體共設計；在越粗的尺度，運行時可選空間較大，但資料移動成本也更高。</p>
+<h2>6.5 重組成本</h2>
+<p>任何拓撲重組都必須支付：</p>
+<h1>$$
+C_{\mathrm{reconf}}</h1>
+<p>T_{\mathrm{quiesce}}
++T_{\mathrm{checkpoint}}
++T_{\mathrm{move}}
++T_{\mathrm{program}}
++T_{\mathrm{warm}}
++T_{\mathrm{validate}}.
+$$</p>
+<p>只有當預期運行收益大於該成本時，才應切換。</p>
+<hr>
+<h1>第七章　AI 拓撲策略器：建議、排序與風險，而不是神諭</h1>
+<h2>7.1 AI 的三個合理角色</h2>
+<h3>候選生成</h3>
+<p>根據工作負載與硬體特徵提出重寫、切分、格式與映射候選。</p>
+<h3>成本預測</h3>
+<p>預測候選在特定後端上的延遲、能耗、記憶體與失敗風險：</p>
+<h1>$$
+(\hat J,\Sigma_J)</h1>
+<p>\mathcal{M}_{\theta}(\Pi,\mathcal{G}_W,\mathcal{G}_R).
+$$</p>
+<h3>搜尋策略</h3>
+<p>決定下一個應實測或模擬的候選，以減少搜尋成本。</p>
+<h2>7.2 AI 不能替代的部分</h2>
+<p>AI 不能自行保證：</p>
+<ul>
+<li>語義等價；</li>
+<li>記憶體模型合法；</li>
+<li>無資料競爭；</li>
+<li>無越權 DMA；</li>
+<li>功率與熱安全；</li>
+<li>即時期限；</li>
+<li>浮點誤差符合規格；</li>
+<li>近似結果可被使用者接受。</li>
+</ul>
+<p>這些由規則、形式驗證、靜態分析、硬體護欄或實驗證書處理。</p>
+<h2>7.3 不確定性與拒絕</h2>
+<p>若模型輸出不確定性過高：</p>
+<p>$$
+U(\Pi)&gt;U_{\max},
+$$</p>
+<p>TCE 應：</p>
+<ol>
+<li>使用較保守規則；</li>
+<li>啟動小規模試跑；</li>
+<li>回退到已知後端；</li>
+<li>要求人工或離線重新編譯。</li>
+</ol>
+<h2>7.4 線上學習的污染風險</h2>
+<p>運行時觀測可能受到：</p>
+<ul>
+<li>背景負載；</li>
+<li>熱狀態；</li>
+<li>資料分布漂移；</li>
+<li>硬體老化；</li>
+<li>對抗性輸入；</li>
+<li>遙測錯誤；</li>
+</ul>
+<p>影響。模型更新必須版本化、可回退，並保存訓練資料血統。不能因「越用越聰明」而跳過驗證。</p>
+<hr>
+<h1>第八章　CXL 與資源織網：有限、分層、可量測</h1>
+<h2>8.1 CXL 的合理位置</h2>
+<p>CXL 可支援 CPU—裝置、CPU—記憶體的一致性與資源池化，適合：</p>
+<ul>
+<li>容量擴展；</li>
+<li>分層記憶體；</li>
+<li>共享記憶體設備；</li>
+<li>加速器與主機資料交換；</li>
+<li>系統級 RAS；</li>
+<li>部分資源解耦。</li>
+</ul>
+<p>CXL 4.0 將鏈路速率提高到 $128\ \mathrm{GT/s}$，並加入 bundled ports 與更強的記憶體 RAS；這代表資源織網持續演進，但不代表頻寬、延遲或拓撲變成無限。</p>
+<h2>8.2 CXL 不能做什麼</h2>
+<p>CXL 不適合被描述為：</p>
+<ul>
+<li>單週期共享暫存器；</li>
+<li>任意 CPU／GPU 的無延遲 ALU 融合；</li>
+<li>全連接 $O(n^2)$ 通道的免費實現；</li>
+<li>無限維地址空間；</li>
+<li>把遠端記憶體延遲消失；</li>
+<li>取消一致性、交換、序列化與擁塞成本。</li>
+</ul>
+<h2>8.3 TCE 的 CXL 模型</h2>
+<p>對記憶體或裝置路徑 $p$：</p>
+<h1>$$
+C_{\mathrm{CXL}}(p)</h1>
+<p>L_{\mathrm{link}}
++L_{\mathrm{switch}}
++L_{\mathrm{protocol}}
++L_{\mathrm{queue}}
++\frac{D}{B_{\mathrm{eff}}}.
+$$</p>
+<p>同時考慮：</p>
+<ul>
+<li>跳數；</li>
+<li>交換拓撲；</li>
+<li>共享鏈路；</li>
+<li>coherency traffic；</li>
+<li>page migration；</li>
+<li>failure domain；</li>
+<li>RAS 與重試。</li>
+</ul>
+<h2>8.4 記憶體分層與資料放置</h2>
+<p>TCE 可將資料分類為：</p>
+<table>
+<thead>
+<tr>
+<th>類型</th>
+<th>合理位置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>極熱、小型、低延遲</td>
+<td>片上／HBM／本地 DRAM</td>
+</tr>
+<tr>
+<td>熱、容量較大</td>
+<td>本地 DRAM／近端 CXL</td>
+</tr>
+<tr>
+<td>溫、可分頁</td>
+<td>CXL 擴展記憶體</td>
+</tr>
+<tr>
+<td>冷、可重建</td>
+<td>遠端記憶體／儲存</td>
+</tr>
+<tr>
+<td>共享模型或唯讀資料</td>
+<td>CXL 池化候選</td>
+</tr>
+</tbody></table>
+<p>對細粒度、指標追逐、頻繁同步的資料，遠端池化可能造成嚴重延遲；TCE 必須以量測而非「維度擴張」決定放置。</p>
+<hr>
+<h1>第九章　TCE 七層架構</h1>
+<h2>L0：語義、型別與效果層</h2>
+<p>負責：</p>
+<ul>
+<li>型別和形狀；</li>
+<li>控制與資料依賴；</li>
+<li>副作用；</li>
+<li>精度與品質；</li>
+<li>安全與隱私標籤。</li>
+</ul>
+<p>輸出語義 TopoIR。</p>
+<h2>L1：等價重寫與形態層</h2>
+<p>負責：</p>
+<ul>
+<li>e-graph；</li>
+<li>rewrite rules；</li>
+<li>稀疏格式；</li>
+<li>算子融合／分解；</li>
+<li>圖、張量、資料流與狀態空間轉換。</li>
+</ul>
+<h2>L2：依賴、局部性與查詢層</h2>
+<p>負責：</p>
+<ul>
+<li>ancestor／descendant closure；</li>
+<li>frontier；</li>
+<li>incremental dependency；</li>
+<li>materialization；</li>
+<li>side-effect ordering；</li>
+<li>DDLE 合法性。</li>
+</ul>
+<h2>L3：拓撲映射與部署層</h2>
+<p>負責：</p>
+<ul>
+<li>工作圖—資源圖匹配；</li>
+<li>partition；</li>
+<li>data placement；</li>
+<li>format selection；</li>
+<li>CXL／NUMA／chiplet 拓撲；</li>
+<li>故障域與信任域。</li>
+</ul>
+<h2>L4：O-Chip／TCE Runtime 層</h2>
+<p>負責：</p>
+<ul>
+<li>意圖與期限；</li>
+<li>動態前沿；</li>
+<li>profile／telemetry；</li>
+<li>DEO 包絡請求；</li>
+<li>遷移與回退；</li>
+<li>決策時限管理。</li>
+</ul>
+<h2>L5：異質執行與提交層</h2>
+<p>後端包括：</p>
+<ul>
+<li>CPU／GPU／NPU；</li>
+<li>SynCore Fusion Cluster；</li>
+<li>SynCore Digital Flow Array；</li>
+<li>FPGA／CGRA；</li>
+<li>AetherGlass 光子線性單元；</li>
+<li>RMC/LRTC 物理儲備池；</li>
+<li>遠端服務或儲存計算。</li>
+</ul>
+<p>結果必須經精確提交、誤差檢查或資格判定。</p>
+<h2>L6：證據、治理與長期學習層</h2>
+<p>負責：</p>
+<ul>
+<li>重寫證據；</li>
+<li>成本模型版本；</li>
+<li>基準與消融；</li>
+<li>失敗資料庫；</li>
+<li>可重現環境；</li>
+<li>模型更新與權限；</li>
+<li>第三方重現。</li>
+</ul>
+<hr>
+<h1>第十章　與計算機概念產品系列的統合</h1>
+<h2>10.1 O-Chip 與 TCE</h2>
+<h1>$$
+\text{TCE}</h1>
+<p>\text{表示、重寫、映射與驗證框架},
+$$</p>
+<h1>$$
+\text{O-Chip}</h1>
+<p>\text{部署後受時限約束的跨層控制面}.
+$$</p>
+<p>TCE 可離線產生候選計畫與策略；O-Chip 在運行期依遙測選擇被允許的計畫。</p>
+<h2>10.2 SynCore 與 TCE</h2>
+<p>SynCore 是 TCE 的異質執行後端：</p>
+<ul>
+<li>F-Mode 支援可組合純量融合；</li>
+<li>D-Mode 支援資料流與空間映射；</li>
+<li>P-Mode 支援特殊振盪器計算；</li>
+<li>VCE 提供驗證、提交與回退。</li>
+</ul>
+<p>TCE 不把不同模式的峰值加速相乘，而比較端到端收益。</p>
+<h2>10.3 DEO、DPCPS 與 DryCore</h2>
+<p>TCE 計畫必須先取得：</p>
+<h1>$$
+\mathcal{C}_{\mathrm{run}}</h1>
+<p>\mathcal{C}<em>{\mathrm{DEO}}
+\cap
+\mathcal{C}</em>{\mathrm{power}}
+\cap
+\mathcal{C}_{\mathrm{thermal}}.
+$$</p>
+<ul>
+<li>DEO 提供合法運作包絡；</li>
+<li>DPCPS 提供功率、電流與 PDN 裕度；</li>
+<li>DryCore 提供溫度、冷卻與失效安全邊界。</li>
+</ul>
+<h2>10.4 SDMCA</h2>
+<p>SDMCA 提供模組、互連、冷卻與故障域的空間拓撲。TCE 可把高通訊子圖映射到相鄰模組，把容錯副本分散到不同故障域，但必須計入背板、線纜、光電與服務成本。</p>
+<h2>10.5 AetherGlass–LaserCPU</h2>
+<p>TCE 只把可合法映射的線性變換、卷積、干涉、模式匹配或特定動力學送入光子域；控制流、精確記憶、驗證與頻繁更新仍留在電子域。</p>
+<h2>10.6 RMC/LRTC</h2>
+<p>物理計算後端被視為近似、校準依賴的特殊裝置。TCE 必須附帶：</p>
+<ul>
+<li>輸入編碼；</li>
+<li>基板狀態；</li>
+<li>讀出模型；</li>
+<li>不確定性；</li>
+<li>數位回退；</li>
+<li>能量與重置成本。</li>
+</ul>
+<h2>10.7 全系列控制鏈</h2>
+<p>$$
+\text{應用意圖}
+\rightarrow
+\text{TopoIR}
+\rightarrow
+\text{等價重寫}
+\rightarrow
+\text{拓撲映射}
+\rightarrow
+\text{O-Chip}
+\rightarrow
+\begin{cases}
+\text{SynCore／CPU／GPU}\
+\text{AetherGlass}\
+\text{RMC/LRTC}\
+\text{CXL／遠端資源}
+\end{cases}
+\rightarrow
+\text{證據化提交}.
+$$</p>
+<hr>
+<h1>第十一章　正確性、安全與回退</h1>
+<h2>11.1 編譯正確性</h2>
+<p>每個重寫至少檢查：</p>
+<ul>
+<li>type legality；</li>
+<li>shape legality；</li>
+<li>dominance；</li>
+<li>memory effect；</li>
+<li>alias；</li>
+<li>synchronization；</li>
+<li>exception／I/O；</li>
+<li>numerical error；</li>
+<li>approximation contract。</li>
+</ul>
+<h2>11.2 記憶體一致性</h2>
+<p>跨 CPU、GPU、CXL 與加速器的資料共享必須使用正式一致性與擁有權協議，不允許以「拓撲連通」推導所有節點看見相同狀態。</p>
+<p>資料狀態可表示為：</p>
+<p>$$
+\operatorname{Owner}(x,t),
+\qquad
+\operatorname{Version}(x,t),
+\qquad
+\operatorname{Scope}(x,t).
+$$</p>
+<h2>11.3 決定性重播</h2>
+<p>TCE 必須記錄：</p>
+<ul>
+<li>計畫版本；</li>
+<li>資源狀態；</li>
+<li>隨機種子；</li>
+<li>動態輸入；</li>
+<li>重寫與映射決策；</li>
+<li>失敗與重試；</li>
+<li>近似後端校準狀態。</li>
+</ul>
+<p>必要時重播相同語義路徑，或說明為何硬體與環境差異使結果只保證容差等價。</p>
+<h2>11.4 看門狗與回退</h2>
+<p>若發生：</p>
+<ul>
+<li>deadline miss；</li>
+<li>cost model 大幅誤差；</li>
+<li>熱／功率證書失效；</li>
+<li>CXL 裝置離線；</li>
+<li>近似誤差超標；</li>
+<li>AI 決策域外；</li>
+<li>圖索引不一致；</li>
+</ul>
+<p>則回退到：</p>
+<ol>
+<li>先前已驗證計畫；</li>
+<li>平台預設編譯；</li>
+<li>CPU／GPU 安全後端；</li>
+<li>全圖保守執行。</li>
+</ol>
+<h2>11.5 安全威脅</h2>
+<p>TCE 特別需要防範：</p>
+<ul>
+<li>惡意重寫規則；</li>
+<li>成本模型投毒；</li>
+<li>偽造遙測；</li>
+<li>CXL／DMA 越權；</li>
+<li>資源耗盡；</li>
+<li>以預取為名讀取敏感資料；</li>
+<li>近似後端悄然降低品質；</li>
+<li>共享資源側通道。</li>
+</ul>
+<p>所有執行計畫都應具有能力限制與最小權限。</p>
+<hr>
+<h1>第十二章　軟體 MVP 與實驗設計</h1>
+<h2>12.1 MVP 目標</h2>
+<p>第一個 TCE 不製造新型處理器，也不實作 CXL$_\infty$。它是一個軟體編譯—運行時原型：</p>
+<blockquote>
+<p><strong>TopoIR＋e-graph 重寫＋資源圖成本模型＋DDLE 運行時＋CPU/GPU 後端。</strong></p>
+</blockquote>
+<h2>12.2 建議技術棧</h2>
+<ul>
+<li>MLIR：多層 IR、dialect conversion、Transform dialect；</li>
+<li>e-graph／<code>egg</code> 或相近系統：等價空間；</li>
+<li>LLVM／CPU backend；</li>
+<li>CUDA／ROCm 或 OpenCL backend；</li>
+<li>GraphBLAS／SuiteSparse：圖—稀疏線性代數基線；</li>
+<li>TACO／MLIR SparseTensor：稀疏格式與迭代生成；</li>
+<li>PaRSEC／Taskflow 類 DAG runtime：動態任務基線；</li>
+<li>hwloc／NUMA／perf／eBPF：資源圖與遙測；</li>
+<li>CXL latency／bandwidth emulator：有限資源池實驗。</li>
+</ul>
+<h2>12.3 工作負載</h2>
+<p>至少包含：</p>
+<ol>
+<li>稀疏矩陣—向量與矩陣—矩陣運算；</li>
+<li>BFS、SSSP、PageRank 或圖前沿任務；</li>
+<li>機器學習推論 DAG；</li>
+<li>多階段資料處理與查詢；</li>
+<li>增量建置或試算表依賴；</li>
+<li>編譯工作流；</li>
+<li>具有副作用與動態控制流的反例；</li>
+<li>查詢祖先接近全圖的退化案例。</li>
+</ol>
+<h2>12.4 基線</h2>
+<ul>
+<li>原始未最佳化版本；</li>
+<li>LLVM／MLIR 標準 pass pipeline；</li>
+<li>單一路徑手工最佳化；</li>
+<li>無 e-graph 的 greedy 重寫；</li>
+<li>全圖執行；</li>
+<li>查詢閉包但無物化；</li>
+<li>DDLE＋物化；</li>
+<li>拓撲無感映射；</li>
+<li>NUMA／CXL 拓撲感知映射；</li>
+<li>規則成本模型；</li>
+<li>學習成本模型。</li>
+</ul>
+<h2>12.5 量測指標</h2>
+<h1>$$
+\mathbf{K}</h1>
+<p>(
+T_{\mathrm{compile}},
+T_{\mathrm{run}},
+L_{\mathrm{p99}},
+E_{\mathrm{wall}},
+D_{\mathrm{move}},
+M_{\mathrm{peak}},
+N_{\mathrm{exec}},
+C_{\mathrm{verify}},
+R_{\mathrm{rollback}}
+).
+$$</p>
+<p>另需記錄：</p>
+<ul>
+<li>e-graph 節點數；</li>
+<li>搜尋時間；</li>
+<li>成本預測誤差；</li>
+<li>DDLE 祖先閉包比例；</li>
+<li>快取命中和失效；</li>
+<li>拓撲映射切邊成本；</li>
+<li>執行結果誤差；</li>
+<li>回退次數。</li>
+</ul>
+<h2>12.6 分階段路線</h2>
+<h3>V0：形式語義</h3>
+<ul>
+<li>TopoIR 核心型別；</li>
+<li>效果系統；</li>
+<li>DDLE 閉包命題；</li>
+<li>重寫信任分級。</li>
+</ul>
+<h3>V1：MLIR 原型</h3>
+<ul>
+<li>Topo dialect；</li>
+<li>Transform dialect 整合；</li>
+<li>CPU／GPU lowering；</li>
+<li>靜態成本模型。</li>
+</ul>
+<h3>V2：e-graph 與抽取</h3>
+<ul>
+<li>規則庫；</li>
+<li>等式飽和預算；</li>
+<li>多目標抽取；</li>
+<li>等價測試。</li>
+</ul>
+<h3>V3：DDLE Runtime</h3>
+<ul>
+<li>查詢閉包；</li>
+<li>增量更新；</li>
+<li>物化與失效；</li>
+<li>反例和副作用。</li>
+</ul>
+<h3>V4：拓撲感知部署</h3>
+<ul>
+<li>NUMA；</li>
+<li>多 GPU；</li>
+<li>模擬 CXL memory tier；</li>
+<li>故障域與遷移。</li>
+</ul>
+<h3>V5：O-Chip／SynCore 整合</h3>
+<ul>
+<li>O-Soft 控制；</li>
+<li>SynIR／TopoIR bridge；</li>
+<li>DEO、DPCPS、DryCore 證書接口；</li>
+<li>FPGA 或 CGRA backend。</li>
+</ul>
+<h3>V6：第三方重現</h3>
+<ul>
+<li>開放基準；</li>
+<li>固定硬體描述；</li>
+<li>完整 log；</li>
+<li>負結果；</li>
+<li>外部實驗室重現。</li>
+</ul>
+<hr>
+<h1>第十三章　可證偽命題</h1>
+<h2>H1：等價重寫收益</h2>
+<p>對具有多種合法佈局與算子分解的工作負載，e-graph＋拓撲成本抽取在相同編譯預算下，能否優於 greedy pass pipeline？</p>
+<p><strong>否證條件：</strong> 編譯時間與記憶體增加，但端到端指標無顯著改善。</p>
+<h2>H2：DDLE 工作縮減</h2>
+<p>當：</p>
+<p>$$
+\frac{|A(Q)|}{|V|}\ll1,
+$$</p>
+<p>DDLE 能否在完整索引與失效成本後，降低執行節點數和互動延遲？</p>
+<p><strong>否證條件：</strong> 索引、物化與失效成本抵銷全部節省。</p>
+<h2>H3：拓撲感知資料放置</h2>
+<p>對跨 NUMA、GPU 和 CXL 模擬層級的工作負載，資源圖映射能否降低：</p>
+<p>$$
+D_{\mathrm{move}}
+\quad\text{或}\quad
+L_{\mathrm{p99}}?
+$$</p>
+<p><strong>否證條件：</strong> 排程與遷移開銷大於局部性收益。</p>
+<h2>H4：學習成本模型</h2>
+<p>學習模型能否在明確校準域內，比人工模型更準確地排序候選？</p>
+<p><strong>否證條件：</strong> 跨工作負載／硬體後失準，且拒絕機制不能控制風險。</p>
+<h2>H5：CXL 資源池邊界</h2>
+<p>容量受限、共享唯讀或可批次搬移的工作負載，是否受益於 CXL 池化；細粒度依賴與 pointer chasing 是否如預期退化？</p>
+<p><strong>否證條件：</strong> 池化在目標工作負載中始終被本地 DRAM 或儲存方案支配。</p>
+<h2>H6：系列協同</h2>
+<p>TCE＋O-Chip＋SynCore＋DEO／DPCPS／DryCore 是否在端到端基準中優於各子系統獨立局部控制？</p>
+<p><strong>否證條件：</strong> 協同層造成控制震盪、過高通訊或無法重現的模型耦合。</p>
+<hr>
+<h1>第十四章　證據制度</h1>
+<h2>E0：構想與形式模型</h2>
+<p>本文目前屬 E0。</p>
+<h2>E1：可執行軟體原型</h2>
+<p>具備 TopoIR、至少一個重寫後端和 DDLE 基線。</p>
+<h2>E2：可重現單機實驗</h2>
+<p>公開程式、硬體、資料、編譯參數與完整日誌。</p>
+<h2>E3：多後端整合</h2>
+<p>CPU、GPU、NUMA／CXL 模擬與至少一個可重構後端。</p>
+<h2>E4：硬體在迴路與第三方驗證</h2>
+<p>外部團隊可重現主要結論，並公開失敗案例。</p>
+<h2>E5：部署資格化</h2>
+<p>長期穩定性、安全、版本治理、回退、故障注入與實際工作負載證據。</p>
+<p>任何 $10^3$ 或 $10^6$ 倍主張都必須標明：</p>
+<ul>
+<li>相對哪個基線；</li>
+<li>是否算法改變；</li>
+<li>是否精度改變；</li>
+<li>是否只計算 kernel；</li>
+<li>是否排除編譯、資料轉換和 I/O；</li>
+<li>是否來自合成情境；</li>
+<li>是否可被第三方重現。</li>
+</ul>
+<hr>
+<h1>第十五章　哲學邊界：拓撲是約束，不是命運</h1>
+<h2>15.1 計算與幾何的弱命題</h2>
+<p>合理的弱命題是：</p>
+<blockquote>
+<p>計算的表示、資料依賴、通訊與硬體配置具有幾何與拓撲結構；選擇不同表示，會改變可利用的局部性、並行性與驗證方式。</p>
+</blockquote>
+<p>這不等於：</p>
+<blockquote>
+<p>計算的本體只剩幾何，或提高維度即可消除複雜度。</p>
+</blockquote>
+<h2>15.2 「插隊」的真正意義</h2>
+<p>合法的插隊不是跨越因果，而是：</p>
+<ul>
+<li>不按來源程式的表面順序執行獨立節點；</li>
+<li>不計算與當前查詢無關的節點；</li>
+<li>用符號表示取代不必要的枚舉；</li>
+<li>用索引、快取、增量和前沿避開重複工作；</li>
+<li>在合法誤差內使用近似或多保真模型。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+\text{跳過表面順序}
+\neq
+\text{跳過真實依賴}.
+$$</p>
+<h2>15.3 AI 是搜尋協作者，不是超越證明的主體</h2>
+<p>AI 可以幫助人類在龐大重寫與映射空間中搜尋，但其輸出仍是：</p>
+<p>$$
+\text{候選計畫}
++
+\text{信心}
++
+\text{證據需求},
+$$</p>
+<p>而不是「直接看見概念空間真理」。</p>
+<h2>15.4 CXL 是資源邊界的重畫，不是維度解放</h2>
+<p>CXL 的重要性在於讓部分記憶體與裝置資源不再被單一主機板插槽永久綁定；它重新配置了系統資源邊界。但所有邊界重畫都伴隨協議、交換、延遲、擁塞、故障與治理。</p>
+<h2>15.5 新版最終命題</h2>
+<p>原稿的句子是：</p>
+<blockquote>
+<p>計算即存在，幾何即命運。</p>
+</blockquote>
+<p>新版提出：</p>
+<blockquote>
+<p><strong>表示塑造可見的解空間，拓撲限制可行的執行路徑，證據決定哪些變換能被信任。</strong></p>
+</blockquote>
+<p>形式上：</p>
+<p>$$
+\text{語義}
+\xrightarrow{\text{表示}}
+\text{候選拓撲}
+\xrightarrow{\text{約束與成本}}
+\text{執行計畫}
+\xrightarrow{\text{驗證}}
+\text{可接受結果}.
+$$</p>
+<p>TCE 的價值不在於宣布「後圖靈時代」已到來，而在於建立一個可以逐項實作、量測、否證與迭代的接口：讓程式重寫、查詢局部性、資源拓撲和異質執行不再是互不相干的最佳化孤島。</p>
+<hr>
+<h1>結論</h1>
+<p>拓撲約束執行引擎 v2.0 將原稿的無限維計算流形、插隊計算、AI 塑形與 CXL$_\infty$，重構為四個可落地的研究模組：</p>
+<ol>
+<li><strong>TopoIR 與等價重寫空間</strong>：以多層圖和 e-graph 表示可選程式結構；</li>
+<li><strong>需求導向躍遷執行</strong>：只計算查詢閉包、稀疏前沿和受變更影響的區域；</li>
+<li><strong>拓撲感知異質映射</strong>：共同最佳化資料、任務、互連、記憶體、功率與故障域；</li>
+<li><strong>證據化 AI 策略與安全回退</strong>：AI 提出候選，形式規則、量測與硬體護欄決定能否執行。</li>
+</ol>
+<p>這些機制不會普遍把 $O(n)$ 變成 $O(1)$，也不需要假設無限維物理或超圖靈計算。它們真正嘗試解決的是更現實的問題：現代系統明明擁有多種等價表示和多種異質資源，卻經常因固定 pass、全圖執行、錯誤資料放置與局部控制衝突而浪費工作。</p>
+<p>本文目前只是一份 E0 架構提案。下一步不是再增加本體論層級，而是實作 TopoIR、建立 DDLE 反例測試、量測重寫搜尋成本、公開拓撲映射基準，並讓所有「更快」都能被完整成本和第三方重現所檢查。</p>
+<hr>
+<h1>參考資料</h1>
+<ol>
+<li>MLIR Project, “Multi-Level Intermediate Representation Overview,” LLVM Project. <a href="https://mlir.llvm.org/">https://mlir.llvm.org/</a>  </li>
+<li>MLIR Project, “Transform Dialect,” LLVM Project. <a href="https://mlir.llvm.org/docs/Dialects/Transform/">https://mlir.llvm.org/docs/Dialects/Transform/</a>  </li>
+<li>MLIR Project, “Dialect Conversion,” LLVM Project. <a href="https://mlir.llvm.org/docs/DialectConversion/">https://mlir.llvm.org/docs/DialectConversion/</a>  </li>
+<li>Max Willsey et al., “egg: Fast and Extensible Equality Saturation,” POPL 2021. <a href="https://doi.org/10.1145/3434304">https://doi.org/10.1145/3434304</a>  </li>
+<li>Fredrik Kjolstad et al., “The Tensor Algebra Compiler,” OOPSLA 2017. <a href="https://doi.org/10.1145/3133901">https://doi.org/10.1145/3133901</a>  </li>
+<li>GraphBLAS Forum, “GraphBLAS Specification and Resources.” <a href="https://graphblas.org/">https://graphblas.org/</a>  </li>
+<li>Jeremy Kepner et al., “Mathematical Foundations of the GraphBLAS,” 2016. <a href="https://arxiv.org/abs/1606.05790">https://arxiv.org/abs/1606.05790</a>  </li>
+<li>R. Hoque et al., “Dynamic Task Discovery in PaRSEC: A Data-Flow Task-Based Runtime,” 2017. <a href="https://icl.utk.edu/files/publications/2017/icl-utk-1027-2017.pdf">https://icl.utk.edu/files/publications/2017/icl-utk-1027-2017.pdf</a>  </li>
+<li>Compute Express Link Consortium, “CXL 4.0 Specification Now Available,” 2025. <a href="https://computeexpresslink.org/">https://computeexpresslink.org/</a>  </li>
+<li>Compute Express Link Consortium, “Introducing the CXL 4.0 Specification,” 2025. <a href="https://computeexpresslink.org/event/introducing-the-cxl-4-0-specification/">https://computeexpresslink.org/event/introducing-the-cxl-4-0-specification/</a>  </li>
+<li>Carl Yang, Aydın Buluç, John D. Owens, “GraphBLAST: A High-Performance Linear Algebra-based Graph Framework on the GPU,” 2019. <a href="https://arxiv.org/abs/1908.01407">https://arxiv.org/abs/1908.01407</a>  </li>
+<li>Stephen Chou, Fredrik Kjolstad, Saman Amarasinghe, “Format Abstraction for Sparse Tensor Algebra Compilers,” 2018. <a href="https://arxiv.org/abs/1804.10112">https://arxiv.org/abs/1804.10112</a></li>
+</ol>
+<hr>
+<h1>附錄 A　核心符號表</h1>
+<table>
+<thead>
+<tr>
+<th>符號</th>
+<th>意義</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$\mathcal{G}_W$</td>
+<td>工作負載多關係圖</td>
+</tr>
+<tr>
+<td>$\mathcal{G}_R$</td>
+<td>資源圖</td>
+</tr>
+<tr>
+<td>$\mathcal{G}_E$</td>
+<td>證據圖</td>
+</tr>
+<tr>
+<td>$E_D$</td>
+<td>資料依賴邊</td>
+</tr>
+<tr>
+<td>$E_C$</td>
+<td>控制依賴邊</td>
+</tr>
+<tr>
+<td>$E_M$</td>
+<td>記憶體與一致性邊</td>
+</tr>
+<tr>
+<td>$E_S$</td>
+<td>副作用與順序邊</td>
+</tr>
+<tr>
+<td>$\Pi$</td>
+<td>執行計畫</td>
+</tr>
+<tr>
+<td>$\rho$</td>
+<td>等價重寫選擇</td>
+</tr>
+<tr>
+<td>$\mu$</td>
+<td>任務—資源映射</td>
+</tr>
+<tr>
+<td>$\lambda$</td>
+<td>資料格式與位置</td>
+</tr>
+<tr>
+<td>$\sigma$</td>
+<td>排程與前沿策略</td>
+</tr>
+<tr>
+<td>$\delta$</td>
+<td>運作包絡與功率—熱要求</td>
+</tr>
+<tr>
+<td>$\phi$</td>
+<td>驗證、失敗與回退計畫</td>
+</tr>
+<tr>
+<td>$A(Q)$</td>
+<td>查詢 $Q$ 的祖先閉包</td>
+</tr>
+<tr>
+<td>$D(\Delta)$</td>
+<td>變更 $\Delta$ 的後代閉包</td>
+</tr>
+<tr>
+<td>DDLE</td>
+<td>需求導向躍遷執行</td>
+</tr>
+<tr>
+<td>$C_{\mathrm{reconf}}$</td>
+<td>重組總成本</td>
+</tr>
+<tr>
+<td>$U_{\mathrm{model}}$</td>
+<td>模型不確定性</td>
+</tr>
+</tbody></table>
+<h1>附錄 B　最低公開資料要求</h1>
+<p>任何 TCE 實驗至少公開：</p>
+<ol>
+<li>完整工作負載和資料版本；</li>
+<li>TopoIR 或可重建的圖表示；</li>
+<li>重寫規則與信任等級；</li>
+<li>編譯、搜尋和抽取預算；</li>
+<li>資源圖、硬體、驅動和韌體；</li>
+<li>基線與所有參數；</li>
+<li>牆鐘時間、編譯時間、能耗與資料搬移；</li>
+<li>快取、索引、物化和失效成本；</li>
+<li>失敗、回退與負結果；</li>
+<li>結果雜湊與可重現腳本。</li>
+</ol>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/ccp-03.html">https://thisoneisneok.com/html/papers/ccp-03.html</a></footer>
+</body>
+</html>

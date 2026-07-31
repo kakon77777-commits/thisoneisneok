@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>資料—狀態—事件—行動：程式系統的四元動力結構 | Neo.K</title>
+<meta name="description" content="前篇建立了問題世界的實體、關係、規則與系統邊界，但靜態世界模型仍不足以描述程式如何隨時間運作。任何持續系統都必須回答：世界目前是什麼狀態、什麼事情發生了、誰想做什麼、哪些資料只是觀測或投影，以及一次變化如何被判定為合法。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pu-1-03.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PU</strong><span>程式宇宙基礎</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PU-1-03</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-27</span></div><div><b>作者</b><span>Neo.K with Aletheia</span></div><div><b>狀態</b><span>初版完成</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pu-1-03.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>資料—狀態—事件—行動：程式系統的四元動力結構</h1>
+<h2>Data, State, Event, and Action: A Fourfold Dynamic Structure of Program Systems</h2>
+<p><strong>論文編號：</strong> PU-1-03<br><strong>系列：</strong>「程式宇宙書系」第 1 冊《系統性程式設計》<br><strong>作者：</strong> Neo.K with Aletheia<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>版本：</strong> v0.1<br><strong>日期：</strong> 2026 年 7 月 27 日  </p>
+<hr>
+<h2>摘要</h2>
+<p>前篇建立了問題世界的實體、關係、規則與系統邊界，但靜態世界模型仍不足以描述程式如何隨時間運作。任何持續系統都必須回答：世界目前是什麼狀態、什麼事情發生了、誰想做什麼、哪些資料只是觀測或投影，以及一次變化如何被判定為合法。</p>
+<p>本文提出程式系統的四元動力結構：</p>
+<h1>$$
+\boxed{
+\mathbb D_P</h1>
+<p>\left\langle
+D,
+S,
+E,
+A
+\right\rangle
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$D$：Data，資料；</li>
+<li>$S$：State，狀態；</li>
+<li>$E$：Event，事件；</li>
+<li>$A$：Action，行動。</li>
+</ul>
+<p>本文核心命題是：</p>
+<p>$$
+\boxed{
+D
+\neq
+S
+\neq
+E
+\neq
+A
+}
+$$</p>
+<p>資料是對世界、狀態、事件或主體主張的表示與證據；狀態是系統在特定時間對世界合法情況的權威判定；事件是某項已發生變化或事實的不可撤回主張；行動則是某個主體希望系統執行之狀態變更請求。四者相互關聯，但不應互相替代。</p>
+<p>本文將一次完整狀態變化形式化為：</p>
+<p>$$
+A_t
+\xrightarrow{\operatorname{Validate}}
+A_t^{v}
+\xrightarrow{\operatorname{Authorize}}
+A_t^{a}
+\xrightarrow{\operatorname{Execute}}
+E_{t+1}
+\xrightarrow{\operatorname{Apply}}
+S_{t+1}
+\xrightarrow{\operatorname{Project}}
+D_{t+1}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>行動先被驗證；</li>
+<li>再被授權；</li>
+<li>執行後形成事件；</li>
+<li>事件改變權威狀態；</li>
+<li>狀態與歷史再被投影為查詢、畫面、報表與資料。</li>
+</ul>
+<p>此模型解釋了為何：</p>
+<ul>
+<li>使用者點擊按鈕不等於事件已發生；</li>
+<li>API 收到請求不等於行動已成功；</li>
+<li>日誌中出現一行不等於權威事件成立；</li>
+<li>資料表中的值不一定是當前權威狀態；</li>
+<li><code>success=true</code> 不一定代表外部世界已完成。</li>
+</ul>
+<p>本文提出狀態判準：</p>
+<p>$$
+\operatorname{State}_t(x)
+\iff
+\operatorname{Authoritative}(x)
+\land
+\operatorname{Current}(x,t)
+\land
+\operatorname{InvariantValid}(x)
+$$</p>
+<p>事件判準：</p>
+<p>$$
+\operatorname{Event}(e)
+\iff
+\operatorname{Occurred}(e)
+\land
+\operatorname{Identified}(e)
+\land
+\operatorname{Timestamped}(e)
+\land
+\operatorname{CausallySituated}(e)
+$$</p>
+<p>以及行動判準：</p>
+<p>$$
+\operatorname{Action}(a)
+\iff
+\operatorname{Requested}(a)
+\land
+\operatorname{ActorKnown}(a)
+\land
+\operatorname{TargetKnown}(a)
+\land
+\operatorname{ExpectedEffectKnown}(a)
+$$</p>
+<p>本文區分：</p>
+<ul>
+<li><strong>命令／請求</strong>與<strong>事件</strong>；</li>
+<li><strong>當前狀態</strong>與<strong>歷史事實</strong>；</li>
+<li><strong>權威狀態</strong>與<strong>資料投影</strong>；</li>
+<li><strong>世界事件</strong>與<strong>處理事件</strong>；</li>
+<li><strong>意圖完成</strong>與<strong>狀態轉移成功</strong>。</li>
+</ul>
+<p>本文進一步建立狀態轉移函數：</p>
+<h1>$$
+S_{t+1}</h1>
+<p>\delta
+\left(
+S_t,
+E_{t+1},
+R_t
+\right)
+$$</p>
+<p>其中 $R_t$ 為當時有效的規則與不變量。事件本身不直接等於新狀態；它必須在規則下被解釋與套用。</p>
+<p>本文也處理長時程與分散式系統中的關鍵問題：</p>
+<ul>
+<li>事件重複；</li>
+<li>訊息亂序；</li>
+<li>延遲到達；</li>
+<li>並行競爭；</li>
+<li>部分成功；</li>
+<li>重試；</li>
+<li>冪等；</li>
+<li>補償；</li>
+<li>快照與重建；</li>
+<li>外部世界確認；</li>
+<li>事件時間與處理時間分離。</li>
+</ul>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+\operatorname{Retry}
+\not\Rightarrow
+\operatorname{RepeatEffect}
+}
+$$</p>
+<p>成熟行動必須具備身份、冪等鍵、前置條件、授權、預期效果、結果證據與失敗語意。否則重試就可能把同一意圖轉化為多次世界效果。</p>
+<p>本文使用待辦事項、訂單付款、網站部署、醫療處置、AI Agent 與研究進度等案例，說明四元結構如何辨識常見錯誤。本文最後提出可證偽研究綱領，包括資料—狀態混淆率、命令—事件混淆率、重複效果率、事件重建一致性、權威狀態辨識、狀態機完整性、處理時間偏差與外部世界確認率。</p>
+<p>本文為下一篇〈責任、模組與契約〉建立動力地基：當資料、狀態、事件與行動被分離後，才能進一步決定哪個模組擁有狀態、誰負責處理事件、哪些行動必須經過契約，以及跨邊界失敗如何被治理。</p>
+<p><strong>關鍵詞：</strong> 資料、狀態、事件、行動、狀態轉移、事件溯源、冪等、分散式系統、程式動力學</p>
+<hr>
+<h2>Abstract</h2>
+<p>This paper develops a fourfold dynamic structure of program systems:</p>
+<h1>$$
+\mathbb D_P</h1>
+<p>\left\langle
+D,
+S,
+E,
+A
+\right\rangle
+$$</p>
+<p>Data represents observations, records, or projections. State is the authoritative current condition of a problem world. Events assert that something has occurred. Actions are requests by actors to produce state changes.</p>
+<p>The core thesis is:</p>
+<p>$$
+D
+\neq
+S
+\neq
+E
+\neq
+A
+$$</p>
+<p>A valid transition is modeled as:</p>
+<p>$$
+A_t
+\rightarrow
+A_t^{v}
+\rightarrow
+A_t^{a}
+\rightarrow
+E_{t+1}
+\rightarrow
+S_{t+1}
+\rightarrow
+D_{t+1}
+$$</p>
+<p>The paper distinguishes commands from events, historical facts from current state, authoritative state from projections, and computation completion from world completion. It addresses idempotency, retries, duplication, ordering, concurrency, partial success, compensation, snapshots, and external confirmation.</p>
+<p><strong>Keywords:</strong> data, state, event, action, state transition, idempotency, event sourcing, distributed systems</p>
+<hr>
+<h1>一、問題的提出：系統不是一堆資料，而是一個持續變化的世界</h1>
+<p>很多程式從資料表開始。</p>
+<p>設計者建立：</p>
+<pre><code class="language-text">users
+orders
+tasks
+payments
+</code></pre>
+<p>然後加入 CRUD。</p>
+<p>但 CRUD 只能說明資料可以被建立、讀取、修改與刪除，不能完整回答：</p>
+<ul>
+<li>這些資料是否是權威狀態；</li>
+<li>誰有權修改；</li>
+<li>什麼事件使它改變；</li>
+<li>修改是否代表現實已發生；</li>
+<li>重複請求是否會重複造成效果；</li>
+<li>失敗後世界停在哪裡；</li>
+<li>歷史如何被保留。</li>
+</ul>
+<p>真正的系統不是資料倉庫，而是時間中的狀態轉換結構。</p>
+<hr>
+<h1>二、四元動力模型</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+\mathbb D_P</h1>
+<p>\left\langle
+D,
+S,
+E,
+A
+\right\rangle
+}
+$$</p>
+<h2>2.1 Data</h2>
+<p>資料是被記錄、傳輸、儲存或計算的表示。</p>
+<p>它可能代表：</p>
+<ul>
+<li>感測值；</li>
+<li>使用者輸入；</li>
+<li>狀態投影；</li>
+<li>歷史事件；</li>
+<li>快取；</li>
+<li>預測；</li>
+<li>主張；</li>
+<li>證據。</li>
+</ul>
+<h2>2.2 State</h2>
+<p>狀態是問題世界在特定時間的權威合法配置。</p>
+<h2>2.3 Event</h2>
+<p>事件是「某件事已發生」的識別化事實主張。</p>
+<h2>2.4 Action</h2>
+<p>行動是由主體提出、希望改變世界的請求或操作意圖。</p>
+<hr>
+<h1>三、四者不可互相替代</h1>
+<h2>3.1 資料不等於狀態</h2>
+<p>同一狀態可能有多份資料投影。</p>
+<p>同一資料也可能：</p>
+<ul>
+<li>過時；</li>
+<li>不完整；</li>
+<li>未驗證；</li>
+<li>只是快取；</li>
+<li>只是使用者主張。</li>
+</ul>
+<h2>3.2 行動不等於事件</h2>
+<p>「請付款」是行動。</p>
+<p>「付款已被授權」才可能是事件。</p>
+<h2>3.3 事件不等於狀態</h2>
+<p>「收到付款授權」事件發生後，訂單是否進入 <code>paid</code>，仍取決於規則與當前狀態。</p>
+<h2>3.4 狀態不等於歷史</h2>
+<p>當前 <code>paid</code> 狀態不能說明：</p>
+<ul>
+<li>何時付款；</li>
+<li>誰付款；</li>
+<li>是否重試；</li>
+<li>是否曾失敗；</li>
+<li>是否經過爭議。</li>
+</ul>
+<h2>3.5 日誌不等於事件</h2>
+<p>日誌可能包含：</p>
+<ul>
+<li>除錯訊息；</li>
+<li>重複輸出；</li>
+<li>處理嘗試；</li>
+<li>例外堆疊；</li>
+<li>非權威敘述。</li>
+</ul>
+<p>事件則需要身份、因果位置與語意。</p>
+<hr>
+<h1>四、資料的五種角色</h1>
+<p>資料在程式系統中不是單一種類。</p>
+<h2>4.1 輸入資料</h2>
+<p>由使用者、感測器或外部服務提供。</p>
+<p>輸入資料通常只是主張，尚未成為權威狀態。</p>
+<h2>4.2 權威資料</h2>
+<p>被系統指定為狀態判定依據的資料。</p>
+<p>例如：</p>
+<ul>
+<li>主資料庫；</li>
+<li>事件歷史；</li>
+<li>經簽章的外部回覆；</li>
+<li>已核准文件。</li>
+</ul>
+<h2>4.3 投影資料</h2>
+<p>為查詢、畫面、搜尋或報表建立的衍生表示。</p>
+<p>投影可被重建，不必是權威來源。</p>
+<h2>4.4 快取資料</h2>
+<p>為效能保存的暫時副本。</p>
+<p>快取可能過時，因此：</p>
+<p>$$
+\operatorname{Cache}(x)
+\not\Rightarrow
+\operatorname{CurrentState}(x)
+$$</p>
+<h2>4.5 證據資料</h2>
+<p>用來證明事件、決策與世界效果的材料，例如：</p>
+<ul>
+<li>簽章；</li>
+<li>回執；</li>
+<li>影像；</li>
+<li>測試結果；</li>
+<li>操作紀錄；</li>
+<li>外部確認。</li>
+</ul>
+<h2>4.6 資料分類必須可見</h2>
+<p>成熟系統應能回答：</p>
+<pre><code class="language-text">這份資料是輸入、權威狀態、投影、快取，還是證據？
+</code></pre>
+<p>否則開發者容易對錯誤資料來源做出世界判定。</p>
+<hr>
+<h1>五、狀態的正式判準</h1>
+<p>本文提出：</p>
+<p>$$
+\operatorname{State}_t(x)
+\iff
+\operatorname{Authoritative}(x)
+\land
+\operatorname{Current}(x,t)
+\land
+\operatorname{InvariantValid}(x)
+$$</p>
+<h2>5.1 權威性</h2>
+<p>必須知道哪一結構有權決定當前狀態。</p>
+<h2>5.2 當前性</h2>
+<p>狀態具有時間。</p>
+<p>昨天的正確值，不一定是今天的狀態。</p>
+<h2>5.3 合法性</h2>
+<p>狀態必須符合世界規則與不變量。</p>
+<h2>5.4 局部狀態與全域狀態</h2>
+<p>分散式系統中，單一節點可能只擁有局部狀態：</p>
+<p>$$
+S_t^{(i)}
+\subseteq
+S_t^{\mathrm{global}}
+$$</p>
+<p>但全域狀態可能無法在同一時刻被單一節點完整看見。</p>
+<h2>5.5 暫時不一致</h2>
+<p>兩個合法節點可能短暫持有不同版本：</p>
+<p>$$
+S_t^{(1)}
+\neq
+S_t^{(2)}
+$$</p>
+<p>這不一定代表資料損壞，但必須有：</p>
+<ul>
+<li>版本；</li>
+<li>合併；</li>
+<li>衝突；</li>
+<li>一致性模型；</li>
+<li>最終判定。</li>
+</ul>
+<hr>
+<h1>六、事件的正式結構</h1>
+<p>本文定義事件：</p>
+<h1>$$
+E</h1>
+<p>\left\langle
+id,
+type,
+actor,
+subject,
+time,
+cause,
+payload,
+evidence,
+version
+\right\rangle
+$$</p>
+<h2>6.1 事件身份</h2>
+<p>每個事件需要唯一或可去重身份。</p>
+<h2>6.2 事件類型</h2>
+<p>事件名稱應以已發生形式表達：</p>
+<pre><code class="language-text">PaymentAuthorized
+TaskCompleted
+DeploymentStarted
+ReviewRejected
+</code></pre>
+<p>而不是：</p>
+<pre><code class="language-text">AuthorizePayment
+CompleteTask
+StartDeployment
+RejectReview
+</code></pre>
+<p>後者較像命令或行動。</p>
+<h2>6.3 行動者與對象</h2>
+<p>需要知道誰或什麼造成事件，以及事件作用於哪個實體。</p>
+<h2>6.4 事件時間</h2>
+<p>至少可區分：</p>
+<ul>
+<li>發生時間；</li>
+<li>記錄時間；</li>
+<li>接收時間；</li>
+<li>處理時間。</li>
+</ul>
+<h2>6.5 因果來源</h2>
+<p>事件應能連接：</p>
+<ul>
+<li>原始命令；</li>
+<li>前一事件；</li>
+<li>工作流；</li>
+<li>外部證據；</li>
+<li>規則版本。</li>
+</ul>
+<h2>6.6 事件不可任意改寫</h2>
+<p>若事件代表已發生事實，錯誤修正應以新事件完成，而不是靜默改寫舊歷史。</p>
+<hr>
+<h1>七、事件不是所有變化</h1>
+<h2>7.1 事件需要領域意義</h2>
+<p>記憶中的位元翻轉不必成為領域事件。</p>
+<h2>7.2 處理事件</h2>
+<p>系統內部可能記錄：</p>
+<ul>
+<li>MessageReceived；</li>
+<li>RetryScheduled；</li>
+<li>CacheRebuilt。</li>
+</ul>
+<p>這些是處理事件，不一定是世界事件。</p>
+<h2>7.3 世界事件</h2>
+<p>世界事件代表問題世界中的有效變化，例如：</p>
+<ul>
+<li>訂單已付款；</li>
+<li>任務被取消；</li>
+<li>Agent 任務已被撤回。</li>
+</ul>
+<h2>7.4 外部事件</h2>
+<p>外部世界發生，系統只能觀測：</p>
+<ul>
+<li>網路中斷；</li>
+<li>使用者離線；</li>
+<li>物流到達；</li>
+<li>法規更新。</li>
+</ul>
+<h2>7.5 事件層級</h2>
+<p>系統應區分：</p>
+<pre><code class="language-yaml">event_scope:
+  processing: true
+  system: true
+  domain: false
+  physical_world: false
+</code></pre>
+<p>避免把內部處理成功冒充領域事件。</p>
+<hr>
+<h1>八、行動的正式結構</h1>
+<p>本文定義：</p>
+<h1>$$
+A</h1>
+<p>\left\langle
+id,
+actor,
+intent,
+target,
+precondition,
+permission,
+expectedEffect,
+deadline,
+idempotency,
+failure
+\right\rangle
+$$</p>
+<h2>8.1 行動身份</h2>
+<p>每一重要行動應可追蹤與去重。</p>
+<h2>8.2 行動者</h2>
+<p>必須知道：</p>
+<ul>
+<li>誰要求；</li>
+<li>誰批准；</li>
+<li>誰執行；</li>
+<li>誰承擔責任。</li>
+</ul>
+<h2>8.3 意圖</h2>
+<p>行動不只包含操作名稱，也應保留其目的。</p>
+<h2>8.4 目標</h2>
+<p>行動作用於哪個世界實體或狀態。</p>
+<h2>8.5 前置條件</h2>
+<p>只有特定世界狀態下才可執行。</p>
+<h2>8.6 權限</h2>
+<p>前置條件成立，不表示行動者有權執行。</p>
+<h2>8.7 預期效果</h2>
+<p>應明示預期產生：</p>
+<ul>
+<li>哪些事件；</li>
+<li>哪些狀態差分；</li>
+<li>哪些外部效果；</li>
+<li>哪些證據。</li>
+</ul>
+<h2>8.8 期限與過期</h2>
+<p>過期行動可能不應繼續執行。</p>
+<h2>8.9 冪等性</h2>
+<p>重複提交同一行動，不應產生多次世界效果。</p>
+<h2>8.10 失敗語意</h2>
+<p>需區分：</p>
+<ul>
+<li>可重試；</li>
+<li>不可重試；</li>
+<li>已部分成功；</li>
+<li>需要補償；</li>
+<li>需要人類判定。</li>
+</ul>
+<hr>
+<h1>九、從行動到事件</h1>
+<p>完整流程為：</p>
+<p>$$
+A_t
+\xrightarrow{\operatorname{Validate}}
+A_t^{v}
+\xrightarrow{\operatorname{Authorize}}
+A_t^{a}
+\xrightarrow{\operatorname{Execute}}
+E_{t+1}
+$$</p>
+<h2>9.1 驗證</h2>
+<p>檢查：</p>
+<ul>
+<li>結構；</li>
+<li>目標；</li>
+<li>前置條件；</li>
+<li>時效；</li>
+<li>世界版本。</li>
+</ul>
+<h2>9.2 授權</h2>
+<p>檢查行動者是否具有合法權力。</p>
+<h2>9.3 執行</h2>
+<p>執行可能：</p>
+<ul>
+<li>成功；</li>
+<li>失敗；</li>
+<li>部分成功；</li>
+<li>超時；</li>
+<li>結果未知。</li>
+</ul>
+<h2>9.4 事件形成</h2>
+<p>只有被系統或世界接受為已發生事實的結果，才應形成領域事件。</p>
+<h2>9.5 拒絕也是結果</h2>
+<p>拒絕行動可形成：</p>
+<pre><code class="language-text">ActionRejected
+AuthorizationDenied
+PreconditionFailed
+</code></pre>
+<p>但這些事件不代表預期世界效果發生。</p>
+<hr>
+<h1>十、從事件到狀態</h1>
+<p>事件經規則套用後形成新狀態：</p>
+<h1>$$
+S_{t+1}</h1>
+<p>\delta
+\left(
+S_t,
+E_{t+1},
+R_t
+\right)
+$$</p>
+<h2>10.1 事件不自動改變狀態</h2>
+<p>同一事件在不同狀態下可能：</p>
+<ul>
+<li>被接受；</li>
+<li>被忽略；</li>
+<li>形成衝突；</li>
+<li>進入爭議；</li>
+<li>需要人工覆核。</li>
+</ul>
+<h2>10.2 規則版本</h2>
+<p>事件的解釋依賴當時有效規則。</p>
+<h1>$$
+S_{t+1}</h1>
+<p>\delta_{R_t}
+\left(
+S_t,
+E_{t+1}
+\right)
+$$</p>
+<p>若規則後續改變，不能任意用新規則重寫舊事件意義。</p>
+<h2>10.3 不變量檢查</h2>
+<p>套用後必須保持：</p>
+<p>$$
+Inv(S_{t+1})=true
+$$</p>
+<p>若不變量失敗，系統可能：</p>
+<ul>
+<li>拒絕事件；</li>
+<li>將事件標記為無法套用；</li>
+<li>進入錯誤狀態；</li>
+<li>觸發補償；</li>
+<li>需要人工介入。</li>
+</ul>
+<h2>10.4 派生狀態</h2>
+<p>某些狀態可由事件歷史重建：</p>
+<h1>$$
+S_t</h1>
+<p>\operatorname{Fold}
+\left(
+S_0,
+E_1,
+E_2,
+\ldots,
+E_t
+\right)
+$$</p>
+<h2>10.5 快照</h2>
+<p>為效能可保存：</p>
+<h1>$$
+Snapshot_k</h1>
+<p>S_k
+$$</p>
+<p>之後只需套用 $k$ 之後的事件。</p>
+<p>快照是狀態加速器，不是歷史替代品。</p>
+<hr>
+<h1>十一、從狀態到資料</h1>
+<p>狀態與歷史會被投影為：</p>
+<ul>
+<li>查詢資料；</li>
+<li>UI 畫面；</li>
+<li>搜尋索引；</li>
+<li>報表；</li>
+<li>通知；</li>
+<li>API 回覆；</li>
+<li>分析指標。</li>
+</ul>
+<p>形式上：</p>
+<h1>$$
+D_t^{(i)}</h1>
+<p>\pi_i
+\left(
+S_t,
+H_t
+\right)
+$$</p>
+<h2>11.1 多投影</h2>
+<p>同一權威狀態可有多個投影。</p>
+<p>例如訂單狀態可投影成：</p>
+<ul>
+<li>客戶畫面；</li>
+<li>商家後台；</li>
+<li>物流工作單；</li>
+<li>財務報表；</li>
+<li>稽核紀錄。</li>
+</ul>
+<h2>11.2 投影延遲</h2>
+<p>投影可能晚於權威狀態。</p>
+<p>因此 UI 尚未更新，不代表狀態沒有改變。</p>
+<p>反之，樂觀 UI 顯示成功，也不代表權威狀態已接受。</p>
+<h2>11.3 投影可重建</h2>
+<p>若投影損壞，應能從權威狀態與歷史重建。</p>
+<h2>11.4 投影不應反向僭位</h2>
+<p>查詢資料通常不應被直接當作權威來源修改。</p>
+<p>否則：</p>
+<ul>
+<li>投影與狀態混合；</li>
+<li>責任不清；</li>
+<li>事件歷史失真；</li>
+<li>同步困難。</li>
+</ul>
+<hr>
+<h1>十二、時間的四種區分</h1>
+<h2>12.1 發生時間</h2>
+<p>世界中事情真正發生的時間。</p>
+<h2>12.2 接收時間</h2>
+<p>系統收到事件的時間。</p>
+<h2>12.3 處理時間</h2>
+<p>系統實際處理的時間。</p>
+<h2>12.4 生效時間</h2>
+<p>事件在制度或狀態上開始有效的時間。</p>
+<p>因此：</p>
+<p>$$
+T_{\mathrm{occur}}
+\neq
+T_{\mathrm{receive}}
+\neq
+T_{\mathrm{process}}
+\neq
+T_{\mathrm{effective}}
+$$</p>
+<h2>12.5 延遲事件</h2>
+<p>某事件可能晚到，但仍屬於較早世界歷史。</p>
+<h2>12.6 未來生效</h2>
+<p>某規則或委任可以先被記錄，但在未來時間才生效。</p>
+<h2>12.7 時間倒置風險</h2>
+<p>若只使用處理時間排序，可能把真正先發生的事件放在後面。</p>
+<hr>
+<h1>十三、順序、因果與亂序</h1>
+<h2>13.1 全域順序未必存在</h2>
+<p>分散式系統中，不同節點可能看到不同事件順序。</p>
+<h2>13.2 因果順序</h2>
+<p>若事件 $e_2$ 依賴 $e_1$：</p>
+<p>$$
+e_1
+\prec
+e_2
+$$</p>
+<p>則應保留因果關係。</p>
+<h2>13.3 無關事件</h2>
+<p>沒有因果關係的事件可以並行。</p>
+<h2>13.4 亂序處理</h2>
+<p>晚到事件可採：</p>
+<ul>
+<li>暫存；</li>
+<li>重排；</li>
+<li>版本檢查；</li>
+<li>補償；</li>
+<li>人工審核；</li>
+<li>接受為新主張但不重寫歷史。</li>
+</ul>
+<h2>13.5 事件序號不是因果全部</h2>
+<p>自增 ID 可以提供資料庫順序，但不必等於世界因果順序。</p>
+<hr>
+<h1>十四、並行與競爭</h1>
+<h2>14.1 同時行動</h2>
+<p>兩個主體可能同時對同一實體提出行動。</p>
+<p>例如兩人同時購買最後一件商品。</p>
+<h2>14.2 樂觀並行</h2>
+<p>行動攜帶所依據的狀態版本：</p>
+<h1>$$
+A</h1>
+<p>\left(
+target,
+expectedVersion
+\right)
+$$</p>
+<p>若版本已改變，行動需重新評估。</p>
+<h2>14.3 悲觀鎖定</h2>
+<p>先取得排他控制，再執行。</p>
+<h2>14.4 衝突不是技術例外全部</h2>
+<p>某些衝突是問題世界中的正常狀態，例如多人同時編輯、競標或資源競爭。</p>
+<h2>14.5 合併規則</h2>
+<p>合併需要明示：</p>
+<ul>
+<li>可自動合併；</li>
+<li>最後寫入者；</li>
+<li>優先角色；</li>
+<li>人工解決；</li>
+<li>形成爭議狀態。</li>
+</ul>
+<hr>
+<h1>十五、重試與冪等</h1>
+<h2>15.1 重試的必要性</h2>
+<p>網路與外部服務可能：</p>
+<ul>
+<li>超時；</li>
+<li>中斷；</li>
+<li>回覆遺失；</li>
+<li>處理成功但確認失敗。</li>
+</ul>
+<h2>15.2 重試風險</h2>
+<p>同一付款行動若被處理兩次，可能造成重複扣款。</p>
+<h2>15.3 冪等鍵</h2>
+<p>$$
+IdempotencyKey(A)=k
+$$</p>
+<p>系統若已處理 $k$，重複請求應回傳原結果，而非再次產生效果。</p>
+<h2>15.4 冪等不是忽略所有重複</h2>
+<p>同一內容但不同真實意圖，可能是兩個合法行動。</p>
+<p>因此身份應來自行動實例，而不是只比較 payload。</p>
+<h2>15.5 核心命題</h2>
+<p>$$
+\boxed{
+\operatorname{Retry}
+\not\Rightarrow
+\operatorname{RepeatEffect}
+}
+$$</p>
+<hr>
+<h1>十六、部分成功與補償</h1>
+<h2>16.1 原子操作的限制</h2>
+<p>跨多個系統的世界變化，通常無法由單一交易完全包住。</p>
+<h2>16.2 部分成功</h2>
+<p>例如：</p>
+<pre><code class="language-text">付款已完成
+庫存更新失敗
+通知未送出
+</code></pre>
+<p>此時不能簡單回覆成功或失敗。</p>
+<h2>16.3 補償</h2>
+<p>補償是新的行動與事件，不是讓歷史未曾發生。</p>
+<p>例如：</p>
+<ul>
+<li>退款；</li>
+<li>釋放庫存；</li>
+<li>撤回發布；</li>
+<li>修正文件；</li>
+<li>恢復權限。</li>
+</ul>
+<h2>16.4 補償失敗</h2>
+<p>補償本身也可能失敗，因此需要：</p>
+<ul>
+<li>狀態；</li>
+<li>重試；</li>
+<li>人工接管；</li>
+<li>證據；</li>
+<li>時限。</li>
+</ul>
+<h2>16.5 長時交易</h2>
+<p>長時工作流應被建模為多階段狀態機，而不是一個長函式。</p>
+<hr>
+<h1>十七、外部世界確認</h1>
+<h2>17.1 內部事件不等於外部完成</h2>
+<p>系統可以產生：</p>
+<pre><code class="language-text">EmailRequestAccepted
+ShipmentDispatched
+DeviceCommandSent
+</code></pre>
+<p>但這些事件不等於：</p>
+<pre><code class="language-text">EmailRead
+ShipmentReceived
+DevicePhysicallyChanged
+</code></pre>
+<h2>17.2 證據分層</h2>
+<p>可區分：</p>
+<ol>
+<li>請求已建立；</li>
+<li>外部系統已接受；</li>
+<li>外部系統宣稱已完成；</li>
+<li>本系統已觀測到效果；</li>
+<li>受影響主體已接受結果。</li>
+</ol>
+<h2>17.3 不可觀測效果</h2>
+<p>若系統無法直接驗證，狀態應保留：</p>
+<pre><code class="language-text">pending-external-confirmation
+externally-claimed
+unverified
+contested
+</code></pre>
+<h2>17.4 完成條件</h2>
+<h1>$$
+Complete</h1>
+<p>InternalState
+\land
+ExternalEvidence
+\land
+RequiredAcceptance
+$$</p>
+<p>不同任務所需層級不同，但不能默認內部事件等於世界完成。</p>
+<hr>
+<h1>十八、事件溯源與狀態快照</h1>
+<h2>18.1 事件溯源</h2>
+<p>事件歷史作為權威來源：</p>
+<h1>$$
+H_t</h1>
+<p>\left[
+E_1,E_2,\ldots,E_t
+\right]
+$$</p>
+<p>狀態由歷史折疊得到。</p>
+<h2>18.2 優點</h2>
+<ul>
+<li>歷史可追蹤；</li>
+<li>狀態可重建；</li>
+<li>規則變化可分析；</li>
+<li>投影可重新生成；</li>
+<li>責任與因果較清楚。</li>
+</ul>
+<h2>18.3 代價</h2>
+<ul>
+<li>事件 schema 演化；</li>
+<li>歷史資料量；</li>
+<li>重建成本；</li>
+<li>錯誤事件修正；</li>
+<li>隱私與刪除；</li>
+<li>規則版本管理。</li>
+</ul>
+<h2>18.4 狀態儲存</h2>
+<p>直接保存當前狀態較簡單，但容易遺失：</p>
+<ul>
+<li>變化原因；</li>
+<li>中間過程；</li>
+<li>失敗；</li>
+<li>撤回；</li>
+<li>責任證據。</li>
+</ul>
+<h2>18.5 混合模式</h2>
+<p>多數系統可使用：</p>
+<ul>
+<li>權威當前狀態；</li>
+<li>關鍵領域事件；</li>
+<li>稽核歷史；</li>
+<li>查詢投影；</li>
+</ul>
+<p>而不必將每個位元變化都事件化。</p>
+<hr>
+<h1>十九、資料刪除與事件歷史</h1>
+<h2>19.1 歷史保存不是無限保存</h2>
+<p>事件可能包含：</p>
+<ul>
+<li>個資；</li>
+<li>敏感內容；</li>
+<li>商業機密；</li>
+<li>錯誤資料。</li>
+</ul>
+<h2>19.2 刪除與可稽核衝突</h2>
+<p>需區分：</p>
+<ul>
+<li>事件存在；</li>
+<li>payload 可見；</li>
+<li>身分可識別；</li>
+<li>證據可驗證；</li>
+<li>法律保留期。</li>
+</ul>
+<h2>19.3 匿名化與密鑰銷毀</h2>
+<p>可用：</p>
+<ul>
+<li>資料最小化；</li>
+<li>欄位加密；</li>
+<li>身分替換；</li>
+<li>密鑰銷毀；</li>
+<li>衍生投影刪除；</li>
+</ul>
+<p>兼顧歷史完整與隱私。</p>
+<h2>19.4 錯誤修正</h2>
+<p>不應直接竄改舊事件，而可新增：</p>
+<pre><code class="language-text">EventCorrected
+ClaimWithdrawn
+IdentityRedacted
+</code></pre>
+<p>保留修正本身的歷史。</p>
+<hr>
+<h1>二十、案例一：待辦事項</h1>
+<h2>20.1 行動</h2>
+<pre><code class="language-text">CompleteTask
+</code></pre>
+<p>包含：</p>
+<ul>
+<li>行動者；</li>
+<li>任務 ID；</li>
+<li>依據版本；</li>
+<li>完成證據；</li>
+<li>冪等鍵。</li>
+</ul>
+<h2>20.2 事件</h2>
+<pre><code class="language-text">TaskCompletionClaimed
+</code></pre>
+<p>不一定直接是 <code>TaskCompleted</code>。</p>
+<p>若需要審核，還可能產生：</p>
+<pre><code class="language-text">TaskCompletionAccepted
+TaskCompletionDisputed
+</code></pre>
+<h2>20.3 狀態</h2>
+<pre><code class="language-text">active
+completion-pending
+completed
+disputed
+</code></pre>
+<h2>20.4 資料</h2>
+<p>UI 上的勾選框只是狀態投影，不是完整歷史與證據。</p>
+<hr>
+<h1>二十一、案例二：訂單付款</h1>
+<h2>21.1 行動</h2>
+<p>客戶提出付款請求。</p>
+<h2>21.2 外部事件</h2>
+<p>付款服務回覆：</p>
+<pre><code class="language-text">PaymentAuthorized
+</code></pre>
+<h2>21.3 系統事件</h2>
+<p>本地成功處理後：</p>
+<pre><code class="language-text">OrderPaymentRecorded
+</code></pre>
+<h2>21.4 狀態</h2>
+<p>訂單進入 <code>paid</code>，但最終銀行結算可能仍未完成。</p>
+<h2>21.5 重複與亂序</h2>
+<p>系統必須處理：</p>
+<ul>
+<li>回呼重複；</li>
+<li>取消事件先到；</li>
+<li>授權晚到；</li>
+<li>退款與付款交錯；</li>
+<li>本地更新失敗。</li>
+</ul>
+<h2>21.6 完成分層</h2>
+<pre><code class="language-yaml">payment:
+  provider_authorization: &quot;confirmed&quot;
+  local_order_state: &quot;paid&quot;
+  bank_settlement: &quot;pending&quot;
+  customer_acceptance: &quot;not-required&quot;
+</code></pre>
+<hr>
+<h1>二十二、案例三：網站部署</h1>
+<h2>22.1 行動</h2>
+<pre><code class="language-text">DeployRelease
+</code></pre>
+<h2>22.2 事件</h2>
+<ul>
+<li>DeploymentRequested；</li>
+<li>ArtifactUploaded；</li>
+<li>ProcessStarted；</li>
+<li>HealthCheckPassed；</li>
+<li>TrafficShifted；</li>
+<li>DeploymentFailed。</li>
+</ul>
+<h2>22.3 狀態</h2>
+<pre><code class="language-text">planned
+approved
+deploying
+verifying
+active
+degraded
+rolled-back
+failed
+</code></pre>
+<h2>22.4 資料</h2>
+<p>部署頁面、日誌、監控指標與版本標籤是不同投影。</p>
+<h2>22.5 世界完成</h2>
+<p>Health check 通過不代表所有使用者流程正常。</p>
+<p>還可能需要：</p>
+<ul>
+<li>真實流量；</li>
+<li>錯誤率；</li>
+<li>人工驗收；</li>
+<li>外部 DNS；</li>
+<li>商業指標。</li>
+</ul>
+<hr>
+<h1>二十三、案例四：醫療處置</h1>
+<h2>23.1 行動</h2>
+<p>醫師開立處置，或病人同意某項治療。</p>
+<h2>23.2 事件</h2>
+<p>需區分：</p>
+<ul>
+<li>TreatmentRecommended；</li>
+<li>ConsentRecorded；</li>
+<li>TreatmentStarted；</li>
+<li>TreatmentAdministered；</li>
+<li>OutcomeObserved。</li>
+</ul>
+<h2>23.3 狀態</h2>
+<p>醫療計畫與病人身體狀態不是同一狀態空間。</p>
+<h2>23.4 資料</h2>
+<p>檢驗值與病人回報都是資料，需要：</p>
+<ul>
+<li>來源；</li>
+<li>時間；</li>
+<li>品質；</li>
+<li>適用範圍；</li>
+<li>專業解釋。</li>
+</ul>
+<h2>23.5 不可逆性</h2>
+<p>高風險行動不能因資料欄位完整就自動執行，仍需保留同意與專業責任。</p>
+<hr>
+<h1>二十四、案例五：AI Agent</h1>
+<h2>24.1 行動</h2>
+<p>Agent 提出：</p>
+<pre><code class="language-text">ModifyFile
+CallAPI
+PublishWebsite
+SendMessage
+</code></pre>
+<h2>24.2 工具回覆</h2>
+<p>工具回傳只是處理資料，不必直接成為領域事件。</p>
+<h2>24.3 事件形成</h2>
+<p>需經驗證後才形成：</p>
+<pre><code class="language-text">FileModified
+WebsitePublished
+MessageAcceptedByProvider
+</code></pre>
+<h2>24.4 狀態</h2>
+<p>Agent 自身也有：</p>
+<ul>
+<li>目標狀態；</li>
+<li>計畫狀態；</li>
+<li>權限狀態；</li>
+<li>預算狀態；</li>
+<li>檢查點；</li>
+<li>等待人類狀態。</li>
+</ul>
+<h2>24.5 重試</h2>
+<p>Agent 若不知道工具已成功，重試可能造成：</p>
+<ul>
+<li>重複寄信；</li>
+<li>重複付款；</li>
+<li>重複發布；</li>
+<li>重複刪除。</li>
+</ul>
+<p>所以 Agent Runtime 必須內建行動身份與冪等證據。</p>
+<hr>
+<h1>二十五、案例六：研究進度</h1>
+<h2>25.1 行動</h2>
+<pre><code class="language-text">ProposeHypothesis
+RunExperiment
+WritePaper
+ClaimResult
+</code></pre>
+<h2>25.2 事件</h2>
+<ul>
+<li>HypothesisRegistered；</li>
+<li>ExperimentExecuted；</li>
+<li>EvidenceProduced；</li>
+<li>CounterexampleFound；</li>
+<li>ManuscriptCompleted；</li>
+<li>ClaimVerified。</li>
+</ul>
+<h2>25.3 狀態</h2>
+<p>論文完成與命題驗證是不同狀態。</p>
+<pre><code class="language-text">drafted
+reviewed
+partially-supported
+contradicted
+verified
+open
+</code></pre>
+<h2>25.4 資料</h2>
+<p>實驗輸出、文獻摘要與模型推論是證據資料，不自動等於研究事實。</p>
+<h2>25.5 失敗也是事件</h2>
+<p>失敗計算與反例是研究世界的重要事件，不應只留在臨時日誌。</p>
+<hr>
+<h1>二十六、主要失敗模式</h1>
+<ol>
+<li><strong>資料即狀態：</strong> 任意資料值被當成當前權威世界。</li>
+<li><strong>快取即權威：</strong> 過時投影被用於重大決策。</li>
+<li><strong>命令即事件：</strong> 收到請求就宣稱事情已發生。</li>
+<li><strong>日誌即歷史：</strong> 除錯輸出被當成領域事件證據。</li>
+<li><strong>事件即狀態：</strong> 忽略規則、前置狀態與不變量。</li>
+<li><strong>狀態即歷史：</strong> 只保存當前值，無法追蹤原因與責任。</li>
+<li><strong>內部事件即外部完成：</strong> 系統處理成功被當成物理效果成功。</li>
+<li><strong>單一時間：</strong> 發生、接收、處理與生效時間混為一談。</li>
+<li><strong>資料庫順序即因果：</strong> 自增 ID 被誤認為世界先後。</li>
+<li><strong>重試即重做：</strong> 相同意圖造成多次世界效果。</li>
+<li><strong>payload 去重：</strong> 內容相同的不同合法行動被錯誤合併。</li>
+<li><strong>所有錯誤皆可重試：</strong> 永久錯誤與權限拒絕被無限重試。</li>
+<li><strong>部分成功二元化：</strong> 跨系統工作流只回傳成功或失敗。</li>
+<li><strong>補償即回滾：</strong> 忽略補償是新的歷史事件。</li>
+<li><strong>投影反向寫入：</strong> 查詢模型直接僭位成權威狀態。</li>
+<li><strong>事件過度化：</strong> 每個技術細節都變成領域事件。</li>
+<li><strong>事件不足：</strong> 重要責任與世界變化只留在可覆寫欄位。</li>
+<li><strong>規則版本遺忘：</strong> 用新規則重新解釋舊歷史。</li>
+<li><strong>未知結果強制成功：</strong> 超時後直接假定外部操作完成。</li>
+<li><strong>完成狀態單層化：</strong> 計算、系統、外部與意圖完成混合。</li>
+<li><strong>事件永久保存迷思：</strong> 忽略隱私、刪除與資料最小化。</li>
+<li><strong>Agent 工具回覆僭位：</strong> 工具文字被直接當成真實世界事件。</li>
+</ol>
+<hr>
+<h1>二十七、可證偽研究綱領</h1>
+<h2>27.1 資料—狀態混淆率</h2>
+<p>從事故與錯誤決策中統計，多少源於使用：</p>
+<ul>
+<li>快取；</li>
+<li>投影；</li>
+<li>未驗證輸入；</li>
+<li>過時副本；</li>
+</ul>
+<p>作為權威狀態。</p>
+<h2>27.2 命令—事件混淆率</h2>
+<p>統計收到請求、排入佇列或開始處理後，系統過早宣稱完成的比例。</p>
+<h2>27.3 重複效果率</h2>
+<h1>$$
+R_D</h1>
+<p>\frac{
+|\text{duplicate world effects}|
+}{
+|\text{retried actions}|
+}
+$$</p>
+<p>測量冪等機制的實際效果。</p>
+<h2>27.4 事件重建一致性</h2>
+<p>從事件歷史重建狀態，與權威快照比較：</p>
+<h1>$$
+C_R</h1>
+<p>1-
+d
+\left(
+S_{\mathrm{replayed}},
+S_{\mathrm{authoritative}}
+\right)
+$$</p>
+<h2>27.5 事件語意完整率</h2>
+<p>測量重要事件是否具有：</p>
+<ul>
+<li>身份；</li>
+<li>主體；</li>
+<li>對象；</li>
+<li>發生時間；</li>
+<li>因果；</li>
+<li>證據；</li>
+<li>規則版本。</li>
+</ul>
+<h2>27.6 權威狀態辨識率</h2>
+<p>檢查開發者與維護者能否正確指出各種資料來源中的權威狀態。</p>
+<h2>27.7 處理時間偏差</h2>
+<p>比較依處理時間排序與依事件時間、因果關係排序後的業務結果差異。</p>
+<h2>27.8 亂序處理成功率</h2>
+<p>測量系統對晚到、重複與交錯事件的正確狀態維持能力。</p>
+<h2>27.9 部分成功可見率</h2>
+<p>統計跨系統工作流中，部分成功是否被正式表示，而非壓成二元結果。</p>
+<h2>27.10 外部世界確認率</h2>
+<p>測量系統宣稱完成的行動中，有多少具有足夠外部證據。</p>
+<h2>27.11 快照—歷史偏差</h2>
+<p>比較快照與完整事件歷史在稽核、除錯與責任判定上的資訊差異。</p>
+<h2>27.12 四元建模教學實驗</h2>
+<p>比較先學 CRUD 與先學資料—狀態—事件—行動區分的學習者，在分散式錯誤、重試與狀態設計上的表現。</p>
+<hr>
+<h1>二十八、本文的二十二項命題</h1>
+<ol>
+<li>資料、狀態、事件與行動是不同的系統存在。</li>
+<li>資料可以是輸入、權威資料、投影、快取或證據。</li>
+<li>狀態是特定時間下權威、當前且符合不變量的世界配置。</li>
+<li>行動是改變世界的請求，不是已發生事實。</li>
+<li>事件是已發生事實的識別化主張，不是未來命令。</li>
+<li>日誌不自動具有領域事件地位。</li>
+<li>事件需經規則套用才能形成新狀態。</li>
+<li>當前狀態無法取代事件歷史。</li>
+<li>同一狀態可以具有多個不同角色投影。</li>
+<li>投影延遲不等於權威狀態尚未改變。</li>
+<li>發生、接收、處理與生效時間必須分離。</li>
+<li>資料庫順序不等於完整因果順序。</li>
+<li>並行衝突可能是正常世界狀態，而非單純技術例外。</li>
+<li></li>
+</ol>
+<p>$$
+\operatorname{Retry}
+\not\Rightarrow
+\operatorname{RepeatEffect}
+$$
+15. 冪等身份應綁定行動實例，而非只比較資料內容。
+16. 部分成功必須成為正式狀態。
+17. 補償是新的行動與事件，而不是真正刪除歷史。
+18. 內部處理完成不等於外部世界完成。
+19. 事件歷史、當前狀態、快照與投影各有不同責任。
+20. 高風險行動需要外部證據與必要的人類接受。
+21. Agent Runtime 必須保存行動身份、工具結果、事件證據與檢查點。
+22. 
+$$
+\boxed{
+\text{程式系統的動力，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{不是資料被任意修改，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是有身份的行動在規則下形成事件，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{事件再使合法世界狀態持續演化。}
+}
+$$</p>
+<hr>
+<h1>二十九、與前後篇的關係</h1>
+<h2>29.1 承接 PU-1-01</h2>
+<p>PU-1-01 將程式定義為可執行問題模型。</p>
+<p>本篇把其中的「可執行」展開為：</p>
+<ul>
+<li>行動驗證；</li>
+<li>授權；</li>
+<li>事件形成；</li>
+<li>狀態轉移；</li>
+<li>資料投影。</li>
+</ul>
+<h2>29.2 承接 PU-1-02</h2>
+<p>PU-1-02 建立了實體、關係、規則與邊界。</p>
+<p>本篇讓這些靜態結構進入時間：</p>
+<ul>
+<li>實體持有狀態；</li>
+<li>關係經事件建立與終止；</li>
+<li>規則控制轉移；</li>
+<li>邊界決定外部證據與完成程度。</li>
+</ul>
+<h2>29.3 銜接 PU-1-04</h2>
+<p>下一篇將回答：</p>
+<ul>
+<li>哪個模組擁有哪個狀態；</li>
+<li>誰有責任處理哪類事件；</li>
+<li>哪些行動能跨模組；</li>
+<li>模組之間如何以契約交換資料、命令、事件與證據；</li>
+<li>為何責任邊界不等於檔案或服務邊界。</li>
+</ul>
+<hr>
+<h1>三十、結論：真正的系統不是資料被改了，而是世界有理由地改變</h1>
+<p>當設計者只看見資料，程式就像一組讀寫欄位的技巧。</p>
+<p>但持續系統真正需要維持的是：</p>
+<ul>
+<li>世界目前處於什麼狀態；</li>
+<li>哪個主體希望做什麼；</li>
+<li>該行動是否有效與有權；</li>
+<li>哪件事情真正發生；</li>
+<li>事件如何改變世界；</li>
+<li>哪份資料只是畫面或投影；</li>
+<li>失敗與重試會不會重複傷害世界；</li>
+<li>外部效果是否真的完成。</li>
+</ul>
+<p>因此，CRUD 並不是錯誤。</p>
+<p>它只是四元動力結構在儲存層的一種低階投影。</p>
+<p>本文將系統動力收束為：</p>
+<p>$$
+\boxed{
+\text{Action}
+\rightarrow
+\text{Validation}
+\rightarrow
+\text{Authorization}
+\rightarrow
+\text{Event}
+\rightarrow
+\text{State}
+\rightarrow
+\text{Data Projection}
+}
+$$</p>
+<p>更完整地說：</p>
+<h1>$$
+\boxed{
+\text{Program Dynamics}</h1>
+<p>\text{Intentional Action}
++
+\text{Rule-Governed Event}
++
+\text{Authoritative State}
++
+\text{Evidence-Bearing Data}
+}
+$$</p>
+<p>這個結構使系統能回答：</p>
+<pre><code class="language-text">誰做了什麼？
+依據哪個世界狀態？
+使用哪條規則？
+真正發生了什麼？
+世界因此變成什麼？
+我們如何知道？
+若只完成一部分，現在應該怎麼辦？
+</code></pre>
+<p>本文的最終命題是：</p>
+<p>$$
+\boxed{
+\text{資料可以被覆寫，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{但世界變化必須有事件、規則、責任與證據。}
+}
+$$</p>
+<p>只有如此，程式才能從資料處理器成為可理解、可恢復、可稽核與可治理的持續世界系統。</p>
+<hr>
+<h1>附錄 A：四元動力最小格式</h1>
+<pre><code class="language-yaml">program_dynamics:
+  action:
+    action_id: &quot;pay-order-001&quot;
+    actor: &quot;customer-17&quot;
+    intent: &quot;pay for order&quot;
+    target: &quot;order-932&quot;
+    expected_version: 4
+    idempotency_key: &quot;customer17-order932-payment1&quot;
+
+  validation:
+    preconditions:
+      - &quot;order.status == payment-pending&quot;
+    permission:
+      - &quot;customer owns order&quot;
+
+  event:
+    event_id: &quot;payment-authorized-889&quot;
+    type: &quot;PaymentAuthorized&quot;
+    occurred_at: &quot;2026-07-27T14:30:00+08:00&quot;
+    caused_by: &quot;pay-order-001&quot;
+    evidence: &quot;provider-receipt-332&quot;
+
+  state:
+    before: &quot;payment-pending&quot;
+    after: &quot;paid&quot;
+    version: 5
+
+  data_projections:
+    customer_view: &quot;Paid&quot;
+    merchant_queue: &quot;Ready for fulfillment&quot;
+    finance_report: &quot;Settlement pending&quot;
+</code></pre>
+<hr>
+<h1>附錄 B：資料角色標記</h1>
+<pre><code class="language-yaml">data_object:
+  name: &quot;order-summary&quot;
+  role: &quot;projection&quot;
+  authoritative: false
+  generated_from:
+    - &quot;order-state&quot;
+    - &quot;payment-events&quot;
+  latency_target: &quot;5s&quot;
+  writable: false
+</code></pre>
+<hr>
+<h1>附錄 C：事件時間格式</h1>
+<pre><code class="language-yaml">event_time:
+  occurred_at: &quot;2026-07-27T14:29:50+08:00&quot;
+  received_at: &quot;2026-07-27T14:30:01+08:00&quot;
+  processed_at: &quot;2026-07-27T14:30:03+08:00&quot;
+  effective_at: &quot;2026-07-27T14:29:50+08:00&quot;
+</code></pre>
+<hr>
+<h1>附錄 D：部分成功格式</h1>
+<pre><code class="language-yaml">workflow_state:
+  workflow_id: &quot;deployment-42&quot;
+  status: &quot;partially-complete&quot;
+
+  completed:
+    - &quot;artifact-uploaded&quot;
+    - &quot;process-started&quot;
+
+  pending:
+    - &quot;external-dns-confirmation&quot;
+
+  failed:
+    - &quot;smoke-test-mobile&quot;
+
+  compensation:
+    available: true
+    action: &quot;rollback-release&quot;
+
+  human_review_required: true
+</code></pre>
+<hr>
+<h1>附錄 E：第 1 冊六篇位置</h1>
+<ol>
+<li>PU-1-01　程式不等於程式碼：可執行問題模型的基本定義</li>
+<li>PU-1-02　問題世界建模：實體、關係、規則與系統邊界</li>
+<li><strong>PU-1-03　資料—狀態—事件—行動：程式系統的四元動力結構</strong></li>
+<li>PU-1-04　責任、模組與契約：從檔案分類到系統邊界</li>
+<li>PU-1-05　可視化作為外部結構記憶：多角色、多尺度的程式理解</li>
+<li>PU-1-06　失敗也是程式：驗證、可觀測、恢復與長期維護</li>
+</ol>
+<hr>
+<h1>參考文獻</h1>
+<h2>Neo.K／EveMissLab 相關理論</h2>
+<ol>
+<li>Neo.K with Aletheia，《程式不等於程式碼：可執行問題模型的基本定義》，2026。</li>
+<li>Neo.K with Aletheia，《問題世界建模：實體、關係、規則與系統邊界》，2026。</li>
+<li>Neo.K with Aletheia，《三宇宙耦合動力學：從想要、表示到世界改變》，2026。</li>
+<li>Neo.K with Aletheia，《數位宇宙作為人工存在域：實體、狀態、規則與歷史》，2026。</li>
+<li>Neo.K with Aletheia，《Agent Runtime：能力規劃、工具調用與可恢復執行》，2026。</li>
+<li>Neo.K with Aletheia，《時間—空間程式控制：長時程 Agent 的迴圈、切片與反身執行》，2026。</li>
+</ol>
+<h2>一般理論背景</h2>
+<ol start="7">
+<li>Harel, D., “Statecharts: A Visual Formalism for Complex Systems,” 1987.</li>
+<li>Lamport, L., “Time, Clocks, and the Ordering of Events in a Distributed System,” 1978.</li>
+<li>Gray, J. and Reuter, A., <em>Transaction Processing</em>, 1992.</li>
+<li>Fowler, M., <em>Patterns of Enterprise Application Architecture</em>, 2002.</li>
+<li>Evans, E., <em>Domain-Driven Design</em>, 2003.</li>
+<li>Kleppmann, M., <em>Designing Data-Intensive Applications</em>, 2017.</li>
+<li>Vernon, V., <em>Implementing Domain-Driven Design</em>, 2013.</li>
+<li>Richardson, C., <em>Microservices Patterns</em>, 2018.</li>
+<li>Helland, P., “Life Beyond Distributed Transactions,” 2007.</li>
+<li>Pat Helland, “Immutability Changes Everything,” 2015.</li>
+<li>Newman, S., <em>Building Microservices</em>, 2015.</li>
+<li>Hoare, C. A. R., “Communicating Sequential Processes,” 1978.</li>
+</ol>
+<hr>
+<h1>版本紀錄</h1>
+<h2>v0.1 — 2026-07-27</h2>
+<ul>
+<li>完成十八篇地基論文第九篇。</li>
+<li>建立資料、狀態、事件、行動四元動力模型。</li>
+<li>明確區分輸入、權威、投影、快取與證據資料。</li>
+<li>提出狀態、事件與行動的形式判準。</li>
+<li>建立行動驗證、授權、執行、事件、狀態與投影鏈。</li>
+<li>分析事件層級、規則版本、不變量與狀態重建。</li>
+<li>區分發生、接收、處理與生效時間。</li>
+<li>分析亂序、因果、並行與衝突。</li>
+<li>建立重試與冪等原則。</li>
+<li>正式建模部分成功、補償與長時工作流。</li>
+<li>區分內部處理與外部世界確認。</li>
+<li>分析事件溯源、快照、隱私與歷史修正。</li>
+<li>加入待辦、付款、部署、醫療、AI Agent 與研究進度案例。</li>
+<li>提出二十二類失敗模式與十二項可證偽研究方向。</li>
+<li>完成與 PU-1-04《責任、模組與契約》的銜接。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pu-1-03.html">https://thisoneisneok.com/html/papers/pu-1-03.html</a></footer>
+</body>
+</html>

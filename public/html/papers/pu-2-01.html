@@ -1,0 +1,1568 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>程式語言不等於文字：結構、語意與執行的基本分離 | Neo.K</title>
+<meta name="description" content="前兩冊已分別回答：為何需要計算、計算世界與物理世界如何耦合，以及程式應如何被建模、切分、理解、驗證與維護。本冊轉向更深一層問題：程式語言究竟是什麼？">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pu-2-01.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PU</strong><span>程式宇宙基礎</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PU-2-01</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-27</span></div><div><b>作者</b><span>Neo.K with Aletheia</span></div><div><b>狀態</b><span>初版完成</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pu-2-01.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>程式語言不等於文字：結構、語意與執行的基本分離</h1>
+<h2>A Programming Language Is Not Text: The Fundamental Separation of Structure, Semantics, and Execution</h2>
+<p><strong>論文編號：</strong> PU-2-01<br><strong>系列：</strong>「程式宇宙書系」第 2 冊《程式語言的本質》<br><strong>作者：</strong> Neo.K with Aletheia<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>版本：</strong> v0.1<br><strong>日期：</strong> 2026 年 7 月 27 日  </p>
+<hr>
+<h2>摘要</h2>
+<p>前兩冊已分別回答：為何需要計算、計算世界與物理世界如何耦合，以及程式應如何被建模、切分、理解、驗證與維護。本冊轉向更深一層問題：程式語言究竟是什麼？</p>
+<p>現代程式語言通常以文字形式出現。開發者在編輯器中輸入字元，編譯器或解譯器解析字串，形成抽象語法樹，再轉換為中介表示、機器碼或 Runtime 行為。由於文字是最可見、最常操作、最容易儲存與版本控制的表面，程式語言長期被誤認為一種特殊文字。</p>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+\text{Programming Language}
+\neq
+\text{Text}
+}
+$$</p>
+<p>文字只是程式語言的一種序列化投影。程式語言更根本的存在結構是：</p>
+<h1>$$
+\boxed{
+\mathcal L_P</h1>
+<p>\left\langle
+\Sigma,
+\Gamma,
+\mathcal S,
+\mathcal M,
+\mathcal E,
+\mathcal V,
+\mathcal R
+\right\rangle
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\Sigma$：符號與基本構件；</li>
+<li>$\Gamma$：組合與形成規則；</li>
+<li>$\mathcal S$：結構空間；</li>
+<li>$\mathcal M$：語意映射；</li>
+<li>$\mathcal E$：效果與世界差分；</li>
+<li>$\mathcal V$：合法性、驗證與不變量；</li>
+<li>$\mathcal R$：Runtime／執行解釋。</li>
+</ul>
+<p>本文將程式語言分為三個不可互相化約的核心層：</p>
+<h1>$$
+\boxed{
+\text{Language}</h1>
+<p>\text{Structure}
++
+\text{Semantics}
++
+\text{Execution}
+}
+$$</p>
+<p>其中：</p>
+<ol>
+<li><strong>結構 Structure</strong>：哪些構件能以何種關係組成合法程式；</li>
+<li><strong>語意 Semantics</strong>：這些結構在問題世界中代表什麼；</li>
+<li><strong>執行 Execution</strong>：這些語意如何被 Runtime 轉化為狀態、事件與外部效果。</li>
+</ol>
+<p>文字只主要承擔結構的線性序列化。即使兩段文字不同，只要它們形成同一結構、保持同一語意並產生相容效果，就可能是同一程式的不同表達。反之，外觀相同的文字若置於不同作用域、版本、型別環境、權限、Runtime 或外部世界中，也可能具有不同語意與效果。</p>
+<p>本文因此提出「三重同一性」：</p>
+<h1>$$
+\operatorname{SameProgram}</h1>
+<p>\operatorname{StructuralEquivalence}
+\land
+\operatorname{SemanticEquivalence}
+\land
+\operatorname{EffectEquivalence}
+$$</p>
+<p>文本相同只提供：</p>
+<p>$$
+\operatorname{TextIdentity}
+$$</p>
+<p>而：</p>
+<p>$$
+\boxed{
+\operatorname{TextIdentity}
+\not\Rightarrow
+\operatorname{ProgramIdentity}
+}
+$$</p>
+<p>本文進一步區分：</p>
+<ul>
+<li>字元；</li>
+<li>token；</li>
+<li>語法節點；</li>
+<li>抽象語法樹；</li>
+<li>語意節點；</li>
+<li>中介表示；</li>
+<li>效果圖；</li>
+<li>執行計畫；</li>
+<li>Runtime 行為；</li>
+<li>世界差分。</li>
+</ul>
+<p>這些並不是同一對象的不同名稱，而是程式在不同投影與處理階段中的不同存在。</p>
+<p>本文提出「文本只是傳輸層」命題。文字適合：</p>
+<ul>
+<li>線性輸入；</li>
+<li>精確編輯；</li>
+<li>差異比較；</li>
+<li>儲存；</li>
+<li>傳輸；</li>
+<li>搜尋；</li>
+<li>版本控制。</li>
+</ul>
+<p>但文字不天然適合直接呈現：</p>
+<ul>
+<li>多重關係；</li>
+<li>並行；</li>
+<li>狀態機；</li>
+<li>權限；</li>
+<li>依賴；</li>
+<li>時間；</li>
+<li>多角色投影；</li>
+<li>失敗與補償；</li>
+<li>世界邊界。</li>
+</ul>
+<p>因此，大量註解、命名規則、資料夾、設計模式與文件，往往是在替文字投影補回其無法直接顯示的結構。</p>
+<p>本文亦提出「結構先於文字」原則：</p>
+<p>$$
+\boxed{
+\text{Intent}
+\rightarrow
+\text{Semantic Structure}
+\rightarrow
+\text{Executable Structure}
+\rightarrow
+\text{Textual Projection}
+}
+$$</p>
+<p>這不是要求所有程式語言取消文字，而是重新排列其本體順序：文字應是可編譯結構的一種編輯與交換介面，而不是程式存在的唯一權威來源。</p>
+<p>本文分析文字語言、視覺語言、AST 編輯器、表單式 DSL、工作流、狀態圖、資料流語言與 AI 意圖介面，指出真正差異不在於是否使用文字，而在於：</p>
+<ul>
+<li>哪一層是權威結構；</li>
+<li>哪些語意被直接表示；</li>
+<li>哪些內容必須靠推論；</li>
+<li>哪些效果能被驗證；</li>
+<li>哪些結構可被多重投影；</li>
+<li>哪些修改能保持語意身份。</li>
+</ul>
+<p>本文也處理自然語言與程式語言的界線。自然語言具有高度意圖表達力，卻常存在歧義、上下文依賴與不可直接執行；傳統程式語言具有精確語法與執行性，卻要求人類先把問題壓縮為機器可接受結構。未來程式語言不必在兩者間二選一，而可建立：</p>
+<p>$$
+\boxed{
+\text{Intent Layer}
+\rightarrow
+\text{Verified Semantic IR}
+\rightarrow
+\text{Multiple Executable Projections}
+}
+$$</p>
+<p>本文使用條件判斷、資料查詢、工作流、UI、AI Agent 與物理裝置控制等案例，說明同一意圖如何具有多種文字與非文字投影。本文最後提出可證偽研究綱領，包括文本—結構漂移、跨表示語意保持、AST 編輯效率、語意縮放、程式同一性判定、自然語言到 IR 的歧義率、視覺語言規模限制、結構化版本控制與 AI 生成程式可驗證性。</p>
+<p>本文為下一篇〈符號作為算子〉奠定起點：既然程式語言不是文字，那麼符號就不應只被理解為靜態字元，而應被理解為帶有輸入、輸出、前置條件、效果、組合律與驗證規則的算子。</p>
+<p><strong>關鍵詞：</strong> 程式語言本體論、文字投影、結構先於文字、語意、中介表示、AST、後文本程式語言、意圖語言</p>
+<hr>
+<h2>Abstract</h2>
+<p>This paper argues that a programming language is not text. Text is only one serialization and editing projection of a deeper language structure.</p>
+<p>A programming language is modeled as:</p>
+<h1>$$
+\mathcal L_P</h1>
+<p>\left\langle
+\Sigma,
+\Gamma,
+\mathcal S,
+\mathcal M,
+\mathcal E,
+\mathcal V,
+\mathcal R
+\right\rangle
+$$</p>
+<p>The paper separates structure, semantics, and execution; distinguishes text identity from program identity; and analyzes tokens, syntax trees, semantic nodes, intermediate representations, effect graphs, execution plans, and world differences as distinct layers.</p>
+<p>It proposes that intent should be translated into verified semantic structure and then projected into one or more textual, visual, or executable representations.</p>
+<p><strong>Keywords:</strong> programming language ontology, text projection, structure before text, semantics, intermediate representation, post-textual programming</p>
+<hr>
+<h1>一、問題的提出：我們看見文字，所以誤以為語言就是文字</h1>
+<p>開發者通常透過文字接觸程式語言。</p>
+<p>例如：</p>
+<pre><code class="language-python">if balance &gt;= amount:
+    balance -= amount
+</code></pre>
+<p>肉眼看到的是：</p>
+<ul>
+<li>字元；</li>
+<li>空格；</li>
+<li>換行；</li>
+<li>關鍵字；</li>
+<li>標點；</li>
+<li>變數名稱。</li>
+</ul>
+<p>但真正執行時，Runtime 並不是直接理解「這一串字」。</p>
+<p>它通常需要經過：</p>
+<pre><code class="language-text">文字
+→ token
+→ 語法結構
+→ 名稱解析
+→ 型別與效果檢查
+→ 中介表示
+→ 執行計畫
+→ Runtime 行為
+</code></pre>
+<p>所以文字是入口，不是全部本體。</p>
+<hr>
+<h1>二、程式語言的七元結構</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+\mathcal L_P</h1>
+<p>\left\langle
+\Sigma,
+\Gamma,
+\mathcal S,
+\mathcal M,
+\mathcal E,
+\mathcal V,
+\mathcal R
+\right\rangle
+}
+$$</p>
+<h2>2.1 符號集合 $\Sigma$</h2>
+<p>包含：</p>
+<ul>
+<li>關鍵字；</li>
+<li>名稱；</li>
+<li>常值；</li>
+<li>操作符；</li>
+<li>型別；</li>
+<li>節點；</li>
+<li>圖形構件；</li>
+<li>結構標籤。</li>
+</ul>
+<h2>2.2 形成規則 $\Gamma$</h2>
+<p>決定哪些構件能以何種方式組合。</p>
+<h2>2.3 結構空間 $\mathcal S$</h2>
+<p>合法程式結構的集合。</p>
+<h2>2.4 語意映射 $\mathcal M$</h2>
+<p>把結構映射到：</p>
+<ul>
+<li>值；</li>
+<li>狀態；</li>
+<li>關係；</li>
+<li>行動；</li>
+<li>事件；</li>
+<li>世界意義。</li>
+</ul>
+<h2>2.5 效果集合 $\mathcal E$</h2>
+<p>描述程式可能：</p>
+<ul>
+<li>讀寫狀態；</li>
+<li>呼叫外部工具；</li>
+<li>產生事件；</li>
+<li>修改權限；</li>
+<li>改變物理世界。</li>
+</ul>
+<h2>2.6 驗證系統 $\mathcal V$</h2>
+<p>包含：</p>
+<ul>
+<li>型別；</li>
+<li>不變量；</li>
+<li>前置條件；</li>
+<li>權限；</li>
+<li>效果限制；</li>
+<li>組合合法性。</li>
+</ul>
+<h2>2.7 Runtime $\mathcal R$</h2>
+<p>決定結構如何被實際解釋與執行。</p>
+<hr>
+<h1>三、結構、語意與執行</h1>
+<p>本文提出：</p>
+<h1>$$
+\boxed{
+\text{Language}</h1>
+<p>\text{Structure}
++
+\text{Semantics}
++
+\text{Execution}
+}
+$$</p>
+<h2>3.1 結構</h2>
+<p>回答：</p>
+<pre><code class="language-text">哪些東西可以組合？
+如何形成合法表達？
+</code></pre>
+<h2>3.2 語意</h2>
+<p>回答：</p>
+<pre><code class="language-text">這個結構代表什麼？
+它引用哪個世界對象？
+</code></pre>
+<h2>3.3 執行</h2>
+<p>回答：</p>
+<pre><code class="language-text">Runtime 如何把此結構轉成狀態變化與效果？
+</code></pre>
+<h2>3.4 三者分離的必要</h2>
+<p>語法合法的程式可能沒有合法語意。</p>
+<p>語意合法的程式可能未被授權執行。</p>
+<p>可執行的程式也可能產生不符合原始目的的效果。</p>
+<p>因此：</p>
+<p>$$
+StructuralValidity
+\not\Rightarrow
+SemanticValidity
+\not\Rightarrow
+ExecutionLegitimacy
+$$</p>
+<hr>
+<h1>四、文字是序列化投影</h1>
+<h2>4.1 線性化</h2>
+<p>問題世界與程式結構通常具有：</p>
+<ul>
+<li>樹；</li>
+<li>圖；</li>
+<li>網路；</li>
+<li>多重依賴；</li>
+<li>並行；</li>
+<li>時間；</li>
+<li>作用域。</li>
+</ul>
+<p>文字則主要是線性序列：</p>
+<h1>$$
+T</h1>
+<p>\left[
+c_1,c_2,\ldots,c_n
+\right]
+$$</p>
+<p>因此，文字表示必須把非線性結構序列化。</p>
+<h2>4.2 序列化規則</h2>
+<p>縮排、括號、分隔符、名稱與關鍵字，都是用線性符號重建結構的方法。</p>
+<h2>4.3 文本投影</h2>
+<p>設程式結構為 $P_s$，則文字投影為：</p>
+<h1>$$
+T_L</h1>
+<p>Serialize_L
+\left(
+P_s
+\right)
+$$</p>
+<p>解析則為：</p>
+<h1>$$
+Parse_L
+\left(
+T_L
+\right)</h1>
+<p>P_s&#39;
+$$</p>
+<p>理想上：</p>
+<p>$$
+P_s&#39;
+\cong
+P_s
+$$</p>
+<h2>4.4 投影損失</h2>
+<p>文字通常不能直接保存所有：</p>
+<ul>
+<li>設計理由；</li>
+<li>問題世界身份；</li>
+<li>權限；</li>
+<li>外部證據；</li>
+<li>圖形位置；</li>
+<li>多角色視圖；</li>
+<li>Runtime 觀測；</li>
+<li>歷史來源。</li>
+</ul>
+<p>這些內容常被放入註解、文件或外部工具。</p>
+<h2>4.5 格式不是語意</h2>
+<p>不同空格、換行與括號風格，可能形成相同結構。</p>
+<p>因此：</p>
+<p>$$
+TextDifference
+\not\Rightarrow
+ProgramDifference
+$$</p>
+<hr>
+<h1>五、從字元到世界效果</h1>
+<p>程式的典型轉換鏈可表示為：</p>
+<p>$$
+Characters
+\rightarrow
+Tokens
+\rightarrow
+Syntax
+\rightarrow
+SemanticStructure
+\rightarrow
+IR
+\rightarrow
+ExecutionPlan
+\rightarrow
+Effects
+\rightarrow
+WorldDifference
+$$</p>
+<h2>5.1 字元 Characters</h2>
+<p>純粹編碼單位。</p>
+<h2>5.2 Token</h2>
+<p>具有詞法類型的符號單位，例如：</p>
+<ul>
+<li>identifier；</li>
+<li>number；</li>
+<li>operator；</li>
+<li>keyword。</li>
+</ul>
+<h2>5.3 語法節點 Syntax Node</h2>
+<p>表達結構關係，例如：</p>
+<ul>
+<li>條件；</li>
+<li>呼叫；</li>
+<li>宣告；</li>
+<li>區塊；</li>
+<li>型別。</li>
+</ul>
+<h2>5.4 語意結構 Semantic Structure</h2>
+<p>將名稱與問題世界對象、作用域、型別、權限與效果連接。</p>
+<h2>5.5 中介表示 IR</h2>
+<p>為分析、驗證、最佳化或多後端生成建立的結構。</p>
+<h2>5.6 執行計畫</h2>
+<p>確定：</p>
+<ul>
+<li>順序；</li>
+<li>資源；</li>
+<li>並行；</li>
+<li>工具；</li>
+<li>交易；</li>
+<li>失敗處理。</li>
+</ul>
+<h2>5.7 效果</h2>
+<p>Runtime 實際讀寫狀態、發布事件或調用外部世界。</p>
+<h2>5.8 世界差分</h2>
+<h1>$$
+\Delta W</h1>
+<h2>W_{t+1}</h2>
+<p>W_t
+$$</p>
+<p>最終程式價值不在於文字被解析，而在於世界是否以合法方式改變。</p>
+<hr>
+<h1>六、各層不是同一對象</h1>
+<h2>6.1 Token 不等於語法節點</h2>
+<p>同一 token 可以在不同結構中具有不同位置。</p>
+<h2>6.2 語法節點不等於語意節點</h2>
+<p>名稱 <code>user</code> 只有在名稱解析與領域連結後，才知道指向哪個對象。</p>
+<h2>6.3 AST 不等於 IR</h2>
+<p>AST 通常保留來源語言結構；IR 可重新組織、正規化或降低抽象層次。</p>
+<h2>6.4 IR 不等於執行</h2>
+<p>IR 仍可能：</p>
+<ul>
+<li>未排程；</li>
+<li>未配置資源；</li>
+<li>未授權；</li>
+<li>未部署；</li>
+<li>未連接外部服務。</li>
+</ul>
+<h2>6.5 執行不等於目的完成</h2>
+<p>Runtime 成功執行，不代表世界效果或原始意圖完成。</p>
+<hr>
+<h1>七、程式同一性的三個層級</h1>
+<p>本文提出：</p>
+<h1>$$
+\operatorname{SameProgram}</h1>
+<p>\operatorname{StructuralEquivalence}
+\land
+\operatorname{SemanticEquivalence}
+\land
+\operatorname{EffectEquivalence}
+$$</p>
+<h2>7.1 結構等價</h2>
+<p>兩個表示形成相容的抽象結構。</p>
+<h2>7.2 語意等價</h2>
+<p>它們指向相同問題世界概念、規則與狀態。</p>
+<h2>7.3 效果等價</h2>
+<p>在明示條件下，它們產生相容世界差分與失敗語意。</p>
+<h2>7.4 文本同一性不足</h2>
+<p>同一份文字置於不同：</p>
+<ul>
+<li>作用域；</li>
+<li>套件版本；</li>
+<li>編譯器；</li>
+<li>設定；</li>
+<li>資料；</li>
+<li>權限；</li>
+<li>Runtime；</li>
+</ul>
+<p>可能產生不同效果。</p>
+<p>所以：</p>
+<p>$$
+\boxed{
+TextIdentity
+\not\Rightarrow
+ProgramIdentity
+}
+$$</p>
+<h2>7.5 文本差異也不足</h2>
+<p>重命名變數、重新格式化或改寫控制流，不必改變程式語意。</p>
+<hr>
+<h1>八、語言的權威結構</h1>
+<h2>8.1 Source of Truth</h2>
+<p>傳統專案常把文字來源碼視為唯一權威。</p>
+<h2>8.2 其他可能權威</h2>
+<p>程式也可能以以下結構為權威：</p>
+<ul>
+<li>schema；</li>
+<li>狀態機；</li>
+<li>規則表；</li>
+<li>AST；</li>
+<li>Intent IR；</li>
+<li>工作流圖；</li>
+<li>形式規格；</li>
+<li>可視節點圖。</li>
+</ul>
+<h2>8.3 生成式來源碼</h2>
+<p>若來源碼由更高層結構生成，手動修改生成檔會造成投影分裂。</p>
+<h2>8.4 權威層必須明示</h2>
+<p>完整工具鏈應說明：</p>
+<pre><code class="language-text">哪一層可以被人類修改？
+哪一層可被重新生成？
+哪一層保存語意身份？
+衝突時以何者為準？
+</code></pre>
+<h2>8.5 多權威風險</h2>
+<p>若文字、圖形、schema 與自然語言規格都能獨立修改，卻沒有同步協議，系統會產生多個互相競爭的真相。</p>
+<hr>
+<h1>九、文字的優勢</h1>
+<p>本文並不否定文字。</p>
+<h2>9.1 高密度</h2>
+<p>熟練使用者可以快速輸入複雜結構。</p>
+<h2>9.2 精確</h2>
+<p>字元序列易於解析、比較與重現。</p>
+<h2>9.3 可版本控制</h2>
+<p>文字差異工具成熟。</p>
+<h2>9.4 易搜尋</h2>
+<p>名稱與模式可被快速查詢。</p>
+<h2>9.5 易傳輸</h2>
+<p>幾乎所有系統都能處理文字。</p>
+<h2>9.6 可組合工具鏈</h2>
+<p>編輯器、編譯器、格式化、靜態分析與建置系統高度成熟。</p>
+<p>因此，問題不是取消文字，而是停止把文字誤認為全部程式結構。</p>
+<hr>
+<h1>十、文字的結構限制</h1>
+<h2>10.1 關係隱藏</h2>
+<p>跨檔案、跨模組與跨時間關係通常需由工具重新推導。</p>
+<h2>10.2 多尺度困難</h2>
+<p>文字瀏覽器不容易同時呈現世界、模組、契約與 Runtime。</p>
+<h2>10.3 並行序列化</h2>
+<p>並行結構常被迫寫成某種線性順序。</p>
+<h2>10.4 權限與效果隱藏</h2>
+<p>許多語言不能直接從語法看出外部效果、授權與不可逆性。</p>
+<h2>10.5 失敗散落</h2>
+<p>失敗可能分散於：</p>
+<ul>
+<li>exception；</li>
+<li>callback；</li>
+<li>retry；</li>
+<li>middleware；</li>
+<li>queue；</li>
+<li>人工流程。</li>
+</ul>
+<h2>10.6 設計理由缺席</h2>
+<p>來源碼通常表達「如何」，不完整表達「為何」。</p>
+<hr>
+<h1>十一、視覺語言不自動優於文字語言</h1>
+<h2>11.1 視覺化的優勢</h2>
+<p>視覺語言可以直接表達：</p>
+<ul>
+<li>節點；</li>
+<li>邊；</li>
+<li>狀態；</li>
+<li>流程；</li>
+<li>依賴；</li>
+<li>並行；</li>
+<li>分支。</li>
+</ul>
+<h2>11.2 視覺化的限制</h2>
+<p>當節點數量上升，可能產生：</p>
+<ul>
+<li>畫布爆炸；</li>
+<li>連線交叉；</li>
+<li>精確編輯困難；</li>
+<li>版本差異不易閱讀；</li>
+<li>鍵盤效率下降；</li>
+<li>抽象能力不足。</li>
+</ul>
+<h2>11.3 視覺不等於結構</h2>
+<p>圖形介面若只是把文字函式變成方塊，未必真正改變語言本體。</p>
+<h2>11.4 混合語言</h2>
+<p>成熟語言可以讓：</p>
+<ul>
+<li>文字編輯局部結構；</li>
+<li>圖形呈現全域關係；</li>
+<li>表格編輯規則；</li>
+<li>狀態圖編輯流程；</li>
+<li>自然語言描述意圖；</li>
+<li>IR 保存權威語意。</li>
+</ul>
+<h2>11.5 投影同步</h2>
+<p>不同投影必須由共同結構生成：</p>
+<h1>$$
+V_{\mathrm{text}}</h1>
+<p>\pi_{\mathrm{text}}
+\left(
+S^\ast
+\right)
+$$</p>
+<h1>$$
+V_{\mathrm{visual}}</h1>
+<p>\pi_{\mathrm{visual}}
+\left(
+S^\ast
+\right)
+$$</p>
+<p>其中 $S^\ast$ 為共同權威結構。</p>
+<hr>
+<h1>十二、結構化編輯</h1>
+<h2>12.1 文字編輯</h2>
+<p>文字編輯允許暫時產生不合法中間狀態。</p>
+<p>例如輸入括號過程中，程式短暫無法解析。</p>
+<h2>12.2 結構化編輯</h2>
+<p>結構化編輯直接操作：</p>
+<ul>
+<li>節點；</li>
+<li>關係；</li>
+<li>型別；</li>
+<li>作用域；</li>
+<li>效果；</li>
+<li>契約。</li>
+</ul>
+<h2>12.3 優點</h2>
+<ul>
+<li>非法結構可被限制；</li>
+<li>重構更安全；</li>
+<li>節點身份可跨修改保存；</li>
+<li>多投影同步較容易；</li>
+<li>AI 可直接修改語意節點。</li>
+</ul>
+<h2>12.4 代價</h2>
+<ul>
+<li>自由輸入受限；</li>
+<li>不完整想法難以暫存；</li>
+<li>工具複雜；</li>
+<li>大量細節操作可能笨重；</li>
+<li>使用者需理解結構。</li>
+</ul>
+<h2>12.5 半結構狀態</h2>
+<p>理想編輯器應允許：</p>
+<pre><code class="language-text">hole
+unknown
+draft-node
+unresolved-reference
+type-to-be-inferred
+</code></pre>
+<p>使不完整意圖能存在，而不必退回無結構文字。</p>
+<hr>
+<h1>十三、語法洞與未完成程式</h1>
+<h2>13.1 未完成不等於錯誤</h2>
+<p>程式設計本來就是逐步形成結構的過程。</p>
+<h2>13.2 Hole</h2>
+<p>定義：</p>
+<p>$$
+\Box_T
+$$</p>
+<p>表示需要某型別或語意的未完成位置。</p>
+<h2>13.3 Hole 的資訊</h2>
+<p>可保存：</p>
+<ul>
+<li>預期型別；</li>
+<li>可用變數；</li>
+<li>前置狀態；</li>
+<li>允許效果；</li>
+<li>未決問題；</li>
+<li>來源意圖。</li>
+</ul>
+<h2>13.4 AI 補全</h2>
+<p>AI 不應只猜下一段文字，而可針對 Hole 生成候選結構，並附：</p>
+<ul>
+<li>語意；</li>
+<li>依賴；</li>
+<li>效果；</li>
+<li>風險；</li>
+<li>驗證條件。</li>
+</ul>
+<h2>13.5 未完成程式作為合法狀態</h2>
+<p>這使程式工具能正式處理「正在思考」的結構，而非只接受完整可編譯文字。</p>
+<hr>
+<h1>十四、自然語言與程式語言</h1>
+<h2>14.1 自然語言的優勢</h2>
+<p>自然語言擅長表達：</p>
+<ul>
+<li>目的；</li>
+<li>背景；</li>
+<li>例外；</li>
+<li>價值；</li>
+<li>模糊需求；</li>
+<li>尚未決定內容。</li>
+</ul>
+<h2>14.2 自然語言的限制</h2>
+<p>它具有：</p>
+<ul>
+<li>歧義；</li>
+<li>省略；</li>
+<li>上下文依賴；</li>
+<li>代詞；</li>
+<li>隱含常識；</li>
+<li>不一致；</li>
+<li>難以直接驗證。</li>
+</ul>
+<h2>14.3 程式語言的優勢</h2>
+<p>傳統程式語言要求明確：</p>
+<ul>
+<li>名稱；</li>
+<li>結構；</li>
+<li>型別；</li>
+<li>順序；</li>
+<li>作用域；</li>
+<li>操作。</li>
+</ul>
+<h2>14.4 程式語言的限制</h2>
+<p>人類必須先完成大量轉譯，把世界與意圖壓縮為機器結構。</p>
+<h2>14.5 不是互相取代</h2>
+<p>未來架構可以是：</p>
+<p>$$
+\boxed{
+NaturalIntent
+\rightarrow
+SemanticIR
+\rightarrow
+Verification
+\rightarrow
+ExecutableProjection
+}
+$$</p>
+<p>自然語言提供意圖與背景；結構化 IR 消除歧義、保留責任並建立可驗證執行。</p>
+<hr>
+<h1>十五、意圖到結構的編譯</h1>
+<h2>15.1 原始意圖</h2>
+<p>例如：</p>
+<pre><code class="language-text">當付款真正成功後，
+把訂單標成已付款，
+但不要因重複通知而重複處理。
+</code></pre>
+<h2>15.2 語意展開</h2>
+<p>需要解析：</p>
+<ul>
+<li>付款真正成功的證據；</li>
+<li>訂單權威狀態；</li>
+<li>事件身份；</li>
+<li>冪等；</li>
+<li>前置條件；</li>
+<li>失敗與未知結果；</li>
+<li>責任模組。</li>
+</ul>
+<h2>15.3 中介結構</h2>
+<pre><code class="language-yaml">intent_ir:
+  action: &quot;record-payment&quot;
+  trigger: &quot;PaymentAuthorized&quot;
+  target: &quot;Order&quot;
+  precondition: &quot;order.status == payment-pending&quot;
+  idempotency: &quot;payment-event-id&quot;
+  effect: &quot;order.status = paid&quot;
+  unknown_outcome: &quot;human-reconciliation&quot;
+</code></pre>
+<h2>15.4 生成投影</h2>
+<p>同一 IR 可以生成：</p>
+<ul>
+<li>程式碼；</li>
+<li>狀態圖；</li>
+<li>測試；</li>
+<li>契約；</li>
+<li>文件；</li>
+<li>監控；</li>
+<li>稽核規則。</li>
+</ul>
+<h2>15.5 人類確認</h2>
+<p>涉及價值、權限與不可逆效果時，編譯器不應只追求自動完成，而應要求明示確認。</p>
+<hr>
+<h1>十六、語意 IR</h1>
+<h2>16.1 為何需要 IR</h2>
+<p>IR 可以作為自然意圖與具體語言之間的穩定橋梁。</p>
+<h2>16.2 語意 IR 應保存</h2>
+<ul>
+<li>問題世界身份；</li>
+<li>實體與關係；</li>
+<li>狀態；</li>
+<li>行動；</li>
+<li>事件；</li>
+<li>規則；</li>
+<li>權限；</li>
+<li>效果；</li>
+<li>失敗；</li>
+<li>證據；</li>
+<li>來源意圖。</li>
+</ul>
+<h2>16.3 IR 不應只是低階指令</h2>
+<p>傳統 IR 主要服務編譯最佳化。</p>
+<p>意圖時代的 IR 還應服務：</p>
+<ul>
+<li>語意保持；</li>
+<li>多後端；</li>
+<li>人類理解；</li>
+<li>AI 修改；</li>
+<li>驗證；</li>
+<li>治理；</li>
+<li>世界差分分析。</li>
+</ul>
+<h2>16.4 IR 版本</h2>
+<p>語意 IR 也需要：</p>
+<ul>
+<li>schema；</li>
+<li>語意版本；</li>
+<li>遷移；</li>
+<li>相容；</li>
+<li>歷史；</li>
+<li>差異。</li>
+</ul>
+<hr>
+<h1>十七、效果應成為語言的一等結構</h1>
+<h2>17.1 傳統隱藏效果</h2>
+<p>函式名稱與回傳型別常無法看出：</p>
+<ul>
+<li>寫資料庫；</li>
+<li>寄信；</li>
+<li>付款；</li>
+<li>發布；</li>
+<li>修改權限；</li>
+<li>控制設備。</li>
+</ul>
+<h2>17.2 效果標記</h2>
+<p>語言可明示：</p>
+<pre><code class="language-text">reads Order
+writes Payment
+emits PaymentAuthorized
+calls ExternalBank
+requires HumanApproval
+irreversible SendMessage
+</code></pre>
+<h2>17.3 效果驗證</h2>
+<p>編譯器或 Runtime 可檢查：</p>
+<ul>
+<li>是否有權；</li>
+<li>是否超出模組責任；</li>
+<li>是否需要交易；</li>
+<li>是否需冪等；</li>
+<li>是否可回復；</li>
+<li>是否需外部證據。</li>
+</ul>
+<h2>17.4 世界差分預覽</h2>
+<p>執行前可產生：</p>
+<p>$$
+\widehat{\Delta W}
+$$</p>
+<p>顯示預期影響與風險。</p>
+<hr>
+<h1>十八、作用域不只是名稱可見性</h1>
+<h2>18.1 傳統作用域</h2>
+<p>決定變數名稱在哪裡可引用。</p>
+<h2>18.2 世界作用域</h2>
+<p>未來語言還可描述：</p>
+<ul>
+<li>哪個問題世界；</li>
+<li>哪個模組責任；</li>
+<li>哪個身份；</li>
+<li>哪個權限；</li>
+<li>哪個時間；</li>
+<li>哪個環境；</li>
+<li>哪個資料敏感域。</li>
+</ul>
+<h2>18.3 效果作用域</h2>
+<p>某一操作只能作用於明示資源與範圍。</p>
+<h2>18.4 Agent 作用域</h2>
+<p>Agent 生成的程式必須繼承：</p>
+<ul>
+<li>工具權限；</li>
+<li>資料作用域；</li>
+<li>預算；</li>
+<li>時間；</li>
+<li>不可逆限制。</li>
+</ul>
+<hr>
+<h1>十九、跨投影修改與同步</h1>
+<h2>19.1 多投影問題</h2>
+<p>同一程式可能同時具有：</p>
+<ul>
+<li>文字；</li>
+<li>圖形；</li>
+<li>表格；</li>
+<li>狀態圖；</li>
+<li>自然語言說明；</li>
+<li>Runtime 設定。</li>
+</ul>
+<h2>19.2 修改傳播</h2>
+<p>若使用者在視覺圖中修改節點，其他投影應由共同結構重新生成。</p>
+<p>$$
+S^\ast
+\xrightarrow{\pi_1}
+V_1
+$$</p>
+<p>$$
+S^\ast
+\xrightarrow{\pi_2}
+V_2
+$$</p>
+<p>而不是：</p>
+<p>$$
+V_1
+\leftrightarrow
+V_2
+$$</p>
+<p>透過大量脆弱雙向轉換互相同步。</p>
+<h2>19.3 Round-Trip</h2>
+<p>理想上：</p>
+<p>$$
+Parse
+\left(
+Print
+\left(
+S^\ast
+\right)
+\right)
+\cong
+S^\ast
+$$</p>
+<p>但註解、格式、位置與非語意資訊可能需要額外保存。</p>
+<h2>19.4 修改衝突</h2>
+<p>若兩個投影同時修改，應進行：</p>
+<ul>
+<li>節點身份比較；</li>
+<li>語意差分；</li>
+<li>衝突定位；</li>
+<li>人類選擇；</li>
+<li>分支與合併。</li>
+</ul>
+<h2>19.5 語意差分</h2>
+<p>傳統文字 diff 顯示字元變化。</p>
+<p>語意 diff 應顯示：</p>
+<ul>
+<li>新增何種世界狀態；</li>
+<li>改變哪條規則；</li>
+<li>新增何種效果；</li>
+<li>哪個契約被破壞；</li>
+<li>哪些主體受到影響。</li>
+</ul>
+<hr>
+<h1>二十、編譯不只是翻譯語法</h1>
+<h2>20.1 傳統理解</h2>
+<p>編譯通常被理解為：</p>
+<p>$$
+Source
+\rightarrow
+Target
+$$</p>
+<h2>20.2 擴展理解</h2>
+<p>意圖時代的編譯應包含：</p>
+<h1>$$
+\boxed{
+Compile</h1>
+<p>Interpret
++
+Disambiguate
++
+Validate
++
+Authorize
++
+Lower
++
+Generate
++
+Verify
+}
+$$</p>
+<h2>20.3 Interpret</h2>
+<p>理解結構所指向的問題世界意義。</p>
+<h2>20.4 Disambiguate</h2>
+<p>把未決、歧義與衝突轉化為選擇點。</p>
+<h2>20.5 Validate</h2>
+<p>檢查型別、狀態、規則、權限與效果。</p>
+<h2>20.6 Authorize</h2>
+<p>確認生成與執行是否在授權範圍。</p>
+<h2>20.7 Lower</h2>
+<p>將高層語意逐步降低為可執行結構。</p>
+<h2>20.8 Generate</h2>
+<p>生成程式碼、配置、工作流、測試與可視投影。</p>
+<h2>20.9 Verify</h2>
+<p>驗證投影保持原始語意與邊界。</p>
+<hr>
+<h1>二十一、案例一：條件判斷</h1>
+<p>原始文字：</p>
+<pre><code class="language-python">if age &gt;= 18:
+    allow()
+</code></pre>
+<p>文字沒有直接回答：</p>
+<ul>
+<li><code>age</code> 來自哪裡；</li>
+<li>何時測量；</li>
+<li><code>18</code> 是法律、政策還是暫時規則；</li>
+<li><code>allow</code> 允許什麼；</li>
+<li>是否有例外；</li>
+<li>誰可修改門檻。</li>
+</ul>
+<p>語意結構應進一步表示：</p>
+<pre><code class="language-yaml">rule:
+  subject: &quot;applicant&quot;
+  property: &quot;verified-age&quot;
+  threshold: 18
+  authority: &quot;policy-v3&quot;
+  effect: &quot;grant-standard-access&quot;
+  exceptions:
+    - &quot;guardian-approved&quot;
+</code></pre>
+<p>因此，文字條件只是規範結構的低階投影。</p>
+<hr>
+<h1>二十二、案例二：資料查詢</h1>
+<p>SQL：</p>
+<pre><code class="language-sql">SELECT * FROM orders WHERE status = &#39;paid&#39;;
+</code></pre>
+<p>文字結構清楚，但仍需知道：</p>
+<ul>
+<li><code>orders</code> 是權威狀態還是投影；</li>
+<li><code>paid</code> 的語意；</li>
+<li>是否包含結算未完成；</li>
+<li>查詢者是否有權看全部訂單；</li>
+<li>時間與新鮮度；</li>
+<li>是否包含已刪除或爭議資料。</li>
+</ul>
+<p>同一 SQL 在不同 schema 與治理下，代表不同程式。</p>
+<hr>
+<h1>二十三、案例三：工作流</h1>
+<p>文字可以寫出步驟：</p>
+<pre><code class="language-text">approve
+deploy
+verify
+publish
+</code></pre>
+<p>但工作流圖更容易直接表示：</p>
+<ul>
+<li>分支；</li>
+<li>並行；</li>
+<li>等待；</li>
+<li>超時；</li>
+<li>補償；</li>
+<li>人工節點；</li>
+<li>回復。</li>
+</ul>
+<p>理想語言可讓同一工作流結構投影成：</p>
+<ul>
+<li>視覺圖；</li>
+<li>YAML；</li>
+<li>程式碼；</li>
+<li>執行引擎設定；</li>
+<li>事故回放。</li>
+</ul>
+<hr>
+<h1>二十四、案例四：使用者介面</h1>
+<p>UI 也可以被視為程式語言投影。</p>
+<p>按鈕、表單與流程表示：</p>
+<ul>
+<li>可行動集合；</li>
+<li>輸入型別；</li>
+<li>狀態；</li>
+<li>權限；</li>
+<li>預設；</li>
+<li>操作效果。</li>
+</ul>
+<p>若 UI、後端契約與世界狀態來自不同結構，便容易產生：</p>
+<ul>
+<li>畫面顯示可做但後端拒絕；</li>
+<li>後端支援但 UI 無入口；</li>
+<li>成功文案與真實完成層級不同。</li>
+</ul>
+<p>共同語意 IR 可以生成 UI 與後端契約，降低此類漂移。</p>
+<hr>
+<h1>二十五、案例五：AI Agent</h1>
+<p>使用者說：</p>
+<pre><code class="language-text">把網站更新後發布。
+</code></pre>
+<p>Agent 不能直接把自然語言當成已完成程式。</p>
+<p>它需要展開：</p>
+<ul>
+<li>哪個網站；</li>
+<li>更新內容；</li>
+<li>測試；</li>
+<li>發布環境；</li>
+<li>權限；</li>
+<li>是否需要批准；</li>
+<li>回滾；</li>
+<li>成功證據。</li>
+</ul>
+<p>Agent 應產生可審核 Intent IR，而不是直接生成並執行文字指令。</p>
+<hr>
+<h1>二十六、案例六：物理裝置控制</h1>
+<p>文字：</p>
+<pre><code class="language-python">motor.start()
+</code></pre>
+<p>無法單獨表達：</p>
+<ul>
+<li>哪台馬達；</li>
+<li>目前物理狀態；</li>
+<li>安全條件；</li>
+<li>人員是否在危險區；</li>
+<li>最大轉速；</li>
+<li>停止路徑；</li>
+<li>感測器是否可信；</li>
+<li>命令送出是否等於馬達啟動。</li>
+</ul>
+<p>物理耦合語言必須把效果、感測、授權與安全不變量提升為一等結構。</p>
+<hr>
+<h1>二十七、主要失敗模式</h1>
+<ol>
+<li><strong>文字本體化：</strong> 把字元序列當成程式語言全部。</li>
+<li><strong>語法即語意：</strong> 可解析便宣稱具有正確世界意義。</li>
+<li><strong>語意即執行：</strong> 有明確意義便假定可合法執行。</li>
+<li><strong>執行即目的：</strong> Runtime 完成便宣稱原始意圖完成。</li>
+<li><strong>文本同一即程式同一：</strong> 忽略作用域、版本、權限與 Runtime。</li>
+<li><strong>文本差異即程式差異：</strong> 把格式與重命名當成語意變更。</li>
+<li><strong>AST 即完整本體：</strong> 忽略領域身份、效果、權限與證據。</li>
+<li><strong>IR 只服務最佳化：</strong> 缺少意圖、責任與世界語意。</li>
+<li><strong>單一來源真相迷思：</strong> 多投影能獨立修改卻無同步協議。</li>
+<li><strong>生成檔手改：</strong> 修改低階投影造成權威結構分裂。</li>
+<li><strong>視覺語言萬能論：</strong> 畫布節點增加後失去可讀性與精確性。</li>
+<li><strong>文字語言萬能論：</strong> 把所有非線性結構交給人腦推導。</li>
+<li><strong>自然語言直接執行：</strong> 未消除歧義、權限與不可逆風險。</li>
+<li><strong>AI 補全文字化：</strong> 只預測下一 token，不理解結構 Hole。</li>
+<li><strong>不允許未完成結構：</strong> 使用者只能在完整程式與純文字之間切換。</li>
+<li><strong>效果隱藏：</strong> 函式看似純粹，實際修改外部世界。</li>
+<li><strong>權限外掛化：</strong> 授權完全位於語言結構之外。</li>
+<li><strong>作用域狹化：</strong> 只管理名稱，不管理世界、資料與效果範圍。</li>
+<li><strong>文字 diff 僭位：</strong> 字元變更被當成完整影響分析。</li>
+<li><strong>投影漂移：</strong> 文字、圖、契約、UI 與 Runtime 使用不同語意。</li>
+<li><strong>編譯只是轉碼：</strong> 忽略消歧、驗證、授權與效果證明。</li>
+<li><strong>物理命令等於物理效果：</strong> 發出控制指令便宣稱裝置已完成操作。</li>
+</ol>
+<hr>
+<h1>二十八、可證偽研究綱領</h1>
+<h2>28.1 文本—結構漂移率</h2>
+<p>比較文字表示與權威 AST／IR：</p>
+<h1>$$
+R_{TS}</h1>
+<p>\frac{
+|\text{semantic structures not faithfully represented in text}|
+}{
+|\text{sampled semantic structures}|
+}
+$$</p>
+<h2>28.2 跨表示語意保持</h2>
+<p>將同一權威結構投影為文字、圖形與表格，再由不同投影重建，測量：</p>
+<ul>
+<li>結構；</li>
+<li>語意；</li>
+<li>效果；</li>
+<li>失敗；</li>
+</ul>
+<p>的保持程度。</p>
+<h2>28.3 程式同一性判定</h2>
+<p>比較：</p>
+<ul>
+<li>文字 diff；</li>
+<li>AST diff；</li>
+<li>語意 diff；</li>
+<li>效果 diff；</li>
+</ul>
+<p>對真實變更影響的預測準確率。</p>
+<h2>28.4 結構化編輯效率</h2>
+<p>測量文字編輯與結構化編輯在：</p>
+<ul>
+<li>輸入速度；</li>
+<li>非法狀態；</li>
+<li>重構；</li>
+<li>大型變更；</li>
+<li>學習成本；</li>
+</ul>
+<p>上的差異。</p>
+<h2>28.5 Hole 輔助效果</h2>
+<p>比較一般文字補全與帶有型別、作用域、效果及意圖的結構 Hole，在 AI 生成正確率上的差異。</p>
+<h2>28.6 視覺語言規模限制</h2>
+<p>測量節點數、邊數與嵌套深度增加後，視覺編輯的理解速度與錯誤率。</p>
+<h2>28.7 混合投影效益</h2>
+<p>比較純文字、純視覺與共同 IR 多投影工具，在不同任務與角色上的表現。</p>
+<h2>28.8 自然語言歧義率</h2>
+<p>統計自然語言意圖轉換成語意 IR 時，需要：</p>
+<ul>
+<li>補充資訊；</li>
+<li>人類選擇；</li>
+<li>權限確認；</li>
+<li>例外定義；</li>
+</ul>
+<p>的比例。</p>
+<h2>28.9 IR 語意完整度</h2>
+<p>檢查 IR 是否保存：</p>
+<ul>
+<li>世界身份；</li>
+<li>狀態；</li>
+<li>行動；</li>
+<li>規則；</li>
+<li>權限；</li>
+<li>效果；</li>
+<li>失敗；</li>
+<li>證據；</li>
+<li>原始意圖。</li>
+</ul>
+<h2>28.10 投影同步錯誤率</h2>
+<p>統計文字、圖形、UI、契約與 Runtime 配置之間因獨立修改造成的漂移。</p>
+<h2>28.11 效果標記與事故率</h2>
+<p>研究明示外部效果、不可逆性與授權需求的語言，是否降低越權與重複操作事故。</p>
+<h2>28.12 語意差分價值</h2>
+<p>比較字元 diff 與語意 diff 對程式審查、影響分析與事故預防的效果。</p>
+<h2>28.13 AI 生成可驗證性</h2>
+<p>比較 AI 直接生成來源碼，以及先生成可驗證語意 IR 再投影來源碼的正確性、可解釋性與恢復性。</p>
+<h2>28.14 物理耦合語言</h2>
+<p>測量明示感測、命令、效果確認與安全不變量的語言，在裝置控制中的失敗辨識能力。</p>
+<hr>
+<h1>二十九、本文的二十二項命題</h1>
+<ol>
+<li>程式語言不等於文字。</li>
+<li>文字是程式結構的一種線性序列化投影。</li>
+<li>程式語言至少包含符號、形成規則、結構、語意、效果、驗證與 Runtime。</li>
+<li>結構合法不代表語意合法，語意合法不代表執行正當。</li>
+<li>字元、token、AST、語意節點、IR、執行計畫與世界差分是不同層級。</li>
+<li>文本同一不保證程式同一。</li>
+<li>文本差異不必然造成程式語意差異。</li>
+<li>程式同一性需要結構、語意與效果等價。</li>
+<li>文字具有高密度、精確、可搜尋與版本控制優勢，但不天然呈現多重關係與效果。</li>
+<li>視覺語言能直接表達關係，卻不自動優於文字語言。</li>
+<li>多種編輯投影應由共同權威結構生成。</li>
+<li>結構化編輯應允許 Hole、未知與未完成語意。</li>
+<li>AI 程式補全應針對語意結構，而非只預測下一段文字。</li>
+<li>自然語言適合表達意圖與背景，但不能未經消歧與驗證直接取得執行權。</li>
+<li>語意 IR 應成為意圖與多種可執行投影之間的穩定橋梁。</li>
+<li>未來 IR 不只服務最佳化，也服務語意保持、治理、驗證與多後端生成。</li>
+<li>外部效果、權限、不可逆性與證據應成為語言的一等結構。</li>
+<li>作用域應從名稱可見性擴展至世界、資料、效果、時間與權限範圍。</li>
+<li>語意差分比字元差分更接近真實程式變更。</li>
+<li>編譯應包含理解、消歧、驗證、授權、降低、生成與證明。</li>
+<li>來源碼可以繼續存在，但不應永久壟斷程式的權威本體。</li>
+<li></li>
+</ol>
+<p>$$
+\boxed{
+\text{程式語言真正表示的，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{不是一串等待機器閱讀的文字，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是一個能被多重投影、驗證並執行的}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{世界結構。}
+}
+$$</p>
+<hr>
+<h1>三十、與前後冊及後續論文的關係</h1>
+<h2>30.1 承接第 0 冊</h2>
+<p>第 0 冊指出意圖、計算與物理世界互不等同，任何表示都具有落差。</p>
+<p>本篇進一步指出，文字只是意圖與計算結構之間的其中一層表示，不能冒充完整程式本體。</p>
+<h2>30.2 承接第 1 冊</h2>
+<p>第 1 冊已建立：</p>
+<ul>
+<li>問題世界；</li>
+<li>狀態動力；</li>
+<li>責任模組；</li>
+<li>契約；</li>
+<li>外部結構記憶；</li>
+<li>失敗與恢復。</li>
+</ul>
+<p>本篇指出，未來程式語言應直接表示這些結構，而不是把它們全部壓縮進文字慣例、框架與人腦。</p>
+<h2>30.3 銜接 PU-2-02</h2>
+<p>下一篇〈符號作為算子〉將研究：</p>
+<ul>
+<li>符號如何從字元提升為操作結構；</li>
+<li>算子的輸入、輸出、前置條件與效果；</li>
+<li>算子如何組合；</li>
+<li>組合何時閉合；</li>
+<li>如何形成可驗證計算閉包；</li>
+<li>同一算子如何具有文字、圖形與機器表示。</li>
+</ul>
+<hr>
+<h1>三十一、結論：文字仍會存在，但不再壟斷程式本體</h1>
+<p>文字程式語言是計算史上極為成功的工具。</p>
+<p>它具有：</p>
+<ul>
+<li>低儲存成本；</li>
+<li>高輸入效率；</li>
+<li>精確語法；</li>
+<li>成熟工具鏈；</li>
+<li>容易搜尋、比較與傳輸。</li>
+</ul>
+<p>因此，後文本程式語言並不等於「沒有文字」。</p>
+<p>它真正意味的是：</p>
+<blockquote>
+<p><strong>程式的權威本體不再被限制為單一文字序列。</strong></p>
+</blockquote>
+<p>程式可以先以語意結構存在，再投影為：</p>
+<ul>
+<li>文字；</li>
+<li>視覺節點；</li>
+<li>狀態圖；</li>
+<li>表格；</li>
+<li>UI；</li>
+<li>契約；</li>
+<li>測試；</li>
+<li>Runtime 計畫；</li>
+<li>AI 可查詢結構。</li>
+</ul>
+<p>這些投影不是彼此競爭的獨立真相，而是共同結構面向不同角色與任務的表達。</p>
+<p>本文將程式語言重新定義為：</p>
+<h1>$$
+\boxed{
+\text{Programming Language}</h1>
+<p>\text{Constructible Structure}
++
+\text{World Semantics}
++
+\text{Executable Effects}
++
+\text{Validation Rules}
+}
+$$</p>
+<p>而文字的位置是：</p>
+<h1>$$
+\boxed{
+\text{Text}</h1>
+<p>\text{One Editable and Serializable Projection}
+}
+$$</p>
+<p>這個重新定位會改變程式設計方法。</p>
+<p>開發者不再只是寫字，而是在：</p>
+<ul>
+<li>建立節點；</li>
+<li>連接世界身份；</li>
+<li>限制合法組合；</li>
+<li>宣告效果；</li>
+<li>配置權限；</li>
+<li>保留未決；</li>
+<li>建立證據；</li>
+<li>生成多重投影。</li>
+</ul>
+<p>AI 也不應只作為更快的打字者。</p>
+<p>它應協助：</p>
+<ul>
+<li>從意圖展開結構；</li>
+<li>找出歧義；</li>
+<li>建立語意 IR；</li>
+<li>生成候選投影；</li>
+<li>驗證效果；</li>
+<li>說明世界差分；</li>
+<li>保留人類決策點。</li>
+</ul>
+<p>因此，第 2 冊的起始命題是：</p>
+<p>$$
+\boxed{
+\text{結構先於文字，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{語意先於執行，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{驗證先於世界改變。}
+}
+$$</p>
+<p>當程式語言被理解為可構造世界結構，而非特殊文字，語言設計才可能真正進入意圖、AI、多投影與物理耦合的下一階段。</p>
+<hr>
+<h1>附錄 A：程式語言七元描述</h1>
+<pre><code class="language-yaml">programming_language:
+  language_id: &quot;intent-structure-language&quot;
+
+  symbols:
+    - &quot;entity&quot;
+    - &quot;state&quot;
+    - &quot;action&quot;
+    - &quot;event&quot;
+    - &quot;effect&quot;
+    - &quot;evidence&quot;
+
+  formation_rules:
+    - &quot;action requires actor and target&quot;
+    - &quot;external effect requires authorization&quot;
+
+  structure:
+    authority: &quot;semantic-ir&quot;
+
+  semantics:
+    world_binding: true
+    identity_preserved: true
+
+  effects:
+    explicit: true
+    irreversible_marked: true
+
+  validation:
+    - &quot;type&quot;
+    - &quot;state&quot;
+    - &quot;permission&quot;
+    - &quot;effect&quot;
+    - &quot;evidence&quot;
+
+  runtime:
+    multiple_backends: true
+</code></pre>
+<hr>
+<h1>附錄 B：多投影結構</h1>
+<pre><code class="language-yaml">authoritative_structure:
+  node_id: &quot;payment-authorize-action&quot;
+  node_type: &quot;action&quot;
+
+  semantics:
+    actor: &quot;order-module&quot;
+    target: &quot;payment-attempt&quot;
+    precondition: &quot;order.payment_status == pending&quot;
+
+  effects:
+    external:
+      - &quot;request bank authorization&quot;
+    events:
+      - &quot;PaymentAuthorized&quot;
+      - &quot;PaymentDeclined&quot;
+      - &quot;PaymentOutcomeUnknown&quot;
+
+  projections:
+    text:
+      language: &quot;TypeScript&quot;
+    visual:
+      view: &quot;payment-workflow&quot;
+    contract:
+      format: &quot;OpenAPI-plus-semantics&quot;
+    test:
+      generated: true
+</code></pre>
+<hr>
+<h1>附錄 C：語意差分</h1>
+<pre><code class="language-yaml">semantic_diff:
+  change_id: &quot;payment-rule-change-04&quot;
+
+  text_diff:
+    lines_changed: 7
+
+  semantic_changes:
+    rule:
+      before: &quot;amount &lt;= order.total&quot;
+      after: &quot;amount == authoritative_order_total&quot;
+
+    effects:
+      added:
+        - &quot;PaymentMismatchRejected&quot;
+
+    affected:
+      contracts:
+        - &quot;authorize-payment-v2&quot;
+      views:
+        - &quot;payment-state-view&quot;
+      actors:
+        - &quot;customer&quot;
+        - &quot;support-agent&quot;
+
+  migration_required: true
+</code></pre>
+<hr>
+<h1>附錄 D：第 2 冊六篇位置</h1>
+<ol>
+<li><strong>PU-2-01　程式語言不等於文字：結構、語意與執行的基本分離</strong></li>
+<li>PU-2-02　符號作為算子：從靜態字元到可組合計算閉包</li>
+<li>PU-2-03　語法—語意—效果：程式語言的三層存在結構</li>
+<li>PU-2-04　意圖中介表示：從自然意圖到多重可執行投影</li>
+<li>PU-2-05　可編譯世界：程式執行作為世界狀態差分</li>
+<li>PU-2-06　後文本程式語言：意圖、結構、驗證與物理耦合的統一框架</li>
+</ol>
+<hr>
+<h1>參考文獻</h1>
+<h2>Neo.K／EveMissLab 相關理論</h2>
+<ol>
+<li>Neo.K with Aletheia，《程式不等於程式碼：可執行問題模型的基本定義》，2026。</li>
+<li>Neo.K with Aletheia，《可視化作為外部結構記憶：多角色、多尺度的程式理解》，2026。</li>
+<li>Neo.K with Aletheia，《失敗也是程式：驗證、可觀測、恢復與長期維護》，2026。</li>
+<li>Neo.K with Aletheia，《結構先於文字：Nova 與後文本程式語言本體論》，2026。</li>
+<li>Neo.K with Aletheia，《符號作為算子：從靜態字元到可組合計算閉包》，2026。</li>
+<li>Neo.K with Aletheia，《可編譯世界：從程式執行到世界狀態演化》，2026。</li>
+<li>Neo.K with Aletheia，《意圖中介表示：從自然語言到多後端可驗證編譯》，2026。</li>
+</ol>
+<h2>一般理論背景</h2>
+<ol start="8">
+<li>Backus, J., “Can Programming Be Liberated from the von Neumann Style?”, 1978.</li>
+<li>McCarthy, J., “Recursive Functions of Symbolic Expressions and Their Computation by Machine,” 1960.</li>
+<li>Scott, D. and Strachey, C., “Toward a Mathematical Semantics for Computer Languages,” 1971.</li>
+<li>Reynolds, J. C., <em>Theories of Programming Languages</em>, 1998.</li>
+<li>Pierce, B. C., <em>Types and Programming Languages</em>, 2002.</li>
+<li>Aho, A. V. et al., <em>Compilers: Principles, Techniques, and Tools</em>, 2006.</li>
+<li>Fowler, M., <em>Domain-Specific Languages</em>, 2010.</li>
+<li>Harel, D., “Statecharts: A Visual Formalism for Complex Systems,” 1987.</li>
+<li>Green, T. R. G. and Petre, M., “Usability Analysis of Visual Programming Environments,” 1996.</li>
+<li>Omar, C. et al., “Hazelnut: A Bidirectionally Typed Structure Editor Calculus,” 2017.</li>
+<li>Erdweg, S. et al., “The State of the Art in Language Workbenches,” 2013.</li>
+<li>Chomsky, N., <em>Syntactic Structures</em>, 1957.</li>
+<li>Knuth, D. E., “Literate Programming,” 1984.</li>
+</ol>
+<hr>
+<h1>版本紀錄</h1>
+<h2>v0.1 — 2026-07-27</h2>
+<ul>
+<li>正式進入第 2 冊《程式語言的本質》。</li>
+<li>完成十八篇地基論文第十三篇。</li>
+<li>提出程式語言不等於文字。</li>
+<li>建立符號、形成規則、結構、語意、效果、驗證與 Runtime 七元模型。</li>
+<li>區分結構、語意與執行三層。</li>
+<li>將文字定位為線性序列化投影。</li>
+<li>區分字元、token、AST、語意結構、IR、執行計畫、效果與世界差分。</li>
+<li>建立結構、語意與效果三重程式同一性。</li>
+<li>分析文字與視覺語言的優勢及限制。</li>
+<li>提出共同權威結構與多投影同步。</li>
+<li>建立結構 Hole 與未完成程式合法狀態。</li>
+<li>建立自然意圖、語意 IR、驗證與多重投影鏈。</li>
+<li>將效果、權限、不可逆性與證據提升為語言一等結構。</li>
+<li>擴展作用域至世界、資料、效果、時間與權限。</li>
+<li>提出語意差分與擴展編譯模型。</li>
+<li>加入條件、查詢、工作流、UI、AI Agent 與物理裝置案例。</li>
+<li>提出二十二類失敗模式與十四項可證偽研究方向。</li>
+<li>建立第 2 冊六篇完整路線。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pu-2-01.html">https://thisoneisneok.com/html/papers/pu-2-01.html</a></footer>
+</body>
+</html>

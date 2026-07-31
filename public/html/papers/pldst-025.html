@@ -1,0 +1,2289 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backus、McCarthy 與 Hickey：函數、符號與簡單性的不同道路 | Neo.K</title>
+<meta name="description" content="John Backus、John McCarthy 與 Rich Hickey 都曾把函數、組合、符號表示與簡單性置於程式語言設計的中心。然而，若只把三人共同歸入「函數式／Lisp／極簡設計」傳統，會同時誤解三者。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-025.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-025</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第四部跨設計師正式比較研究</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-025.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>Backus、McCarthy 與 Hickey：函數、符號與簡單性的不同道路</h1>
+<h2>摘要</h2>
+<p>John Backus、John McCarthy 與 Rich Hickey 都曾把函數、組合、符號表示與簡單性置於程式語言設計的中心。然而，若只把三人共同歸入「函數式／Lisp／極簡設計」傳統，會同時誤解三者。</p>
+<p>Backus 的後期工作不是一般意義上的 Lambda-calculus 語言推廣，而是試圖建立 <strong>Function-level programming</strong>：程式由完整函數及固定的 Combining forms 組成，不依賴命名參數、逐值變數、賦值與顯式遞迴。他希望程式語言同時成為程式代數，使程式可像方程式一樣在同一語言內被轉換、證明與求解。[R1][R2][R3]</p>
+<p>McCarthy 的核心問題則不是先消除所有命名，而是讓機器能操作符號表達式、邏輯句子與可變大小結構。LISP 透過 S-expression、List、Recursive function、Conditional expression、Lambda、<code>apply</code> 與 <code>eval</code>，建立一個小型但具有極高生成力的符號核心。其簡單性是「少數表示與規則能生成整個活系統」，而不是「系統只有少量行為」。[R4][R5][R6]</p>
+<p>Hickey 繼承 Lisp 的 Code-as-data、Macro、REPL 與函數組合，但將「簡單」重新定義為不交纏。Clojure 的重點不是宣稱真實世界沒有狀態，而是區分 Value、Identity、State、Reference 與 Time，讓不可變值、函數變換與受控參照各自承擔不同責任；再透過 Persistent data、宿主 JVM、Protocol、Transducer 與克制演化，把簡單性變成一項長期系統設計紀律。[R7][R8][R9][R10]</p>
+<p>本文提出三種簡單性原型：</p>
+<p>$$
+\boxed{
+\begin{aligned}
+Backus &amp;: \text{Algebraic Transformational Simplicity}\
+McCarthy &amp;: \text{Generative Symbolic Simplicity}\
+Hickey &amp;: \text{Decomplective Structural Simplicity}
+\end{aligned}
+}
+$$</p>
+<p>三者對「函數」的理解分別是：</p>
+<p>$$
+\boxed{
+\begin{aligned}
+Backus &amp;: \text{函數是組合與程式代數的基本單位}\
+McCarthy &amp;: \text{函數是遞迴符號計算與可執行語義的核心}\
+Hickey &amp;: \text{函數是不可變值之間的可組合轉換}
+\end{aligned}
+}
+$$</p>
+<p>本文以十四個共同軸比較三人：</p>
+<ol>
+<li>原始問題；</li>
+<li>函數的地位；</li>
+<li>符號與資料；</li>
+<li>命名；</li>
+<li>變數與賦值；</li>
+<li>遞迴；</li>
+<li>組合；</li>
+<li>語言核心；</li>
+<li>語言延展；</li>
+<li>狀態與時間；</li>
+<li>形式推理；</li>
+<li>宿主與實作；</li>
+<li>複雜度配置；</li>
+<li>歷史限制與自我修正。</li>
+</ol>
+<p>核心結論是：</p>
+<blockquote>
+<p>三者都追求簡單，但 Backus 希望程式可以被代數化，McCarthy 希望計算可以被符號化，Hickey 希望系統可以被去交纏化。</p>
+</blockquote>
+<p>因此「簡單語言」至少包含三種不同工程政治：</p>
+<ul>
+<li>限制組合機制，使程式可推導；</li>
+<li>統一表示，使系統可生成；</li>
+<li>分離責任，使系統可理解。</li>
+</ul>
+<p><strong>關鍵詞：</strong> John Backus、John McCarthy、Rich Hickey、FP、LISP、Clojure、函數級程式設計、符號計算、簡單性、組合、不可變值、程式代數、PLDST</p>
+<hr>
+<h1>第一部分　比較方法：簡單究竟是什麼</h1>
+<h2>一、不能以功能數量直接衡量簡單</h2>
+<p>一門語言的核心功能很少，不表示：</p>
+<ul>
+<li>執行模型簡單；</li>
+<li>程式容易理解；</li>
+<li>生態不會分裂；</li>
+<li>巨集與元程式設計沒有代價；</li>
+<li>狀態與時間已被處理；</li>
+<li>工具容易建立。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+CoreSize\downarrow
+\not\Rightarrow
+SystemComplexity\downarrow
+$$</p>
+<hr>
+<h2>二、簡單、容易、熟悉與小型必須分開</h2>
+<p>本文區分：</p>
+<p>$$
+Simple
+\neq
+Easy
+\neq
+Familiar
+\neq
+Small
+\neq
+Short
+$$</p>
+<p>其中：</p>
+<ul>
+<li><strong>Simple</strong>：概念是否少交纏、可分解或可由少數規則推導；</li>
+<li><strong>Easy</strong>：是否接近既有能力與工具；</li>
+<li><strong>Familiar</strong>：是否符合既有經驗；</li>
+<li><strong>Small</strong>：核心功能或語法數量是否少；</li>
+<li><strong>Short</strong>：表面字元或程式行數是否少。</li>
+</ul>
+<hr>
+<h2>三、簡單性向量</h2>
+<p>定義：</p>
+<p>$$
+\mathcal{S}(L)=
+(
+S_{\text{core}},
+S_{\text{composition}},
+S_{\text{representation}},
+S_{\text{state}},
+S_{\text{reasoning}},
+S_{\text{tool}},
+S_{\text{evolution}}
+)
+$$</p>
+<p>三位設計者優化的分量不同。</p>
+<hr>
+<h2>四、簡單性不是總量消失</h2>
+<p>更合理的模型是：</p>
+<h1>$$
+C_{\text{total}}</h1>
+<p>C_{\text{surface}}
++
+C_{\text{runtime}}
++
+C_{\text{compiler}}
++
+C_{\text{library}}
++
+C_{\text{state}}
++
+C_{\text{tool}}
++
+C_{\text{governance}}
+$$</p>
+<p>設計者通常只能重分配，而不能消滅所有複雜度。</p>
+<hr>
+<h2>五、三種簡單性問題</h2>
+<p>Backus 問：</p>
+<blockquote>
+<p>能否讓程式由少量可推導的函數組合構成，而不再逐字操縱狀態？</p>
+</blockquote>
+<p>McCarthy 問：</p>
+<blockquote>
+<p>能否用少數符號表示與遞迴規則，建立可自我解釋並持續生長的計算系統？</p>
+</blockquote>
+<p>Hickey 問：</p>
+<blockquote>
+<p>能否把值、身分、狀態、時間、資料處理與執行情境拆開，使每項機制只承擔清楚責任？</p>
+</blockquote>
+<hr>
+<h2>六、本文所稱「道路」</h2>
+<p>「道路」不是線性演進：</p>
+<pre><code class="language-text">Backus → McCarthy → Hickey
+</code></pre>
+<p>事實上 McCarthy 的 LISP 早於 Backus 1977 年的 FP 論述，Hickey 則在數十年後重組 Lisp、函數式與產業平台。</p>
+<p>本文比較的是三種概念路線，而不是單一路線的前後版本。</p>
+<hr>
+<h1>第二部分　共同基底：三人為何可以比較</h1>
+<h2>七、都拒絕讓機器偶發細節主導語言</h2>
+<p>Backus 批判 Word-at-a-time、Storage cell、Assignment 與 Jump 對語言的支配。[R1]</p>
+<p>McCarthy 建立與 IBM 704 相對獨立的 S-expression 與 Recursive function 表示，使符號問題不必直接映射固定記憶體陣列。[R4]</p>
+<p>Hickey 讓值保持不可變，將變化放入明確 Reference semantics，而不是把記憶體位置內容直接等同於事物狀態。[R8]</p>
+<hr>
+<h2>八、都把函數提高為一級構造</h2>
+<p>三者都拒絕把函數只視為：</p>
+<ul>
+<li>一段可跳轉 Subroutine；</li>
+<li>一個帶副作用的命令容器；</li>
+<li>對機器操作的薄包裝。</li>
+</ul>
+<p>但三者提高函數的方式不同。</p>
+<hr>
+<h2>九、都追求組合</h2>
+<h1>$$
+NewProgram</h1>
+<p>Combine(ExistingPrograms)
+$$</p>
+<p>然而：</p>
+<ul>
+<li>Backus 要固定 Combining forms 及其代數律；</li>
+<li>McCarthy 依靠 Lambda、Recursive definition、List 與 <code>eval</code>；</li>
+<li>Hickey 依靠 First-class function、Persistent values、Sequence abstraction、Transducer 與 Protocol。</li>
+</ul>
+<hr>
+<h2>十、都把執行系統視為語言的一部分</h2>
+<p>三者的成果都不能只靠語法：</p>
+<ul>
+<li>FP 需要實作模型、程式代數與狀態轉換系統；</li>
+<li>LISP 需要 Interpreter、GC、Reader、Printer、Compiler 與 Online environment；</li>
+<li>Clojure 需要 JVM、Persistent collection、Compiler、Reference type、REPL 與 Library。</li>
+</ul>
+<hr>
+<h2>十一、都不是純粹功能刪除</h2>
+<p>三者都不是把語言縮小到不能工作。</p>
+<p>Backus 希望少量 Combining forms 產生高階程式。</p>
+<p>McCarthy 希望小型核心能生成新的語言能力。</p>
+<p>Hickey 希望功能不交纏，並以宿主平台與資料導向擴張。</p>
+<hr>
+<h2>十二、都面對現實邊界</h2>
+<ul>
+<li>Backus 的 FP 難以乾淨處理 I/O 與周邊系統；</li>
+<li>LISP 的小核心生成方言、動態錯誤與治理問題；</li>
+<li>Clojure 的簡單語義依賴複雜 JVM、Persistent structure、Compiler 與工具。</li>
+</ul>
+<p>所以三者都證明：</p>
+<p>$$
+ConceptualSimplicity
+\neq
+CompleteSystemSimplicity
+$$</p>
+<hr>
+<h1>第三部分　Backus：把程式提升為函數代數</h1>
+<h2>十三、問題不是函數不足，而是程式仍被狀態語法統治</h2>
+<p>Backus 將傳統語言看成馮紐曼機器的高階複製：</p>
+<ul>
+<li>Variable 對應 Storage cell；</li>
+<li>Assignment 對應 Fetch／Store；</li>
+<li>Control statement 對應 Jump／Test；</li>
+<li>程式必須逐字搬運資料。[R1]</li>
+</ul>
+<p>其批判不是「效能太低」，而是：</p>
+<blockquote>
+<p>機器架構同時成為人類思想的瓶頸。</p>
+</blockquote>
+<hr>
+<h2>十四、Word-at-a-time 思考</h2>
+<p>馮紐曼瓶頸不只是 CPU 與 Memory 之間的資料通道，也是一種概念瓶頸：</p>
+<p>$$
+Problem
+\rightarrow
+SequenceOfWordOperations
+$$</p>
+<p>人必須把大尺度轉換拆成大量地址、載入、儲存及更新。</p>
+<hr>
+<h2>十五、Function-level 與 Value-level</h2>
+<p>Backus 的 FP 特別區分：</p>
+<ul>
+<li><strong>Value-level</strong>：以變數表示值，建立 Lambda、替換與遞迴；</li>
+<li><strong>Function-level</strong>：直接把完整函數當作組合對象。</li>
+</ul>
+<p>在 FP 中：</p>
+<pre><code class="language-text">程式就是函數
+新程式由既有函數與固定 Combining forms 建立
+不必反覆命名每個輸入值
+</code></pre>
+<hr>
+<h2>十六、函數是程式單位</h2>
+<p>Backus 的函數不是只接受值並回傳值。</p>
+<p>它同時是：</p>
+<ul>
+<li>程式；</li>
+<li>代數中的變量；</li>
+<li>可組合構造；</li>
+<li>可被等式替換的對象；</li>
+<li>可由定理描述的行為單位。</li>
+</ul>
+<hr>
+<h2>十七、Combining forms</h2>
+<p>Combining forms 可由既有函數建立新函數，例如：</p>
+<ul>
+<li>Composition；</li>
+<li>Construction；</li>
+<li>Condition；</li>
+<li>Insert；</li>
+<li>Apply-to-all；</li>
+<li>Constant。</li>
+</ul>
+<p>其目標為：</p>
+<p>$$
+f_1,f_2,\ldots,f_n
+\xrightarrow{\phi}
+g
+$$</p>
+<p>其中 $\phi$ 本身具有可理解的代數律。</p>
+<hr>
+<h2>十八、固定組合機制的政治</h2>
+<p>Backus 並不主張每個使用者任意發明無數組合形式。</p>
+<p>他警告：</p>
+<p>$$
+UnrestrictedCombiningFreedom
+\Rightarrow
+Chaos
+$$</p>
+<p>因此 FP 偏好：</p>
+<ul>
+<li>少量固定 Combining forms；</li>
+<li>長期熟悉其性質；</li>
+<li>以代數律支持推理；</li>
+<li>透過組合而非核心功能堆疊擴張。</li>
+</ul>
+<hr>
+<h2>十九、程式代數</h2>
+<p>Backus 希望：</p>
+<p>$$
+ProgramEquation
+\leftrightarrow
+AlgebraicEquation
+$$</p>
+<p>程式語言同時是：</p>
+<ul>
+<li>撰寫程式的語言；</li>
+<li>轉換程式的語言；</li>
+<li>證明程式的語言；</li>
+<li>解函數方程的語言。</li>
+</ul>
+<p>而不是另用一套外部邏輯只「談論」程式。[R1]</p>
+<hr>
+<h2>二十、同一語言內推理</h2>
+<p>理想狀態為：</p>
+<h1>$$
+P</h1>
+<p>Q
+$$</p>
+<p>既表示兩個程式計算同一函數，也允許用代數律把 $P$ 逐步轉換成 $Q$。</p>
+<p>因此：</p>
+<p>$$
+Programming
++
+Transformation
++
+Proof
+$$</p>
+<p>不再被完全分開。</p>
+<hr>
+<h2>二十一、無命名並非反符號</h2>
+<p>Backus 反對的是高密度命名與替換機制對程式結構的支配，而不是所有符號。</p>
+<p>FP 仍需要：</p>
+<ul>
+<li>函數名稱；</li>
+<li>Combining form；</li>
+<li>定義；</li>
+<li>Algebraic variable。</li>
+</ul>
+<p>但它試圖避免：</p>
+<blockquote>
+<p>為每一次值流動建立局部名稱，並讓名稱管理成為主要程式工作。</p>
+</blockquote>
+<hr>
+<h2>二十二、無顯式遞迴</h2>
+<p>許多 FP 程式可透過高階 Combining forms 隱含遞迴行為，而不直接寫自我呼叫。</p>
+<p>這將責任移至：</p>
+<ul>
+<li><code>α</code> 類 Apply-to-all；</li>
+<li><code>insert</code> 類 Fold；</li>
+<li>組合形式；</li>
+<li>系統執行模型。</li>
+</ul>
+<hr>
+<h2>二十三、資料作為整體</h2>
+<p>Backus 希望程式處理：</p>
+<ul>
+<li>Vector；</li>
+<li>Tree；</li>
+<li>Structured data；</li>
+<li>完整轉換；</li>
+</ul>
+<p>而不是逐字操作。</p>
+<p>因此：</p>
+<p>$$
+UnitOfThought
+\uparrow
+$$</p>
+<hr>
+<h2>二十四、狀態沒有完全消失</h2>
+<p>Backus 並非否認歷史敏感系統需要狀態。</p>
+<p>他提出 Applicative state transition 系統，希望：</p>
+<ul>
+<li>主要計算保持 Applicative；</li>
+<li>狀態轉換只在大尺度發生；</li>
+<li>語義不與每一個微小操作緊密耦合。</li>
+</ul>
+<p>所以：</p>
+<p>$$
+StateFrequency\downarrow
+\quad
+StateSemanticCoupling\downarrow
+$$</p>
+<p>而不是：</p>
+<p>$$
+State=0
+$$</p>
+<hr>
+<h2>二十五、Backus 的簡單性</h2>
+<p>Backus 的簡單性為：</p>
+<h1>$$
+S_B</h1>
+<h2>FixedCombiningForms
++
+AlgebraicLaws
++
+NoValueVariables
++
+LargeConceptualUnits</h2>
+<p>WordAtATimeControl
+$$</p>
+<hr>
+<h2>二十六、實作與現實限制</h2>
+<p>Backus 後來承認：</p>
+<ul>
+<li>Combining forms 較容易形成；</li>
+<li>完整 I/O、互動與周邊系統難以乾淨納入；</li>
+<li>FP 作為完整系統最終未成功；</li>
+<li>仍需要新的方式處理歷史與外部世界。[R2]</li>
+</ul>
+<p>這使 Backus 的簡單性具有強烈反身性：</p>
+<blockquote>
+<p>他不只批判舊語言，也批判自己方案未完成之處。</p>
+</blockquote>
+<hr>
+<h2>二十七、Backus 原型</h2>
+<p>本文將 Backus 判定為：</p>
+<p>$$
+\boxed{
+\text{Algebraic Transformational Simplifier}
+}
+$$</p>
+<p>其核心命題：</p>
+<blockquote>
+<p>只有當程式可以由少量函數組合建立，並能在同一語言內推導與轉換，抽象才真正脫離逐字操作。</p>
+</blockquote>
+<hr>
+<h1>第四部分　McCarthy：把計算統一為符號遞迴系統</h1>
+<h2>二十八、問題先於簡潔語法</h2>
+<p>LISP 的原始需求是讓 Advice Taker 操作：</p>
+<ul>
+<li>宣告句；</li>
+<li>命令句；</li>
+<li>邏輯關係；</li>
+<li>形式知識；</li>
+<li>推論過程。[R4]</li>
+</ul>
+<p>因此 McCarthy 不是先問：</p>
+<blockquote>
+<p>怎樣設計最少語法？</p>
+</blockquote>
+<p>而是問：</p>
+<blockquote>
+<p>什麼表示能讓機器處理任意大小與深度的符號結構？</p>
+</blockquote>
+<hr>
+<h2>二十九、S-expression</h2>
+<p>S-expression 以兩項基本規則建立：</p>
+<ol>
+<li>Atom 是 S-expression；</li>
+<li>若 $e_1,e_2$ 是 S-expression，則 Pair 也是 S-expression。</li>
+</ol>
+<p>這產生：</p>
+<ul>
+<li>List；</li>
+<li>Tree；</li>
+<li>Nested expression；</li>
+<li>Program representation；</li>
+<li>Symbolic data。</li>
+</ul>
+<hr>
+<h2>三十、符號是可操作對象</h2>
+<p>傳統數值語言主要計算：</p>
+<p>$$
+Number\rightarrow Number
+$$</p>
+<p>LISP 擴張為：</p>
+<p>$$
+SymbolicExpression
+\rightarrow
+SymbolicExpression
+$$</p>
+<p>程式可：</p>
+<ul>
+<li>分解公式；</li>
+<li>重新排列；</li>
+<li>代換；</li>
+<li>推理；</li>
+<li>生成新程式；</li>
+<li>解釋程式。</li>
+</ul>
+<hr>
+<h2>三十一、函數是遞迴規則</h2>
+<p>McCarthy 的函數觀包含：</p>
+<ul>
+<li>Partial function；</li>
+<li>Predicate；</li>
+<li>Conditional expression；</li>
+<li>Lambda abstraction；</li>
+<li>Recursive definition；</li>
+<li>Universal function。</li>
+</ul>
+<p>函數描述符號結構如何被分解與重組。</p>
+<hr>
+<h2>三十二、條件式成為表達式</h2>
+<p><code>cond</code> 使分支進入函數定義：</p>
+<p>$$
+Branch
+\in
+Expression
+$$</p>
+<p>計算不必完全分成：</p>
+<pre><code class="language-text">Expression world
+Statement world
+</code></pre>
+<p>這一點與 Backus 對傳統語言分裂的批判形成呼應。</p>
+<hr>
+<h2>三十三、遞迴對齊資料結構</h2>
+<p>若資料是遞迴樹：</p>
+<h1>$$
+Data</h1>
+<p>Atom
+;\cup;
+Pair(Data,Data)
+$$</p>
+<p>則程式也可遞迴：</p>
+<h1>$$
+Program(Data)</h1>
+<p>Case(Atom)
+;\cup;
+Combine(Program(left),Program(right))
+$$</p>
+<p>問題、資料與控制結構因此互相對齊。</p>
+<hr>
+<h2>三十四、Lambda 的角色</h2>
+<p>McCarthy 使用 Lambda 表示：</p>
+<ul>
+<li>參數；</li>
+<li>函數；</li>
+<li>綁定；</li>
+<li>高階傳遞。</li>
+</ul>
+<p>這與 Backus 後期試圖減少 Lambda 式變量替換形成直接張力。</p>
+<hr>
+<h2>三十五、<code>apply</code> 與 <code>eval</code></h2>
+<p>1960 年論文中的 Universal S-function：</p>
+<ul>
+<li>理論上類似 Universal Turing machine；</li>
+<li>實際上可作 Interpreter；</li>
+<li>使語言形式與執行系統接近。</li>
+</ul>
+<p>$$
+FormalDefinition
+\rightarrow
+ExecutableSemantics
+$$</p>
+<hr>
+<h2>三十六、程式即資料</h2>
+<p>當程式與資料都使用 S-expression：</p>
+<h1>$$
+Representation(program)</h1>
+<p>Representation(data)
+$$</p>
+<p>因此程式可以：</p>
+<ul>
+<li>讀取程式；</li>
+<li>建構程式；</li>
+<li>改寫程式；</li>
+<li>解釋程式；</li>
+<li>建立 DSL；</li>
+<li>建立 Macro。</li>
+</ul>
+<hr>
+<h2>三十七、極小核心是生成器</h2>
+<p>McCarthy 的簡單性不是：</p>
+<pre><code class="language-text">所有 Lisp 程式都很短
+</code></pre>
+<p>而是：</p>
+<pre><code class="language-text">少量原語可以生成大量語言能力
+</code></pre>
+<p>可表示為：</p>
+<h1>$$
+GenerativePower</h1>
+<p>\frac{ReachableLanguageSpace}{CoreMechanisms}
+$$</p>
+<hr>
+<h2>三十八、Reader 與 Printer</h2>
+<p>統一表示需要：</p>
+<ul>
+<li>Reader 將外部文字轉成 S-expression；</li>
+<li>Printer 將結構重新輸出；</li>
+<li>Symbol table 維持 Atom；</li>
+<li>List structure 保存資料；</li>
+<li>GC 自動回收。</li>
+</ul>
+<p>因此括號背後是一整個運行制度。</p>
+<hr>
+<h2>三十九、GC 的人本與理論價值</h2>
+<p>若使用者必須手工回收 List node：</p>
+<p>$$
+SymbolicAbstraction
+\rightarrow
+MemoryBookkeeping
+$$</p>
+<p>GC 把儲存生命週期交給 Runtime，使符號操作保持高階。</p>
+<hr>
+<h2>四十、互動環境</h2>
+<p>LISP 很快包含：</p>
+<ul>
+<li>定義函數；</li>
+<li>直接求值；</li>
+<li>Trace；</li>
+<li>Error diagnostic；</li>
+<li>Interpreter；</li>
+<li>Compiler；</li>
+<li>Reader／Printer。</li>
+</ul>
+<p>小核心因此變成 Live system。</p>
+<hr>
+<h2>四十一、可延展性</h2>
+<p>McCarthy 型簡單性允許使用者建立：</p>
+<ul>
+<li>新控制形式；</li>
+<li>新資料表示；</li>
+<li>Macro；</li>
+<li>Interpreter；</li>
+<li>Symbolic tool；</li>
+<li>Domain language。</li>
+</ul>
+<p>簡單性因此帶來權力，而不是只帶來限制。</p>
+<hr>
+<h2>四十二、生成性代價</h2>
+<p>$$
+SmallCore
++
+Metaprogramming
++
+DynamicRepresentation
+\Rightarrow
+LargeEmergentLanguage
+$$</p>
+<p>代價包括：</p>
+<ul>
+<li>方言；</li>
+<li>巨集慣例；</li>
+<li>動態錯誤；</li>
+<li>工具難度；</li>
+<li>安全邊界；</li>
+<li>社群分裂；</li>
+<li>語言治理。</li>
+</ul>
+<hr>
+<h2>四十三、偶發穩定</h2>
+<p>McCarthy 原本區分 M-expression 與 S-expression，後者偏向內部表示。</p>
+<p>但因 M-expression 未完成普及：</p>
+<p>$$
+IntermediateRepresentation
+\rightarrow
+SurfaceSyntax
+$$</p>
+<p>Lisp 最具代表性的表面，部分來自歷史偶發，而非完整預定終局。</p>
+<hr>
+<h2>四十四、符號統一的邊界</h2>
+<p>統一表示不表示：</p>
+<ul>
+<li>所有資料都最適合 List；</li>
+<li>所有領域都應以 Macro 建模；</li>
+<li>所有語義都應由 <code>eval</code> 開放；</li>
+<li>所有系統狀態都天然簡單。</li>
+</ul>
+<p>Lisp 後代必須持續補充：</p>
+<ul>
+<li>Vector；</li>
+<li>Record；</li>
+<li>Module；</li>
+<li>Type；</li>
+<li>Package；</li>
+<li>Safety；</li>
+<li>Namespace；</li>
+<li>Concurrency。</li>
+</ul>
+<hr>
+<h2>四十五、McCarthy 的簡單性</h2>
+<h1>$$
+S_M</h1>
+<h2>UniformRepresentation
++
+RecursiveCore
++
+ExecutableSemantics
++
+ProgramDataUnity</h2>
+<p>PrimitiveDiversity
+$$</p>
+<hr>
+<h2>四十六、McCarthy 原型</h2>
+<p>本文將 McCarthy 判定為：</p>
+<p>$$
+\boxed{
+\text{Generative Symbolic Simplifier}
+}
+$$</p>
+<p>其核心命題：</p>
+<blockquote>
+<p>一個核心若能統一資料、程式與語義，便不必預先內建所有未來能力；使用者可以讓語言從內部繼續生長。</p>
+</blockquote>
+<hr>
+<h1>第五部分　Hickey：把交纏拆成值、身分、狀態與時間</h1>
+<h2>四十七、繼承 Lisp，但不複製 Lisp</h2>
+<p>Clojure 繼承：</p>
+<ul>
+<li>S-expression；</li>
+<li>Code-as-data；</li>
+<li>Macro；</li>
+<li>REPL；</li>
+<li>First-class function；</li>
+<li>Dynamic development。</li>
+</ul>
+<p>但 Hickey 重新選擇：</p>
+<ul>
+<li>Vector、Map、Set 與 List 都是一級資料；</li>
+<li>Immutable persistent collection；</li>
+<li>JVM interoperability；</li>
+<li>多種 Reference semantics；</li>
+<li>Namespace；</li>
+<li>Protocol；</li>
+<li>宿主編譯。</li>
+</ul>
+<hr>
+<h2>四十八、Simple 不等於 Easy</h2>
+<p>〈Simple Made Easy〉區分：</p>
+<h1>$$
+Simple</h1>
+<p>NotIntertwined
+$$</p>
+<h1>$$
+Easy</h1>
+<p>NearToExistingAbility
+$$</p>
+<p>熟悉的物件可變模型可能容易，卻不簡單。</p>
+<p>不熟悉的 Persistent value 可能不容易，卻更容易被獨立理解。[R7]</p>
+<hr>
+<h2>四十九、Complect</h2>
+<p>Complect 指：</p>
+<blockquote>
+<p>把原本可獨立變化、推理或替換的概念編織成同一件事。</p>
+</blockquote>
+<p>例如：</p>
+<ul>
+<li>Identity 與 State；</li>
+<li>Data 與 Behavior；</li>
+<li>Order 與 Result；</li>
+<li>Location 與 Value；</li>
+<li>Algorithm 與 Source／Sink；</li>
+<li>Policy 與 Mechanism。</li>
+</ul>
+<hr>
+<h2>五十、Value</h2>
+<p>Value 是：</p>
+<ul>
+<li>不可變；</li>
+<li>可比較；</li>
+<li>可分享；</li>
+<li>可傳遞；</li>
+<li>表示某項資訊；</li>
+<li>不因位置改寫而改變。</li>
+</ul>
+<p>$$
+Value_t
+\neq
+Value_{t+1}
+$$</p>
+<p>新值不是舊值被修改，而是另一個值。</p>
+<hr>
+<h2>五十一、Identity</h2>
+<p>Identity 是跨時間指稱同一事物的名稱：</p>
+<ul>
+<li>帳戶；</li>
+<li>訂單；</li>
+<li>玩家；</li>
+<li>程序；</li>
+<li>資料庫。</li>
+</ul>
+<p>Identity 不等於任何單一 State。</p>
+<hr>
+<h2>五十二、State</h2>
+<p>$$
+State(identity,t)=Value_t
+$$</p>
+<p>某 Identity 在時間 $t$ 關聯一個不可變值。</p>
+<p>變化表示：</p>
+<p>$$
+Value_0
+\rightarrow
+Value_1
+\rightarrow
+Value_2
+$$</p>
+<p>由 Identity 串接，而不是舊值本體被改造成新值。</p>
+<hr>
+<h2>五十三、Reference</h2>
+<p>Reference 管理：</p>
+<ul>
+<li>目前 Value；</li>
+<li>更新規則；</li>
+<li>同步；</li>
+<li>協調；</li>
+<li>可觀察性；</li>
+<li>時間順序。</li>
+</ul>
+<p>Clojure 使用 Ref、Atom、Agent、Var 等不同構造，不讓單一「可變變數」概念承擔所有狀態語義。</p>
+<hr>
+<h2>五十四、函數是值轉換</h2>
+<p>Hickey 型函數主要是：</p>
+<p>$$
+f:Value\rightarrow Value
+$$</p>
+<p>函數可在沒有 Identity 更新的情況下先計算新值。</p>
+<p>狀態變化再由明確參照機制提交。</p>
+<hr>
+<h2>五十五、計算與提交分離</h2>
+<p>$$
+newValue=f(oldValue)
+$$</p>
+<p>與：</p>
+<p>$$
+Reference\leftarrow newValue
+$$</p>
+<p>是兩項不同責任。</p>
+<p>這讓：</p>
+<ul>
+<li>測試；</li>
+<li>重試；</li>
+<li>並行；</li>
+<li>Snapshot；</li>
+<li>推理；</li>
+<li>Audit；</li>
+</ul>
+<p>更容易。</p>
+<hr>
+<h2>五十六、Persistent data</h2>
+<p>不可變若每次完整複製，成本過高。</p>
+<p>Persistent data structure 以結構共享使：</p>
+<p>$$
+UpdateCost
+\ll
+FullCopyCost
+$$</p>
+<p>Runtime 承擔結構複雜度，使用者獲得穩定值語義。</p>
+<hr>
+<h2>五十七、資料高於物件封裝</h2>
+<p>Clojure 傾向使用開放資料：</p>
+<ul>
+<li>Map；</li>
+<li>Vector；</li>
+<li>Set；</li>
+<li>Keyword；</li>
+<li>Sequence；</li>
+<li>Metadata。</li>
+</ul>
+<p>行為多由 Namespace 中函數處理，而不是每種資料都封裝於可變物件。</p>
+<hr>
+<h2>五十八、函數與資料保持可分離</h2>
+<p>傳統物件可能將：</p>
+<p>$$
+Data
++
+Identity
++
+Methods
++
+Mutation
++
+Lifecycle
+$$</p>
+<p>綁成同一單位。</p>
+<p>Hickey 偏好：</p>
+<p>$$
+Data
+\quad+\quad
+Functions
+\quad+\quad
+ExplicitReferences
+$$</p>
+<hr>
+<h2>五十九、Sequence abstraction</h2>
+<p>Clojure 的 Sequence 讓多種 Collection 可由共同函數操作。</p>
+<p>這保留 McCarthy 式統一操作精神，但不要求所有資料都實際是 List。</p>
+<hr>
+<h2>六十、Transducer</h2>
+<p>Transducer 將資料轉換 Algorithm 從：</p>
+<ul>
+<li>Input source；</li>
+<li>Output sink；</li>
+<li>Collection type；</li>
+<li>Execution strategy；</li>
+</ul>
+<p>中拆開。</p>
+<p>可抽象為：</p>
+<p>$$
+Transformation
+\neq
+CollectionTraversalContext
+$$</p>
+<p>這是 Hickey 去交纏方法的典型後續。</p>
+<hr>
+<h2>六十一、宿主平台槓桿</h2>
+<p>Clojure 不建立自己的完整 OS、VM 與 Library 世界。</p>
+<p>它使用：</p>
+<ul>
+<li>JVM；</li>
+<li>Java Library；</li>
+<li>Java Thread；</li>
+<li>Java Class；</li>
+<li>Existing deployment。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+NewSemanticModel
++
+ExistingIndustrialRuntime
+$$</p>
+<hr>
+<h2>六十二、簡單不等於獨立實作</h2>
+<p>依賴 JVM 會降低 Clojure 自建能力數量，卻引入：</p>
+<ul>
+<li>Java type；</li>
+<li>Reflection；</li>
+<li>Classloader；</li>
+<li>Host exception；</li>
+<li>Startup；</li>
+<li>Interop edge case；</li>
+<li>Performance model。</li>
+</ul>
+<p>所以：</p>
+<p>$$
+CoreSimplicity
++
+HostComplexity
+$$</p>
+<p>同時存在。</p>
+<hr>
+<h2>六十三、克制核心演化</h2>
+<p>Hickey 與 Clojure Core 長期傾向：</p>
+<ul>
+<li>少加功能；</li>
+<li>尋找一般解法；</li>
+<li>依靠 Library；</li>
+<li>使用 Data／Function；</li>
+<li>保持向後相容；</li>
+<li>等待需求成熟。</li>
+</ul>
+<p>這使簡單性成為治理准入條件。</p>
+<hr>
+<h2>六十四、Hickey 的簡單性</h2>
+<h1>$$
+S_H</h1>
+<h2>SeparationOfConcerns
++
+ImmutableValues
++
+ExplicitStateSemantics
++
+ComposableFunctions
++
+HostLeverage</h2>
+<p>Complecting
+$$</p>
+<hr>
+<h2>六十五、Hickey 原型</h2>
+<p>本文將 Hickey 判定為：</p>
+<p>$$
+\boxed{
+\text{Decomplective Structural Simplifier}
+}
+$$</p>
+<p>其核心命題：</p>
+<blockquote>
+<p>系統難以理解，往往不是因為功能太多，而是因為本可分離的概念被綁成同一個機制；簡單性首先是解除交纏。</p>
+</blockquote>
+<hr>
+<h1>第六部分　第一比較軸：函數究竟是什麼</h1>
+<h2>六十六、Backus：程式本身</h2>
+<p>Backus 的函數主要是：</p>
+<ul>
+<li>完整程式；</li>
+<li>組合對象；</li>
+<li>代數變量；</li>
+<li>大尺度轉換。</li>
+</ul>
+<p>他希望避免把注意力放在每個參數名與值替換上。</p>
+<hr>
+<h2>六十七、McCarthy：遞迴符號規則</h2>
+<p>McCarthy 的函數主要是：</p>
+<ul>
+<li>對 Symbolic expression 的操作；</li>
+<li>Conditional recursive definition；</li>
+<li>Lambda abstraction；</li>
+<li><code>apply</code>／<code>eval</code> 的可執行語義。</li>
+</ul>
+<hr>
+<h2>六十八、Hickey：值之間的轉換</h2>
+<p>Hickey 的函數主要是：</p>
+<ul>
+<li>First-class value；</li>
+<li>對不可變資料的轉換；</li>
+<li>與 Identity 更新分離；</li>
+<li>可從 Collection context 解耦；</li>
+<li>可由 REPL 互動組合。</li>
+</ul>
+<hr>
+<h2>六十九、三種函數尺度</h2>
+<p>$$
+\boxed{
+\begin{aligned}
+Backus &amp;: ProgramScaleFunction\
+McCarthy &amp;: SymbolicRecursiveFunction\
+Hickey &amp;: ValueTransformationFunction
+\end{aligned}
+}
+$$</p>
+<hr>
+<h2>七十、函數並非同義詞</h2>
+<p>把三者都稱為 Functional programming 會掩蓋：</p>
+<ul>
+<li>Backus 對 Lambda naming／substitution 的批判；</li>
+<li>McCarthy 對 Lambda、Recursion 與 Universal function 的依賴；</li>
+<li>Hickey 對 Impure host、Explicit references 與 Pragmatism 的接受。</li>
+</ul>
+<hr>
+<h1>第七部分　第二比較軸：符號與資料</h1>
+<h2>七十一、Backus：降低值名稱支配</h2>
+<p>Backus 希望程式主要呈現：</p>
+<ul>
+<li>函數結構；</li>
+<li>資料轉換；</li>
+<li>組合關係；</li>
+<li>代數等式。</li>
+</ul>
+<p>符號服務於函數級關係，而不是逐步地址操作。</p>
+<hr>
+<h2>七十二、McCarthy：符號是計算材料</h2>
+<p>McCarthy 把 Atom、List 與 S-expression 建立為：</p>
+<ul>
+<li>資料；</li>
+<li>公式；</li>
+<li>程式；</li>
+<li>語言描述；</li>
+<li>推理內容。</li>
+</ul>
+<p>符號在其系統中具有本體中心地位。</p>
+<hr>
+<h2>七十三、Hickey：從符號中心轉向值中心</h2>
+<p>Clojure 保留 Symbol 與 S-expression，但更強調：</p>
+<ul>
+<li>Map；</li>
+<li>Vector；</li>
+<li>Set；</li>
+<li>Keyword；</li>
+<li>Value；</li>
+<li>EDN；</li>
+<li>開放資料。</li>
+</ul>
+<p>程式即資料仍重要，但「資訊是值」比「一切都是 List」更中心。</p>
+<hr>
+<h2>七十四、表示統一程度</h2>
+<p>$$
+RepresentationUnity:
+McCarthy &gt; Hickey &gt; Backus
+$$</p>
+<p>但這不是優劣排名。</p>
+<p>Backus 更關心程式組合，McCarthy 更關心統一符號表示，Hickey 更關心不同資料角色保持清楚。</p>
+<hr>
+<h1>第八部分　第三比較軸：命名、變數與替換</h1>
+<h2>七十五、Backus：反命名密度</h2>
+<p>Backus 認為大量變數與 Naming convention：</p>
+<ul>
+<li>阻礙組合；</li>
+<li>增加 Procedure declaration；</li>
+<li>讓程式侷限於特定參數；</li>
+<li>強化 Word-at-a-time 思考。</li>
+</ul>
+<hr>
+<h2>七十六、McCarthy：命名是遞迴與符號操作資源</h2>
+<p>LISP 使用：</p>
+<ul>
+<li>Symbol；</li>
+<li>Parameter；</li>
+<li>Function name；</li>
+<li>Lambda variable；</li>
+<li>Label；</li>
+<li>Association list。</li>
+</ul>
+<p>命名不是應消除的負擔，而是符號計算核心。</p>
+<hr>
+<h2>七十七、Hickey：區分名稱與值</h2>
+<p>Clojure 的 Symbol／Var／Value 分開：</p>
+<ul>
+<li>Symbol 是程式表示；</li>
+<li>Var 是 Namespace 中名稱到值的可重定義參照；</li>
+<li>Value 本身不可變；</li>
+<li>Local binding 不代表可變儲存格。</li>
+</ul>
+<p>這是對 Lisp 命名模型的再結構化。</p>
+<hr>
+<h2>七十八、命名成本公式</h2>
+<h1>$$
+C_{\text{name}}</h1>
+<p>Creation
++
+Scope
++
+Resolution
++
+Substitution
++
+MutationAmbiguity
+$$</p>
+<p>Backus 主要降低 Creation 與 Substitution。</p>
+<p>McCarthy 利用 Name 生成語言能力。</p>
+<p>Hickey 主要降低 MutationAmbiguity，並以 Namespace 管理 Resolution。</p>
+<hr>
+<h1>第九部分　第四比較軸：組合</h1>
+<h2>七十九、Backus：固定 Combining forms</h2>
+<p>$$
+g=\phi(f_1,\ldots,f_n)
+$$</p>
+<p>組合形式數量受限，並具有代數律。</p>
+<hr>
+<h2>八十、McCarthy：Lambda、List 與 Macro 生長</h2>
+<p>組合來自：</p>
+<ul>
+<li>Function application；</li>
+<li>Recursive definition；</li>
+<li>List construction；</li>
+<li>Higher-order operation；</li>
+<li><code>eval</code>；</li>
+<li>Macro tradition。</li>
+</ul>
+<p>其可生成空間更開放。</p>
+<hr>
+<h2>八十一、Hickey：資料、函數、Protocol 與 Transducer</h2>
+<p>組合來自：</p>
+<ul>
+<li>Pure／mostly pure function；</li>
+<li>Persistent values；</li>
+<li>Sequence；</li>
+<li>Higher-order function；</li>
+<li>Protocol；</li>
+<li>Multimethod；</li>
+<li>Transducer；</li>
+<li>Macro。</li>
+</ul>
+<p>但核心功能加入受到較強治理克制。</p>
+<hr>
+<h2>八十二、組合自由與推理性</h2>
+<p>$$
+CompositionFreedom\uparrow
+\Rightarrow
+PotentialVariation\uparrow
+$$</p>
+<p>Backus 以固定形式換取推理。</p>
+<p>McCarthy 以開放生成換取延展。</p>
+<p>Hickey 以結構分離與保守核心換取長期可理解性。</p>
+<hr>
+<h1>第十部分　第五比較軸：遞迴</h1>
+<h2>八十三、Backus：把遞迴封裝進組合形式</h2>
+<p>使用者不必反覆寫：</p>
+<pre><code class="language-text">function calls itself
+</code></pre>
+<p>而以高階結構表示：</p>
+<ul>
+<li>Map；</li>
+<li>Fold；</li>
+<li>Insert；</li>
+<li>Tree／Sequence transform。</li>
+</ul>
+<hr>
+<h2>八十四、McCarthy：遞迴是語言本體</h2>
+<p>Recursive function 是 LISP 形式核心之一。</p>
+<p>資料與程式都由遞迴規則構成。</p>
+<hr>
+<h2>八十五、Hickey：遞迴是可用機制，但不必支配日常</h2>
+<p>Clojure 支援：</p>
+<ul>
+<li><code>recur</code>；</li>
+<li>Loop；</li>
+<li>Sequence operation；</li>
+<li>Reduce；</li>
+<li>Lazy sequence；</li>
+<li>Transducer。</li>
+</ul>
+<p>日常程式通常由 Library 高階函數承擔遞迴。</p>
+<hr>
+<h2>八十六、遞迴的三種責任分配</h2>
+<pre><code class="language-text">Backus：遞迴下沉到 Combining forms
+McCarthy：遞迴顯性成為形式定義
+Hickey：遞迴多下沉到資料操作與 Library
+</code></pre>
+<hr>
+<h1>第十一部分　第六比較軸：狀態與時間</h1>
+<h2>八十七、Backus：降低狀態耦合</h2>
+<p>Backus 不滿意每個微小計算都修改全域機器狀態。</p>
+<p>其目標：</p>
+<p>$$
+Computation
+\gg
+StateTransitionFrequency
+$$</p>
+<hr>
+<h2>八十八、McCarthy：形式核心 Applicative，系統很快加入命令能力</h2>
+<p>1960 年 LISP 核心以函數與 S-expression 描述，但實際系統已包含：</p>
+<ul>
+<li>Assignment；</li>
+<li><code>go to</code>；</li>
+<li>Machine-language function；</li>
+<li>Association list；</li>
+<li>I/O；</li>
+<li>Compiler。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+PureFormalCore
+\neq
+EntireOperationalSystem
+$$</p>
+<hr>
+<h2>八十九、Hickey：狀態重新建模</h2>
+<p>Hickey 不試圖把狀態藏起來，而是要求：</p>
+<p>$$
+Identity
+\neq
+State
+\neq
+Value
+\neq
+Reference
+\neq
+Time
+$$</p>
+<hr>
+<h2>九十、Backus 與 Hickey 的重要差異</h2>
+<p>Backus 的主要策略：</p>
+<blockquote>
+<p>讓狀態轉換更少、更大尺度、更鬆耦合。</p>
+</blockquote>
+<p>Hickey 的主要策略：</p>
+<blockquote>
+<p>讓狀態轉換具有明確 Identity、Reference、時間與協調語義。</p>
+</blockquote>
+<hr>
+<h2>九十一、McCarthy 的中間位置</h2>
+<p>McCarthy 提供函數式形式核心，但其真正革命是符號與語言自我表示，而不是完整狀態理論。</p>
+<p>後代 Lisp 因此可採：</p>
+<ul>
+<li>Functional；</li>
+<li>Imperative；</li>
+<li>Object；</li>
+<li>Actor；</li>
+<li>STM；</li>
+<li>Persistent value。</li>
+</ul>
+<hr>
+<h1>第十二部分　第七比較軸：形式推理</h1>
+<h2>九十二、Backus：代數轉換</h2>
+<p>推理理想：</p>
+<h1>$$
+P</h1>
+<h1>P_1</h1>
+<h1>P_2</h1>
+<h1>\cdots</h1>
+<p>Q
+$$</p>
+<p>每一步由程式代數律支持。</p>
+<hr>
+<h2>九十三、McCarthy：遞迴形式與 Universal function</h2>
+<p>推理理想：</p>
+<ul>
+<li>形式定義；</li>
+<li>Conditional equation；</li>
+<li>Recursive function；</li>
+<li><code>apply</code>／<code>eval</code>；</li>
+<li>程式與資料表示。</li>
+</ul>
+<p>它建立語言的數學與執行連接。</p>
+<hr>
+<h2>九十四、Hickey：局部可推理性</h2>
+<p>Hickey 追求：</p>
+<ul>
+<li>值不變；</li>
+<li>函數輸入輸出穩定；</li>
+<li>狀態邊界明確；</li>
+<li>資料開放；</li>
+<li>Algorithm 與執行情境分離。</li>
+</ul>
+<p>不是建立完整程式代數，而是降低推理所需同時追蹤的維度。</p>
+<hr>
+<h2>九十五、三種推理對象</h2>
+<p>$$
+\boxed{
+\begin{aligned}
+Backus &amp;: \text{程式等式}\
+McCarthy &amp;: \text{符號函數與語言語義}\
+Hickey &amp;: \text{值、時間與責任邊界}
+\end{aligned}
+}
+$$</p>
+<hr>
+<h1>第十三部分　第八比較軸：核心與延展</h1>
+<h2>九十六、Backus：核心固定，程式由組合擴張</h2>
+<p>$$
+StableCombinators
+\rightarrow
+NewPrograms
+$$</p>
+<p>他反對不斷把特殊功能加入 Framework。</p>
+<hr>
+<h2>九十七、McCarthy：核心小，語言可由自身擴張</h2>
+<p>$$
+SmallCore
++
+ProgramAsData
++
+Eval
+\rightarrow
+NewLanguageForms
+$$</p>
+<hr>
+<h2>九十八、Hickey：核心克制，擴張依靠資料、函數、宿主與 Library</h2>
+<p>$$
+ConservativeCore
++
+JVM
++
+Library
++
+Macro
++
+Protocol
+\rightarrow
+Ecosystem
+$$</p>
+<hr>
+<h2>九十九、延展性的不同治理</h2>
+<ul>
+<li>Backus：以固定 Combining forms 約束；</li>
+<li>McCarthy：以語言內生成能力開放；</li>
+<li>Hickey：以創始品味、Core team 與宿主槓桿克制。</li>
+</ul>
+<hr>
+<h1>第十四部分　第九比較軸：宿主、機器與實作</h1>
+<h2>一百、Backus：尋找非馮紐曼整體系統</h2>
+<p>Backus 希望：</p>
+<ul>
+<li>語言；</li>
+<li>程式代數；</li>
+<li>狀態轉換；</li>
+<li>甚至機器架構；</li>
+</ul>
+<p>共同脫離馮紐曼模型。</p>
+<p>這是一種高風險整體替代。</p>
+<hr>
+<h2>一百零一、McCarthy：形式獨立，實作進入 IBM 704</h2>
+<p>S-expression 與 S-function 被描述為與特定機器獨立。</p>
+<p>但實際成功依賴：</p>
+<ul>
+<li>IBM 704；</li>
+<li>List storage；</li>
+<li>GC；</li>
+<li>Stack；</li>
+<li>Reader；</li>
+<li>Compiler；</li>
+<li>Interpreter。</li>
+</ul>
+<hr>
+<h2>一百零二、Hickey：語義重建，宿主不重建</h2>
+<p>Clojure 主動接受 JVM：</p>
+<ul>
+<li>不重新建立全部 Runtime；</li>
+<li>不重新建立企業 Library；</li>
+<li>直接進入既有部署；</li>
+<li>在宿主上重建 Value／State／Function model。</li>
+</ul>
+<hr>
+<h2>一百零三、替代幅度</h2>
+<p>$$
+SystemReplacement:
+Backus &gt; McCarthy &gt; Hickey
+$$</p>
+<p>其中：</p>
+<ul>
+<li>Backus 想替代整體範式；</li>
+<li>McCarthy 建立新符號系統但仍落地既有機器；</li>
+<li>Hickey 明確選擇宿主共生。</li>
+</ul>
+<hr>
+<h1>第十五部分　複雜度配置</h1>
+<h2>一百零四、Backus 的配置</h2>
+<p>降低：</p>
+<ul>
+<li>值變數；</li>
+<li>賦值；</li>
+<li>逐字控制；</li>
+<li>顯式遞迴；</li>
+<li>外部證明語言依賴。</li>
+</ul>
+<p>增加：</p>
+<ul>
+<li>Combining system；</li>
+<li>Function algebra；</li>
+<li>Specialized implementation；</li>
+<li>I/O integration difficulty；</li>
+<li>新計算模型成本。</li>
+</ul>
+<hr>
+<h2>一百零五、McCarthy 的配置</h2>
+<p>降低：</p>
+<ul>
+<li>固定資料格式；</li>
+<li>語法原語數量；</li>
+<li>程式／資料表示差異；</li>
+<li>手工記憶體回收；</li>
+<li>新語言機制准入門檻。</li>
+</ul>
+<p>增加：</p>
+<ul>
+<li>Runtime；</li>
+<li>GC；</li>
+<li>Dynamic reasoning；</li>
+<li>Macro／eval 安全；</li>
+<li>方言；</li>
+<li>工具；</li>
+<li>社群治理。</li>
+</ul>
+<hr>
+<h2>一百零六、Hickey 的配置</h2>
+<p>降低：</p>
+<ul>
+<li>Mutable object reasoning；</li>
+<li>Defensive copying；</li>
+<li>State ambiguity；</li>
+<li>Algorithm／context coupling；</li>
+<li>核心功能膨脹。</li>
+</ul>
+<p>增加：</p>
+<ul>
+<li>Persistent structure；</li>
+<li>JVM interop；</li>
+<li>Reference model learning；</li>
+<li>Dynamic tooling；</li>
+<li>Macro discipline；</li>
+<li>Core governance dependence。</li>
+</ul>
+<hr>
+<h2>一百零七、三種複雜度搬運</h2>
+<p>$$
+\boxed{
+\begin{aligned}
+Backus &amp;: \text{操作複雜度}\rightarrow\text{組合代數與系統實作}\
+McCarthy &amp;: \text{表示複雜度}\rightarrow\text{Runtime 與語言內生成}\
+Hickey &amp;: \text{狀態複雜度}\rightarrow\text{值結構與明確參照}
+\end{aligned}
+}
+$$</p>
+<hr>
+<h1>第十六部分　歷史張力：三人並不是和諧同派</h1>
+<h2>一百零八、Backus 對 Lambda 傳統的批評</h2>
+<p>Backus 認為 Lambda-calculus 型系統雖強大，卻仍帶有：</p>
+<ul>
+<li>命名；</li>
+<li>Substitute；</li>
+<li>Variable；</li>
+<li>自由發明 Combining form；</li>
+</ul>
+<p>等複雜性。</p>
+<p>這直接區別於 McCarthy。</p>
+<hr>
+<h2>一百零九、McCarthy 的成功反駁了部分疑慮，也證實部分疑慮</h2>
+<p>Lisp 的歷史顯示：</p>
+<ul>
+<li>Lambda、Symbol 與 <code>eval</code> 可形成長壽語族；</li>
+<li>統一表示具有極高延展性；</li>
+<li>小核心能支撐大量應用。</li>
+</ul>
+<p>同時也顯示：</p>
+<ul>
+<li>方言分裂；</li>
+<li>巨集文化差異；</li>
+<li>動態工具成本；</li>
+<li>大型語言表面；</li>
+<li>相容與治理；</li>
+</ul>
+<p>確實會累積。</p>
+<hr>
+<h2>一百一十、Hickey 對 Lisp 的選擇性繼承</h2>
+<p>Hickey 保留：</p>
+<ul>
+<li>Code-as-data；</li>
+<li>Macro；</li>
+<li>REPL；</li>
+<li>Function；</li>
+<li>S-expression。</li>
+</ul>
+<p>但拒絕或重構：</p>
+<ul>
+<li>普遍可變資料；</li>
+<li>Identity／State 混合；</li>
+<li>List 唯一中心；</li>
+<li>自建封閉平台；</li>
+<li>無限制功能增長；</li>
+<li>物件式資料—行為—狀態綁定。</li>
+</ul>
+<hr>
+<h2>一百一十一、Hickey 不是 Backus 的直接完成者</h2>
+<p>Clojure 並沒有實作 Backus FP 的固定 Function-level algebra。</p>
+<p>它仍使用：</p>
+<ul>
+<li>Local binding；</li>
+<li>Lambda／<code>fn</code>；</li>
+<li>Symbol；</li>
+<li>Variable name；</li>
+<li>Recursion；</li>
+<li>State references；</li>
+<li>Host side effects。</li>
+</ul>
+<p>所以 Hickey 與 Backus 的共同點是反交纏與重視值轉換，不是語言機制相同。</p>
+<hr>
+<h2>一百一十二、McCarthy 不是只有歷史中介</h2>
+<p>McCarthy 提出的核心統一具有獨立方向：</p>
+<h1>$$
+Program</h1>
+<h1>Data</h1>
+<p>SymbolicExpression
+$$</p>
+<p>這一方向既不同於 Backus 的 Program algebra，也不同於 Hickey 的 Value／Identity separation。</p>
+<hr>
+<h1>第十七部分　反例與去神話</h1>
+<h2>一百一十三、Backus 不等於現代函數式語言總代表</h2>
+<p>Backus FP：</p>
+<ul>
+<li>不以 Lambda calculus 為中心；</li>
+<li>偏 Function-level；</li>
+<li>使用固定 Combining forms；</li>
+<li>具有自己的代數與狀態轉換構想。</li>
+</ul>
+<p>不能把 Haskell、ML、Scheme、Clojure 全部直接回寫為其方案。</p>
+<hr>
+<h2>一百一十四、McCarthy 不等於 Lisp 所有成果</h2>
+<p>LISP 是多人系統：</p>
+<ul>
+<li>Steve Russell；</li>
+<li>Daniel Edwards；</li>
+<li>Timothy Hart；</li>
+<li>Michael Levin；</li>
+<li>Paul Abrahams；</li>
+<li>Phyllis Fox；</li>
+<li>Klim Maling；</li>
+<li>多個後續實作與共同體。</li>
+</ul>
+<p><code>eval</code> 成為 Interpreter 的實作洞見尤其不能只歸於 McCarthy。</p>
+<hr>
+<h2>一百一十五、Hickey 的簡單不表示 Clojure 容易</h2>
+<p>Clojure 仍要求理解：</p>
+<ul>
+<li>Lisp syntax；</li>
+<li>Persistent collection；</li>
+<li>JVM；</li>
+<li>Lazy sequence；</li>
+<li>Macro；</li>
+<li>Reference type；</li>
+<li>Namespace；</li>
+<li>Host interop；</li>
+<li>Toolchain。</li>
+</ul>
+<p>簡單性是結構目標，不是入門成本保證。</p>
+<hr>
+<h2>一百一十六、小核心不等於小生態</h2>
+<h1>$$
+SmallLanguageKernel
++
+Time
++
+Users
++
+Libraries</h1>
+<p>LargeOperationalSystem
+$$</p>
+<p>Lisp 與 Clojure 都證明核心與實際工作環境必須分開評估。</p>
+<hr>
+<h2>一百一十七、不可變不等於沒有時間</h2>
+<p>Hickey 不是消除時間，而是讓時間顯性：</p>
+<p>$$
+Identity
+\xrightarrow{t}
+Value_t
+$$</p>
+<p>Backus 也承認歷史敏感系統需要某種狀態轉換。</p>
+<hr>
+<h2>一百一十八、形式優雅不能自動處理外部世界</h2>
+<ul>
+<li>I/O；</li>
+<li>Failure；</li>
+<li>Resource；</li>
+<li>Concurrency；</li>
+<li>Distribution；</li>
+<li>Deployment；</li>
+<li>Interop；</li>
+<li>Security；</li>
+</ul>
+<p>都需要額外模型。</p>
+<p>三人的簡單性方案都必須在此接受壓力測試。</p>
+<hr>
+<h1>第十八部分　PLDST 十四軸比較矩陣</h1>
+<h2>一百一十九、比較矩陣</h2>
+<table>
+<thead>
+<tr>
+<th>軸</th>
+<th>Backus</th>
+<th>McCarthy</th>
+<th>Hickey</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>原始問題</td>
+<td>擺脫逐字狀態控制</td>
+<td>操作符號與形式知識</td>
+<td>拆開值、身分、狀態與時間</td>
+</tr>
+<tr>
+<td>函數地位</td>
+<td>完整程式與代數單位</td>
+<td>遞迴符號函數與語義</td>
+<td>不可變值之間的轉換</td>
+</tr>
+<tr>
+<td>符號地位</td>
+<td>降低值命名支配</td>
+<td>計算的基本材料</td>
+<td>保留 Lisp Symbol，但轉向值與資料</td>
+</tr>
+<tr>
+<td>命名態度</td>
+<td>減少命名與替換</td>
+<td>命名、Lambda、Symbol 為核心</td>
+<td>區分 Symbol、Var、Binding、Value</td>
+</tr>
+<tr>
+<td>變數／賦值</td>
+<td>強烈批判</td>
+<td>形式核心弱化，實際系統納入</td>
+<td>Local binding 與明確 Reference 分離</td>
+</tr>
+<tr>
+<td>遞迴</td>
+<td>多封裝進 Combining forms</td>
+<td>核心形式</td>
+<td>多由 Library／Sequence／Reduce 承擔</td>
+</tr>
+<tr>
+<td>組合</td>
+<td>固定 Combining forms</td>
+<td>Lambda、List、eval、Macro</td>
+<td>Function、Data、Protocol、Transducer</td>
+</tr>
+<tr>
+<td>核心</td>
+<td>小且固定</td>
+<td>小且生成性高</td>
+<td>小而克制，宿主槓桿大</td>
+</tr>
+<tr>
+<td>延展</td>
+<td>組合既有函數</td>
+<td>語言內生成新形式</td>
+<td>Library、Macro、Protocol、JVM</td>
+</tr>
+<tr>
+<td>狀態</td>
+<td>降低頻率與語義耦合</td>
+<td>核心 Applicative，系統混合</td>
+<td>Value／Identity／Reference 明確分離</td>
+</tr>
+<tr>
+<td>形式推理</td>
+<td>程式代數</td>
+<td>遞迴函數與可執行語義</td>
+<td>局部可推理與責任分離</td>
+</tr>
+<tr>
+<td>宿主策略</td>
+<td>傾向整體替代</td>
+<td>形式獨立、落地 IBM 704</td>
+<td>JVM 共生</td>
+</tr>
+<tr>
+<td>主要優勢</td>
+<td>可轉換、可推導、大尺度思考</td>
+<td>統一表示、自我延展、活系統</td>
+<td>並發可推理、資訊穩定、實用生態</td>
+</tr>
+<tr>
+<td>主要風險</td>
+<td>I/O／完整系統不足</td>
+<td>方言、動態、安全、工具</td>
+<td>學習、宿主複雜度、集中治理</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>一百二十、三種目標函數</h2>
+<p>Backus：</p>
+<h1>$$
+J_B</h1>
+<h2>\alpha A_{\text{algebra}}
++
+\beta C_{\text{composition}}
++
+\gamma U_{\text{large-unit}}</h2>
+<h2>\lambda V_{\text{value-variable}}</h2>
+<p>\mu S_{\text{state-coupling}}
+$$</p>
+<p>McCarthy：</p>
+<h1>$$
+J_M</h1>
+<h2>\alpha U_{\text{representation}}
++
+\beta G_{\text{generativity}}
++
+\gamma E_{\text{executable-semantics}}</h2>
+<p>\lambda P_{\text{primitive-diversity}}
+$$</p>
+<p>Hickey：</p>
+<h1>$$
+J_H</h1>
+<h2>\alpha D_{\text{decomplecting}}
++
+\beta V_{\text{immutability}}
++
+\gamma R_{\text{explicit-state}}
++
+\delta H_{\text{host-leverage}}</h2>
+<p>\lambda I_{\text{intertwining}}
+$$</p>
+<p>這些是本文分析模型，不是三人提出的量化公式。</p>
+<hr>
+<h1>第十九部分　對新語言設計的實際啟示</h1>
+<h2>一百二十一、先回答你要的是哪種簡單</h2>
+<p>新語言應明確選擇：</p>
+<pre><code class="language-text">代數可推導？
+核心少且生成力高？
+責任不交纏？
+入門熟悉？
+表面短？
+工具容易？
+生態一致？
+</code></pre>
+<p>不能用「簡單」一詞同時代替全部目標。</p>
+<hr>
+<h2>一百二十二、建立簡單性負擔表</h2>
+<p>每個設計決策應記錄：</p>
+<pre><code class="language-text">刪除了什麼概念？
+複雜度被搬到哪一層？
+使用者還要理解什麼？
+Runtime 新增什麼責任？
+Tooling 能否恢復隱藏資訊？
+是否增加語言內生成權力？
+是否增加狀態或時間歧義？
+是否形成新的治理瓶頸？
+</code></pre>
+<hr>
+<h2>一百二十三、建立函數尺度標記</h2>
+<p>語言文件應說明函數主要被用作：</p>
+<ul>
+<li>Value-level calculation；</li>
+<li>Program-level composition；</li>
+<li>Effectful procedure；</li>
+<li>Symbolic rule；</li>
+<li>Transformation pipeline；</li>
+<li>Stateful transition。</li>
+</ul>
+<p>否則「支援函數式」資訊不足。</p>
+<hr>
+<h2>一百二十四、建立符號權力邊界</h2>
+<p>若程式與資料統一，必須設計：</p>
+<ul>
+<li>Read／eval 分離；</li>
+<li>Macro phase；</li>
+<li>Namespace；</li>
+<li>Security；</li>
+<li>Tooling；</li>
+<li>Source mapping；</li>
+<li>Generated code diagnostics。</li>
+</ul>
+<p>McCarthy 的生成性必須配合現代邊界。</p>
+<hr>
+<h2>一百二十五、建立狀態頻率與狀態語義雙指標</h2>
+<p>Backus 提醒我們降低：</p>
+<p>$$
+Frequency(StateTransition)
+$$</p>
+<p>Hickey 提醒我們明確：</p>
+<p>$$
+Semantics(StateTransition)
+$$</p>
+<p>兩者缺一不可。</p>
+<hr>
+<h2>一百二十六、固定組合與開放延展需分層</h2>
+<p>可以設計：</p>
+<pre><code class="language-text">核心層：少量固定、可推導組合
+語言層：受限 Macro／Protocol
+程式庫層：開放組合
+應用層：領域 DSL
+</code></pre>
+<p>這是三人路線可互補之處。</p>
+<hr>
+<h2>一百二十七、宿主不是免費午餐</h2>
+<p>使用既有 Runtime 可節省：</p>
+<ul>
+<li>GC；</li>
+<li>Thread；</li>
+<li>Library；</li>
+<li>Deployment；</li>
+<li>Tooling。</li>
+</ul>
+<p>但必須公開宿主洩漏：</p>
+<ul>
+<li>Type；</li>
+<li>Exception；</li>
+<li>Performance；</li>
+<li>Reflection；</li>
+<li>Lifecycle；</li>
+<li>Interop。</li>
+</ul>
+<hr>
+<h2>一百二十八、不要把簡單性道德化</h2>
+<p>複雜需求有時真的需要：</p>
+<ul>
+<li>多種狀態模型；</li>
+<li>Effect；</li>
+<li>Resource；</li>
+<li>Transaction；</li>
+<li>Distribution；</li>
+<li>Compatibility；</li>
+<li>Optimization。</li>
+</ul>
+<p>簡單性不是把所有複雜需求稱為錯誤，而是讓複雜度具有可辨識位置。</p>
+<hr>
+<h1>第二十部分　統一結論</h1>
+<h2>一百二十九、三人共同反對的是什麼</h2>
+<p>三者共同反對：</p>
+<blockquote>
+<p>讓使用者在沒有必要時，替機器、表示或歷史偶發支付重複認知成本。</p>
+</blockquote>
+<hr>
+<h2>一百三十、三人的分歧</h2>
+<p>Backus 認為根本問題是：</p>
+<p>$$
+Programming
+\approx
+WordAtATimeStateManipulation
+$$</p>
+<p>McCarthy 認為根本機會是：</p>
+<p>$$
+Programs
+\text{ can manipulate }
+Programs
+\text{ as symbols}
+$$</p>
+<p>Hickey 認為根本問題是：</p>
+<p>$$
+Concepts
+\text{ are complected}
+$$</p>
+<hr>
+<h2>一百三十一、三種簡單性憲法</h2>
+<p>Backus：</p>
+<blockquote>
+<p>語言應以少量固定函數組合建立程式，並具有可用於程式轉換與證明的代數。</p>
+</blockquote>
+<p>McCarthy：</p>
+<blockquote>
+<p>語言應以統一符號表示與遞迴語義形成小型生成核心，使程式能操作並延展自身語言。</p>
+</blockquote>
+<p>Hickey：</p>
+<blockquote>
+<p>語言應把值、身分、狀態、時間與處理情境分離，讓必要變化具有明確邊界。</p>
+</blockquote>
+<hr>
+<h2>一百三十二、三種複雜度政治</h2>
+<p>$$
+\boxed{
+\begin{aligned}
+Backus &amp;: \text{限制組合語彙，以換取代數推理}\
+McCarthy &amp;: \text{統一表示語彙，以換取生成能力}\
+Hickey &amp;: \text{分離責任語彙，以換取結構理解}
+\end{aligned}
+}
+$$</p>
+<hr>
+<h2>一百三十三、三者可否混合</h2>
+<p>可以，但不是簡單相加。</p>
+<p>例如一門新語言可同時採：</p>
+<ul>
+<li>Backus 式固定核心 Combinator；</li>
+<li>McCarthy 式程式資料表示；</li>
+<li>Hickey 式不可變值與明確 State model。</li>
+</ul>
+<p>但會產生衝突：</p>
+<ul>
+<li>Macro 是否破壞代數律？</li>
+<li>Host effect 是否破壞純轉換？</li>
+<li>開放符號生成是否破壞核心克制？</li>
+<li>多種 Reference 是否增加核心表面？</li>
+<li>程式代數如何處理 I/O 與時間？</li>
+</ul>
+<hr>
+<h2>一百三十四、最終 PLDST 判定</h2>
+<p>$$
+\boxed{
+\begin{aligned}
+John\ Backus
+&amp;:
+\text{Algebraic Transformational Simplifier}\
+John\ McCarthy
+&amp;:
+\text{Generative Symbolic Simplifier}\
+Rich\ Hickey
+&amp;:
+\text{Decomplective Structural Simplifier}
+\end{aligned}
+}
+$$</p>
+<hr>
+<h2>一百三十五、本文最後命題</h2>
+<blockquote>
+<p>簡單性不是「沒有東西」，而是決定哪些東西應該被固定、哪些東西可以生成，以及哪些東西絕不能被交纏。</p>
+</blockquote>
+<p>因此：</p>
+<h1>$$
+\boxed{
+Simplicity</h1>
+<h2>Constraint
++
+Generativity
++
+Separation</h2>
+<p>UntrackedCoupling
+}
+$$</p>
+<p>Backus、McCarthy 與 Hickey 分別把其中一項推向極致：</p>
+<ul>
+<li>Backus 深化 Constraint 與 Algebra；</li>
+<li>McCarthy 深化 Generativity 與 Representation；</li>
+<li>Hickey 深化 Separation 與 Explicit change。</li>
+</ul>
+<p>這三條道路共同構成 PLDST 對「簡單性」最重要的比較基礎。</p>
+<hr>
+<h1>附錄 A　PLDST 比較卡</h1>
+<pre><code class="language-text">比較組：John Backus／John McCarthy／Rich Hickey
+主要語言／系統：FP／LISP／Clojure
+共同命題：以函數與高階表示降低命令式偶發負擔
+
+Backus：
+核心問題＝逐字狀態與命名支配
+核心策略＝Function-level、Combining forms、Program algebra
+簡單性＝固定組合與可推導轉換
+複雜度去向＝代數基礎、實作、I/O 與狀態整合
+主要限制＝完整系統與外部世界
+
+McCarthy：
+核心問題＝符號知識與可變結構的計算
+核心策略＝S-expression、Recursion、Lambda、eval
+簡單性＝小型生成核心與統一表示
+複雜度去向＝Runtime、GC、Macro、方言與治理
+主要限制＝動態、安全、工具、分支
+
+Hickey：
+核心問題＝值、身分、狀態、時間與情境交纏
+核心策略＝Immutable value、Reference semantics、Function、Host JVM
+簡單性＝解除交纏與責任分離
+複雜度去向＝Persistent structure、JVM、工具、學習與治理
+主要限制＝宿主洩漏、動態工具、集中演化
+
+核心比較：
+Backus＝代數轉換型簡單性
+McCarthy＝生成符號型簡單性
+Hickey＝去交纏結構型簡單性
+
+歸因信心：高
+</code></pre>
+<hr>
+<h1>附錄 B　設計決策語料</h1>
+<table>
+<thead>
+<tr>
+<th>人物</th>
+<th>問題</th>
+<th>決策</th>
+<th>簡單性類型</th>
+<th>複雜度去向</th>
+<th>PLDST 標記</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Backus</td>
+<td>逐字控制支配程式</td>
+<td>Function-level programming</td>
+<td>代數／尺度</td>
+<td>FP system</td>
+<td>B-F</td>
+</tr>
+<tr>
+<td>Backus</td>
+<td>程式難以同語言轉換</td>
+<td>Program algebra</td>
+<td>可推導</td>
+<td>Algebra foundation</td>
+<td>B-A</td>
+</tr>
+<tr>
+<td>Backus</td>
+<td>自由組合可能混亂</td>
+<td>固定 Combining forms</td>
+<td>約束型</td>
+<td>核心選擇</td>
+<td>B-C</td>
+</tr>
+<tr>
+<td>Backus</td>
+<td>歷史系統仍需狀態</td>
+<td>Applicative state transition</td>
+<td>鬆耦合</td>
+<td>State model</td>
+<td>B-S</td>
+</tr>
+<tr>
+<td>McCarthy</td>
+<td>符號結構長度不固定</td>
+<td>List／S-expression</td>
+<td>表示統一</td>
+<td>GC／Runtime</td>
+<td>M-S</td>
+</tr>
+<tr>
+<td>McCarthy</td>
+<td>符號函數需遞迴</td>
+<td>Conditional／Lambda／Label</td>
+<td>生成核心</td>
+<td>Dynamic execution</td>
+<td>M-R</td>
+</tr>
+<tr>
+<td>McCarthy</td>
+<td>語言需可執行定義</td>
+<td><code>apply</code>／<code>eval</code></td>
+<td>語義統一</td>
+<td>Interpreter／Safety</td>
+<td>M-E</td>
+</tr>
+<tr>
+<td>McCarthy</td>
+<td>程式需操作程式</td>
+<td>Program as data</td>
+<td>延展型</td>
+<td>Macro／Dialect</td>
+<td>M-P</td>
+</tr>
+<tr>
+<td>Hickey</td>
+<td>值與狀態被混同</td>
+<td>Immutable values</td>
+<td>去交纏</td>
+<td>Persistent structure</td>
+<td>H-V</td>
+</tr>
+<tr>
+<td>Hickey</td>
+<td>Identity 與更新規則混同</td>
+<td>Ref／Atom／Agent／Var</td>
+<td>責任分離</td>
+<td>Runtime semantics</td>
+<td>H-I</td>
+</tr>
+<tr>
+<td>Hickey</td>
+<td>Algorithm 綁定 Collection context</td>
+<td>Transducer</td>
+<td>情境分離</td>
+<td>Library abstraction</td>
+<td>H-T</td>
+</tr>
+<tr>
+<td>Hickey</td>
+<td>新語言重建成本過高</td>
+<td>JVM symbiosis</td>
+<td>宿主槓桿</td>
+<td>Interop complexity</td>
+<td>H-J</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>附錄 C　來源與參考文獻</h1>
+<p><strong>[R1]</strong> John Backus, “Can Programming Be Liberated from the von Neumann Style? A Functional Style and Its Algebra of Programs,” <em>Communications of the ACM</em> 21(8), 1978.<br>— 馮紐曼瓶頸、Function-level programming、Combining forms、Program algebra、Applicative state transition。</p>
+<p><strong>[R2]</strong> Grady Booch, “Oral History of John Backus,” Computer History Museum, 2006.<br>— Backus 對 FP 起源、I/O 困難、完整系統限制及後期自我評價的直接敘述。</p>
+<p><strong>[R3]</strong> Computer History Museum Software Preservation Group, “History of John Backus’s Functional Programming Project.”<br>— FP、FL、FFP、文件與實作歷史保存。</p>
+<p><strong>[R4]</strong> John McCarthy, “Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I,” <em>Communications of the ACM</em> 3(4), 1960.<br>— S-expression、S-function、Conditional、Lambda、<code>apply</code>、Interpreter、List structure 與 GC。</p>
+<p><strong>[R5]</strong> John McCarthy, “History of Lisp,” HOPL I, 1978／1979.<br>— LISP 問題形成、M-expression／S-expression、<code>eval</code> 實作與歷史歸因。</p>
+<p><strong>[R6]</strong> John McCarthy et al., <em>LISP 1.5 Programmer’s Manual</em>, MIT Press, 1962.<br>— Interpreter、Compiler、Reader／Printer、GC、實作團隊與早期系統。</p>
+<p><strong>[R7]</strong> Rich Hickey, “Simple Made Easy,” Strange Loop, 2011.<br>— Simple／Easy、Complect、Composition 與結構簡單性。</p>
+<p><strong>[R8]</strong> Rich Hickey, “Values and Change: Clojure’s Approach to Identity and State,” Clojure official site.<br>— Value、Identity、State、Reference、Time、STM 與 Agent。</p>
+<p><strong>[R9]</strong> Rich Hickey, “A History of Clojure,” <em>Proceedings of the ACM on Programming Languages</em>, HOPL IV, 2020.<br>— Clojure 形成、JVM、設計目標、Persistent data、Concurrency 與取捨。</p>
+<p><strong>[R10]</strong> Clojure official Rationale、Functional Programming、Development 與 Reference 文件。<br>— Dynamic compiled language、Persistent collection、Sequence、Host interop、克制演化與現行語義。</p>
+<p><strong>[R11]</strong> PLDST-011, <em>John Backus：從 FORTRAN 到函數級程式設計的自我反省</em>.<br>— 本系列前置個案研究。</p>
+<p><strong>[R12]</strong> PLDST-012, <em>John McCarthy：極小核心、符號計算與語言可延展性</em>.<br>— 本系列前置個案研究。</p>
+<p><strong>[R13]</strong> PLDST-021, <em>Rich Hickey：價值、身分與簡單性的分離</em>.<br>— 本系列前置個案研究。</p>
+<p><strong>資料查核日期：</strong> 2026-07-30。</p>
+<hr>
+<h1>附錄 D　PLDST 比較標記</h1>
+<pre><code class="language-text">[B-F] Backus: function-level programming
+[B-C] Backus: fixed combining forms
+[B-A] Backus: algebra of programs
+[B-V] Backus: anti word-at-a-time
+[B-S] Backus: loose state coupling
+[B-R] Backus: reflexive revision
+
+[M-S] McCarthy: symbolic representation
+[M-R] McCarthy: recursive core
+[M-L] McCarthy: lambda and naming
+[M-E] McCarthy: executable semantics
+[M-P] McCarthy: program-data unity
+[M-G] McCarthy: generative extensibility
+
+[H-S] Hickey: simple-not-easy
+[H-D] Hickey: decomplecting
+[H-V] Hickey: immutable values
+[H-I] Hickey: identity-state separation
+[H-T] Hickey: transducer/context separation
+[H-J] Hickey: JVM host leverage
+[H-C] Hickey: conservative core evolution
+
+[C-F] comparative function model
+[C-S] comparative simplicity model
+[C-R] representation politics
+[C-T] time-state allocation
+[C-X] extension governance
+[C-B] complexity burden
+</code></pre>
+<hr>
+<h1>附錄 E　第二輪史實、概念與比較校對紀錄</h1>
+<h2>E.1 Backus FP 不是一般 Lambda 語言</h2>
+<p>重新核對圖靈獎演講：</p>
+<ul>
+<li>FP 程式被定義為沒有變量的函數；</li>
+<li>新函數主要由固定 Combining forms 與簡單定義建立；</li>
+<li>Backus 明確把 FP 與 Lambda-calculus 型 Applicative system 比較；</li>
+<li>他認為無限制的替換與組合自由會造成複雜性。</li>
+</ul>
+<p>因此本文使用：</p>
+<pre><code class="language-text">Function-level programming
+</code></pre>
+<p>而沒有把 Backus 簡化成「現代純函數語言倡議者」。</p>
+<hr>
+<h2>E.2 Backus 沒有否認所有狀態</h2>
+<p>圖靈獎演講提出 Applicative state transition 系統，承認歷史敏感計算需要狀態轉換。</p>
+<p>其要求是：</p>
+<pre><code class="language-text">狀態轉換不應與每一個微小計算緊密耦合
+</code></pre>
+<p>而不是所有系統永遠無狀態。</p>
+<hr>
+<h2>E.3 Backus 對 FP 的後期修正</h2>
+<p>口述歷史明確指出：</p>
+<ul>
+<li>Combining forms 的核心構想相對容易；</li>
+<li>I/O 與周邊能力難以乾淨納入；</li>
+<li>FP 作為完整系統最終沒有成功；</li>
+<li>他仍認為資料轉換型問題適合函數式方法。</li>
+</ul>
+<p>本文因此沒有把 FP 描述成已完成的通用替代。</p>
+<hr>
+<h2>E.4 McCarthy 核心與實際 LISP 系統分開</h2>
+<p>1960 論文的形式核心以 S-function 與遞迴定義為主，但早期 LISP 系統已包含：</p>
+<ul>
+<li>編譯；</li>
+<li>Machine-language function；</li>
+<li>Assignment；</li>
+<li><code>go to</code>；</li>
+<li>I/O；</li>
+<li>Trace。</li>
+</ul>
+<p>本文因此分開：</p>
+<p>$$
+FormalCore
+\neq
+OperationalSystem
+$$</p>
+<hr>
+<h2>E.5 <code>eval</code> 歸因</h2>
+<p>McCarthy 提出 Universal function 的形式；Steve Russell 看出並實作其 Interpreter 意義；其他團隊成員建立 GC、Compiler、Reader／Printer 及系統。</p>
+<p>本文不把整套 LISP 實作歸於 McCarthy 個人。</p>
+<hr>
+<h2>E.6 S-expression 的歷史偶發</h2>
+<p>McCarthy 原計畫以 M-expression 作外部語法、S-expression 作內部表示。</p>
+<p>M-expression 沒有完成普及，使 S-expression 成為主要表面。</p>
+<p>本文將其標記為：</p>
+<pre><code class="language-text">事故性穩定
+</code></pre>
+<p>而非完全預定設計終局。</p>
+<hr>
+<h2>E.7 Hickey 的 Simple 定義</h2>
+<p>〈Simple Made Easy〉的 Simple 主要指：</p>
+<ul>
+<li>單一責任；</li>
+<li>未被交織；</li>
+<li>可獨立理解與組合。</li>
+</ul>
+<p>它不等同：</p>
+<ul>
+<li>少字元；</li>
+<li>初學容易；</li>
+<li>熟悉；</li>
+<li>無功能；</li>
+<li>無狀態。</li>
+</ul>
+<hr>
+<h2>E.8 Clojure 沒有宣稱完全純函數</h2>
+<p>官方資料明確稱 Clojure predominantly functional／impure，並提供 Ref、Atom、Agent、Var 及 Java interop。</p>
+<p>本文使用：</p>
+<pre><code class="language-text">函數式優先＋明確變化邊界
+</code></pre>
+<p>而不是「完全純函數語言」。</p>
+<hr>
+<h2>E.9 Value 與 Identity</h2>
+<p>官方 Identity／State 文件明確區分：</p>
+<ul>
+<li>Identity 可以在不同時間具有不同 State；</li>
+<li>State 本身是不可變 Value；</li>
+<li>新值由舊值透過函數產生；</li>
+<li>Reference 管理變化與協調。</li>
+</ul>
+<p>本文的形式化為分析重述，不是官方原始數學公式。</p>
+<hr>
+<h2>E.10 三種 Simplifier 是本文原型</h2>
+<p>下列名稱不是三位設計者自稱：</p>
+<pre><code class="language-text">Algebraic Transformational Simplifier
+Generative Symbolic Simplifier
+Decomplective Structural Simplifier
+</code></pre>
+<p>其用途是把「簡單性」分解成可比較的設計風格。</p>
+<hr>
+<h1>附錄 F　與下一篇的銜接</h1>
+<p>PLDST-025 比較三種簡單性：</p>
+<pre><code class="language-text">代數轉換
+符號生成
+結構去交纏
+</code></pre>
+<p>PLDST-026 將從設計內容轉向設計權力：</p>
+<blockquote>
+<p>當語言由個人創始者、仁慈獨裁者、核心團隊、標準委員會或 RFC 社群治理時，誰有權定義「這仍是同一門語言」？</p>
+</blockquote>
+<p>下一篇預定為：</p>
+<p><strong>PLDST-026：個人設計者、仁慈獨裁者與 RFC 制度——語言治理風格比較。</strong></p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-025.html">https://thisoneisneok.com/html/papers/pldst-025.html</a></footer>
+</body>
+</html>

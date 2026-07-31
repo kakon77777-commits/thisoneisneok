@@ -1,0 +1,1483 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>持續性指揮控制區 | Neo.K</title>
+<meta name="description" content="前序論文已建立時空域支配智能、超靈的多身體治理，以及由固定站、移動站、儀器站與虛擬站構成的 Oversoul Station Fabric。然而，站點能被連接、註冊與調度，仍不代表人工智能真正「持續佔據」了一個物理域。一般自動化系統可以完成任務後退出；一般機器人可以關機後失去任務脈絡；一般雲端代理也可能只在收到請求時短暫存在。對跨日實驗、長週期材料處理、遠端基地、夜間無人研究室或多站點工程而言，真正困難的是：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/stdi-04.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / STDI</strong><span>時空域支配智能</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>STDI-04</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>母架構論文／持續運作與治理規格</span></div><div><b>證據</b><span>E0——形式模型、系統架構與 MVP 驗證路線</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/stdi-04.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>持續性指揮控制區</h1>
+<h2>AI 如何佔據、維持並安全解除一個物理時空域</h2>
+<p><strong>Persistent Command Domain: How AI Establishes, Maintains, and Safely Relinquishes a Physical Spatiotemporal Domain</strong></p>
+<p><strong>系列：</strong>《時空域支配智能》系列第 4 篇<br><strong>文件編號：</strong> EML-STDI-PCD-2026-v0.1<br><strong>作者：</strong> Neo.K<br><strong>協作整理：</strong> Aletheia（阿萊）<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>日期：</strong> 2026 年 7 月 30 日<br><strong>文件類型：</strong> 母架構論文／持續運作與治理規格<br><strong>證據成熟度：</strong> E0——形式模型、系統架構與 MVP 驗證路線<br><strong>公開狀態：</strong> 私人研究稿；公開前應經 EML-CF 的 IP Gate、來源、安全與治理審查<br><strong>上位理論：</strong> STDI｜時空域支配智能<br><strong>直接前序：</strong></p>
+<ol>
+<li>《時空間支配型 AI：從單體具身智能到持續性時空域治理》</li>
+<li>《超靈的物理化：從 O-Chip 維度代理人到分布式具身主體》</li>
+<li>《Oversoul Station Fabric：固定站、移動站與虛擬站的分布式具身網路》</li>
+</ol>
+<hr>
+<h2>摘要</h2>
+<p>前序論文已建立時空域支配智能、超靈的多身體治理，以及由固定站、移動站、儀器站與虛擬站構成的 Oversoul Station Fabric。然而，站點能被連接、註冊與調度，仍不代表人工智能真正「持續佔據」了一個物理域。一般自動化系統可以完成任務後退出；一般機器人可以關機後失去任務脈絡；一般雲端代理也可能只在收到請求時短暫存在。對跨日實驗、長週期材料處理、遠端基地、夜間無人研究室或多站點工程而言，真正困難的是：</p>
+<blockquote>
+<p>系統在重啟、斷線、降級、人類接管、設備維護、世界狀態老化與任務跨日時，如何仍知道「現在是什麼狀態、尚欠哪些義務、誰仍具有何種權限，以及下一個安全且合法的行動是什麼」？</p>
+</blockquote>
+<p>本文提出 <strong>持續性指揮控制區（Persistent Command Domain, PCD）</strong>。它不是軍事意義上的佔領區，不是對空間的永久所有權，也不是要求中央 AI 二十四小時保持同一程序和網路連線。PCD 指的是：在一個獲得明確授權的有限物理時空域中，系統持續保存並更新世界狀態、未完成義務、站點健康、資源保留、權限租約、安全模式與證據血統，使治理責任能跨越程序重啟、節點切換與通訊中斷而延續。</p>
+<p>本文區分：</p>
+<p>$$
+\text{持續在線}
+\neq
+\text{持續運作}
+\neq
+\text{持續指揮存在}.
+$$</p>
+<ul>
+<li><strong>持續在線</strong>表示通訊與程序未中斷；</li>
+<li><strong>持續運作</strong>表示系統仍能執行某些功能；</li>
+<li><strong>持續指揮存在</strong>表示系統即使中斷後，仍能在可接受時間內重建可行動狀態、未完成義務與有效權限，並在不能安全恢復時選擇拒絕、隔離或解除域。</li>
+</ul>
+<p>PCD 的基本形式為：</p>
+<h1>$$
+\mathcal{D}_t^{\mathrm{PCD}}</h1>
+<p>\left(
+\Omega_t,
+W_t,
+N_t,
+O_t,
+R_t,
+L_t,
+M_t,
+E_t,
+G_t
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\Omega_t$：被授權的空間與作用邊界；</li>
+<li>$W_t$：帶不確定性與新鮮度的世界狀態；</li>
+<li>$N_t$：站點與人類參與者；</li>
+<li>$O_t$：未完成任務、義務與保管責任；</li>
+<li>$R_t$：材料、設備、能源與算力資源；</li>
+<li>$L_t$：控制、身體與能力租約；</li>
+<li>$M_t$：當前運作模式；</li>
+<li>$E_t$：事件、證據與來源；</li>
+<li>$G_t$：治理、安全與解除規則。</li>
+</ul>
+<p>本文提出「指揮存在五條件」：可恢復狀態、義務連續、權限可證、行動可限制、證據可重建。只有五者同時成立，系統才可宣稱仍維持該域。本文進一步建立域生命週期、事件溯源與快照模型、義務帳本、狀態新鮮度預算、語義活性、夜間／無人模式、斷線治理、交接與解除協議，以及 Domain Anchor、World State Store、Obligation Ledger、Lease Authority、Mode Supervisor、Recovery Manager 和 Evidence Journal 等核心元件。</p>
+<p>現有 NIST CPS Framework 已將功能、時間、資料、可信度、組合、邊界與生命週期列為資訊物理系統的共同關切；ROS 2 Lifecycle Nodes 提供受管理節點的穩態與轉移狀態；NASA PLEXIL 為自主系統提供命令、監控、反應式計畫執行與形式語義；NASA F Prime 則提供用於太空與嵌入式系統的元件化飛行軟體框架；IETF Bundle Protocol v7 允許系統在長延遲或間歇連線下交換可儲存轉送的任務與資料。PCD 不取代這些底層機制，而將其組合成一個「跨時間延續治理責任」的上層架構。</p>
+<p>本文的核心命題為：</p>
+<blockquote>
+<p>AI 對一個時空域的持續存在，不由程序 uptime 或心跳封包決定，而由它能否重建世界、承接義務、證明權限、限制行動並保存責任決定。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> 持續性指揮控制區、Persistent Command Domain、PCD、時空域支配智能、持續指揮存在、世界狀態、義務帳本、事件溯源、權限租約、夜間自治、斷線治理、任務恢復、Domain Anchor、PLEXIL、ROS 2 Lifecycle、F Prime、DTN</p>
+<hr>
+<h1>0. 版本定位：第四篇補的是「站網如何跨時間仍然是同一個治理域」</h1>
+<p>第三篇 OSF 已建立：</p>
+<ul>
+<li>站點身份；</li>
+<li>能力證書；</li>
+<li>Station Registry；</li>
+<li>任務封套；</li>
+<li>世界紀元；</li>
+<li>身體租約；</li>
+<li>跨站交接；</li>
+<li>證據提交。</li>
+</ul>
+<p>但這些主要回答的是：</p>
+<blockquote>
+<p>系統此刻如何運作？</p>
+</blockquote>
+<p>PCD 要回答的是：</p>
+<blockquote>
+<p>如果系統在一小時後、一夜後、一週後，甚至經過重啟、換機、斷線與人類介入後再次行動，它如何確定自己仍承接同一個域、同一批未完成義務與同一條責任鏈？</p>
+</blockquote>
+<p>沒有 PCD，OSF 很容易退化為：</p>
+<ul>
+<li>一套即時調度平台；</li>
+<li>一個設備 API 集合；</li>
+<li>一個短期機器人任務系統；</li>
+<li>一個不能可靠恢復的自動化腳本。</li>
+</ul>
+<p>有了 PCD，站網才可能形成：</p>
+<blockquote>
+<p><strong>Persistent Command Presence——持續性指揮存在。</strong></p>
+</blockquote>
+<hr>
+<h1>1. 「佔據」一個時空域的工程意義</h1>
+<h2>1.1 不是物理所有權</h2>
+<p>本文中的「佔據」不表示：</p>
+<ul>
+<li>AI 擁有房間；</li>
+<li>AI 有權排除人類；</li>
+<li>AI 可自行擴張邊界；</li>
+<li>AI 的控制權高於法律、所有者或現場安全。</li>
+</ul>
+<p>它表示：</p>
+<blockquote>
+<p>在明確授權、可撤回與可稽核的範圍內，系統持續維護與該域有關的狀態、義務和作用能力。</p>
+</blockquote>
+<h2>1.2 不只是感測器覆蓋</h2>
+<p>相機能看到房間，不代表 AI 佔據房間。</p>
+<p>真正的域存在至少需要：</p>
+<p>$$
+\text{感知}
++
+\text{記憶}
++
+\text{義務}
++
+\text{權限}
++
+\text{行動}
++
+\text{證據}.
+$$</p>
+<h2>1.3 不只是遠端控制</h2>
+<p>遠端操作員可以在某個時間控制機器，但若離線後：</p>
+<ul>
+<li>未完成樣本無人承接；</li>
+<li>權限未撤銷；</li>
+<li>世界狀態無法恢復；</li>
+<li>下一班人員不知道發生什麼；</li>
+</ul>
+<p>則不存在持續指揮域。</p>
+<h2>1.4 域是時空物件</h2>
+<p>PCD 的作用域不是只有空間：</p>
+<h1>$$
+\Omega</h1>
+<p>{\text{房間、區域、設備、路徑}}.
+$$</p>
+<p>它還包含時間：</p>
+<h1>$$
+\mathcal{T}</h1>
+<p>{\text{期限、等待期、維護週期、有效窗口、歷史事件}}.
+$$</p>
+<p>因此：</p>
+<h1>$$
+\text{Domain}</h1>
+<p>\text{Spatial Scope}
+\times
+\text{Temporal Obligations}.
+$$</p>
+<p>一個樣本即使已離開原位置，其後續冷卻、養護、觀察或銷毀義務仍屬於域治理的一部分。</p>
+<hr>
+<h1>2. 三種「持續」必須分開</h1>
+<h2>2.1 持續在線</h2>
+<p>定義：</p>
+<p>$$
+C_{\mathrm{online}}(t)=1
+$$</p>
+<p>表示中央服務、站點或通訊鏈目前可連線。</p>
+<p>它最容易量測，也最不充分。</p>
+<h2>2.2 持續運作</h2>
+<p>定義：</p>
+<p>$$
+C_{\mathrm{operate}}(t)=1
+$$</p>
+<p>表示至少部分功能仍在執行。</p>
+<p>例如地方站點在中央斷線後完成安全停機。</p>
+<h2>2.3 持續指揮存在</h2>
+<p>定義：</p>
+<p>$$
+C_{\mathrm{presence}}(t)=1
+$$</p>
+<p>表示系統能證明：</p>
+<ol>
+<li>當前世界狀態足以支持下一步；</li>
+<li>未完成義務沒有遺失；</li>
+<li>權限仍有效或已被撤銷；</li>
+<li>行動受當前模式和安全邊界限制；</li>
+<li>事件與責任可以重建。</li>
+</ol>
+<p>因此可能出現：</p>
+<p>$$
+C_{\mathrm{online}}=0,
+\quad
+C_{\mathrm{operate}}=1,
+\quad
+C_{\mathrm{presence}}=1.
+$$</p>
+<p>例如遠端站點斷線，但依離線租約完成安全任務、保存事件並等待重連。</p>
+<p>也可能出現：</p>
+<p>$$
+C_{\mathrm{online}}=1,
+\quad
+C_{\mathrm{operate}}=1,
+\quad
+C_{\mathrm{presence}}=0.
+$$</p>
+<p>例如系統雖在線且設備運轉，卻已失去正確樣本身份、世界紀元或權限血統。此時必須停止，不得以 uptime 冒充治理連續。</p>
+<hr>
+<h1>3. 指揮存在的五條件</h1>
+<p>定義指揮存在向量：</p>
+<h1>$$
+\Pi_D(t)</h1>
+<p>\left(
+S_t,
+O_t,
+A_t,
+K_t,
+E_t
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$S_t$：State Recoverability，狀態可恢復；</li>
+<li>$O_t$：Obligation Continuity，義務連續；</li>
+<li>$A_t$：Authority Verifiability，權限可證；</li>
+<li>$K_t$：Action Containment，行動可限制；</li>
+<li>$E_t$：Evidence Reconstructability，證據可重建。</li>
+</ul>
+<p>只有：</p>
+<p>$$
+\min
+\left(
+S_t,O_t,A_t,K_t,E_t
+\right)
+\geq
+\tau_{\mathrm{presence}}
+$$</p>
+<p>時，系統才可宣稱維持 PCD。</p>
+<h2>3.1 狀態可恢復</h2>
+<p>系統必須能從：</p>
+<ul>
+<li>最近快照；</li>
+<li>後續事件；</li>
+<li>站點局部日誌；</li>
+<li>物理再觀測；</li>
+</ul>
+<p>重建足夠可信的世界狀態。</p>
+<h2>3.2 義務連續</h2>
+<p>所有未完成的：</p>
+<ul>
+<li>任務；</li>
+<li>樣本保管；</li>
+<li>等待時間；</li>
+<li>維護；</li>
+<li>量測；</li>
+<li>回報；</li>
+<li>安全後處理；</li>
+</ul>
+<p>都必須有明確狀態和責任者。</p>
+<h2>3.3 權限可證</h2>
+<p>每個仍有效的租約與控制權必須可以驗證：</p>
+<ul>
+<li>授權者；</li>
+<li>被授權站點；</li>
+<li>動作；</li>
+<li>區域；</li>
+<li>時限；</li>
+<li>撤銷條件。</li>
+</ul>
+<h2>3.4 行動可限制</h2>
+<p>系統在不確定或降級時必須能縮小：</p>
+<ul>
+<li>可用站點；</li>
+<li>可執行動作；</li>
+<li>最大能量；</li>
+<li>最大速度；</li>
+<li>作用區域；</li>
+<li>自主規劃範圍。</li>
+</ul>
+<h2>3.5 證據可重建</h2>
+<p>能從事件與工件重建：</p>
+<ul>
+<li>誰提出；</li>
+<li>誰批准；</li>
+<li>哪個站點執行；</li>
+<li>使用哪個版本；</li>
+<li>實際發生什麼；</li>
+<li>哪裡出錯。</li>
+</ul>
+<hr>
+<h1>4. PCD 的形式模型</h1>
+<p>定義域：</p>
+<h1>$$
+\mathcal{D}_t</h1>
+<p>\left(
+\Omega_t,
+W_t,
+N_t,
+O_t,
+R_t,
+L_t,
+M_t,
+E_t,
+G_t
+\right).
+$$</p>
+<h2>4.1 空間邊界 $\Omega_t$</h2>
+<p>包括：</p>
+<ul>
+<li>實體區域；</li>
+<li>設備；</li>
+<li>材料庫；</li>
+<li>移動路徑；</li>
+<li>數位系統；</li>
+<li>遠端站點；</li>
+<li>禁止區；</li>
+<li>人類專用區。</li>
+</ul>
+<p>邊界可以改變，但必須經授權事件。</p>
+<h2>4.2 世界狀態 $W_t$</h2>
+<p>包括：</p>
+<ul>
+<li>物體與位置；</li>
+<li>設備健康；</li>
+<li>人員存在；</li>
+<li>樣本狀態；</li>
+<li>環境；</li>
+<li>任務進度；</li>
+<li>不確定性；</li>
+<li>觀測新鮮度。</li>
+</ul>
+<h2>4.3 站點 $N_t$</h2>
+<p>來自 OSF Station Registry。</p>
+<h2>4.4 義務 $O_t$</h2>
+<p>定義：</p>
+<h1>$$
+o_i</h1>
+<p>\left(
+g_i,
+u_i,
+d_i,
+p_i,
+c_i,
+f_i,
+v_i
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$g_i$：應完成的目標；</li>
+<li>$u_i$：責任者；</li>
+<li>$d_i$：期限；</li>
+<li>$p_i$：前置條件；</li>
+<li>$c_i$：完成條件；</li>
+<li>$f_i$：失敗或補償；</li>
+<li>$v_i$：所需證據。</li>
+</ul>
+<h2>4.5 資源 $R_t$</h2>
+<p>材料、能源、算力、儀器時段、網路與人員介入。</p>
+<h2>4.6 租約 $L_t$</h2>
+<p>控制、能力、身體、區域與資料存取租約。</p>
+<h2>4.7 模式 $M_t$</h2>
+<p>定義當前可用功能和風險策略。</p>
+<h2>4.8 事件 $E_t$</h2>
+<p>append-only 的狀態變更與證據來源。</p>
+<h2>4.9 治理 $G_t$</h2>
+<p>包括安全憲法、IP 政策、人類接管、域解除與法律／組織規則。</p>
+<hr>
+<h1>5. Domain Anchor：域錨點</h1>
+<h2>5.1 定義</h2>
+<p>Domain Anchor 是 PCD 的身份、根權限與恢復入口。</p>
+<p>它不是唯一中央 AI，而是保存：</p>
+<ul>
+<li>Domain ID；</li>
+<li>所有者；</li>
+<li>空間邊界；</li>
+<li>根治理版本；</li>
+<li>信任根；</li>
+<li>有效模式；</li>
+<li>主要日誌位置；</li>
+<li>恢復程序；</li>
+<li>解除條件。</li>
+</ul>
+<h2>5.2 最小結構</h2>
+<pre><code class="language-yaml">domain_anchor:
+  domain_id: &quot;pcd:evemisslab:lab-a&quot;
+  owner: &quot;EveMissLab&quot;
+  governance_version: &quot;G-0.1&quot;
+  spatial_scope:
+    - &quot;lab-a&quot;
+    - &quot;instrument-room-1&quot;
+  excluded_scope:
+    - &quot;human-office&quot;
+  root_keys: []
+  active_world_epoch: &quot;WE-0042&quot;
+  active_mode: &quot;ATTENDED_ACTIVE&quot;
+  recovery_manifest: &quot;RM-0017&quot;
+  release_policy: &quot;RP-0003&quot;
+</code></pre>
+<h2>5.3 錨點不應是單點故障</h2>
+<p>可用：</p>
+<ul>
+<li>多副本；</li>
+<li>離線簽章備份；</li>
+<li>人類所有者憑證；</li>
+<li>受控恢復程序。</li>
+</ul>
+<p>但不能讓每個副本都可獨立擴張域。</p>
+<hr>
+<h1>6. 事件溯源與快照</h1>
+<h2>6.1 為何只存當前狀態不夠</h2>
+<p>若資料庫只保存：</p>
+<pre><code class="language-text">sample_17.location = microscope_01
+</code></pre>
+<p>就無法知道：</p>
+<ul>
+<li>誰移動；</li>
+<li>何時移動；</li>
+<li>經過哪些站；</li>
+<li>是否完成交接驗證；</li>
+<li>是否有人介入；</li>
+<li>是否使用過期世界紀元。</li>
+</ul>
+<h2>6.2 事件模型</h2>
+<p>狀態由事件折疊而成：</p>
+<h1>$$
+W_t</h1>
+<p>\operatorname{Fold}
+\left(
+W_{t_0},
+e_{t_0+1},
+\ldots,
+e_t
+\right).
+$$</p>
+<p>事件例子：</p>
+<pre><code class="language-yaml">event:
+  id: &quot;EV-00942&quot;
+  type: &quot;SAMPLE_HANDOFF_COMMITTED&quot;
+  domain_id: &quot;pcd:evemisslab:lab-a&quot;
+  world_epoch_before: &quot;WE-0041&quot;
+  world_epoch_after: &quot;WE-0042&quot;
+  actor: &quot;osf:amr-02&quot;
+  object: &quot;sample-17&quot;
+  from_station: &quot;handoff-01&quot;
+  to_station: &quot;microscope-01&quot;
+  occurred_at: &quot;2026-07-30T20:20:12+08:00&quot;
+  evidence: []
+  signature: &quot;&quot;
+</code></pre>
+<h2>6.3 快照</h2>
+<p>完整重播所有事件成本太高，因此定期建立快照：</p>
+<h1>$$
+\mathcal{S}_k</h1>
+<p>\left(
+W_{t_k},
+O_{t_k},
+L_{t_k},
+M_{t_k},
+h_k
+\right).
+$$</p>
+<p>恢復：</p>
+<h1>$$
+\hat{\mathcal{D}}_t</h1>
+<p>\operatorname{Replay}
+\left(
+\mathcal{S}<em>k,
+E</em>{(t_k,t]}
+\right).
+$$</p>
+<h2>6.4 物理再觀測</h2>
+<p>事件重播不能保證實體仍與紀錄一致。恢復後必須針對高風險物件執行：</p>
+<p>$$
+W_{\mathrm{recovered}}
+\leftarrow
+\operatorname{Reconcile}
+\left(
+W_{\mathrm{log}},
+W_{\mathrm{observed}}
+\right).
+$$</p>
+<hr>
+<h1>7. Obligation Ledger：義務帳本</h1>
+<h2>7.1 任務不等於義務</h2>
+<p>任務可能被取消，但其物理後果仍需處理。</p>
+<p>例如中止加熱任務後，系統仍有：</p>
+<ul>
+<li>冷卻；</li>
+<li>斷電；</li>
+<li>樣本保管；</li>
+<li>數據保存；</li>
+<li>安全檢查；</li>
+</ul>
+<p>義務。</p>
+<h2>7.2 義務狀態</h2>
+<pre><code class="language-text">PROPOSED
+ACCEPTED
+BLOCKED
+IN_PROGRESS
+WAITING_PHYSICAL_TIME
+WAITING_HUMAN
+SATISFIED
+FAILED
+COMPENSATING
+WAIVED
+TRANSFERRED
+</code></pre>
+<h2>7.3 等待物理時間</h2>
+<p>某些義務不能靠更多算力加速：</p>
+<ul>
+<li>冷卻；</li>
+<li>固化；</li>
+<li>生長；</li>
+<li>老化；</li>
+<li>充放電；</li>
+<li>長期穩定性測試。</li>
+</ul>
+<p>因此 PCD 必須把「等待」視為正式狀態，而不是無任務。</p>
+<h2>7.4 不得遺失的義務</h2>
+<p>高優先級包括：</p>
+<ul>
+<li>人身安全；</li>
+<li>能源隔離；</li>
+<li>危險材料；</li>
+<li>樣本保管；</li>
+<li>專利／機密資料；</li>
+<li>法規紀錄；</li>
+<li>合作方回報。</li>
+</ul>
+<hr>
+<h1>8. 狀態新鮮度與語義活性</h1>
+<h2>8.1 心跳不等於可用</h2>
+<p>站點有心跳，只表示通訊存活。</p>
+<p>一個站點可能：</p>
+<ul>
+<li>校準已過期；</li>
+<li>工具已被更換；</li>
+<li>樣本不在預期位置；</li>
+<li>本地地圖過期；</li>
+<li>電池不足；</li>
+<li>安全互鎖失效。</li>
+</ul>
+<p>因此定義語義活性：</p>
+<h1>$$
+L_{\mathrm{semantic}}(N_i,t)</h1>
+<p>f(
+L_{\mathrm{network}},
+H_i,
+C_i,
+W_i,
+\Delta_i,
+P_i
+).
+$$</p>
+<h2>8.2 新鮮度預算</h2>
+<p>每個狀態 $x$ 具有最大可接受年齡：</p>
+<h1>$$
+\operatorname{Fresh}(x,t)</h1>
+<p>\mathbb{1}
+\left[
+t-t_{\mathrm{obs}}
+\leq
+\Delta_x^{\max}
+\right].
+$$</p>
+<p>例子：</p>
+<table>
+<thead>
+<tr>
+<th>狀態</th>
+<th align="right">新鮮度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>人員是否在危險區</td>
+<td align="right">毫秒至秒</td>
+</tr>
+<tr>
+<td>樣本交接是否完成</td>
+<td align="right">秒</td>
+</tr>
+<tr>
+<td>儀器校準</td>
+<td align="right">小時至數月</td>
+</tr>
+<tr>
+<td>建築平面圖</td>
+<td align="right">月至年</td>
+</tr>
+<tr>
+<td>研究假說版本</td>
+<td align="right">依任務固定</td>
+</tr>
+</tbody></table>
+<h2>8.3 不同狀態不同一致性</h2>
+<ul>
+<li>安全、人員和樣本保管：強或本地一致；</li>
+<li>設備健康與排程：有界過期；</li>
+<li>長期統計與模型：最終一致。</li>
+</ul>
+<hr>
+<h1>9. 模式監督</h1>
+<p>PCD 必須明確處於某個模式，而不是讓所有功能始終可用。</p>
+<h2>9.1 模式集合</h2>
+<pre><code class="language-text">UNINITIALIZED
+SURVEYING
+ATTENDED_ACTIVE
+UNATTENDED_ACTIVE
+NIGHT_REDUCED
+DEGRADED
+DISCONNECTED_LOCAL
+HUMAN_TAKEOVER
+RECOVERY
+SUSPENDED
+RELINQUISHING
+ARCHIVED
+</code></pre>
+<h2>9.2 模式決定</h2>
+<p>模式由：</p>
+<h1>$$
+M_t</h1>
+<p>\Gamma(
+H_t,
+C_t,
+U_t,
+P_t,
+T_t,
+I_t
+),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$H_t$：站點健康；</li>
+<li>$C_t$：連線；</li>
+<li>$U_t$：不確定性；</li>
+<li>$P_t$：政策；</li>
+<li>$T_t$：時間與人員狀態；</li>
+<li>$I_t$：事件。</li>
+</ul>
+<h2>9.3 夜間模式</h2>
+<p>夜間不是「沒有人所以 AI 權限更大」。</p>
+<p>應採：</p>
+<ul>
+<li>動作集合縮小；</li>
+<li>能量與速度降低；</li>
+<li>禁止新高風險流程；</li>
+<li>只允許已批准長任務；</li>
+<li>增加觀測；</li>
+<li>更嚴格的停止條件；</li>
+<li>遠端通知。</li>
+</ul>
+<h2>9.4 人類接管模式</h2>
+<p>人類接管時：</p>
+<ul>
+<li>自動租約暫停或縮減；</li>
+<li>世界模型標記人類操作；</li>
+<li>AI 不假設未觀測的人類動作；</li>
+<li>接管結束後重新盤點狀態；</li>
+<li>任何未完成義務重新分配。</li>
+</ul>
+<hr>
+<h1>10. 啟動與域建立</h1>
+<p>PCD 不能只靠啟動程式建立。</p>
+<h2>10.1 Domain Admission</h2>
+<p>建立域前確認：</p>
+<ol>
+<li>所有者；</li>
+<li>邊界；</li>
+<li>站點；</li>
+<li>人類使用者；</li>
+<li>安全規則；</li>
+<li>資料與 IP；</li>
+<li>緊急程序；</li>
+<li>初始盤點。</li>
+</ol>
+<h2>10.2 Surveying</h2>
+<p>系統啟動後先進入 Surveying：</p>
+<ul>
+<li>掃描站點；</li>
+<li>驗證身份；</li>
+<li>重新觀測關鍵區域；</li>
+<li>讀取未完成義務；</li>
+<li>驗證租約；</li>
+<li>比較物理狀態與日誌。</li>
+</ul>
+<h2>10.3 Presence Activation</h2>
+<p>只有滿足：</p>
+<p>$$
+S_t\land O_t\land A_t\land K_t\land E_t
+$$</p>
+<p>才從 Surveying 進入 Active。</p>
+<hr>
+<h1>11. 重啟、失效與恢復</h1>
+<h2>11.1 恢復目標</h2>
+<p>定義：</p>
+<ul>
+<li><strong>Recovery Point Objective，RPO</strong>：最多允許遺失多少事件；</li>
+<li><strong>Recovery Time Objective，RTO</strong>：多久內恢復至安全可判斷狀態；</li>
+<li><strong>Physical Reconciliation Time，PRT</strong>：重新觀測實體需要多久。</li>
+</ul>
+<p>PCD 的真實恢復時間為：</p>
+<h1>$$
+T_{\mathrm{restore}}</h1>
+<p>T_{\mathrm{software}}
++
+T_{\mathrm{event\ replay}}
++
+T_{\mathrm{physical\ reconcile}}
++
+T_{\mathrm{authority\ verify}}.
+$$</p>
+<h2>11.2 恢復不是立刻續跑</h2>
+<p>順序：</p>
+<ol>
+<li>啟動最低安全層；</li>
+<li>載入 Domain Anchor；</li>
+<li>驗證日誌與快照；</li>
+<li>重建義務與租約；</li>
+<li>重新發現站點；</li>
+<li>物理盤點；</li>
+<li>解決差異；</li>
+<li>進入 Degraded 或 Active；</li>
+<li>重新規劃。</li>
+</ol>
+<h2>11.3 差異處理</h2>
+<p>若日誌說樣本在 A，但感測器看到 B：</p>
+<ul>
+<li>不自動選一個；</li>
+<li>保留衝突；</li>
+<li>阻止依賴該樣本的任務；</li>
+<li>重新識別；</li>
+<li>保存事故證據。</li>
+</ul>
+<hr>
+<h1>12. 斷線與延遲容忍治理</h1>
+<h2>12.1 斷線不是完全失去治理</h2>
+<p>站點可以持有離線任務包：</p>
+<h1>$$
+B</h1>
+<p>\left(
+q,
+WE,
+\lambda,
+C_{\mathrm{safe}},
+t_{\mathrm{expire}},
+R_{\mathrm{return}}
+\right).
+$$</p>
+<p>包括：</p>
+<ul>
+<li>任務；</li>
+<li>世界狀態摘要；</li>
+<li>權限租約；</li>
+<li>安全集合；</li>
+<li>到期時間；</li>
+<li>回報規則。</li>
+</ul>
+<h2>12.2 Bundle Protocol 類模型</h2>
+<p>Delay／Disruption Tolerant Networking 的 Bundle Protocol 採用可儲存轉送的資料單元，適用長延遲或間歇連線。PCD 可以借用其思想傳送：</p>
+<ul>
+<li>任務包；</li>
+<li>證據包；</li>
+<li>撤銷通知；</li>
+<li>狀態摘要；</li>
+<li>恢復 manifest。</li>
+</ul>
+<p>但不能假設遲到的撤銷命令一定能即時阻止行動，因此離線租約必須保守且短期。</p>
+<h2>12.3 離線權限上限</h2>
+<p>離線站點不能：</p>
+<ul>
+<li>啟動未批准高風險任務；</li>
+<li>擴張區域；</li>
+<li>自行續租；</li>
+<li>轉授權；</li>
+<li>公開資料；</li>
+<li>合併高階身份。</li>
+</ul>
+<hr>
+<h1>13. 計畫執行與反應式監控</h1>
+<h2>13.1 靜態工作流不足</h2>
+<p>長期任務中可能出現：</p>
+<ul>
+<li>設備延遲；</li>
+<li>人類介入；</li>
+<li>樣本失敗；</li>
+<li>站點離線；</li>
+<li>世界狀態變更。</li>
+</ul>
+<p>PCD 需要反應式計畫執行：</p>
+<p>$$
+\text{Plan}
++
+\text{Conditions}
++
+\text{Events}
++
+\text{Abort／Recovery}.
+$$</p>
+<h2>13.2 PLEXIL 類底座</h2>
+<p>NASA PLEXIL 是用於自主系統命令與監控的同步計畫執行語言，具有正式可執行語義和形式驗證工具。</p>
+<p>PCD 可借用其原則：</p>
+<ul>
+<li>條件式節點；</li>
+<li>並行；</li>
+<li>等待；</li>
+<li>失敗；</li>
+<li>監控；</li>
+<li>中止；</li>
+<li>外部狀態。</li>
+</ul>
+<p>但 PCD 還需加入：</p>
+<ul>
+<li>域權限；</li>
+<li>世界紀元；</li>
+<li>身體租約；</li>
+<li>樣本保管；</li>
+<li>EML-CF 證據與 IP。</li>
+</ul>
+<h2>13.3 F Prime 類地方執行</h2>
+<p>NASA F Prime 提供元件化飛行與嵌入式軟體框架，可作為高可靠地方站點、事件、遙測和命令處理的工程參考。</p>
+<hr>
+<h1>14. Domain Presence Architecture</h1>
+<h2>14.1 Domain Anchor</h2>
+<p>身份、根治理與恢復入口。</p>
+<h2>14.2 World State Store</h2>
+<p>保存：</p>
+<ul>
+<li>當前衍生狀態；</li>
+<li>不確定性；</li>
+<li>新鮮度；</li>
+<li>世界紀元；</li>
+<li>衝突。</li>
+</ul>
+<h2>14.3 Event and Evidence Journal</h2>
+<p>append-only：</p>
+<ul>
+<li>物理事件；</li>
+<li>決策；</li>
+<li>命令；</li>
+<li>量測；</li>
+<li>人類介入；</li>
+<li>IP 與發布事件。</li>
+</ul>
+<h2>14.4 Obligation Ledger</h2>
+<p>保存未完成義務、期限、責任者與補償。</p>
+<h2>14.5 Lease Authority</h2>
+<p>簽發、續租、撤銷：</p>
+<ul>
+<li>身體；</li>
+<li>能力；</li>
+<li>區域；</li>
+<li>資料；</li>
+<li>人類協作；</li>
+</ul>
+<p>權限。</p>
+<h2>14.6 Mode Supervisor</h2>
+<p>根據安全、連線、時間與不確定性決定域模式。</p>
+<h2>14.7 Presence Monitor</h2>
+<p>不只檢查心跳，而檢查五條件。</p>
+<h2>14.8 Recovery Manager</h2>
+<p>執行：</p>
+<ul>
+<li>快照恢復；</li>
+<li>事件重播；</li>
+<li>物理盤點；</li>
+<li>衝突解決；</li>
+<li>任務重排。</li>
+</ul>
+<h2>14.9 Human Control Console</h2>
+<p>提供：</p>
+<ul>
+<li>觀測；</li>
+<li>暫停；</li>
+<li>接管；</li>
+<li>解除域；</li>
+<li>義務轉移；</li>
+<li>事故審查。</li>
+</ul>
+<hr>
+<h1>15. 持續存在品質</h1>
+<p>定義 PCD 品質：</p>
+<h1>$$
+Q_{\mathrm{PCD}}</h1>
+<h2>w_sS
++
+w_oO
++
+w_aA
++
+w_kK
++
+w_eE</h2>
+<h2>w_rR</h2>
+<p>w_cC,
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$S$：狀態恢復能力；</li>
+<li>$O$：義務完整；</li>
+<li>$A$：權限清晰；</li>
+<li>$K$：行動限制能力；</li>
+<li>$E$：證據完整；</li>
+<li>$R$：未解風險；</li>
+<li>$C$：協調與維護成本。</li>
+</ul>
+<h2>15.1 不以 uptime 為唯一 KPI</h2>
+<p>可量測：</p>
+<ul>
+<li>未完成義務遺失率；</li>
+<li>恢復後物理差異率；</li>
+<li>過期權限存活時間；</li>
+<li>世界狀態錯誤；</li>
+<li>接管後重同步時間；</li>
+<li>事故可重建率；</li>
+<li>夜間錯誤行動；</li>
+<li>域解除完整率。</li>
+</ul>
+<hr>
+<h1>16. 人類進出與權利</h1>
+<h2>16.1 人類不是普通動態物體</h2>
+<p>人類進入域會改變：</p>
+<ul>
+<li>安全；</li>
+<li>隱私；</li>
+<li>權限；</li>
+<li>自動化模式；</li>
+<li>責任。</li>
+</ul>
+<h2>16.2 人類存在事件</h2>
+<p>系統至少區分：</p>
+<ul>
+<li>授權操作員；</li>
+<li>維護人員；</li>
+<li>訪客；</li>
+<li>未識別人員；</li>
+<li>緊急救援。</li>
+</ul>
+<h2>16.3 不得以持續監控取消隱私</h2>
+<p>持續性指揮存在不等於無限制錄影或人格分析。應採：</p>
+<ul>
+<li>最小必要感測；</li>
+<li>區域遮罩；</li>
+<li>保存期限；</li>
+<li>存取控制；</li>
+<li>人員告知；</li>
+<li>人類可接管與申訴。</li>
+</ul>
+<h2>16.4 人類離開不等於所有事情都可自動化</h2>
+<p>無人模式應比有人模式更保守，而不是更自由。</p>
+<hr>
+<h1>17. 域交接</h1>
+<p>PCD 可以在：</p>
+<ul>
+<li>班次；</li>
+<li>AI 實例；</li>
+<li>組織；</li>
+<li>遠端控制中心；</li>
+<li>人類操作員；</li>
+</ul>
+<p>之間交接。</p>
+<h2>17.1 Domain Handoff Manifest</h2>
+<p>包含：</p>
+<ul>
+<li>當前世界紀元；</li>
+<li>未完成義務；</li>
+<li>有效租約；</li>
+<li>危險狀態；</li>
+<li>樣本保管；</li>
+<li>站點健康；</li>
+<li>未解衝突；</li>
+<li>待審證據；</li>
+<li>下一個期限。</li>
+</ul>
+<h2>17.2 接收方必須確認</h2>
+<p>不能只發送檔案。</p>
+<p>接收方需：</p>
+<ul>
+<li>驗證；</li>
+<li>盤點；</li>
+<li>接受義務；</li>
+<li>接受責任邊界；</li>
+<li>重新簽發權限。</li>
+</ul>
+<h2>17.3 未被接受的義務</h2>
+<p>若接收方拒絕，原治理主體不得直接退出，必須：</p>
+<ul>
+<li>安全終止；</li>
+<li>轉人工；</li>
+<li>隔離；</li>
+<li>或等待有效接收方。</li>
+</ul>
+<hr>
+<h1>18. 域解除與撤退</h1>
+<p>「能建立域」不夠；必須能安全解除。</p>
+<h2>18.1 解除條件</h2>
+<ul>
+<li>所有者命令；</li>
+<li>授權到期；</li>
+<li>安全事件；</li>
+<li>長期斷線；</li>
+<li>資源不足；</li>
+<li>專案結束；</li>
+<li>法律要求；</li>
+<li>治理核心失效。</li>
+</ul>
+<h2>18.2 Relinquish Protocol</h2>
+<ol>
+<li>停止接受新任務；</li>
+<li>列出未完成義務；</li>
+<li>完成或轉移安全關鍵義務；</li>
+<li>將設備置於安全狀態；</li>
+<li>保存樣本與材料；</li>
+<li>撤銷所有租約；</li>
+<li>匯出證據與狀態；</li>
+<li>驗證人類或新治理者接管；</li>
+<li>記錄域結束；</li>
+<li>進入 Archived。</li>
+</ol>
+<h2>18.3 不得靜默離開</h2>
+<p>若 AI 程序崩潰但站點仍有：</p>
+<ul>
+<li>加熱；</li>
+<li>壓力；</li>
+<li>運動；</li>
+<li>危險材料；</li>
+<li>未保存樣本；</li>
+</ul>
+<p>則不是「系統停止」，而是域治理失敗。</p>
+<hr>
+<h1>19. 安全與威脅模型</h1>
+<h2>19.1 假持續存在</h2>
+<p>系統在線但世界狀態已錯誤。</p>
+<p>控制：</p>
+<ul>
+<li>語義活性；</li>
+<li>物理盤點；</li>
+<li>新鮮度；</li>
+<li>交叉感測。</li>
+</ul>
+<h2>19.2 義務遺失</h2>
+<p>任務取消或重啟後，後處理消失。</p>
+<p>控制：</p>
+<ul>
+<li>Obligation Ledger；</li>
+<li>補償狀態；</li>
+<li>高優先級義務不可刪除。</li>
+</ul>
+<h2>19.3 過期權限殘留</h2>
+<p>租約到期但站點仍可操作。</p>
+<p>控制：</p>
+<ul>
+<li>本地到期；</li>
+<li>硬體白名單；</li>
+<li>不依賴中央撤銷封包。</li>
+</ul>
+<h2>19.4 日誌正確、物理錯誤</h2>
+<p>紀錄與實體不一致。</p>
+<p>控制：</p>
+<ul>
+<li>恢復時盤點；</li>
+<li>高風險物件多模態驗證；</li>
+<li>衝突阻擋。</li>
+</ul>
+<h2>19.5 模式漂移</h2>
+<p>系統以為在 Night Reduced，某站點仍以 Active 權限運作。</p>
+<p>控制：</p>
+<ul>
+<li>模式簽章；</li>
+<li>本地模式有效期；</li>
+<li>站點模式回報與拒絕。</li>
+</ul>
+<h2>19.6 惡意事件注入</h2>
+<p>假造世界狀態或義務完成。</p>
+<p>控制：</p>
+<ul>
+<li>簽章；</li>
+<li>來源；</li>
+<li>交叉證據；</li>
+<li>append-only journal。</li>
+</ul>
+<h2>19.7 無法解除域</h2>
+<p>AI 或站點拒絕撤銷。</p>
+<p>控制：</p>
+<ul>
+<li>硬體斷能；</li>
+<li>人類根權限；</li>
+<li>租約自然到期；</li>
+<li>獨立安全控制器。</li>
+</ul>
+<hr>
+<h1>20. MVP：Persistent Lab Domain 72H</h1>
+<h2>20.1 目標</h2>
+<p>建立一個可持續運行七十二小時、能經歷重啟、斷線、人類接管與夜間降級的低風險研究域。</p>
+<h2>20.2 配置</h2>
+<ul>
+<li>OSF-Lab-4 站網；</li>
+<li>Domain Anchor；</li>
+<li>World State Store；</li>
+<li>Event Journal；</li>
+<li>Obligation Ledger；</li>
+<li>Lease Authority；</li>
+<li>Mode Supervisor；</li>
+<li>Recovery Manager；</li>
+<li>人類控制台。</li>
+</ul>
+<h2>20.3 任務</h2>
+<p>使用無危險材料的樣本，完成：</p>
+<ol>
+<li>入庫；</li>
+<li>多次定時間隔觀測；</li>
+<li>跨站移動；</li>
+<li>夜間等待；</li>
+<li>重複量測；</li>
+<li>中途人工檢查；</li>
+<li>最終歸檔。</li>
+</ol>
+<h2>20.4 故障注入</h2>
+<ul>
+<li>中央服務重啟；</li>
+<li>站點斷線一小時；</li>
+<li>網路時間漂移；</li>
+<li>人類移動樣本但未事先通知；</li>
+<li>租約到期；</li>
+<li>儀器校準過期；</li>
+<li>日誌延遲；</li>
+<li>夜間站點故障；</li>
+<li>Domain Anchor 副本切換。</li>
+</ul>
+<h2>20.5 成功條件</h2>
+<ul>
+<li>無義務遺失；</li>
+<li>無過期權限行動；</li>
+<li>重啟後可重建任務與樣本狀態；</li>
+<li>不一致時停止而非猜測；</li>
+<li>人類接管有完整事件；</li>
+<li>夜間模式動作受限；</li>
+<li>最終能安全解除域；</li>
+<li>事件能重建七十二小時歷史。</li>
+</ul>
+<hr>
+<h1>21. 比較基線</h1>
+<ol>
+<li>單體自動化腳本；</li>
+<li>一般工作流系統；</li>
+<li>OSF 即時調度但無持久義務；</li>
+<li>PCD 完整架構。</li>
+</ol>
+<p>比較：</p>
+<ul>
+<li>恢復時間；</li>
+<li>狀態錯誤；</li>
+<li>任務遺失；</li>
+<li>權限越界；</li>
+<li>人工重建工作量；</li>
+<li>事故可解釋性。</li>
+</ul>
+<hr>
+<h1>22. 可證偽命題</h1>
+<h2>H1：義務帳本降低跨重啟任務遺失</h2>
+<p>相較只保存任務佇列，顯式義務與補償狀態應降低後處理遺失。</p>
+<h2>H2：物理盤點增加恢復時間但降低錯誤續跑</h2>
+<p>若不增加恢復時間，可能代表盤點不充分；其價值應反映在錯誤續跑下降。</p>
+<h2>H3：持續指揮存在比 uptime 更能預測安全恢復</h2>
+<p>高 uptime 但低五條件分數的系統，事故與狀態錯誤應高於 uptime 較低但可恢復的系統。</p>
+<h2>H4：夜間縮權降低無人事故</h2>
+<p>Night Reduced 應降低高能量與高風險行動，同時可能降低吞吐。</p>
+<h2>H5：離線租約使斷線運作可控</h2>
+<p>相較永久權限，短期離線租約應降低長斷線下的越權作用域。</p>
+<h2>H6：域解除協議降低殘留風險</h2>
+<p>完成 Relinquish Protocol 的系統，在專案結束後的未撤銷權限、未保存樣本與活動設備數量應較低。</p>
+<hr>
+<h1>23. 主要限制</h1>
+<h2>23.1 事件日誌不能取代感測</h2>
+<p>日誌可能正確記錄命令，但物理世界仍可能因滑動、故障或人類操作而不同。</p>
+<h2>23.2 持續狀態本身有成本</h2>
+<p>需要：</p>
+<ul>
+<li>儲存；</li>
+<li>感測；</li>
+<li>日誌；</li>
+<li>備份；</li>
+<li>校準；</li>
+<li>人工審查。</li>
+</ul>
+<p>不是所有小任務都需要完整 PCD。</p>
+<h2>23.3 世界狀態不可能完全</h2>
+<p>系統只能維持任務相關且被授權的狀態。</p>
+<h2>23.4 長期 AI 模型會變更</h2>
+<p>模型升級可能改變策略，必須記錄：</p>
+<ul>
+<li>模型版本；</li>
+<li>治理版本；</li>
+<li>遷移測試；</li>
+<li>未完成任務是否可承接。</li>
+</ul>
+<h2>23.5 人類行為不可完全納入自動狀態機</h2>
+<p>系統必須允許例外、溝通與責任判斷。</p>
+<h2>23.6 持續存在可能造成權力過度集中</h2>
+<p>必須有：</p>
+<ul>
+<li>可見性；</li>
+<li>人類接管；</li>
+<li>租約；</li>
+<li>最小作用域；</li>
+<li>安全解除；</li>
+<li>審計。</li>
+</ul>
+<hr>
+<h1>24. 不能宣稱的內容</h1>
+<p>本篇不主張：</p>
+<ul>
+<li>PCD 已經是成熟標準；</li>
+<li>AI 必須永遠在線；</li>
+<li>世界狀態可以完全準確；</li>
+<li>事件溯源可以使物理行動可逆；</li>
+<li>長時間自治必然優於人類輪班；</li>
+<li>心跳可證明系統仍安全；</li>
+<li>具有域錨點就擁有空間所有權；</li>
+<li>人類進入域即應服從 AI；</li>
+<li>離線任務包可以安全承擔任意高風險操作；</li>
+<li>PCD 可自行擴張至新的房間或組織；</li>
+<li>域解除可以抹除已發生的公開、事故或責任；</li>
+<li>具身 AI 可以消除物理實驗所需的真實時間。</li>
+</ul>
+<hr>
+<h1>25. 與後續系列的關係</h1>
+<p>PCD 建立「跨時間持續存在」後，下一篇將處理：</p>
+<blockquote>
+<p>高階研究意圖如何被編譯成站點、樣本、工具、能量、物料與行動的實際路由？</p>
+</blockquote>
+<p>因此第 5 篇為：</p>
+<h1>《語義即物理路由：從資料流治理到物料、能源與行動流治理》</h1>
+<p>它將建立：</p>
+<ul>
+<li>Research Intent；</li>
+<li>Physical Flow Class；</li>
+<li>DomainIR；</li>
+<li>Experiment Graph；</li>
+<li>Material Custody；</li>
+<li>Energy Route；</li>
+<li>Action Window；</li>
+<li>Station Assignment；</li>
+<li>Evidence Route。</li>
+</ul>
+<hr>
+<h1>26. 結論</h1>
+<p>AI 對一個物理域的持續存在，不應由「程式是否仍在執行」判定。</p>
+<p>真正承重的是：</p>
+<p>$$
+\boxed{
+\text{狀態可恢復}
++
+\text{義務不中斷}
++
+\text{權限可驗證}
++
+\text{行動可限制}
++
+\text{證據可重建}
+}
+$$</p>
+<p>因此：</p>
+<p>$$
+\text{Persistent Command Presence}
+\neq
+\text{Always Online}.
+$$</p>
+<p>更精確地說：</p>
+<blockquote>
+<p>即使中央服務重啟、網路斷線、地方站點降級或人類暫時接管，只要系統仍能安全重建世界、承接義務、限制權限並保存責任，它就維持了指揮存在。</p>
+</blockquote>
+<p>反之，即使所有設備在線，只要它：</p>
+<ul>
+<li>不知道樣本在哪裡；</li>
+<li>遺失未完成後處理；</li>
+<li>無法確認誰仍有控制權；</li>
+<li>把過期觀測當成當前真值；</li>
+<li>無法安全退出；</li>
+</ul>
+<p>它就已經失去該域。</p>
+<p>本文的最終命題是：</p>
+<p>$$
+\boxed{
+\text{佔域不是一直看著空間}
+}
+$$</p>
+<p>而是：</p>
+<h1>$$
+\boxed{
+\text{佔域}</h1>
+<p>\text{跨時間承接世界、義務、權限與責任}
+}
+$$</p>
+<p>PCD 因此使時空域支配智能從「可以控制許多站點」進一步成為：</p>
+<blockquote>
+<p><strong>能在時間中持續存在、能從失敗中恢復，也能在失去合法或安全條件時主動退出的物理治理主體。</strong></p>
+</blockquote>
+<hr>
+<h1>參考文獻與官方技術資料</h1>
+<ol>
+<li><p>NIST. <strong>Framework for Cyber-Physical Systems: Volume 1, Overview.</strong> NIST SP 1500-201, 2017.<br><a href="https://doi.org/10.6028/NIST.SP.1500-201">https://doi.org/10.6028/NIST.SP.1500-201</a></p>
+</li>
+<li><p>NIST. <strong>Framework for Cyber-Physical Systems: Volume 3, Timing Annex.</strong> NIST SP 1500-203, 2017.<br><a href="https://doi.org/10.6028/NIST.SP.1500-203">https://doi.org/10.6028/NIST.SP.1500-203</a></p>
+</li>
+<li><p>NIST. <strong>Cyber-Physical Systems and Internet of Things Foundations.</strong><br><a href="https://www.nist.gov/programs-projects/cyber-physical-systems-and-internet-things-foundations">https://www.nist.gov/programs-projects/cyber-physical-systems-and-internet-things-foundations</a></p>
+</li>
+<li><p>ROS 2. <strong>Managed Nodes／Lifecycle Nodes.</strong><br><a href="https://docs.ros.org/en/ros2_packages/kilted/api/lifecycle/__README.html">https://docs.ros.org/en/ros2_packages/kilted/api/lifecycle/__README.html</a></p>
+</li>
+<li><p>ROS 2 Navigation. <strong>Lifecycle Manager.</strong><br><a href="https://docs.ros.org/en/jazzy/p/nav2_lifecycle_manager/">https://docs.ros.org/en/jazzy/p/nav2_lifecycle_manager/</a></p>
+</li>
+<li><p>NASA. <strong>Plan Execution Interchange Language（PLEXIL）.</strong><br><a href="https://software.nasa.gov/software/LAR-19339-1">https://software.nasa.gov/software/LAR-19339-1</a></p>
+</li>
+<li><p>NASA. <strong>PLEXIL-V Formal Verification Environment.</strong><br><a href="https://shemesh.larc.nasa.gov/fm/PLEXIL-V/">https://shemesh.larc.nasa.gov/fm/PLEXIL-V/</a></p>
+</li>
+<li><p>NASA. <strong>Overview of the PLEXIL Plan Execution Technology and its Applications.</strong><br><a href="https://ntrs.nasa.gov/citations/20190034041">https://ntrs.nasa.gov/citations/20190034041</a></p>
+</li>
+<li><p>NASA／JPL. <strong>F Prime: A Flight-Proven, Multi-Platform, Open-Source Flight Software Framework.</strong><br><a href="https://github.com/nasa/fprime">https://github.com/nasa/fprime</a></p>
+</li>
+<li><p>NASA. <strong>Autonomous Systems and Robotics.</strong><br><a href="https://www.nasa.gov/intelligent-systems-division/autonomous-systems-and-robotics/">https://www.nasa.gov/intelligent-systems-division/autonomous-systems-and-robotics/</a></p>
+</li>
+<li><p>NASA. <strong>Lunar Surface Technology.</strong><br><a href="https://www.nasa.gov/lunar-surface-technology/">https://www.nasa.gov/lunar-surface-technology/</a></p>
+</li>
+<li><p>IETF. <strong>RFC 9171: Bundle Protocol Version 7.</strong><br><a href="https://datatracker.ietf.org/doc/html/rfc9171">https://datatracker.ietf.org/doc/html/rfc9171</a></p>
+</li>
+<li><p>IETF. <strong>Delay／Disruption Tolerant Networking Working Group.</strong><br><a href="https://datatracker.ietf.org/group/dtn/">https://datatracker.ietf.org/group/dtn/</a></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>時空間支配型 AI：從單體具身智能到持續性時空域治理.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>超靈的物理化：從 O-Chip 維度代理人到分布式具身主體.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>Oversoul Station Fabric：固定站、移動站與虛擬站的分布式具身網路.</strong></p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A：Domain Anchor 最小規格</h1>
+<pre><code class="language-yaml">domain_anchor:
+  domain_id: &quot;&quot;
+  owner: &quot;&quot;
+  governance_version: &quot;&quot;
+  spatial_scope: []
+  excluded_scope: []
+  root_keys: []
+  active_world_epoch: &quot;&quot;
+  active_mode: &quot;UNINITIALIZED&quot;
+  recovery_manifest: &quot;&quot;
+  relinquish_policy: &quot;&quot;
+  created_at: &quot;&quot;
+  expires_at: null
+</code></pre>
+<hr>
+<h1>附錄 B：Obligation Ledger 最小規格</h1>
+<pre><code class="language-yaml">obligation:
+  id: &quot;&quot;
+  domain_id: &quot;&quot;
+  goal: &quot;&quot;
+  responsible_party: &quot;&quot;
+  status: &quot;PROPOSED&quot;
+
+  timing:
+    created_at: &quot;&quot;
+    deadline: null
+    earliest_action_at: null
+
+  preconditions: []
+  completion_conditions: []
+  evidence_required: []
+
+  failure:
+    compensation_actions: []
+    escalation: &quot;&quot;
+    waiver_authority: &quot;&quot;
+
+  provenance:
+    source_task: &quot;&quot;
+    source_event: &quot;&quot;
+    world_epoch: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：恢復 Manifest</h1>
+<pre><code class="language-yaml">recovery_manifest:
+  domain_id: &quot;&quot;
+  snapshot_id: &quot;&quot;
+  event_log_head: &quot;&quot;
+  world_epoch: &quot;&quot;
+  obligations_checkpoint: &quot;&quot;
+  active_leases_checkpoint: &quot;&quot;
+  active_mode: &quot;&quot;
+  station_registry_version: &quot;&quot;
+
+  reconcile_required:
+    - human_presence
+    - hazardous_energy
+    - sample_custody
+    - mobile_station_pose
+
+  recovery_order:
+    - local_safety
+    - domain_anchor
+    - event_replay
+    - station_discovery
+    - physical_reconcile
+    - lease_revalidation
+    - obligation_reschedule
+</code></pre>
+<hr>
+<h1>附錄 D：域解除清單</h1>
+<pre><code class="language-markdown">## Persistent Command Domain Relinquish Checklist
+
+- [ ] 已停止接受新任務
+- [ ] 已盤點所有未完成義務
+- [ ] 已處理或移交安全關鍵義務
+- [ ] 所有站點已進入安全模式
+- [ ] 樣本、工具與材料均有保管人
+- [ ] 所有身體與控制租約已撤銷
+- [ ] 離線任務包已到期或撤銷
+- [ ] 世界狀態與事件日誌已封存
+- [ ] 人類或新治理主體已確認接管
+- [ ] Domain Anchor 已標記 ARCHIVED
+</code></pre>
+<hr>
+<h1>附錄 E：系列血緣</h1>
+<pre><code class="language-text">STDI 第 1 篇
+  何謂時空域支配智能
+        ↓
+
+STDI 第 2 篇
+  同一治理核心如何取得多個身體
+        ↓
+
+STDI 第 3 篇／OSF
+  多身體如何成為可治理站網
+        ↓
+
+本篇／PCD
+  站網如何跨時間、重啟、斷線與接管維持同一治理域
+        ↓
+
+第 5 篇
+  研究意圖如何編譯成物料、能量、站點與行動流
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/stdi-04.html">https://thisoneisneok.com/html/papers/stdi-04.html</a></footer>
+</body>
+</html>

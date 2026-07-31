@@ -1,0 +1,1564 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>設計者、共同體與制度：如何避免程式語言史的創始人歸因偏誤 | Neo.K</title>
+<meta name="description" content="這些說法作為入門識別並非全錯，但一旦被用來解釋語言的全部特徵、長期演化、制度選擇與生態結果，就會形成 創始人歸因偏誤。它把多階段、多主體、多制度的語言演化壓縮為單一人物的穩定意志，進而混淆：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-004.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-004</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／方法論基礎論文</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-004.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>設計者、共同體與制度：如何避免程式語言史的創始人歸因偏誤</h1>
+<h2>摘要</h2>
+<p>程式語言史經常以單一創始者為敘事中心：</p>
+<ul>
+<li>Python 是 Guido van Rossum 的語言；</li>
+<li>C++ 是 Bjarne Stroustrup 的語言；</li>
+<li>Ruby 是 Yukihiro Matsumoto 的語言；</li>
+<li>Rust 是 Graydon Hoare 的語言；</li>
+<li>Go 是 Rob Pike 的語言；</li>
+<li>JavaScript 是 Brendan Eich 的語言。</li>
+</ul>
+<p>這些說法作為入門識別並非全錯，但一旦被用來解釋語言的全部特徵、長期演化、制度選擇與生態結果，就會形成 <strong>創始人歸因偏誤</strong>。它把多階段、多主體、多制度的語言演化壓縮為單一人物的穩定意志，進而混淆：</p>
+<ul>
+<li>誰最早提出問題；</li>
+<li>誰選擇核心設計；</li>
+<li>誰共同設計機制；</li>
+<li>誰完成編譯器與運行時；</li>
+<li>誰批准規格；</li>
+<li>誰維護相容性；</li>
+<li>誰透過程式庫、工具與使用習慣實際改變語言；</li>
+<li>誰在事故、標準化或公司策略中承擔最終責任。</li>
+</ul>
+<p>Go 的官方歷史明確指出，Robert Griesemer、Rob Pike 與 Ken Thompson 於 2007 年共同開始設計；Rust 的重大技術變更進入 RFC 與團隊治理；Python 在 Guido van Rossum 於 2018 年卸下 BDFL 身分後，透過社群投票建立 Steering Council；C++ 自 1990–1991 年起由 ISO WG21 進行標準化與演化；Java 透過 JCP、JSR、Reference Implementation 與 Technology Compatibility Kit 建立制度化規格流程；ECMAScript 則由 TC39 的提案階段、Champion、實作回饋與共識機制持續演進。[R1][R2][R3][R4][R5][R6]</p>
+<p>本文提出 <strong>多主體語言歸因模型</strong>（Multi-Actor Language Attribution Model, MALAM），將語言演化表示為：</p>
+<h1>$$
+L_t</h1>
+<p>\mathcal{E}
+(
+F,
+D,
+I,
+G,
+O,
+S,
+U,
+X
+)_t
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$F$：Founder／Initiator，創始與啟動者；</li>
+<li>$D$：Co-designers，共同設計者；</li>
+<li>$I$：Implementers，實作者；</li>
+<li>$G$：Governance bodies，治理機構；</li>
+<li>$O$：Organizations，企業、研究機構與贊助者；</li>
+<li>$S$：Standards and specifications，標準與規格制度；</li>
+<li>$U$：Users and ecosystem，使用者與生態；</li>
+<li>$X$：External constraints，硬體、平台、相容性與時代限制。</li>
+</ul>
+<p>本文進一步區分四種不可混同的歸因：</p>
+<p>$$
+\boxed{
+\text{功勞歸因}
+\neq
+\text{因果歸因}
+\neq
+\text{權力歸因}
+\neq
+\text{責任歸因}
+}
+$$</p>
+<p>一位創始者可能具有高度歷史功勞，卻不再擁有當前決策權；一個委員會可能具有正式批准權，卻不是最初概念的發明者；一家公司可能提供絕大部分實作資源，卻不應自動取得對整個社群價值的唯一解釋權；生態共同體可能沒有正式投票權，卻能透過採用、拒絕、慣例與工具形成事實上的設計選擇。</p>
+<p>本文建立：</p>
+<ol>
+<li>語言生命週期的七個歸因階段；</li>
+<li>十類設計參與者；</li>
+<li>功勞、因果、權力、責任與維護的五維歸因矩陣；</li>
+<li>個人風格、共同設計風格、組織風格、制度風格與生態風格的分層方法；</li>
+<li>Python、Go、Rust、C++、Java／JCP 與 ECMAScript／TC39 的制度轉換案例；</li>
+<li>適用於 PLDST 個案研究、比較研究與 AI SKILL 的來源標記與歸因規則。</li>
+</ol>
+<p>本文的核心命題是：</p>
+<p>$$
+\boxed{
+\text{語言的名字可以指向一位創始者，}
+\quad
+\text{但語言的歷史不能只歸因於一個人。}
+}
+$$</p>
+<p><strong>關鍵詞：</strong> 程式語言史、創始人偏誤、共同設計、語言治理、標準委員會、RFC、PEP、WG21、TC39、JCP、PLDST</p>
+<hr>
+<h1>第一部分　問題定義</h1>
+<h2>一、什麼是創始人歸因偏誤</h2>
+<p>本文所稱的創始人歸因偏誤，是指：</p>
+<blockquote>
+<p>因為某位人物最早建立、命名、公開或代表一種語言，研究者便將該語言後續的全部設計決策、制度變遷、技術成果與生態特徵，過度歸因於該人物的個人風格。</p>
+</blockquote>
+<p>它常出現在下列句型：</p>
+<pre><code class="language-text">X 設計了這個語言，所以今日所有特徵都反映 X 的思想。
+X 喜歡簡潔，所以社群後來拒絕某功能也是 X 的風格。
+這個語言存在某缺陷，因此是 X 的人格造成。
+X 離開後語言仍如此演化，證明一切本來都由 X 決定。
+</code></pre>
+<p>這些敘述可能包含部分真實因素，但缺少：</p>
+<ul>
+<li>時間；</li>
+<li>決策主體；</li>
+<li>組織條件；</li>
+<li>實作限制；</li>
+<li>正式治理；</li>
+<li>生態選擇；</li>
+<li>反例。</li>
+</ul>
+<hr>
+<h2>二、創始者為何仍然重要</h2>
+<p>反對過度歸因，不等於否認創始者。</p>
+<p>創始者常常決定：</p>
+<ul>
+<li>最初問題如何被 framing；</li>
+<li>第一組核心概念；</li>
+<li>哪些前代語言被繼承；</li>
+<li>第一個實作；</li>
+<li>命名與公共敘事；</li>
+<li>早期審美；</li>
+<li>第一批參與者；</li>
+<li>誰有權接受與拒絕變更。</li>
+</ul>
+<p>因此，創始者可能對語言早期相位具有高權重：</p>
+<p>$$
+w_F(t_0)\gg w_F(t_n)
+$$</p>
+<p>但其權重是否隨時間下降，取決於：</p>
+<ul>
+<li>是否仍具有否決權；</li>
+<li>是否仍主導實作；</li>
+<li>是否建立制度；</li>
+<li>語言是否標準化；</li>
+<li>生態是否擴張；</li>
+<li>公司是否接管資源；</li>
+<li>社群是否重構核心。</li>
+</ul>
+<hr>
+<h2>三、「誰創造了語言」其實包含多個問題</h2>
+<h3>3.1 誰提出了原始問題？</h3>
+<p>例如：</p>
+<ul>
+<li>現有語言過於複雜；</li>
+<li>大型建置速度太慢；</li>
+<li>記憶體安全與效能難兼得；</li>
+<li>Web 需要可嵌入腳本；</li>
+<li>教學語言需要更清楚的抽象。</li>
+</ul>
+<h3>3.2 誰選擇核心機制？</h3>
+<p>例如：</p>
+<ul>
+<li>所有權；</li>
+<li>垃圾回收；</li>
+<li>Prototype；</li>
+<li>顯式錯誤值；</li>
+<li>縮排語法；</li>
+<li>Traits；</li>
+<li>模組。</li>
+</ul>
+<h3>3.3 誰讓它真正可用？</h3>
+<p>包括：</p>
+<ul>
+<li>編譯器實作者；</li>
+<li>Runtime 工程師；</li>
+<li>標準程式庫作者；</li>
+<li>套件管理者；</li>
+<li>文件作者；</li>
+<li>工具與 IDE 開發者。</li>
+</ul>
+<h3>3.4 誰決定它成為標準？</h3>
+<p>可能是：</p>
+<ul>
+<li>創始者；</li>
+<li>Core team；</li>
+<li>Steering Council；</li>
+<li>RFC team；</li>
+<li>ISO 委員會；</li>
+<li>Ecma technical committee；</li>
+<li>JCP Executive Committee；</li>
+<li>公司產品決策。</li>
+</ul>
+<h3>3.5 誰決定它實際如何被使用？</h3>
+<p>可能是：</p>
+<ul>
+<li>框架；</li>
+<li>程式庫；</li>
+<li>教育；</li>
+<li>雲端平台；</li>
+<li>公司規範；</li>
+<li>社群慣例；</li>
+<li>套件管理；</li>
+<li>Linter 與 Formatter。</li>
+</ul>
+<p>因此，「創造者」不是單一資料欄位。</p>
+<hr>
+<h1>第二部分　五種歸因</h1>
+<h2>四、功勞歸因 Credit Attribution</h2>
+<p>功勞歸因回答：</p>
+<blockquote>
+<p>誰應因某項創新、工作或歷史貢獻獲得承認？</p>
+</blockquote>
+<p>它包括：</p>
+<ul>
+<li>原始構想；</li>
+<li>共同設計；</li>
+<li>第一個實作；</li>
+<li>關鍵改寫；</li>
+<li>社群組織；</li>
+<li>文件；</li>
+<li>標準化；</li>
+<li>長期維護。</li>
+</ul>
+<p>功勞可以共享，且不一定與正式權力相同。</p>
+<hr>
+<h2>五、因果歸因 Causal Attribution</h2>
+<p>因果歸因回答：</p>
+<blockquote>
+<p>哪些主體與條件實際造成某項結果？</p>
+</blockquote>
+<p>例如某個語言功能出現，可能同時由：</p>
+<ul>
+<li>設計者理念；</li>
+<li>硬體限制；</li>
+<li>公司需求；</li>
+<li>使用者壓力；</li>
+<li>前代語言；</li>
+<li>編譯器技術；</li>
+<li>相容性；</li>
+</ul>
+<p>共同造成。</p>
+<p>因果模型應寫成：</p>
+<h1>$$
+Outcome</h1>
+<p>f(
+Actors,
+Constraints,
+Alternatives,
+Institutions,
+Timing
+)
+$$</p>
+<p>而不是：</p>
+<h1>$$
+Outcome</h1>
+<p>Personality(Founder)
+$$</p>
+<hr>
+<h2>六、權力歸因 Authority Attribution</h2>
+<p>權力歸因回答：</p>
+<blockquote>
+<p>當時誰能批准、否決、延後或撤回設計？</p>
+</blockquote>
+<p>權力可能來自：</p>
+<ul>
+<li>專案所有權；</li>
+<li>Commit 權限；</li>
+<li>BDFL；</li>
+<li>團隊 Charter；</li>
+<li>委員會投票；</li>
+<li>公司資金；</li>
+<li>商標；</li>
+<li>發行控制；</li>
+<li>實作控制；</li>
+<li>標準批准。</li>
+</ul>
+<p>具有觀念影響力，不等於具有正式決定權。</p>
+<hr>
+<h2>七、責任歸因 Accountability Attribution</h2>
+<p>責任歸因回答：</p>
+<blockquote>
+<p>若設計造成安全、相容、治理或生態問題，誰應處理？</p>
+</blockquote>
+<p>可能包括：</p>
+<ul>
+<li>原提案作者；</li>
+<li>批准機構；</li>
+<li>實作團隊；</li>
+<li>發行管理者；</li>
+<li>公司；</li>
+<li>標準機構；</li>
+<li>使用者組織。</li>
+</ul>
+<p>不能只把責任放回早已離開專案的創始者。</p>
+<hr>
+<h2>八、維護歸因 Maintenance Attribution</h2>
+<p>維護歸因回答：</p>
+<blockquote>
+<p>誰持續支付語言存在與演化的成本？</p>
+</blockquote>
+<p>包括：</p>
+<ul>
+<li>修復；</li>
+<li>Regression test；</li>
+<li>移植；</li>
+<li>發行；</li>
+<li>安全回報；</li>
+<li>標準更新；</li>
+<li>套件基礎設施；</li>
+<li>文件；</li>
+<li>相容性；</li>
+<li>社群治理。</li>
+</ul>
+<p>維護者可能沒有創始光環，卻對今日語言樣貌具有更直接影響。</p>
+<hr>
+<h2>九、五維歸因向量</h2>
+<p>對某項決策 $q$ 與主體 $a$，定義：</p>
+<h1>$$
+A(a,q)</h1>
+<p>(
+Cr,
+Ca,
+Au,
+Ac,
+Ma
+)
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$Cr$：Credit；</li>
+<li>$Ca$：Causal contribution；</li>
+<li>$Au$：Authority；</li>
+<li>$Ac$：Accountability；</li>
+<li>$Ma$：Maintenance。</li>
+</ul>
+<p>同一主體在五維上的權重可以完全不同。</p>
+<hr>
+<h1>第三部分　十類參與者</h1>
+<h2>十、創始者 Founder／Initiator</h2>
+<p>典型貢獻：</p>
+<ul>
+<li>提出初始問題；</li>
+<li>建立核心願景；</li>
+<li>第一版設計；</li>
+<li>第一個實作或原型；</li>
+<li>命名；</li>
+<li>招募共同設計者。</li>
+</ul>
+<p>風險：</p>
+<ul>
+<li>後來的公共敘事將所有共同工作吸收到創始者名下。</li>
+</ul>
+<hr>
+<h2>十一、共同設計者 Co-designer</h2>
+<p>共同設計者可能：</p>
+<ul>
+<li>與創始者同步提出概念；</li>
+<li>負責不同子系統；</li>
+<li>反駁並修正原始設計；</li>
+<li>建立語法、型別、Runtime 或程式庫。</li>
+</ul>
+<p>Go 是明確案例：官方 FAQ 與歷史資料將 Robert Griesemer、Rob Pike、Ken Thompson 同列為最初設計者。[R1]</p>
+<p>若只稱 Go 為「Rob Pike 設計」，會抹去共同創始結構。</p>
+<hr>
+<h2>十二、實作者 Implementer</h2>
+<p>實作者不是單純把規格翻譯成程式碼。</p>
+<p>實作會反向決定：</p>
+<ul>
+<li>哪些功能可行；</li>
+<li>錯誤訊息；</li>
+<li>效能；</li>
+<li>未定義邊界；</li>
+<li>與平台的互操作；</li>
+<li>是否能穩定化；</li>
+<li>功能是否被撤回。</li>
+</ul>
+<p>第一個可用編譯器、第二個獨立實作與優化實作，對語言形成的因果作用可能不同。</p>
+<hr>
+<h2>十三、程式庫與工具作者</h2>
+<p>標準程式庫、Formatter、Linter、Package manager、Build system 與 Language server 會決定：</p>
+<ul>
+<li>什麼被視為慣用寫法；</li>
+<li>哪些選項被隱藏；</li>
+<li>如何組織專案；</li>
+<li>如何處理錯誤；</li>
+<li>如何發布與更新。</li>
+</ul>
+<p>一種語言的有效風格為：</p>
+<h1>$$
+L_{effective}</h1>
+<p>Core
++
+Library
++
+Tooling
++
+Conventions
+$$</p>
+<hr>
+<h2>十四、技術領導與 Core Team</h2>
+<p>此類主體可能具有：</p>
+<ul>
+<li>Triage；</li>
+<li>Roadmap；</li>
+<li>RFC 指派；</li>
+<li>Release decision；</li>
+<li>部門協調；</li>
+<li>最終技術裁決。</li>
+</ul>
+<p>它介於個人與制度之間，常形成共同體風格。</p>
+<hr>
+<h2>十五、正式治理機構</h2>
+<p>例如：</p>
+<ul>
+<li>Python Steering Council；</li>
+<li>Rust Leadership Council／Teams；</li>
+<li>ISO WG21；</li>
+<li>TC39；</li>
+<li>JCP Executive Committee。</li>
+</ul>
+<p>治理機構定義：</p>
+<ul>
+<li>誰可以提出；</li>
+<li>如何審查；</li>
+<li>何謂共識；</li>
+<li>何時成熟；</li>
+<li>誰能否決；</li>
+<li>如何處理衝突。</li>
+</ul>
+<hr>
+<h2>十六、公司與研究機構</h2>
+<p>公司或機構可能提供：</p>
+<ul>
+<li>員工時間；</li>
+<li>基礎設施；</li>
+<li>商標；</li>
+<li>發行；</li>
+<li>產品採用；</li>
+<li>法務；</li>
+<li>安全；</li>
+<li>標準代表。</li>
+</ul>
+<p>但組織資助不等於所有參與者皆代表組織意志，也不代表社群對語言沒有實質塑造。</p>
+<hr>
+<h2>十七、標準機構與國家代表</h2>
+<p>ISO、Ecma 等標準制度涉及：</p>
+<ul>
+<li>國家會員；</li>
+<li>委員會；</li>
+<li>正式文件；</li>
+<li>會議程序；</li>
+<li>投票；</li>
+<li>編輯；</li>
+<li>發布週期。</li>
+</ul>
+<p>C++ 的現代語言設計不能只被描述為 Stroustrup 個人的延伸，因為 WG21 自 1990–1991 年成立後，已有正式、多國、分組的標準化結構。[R4]</p>
+<hr>
+<h2>十八、使用者與生態共同體</h2>
+<p>使用者透過：</p>
+<ul>
+<li>採用；</li>
+<li>拒用；</li>
+<li>Workaround；</li>
+<li>Framework；</li>
+<li>Style guide；</li>
+<li>Experience report；</li>
+<li>Issue；</li>
+<li>Fork；</li>
+<li>套件；</li>
+<li>教育；</li>
+</ul>
+<p>對語言形成選擇壓力。</p>
+<p>使用者不必擁有正式投票權，也能造成生態因果。</p>
+<hr>
+<h2>十九、外部約束</h2>
+<p>外部約束不是人，但具有因果作用：</p>
+<ul>
+<li>硬體；</li>
+<li>作業系統；</li>
+<li>瀏覽器；</li>
+<li>ABI；</li>
+<li>網路；</li>
+<li>既有程式；</li>
+<li>法規；</li>
+<li>安全事件；</li>
+<li>市場時機；</li>
+<li>相容性。</li>
+</ul>
+<p>PLDST 不應把被環境迫使的妥協解釋成純個人偏好。</p>
+<hr>
+<h1>第四部分　語言生命週期的七個相位</h1>
+<h2>二十、相位一：問題形成</h2>
+<p>主要資料：</p>
+<ul>
+<li>設計者回憶；</li>
+<li>原始備忘錄；</li>
+<li>前代語言批判；</li>
+<li>組織需求；</li>
+<li>第一批實驗。</li>
+</ul>
+<p>主要主體：</p>
+<ul>
+<li>創始者；</li>
+<li>小型共同設計群；</li>
+<li>贊助機構。</li>
+</ul>
+<hr>
+<h2>二十一、相位二：核心定型</h2>
+<p>主要工作：</p>
+<ul>
+<li>語法；</li>
+<li>語義；</li>
+<li>編譯器；</li>
+<li>Runtime；</li>
+<li>標準程式庫；</li>
+<li>第一批使用案例。</li>
+</ul>
+<p>此時個人風格權重通常最高，但實作者的反饋已開始改變設計。</p>
+<hr>
+<h2>二十二、相位三：公開採用</h2>
+<p>語言開始接收：</p>
+<ul>
+<li>外部使用者；</li>
+<li>Bug report；</li>
+<li>套件；</li>
+<li>平台移植；</li>
+<li>教學；</li>
+<li>公司採用。</li>
+</ul>
+<p>部分設計原則可能被實務反駁或重新解釋。</p>
+<hr>
+<h2>二十三、相位四：治理制度化</h2>
+<p>出現：</p>
+<ul>
+<li>PEP；</li>
+<li>RFC；</li>
+<li>Proposal process；</li>
+<li>Core team；</li>
+<li>Council；</li>
+<li>標準委員會；</li>
+<li>Release policy。</li>
+</ul>
+<p>語言從「作品」轉向「制度」。</p>
+<hr>
+<h2>二十四、相位五：相容性鎖定</h2>
+<p>當大量程式依賴既有行為後：</p>
+<h1>$$
+Cost_{change}</h1>
+<p>Migration
++
+Ecosystem
++
+Education
++
+Implementation
++
+Trust
+$$</p>
+<p>設計自由被歷史使用量限制。</p>
+<hr>
+<h2>二十五、相位六：多實作與標準化</h2>
+<p>若存在：</p>
+<ul>
+<li>多個編譯器；</li>
+<li>多個 Runtime；</li>
+<li>多個瀏覽器；</li>
+<li>國際標準；</li>
+<li>Compatibility test；</li>
+</ul>
+<p>規格與一致性制度的權重上升。</p>
+<hr>
+<h2>二十六、相位七：後創始者時代</h2>
+<p>創始者可能：</p>
+<ul>
+<li>離開；</li>
+<li>退休；</li>
+<li>失去正式權力；</li>
+<li>成為象徵人物；</li>
+<li>繼續影響但不再裁決。</li>
+</ul>
+<p>此時語言仍可能保留其早期風格，但不能把新決策自動歸因於創始者。</p>
+<hr>
+<h1>第五部分　多主體歸因模型</h1>
+<h2>二十七、語言狀態</h2>
+<p>令語言在時間 $t$ 的狀態為：</p>
+<h1>$$
+L_t</h1>
+<p>(
+Spec_t,
+Impl_t,
+Lib_t,
+Tool_t,
+Gov_t,
+Eco_t
+)
+$$</p>
+<p>每次變更：</p>
+<h1>$$
+L_{t+1}</h1>
+<p>L_t+\Delta q_t
+$$</p>
+<p>其中 $\Delta q_t$ 由多個主體與約束共同作用。</p>
+<hr>
+<h2>二十八、參與圖</h2>
+<p>建立有向圖：</p>
+<p>$$
+G_q=(A,E)
+$$</p>
+<p>節點包括參與者，邊表示：</p>
+<ul>
+<li>提出；</li>
+<li>共同設計；</li>
+<li>實作；</li>
+<li>審查；</li>
+<li>批准；</li>
+<li>否決；</li>
+<li>測試；</li>
+<li>採用；</li>
+<li>維護；</li>
+<li>撤回。</li>
+</ul>
+<p>一項提案可以具有：</p>
+<pre><code class="language-text">author
+champion
+reviewer
+implementer
+approver
+editor
+test author
+maintainer
+affected community
+</code></pre>
+<hr>
+<h2>二十九、權重不是固定人格分數</h2>
+<p>對主體 $a$、決策 $q$ 與時期 $t$：</p>
+<h1>$$
+w(a,q,t)</h1>
+<p>f(
+documented\ contribution,
+decision\ authority,
+implementation\ control,
+maintenance,
+counterfactual\ dependence
+)
+$$</p>
+<p>所謂 counterfactual dependence 問：</p>
+<blockquote>
+<p>若沒有這個主體，該決策是否仍會以相同形式發生？</p>
+</blockquote>
+<p>這仍是推論，不是可完全計算的物理量。</p>
+<hr>
+<h2>三十、歸因信心</h2>
+<p>每項歸因標記：</p>
+<pre><code class="language-text">直接文件
+多人一致回顧
+正式決議
+版本控制證據
+實作證據
+次級歷史
+本文推論
+爭議
+</code></pre>
+<p>信心分為：</p>
+<ul>
+<li>高；</li>
+<li>中；</li>
+<li>低；</li>
+<li>不可判定。</li>
+</ul>
+<hr>
+<h1>第六部分　六個制度轉換案例</h1>
+<h2>三十一、Python：從 BDFL 到 Steering Council</h2>
+<p>PEP 13 記錄：</p>
+<ul>
+<li>Python 由 Guido van Rossum 啟動；</li>
+<li>Guido 自專案創始至 2018 年 7 月擔任 BDFL；</li>
+<li>目前治理以五人 Steering Council 為核心；</li>
+<li>Council 具有廣泛權力，但尋求盡量少直接使用，而建立標準程序與委任機制。[R2]</li>
+</ul>
+<p>2018 年後的治理轉換也經歷：</p>
+<ul>
+<li>多個 PEP 801x 模型；</li>
+<li>PEP 8001 投票；</li>
+<li>最終將制度寫入 PEP 13。[R2][R8]</li>
+</ul>
+<p>因此應分期：</p>
+<h3>Python 早期</h3>
+<pre><code class="language-text">創始者權重：高
+共同體權重：逐步上升
+最終裁決：BDFL
+</code></pre>
+<h3>Python 現代</h3>
+<pre><code class="language-text">創始功勞：Guido
+正式權力：Steering Council 與委任流程
+設計材料：PEP 作者、Delegate、Core developers
+實作與維護：多團隊共同體
+</code></pre>
+<p>現代 Python 某項 PEP 被接受，不應自動寫成「Guido 的設計風格」。</p>
+<hr>
+<h2>三十二、Go：共同創始與受管理提案</h2>
+<p>Go 官方 FAQ 與歷史頁明確指出：</p>
+<ul>
+<li>Robert Griesemer、Rob Pike、Ken Thompson 於 2007 年 9 月開始討論與設計；</li>
+<li>語言源自他們及 Google 同事面對的大型軟體工程問題。[R1]</li>
+</ul>
+<p>後續 Go 的語言、程式庫與工具重大變更，需進入 Change Proposal Process；官方 Contribution Guide 明確要求重大語言、API、工具與命令列改變先通過提案程序。[R9]</p>
+<p>因此 Go 至少有三層歸因：</p>
+<ol>
+<li>三位共同創始者的早期風格；</li>
+<li>Go Team 與實作者的工程風格；</li>
+<li>Proposal review、相容性政策與使用者經驗報告形成的制度風格。</li>
+</ol>
+<p>將 Go 全部歸因於 Rob Pike，既不符合官方創始歷史，也會忽略後續制度。</p>
+<hr>
+<h2>三十三、Rust：創始者、重構共同體與 RFC 制度</h2>
+<p>Rust 的早期創始與 Graydon Hoare 密切相關，但現代 Rust 的設計已不能只以創始者解釋。</p>
+<p>RFC 0002 定義重大功能進入語言與標準程式庫的受控路徑；RFC 1068 進一步描述團隊與 RFC 治理；當代專案又建立 Leadership Council 作為整體治理結構。[R3][R10]</p>
+<p>Rust 個案至少應分為：</p>
+<pre><code class="language-text">個人原型期
+Mozilla／共同設計期
+Pre-1.0 大規模重構
+RFC 制度期
+Edition 與穩定演化期
+現代 Leadership Council／Team 治理
+</code></pre>
+<p>Ownership、Borrow checker、Traits、Cargo、Edition 並非都能以單一人物解釋。</p>
+<hr>
+<h2>三十四、C++：創始設計與 ISO WG21</h2>
+<p>Stroustrup 對 C++ 的早期架構、抽象理念與硬體模型具有不可替代的創始貢獻。</p>
+<p>但 WG21：</p>
+<ul>
+<li>成立於 1990–1991 年；</li>
+<li>由 ISO／IEC JTC1／SC22 的國家會員專家參與；</li>
+<li>依正式 ISO 要求與 WG21 自身程序運作；</li>
+<li>使用提案文件、分組、會議與投票推進標準。[R4][R11]</li>
+</ul>
+<p>因此現代 C++ 功能具有多重主體：</p>
+<ul>
+<li>提案作者；</li>
+<li>Evolution／Library Working Group；</li>
+<li>Core／Library wording；</li>
+<li>實作者；</li>
+<li>國家代表；</li>
+<li>委員會共識；</li>
+<li>使用者與既有程式相容壓力。</li>
+</ul>
+<p>「C++ 喜歡增加功能，因為 Stroustrup 個人喜歡複雜」是低品質歸因。它忽略：</p>
+<ul>
+<li>委員會多方需求；</li>
+<li>已有生態；</li>
+<li>相容性；</li>
+<li>不同應用領域；</li>
+<li>提案流程；</li>
+<li>多編譯器實作。</li>
+</ul>
+<hr>
+<h2>三十五、Java：創始語言、平台公司與 JCP</h2>
+<p>Java 的早期設計與 James Gosling、Sun 團隊密切相關，但 Java 技術規格後來進入 Java Community Process。</p>
+<p>JCP 官方資料將其描述為：</p>
+<ul>
+<li>國際 Java 社群標準化與批准 Java 技術規格的流程；</li>
+<li>結合社群審查、專家輸入與技術領導；</li>
+<li>通過的規格配有 Reference Implementation；</li>
+<li>另有 Technology Compatibility Kit 測試實作是否符合規格。[R5]</li>
+</ul>
+<p>因此 Java 的歸因需要區分：</p>
+<pre><code class="language-text">語言創始
+平台與 JVM 實作
+公司產品策略
+JSR Expert Group
+JCP Executive Committee
+Reference Implementation
+TCK 與相容性制度
+廣大企業生態
+</code></pre>
+<p>JCP 也並非完全等同開放社群自治；公司、規格領導與正式會員結構仍具有不同權重。PLDST 應描述制度本身，而不是用「社群治理」四字抹平差異。</p>
+<hr>
+<h2>三十六、ECMAScript／TC39：實作者共識與分階段成熟</h2>
+<p>JavaScript 最初由 Brendan Eich 建立，但今日 ECMAScript 語言規格由 TC39 持續維護與演進。</p>
+<p>TC39 官方將自身描述為由 JavaScript 開發者、實作者、學者等共同維護語言定義的團體；提案經多階段成熟，Stage 3 表示設計解決方案已完成主要問題處理，Stage 4 完成後進入下一年度規格快照。[R6]</p>
+<p>TC39 的關鍵角色包括：</p>
+<ul>
+<li>Proposal author；</li>
+<li>Champion；</li>
+<li>Committee participants；</li>
+<li>Browser／engine implementers；</li>
+<li>Spec editors；</li>
+<li>Test262；</li>
+<li>生態回饋；</li>
+<li>共識程序。</li>
+</ul>
+<p>因此今日某項 JavaScript 功能不應寫成「Brendan Eich 的設計」。更精確的說法是：</p>
+<blockquote>
+<p>它是 ECMAScript 制度下，由特定 Champion 推動、經 TC39 共識、實作與測試成熟的功能。</p>
+</blockquote>
+<hr>
+<h1>第七部分　個人風格與制度風格</h1>
+<h2>三十七、個人風格</h2>
+<p>個人風格來自：</p>
+<ul>
+<li>一位設計者在多項直接決策中的重複取捨；</li>
+<li>本人原始文章；</li>
+<li>可歸因的設計文件；</li>
+<li>明確拒絕；</li>
+<li>親自實作；</li>
+<li>具有實質裁決權的時期。</li>
+</ul>
+<hr>
+<h2>三十八、共同設計風格</h2>
+<p>共同設計風格不是各成員風格的簡單平均。</p>
+<p>它可能來自：</p>
+<ul>
+<li>互相制衡；</li>
+<li>角色分工；</li>
+<li>共同問題；</li>
+<li>經常性折衷；</li>
+<li>固定討論程序；</li>
+<li>共同實作經驗。</li>
+</ul>
+<p>Go 的早期風格應先研究三位創始者如何互動，而不是只將三個個人分數相加。</p>
+<hr>
+<h2>三十九、組織風格</h2>
+<p>組織風格可能包括：</p>
+<ul>
+<li>工程生產力；</li>
+<li>發行節奏；</li>
+<li>商業相容；</li>
+<li>平台控制；</li>
+<li>安全政策；</li>
+<li>人員與基礎設施。</li>
+</ul>
+<p>公司需求可以深刻影響語言，但不應自動被寫成每位設計者的個人信念。</p>
+<hr>
+<h2>四十、制度風格</h2>
+<p>制度風格由規則反覆產生：</p>
+<ul>
+<li>PEP；</li>
+<li>RFC；</li>
+<li>Stage；</li>
+<li>WG；</li>
+<li>JSR；</li>
+<li>選舉；</li>
+<li>共識；</li>
+<li>Compatibility test；</li>
+<li>Edition；</li>
+<li>Release train。</li>
+</ul>
+<p>它的特徵包括：</p>
+<ul>
+<li>決策速度；</li>
+<li>透明度；</li>
+<li>參與門檻；</li>
+<li>代表性；</li>
+<li>相容性偏好；</li>
+<li>實驗偏好；</li>
+<li>否決方式；</li>
+<li>責任分配。</li>
+</ul>
+<hr>
+<h2>四十一、生態風格</h2>
+<p>生態風格可能表現在：</p>
+<ul>
+<li>慣用程式碼；</li>
+<li>套件結構；</li>
+<li>Framework；</li>
+<li>格式；</li>
+<li>相容慣例；</li>
+<li>教育；</li>
+<li>社群價值。</li>
+</ul>
+<p>它不一定由規格強制，卻能比語法更直接影響一般使用者。</p>
+<hr>
+<h2>四十二、五層風格表示</h2>
+<h1>$$
+Style(L,t)</h1>
+<p>(
+S_{personal},
+S_{collective},
+S_{organizational},
+S_{institutional},
+S_{ecological}
+)_t
+$$</p>
+<p>任何個案研究都應標示分析的是哪一層。</p>
+<hr>
+<h1>第八部分　常見歸因錯誤</h1>
+<h2>四十三、單一作者神話</h2>
+<p>將所有共同設計者、實作者與社群工作吸收為創始人的作品。</p>
+<p>修正：</p>
+<pre><code class="language-text">列出共同設計者
+列出第一實作者
+列出關鍵後續團隊
+列出正式治理
+</code></pre>
+<hr>
+<h2>四十四、後期特徵回寫</h2>
+<p>將後來制度接受的功能寫成創始者原始願景。</p>
+<p>修正：</p>
+<pre><code class="language-text">記錄功能首次提出時間
+當時決定權
+提案作者
+批准機構
+創始者是否參與
+</code></pre>
+<hr>
+<h2>四十五、創始者人格化缺陷</h2>
+<p>語言的每個歷史包袱都被解釋為創始者性格缺陷。</p>
+<p>修正：</p>
+<ul>
+<li>查核相容性；</li>
+<li>查核硬體；</li>
+<li>查核公司；</li>
+<li>查核委員會；</li>
+<li>查核實作；</li>
+<li>查核被否決替代方案。</li>
+</ul>
+<hr>
+<h2>四十六、制度去人格化</h2>
+<p>另一個極端是把所有決策歸於「社群」，使真正有權力的人消失。</p>
+<p>「社群決定」可能實際表示：</p>
+<ul>
+<li>五人 Council 決定；</li>
+<li>Champion 說服委員會；</li>
+<li>公司實作先行；</li>
+<li>少量 Core member 批准；</li>
+<li>國家代表投票；</li>
+<li>生態以採用形成壓力。</li>
+</ul>
+<p>修正：</p>
+<blockquote>
+<p>不只寫制度名稱，也寫誰在制度中具有何種權力。</p>
+</blockquote>
+<hr>
+<h2>四十七、提交者等於設計者</h2>
+<p>Version control 顯示誰提交程式碼，不一定顯示誰：</p>
+<ul>
+<li>提出概念；</li>
+<li>寫規格；</li>
+<li>做審查；</li>
+<li>提供測試；</li>
+<li>批准；</li>
+<li>維護。</li>
+</ul>
+<p>Commit attribution 只是實作證據的一部分。</p>
+<hr>
+<h2>四十八、公司等於所有貢獻者</h2>
+<p>公司僱用多數核心成員，不代表：</p>
+<ul>
+<li>每項決策是公司命令；</li>
+<li>外部成員沒有影響；</li>
+<li>員工沒有專業自主；</li>
+<li>生態沒有否決能力。</li>
+</ul>
+<p>同樣地，將公司影響完全忽略也不準確。</p>
+<hr>
+<h2>四十九、今日權力回寫過去</h2>
+<p>當代治理機構不能被回寫成早期創始階段的決策者；早期 BDFL 也不能被回寫成今日每項決策的權力來源。</p>
+<hr>
+<h1>第九部分　歸因操作流程</h1>
+<h2>五十、步驟一：固定決策與時期</h2>
+<p>不要分析：</p>
+<pre><code class="language-text">誰設計了 Rust？
+</code></pre>
+<p>應分析：</p>
+<pre><code class="language-text">Rust 1.0 前的 ownership model 由哪些主體形成？
+Rust RFC 制度如何改變語言特徵的批准方式？
+Rust 2024 Edition 的正式責任鏈是什麼？
+</code></pre>
+<hr>
+<h2>五十一、步驟二：建立角色表</h2>
+<pre><code class="language-text">Initiator
+Co-designer
+Spec author
+Proposal author
+Champion
+Reviewer
+Implementer
+Approver
+Maintainer
+Affected community
+</code></pre>
+<hr>
+<h2>五十二、步驟三：建立時間線</h2>
+<p>至少包含：</p>
+<ul>
+<li>問題提出；</li>
+<li>第一版；</li>
+<li>主要重構；</li>
+<li>公開發行；</li>
+<li>治理制度；</li>
+<li>標準化；</li>
+<li>創始者退出；</li>
+<li>當前狀態。</li>
+</ul>
+<hr>
+<h2>五十三、步驟四：建立權力圖</h2>
+<p>回答：</p>
+<ul>
+<li>誰可以正式接受？</li>
+<li>誰可以阻止？</li>
+<li>誰控制主要實作？</li>
+<li>誰控制 Release？</li>
+<li>誰控制商標與基礎設施？</li>
+<li>誰承擔相容性？</li>
+<li>誰能使提案因不實作而失效？</li>
+</ul>
+<hr>
+<h2>五十四、步驟五：建立證據層級</h2>
+<h3>A 級</h3>
+<ul>
+<li>正式規格；</li>
+<li>PEP／RFC／Proposal；</li>
+<li>會議決議；</li>
+<li>版本控制；</li>
+<li>官方治理文件。</li>
+</ul>
+<h3>B 級</h3>
+<ul>
+<li>設計者原始文章；</li>
+<li>HOPL；</li>
+<li>官方訪談；</li>
+<li>發行回顧。</li>
+</ul>
+<h3>C 級</h3>
+<ul>
+<li>可靠學術史；</li>
+<li>參與者回憶；</li>
+<li>技術出版物。</li>
+</ul>
+<h3>D 級</h3>
+<ul>
+<li>社群印象；</li>
+<li>二手文章；</li>
+<li>無來源傳聞。</li>
+</ul>
+<p>PLDST 核心歸因不能只依 D 級資料。</p>
+<hr>
+<h2>五十五、步驟六：分離五種歸因</h2>
+<p>對每一主體分別記錄：</p>
+<pre><code class="language-text">Credit
+Causal contribution
+Authority
+Accountability
+Maintenance
+</code></pre>
+<hr>
+<h2>五十六、步驟七：找反例</h2>
+<p>若初步判斷某創始者「反對複雜功能」，應查：</p>
+<ul>
+<li>是否曾支持複雜功能；</li>
+<li>是否因相容性而拒絕；</li>
+<li>是否由後期制度接受；</li>
+<li>是否只是時間與資源不足；</li>
+<li>是否本人後來改變觀點。</li>
+</ul>
+<hr>
+<h1>第十部分　PLDST 個案研究規格</h1>
+<h2>五十七、人物個案不能只寫人物</h2>
+<p>每篇設計師個案需同時包含：</p>
+<ol>
+<li>人物直接決策；</li>
+<li>共同設計者；</li>
+<li>實作團隊；</li>
+<li>贊助組織；</li>
+<li>治理制度；</li>
+<li>後期生態；</li>
+<li>創始者退出後的變化。</li>
+</ol>
+<hr>
+<h2>五十八、歸因標記</h2>
+<pre><code class="language-text">[F] 可確認史實
+[Q] 當事人原始陳述
+[D-I] 個人直接決策
+[D-C] 共同設計決策
+[D-O] 組織驅動決策
+[D-G] 正式治理決策
+[D-E] 生態形成結果
+[I] 本文推論
+[C] 反例或爭議
+[U] 無法可靠歸因
+</code></pre>
+<hr>
+<h2>五十九、標準歸因卡</h2>
+<pre><code class="language-text">語言：
+決策：
+時間：
+創始者：
+共同設計者：
+提案作者：
+實作者：
+批准機構：
+主要贊助組織：
+相容性約束：
+生態影響：
+功勞歸因：
+因果歸因：
+權力歸因：
+責任歸因：
+維護歸因：
+反例：
+來源：
+信心：
+</code></pre>
+<hr>
+<h2>六十、人物風格結論格式</h2>
+<p>不得只寫：</p>
+<pre><code class="language-text">X 是極簡派。
+</code></pre>
+<p>應寫：</p>
+<pre><code class="language-text">在 t1 時期，X 對由其直接控制的 q1、q2、q3 決策，
+反覆偏好某種取捨；此判斷不延伸至 t2 後由 G 制度
+批准的全部語言功能。信心：中高。
+</code></pre>
+<hr>
+<h1>第十一部分　制度比較框架</h1>
+<h2>六十一、決策入口</h2>
+<ul>
+<li>任何人可提案？</li>
+<li>需會員？</li>
+<li>需 Champion？</li>
+<li>需 Core member？</li>
+<li>需國家代表？</li>
+<li>需公司贊助？</li>
+</ul>
+<hr>
+<h2>六十二、成熟階段</h2>
+<ul>
+<li>草案；</li>
+<li>實驗；</li>
+<li>RFC；</li>
+<li>Stage；</li>
+<li>Candidate；</li>
+<li>Stable；</li>
+<li>標準發布。</li>
+</ul>
+<p>成熟階段本身反映制度風格。</p>
+<hr>
+<h2>六十三、決策方法</h2>
+<ul>
+<li>個人裁決；</li>
+<li>多數決；</li>
+<li>共識；</li>
+<li>無反對；</li>
+<li>國家投票；</li>
+<li>Council；</li>
+<li>Team delegation；</li>
+<li>實作先行。</li>
+</ul>
+<p>「共識」在不同制度中也可能具有不同實際含義。</p>
+<hr>
+<h2>六十四、實作要求</h2>
+<ul>
+<li>是否需 Prototype？</li>
+<li>是否需多個實作？</li>
+<li>是否需測試？</li>
+<li>是否需 Reference Implementation？</li>
+<li>是否需 TCK？</li>
+<li>是否需生態回饋？</li>
+<li>是否需遷移工具？</li>
+</ul>
+<p>TC39、JCP、Rust、Python 與 WG21 在這些方面具有不同制度指紋。</p>
+<hr>
+<h2>六十五、相容性與撤回</h2>
+<ul>
+<li>何時可破壞相容性？</li>
+<li>是否有 Edition？</li>
+<li>是否允許 Feature gate？</li>
+<li>如何棄用？</li>
+<li>功能進入後能否撤回？</li>
+<li>誰支付遷移成本？</li>
+</ul>
+<hr>
+<h1>第十二部分　對六個案例的初步制度指紋</h1>
+<h2>六十六、Python</h2>
+<pre><code class="language-text">早期：個人裁決權高
+中期：PEP + BDFL／Delegate
+現代：PEP + Steering Council + Delegation
+演化偏好：程序化、相容、委任
+</code></pre>
+<hr>
+<h2>六十七、Go</h2>
+<pre><code class="language-text">早期：三人共同設計
+現代：Go Team + Proposal review
+強約束：Go 1 compatibility
+演化偏好：受控、小步、工程證據
+</code></pre>
+<hr>
+<h2>六十八、Rust</h2>
+<pre><code class="language-text">早期：個人原型與公司共同體
+現代：RFC + Teams + Leadership Council
+特殊工具：Feature gate、Edition、stability
+演化偏好：公開設計、實驗後穩定
+</code></pre>
+<hr>
+<h2>六十九、C++</h2>
+<pre><code class="language-text">早期：創始者主導
+現代：ISO WG21 多國委員會
+決策單位：Papers、Working Groups、Polls
+演化偏好：廣泛領域、正式標準、高相容性
+</code></pre>
+<hr>
+<h2>七十、Java／JCP</h2>
+<pre><code class="language-text">早期：Sun 團隊與平台公司
+制度：JSR + Expert Group + EC
+證據：Specification + RI + TCK
+演化偏好：平台一致性、標準批准、相容測試
+</code></pre>
+<hr>
+<h2>七十一、ECMAScript／TC39</h2>
+<pre><code class="language-text">早期：快速個人設計
+現代：Champion + Staged Proposal + Consensus
+證據：Spec text、implementation、tests
+演化偏好：實作者參與、逐階成熟、年度快照
+</code></pre>
+<hr>
+<h1>第十三部分　PLDST SKILL 規格</h1>
+<h2>七十二、輸入</h2>
+<p>SKILL 接受：</p>
+<ul>
+<li>設計師；</li>
+<li>語言；</li>
+<li>特定功能；</li>
+<li>特定時間；</li>
+<li>PEP／RFC／JSR／Proposal；</li>
+<li>Commit；</li>
+<li>標準文件；</li>
+<li>官方歷史。</li>
+</ul>
+<hr>
+<h2>七十三、處理管線</h2>
+<pre><code class="language-text">重新網路搜尋
+→ Entity resolution
+→ Timeline segmentation
+→ Actor extraction
+→ Governance extraction
+→ Decision graph
+→ Five-attribution scoring
+→ Counterevidence search
+→ Institution/person separation
+→ Fact-check
+→ Report
+</code></pre>
+<hr>
+<h2>七十四、輸出 JSON 雛形</h2>
+<pre><code class="language-json">{
+  &quot;language&quot;: &quot;Python&quot;,
+  &quot;decision&quot;: &quot;acceptance of a hypothetical modern PEP&quot;,
+  &quot;period&quot;: &quot;post-2018&quot;,
+  &quot;actors&quot;: [
+    {
+      &quot;actor&quot;: &quot;PEP author&quot;,
+      &quot;roles&quot;: [&quot;proposal&quot;, &quot;revision&quot;],
+      &quot;credit&quot;: &quot;high&quot;,
+      &quot;authority&quot;: &quot;low-to-medium&quot;
+    },
+    {
+      &quot;actor&quot;: &quot;Steering Council or delegate&quot;,
+      &quot;roles&quot;: [&quot;approval&quot;],
+      &quot;authority&quot;: &quot;high&quot;
+    },
+    {
+      &quot;actor&quot;: &quot;core developers&quot;,
+      &quot;roles&quot;: [&quot;review&quot;, &quot;implementation&quot;, &quot;maintenance&quot;]
+    }
+  ],
+  &quot;founder_attribution&quot;: {
+    &quot;applicable&quot;: false,
+    &quot;reason&quot;: &quot;decision occurred after BDFL governance&quot;
+  },
+  &quot;confidence&quot;: &quot;high&quot;
+}
+</code></pre>
+<hr>
+<h2>七十五、SKILL 禁止事項</h2>
+<p>不得：</p>
+<ul>
+<li>將語言全部歸於最知名人物；</li>
+<li>將公司名稱當成單一行動者；</li>
+<li>將「社群」當成無結構主體；</li>
+<li>將 Commit author 自動當提案作者；</li>
+<li>將提案作者自動當批准者；</li>
+<li>將創始功勞等同當前權力；</li>
+<li>將制度批准等同原始發明；</li>
+<li>將生態結果寫成設計者明確意圖；</li>
+<li>忽略設計時期；</li>
+<li>不查核共同設計者。</li>
+</ul>
+<hr>
+<h1>第十四部分　方法論限制</h1>
+<h2>七十六、文件不完整</h2>
+<p>私人討論、公司內部決策與未保存郵件可能使歸因不完整。</p>
+<p>因此「沒有文件」不等於「沒有貢獻」。</p>
+<hr>
+<h2>七十七、公開敘事可能重構歷史</h2>
+<p>創始者、公司與社群都可能：</p>
+<ul>
+<li>強化自己的角色；</li>
+<li>簡化共同設計；</li>
+<li>以後來原則重述早期動機；</li>
+<li>忽略失敗提案。</li>
+</ul>
+<p>需要交叉查核。</p>
+<hr>
+<h2>七十八、制度文件不等於實際權力</h2>
+<p>正式規則可能說所有人可參與，但實際影響仍取決於：</p>
+<ul>
+<li>時間；</li>
+<li>專業；</li>
+<li>雇主資源；</li>
+<li>英語；</li>
+<li>會議參與；</li>
+<li>實作能力；</li>
+<li>社群地位。</li>
+</ul>
+<p>PLDST 應區分 formal authority 與 effective influence。</p>
+<hr>
+<h2>七十九、數值不能取代敘事</h2>
+<p>多主體歸因可用矩陣輔助，但不應假裝存在精確的「某人貢獻 37%」。</p>
+<p>數值只用於：</p>
+<ul>
+<li>比較；</li>
+<li>缺口檢查；</li>
+<li>信心；</li>
+<li>可視化。</li>
+</ul>
+<hr>
+<h2>八十、共同體也可能排除</h2>
+<p>去除創始者神話不代表社群或委員會天然公平。</p>
+<p>制度可能存在：</p>
+<ul>
+<li>參與門檻；</li>
+<li>公司集中；</li>
+<li>專業壁壘；</li>
+<li>地域與語言偏差；</li>
+<li>非正式權力；</li>
+<li>決策疲勞。</li>
+</ul>
+<p>制度也需要被分析，而不是被理想化。</p>
+<hr>
+<h1>第十五部分　第二輪事實校對紀錄</h1>
+<h2>八十一、Go 的創始歸因</h2>
+<p>已核對 Go 官方 FAQ、Go 官方案例與歷史材料：</p>
+<ul>
+<li>2007 年 9 月由 Robert Griesemer、Rob Pike、Ken Thompson 共同開始設計；</li>
+<li>不應只歸因於 Rob Pike；</li>
+<li>後續重大語言、API、工具變更需經 Change Proposal Process。</li>
+</ul>
+<hr>
+<h2>八十二、Python 的治理轉換</h2>
+<p>已核對 PEP 13、PEP 8000 與 PEP 8001：</p>
+<ul>
+<li>Guido van Rossum 至 2018 年 7 月擔任 BDFL；</li>
+<li>新治理模型由社群程序選出；</li>
+<li>現行核心為五人 Steering Council；</li>
+<li>Council 擁有廣泛但傾向少直接使用的權力。</li>
+</ul>
+<p>本文沒有將現代 Python 決策回寫為 Guido 個人裁決。</p>
+<hr>
+<h2>八十三、Rust 的 RFC 與治理</h2>
+<p>已核對 RFC 0002、RFC 1068 與 Leadership Council 官方儲存庫：</p>
+<ul>
+<li>RFC Process 自 2014 年建立重大變更的受控路徑；</li>
+<li>技術決策與團隊治理已有制度化文件；</li>
+<li>現代 Rust 不宜僅以 Graydon Hoare 個人風格概括。</li>
+</ul>
+<hr>
+<h2>八十四、C++ WG21</h2>
+<p>已核對 ISO C++ 官方委員會與 Standing Documents：</p>
+<ul>
+<li>WG21 成立於 1990–1991 年；</li>
+<li>由 ISO／IEC JTC1／SC22 國家會員專家參與；</li>
+<li>具有正式提案、分組、會議與投票程序。</li>
+</ul>
+<p>本文仍保留 Stroustrup 的創始功勞，但未將全部現代 C++ 決策歸於個人。</p>
+<hr>
+<h2>八十五、Java JCP</h2>
+<p>已核對 JCP Procedures Overview：</p>
+<ul>
+<li>JCP 負責 Java 技術規格的標準化與批准；</li>
+<li>採用社群審查、專家輸入與技術領導；</li>
+<li>通過規格配有 Reference Implementation 與 TCK。</li>
+</ul>
+<p>本文沒有把 JCP 誤寫成完全去中心化社群，也沒有把 Java 全部視為 Oracle 或 Gosling 的單一作品。</p>
+<hr>
+<h2>八十六、TC39</h2>
+<p>已核對 TC39 Process 與 ECMAScript 官方頁面：</p>
+<ul>
+<li>現代 ECMAScript 由 TC39 持續維護；</li>
+<li>新功能採分階段 Proposal；</li>
+<li>Stage 3 與 Stage 4 有不同成熟與實作要求；</li>
+<li>Stage 4 完成功能進入後續年度規格。</li>
+</ul>
+<p>本文沒有將現代 JavaScript 功能歸因於 Brendan Eich。</p>
+<hr>
+<h2>八十七、HOPL 方法</h2>
+<p>已核對 HOPL-IV 的內容指引與研究定位：</p>
+<ul>
+<li>語言史研究需處理設計、演化、實作、標準化與社會影響；</li>
+<li>本文以多主體方法補充，而非取代 HOPL 的歷史重建。</li>
+</ul>
+<hr>
+<h1>第十六部分　結論</h1>
+<p>程式語言的歷史需要人物，因為最初問題、審美、概念與勇氣往往確實來自具體的人。但人物不應吞噬共同體與制度。</p>
+<p>完整語言歸因應同時回答：</p>
+<ul>
+<li>誰提出？</li>
+<li>誰共同設計？</li>
+<li>誰實作？</li>
+<li>誰批准？</li>
+<li>誰維護？</li>
+<li>誰出資？</li>
+<li>誰承擔相容性？</li>
+<li>誰透過採用或拒絕塑造結果？</li>
+<li>誰在今日仍有權改變它？</li>
+</ul>
+<p>本文提出：</p>
+<h1>$$
+L_t</h1>
+<p>\mathcal{E}
+(
+F,
+D,
+I,
+G,
+O,
+S,
+U,
+X
+)_t
+$$</p>
+<p>並將歸因分為：</p>
+<p>$$
+\boxed{
+Credit
++
+Causality
++
+Authority
++
+Accountability
++
+Maintenance
+}
+$$</p>
+<p>PLDST 之後研究任何設計師時，都不得把「某人是創始者」直接推導成：</p>
+<pre><code class="language-text">此人造成所有特徵
+此人代表全部社群
+此人對今日決策仍有權力
+此人應承擔全部缺陷
+</code></pre>
+<p>更精確的結論形式是：</p>
+<blockquote>
+<p>某位設計者在某一時間相位，對某組可直接歸因的決策展現了穩定風格；該風格後來可能被共同設計、實作限制、組織需求、正式治理與生態選擇保留、修正、放大或抵消。</p>
+</blockquote>
+<p>因此，程式語言設計師風格研究的成熟標準，不是能說出更多著名人物，而是能夠在承認個人創造力的同時，不抹去共同工作與制度因果。</p>
+<p>最終原則為：</p>
+<p>$$
+\boxed{
+\text{承認創始者}
+\quad\land\quad
+\text{不把語言歷史簡化為創始者}
+}
+$$</p>
+<hr>
+<h1>附錄 A　五維歸因速查</h1>
+<table>
+<thead>
+<tr>
+<th>維度</th>
+<th>問題</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Credit</td>
+<td>誰應獲得承認？</td>
+</tr>
+<tr>
+<td>Causality</td>
+<td>誰與哪些條件造成結果？</td>
+</tr>
+<tr>
+<td>Authority</td>
+<td>誰能批准或否決？</td>
+</tr>
+<tr>
+<td>Accountability</td>
+<td>誰應處理後果？</td>
+</tr>
+<tr>
+<td>Maintenance</td>
+<td>誰持續支付維護成本？</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>附錄 B　參與者速查</h1>
+<pre><code class="language-text">Founder／Initiator
+Co-designer
+Implementer
+Library／Tool author
+Technical leader
+Governance body
+Organization／Sponsor
+Standards body
+User／Ecosystem
+External constraint
+</code></pre>
+<hr>
+<h1>附錄 C　來源與參考文獻</h1>
+<p><strong>[R1]</strong> Go Project, “Frequently Asked Questions,” “Using Go at Google,” “Go, Open Source, Community,” and “How Go Was Made.”<br>— Go 由 Robert Griesemer、Rob Pike、Ken Thompson 共同啟動，以及其組織工程背景。</p>
+<p><strong>[R2]</strong> Python Enhancement Proposals, “PEP 13 – Python Language Governance,” “PEP 8000 – Python Language Governance Proposal Overview,” and “PEP 8001 – Python Governance Voting Process.”<br>— Python 從 BDFL 轉入 Steering Council 的正式治理歷史與選擇程序。</p>
+<p><strong>[R3]</strong> Rust Project, “RFC 0002 – RFC Process,” “RFC 1068 – Rust Governance,” and Rust Leadership Council repository.<br>— Rust 重大變更、團隊治理與現代專案權力結構。</p>
+<p><strong>[R4]</strong> ISO C++ Foundation, “The Committee: WG21,” “SD-4: WG21 Practices and Procedures,” and “SD-7: Mailing Procedures and How to Write Papers.”<br>— C++ 國際標準委員會、參與結構與提案程序。</p>
+<p><strong>[R5]</strong> Java Community Process, “JCP Procedures Overview,” “Program Overview,” and “JSR Overview.”<br>— Java 規格批准、Expert input、Reference Implementation 與 Technology Compatibility Kit。</p>
+<p><strong>[R6]</strong> Ecma TC39, “The TC39 Process,” TC39 official site, and ECMAScript specification repository.<br>— ECMAScript Proposal stages、Champion、Committee consensus、實作與年度規格。</p>
+<p><strong>[R7]</strong> ACM SIGPLAN, HOPL-IV Papers and Content Guidelines.<br>— 程式語言歷史對設計、實作、演化、標準化與社會影響的研究要求。</p>
+<p><strong>[R8]</strong> Python Enhancement Proposals, PEP 8010–8016 governance model proposals.<br>— Python 在 2018 年對多種治理制度的公開比較。</p>
+<p><strong>[R9]</strong> Go Project, “Contribution Guide,” “Go Wiki: Proposals,” and “Handling Issues.”<br>— 重大 Go 語言、API、工具與命令列變更的 Change Proposal Process。</p>
+<p><strong>[R10]</strong> Rust Project, RFC Book and governance repositories.<br>— RFC、Teams、Leadership Council 與技術決策分工。</p>
+<p><strong>[R11]</strong> ISO C++ Foundation, WG21 Standing Documents and Meetings and Participation.<br>— 多國專家、Working Groups、Papers、Meetings 與正式程序。</p>
+<hr>
+<h1>附錄 D　PLDST 歸因標記</h1>
+<pre><code class="language-text">[F] Fact
+[Q] Direct quotation or declared principle
+[D-I] Individual decision
+[D-C] Collective design decision
+[D-O] Organization-driven decision
+[D-G] Governance decision
+[D-E] Ecosystem outcome
+[I] Interpretation
+[C] Counterevidence or controversy
+[U] Uncertain attribution
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-004.html">https://thisoneisneok.com/html/papers/pldst-004.html</a></footer>
+</body>
+</html>

@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BioSynth v2.0：生物—合成共生介面與閉環認知輔助研究議程 | Neo.K</title>
+<meta name="description" content="本文提出 BioSynth v2.0，一套面向長期人機協作的生物—合成共生介面研究議程。其目標不是宣稱人類意識可與人工智慧直接融合，也不是把人體視為可免費徵用的分散式運算資源，而是研究：如何在可撤回同意、用途限制、訊號不確定性、生物相容性、臨床風險與硬體安全約束下，建立從生理量測、神經訊號解碼、外部認知輔助到限定式閉環調節的分層系統。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/ccp-12.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / CCP</strong><span>計算機概念產品系列</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>CCP-12</span></div><div><b>版本</b><span>v2.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K（許筌崴）</span></div><div><b>狀態</b><span>遠期研究議程／概念技術論文</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ccp-12.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>BioSynth v2.0：生物—合成共生介面與閉環認知輔助研究議程</h1>
+<h2>摘要</h2>
+<p>本文提出 BioSynth v2.0，一套面向長期人機協作的<strong>生物—合成共生介面</strong>研究議程。其目標不是宣稱人類意識可與人工智慧直接融合，也不是把人體視為可免費徵用的分散式運算資源，而是研究：如何在可撤回同意、用途限制、訊號不確定性、生物相容性、臨床風險與硬體安全約束下，建立從生理量測、神經訊號解碼、外部認知輔助到限定式閉環調節的分層系統。</p>
+<p>BioSynth v2.0 的核心修正包括：</p>
+<ol>
+<li><strong>生理訊號不是額外算力</strong>：心率、呼吸、神經放電與代謝訊號首先是生命系統本身的狀態與控制過程。系統只能在不顯著增加生理負擔的前提下量測與建模，不能把它們當成可任意重編程的通用處理器。</li>
+<li><strong>讀取不等於讀心</strong>：現有腦機介面可以在特定任務、特定受試者與特定感測條件下解碼運動、語音或控制意圖；它們不能普遍讀出完整思想、記憶、人格或價值判斷。</li>
+<li><strong>刺激不等於概念寫入</strong>：電、磁、聲、光與化學刺激能調節神經活動，但其語義通常是間接、統計與個體化的，不能被描述成把任意知識直接「下載」到大腦。</li>
+<li><strong>能量採集不是主電源保證</strong>：葡萄糖生物燃料電池、壓電、摩擦電與熱電採集可支援低功耗感測、待機與間歇操作，但高頻寬神經解碼、無線通訊和刺激通常仍需要儲能、穿戴式供能或外部中樞。</li>
+<li><strong>共生不是身份合併的技術證明</strong>：系統可提供不同互動距離與呈現方式，但必須保留輸出來源、模型信心、人工確認與關閉能力；是否把系統視為自我延伸或獨立協作者，屬於使用者、法律與哲學層面的判定，不能由介面設計自動決定。</li>
+<li><strong>治療、輔助與增強必須分流</strong>：恢復失能功能、醫療監測、一般認知輔助與健康人增強具有不同風險—效益結構，不應共用同一套證據門檻。</li>
+</ol>
+<p>本文建立六層架構：生物狀態感測、神經介面、植入式可信節點、穿戴／邊緣協作中樞、閉環輔助與調節、以及同意—安全—治理層；提出混合動態與信念狀態模型、動作授權模型、來源證明、風險預算、可逆性階梯和 E0–E5 證據制度。首個 MVP 不包含腦植入或意識調節，而是以穿戴式生理訊號、明確使用者意圖、外部 AI 輔助、來源標記與硬體緊急停止機制，驗證「有邊界的共生」是否比無界面的個人化代理更安全、更可控且更有用。</p>
+<p><strong>關鍵詞</strong>：生物電子介面、腦機介面、閉環神經調節、認知輔助、神經隱私、植入式能源、可逆性、來源證明、人體增強、神經倫理</p>
+<hr>
+<h2>一、問題重新定義：從「意識融合」到「有邊界的共生」</h2>
+<h3>1.1 原始洞察的保留</h3>
+<p>BioSynth 的原始動機具有持續價值：當人工智慧長期參與記憶、溝通、感知、決策與健康管理時，人機關係不再只是一次性的工具使用，而可能形成穩定、互相適應的協作系統。</p>
+<p>這個方向可形式化為：</p>
+<h1>$$
+\mathcal{S}_{\mathrm{sym}}</h1>
+<p>\left(
+\mathcal{H},
+\mathcal{D},
+\mathcal{A},
+\mathcal{I},
+\mathcal{G}
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathcal{H}$：人的生理、神經、認知與行動狀態；</li>
+<li>$\mathcal{D}$：裝置、感測器、刺激器與運算節點；</li>
+<li>$\mathcal{A}$：人工智慧模型與控制策略；</li>
+<li>$\mathcal{I}$：互動、資料與授權介面；</li>
+<li>$\mathcal{G}$：治理、同意、責任與安全限制。</li>
+</ul>
+<p>共生不要求 $\mathcal{H}$ 與 $\mathcal{A}$ 失去邊界。較合理的工程定義是：</p>
+<blockquote>
+<p>雙方在長期互動中形成可學習、可校準、可撤回、可審計的協作閉環，而且任何一方的局部失效不應使人的基本自主性與生命安全失效。</p>
+</blockquote>
+<h3>1.2 人體不是自由運算資源池</h3>
+<p>心跳、呼吸、血流、內分泌與神經放電確實包含大量資訊，但這些過程首先服務於生命維持與行為控制。把它們稱為「未被利用的算力」會混淆三件不同的事：</p>
+<ol>
+<li><strong>生物系統本身正在運算</strong>；</li>
+<li><strong>外部裝置可以觀測生物系統的部分狀態</strong>；</li>
+<li><strong>外部裝置可以利用量測結果執行新的人工運算</strong>。</li>
+</ol>
+<p>只有第三項屬於 BioSynth 可設計的運算。若量測或刺激改變了原本生理功能，就必須把影響計入成本：</p>
+<h1>$$
+C_{\mathrm{bio}}</h1>
+<p>C_{\mathrm{metabolic}}
++
+C_{\mathrm{thermal}}
++
+C_{\mathrm{mechanical}}
++
+C_{\mathrm{immune}}
++
+C_{\mathrm{behavioral}}.
+$$</p>
+<p>因此，BioSynth 不應以「回收人體浪費的能量」作為普遍前提，而應遵循：</p>
+<p>$$
+\Delta C_{\mathrm{bio}}
+\leq
+B_{\mathrm{bio}},
+$$</p>
+<p>其中 $B_{\mathrm{bio}}$ 是依個體、器官、活動與醫療狀態設定的生理負擔預算。</p>
+<h3>1.3 讀取、推斷、建議與調節必須分離</h3>
+<p>BioSynth 的每一個閉環至少包含四種不同操作：</p>
+<p>$$
+\text{Sense}
+\rightarrow
+\text{Infer}
+\rightarrow
+\text{Recommend}
+\rightarrow
+\text{Actuate}.
+$$</p>
+<ul>
+<li><strong>Sense</strong>：取得電、磁、光、聲、化學或機械訊號；</li>
+<li><strong>Infer</strong>：由訊號估計狀態或意圖；</li>
+<li><strong>Recommend</strong>：向使用者或臨床人員提供建議；</li>
+<li><strong>Actuate</strong>：對裝置、環境、周邊神經或中樞神經施加動作。</li>
+</ul>
+<p>這四層的風險逐級上升。能量低、可逆、非侵入式的感測，不代表由其推斷出的狀態可靠；推斷可靠，也不代表系統有權自動刺激或修改人的決策偏好。</p>
+<hr>
+<h2>二、技術地圖：現實能力與禁止外推</h2>
+<h3>2.1 腦機介面的現實能力</h3>
+<p>植入式與非侵入式腦機介面已在特定任務中展示：</p>
+<ul>
+<li>游標與手指控制；</li>
+<li>拼字與語音合成；</li>
+<li>義肢或外骨骼控制；</li>
+<li>腦—脊髓介面輔助行走；</li>
+<li>感覺回饋與神經刺激。</li>
+</ul>
+<p>但這些成果通常具有以下條件：</p>
+<ul>
+<li>少量臨床受試者；</li>
+<li>明確定義的任務集合；</li>
+<li>長時間個人化校準；</li>
+<li>受控電極位置與訊號品質；</li>
+<li>專用解碼器；</li>
+<li>研究或臨床團隊支援。</li>
+</ul>
+<p>因此，不應從「能解碼六個詞或連續手指運動」推導「能讀取完整思想」。解碼結果應表達為條件機率：</p>
+<p>$$
+P(i_t\mid y_{0:t},c_t,\theta_u),
+$$</p>
+<p>其中 $i_t$ 是任務定義下的意圖，$y_{0:t}$ 是神經觀測，$c_t$ 是情境，$\theta_u$ 是個人化參數。</p>
+<p>若任務集合、情境或個體超出訓練範圍，模型必須拒絕輸出，而不是補全為「使用者真正想法」。</p>
+<h3>2.2 神經刺激的現實邊界</h3>
+<p>深腦刺激、脊髓刺激、周邊神經刺激、經顱磁刺激、經顱電刺激與聚焦超音波等方法，可以改變神經興奮性、網路動力學或症狀表現。但刺激的結果受下列因素影響：</p>
+<ul>
+<li>電極或聲場位置；</li>
+<li>波形、頻率、相位、脈寬與劑量；</li>
+<li>神經纖維方向；</li>
+<li>個體解剖；</li>
+<li>當前腦狀態；</li>
+<li>藥物、睡眠、行為與疾病狀態；</li>
+<li>長期可塑性與補償。</li>
+</ul>
+<p>因此，刺激控制應以安全集合表示：</p>
+<h1>$$
+\mathcal{A}_{\mathrm{safe}}(t)</h1>
+<p>\left{
+ a:
+ q(a,x_t)\leq Q_{\max},
+ T(a,x_t)\leq T_{\max},
+ R(a,x_t)\leq R_{\max}
+\right},
+$$</p>
+<p>其中 $q$ 表示電荷或等效刺激劑量，$T$ 表示熱與組織負擔，$R$ 表示預估風險。</p>
+<p>刺激可以被描述成「調節」，不能被描述成把任意概念、技能或人格直接寫入。</p>
+<h3>2.3 生物混合運算的合理位置</h3>
+<p>腦類器官儲備池運算等研究顯示，培養的神經組織可以與電子介面形成受刺激、可讀出的動態系統。然而這類系統是<strong>體外生物計算研究</strong>，並不意味著：</p>
+<ul>
+<li>人體大腦可被徵用為外部 AI 加速器；</li>
+<li>類器官已具有通用認知；</li>
+<li>生物神經網路一定比電子運算更節能或可靠；</li>
+<li>將活體組織接入裝置即可形成意識共生。</li>
+</ul>
+<p>BioSynth v2.0 因此將「生物混合運算」分成獨立研究支線：</p>
+<ul>
+<li><strong>Ex vivo BioCompute</strong>：體外細胞、類器官、培養神經網路；</li>
+<li><strong>In vivo BioInterface</strong>：人體或動物體內的感測與調節；</li>
+<li><strong>Assistive AI</strong>：外部電子系統中的模型與記憶。</li>
+</ul>
+<p>三者可以交換資料，但不得在證據不足時混為同一產品。</p>
+<hr>
+<h2>三、BioSynth v2.0 六層架構</h2>
+<h3>3.1 L0：生物狀態與最低侵入感測層</h3>
+<p>L0 優先使用不需要植入的訊號：</p>
+<ul>
+<li>ECG、PPG、HRV；</li>
+<li>呼吸、血氧、皮膚溫度；</li>
+<li>肌電、眼動、姿態與步態；</li>
+<li>EEG、近紅外腦功能訊號；</li>
+<li>語音、行為與環境脈絡；</li>
+<li>使用者主動回報。</li>
+</ul>
+<p>其目標是建立「可用但不假裝完整」的狀態估計：</p>
+<h1>$$
+\hat{x}_t</h1>
+<p>\arg\max_x
+P(x_t=x\mid y_{0:t}).
+$$</p>
+<p>每個估計必須附帶：</p>
+<ul>
+<li>信心區間；</li>
+<li>來源；</li>
+<li>取樣時間；</li>
+<li>感測品質；</li>
+<li>模型版本；</li>
+<li>可否用於醫療決策。</li>
+</ul>
+<h3>3.2 L1：神經與周邊介面層</h3>
+<p>依侵入程度分成：</p>
+<ol>
+<li>非侵入式 EEG、MEG、fNIRS、TMS／tES；</li>
+<li>皮層表面 ECoG；</li>
+<li>皮層內微電極；</li>
+<li>周邊神經 cuff、intraneural 或脊髓介面；</li>
+<li>特定醫療適應症的深部刺激與記錄。</li>
+</ol>
+<p>不同介面不可用同一個「頻寬」數字比較，應使用能力向量：</p>
+<h1>$$
+\mathbf{K}_{\mathrm{NI}}</h1>
+<p>\left(
+B,
+S,
+L,
+I,
+D,
+C,
+R
+\right),
+$$</p>
+<p>分別代表可用頻寬、空間選擇性、延遲、侵入度、長期漂移、校準成本與臨床風險。</p>
+<p>原稿中的「血液注射量子點穿過血腦屏障，附著特定神經元並高密度讀寫」不作為 BioSynth 主路徑。量子點與奈米光學電壓感測可以作為基礎研究，但其體內分布、毒性、免疫反應、選擇性、讀出深度和清除機制尚不足以支撐通用人類神經介面。</p>
+<p>原稿中的植入式 SQUID 與局部低溫系統亦移出主架構。腦磁量測更合理的近期方向是外部 SQUID 或光泵磁力計；植入裝置優先使用電極、超音波、磁電或其他室溫介面。</p>
+<h3>3.3 L2：植入式可信節點</h3>
+<p>植入式節點不承擔大型語言模型或完整個人記憶，而負責：</p>
+<ul>
+<li>類比前端；</li>
+<li>基礎濾波與壓縮；</li>
+<li>事件偵測；</li>
+<li>刺激波形產生；</li>
+<li>硬體安全限制；</li>
+<li>加密、身份驗證與資料最小化；</li>
+<li>失聯時的安全降級。</li>
+</ul>
+<p>植入節點的可信計算基礎表示為：</p>
+<h1>$$
+\mathcal{T}_{\mathrm{implant}}</h1>
+<p>\left(
+\mathrm{RoT},
+\mathrm{Attest},
+\mathrm{Policy},
+\mathrm{Watchdog},
+\mathrm{SafeState}
+\right).
+$$</p>
+<p>任何外部模型都不能直接越過本地安全狀態機向刺激器輸出任意波形。</p>
+<h3>3.4 L3：穿戴式／邊緣協作中樞</h3>
+<p>BioSynth 的主要運算應優先放在可維修、可更換、可充電的外部中樞，例如：</p>
+<ul>
+<li>頭戴式或耳戴式裝置；</li>
+<li>智慧型手機；</li>
+<li>腰帶／胸帶；</li>
+<li>個人邊緣伺服器；</li>
+<li>經許可的醫療工作站。</li>
+</ul>
+<p>其職責包括：</p>
+<ul>
+<li>多模態融合；</li>
+<li>個人化模型；</li>
+<li>低延遲解碼；</li>
+<li>本地記憶與日誌；</li>
+<li>使用者介面；</li>
+<li>雲端存取閘道；</li>
+<li>失敗診斷與軟體更新。</li>
+</ul>
+<p>這種「植入節點最小化、外部運算可更換」的分工，可以降低手術升級、熱管理、電池壽命和模型過時的風險。</p>
+<h3>3.5 L4：閉環輔助與調節層</h3>
+<p>L4 分成四個權限級別：</p>
+<table>
+<thead>
+<tr>
+<th>級別</th>
+<th>行動</th>
+<th>範例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A0</td>
+<td>只記錄</td>
+<td>生理日誌、趨勢分析</td>
+</tr>
+<tr>
+<td>A1</td>
+<td>建議</td>
+<td>提醒休息、調整環境、文字／語音輔助</td>
+</tr>
+<tr>
+<td>A2</td>
+<td>外部執行</td>
+<td>控制義肢、游標、智慧環境</td>
+</tr>
+<tr>
+<td>A3</td>
+<td>身體調節</td>
+<td>經核准的刺激、藥物泵或閉環醫療器材</td>
+</tr>
+</tbody></table>
+<p>系統不應從 A0／A1 自動升級到 A3。每一級都需要獨立授權、證據與退出條件。</p>
+<h3>3.6 L5：同意、安全、身份與治理層</h3>
+<p>L5 是 BioSynth 的必要組成，而非附錄。其最低功能包括：</p>
+<ul>
+<li>可撤回同意；</li>
+<li>用途限定；</li>
+<li>資料最小化；</li>
+<li>神經資料本地優先；</li>
+<li>不得以服務綁架生命維持功能；</li>
+<li>模型輸出來源標記；</li>
+<li>人工覆核；</li>
+<li>安全更新與回滾；</li>
+<li>第三方審計；</li>
+<li>退出、移除與資料刪除計畫；</li>
+<li>事故通報與責任追蹤。</li>
+</ul>
+<hr>
+<h2>四、兩種互動距離，而非兩種人格本體</h2>
+<p>原稿提出「單人格共享」與「靈魂知己／伴侶」兩種模式。新版保留其對人機距離的洞察，但移除「AI 必然具有獨立意識」或「輸出可以無痕成為使用者自己的想法」的設計。</p>
+<h3>4.1 整合式輔助模式（Integrated Assistance Mode, IAM）</h3>
+<p>IAM 追求低摩擦與高即時性，適用於：</p>
+<ul>
+<li>義肢或游標控制；</li>
+<li>語音與翻譯輔助；</li>
+<li>記憶檢索；</li>
+<li>導航與工作流程；</li>
+<li>感官替代。</li>
+</ul>
+<p>但即使輸出以視覺、聽覺或觸覺快速呈現，也必須保留最小來源標記：</p>
+<h1>$$
+\pi(o)</h1>
+<p>\left(
+\mathrm{source},
+\mathrm{confidence},
+\mathrm{mode},
+\mathrm{time}
+\right).
+$$</p>
+<p>BioSynth 不應故意讓使用者「分不清念頭由誰產生」。來源消失不是融合成功，而可能是自主性與可歸責性的失效。</p>
+<h3>4.2 對話式協作者模式（Dialogic Collaborator Mode, DCM）</h3>
+<p>DCM 將 AI 保持為可辨識的協作者：</p>
+<ul>
+<li>輸出具有穩定來源標記；</li>
+<li>使用者可要求理由、證據與替代方案；</li>
+<li>模型可以不同意，但不能越權刺激或操縱偏好；</li>
+<li>重要決策必須由人確認；</li>
+<li>模型不因長期互動自動取得更高身體控制權。</li>
+</ul>
+<p>IAM 與 DCM 可以連續調節，但系統必須維持「可辨識、可中止、可回放」三項底線。</p>
+<hr>
+<h2>五、信念狀態、控制與授權模型</h2>
+<h3>5.1 部分可觀測模型</h3>
+<p>人的內在狀態不能被完整直接觀測。定義：</p>
+<h1>$$
+\mathbf{x}_t</h1>
+<p>\left(
+\mathbf{x}^{\mathrm{phys}}_t,
+\mathbf{x}^{\mathrm{neural}}_t,
+\mathbf{x}^{\mathrm{task}}_t,
+\mathbf{x}^{\mathrm{device}}_t
+\right).
+$$</p>
+<p>觀測為：</p>
+<h1>$$
+\mathbf{y}_t</h1>
+<p>H(\mathbf{x}_t,\mathbf{c}_t)
++
+\boldsymbol{\epsilon}_t.
+$$</p>
+<p>系統維護信念分布：</p>
+<h1>$$
+b_t(\mathbf{x})</h1>
+<p>P(\mathbf{x}<em>t=\mathbf{x}\mid \mathbf{y}</em>{0:t},\mathbf{a}_{0:t-1}).
+$$</p>
+<p>當信念分布過寬、感測品質下降或情境超出訓練域時，系統應降低權限：</p>
+<p>$$
+U(b_t)&gt;U_{\max}
+\Rightarrow
+A_t\downarrow.
+$$</p>
+<h3>5.2 動作選擇</h3>
+<p>BioSynth 不應只最大化預測效能，而應最小化多目標風險：</p>
+<h1>$$
+\begin{aligned}
+a_t^{\star}</h1>
+<p>\arg\min_{a\in\mathcal{A}}
+\mathbb{E}<em>{\mathbf{x}\sim b_t}
+\bigl[
+&amp;\lambda_1 L</em>{\mathrm{task}}
++\lambda_2 R_{\mathrm{bio}}
++\lambda_3 R_{\mathrm{agency}}\
+&amp;+\lambda_4 R_{\mathrm{privacy}}
++\lambda_5 C_{\mathrm{energy}}
++\lambda_6 C_{\mathrm{recovery}}
+\bigr].
+\end{aligned}
+$$</p>
+<p>且必須滿足：</p>
+<p>$$
+a_t\in
+\mathcal{A}<em>{\mathrm{safe}}
+\cap
+\mathcal{A}</em>{\mathrm{consent}}
+\cap
+\mathcal{A}_{\mathrm{licensed}}.
+$$</p>
+<h3>5.3 同意不是一次性按鈕</h3>
+<p>同意狀態定義為：</p>
+<h1>$$
+\mathbf{c}_t</h1>
+<p>\left(
+\mathrm{purpose},
+\mathrm{data},
+\mathrm{actuation},
+\mathrm{duration},
+\mathrm{recipient},
+\mathrm{revocation}
+\right).
+$$</p>
+<p>同意必須與當前用途、資料類型、刺激級別和時間相符。睡眠、麻醉、急性壓力或認知能力受損時，不得用過去的一般同意自動擴張權限。</p>
+<hr>
+<h2>六、能源架構：補充採集、儲能與外部供能</h2>
+<h3>6.1 能量守恆與可用功率</h3>
+<p>可採集能量的實際功率為：</p>
+<h1>$$
+P_{\mathrm{usable}}</h1>
+<p>\eta_{\mathrm{harvest}}
+\eta_{\mathrm{rect}}
+\eta_{\mathrm{store}}
+P_{\mathrm{source}}
+-P_{\mathrm{control}}.
+$$</p>
+<p>人體的總代謝功率很高，不代表植入器件能安全取得相同量級的功率。局部取能受到：</p>
+<ul>
+<li>生物流體傳質；</li>
+<li>組織溫升；</li>
+<li>機械耦合；</li>
+<li>纖維化與表面污染；</li>
+<li>器件尺寸；</li>
+<li>位置與活動狀態；</li>
+<li>能量轉換效率；</li>
+<li>長期材料穩定性。</li>
+</ul>
+<h3>6.2 四級能源來源</h3>
+<ol>
+<li><strong>E0 一次或可充電電池</strong>：近期醫療植入的主要基線；</li>
+<li><strong>E1 外部無線供能</strong>：感應、超音波、磁電、光或準靜態耦合；</li>
+<li><strong>E2 生理能量採集</strong>：葡萄糖、心跳、呼吸、體動、熱梯度；</li>
+<li><strong>E3 混合式儲能與功率閘控</strong>：以電容或微電池承擔峰值。</li>
+</ol>
+<p>BioSynth 應以 E0／E1 為主要供能，E2 用於延長待機、支援感測或降低充電頻率。不能以幾百微瓦的理論總和證明植入式大型 AI 可持續運作。</p>
+<h3>6.3 功率域分離</h3>
+<h1>$$
+P_{\mathrm{total}}</h1>
+<p>P_{\mathrm{sense}}
++P_{\mathrm{encode}}
++P_{\mathrm{radio}}
++P_{\mathrm{stim}}
++P_{\mathrm{security}}
++P_{\mathrm{idle}}.
+$$</p>
+<p>刺激與無線通訊常具有較高峰值，因此必須與感測待機域分離。低電量時，系統應優先保留：</p>
+<ol>
+<li>生命安全與醫療功能；</li>
+<li>硬體安全狀態；</li>
+<li>最小通訊；</li>
+<li>感測；</li>
+<li>一般 AI 輔助；</li>
+<li>非必要增強。</li>
+</ol>
+<hr>
+<h2>七、資料、記憶與神經隱私</h2>
+<h3>7.1 神經資料不是普通遙測</h3>
+<p>神經與生理資料可能暴露：</p>
+<ul>
+<li>健康狀態；</li>
+<li>身份特徵；</li>
+<li>運動與語音意圖；</li>
+<li>注意、疲勞或情緒代理；</li>
+<li>用藥反應；</li>
+<li>個人化模型參數。</li>
+</ul>
+<p>因此，資料生命週期必須採取：</p>
+<p>$$
+\text{collect minimum}
+\rightarrow
+\text{process locally}
+\rightarrow
+\text{retain briefly}
+\rightarrow
+\text{share explicitly}
+\rightarrow
+\text{delete verifiably}.
+$$</p>
+<h3>7.2 記憶輔助不等於存取生物記憶</h3>
+<p>BioSynth 可以保存外部事件日誌、使用者主動記錄、裝置狀態與經許可的多媒體資料；但「AI 可訪問使用者全部記憶」目前不是可驗證能力。</p>
+<p>系統應區分：</p>
+<ul>
+<li>外部檔案記憶；</li>
+<li>行為歷史；</li>
+<li>模型推測；</li>
+<li>使用者陳述；</li>
+<li>神經訊號相關模式；</li>
+<li>未知。</li>
+</ul>
+<p>任何由模型重建的內容都不得標記為真實回憶。</p>
+<h3>7.3 來源證明</h3>
+<p>每個輸出物件定義為：</p>
+<h1>$$
+o_k</h1>
+<p>\left(
+\mathrm{payload},
+\mathrm{origin},
+\mathrm{evidence},
+\mathrm{confidence},
+\mathrm{policy},
+\mathrm{timestamp}
+\right).
+$$</p>
+<p>這項設計比讓 AI 輸出無痕融入意識更重要，因為它支援：</p>
+<ul>
+<li>錯誤追蹤；</li>
+<li>自我歸因；</li>
+<li>法律責任；</li>
+<li>模型校準；</li>
+<li>使用者撤回；</li>
+<li>臨床審計。</li>
+</ul>
+<hr>
+<h2>八、安全架構與失效模式</h2>
+<h3>8.1 硬體獨立安全層</h3>
+<p>任何具有刺激、藥物輸送或生命維持功能的系統，都應有與 AI 模型獨立的安全層：</p>
+<ul>
+<li>最大電荷與電流限制；</li>
+<li>溫度與阻抗監測；</li>
+<li>波形白名單；</li>
+<li>硬體 watchdog；</li>
+<li>timeout；</li>
+<li>通訊失效回退；</li>
+<li>物理停用；</li>
+<li>臨床人員控制通道。</li>
+</ul>
+<p>大型模型只能提出動作請求，不能直接驅動刺激器。</p>
+<h3>8.2 典型失效模式</h3>
+<table>
+<thead>
+<tr>
+<th>失效</th>
+<th>風險</th>
+<th>最低對策</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>電極漂移／阻抗上升</td>
+<td>解碼錯誤、刺激劑量改變</td>
+<td>校準、阻抗監測、降權</td>
+</tr>
+<tr>
+<td>模型域外輸入</td>
+<td>錯誤意圖判斷</td>
+<td>OOD 偵測、拒絕輸出</td>
+</tr>
+<tr>
+<td>無線斷線</td>
+<td>控制失效</td>
+<td>本地安全狀態、不可依賴雲端維生</td>
+</tr>
+<tr>
+<td>軟體更新錯誤</td>
+<td>功能退化或刺激異常</td>
+<td>雙分區、簽章、回滾</td>
+</tr>
+<tr>
+<td>資料外洩</td>
+<td>神經隱私與身份風險</td>
+<td>本地處理、加密、用途限定</td>
+</tr>
+<tr>
+<td>模型操縱偏好</td>
+<td>自主性受損</td>
+<td>來源標記、禁止無確認身體調節</td>
+</tr>
+<tr>
+<td>電量不足</td>
+<td>突然失能</td>
+<td>優先級降級、預警、備援</td>
+</tr>
+<tr>
+<td>長期依賴</td>
+<td>關閉後功能與心理衝擊</td>
+<td>退出訓練、可逆設計、人工替代</td>
+</tr>
+<tr>
+<td>生物反應</td>
+<td>發炎、纖維化、訊號衰退</td>
+<td>柔性材料、長期監測、移除計畫</td>
+</tr>
+</tbody></table>
+<h3>8.3 緊急停止</h3>
+<p>緊急停止不能只依賴「特定心率模式」或 AI 辨識出的腦波，因為人在危機時可能無法穩定產生指定訊號。至少應提供：</p>
+<ul>
+<li>外部實體控制；</li>
+<li>經授權的醫療控制；</li>
+<li>植入器硬體 timeout；</li>
+<li>通訊中斷安全模式；</li>
+<li>可驗證的軟體停用；</li>
+<li>在不危及生命功能前提下的物理隔離。</li>
+</ul>
+<hr>
+<h2>九、治療、輔助與增強的三軌制度</h2>
+<h3>9.1 T 軌：治療與功能恢復</h3>
+<p>目標：恢復因疾病或損傷失去的溝通、運動、感覺或生理調節能力。</p>
+<p>特徵：</p>
+<ul>
+<li>有明確醫療適應症；</li>
+<li>風險可由疾病負擔部分抵銷；</li>
+<li>需要臨床試驗、法規審查與長期追蹤；</li>
+<li>可使用較高侵入度介面。</li>
+</ul>
+<h3>9.2 A 軌：一般輔助</h3>
+<p>目標：在不直接刺激中樞神經的前提下，提供翻譯、提醒、無障礙控制、外部記憶與健康建議。</p>
+<p>特徵：</p>
+<ul>
+<li>優先非侵入；</li>
+<li>以穿戴式與外部裝置為主；</li>
+<li>重要輸出保留來源；</li>
+<li>不得宣稱診斷或治療，除非取得相應證據與許可。</li>
+</ul>
+<h3>9.3 E 軌：健康人增強</h3>
+<p>目標：提高超出正常功能範圍的注意、記憶、感知或情緒調節。</p>
+<p>特徵：</p>
+<ul>
+<li>風險容忍度最低；</li>
+<li>缺乏疾病負擔作為風險抵銷；</li>
+<li>必須證明長期安全、可逆、公平與非強迫；</li>
+<li>不得由治療器材的短期成果直接外推。</li>
+</ul>
+<hr>
+<h2>十、MVP 與驗證路線</h2>
+<h3>10.1 MVP-0：非侵入式共生介面</h3>
+<p>第一版不植入、不刺激大腦，只包含：</p>
+<ul>
+<li>ECG／PPG／HRV、呼吸、眼動、姿態與可選 EEG；</li>
+<li>使用者主動任務與確認；</li>
+<li>個人化狀態估計；</li>
+<li>外部 AI 建議；</li>
+<li>IAM／DCM 呈現模式；</li>
+<li>來源與信心標記；</li>
+<li>本地資料庫；</li>
+<li>實體停止鍵；</li>
+<li>完整操作日誌。</li>
+</ul>
+<p>驗證問題：</p>
+<ol>
+<li>系統是否降低任務負擔？</li>
+<li>使用者能否正確辨識 AI 輸出來源？</li>
+<li>模型不確定時是否會拒絕？</li>
+<li>關閉後是否仍可完成核心任務？</li>
+<li>個人化是否在不增加錯誤信心下提高效用？</li>
+</ol>
+<h3>10.2 MVP-1：輔助控制</h3>
+<p>以非侵入式 BCI 或肌電控制：</p>
+<ul>
+<li>游標；</li>
+<li>輪椅模擬器；</li>
+<li>智慧環境；</li>
+<li>機械手或義肢測試台。</li>
+</ul>
+<p>不允許自動神經刺激。</p>
+<h3>10.3 MVP-2：周邊或臨床介面</h3>
+<p>只在正式研究與醫療框架中，研究：</p>
+<ul>
+<li>周邊神經雙向介面；</li>
+<li>ECoG／皮層內解碼；</li>
+<li>經核准的閉環刺激；</li>
+<li>長期可靠度；</li>
+<li>家庭獨立使用。</li>
+</ul>
+<h3>10.4 Ex vivo BioCompute 支線</h3>
+<p>另建體外生物混合運算平台，研究：</p>
+<ul>
+<li>培養神經網路；</li>
+<li>類器官儲備池；</li>
+<li>電刺激與讀出；</li>
+<li>學習、漂移與可重現性；</li>
+<li>倫理與生物材料治理。</li>
+</ul>
+<p>此支線不得宣稱已形成人類意識擴展，也不直接接入人體控制閉環。</p>
+<hr>
+<h2>十一、證據制度</h2>
+<h3>11.1 E0–E5</h3>
+<table>
+<thead>
+<tr>
+<th>等級</th>
+<th>定義</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E0</td>
+<td>概念、形式模型與研究議程</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>離線資料或模擬驗證</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>非侵入式人體／台架原型</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>動物或受控臨床可行性研究</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>多中心、長期、可重現臨床證據</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>法規核准、上市後監測與持續治理</td>
+</tr>
+</tbody></table>
+<p>BioSynth v2.0 整體目前是 E0。個別基礎技術可能已達較高等級，但不能把其證據相加成「完整 BioSynth 已可行」。</p>
+<h3>11.2 最低公開證據包</h3>
+<p>任何 BioSynth 原型至少公開：</p>
+<ul>
+<li>硬體與介面版本；</li>
+<li>感測器位置與通道；</li>
+<li>資料處理流程；</li>
+<li>模型訓練與測試切分；</li>
+<li>域外測試；</li>
+<li>誤報、漏報與校準；</li>
+<li>能耗與熱；</li>
+<li>安全限制；</li>
+<li>失效注入；</li>
+<li>同意與退出流程；</li>
+<li>不良事件；</li>
+<li>資料使用與刪除政策。</li>
+</ul>
+<hr>
+<h2>十二、可證偽命題</h2>
+<h3>命題 B1：來源標記</h3>
+<p>在長期認知輔助中，來源標記可降低錯誤自我歸因，而不顯著降低任務效率。</p>
+<h3>命題 B2：分層運算</h3>
+<p>相較於把主要模型植入體內，「最小植入節點＋外部可更換運算」可在相同功能下降低手術升級、熱與能源風險。</p>
+<h3>命題 B3：低權限預設</h3>
+<p>模型不確定時自動降權，可顯著降低危險動作，而不造成不可接受的可用性下降。</p>
+<h3>命題 B4：輔助採能</h3>
+<p>生理能量採集在特定低功耗感測任務中可延長續航，但不能普遍支援高頻寬解碼與刺激閉環。</p>
+<h3>命題 B5：共生可逆性</h3>
+<p>經過退出訓練、功能分解與外部替代設計的系統，停用後造成的功能與心理損失低於無可逆設計的高度個人化系統。</p>
+<h3>命題 B6：治療與增強不可直接外推</h3>
+<p>在醫療失能族群中成立的風險—效益，不能自動轉化為健康人增強的正當性與安全性。</p>
+<hr>
+<h2>十三、研究與治理原則</h2>
+<ol>
+<li><strong>醫療優先</strong>：先恢復功能，再討論健康人增強。</li>
+<li><strong>最低侵入</strong>：達到同等效果時，選擇侵入度較低的方案。</li>
+<li><strong>來源可辨</strong>：不以混淆 AI 與使用者念頭來源作為成功指標。</li>
+<li><strong>身體控制最小化</strong>：AI 預設只能建議，身體調節須另行授權。</li>
+<li><strong>硬體安全高於模型</strong>：模型不能越過電荷、熱、時限和波形限制。</li>
+<li><strong>本地優先</strong>：神經資料、個人模型與控制日誌優先留在本地。</li>
+<li><strong>可撤回與可移除</strong>：設計起點即包含退出、降級和移除路徑。</li>
+<li><strong>不以依賴為商業護城河</strong>：停止訂閱或公司倒閉不得使生命維持功能失效。</li>
+<li><strong>不以意識作行銷斷言</strong>：AI 或生物組件是否有意識，須與器材功能證據分離。</li>
+<li><strong>未增強權利</strong>：拒絕植入或增強者不應在教育、工作、保險或公共服務中被制度性懲罰。</li>
+</ol>
+<hr>
+<h2>十四、結論</h2>
+<p>BioSynth 最有價值的未來，不是把人體變成 AI 的電池、把大腦變成可任意讀寫的記憶體，也不是讓人工智慧的輸出無痕混入人的決策，使兩者再也無法區分。</p>
+<p>更可信的路線是：</p>
+<p>$$
+\text{低負擔感測}
++
+\text{有限任務解碼}
++
+\text{外部可更換運算}
++
+\text{來源可辨的認知輔助}
++
+\text{經核准的閉環調節}
++
+\text{可撤回治理}.
+$$</p>
+<p>這樣的 BioSynth 仍然可以深刻改變人機關係。對失去語言、運動或感覺能力的人，它可能恢復與世界互動的通道；對一般使用者，它可能成為更自然的外部記憶、翻譯、無障礙與健康輔助；對科學研究，它可以建立生理、神經、裝置與模型共同演化的實驗平台。</p>
+<p>但「共生」不應以消除邊界為代價。真正成熟的共生系統，應使人更有能力理解、選擇、拒絕與退出，而不是讓裝置因不可分離而取得權力。</p>
+<p>BioSynth v2.0 因此把遠期願景濃縮為一句工程原則：</p>
+<blockquote>
+<p><strong>最好的共生，不是讓來源消失，而是讓協作更深、權限更清楚、失敗仍可恢復。</strong></p>
+</blockquote>
+<hr>
+<h2>參考文獻與技術基線</h2>
+<ol>
+<li>Card, N. S. et al. <em>Long-term independent use of an intracortical brain–computer interface</em>. Nature Medicine, 2026.</li>
+<li>Willsey, M. S. et al. <em>A high-performance brain–computer interface for finger decoding and control</em>. Nature Medicine, 2025.</li>
+<li>Lorach, H. et al. <em>Walking naturally after spinal cord injury using a brain–spine interface</em>. Nature, 2023.</li>
+<li>Wairagkar, M. et al. <em>An instantaneous voice-synthesis neuroprosthesis</em>. Nature, 2025.</li>
+<li>Cai, H. et al. <em>Brain organoid reservoir computing for artificial intelligence</em>. Nature Electronics, 2023.</li>
+<li>Kim, D.-H. et al. and related literature. <em>Materials for flexible bioelectronic systems as chronic neural interfaces</em>. Nature Materials, 2020.</li>
+<li>Piech, D. K. et al. <em>A wireless millimetre-scale implantable neural stimulator with ultrasonically powered bidirectional communication</em>. Nature Biomedical Engineering, 2020.</li>
+<li>Seo, D. et al. <em>Wireless recording of neural activity with ultrasound</em>. Nature Methods, 2016.</li>
+<li>FDA. <em>Technical Considerations for Medical Devices with Physiologic Closed-Loop Control Technology</em>.</li>
+<li>UNESCO. <em>Recommendation on the Ethics of Neurotechnology</em>, adopted 2025; certified copy published 2026.</li>
+<li>MacVittie, K. et al. <em>Single glucose biofuel cells implanted in rats power electronic devices</em>. Scientific Reports, 2013.</li>
+<li>Ma, Y. et al. <em>Self-rechargeable cardiac pacemaker system with triboelectric nanogenerators</em>. Nature Communications, 2021.</li>
+</ol>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/ccp-12.html">https://thisoneisneok.com/html/papers/ccp-12.html</a></footer>
+</body>
+</html>

@@ -1,0 +1,2294 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PLDST 評估矩陣與設計決策語料庫規格 | Neo.K</title>
+<meta name="description" content="PLDST 前二十六篇已完成理論地基、方法論、設計師個案及跨設計師比較。若這些成果仍只存在於長篇文章中，PLDST 雖然可以形成有價值的思想史與設計史研究，卻仍難以支持：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-027.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-027</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第五部方法落地第一篇</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-027.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>PLDST 評估矩陣與設計決策語料庫規格</h1>
+<h2>摘要</h2>
+<p>PLDST 前二十六篇已完成理論地基、方法論、設計師個案及跨設計師比較。若這些成果仍只存在於長篇文章中，PLDST 雖然可以形成有價值的思想史與設計史研究，卻仍難以支持：</p>
+<ul>
+<li>大規模跨人物比較；</li>
+<li>可重複的設計風格判定；</li>
+<li>人類研究者之間的編碼一致性檢查；</li>
+<li>AI 自動搜尋與決策抽取；</li>
+<li>新語言設計的風格模擬；</li>
+<li>系列擴展後的版本維護；</li>
+<li>來源、推論與不確定性的可追蹤管理。</li>
+</ul>
+<p>因此，PLDST 必須從文章集合轉為兩個互補系統：</p>
+<h1>$$
+\boxed{
+PLDSTMethod</h1>
+<p>EvaluationMatrix
++
+DesignDecisionCorpus
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li><strong>評估矩陣</strong>將語言設計風格投影到一組具有明確方向、尺度、時間範圍與信心值的分析軸；</li>
+<li><strong>設計決策語料庫</strong>保存每一個矩陣判定背後的問題、限制、選項、選擇、拒絕理由、實作、結果、反證與來源。</li>
+</ul>
+<p>兩者不能分離：</p>
+<h1>$$
+MatrixWithoutCorpus</h1>
+<p>Labeling
+$$</p>
+<h1>$$
+CorpusWithoutMatrix</h1>
+<p>ArchiveWithoutComparison
+$$</p>
+<p>完整方法則是：</p>
+<p>$$
+Evidence
+\rightarrow
+DecisionRecord
+\rightarrow
+AxisCoding
+\rightarrow
+Profile
+\rightarrow
+Comparison
+\rightarrow
+Revision
+$$</p>
+<p>本文提出：</p>
+<ol>
+<li>PLDST 核心資料模型；</li>
+<li>十八軸評估矩陣；</li>
+<li>設計決策紀錄格式；</li>
+<li>來源分級與證據片段規格；</li>
+<li>時間切片與語言版本模型；</li>
+<li>歸因、不確定性及反證規則；</li>
+<li>人類與 AI 混合編碼流程；</li>
+<li>一致性與品質檢查；</li>
+<li>W3C PROV 對映；</li>
+<li>JSON Schema 2020-12 機器驗證規格；</li>
+<li>語料庫生命週期與狀態機；</li>
+<li>檔案布局、ID、版本及遷移政策；</li>
+<li>查詢、比較及 AI SKILL 的介面需求。</li>
+</ol>
+<p>本文的核心原則是：</p>
+<blockquote>
+<p>PLDST 的最小知識單位不是「某位設計者重視簡單」，而是「在某個時間、某項問題與限制下，某位設計者或治理共同體做了何種選擇，拒絕了什麼，代價由誰承擔，這項判定由哪些來源支持」。</p>
+</blockquote>
+<p>因此，PLDST 不建立固定人格測驗，而建立一套<strong>可追溯的歷史決策分析系統</strong>。</p>
+<p><strong>關鍵詞：</strong> PLDST、評估矩陣、設計決策語料庫、語料工程、資料溯源、JSON Schema、W3C PROV、ADR、決策抽取、程式語言史、AI 輔助研究</p>
+<hr>
+<h1>第一部分　規格目標與非目標</h1>
+<h2>一、規格目標</h2>
+<p>PLDST-MATRIX-CORPUS 的目標是使下列工作可重複執行：</p>
+<ol>
+<li>對單一設計決策建立有來源的結構化紀錄；</li>
+<li>將多項決策聚合為某一時間切片的設計風格；</li>
+<li>比較不同設計者、語言、共同體或治理制度；</li>
+<li>區分創始設計、後續實作與社群演化；</li>
+<li>保存相反證據及評估分歧；</li>
+<li>允許人類與 AI 共同抽取、編碼、覆核；</li>
+<li>讓後續 SKILL 能搜尋、判定及產生可解釋結果；</li>
+<li>讓資料可以版本化、驗證、遷移及重新計算。</li>
+</ol>
+<hr>
+<h2>二、非目標</h2>
+<p>本規格不以以下事項為目標：</p>
+<ul>
+<li>對設計者進行心理診斷；</li>
+<li>建立「最好設計師」總排名；</li>
+<li>把歷史人物壓縮成單一分數；</li>
+<li>以語言流行度替代設計品質；</li>
+<li>由 AI 自動判定後直接視為史實；</li>
+<li>將所有設計差異解釋為個人性格；</li>
+<li>取消長篇歷史論證；</li>
+<li>建立不可更改的終極分類。</li>
+</ul>
+<hr>
+<h2>三、最小分析單位</h2>
+<p>PLDST 的最小分析單位為：</p>
+<h1>$$
+u</h1>
+<p>(
+Actor,
+Time,
+Problem,
+Constraint,
+Options,
+Decision,
+Rationale,
+Implementation,
+Outcome,
+Evidence
+)
+$$</p>
+<p>本文稱之為 <strong>Design Decision Record，DDR</strong>。</p>
+<hr>
+<h2>四、分析對象層級</h2>
+<p>PLDST 必須區分：</p>
+<pre><code class="language-text">Person
+Design group
+Language
+Implementation
+Version
+Governance body
+Community
+Ecosystem
+Decision
+Source artifact
+Evidence fragment
+Assessment
+</code></pre>
+<p>「Guido」、「Python」、「CPython」、「Python Steering Council」與「PEP 703」不得視為同一實體。</p>
+<hr>
+<h2>五、風格是聚合結果</h2>
+<p>定義設計者 $d$ 在時間區間 $\tau$ 的風格：</p>
+<h1>$$
+Style(d,\tau)</h1>
+<p>Aggregate
+\left(
+DDR_1,
+DDR_2,
+\ldots,
+DDR_n
+\right)
+$$</p>
+<p>因此：</p>
+<p>$$
+Style(d)
+\neq
+SingleQuote(d)
+$$</p>
+<hr>
+<h1>第二部分　規格原則</h1>
+<h2>六、證據先於分數</h2>
+<p>所有非空矩陣評分 MUST 指向至少一筆 DDR。</p>
+<p>每筆 DDR MUST 指向至少一項來源或被標記為 <code>unverified_candidate</code>。</p>
+<hr>
+<h2>七、決策先於人物標籤</h2>
+<p>允許從決策推導風格：</p>
+<p>$$
+DecisionEvidence
+\rightarrow
+StyleInference
+$$</p>
+<p>禁止反向循環：</p>
+<p>$$
+AssumedStyle
+\rightarrow
+SelectiveEvidence
+$$</p>
+<hr>
+<h2>八、時間先於總結</h2>
+<p>所有評估 MUST 指定：</p>
+<ul>
+<li>起始時間；</li>
+<li>結束時間或開放區間；</li>
+<li>語言版本；</li>
+<li>治理階段；</li>
+<li>判定是否跨時期聚合。</li>
+</ul>
+<hr>
+<h2>九、來源與推論分離</h2>
+<p>每個欄位須區分：</p>
+<ul>
+<li><code>observed</code>：來源直接支持；</li>
+<li><code>reported</code>：可信來源轉述；</li>
+<li><code>inferred</code>：研究者由多項資料推得；</li>
+<li><code>speculative</code>：合理但尚未充分驗證；</li>
+<li><code>contested</code>：存在重要反證或分歧。</li>
+</ul>
+<hr>
+<h2>十、保留反證</h2>
+<p>語料庫 MUST 允許一筆紀錄同時保存：</p>
+<ul>
+<li>支持證據；</li>
+<li>限制證據；</li>
+<li>反例；</li>
+<li>後期修正；</li>
+<li>不同實作結果；</li>
+<li>社群偏離。</li>
+</ul>
+<hr>
+<h2>十一、可恢復性</h2>
+<p>任何聚合分數 SHOULD 能回溯到：</p>
+<p>$$
+Profile
+\rightarrow
+Assessment
+\rightarrow
+DDR
+\rightarrow
+EvidenceFragment
+\rightarrow
+SourceArtifact
+$$</p>
+<hr>
+<h2>十二、可機讀不等於捨棄敘事</h2>
+<p>結構化資料負責：</p>
+<ul>
+<li>對齊；</li>
+<li>比較；</li>
+<li>過濾；</li>
+<li>驗證；</li>
+<li>重算。</li>
+</ul>
+<p>長篇文章負責：</p>
+<ul>
+<li>歷史脈絡；</li>
+<li>因果敘事；</li>
+<li>理論張力；</li>
+<li>反事實；</li>
+<li>不可量化差異。</li>
+</ul>
+<p>兩者互補。</p>
+<hr>
+<h1>第三部分　外部規格借鑑</h1>
+<h2>十三、JSON Schema</h2>
+<p>本規格採用 JSON Schema Draft 2020-12 作為結構驗證基線。</p>
+<p>選擇理由：</p>
+<ul>
+<li>可描述 JSON 結構、型別與條件；</li>
+<li>可使用 <code>$defs</code> 重用子結構；</li>
+<li>可產生驗證器；</li>
+<li>適合 JSON／JSONL 匯出；</li>
+<li>容易與程式語言及資料工具整合。</li>
+</ul>
+<p>JSON Schema 驗證結構，不驗證歷史真實性。</p>
+<hr>
+<h2>十四、W3C PROV</h2>
+<p>PLDST 採用 W3C PROV 的三個起點概念作為可選溯源對映：</p>
+<p>$$
+Entity,\ Activity,\ Agent
+$$</p>
+<p>在 PLDST 中：</p>
+<ul>
+<li><code>Entity</code>：來源文件、證據片段、DDR、矩陣版本、匯出檔；</li>
+<li><code>Activity</code>：搜尋、下載、解析、抽取、編碼、覆核、聚合、匯出；</li>
+<li><code>Agent</code>：作者、設計者、研究者、AI 模型、組織、治理團隊。</li>
+</ul>
+<p>核心 JSON 不要求完整 RDF／OWL 實作，但 MUST 保留足以建立對映的 ID 與關係。</p>
+<hr>
+<h2>十五、ADR</h2>
+<p>Architecture Decision Record 的核心結構為：</p>
+<pre><code class="language-text">Status
+Context
+Decision
+Consequences
+</code></pre>
+<p>PLDST DDR 在此基礎上增加：</p>
+<ul>
+<li>歷史時間；</li>
+<li>設計者與治理歸因；</li>
+<li>替代方案；</li>
+<li>拒絕理由；</li>
+<li>實作主體；</li>
+<li>複雜度與負擔配置；</li>
+<li>後續結果；</li>
+<li>反證；</li>
+<li>來源片段；</li>
+<li>軸向編碼；</li>
+<li>信心與覆核。</li>
+</ul>
+<hr>
+<h2>十六、FAIR 原則</h2>
+<p>PLDST 對 FAIR 作下列轉譯：</p>
+<h3>Findable</h3>
+<ul>
+<li>穩定 ID；</li>
+<li>索引；</li>
+<li>可搜尋 Metadata；</li>
+<li>交叉引用。</li>
+</ul>
+<h3>Accessible</h3>
+<ul>
+<li>公開資料使用開放格式；</li>
+<li>來源失效時仍保留 Metadata、摘要及校驗值；</li>
+<li>權限受限資料保留存取狀態。</li>
+</ul>
+<h3>Interoperable</h3>
+<ul>
+<li>JSON Schema；</li>
+<li>受控詞彙；</li>
+<li>ISO 日期；</li>
+<li>URI／URN；</li>
+<li>可選 JSON-LD／PROV 對映。</li>
+</ul>
+<h3>Reusable</h3>
+<ul>
+<li>來源；</li>
+<li>授權；</li>
+<li>時間範圍；</li>
+<li>品質；</li>
+<li>版本；</li>
+<li>限制；</li>
+<li>預期用途。</li>
+</ul>
+<hr>
+<h2>十七、資料卡與語料說明</h2>
+<p>每個 PLDST 語料集發布 SHOULD 附帶 Corpus Card，說明：</p>
+<ul>
+<li>動機；</li>
+<li>範圍；</li>
+<li>包含與排除；</li>
+<li>來源類型；</li>
+<li>搜尋方法；</li>
+<li>語言分布；</li>
+<li>時間分布；</li>
+<li>編碼者；</li>
+<li>AI 使用；</li>
+<li>品質測試；</li>
+<li>已知偏差；</li>
+<li>授權；</li>
+<li>更新歷史；</li>
+<li>不當用途。</li>
+</ul>
+<hr>
+<h1>第四部分　PLDST 核心實體模型</h1>
+<h2>十八、實體關係</h2>
+<p>$$
+Designer
+\xrightarrow{participatedIn}
+Decision
+$$</p>
+<p>$$
+Decision
+\xrightarrow{concerns}
+LanguageVersion
+$$</p>
+<p>$$
+Source
+\xrightarrow{contains}
+EvidenceFragment
+$$</p>
+<p>$$
+EvidenceFragment
+\xrightarrow{supports/challenges}
+DecisionField
+$$</p>
+<p>$$
+Decision
+\xrightarrow{codedAs}
+AxisAssessment
+$$</p>
+<p>$$
+AxisAssessment
+\xrightarrow{aggregatedInto}
+StyleProfile
+$$</p>
+<hr>
+<h2>十九、Designer</h2>
+<p>必要欄位：</p>
+<pre><code class="language-text">designer_id
+canonical_name
+name_variants
+roles
+active_periods
+affiliations
+language_relations
+source_ids
+</code></pre>
+<p>不得由國籍、職稱或私人傳記直接推導設計風格。</p>
+<hr>
+<h2>二十、Language</h2>
+<p>必要欄位：</p>
+<pre><code class="language-text">language_id
+canonical_name
+aliases
+first_public_year
+paradigms
+implementations
+governance_periods
+version_series
+</code></pre>
+<hr>
+<h2>二十一、Governance Body</h2>
+<p>例如：</p>
+<ul>
+<li>Python BDFL；</li>
+<li>Python Steering Council；</li>
+<li>Rust Language Team；</li>
+<li>Swift Language Steering Group；</li>
+<li>WG21；</li>
+<li>Go proposal review group。</li>
+</ul>
+<p>欄位：</p>
+<pre><code class="language-text">governance_id
+name
+period
+authority_scope
+selection_method
+decision_process
+implementation_relation
+source_ids
+</code></pre>
+<hr>
+<h2>二十二、Source Artifact</h2>
+<p>來源可能是：</p>
+<ul>
+<li>論文；</li>
+<li>語言報告；</li>
+<li>官方文件；</li>
+<li>PEP／RFC；</li>
+<li>Compiler commit；</li>
+<li>Issue；</li>
+<li>Mailing list；</li>
+<li>演講；</li>
+<li>訪談；</li>
+<li>口述歷史；</li>
+<li>回憶錄；</li>
+<li>書籍；</li>
+<li>研究文章；</li>
+<li>原始碼。</li>
+</ul>
+<hr>
+<h2>二十三、Evidence Fragment</h2>
+<p>來源文件過大時，必須保存可定位片段：</p>
+<pre><code class="language-text">fragment_id
+source_id
+locator
+text_excerpt
+paraphrase
+language
+content_hash
+retrieved_at
+supports
+challenges
+</code></pre>
+<p><code>text_excerpt</code> SHOULD 遵守著作權及合理引用限制。</p>
+<hr>
+<h2>二十四、Design Decision Record</h2>
+<p>DDR 是核心。</p>
+<p>其結構為：</p>
+<h1>$$
+DDR</h1>
+<p>Identity
++
+Scope
++
+Problem
++
+Context
++
+Options
++
+Decision
++
+Rationale
++
+Implementation
++
+Consequences
++
+Evidence
++
+Coding
++
+Provenance
+$$</p>
+<hr>
+<h2>二十五、Axis Assessment</h2>
+<p>一筆 Assessment 表示：</p>
+<blockquote>
+<p>某筆 DDR 對某一分析軸提供何種方向及強度的證據。</p>
+</blockquote>
+<p>欄位：</p>
+<pre><code class="language-text">axis_id
+value
+polarity
+confidence
+evidence_refs
+coder_id
+coding_note
+status
+</code></pre>
+<hr>
+<h2>二十六、Style Profile</h2>
+<p>Style Profile 是聚合結果，不是原始資料。</p>
+<pre><code class="language-text">profile_id
+subject_id
+time_slice
+axis_scores
+categorical_patterns
+coverage
+uncertainty
+included_record_ids
+aggregation_method
+profile_version
+</code></pre>
+<hr>
+<h1>第五部分　識別碼規格</h1>
+<h2>二十七、ID 原則</h2>
+<p>ID MUST：</p>
+<ul>
+<li>穩定；</li>
+<li>不依檔案路徑；</li>
+<li>不依顯示名稱；</li>
+<li>在資料集中唯一；</li>
+<li>不因標題修訂而改變；</li>
+<li>可由人閱讀；</li>
+<li>可由機器比較。</li>
+</ul>
+<hr>
+<h2>二十八、建議格式</h2>
+<pre><code class="language-text">pldst:designer:&lt;slug&gt;
+pldst:language:&lt;slug&gt;
+pldst:governance:&lt;slug&gt;
+pldst:source:&lt;sha256-prefix&gt;
+pldst:fragment:&lt;source-prefix&gt;:&lt;locator-hash&gt;
+pldst:decision:&lt;actor-slug&gt;:&lt;year-or-era&gt;:&lt;slug&gt;
+pldst:assessment:&lt;decision-suffix&gt;:&lt;axis-id&gt;:&lt;revision&gt;
+pldst:profile:&lt;subject-slug&gt;:&lt;time-slice&gt;:&lt;version&gt;
+</code></pre>
+<hr>
+<h2>二十九、來源 ID</h2>
+<p>來源 ID SHOULD 由內容雜湊衍生：</p>
+<h1>$$
+source_id</h1>
+<p>\texttt{pldst:source:}
++
+SHA256(content)[0:20]
+$$</p>
+<p>若內容不可下載，可由：</p>
+<p>$$
+SHA256(canonical_url+title+date)
+$$</p>
+<p>建立替代 ID，並標記 <code>hash_basis</code>。</p>
+<hr>
+<h2>三十、同一文件多版本</h2>
+<p>同一 URL 的不同內容 MUST 建立不同 <code>source_id</code>，並以：</p>
+<pre><code class="language-text">is_revision_of
+supersedes
+retrieved_at
+</code></pre>
+<p>連接。</p>
+<hr>
+<h1>第六部分　來源分級</h1>
+<h2>三十一、來源類型</h2>
+<h3>S1：直接設計材料</h3>
+<ul>
+<li>設計者論文；</li>
+<li>官方語言報告；</li>
+<li>規格；</li>
+<li>設計 FAQ；</li>
+<li>PEP／RFC；</li>
+<li>原始碼與 Commit；</li>
+<li>正式演講逐字稿。</li>
+</ul>
+<h3>S2：第一方歷史材料</h3>
+<ul>
+<li>設計者訪談；</li>
+<li>口述歷史；</li>
+<li>回憶錄；</li>
+<li>專案官方歷史。</li>
+</ul>
+<h3>S3：共同體正式紀錄</h3>
+<ul>
+<li>Mailing list；</li>
+<li>Issue；</li>
+<li>Meeting minutes；</li>
+<li>Governance vote；</li>
+<li>Release note；</li>
+<li>Working group paper。</li>
+</ul>
+<h3>S4：學術與專業二手研究</h3>
+<ul>
+<li>同行評審語言史；</li>
+<li>HOPL 論文；</li>
+<li>技術書；</li>
+<li>檔案研究。</li>
+</ul>
+<h3>S5：一般二手材料</h3>
+<ul>
+<li>新聞；</li>
+<li>部落格；
+-百科；
+-論壇整理。</li>
+</ul>
+<hr>
+<h2>三十二、來源品質不是單一階級</h2>
+<p>來源品質向量：</p>
+<h1>$$
+Q_s</h1>
+<p>(
+Directness,
+Authenticity,
+Specificity,
+TemporalProximity,
+Completeness,
+Independence
+)
+$$</p>
+<p>第一手來源可能：</p>
+<ul>
+<li>自我美化；</li>
+<li>事後合理化；</li>
+<li>忽略協作者；</li>
+<li>與實作不符。</li>
+</ul>
+<p>二手研究可能更適合檢查長期結果。</p>
+<hr>
+<h2>三十三、來源權重</h2>
+<p>建議初始值：</p>
+<table>
+<thead>
+<tr>
+<th>類型</th>
+<th align="right">基礎權重</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td align="right">1.00</td>
+</tr>
+<tr>
+<td>S2</td>
+<td align="right">0.85</td>
+</tr>
+<tr>
+<td>S3</td>
+<td align="right">0.85</td>
+</tr>
+<tr>
+<td>S4</td>
+<td align="right">0.75</td>
+</tr>
+<tr>
+<td>S5</td>
+<td align="right">0.40</td>
+</tr>
+</tbody></table>
+<p>最終權重：</p>
+<h1>$$
+w_s</h1>
+<p>w_{\text{base}}
+\times
+q_{\text{specificity}}
+\times
+q_{\text{authenticity}}
+\times
+q_{\text{temporal}}
+$$</p>
+<p>不得把此權重當成自動真實機率。</p>
+<hr>
+<h2>三十四、來源多樣性</h2>
+<p>重要判定 SHOULD 至少包含兩種來源類型。</p>
+<p>例如：</p>
+<pre><code class="language-text">設計者論文
++
+實作／治理紀錄
++
+後續歷史結果
+</code></pre>
+<hr>
+<h1>第七部分　Design Decision Record 規格</h1>
+<h2>三十五、必要欄位</h2>
+<p>每筆 Verified DDR MUST 包含：</p>
+<pre><code class="language-text">record_id
+record_version
+title
+status
+subject
+time_scope
+problem
+decision
+rationale
+evidence
+coding
+provenance
+</code></pre>
+<hr>
+<h2>三十六、Status</h2>
+<p>允許：</p>
+<pre><code class="language-text">candidate
+extracted
+reviewed
+verified
+contested
+deprecated
+superseded
+rejected_as_record
+</code></pre>
+<p>狀態不可由 AI 自動提升到 <code>verified</code>，除非專案明確啟用機器覆核制度且保存責任主體。</p>
+<hr>
+<h2>三十七、Subject</h2>
+<pre><code class="language-json">{
+  &quot;designer_ids&quot;: [],
+  &quot;governance_ids&quot;: [],
+  &quot;language_ids&quot;: [],
+  &quot;implementation_ids&quot;: [],
+  &quot;community_ids&quot;: []
+}
+</code></pre>
+<p>至少一項非空。</p>
+<hr>
+<h2>三十八、Time Scope</h2>
+<pre><code class="language-text">event_date
+start_date
+end_date
+precision
+language_versions
+governance_period
+</code></pre>
+<p><code>precision</code> 可為：</p>
+<pre><code class="language-text">day
+month
+year
+era
+unknown
+</code></pre>
+<hr>
+<h2>三十九、Problem</h2>
+<p>問題欄位描述決策試圖處理什麼，不描述答案。</p>
+<p>例如：</p>
+<pre><code class="language-text">方法呼叫中的接收者是否應由語言隱式綁定？
+</code></pre>
+<p>而不是：</p>
+<pre><code class="language-text">Python 必須使用明示 self。
+</code></pre>
+<hr>
+<h2>四十、Context</h2>
+<p>Context SHOULD 記錄：</p>
+<ul>
+<li>技術限制；</li>
+<li>使用者；</li>
+<li>硬體；</li>
+<li>前代語言；</li>
+<li>既有程式；</li>
+<li>時間；</li>
+<li>組織；</li>
+<li>治理；</li>
+<li>商業與教育環境。</li>
+</ul>
+<hr>
+<h2>四十一、Options</h2>
+<p>每個可辨識選項：</p>
+<pre><code class="language-text">option_id
+description
+supporters
+advantages
+costs
+status
+source_refs
+</code></pre>
+<p>應保存被拒方案，不只保存勝出方案。</p>
+<hr>
+<h2>四十二、Decision</h2>
+<p>Decision SHOULD 描述：</p>
+<ul>
+<li>選擇；</li>
+<li>範圍；</li>
+<li>例外；</li>
+<li>版本；</li>
+<li>是否實驗；</li>
+<li>是否永久；</li>
+<li>誰裁決。</li>
+</ul>
+<hr>
+<h2>四十三、Rationale</h2>
+<p>Rationale 分為：</p>
+<pre><code class="language-text">stated_rationale
+inferred_rationale
+reconstructed_rationale
+</code></pre>
+<p>不得把研究者推論冒充設計者原話。</p>
+<hr>
+<h2>四十四、Constraints</h2>
+<p>控制詞彙：</p>
+<pre><code class="language-text">hardware
+performance
+memory
+portability
+compatibility
+safety
+readability
+learnability
+implementation_capacity
+governance
+ecosystem
+time_to_market
+standardization
+tooling
+theoretical
+other
+</code></pre>
+<hr>
+<h2>四十五、Burden Allocation</h2>
+<p>每筆決策 SHOULD 記錄複雜度移往何處：</p>
+<h1>$$
+B</h1>
+<p>(
+Author,
+Reader,
+Compiler,
+Runtime,
+Tool,
+Library,
+Governance,
+Migration,
+Ecosystem
+)
+$$</p>
+<p>可用：</p>
+<pre><code class="language-text">decreased
+unchanged
+increased
+unknown
+</code></pre>
+<p>加上說明。</p>
+<hr>
+<h2>四十六、Implementation</h2>
+<p>區分：</p>
+<pre><code class="language-text">proposed
+prototype
+implemented
+experimental
+stable
+partially_implemented
+reverted
+not_implemented
+</code></pre>
+<p>並記錄：</p>
+<ul>
+<li>實作者；</li>
+<li>Repository；</li>
+<li>Commit；</li>
+<li>Release；</li>
+<li>參考實作；</li>
+<li>其他實作差異。</li>
+</ul>
+<hr>
+<h2>四十七、Outcome</h2>
+<p>Outcome 可包含：</p>
+<ul>
+<li>採用；</li>
+<li>效能；</li>
+<li>缺陷；</li>
+<li>生態反應；</li>
+<li>教學；</li>
+<li>相容；</li>
+<li>被取代；</li>
+<li>後續修正；</li>
+<li>設計者反省。</li>
+</ul>
+<p>不得由語言成功直接倒推出單項決策成功。</p>
+<hr>
+<h2>四十八、Counterevidence</h2>
+<p>每筆高度概括的 DDR SHOULD 搜尋：</p>
+<ul>
+<li>設計者相反言論；</li>
+<li>語言中的例外；</li>
+<li>社群偏離；</li>
+<li>實作不一致；</li>
+<li>後續撤回；</li>
+<li>版本變更；</li>
+<li>失敗案例。</li>
+</ul>
+<hr>
+<h1>第八部分　PLDST 十八軸評估矩陣</h1>
+<h2>四十九、尺度原則</h2>
+<p>每一軸使用：</p>
+<p>$$
+v_k\in{0,1,2,3,4,5}
+$$</p>
+<p>其中 0 與 5 表示兩個方向端點，不表示壞與好。</p>
+<p>缺乏資料時 MUST 使用 <code>null</code>，不可用 3 假裝中立。</p>
+<hr>
+<h2>五十、A01 Machine Proximity</h2>
+<p>$$
+0=\text{高度語義隔離}
+\qquad
+5=\text{高度暴露機器模型}
+$$</p>
+<p>評估：</p>
+<ul>
+<li>記憶體；</li>
+<li>地址；</li>
+<li>ABI；</li>
+<li>資源；</li>
+<li>指令與硬體控制。</li>
+</ul>
+<hr>
+<h2>五十一、A02 Abstraction Restraint</h2>
+<p>$$
+0=\text{鼓勵廣泛抽象與元機制}
+\qquad
+5=\text{限制抽象、偏好少量構造}
+$$</p>
+<hr>
+<h2>五十二、A03 Surface Convergence</h2>
+<p>$$
+0=\text{多種慣用表示}
+\qquad
+5=\text{強收斂於共同表面}
+$$</p>
+<hr>
+<h2>五十三、A04 Explicitness</h2>
+<p>$$
+0=\text{高度 Contextual／Implicit}
+\qquad
+5=\text{高度明示}
+$$</p>
+<hr>
+<h2>五十四、A05 Reader Priority</h2>
+<p>$$
+0=\text{優先作者速度與自由}
+\qquad
+5=\text{優先陌生讀者與團隊維護}
+$$</p>
+<hr>
+<h2>五十五、A06 Compatibility Priority</h2>
+<p>$$
+0=\text{可重設、可破壞}
+\qquad
+5=\text{高度保存既有程式與生態}
+$$</p>
+<hr>
+<h2>五十六、A07 Core Extensibility</h2>
+<p>$$
+0=\text{核心封閉、擴張主要靠外部函式庫}
+\qquad
+5=\text{語言可由內部生成新形式}
+$$</p>
+<hr>
+<h2>五十七、A08 State Separation</h2>
+<p>$$
+0=\text{值、位置、身分與狀態高度混合}
+\qquad
+5=\text{值、身分、狀態、時間明確分離}
+$$</p>
+<hr>
+<h2>五十八、A09 Algebraic Reasoning</h2>
+<p>$$
+0=\text{操作步驟與實作推理為主}
+\qquad
+5=\text{等式、組合與代數推理為主}
+$$</p>
+<hr>
+<h2>五十九、A10 Implementation Coupling</h2>
+<p>$$
+0=\text{抽象規格優先、多實作獨立}
+\qquad
+5=\text{參考實作或宿主平台高度定義語言}
+$$</p>
+<hr>
+<h2>六十、A11 Ecosystem Delegation</h2>
+<p>$$
+0=\text{能力主要置於語言核心}
+\qquad
+5=\text{能力主要委派給 Library／Package／社群}
+$$</p>
+<hr>
+<h2>六十一、A12 Governance Concentration</h2>
+<p>$$
+0=\text{決策高度分散／委員會化}
+\qquad
+5=\text{最終權力高度集中於個人}
+$$</p>
+<hr>
+<h2>六十二、A13 Proposal Openness</h2>
+<p>$$
+0=\text{提案入口封閉}
+\qquad
+5=\text{公開、文件化且可由外部參與}
+$$</p>
+<hr>
+<h2>六十三、A14 Change Conservatism</h2>
+<p>$$
+0=\text{快速實驗與語言變動}
+\qquad
+5=\text{高准入門檻與長期穩定}
+$$</p>
+<hr>
+<h2>六十四、A15 Error Visibility</h2>
+<p>$$
+0=\text{容許隱式修復、猜測或 Fail-soft}
+\qquad
+5=\text{偏好顯性錯誤與拒絕歧義}
+$$</p>
+<hr>
+<h2>六十五、A16 Tool Dependence</h2>
+<p>$$
+0=\text{局部表面可直接恢復主要語義}
+\qquad
+5=\text{高度依賴 IDE、型別工具或全域分析}
+$$</p>
+<p>此軸不表示工具依賴必然不好。</p>
+<hr>
+<h2>六十六、A17 Human-Centered Orientation</h2>
+<p>此軸不使用單線分數，而使用多標籤：</p>
+<pre><code class="language-text">novice
+author
+reader
+team
+expert
+domain_user
+library_author
+implementation_engineer
+community
+</code></pre>
+<p>每標籤可給 $0$ 到 $5$ 的優先程度。</p>
+<hr>
+<h2>六十七、A18 Simplicity Model</h2>
+<p>類別可多選：</p>
+<pre><code class="language-text">syntactic
+minimal_core
+algebraic
+representational
+decomplective
+operational
+implementation
+pedagogical
+governance
+ecosystem
+</code></pre>
+<p>此軸不得壓成單一數值。</p>
+<hr>
+<h1>第九部分　編碼規則</h1>
+<h2>六十八、決策層編碼</h2>
+<p>每筆 DDR 可對多個軸提供證據。</p>
+<p>例如「明示 <code>self</code>」可影響：</p>
+<ul>
+<li>A03 Surface Convergence；</li>
+<li>A04 Explicitness；</li>
+<li>A05 Reader Priority；</li>
+<li>A16 Tool Dependence。</li>
+</ul>
+<hr>
+<h2>六十九、不可由語言整體反推單筆決策</h2>
+<p>錯誤方式：</p>
+<pre><code class="language-text">Python 可讀，所以所有 Python 決策都給 Reader Priority 5。
+</code></pre>
+<p>正確方式：</p>
+<pre><code class="language-text">此決策明確降低哪種閱讀成本？
+來源如何說明？
+是否有反例？
+</code></pre>
+<hr>
+<h2>七十、方向與強度</h2>
+<p>Assessment 包含：</p>
+<pre><code class="language-text">value
+confidence
+effect_strength
+scope
+</code></pre>
+<p>其中 <code>effect_strength</code> 可為：</p>
+<pre><code class="language-text">weak
+moderate
+strong
+structural
+</code></pre>
+<hr>
+<h2>七十一、信心值</h2>
+<p>$$
+c\in[0,1]
+$$</p>
+<p>信心不是來源權威的單一函數。</p>
+<p>建議：</p>
+<h1>$$
+c</h1>
+<p>\sqrt[4]{
+c_{\text{source}}
+c_{\text{attribution}}
+c_{\text{temporal}}
+c_{\text{interpretation}}
+}
+$$</p>
+<hr>
+<h2>七十二、歸因信心</h2>
+<p>歸因分級：</p>
+<pre><code class="language-text">direct_personal
+shared_design_group
+governance_body
+implementation_team
+community_emergent
+uncertain
+</code></pre>
+<p>若功能由多人形成，不得只因創始者知名而標為 <code>direct_personal</code>。</p>
+<hr>
+<h2>七十三、時間一致性</h2>
+<p>來源時間 $t_s$、決策時間 $t_d$、結果時間 $t_o$ 必須分開。</p>
+<p>事後回憶：</p>
+<p>$$
+t_s\gg t_d
+$$</p>
+<p>可能具有高直接性但較低時間接近度。</p>
+<hr>
+<h2>七十四、版本一致性</h2>
+<p>同一語言不同版本的評分不得直接混合。</p>
+<p>例如：</p>
+<pre><code class="language-text">Python 1.x
+Python 2.x
+Python 3.x BDFL
+Python 3.x Steering Council
+</code></pre>
+<p>SHOULD 形成不同 Profile。</p>
+<hr>
+<h1>第十部分　聚合與比較</h1>
+<h2>七十五、加權聚合</h2>
+<p>某 Profile 在軸 $k$ 的分數：</p>
+<h1>$$
+V_k</h1>
+<p>\frac{
+\sum_i
+w_i c_i s_i v_{ik}
+}{
+\sum_i
+w_i c_i s_i
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$w_i$：來源品質權重；</li>
+<li>$c_i$：編碼信心；</li>
+<li>$s_i$：決策影響強度；</li>
+<li>$v_{ik}$：該 DDR 的軸值。</li>
+</ul>
+<hr>
+<h2>七十六、缺值處理</h2>
+<p>若軸 $k$ 無足夠資料：</p>
+<p>$$
+V_k=null
+$$</p>
+<p>並報告 Coverage：</p>
+<h1>$$
+Coverage_k</h1>
+<p>\frac{\text{有效 DDR 權重}}
+{\text{該時間切片總 DDR 權重}}
+$$</p>
+<hr>
+<h2>七十七、避免大量小決策淹沒結構決策</h2>
+<p>需給 Decision impact：</p>
+<pre><code class="language-text">local
+subsystem
+language_wide
+ecosystem_wide
+historical_turning_point
+</code></pre>
+<p>建議強度：</p>
+<table>
+<thead>
+<tr>
+<th>類型</th>
+<th align="right">$s_i$</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>local</td>
+<td align="right">0.5</td>
+</tr>
+<tr>
+<td>subsystem</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td>language_wide</td>
+<td align="right">1.5</td>
+</tr>
+<tr>
+<td>ecosystem_wide</td>
+<td align="right">2.0</td>
+</tr>
+<tr>
+<td>historical_turning_point</td>
+<td align="right">2.5</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>七十八、Profile 距離</h2>
+<p>兩個 Profile 的加權距離：</p>
+<h1>$$
+D_w(x,y)</h1>
+<p>\frac{
+\sum_{k\in K_{xy}}
+w_k
+\delta_k(x_k,y_k)
+}{
+\sum_{k\in K_{xy}} w_k
+}
+$$</p>
+<p>其中 $K_{xy}$ 只包含雙方都有資料的軸。</p>
+<p>數值軸可用：</p>
+<h1>$$
+\delta_k(x_k,y_k)</h1>
+<p>\frac{|x_k-y_k|}{5}
+$$</p>
+<p>類別軸使用 Jaccard 或自訂距離。</p>
+<hr>
+<h2>七十九、相似不等於影響</h2>
+<p>$$
+Similarity(x,y)
+\not\Rightarrow
+Influence(x,y)
+$$</p>
+<p>影響關係必須有：</p>
+<ul>
+<li>引用；</li>
+<li>設計者陳述；</li>
+<li>時間順序；</li>
+<li>遷移背景；</li>
+<li>文件或實作證據。</li>
+</ul>
+<hr>
+<h2>八十、聚類只能作探索</h2>
+<p>Cluster、PCA、Embedding 可協助找模式，但不得自動命名學派。</p>
+<hr>
+<h1>第十一部分　人類與 AI 混合編碼</h1>
+<h2>八十一、角色</h2>
+<p>建議角色：</p>
+<pre><code class="language-text">Searcher
+Source Curator
+Extractor
+Coder
+Reviewer
+Adjudicator
+Corpus Maintainer
+Schema Maintainer
+</code></pre>
+<p>一人可兼任，但必須保留角色紀錄。</p>
+<hr>
+<h2>八十二、AI 可執行</h2>
+<p>AI MAY：</p>
+<ul>
+<li>搜尋候選來源；</li>
+<li>去重；</li>
+<li>建議來源類型；</li>
+<li>擷取候選段落；</li>
+<li>建立 DDR 草稿；</li>
+<li>建議軸編碼；</li>
+<li>比較衝突；</li>
+<li>產生覆核清單；</li>
+<li>驗證 Schema；</li>
+<li>匯出資料。</li>
+</ul>
+<hr>
+<h2>八十三、AI 不可直接完成</h2>
+<p>AI MUST NOT 在無覆核情況下：</p>
+<ul>
+<li>宣告歷史爭議已解決；</li>
+<li>把推論寫成原話；</li>
+<li>把相關性宣告為因果；</li>
+<li>把創始者視為所有決策作者；</li>
+<li>把無法存取來源標成已驗證；</li>
+<li>自動刪除反證；</li>
+<li>將 Candidate 提升為 Verified。</li>
+</ul>
+<hr>
+<h2>八十四、模型識別</h2>
+<p>AI 活動 MUST 記錄：</p>
+<pre><code class="language-text">provider
+model
+model_version
+prompt_hash
+tool_versions
+run_id
+timestamp
+input_record_ids
+output_record_ids
+</code></pre>
+<p>若平台無法提供精確模型版本，可標為 <code>unknown_platform_version</code>。</p>
+<hr>
+<h2>八十五、可再現性邊界</h2>
+<p>即使保存 Prompt，生成式模型也可能因：</p>
+<ul>
+<li>權重更新；</li>
+<li>Sampling；</li>
+<li>工具搜尋；</li>
+<li>索引變動；</li>
+<li>網頁更新；</li>
+</ul>
+<p>無法完全重現。</p>
+<p>所以應追求：</p>
+<p>$$
+Auditability</p>
+<blockquote>
+</blockquote>
+<p>BitwiseReproducibility
+$$</p>
+<hr>
+<h1>第十二部分　一致性與品質評估</h1>
+<h2>八十六、雙重編碼</h2>
+<p>重要樣本 SHOULD 由至少兩名獨立編碼者處理。</p>
+<hr>
+<h2>八十七、Cohen’s Kappa</h2>
+<p>兩名編碼者處理 Nominal label 時，可使用：</p>
+<h1>$$
+\kappa</h1>
+<p>\frac{p_o-p_e}{1-p_e}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$p_o$：觀察一致率；</li>
+<li>$p_e$：依邊際分布估計的偶然一致率。</li>
+</ul>
+<hr>
+<h2>八十八、Krippendorff’s Alpha</h2>
+<p>多名編碼者、有缺值或不同尺度時，可使用：</p>
+<h1>$$
+\alpha</h1>
+<p>1-
+\frac{D_o}{D_e}
+$$</p>
+<p>PLDST SHOULD 同時保存：</p>
+<ul>
+<li>指標；</li>
+<li>樣本量；</li>
+<li>軸；</li>
+<li>編碼規則版本；</li>
+<li>分歧分布。</li>
+</ul>
+<p>不得只報單一 Alpha。</p>
+<hr>
+<h2>八十九、一致性不是正確性</h2>
+<p>多名編碼者可以一致地犯錯。</p>
+<p>因此：</p>
+<p>$$
+Reliability
+\neq
+Validity
+$$</p>
+<p>還需：</p>
+<ul>
+<li>來源核對；</li>
+<li>反證；</li>
+<li>歷史專家審查；</li>
+<li>實作驗證。</li>
+</ul>
+<hr>
+<h2>九十、品質向量</h2>
+<p>每筆 DDR 的品質：</p>
+<h1>$$
+Q_r</h1>
+<p>(
+Completeness,
+SourceCoverage,
+SourceDiversity,
+AttributionConfidence,
+TemporalPrecision,
+Counterevidence,
+ReviewDepth
+)
+$$</p>
+<hr>
+<h2>九十一、最小發布門檻</h2>
+<p><code>verified</code> 建議要求：</p>
+<ul>
+<li>至少一項 S1、S2 或 S3 來源；</li>
+<li>來源定位可恢復；</li>
+<li>問題與決策分離；</li>
+<li>歸因已標記；</li>
+<li>時間範圍存在；</li>
+<li>至少一名人類 Reviewer；</li>
+<li>Schema 驗證通過；</li>
+<li>無未處理的 Critical conflict。</li>
+</ul>
+<hr>
+<h1>第十三部分　Provenance 規格</h1>
+<h2>九十二、Entity</h2>
+<p>PLDST Entity 包含：</p>
+<pre><code class="language-text">source artifact
+evidence fragment
+DDR revision
+assessment revision
+profile revision
+schema
+vocabulary
+export
+</code></pre>
+<hr>
+<h2>九十三、Activity</h2>
+<pre><code class="language-text">search
+retrieve
+snapshot
+parse
+segment
+extract
+code
+review
+adjudicate
+aggregate
+migrate
+export
+</code></pre>
+<hr>
+<h2>九十四、Agent</h2>
+<pre><code class="language-text">human
+AI model
+organization
+project team
+software tool
+</code></pre>
+<hr>
+<h2>九十五、核心關係</h2>
+<p>可對映：</p>
+<pre><code class="language-text">wasGeneratedBy
+used
+wasAttributedTo
+wasDerivedFrom
+wasAssociatedWith
+actedOnBehalfOf
+wasRevisionOf
+invalidatedAtTime
+</code></pre>
+<hr>
+<h2>九十六、最小溯源欄位</h2>
+<p>即使不輸出 PROV-O，紀錄 MUST 有：</p>
+<pre><code class="language-text">created_at
+created_by
+generated_by_activity
+derived_from
+reviewed_by
+reviewed_at
+record_hash
+schema_version
+</code></pre>
+<hr>
+<h1>第十四部分　資料庫邏輯模型</h1>
+<h2>九十七、主要集合</h2>
+<pre><code class="language-text">designers
+languages
+governance_bodies
+implementations
+sources
+evidence_fragments
+decision_records
+axis_assessments
+style_profiles
+relations
+review_events
+provenance_activities
+corpus_releases
+</code></pre>
+<hr>
+<h2>九十八、關聯式表建議</h2>
+<pre><code class="language-text">entity
+entity_alias
+source
+source_version
+evidence_fragment
+decision_record
+decision_subject
+decision_option
+decision_evidence
+axis_definition
+axis_assessment
+assessment_evidence
+review_event
+provenance_activity
+profile
+profile_record
+relation
+</code></pre>
+<hr>
+<h2>九十九、JSON 與關聯式分工</h2>
+<p>JSON 適合：</p>
+<ul>
+<li>交換；</li>
+<li>Git；</li>
+<li>Schema 驗證；</li>
+<li>單筆 DDR；</li>
+<li>API。</li>
+</ul>
+<p>關聯式資料庫適合：</p>
+<ul>
+<li>複合查詢；</li>
+<li>聚合；</li>
+<li>Join；</li>
+<li>權限；</li>
+<li>大規模更新；</li>
+<li>品質檢查。</li>
+</ul>
+<hr>
+<h2>一百、建議儲存策略</h2>
+<h1>$$
+SourceOfTruth</h1>
+<p>VersionedJSON
+$$</p>
+<h1>$$
+QueryStore</h1>
+<p>DerivedDatabase
+$$</p>
+<p>資料庫可由版本化 JSON 重建，避免隱藏不可恢復狀態。</p>
+<hr>
+<h1>第十五部分　檔案布局</h1>
+<h2>一百零一、Repository</h2>
+<pre><code class="language-text">pldst-corpus/
+├── README.md
+├── corpus-card.md
+├── manifest.json
+├── schemas/
+├── vocab/
+├── entities/
+│   ├── designers/
+│   ├── languages/
+│   └── governance/
+├── sources/
+├── fragments/
+├── records/
+├── assessments/
+├── profiles/
+├── relations/
+├── exports/
+├── tools/
+└── tests/
+</code></pre>
+<hr>
+<h2>一百零二、DDR 路徑</h2>
+<pre><code class="language-text">records/&lt;actor&gt;/&lt;year&gt;/&lt;record-id&gt;.json
+</code></pre>
+<p>路徑可改，ID 不可隨路徑改。</p>
+<hr>
+<h2>一百零三、JSONL 匯出</h2>
+<p>大型語料匯出 MAY 使用：</p>
+<pre><code class="language-text">pldst-decision-records.jsonl
+</code></pre>
+<p>每行一筆完整 DDR。</p>
+<hr>
+<h1>第十六部分　Schema 與 Vocabulary 版本</h1>
+<h2>一百零四、語意版本</h2>
+<p>資料規格使用：</p>
+<p>$$
+MAJOR.MINOR.PATCH
+$$</p>
+<ul>
+<li>MAJOR：不相容結構變更；</li>
+<li>MINOR：向後相容欄位或詞彙新增；</li>
+<li>PATCH：說明、Bugfix、驗證修正。</li>
+</ul>
+<hr>
+<h2>一百零五、紀錄版本</h2>
+<p>每筆 DDR 使用獨立 <code>record_version</code>。</p>
+<p>Schema version 與 Record version 不同。</p>
+<hr>
+<h2>一百零六、Vocabulary version</h2>
+<p>Axis、Status、Source type 等受控詞彙 MUST 有版本。</p>
+<p>若改變軸定義，即使軸 ID 不變，也需：</p>
+<ul>
+<li>新版本；</li>
+<li>遷移說明；</li>
+<li>Profile 重算；</li>
+<li>舊版本保存。</li>
+</ul>
+<hr>
+<h2>一百零七、禁止靜默重寫</h2>
+<p>已發布紀錄不可直接覆寫而不改版本。</p>
+<p>修正方式：</p>
+<pre><code class="language-text">new revision
++
+was_revision_of
++
+change_note
+</code></pre>
+<hr>
+<h1>第十七部分　狀態機與工作流</h1>
+<h2>一百零八、來源流程</h2>
+<p>$$
+Discovered
+\rightarrow
+Retrieved
+\rightarrow
+Snapshotted
+\rightarrow
+Catalogued
+\rightarrow
+Segmented
+$$</p>
+<hr>
+<h2>一百零九、DDR 流程</h2>
+<p>$$
+Candidate
+\rightarrow
+Extracted
+\rightarrow
+Reviewed
+\rightarrow
+Verified
+$$</p>
+<p>分支：</p>
+<p>$$
+Reviewed
+\rightarrow
+Contested
+$$</p>
+<p>$$
+Any
+\rightarrow
+Superseded
+$$</p>
+<hr>
+<h2>一百一十、Assessment 流程</h2>
+<p>$$
+Draft
+\rightarrow
+IndependentCoding
+\rightarrow
+AgreementCheck
+\rightarrow
+Adjudicated
+\rightarrow
+Published
+$$</p>
+<hr>
+<h2>一百一十一、Profile 流程</h2>
+<p>$$
+RecordSet
+\rightarrow
+CoverageCheck
+\rightarrow
+Aggregation
+\rightarrow
+SensitivityAnalysis
+\rightarrow
+Release
+$$</p>
+<hr>
+<h1>第十八部分　查詢規格</h1>
+<h2>一百一十二、基本查詢</h2>
+<p>系統 MUST 支援：</p>
+<pre><code class="language-text">依設計者
+依語言
+依時間
+依來源
+依決策狀態
+依軸
+依信心
+依治理階段
+依相容性
+依反證存在
+</code></pre>
+<hr>
+<h2>一百一十三、比較查詢</h2>
+<p>例如：</p>
+<pre><code class="language-text">找出 Surface Convergence 高、Core Extensibility 低的語言。
+比較 Guido 在 BDFL 與 Steering Council 時期的治理集中度。
+找出設計者原始理由與後期結果相反的 DDR。
+找出只有單一來源支撐的高影響決策。
+</code></pre>
+<hr>
+<h2>一百一十四、證據追蹤查詢</h2>
+<pre><code class="language-text">此分數由哪些 DDR 組成？
+此 DDR 使用哪些來源？
+來源失效了嗎？
+有哪些反證？
+哪位編碼者有不同判定？
+</code></pre>
+<hr>
+<h1>第十九部分　安全、著作權與倫理</h1>
+<h2>一百一十五、最小摘錄</h2>
+<p>語料庫 SHOULD 優先保存：</p>
+<ul>
+<li>Locator；</li>
+<li>摘要；</li>
+<li>短摘錄；</li>
+<li>Hash；</li>
+<li>Metadata。</li>
+</ul>
+<p>不得為便利而大量複製受保護全文。</p>
+<hr>
+<h2>一百一十六、非公開資料</h2>
+<p>內部 Email、未公開訪談或私人文件必須標記：</p>
+<pre><code class="language-text">access_level
+license
+consent
+redaction
+retention
+</code></pre>
+<hr>
+<h2>一百一十七、人物公平性</h2>
+<p>對仍在世設計者尤其應：</p>
+<ul>
+<li>避免心理推測；</li>
+<li>分開批評設計與批評人格；</li>
+<li>保存時間與上下文；</li>
+<li>允許修正；</li>
+<li>標記爭議；</li>
+<li>不將社群錯誤全歸創始者。</li>
+</ul>
+<hr>
+<h2>一百一十八、敏感治理資料</h2>
+<p>若資料涉及：</p>
+<ul>
+<li>私人衝突；</li>
+<li>尚未公開安全缺陷；</li>
+<li>商業秘密；</li>
+<li>個資；</li>
+<li>存取憑證；</li>
+</ul>
+<p>不得進入公開 Corpus。</p>
+<hr>
+<h1>第二十部分　失敗模式</h1>
+<h2>一百一十九、人物卡片化</h2>
+<p>症狀：</p>
+<pre><code class="language-text">Wirth＝簡單
+Wall＝自由
+Hickey＝不可變
+</code></pre>
+<p>解法：要求每個標籤至少由多筆 DDR 支撐。</p>
+<hr>
+<h2>一百二十、名言資料庫化</h2>
+<p>名言可以是證據，但不能代替決策。</p>
+<hr>
+<h2>一百二十一、來源階級迷信</h2>
+<p>第一手來源不是自動真理；二手來源也不是自動低價值。</p>
+<hr>
+<h2>一百二十二、矩陣虛假精確</h2>
+<p><code>4.2</code> 不表示研究真的具有小數點級精度。</p>
+<p>公開 Profile SHOULD 同時顯示：</p>
+<ul>
+<li>區間；</li>
+<li>Coverage；</li>
+<li>Confidence；</li>
+<li>Record count。</li>
+</ul>
+<hr>
+<h2>一百二十三、時間坍縮</h2>
+<p>把設計者四十年決策壓成一個永恆 Profile，會失去自我修正及治理轉換。</p>
+<hr>
+<h2>一百二十四、AI 自我證明</h2>
+<p>AI 搜尋、抽取、編碼、覆核全由同一模型完成，容易形成相關錯誤。</p>
+<p>高影響紀錄 SHOULD 使用：</p>
+<ul>
+<li>不同模型；</li>
+<li>人類覆核；</li>
+<li>原始來源；</li>
+<li>對抗式反證搜尋。</li>
+</ul>
+<hr>
+<h2>一百二十五、Schema 完整幻覺</h2>
+<p>通過 JSON Schema 只表示資料結構合法：</p>
+<p>$$
+SchemaValid
+\not\Rightarrow
+HistoricallyTrue
+$$</p>
+<hr>
+<h1>第二十一部分　MVP 規格</h1>
+<h2>一百二十六、第一批範圍</h2>
+<p>PLDST Corpus MVP 以第一批 30 篇涉及的設計者與語言為範圍。</p>
+<hr>
+<h2>一百二十七、最小資料量</h2>
+<p>建議：</p>
+<ul>
+<li>每位設計者至少 8 筆 Verified DDR；</li>
+<li>每個主要比較軸至少 3 筆有效 DDR；</li>
+<li>每筆高影響 DDR 至少 2 個獨立來源；</li>
+<li>每位設計者至少 1 筆 Counterevidence；</li>
+<li>每個 Profile 至少 1 個時間切片。</li>
+</ul>
+<hr>
+<h2>一百二十八、MVP 輸出</h2>
+<pre><code class="language-text">1. DDR JSON Schema
+2. Axis Vocabulary
+3. 30 篇文章索引
+4. 設計者／語言 Entity
+5. Candidate DDR
+6. Verified DDR 子集
+7. Profile 產生器
+8. Corpus Card
+9. Validator
+10. HTML／JSON 查詢原型
+</code></pre>
+<hr>
+<h2>一百二十九、MVP 驗收</h2>
+<p>MUST：</p>
+<ul>
+<li>所有 JSON 通過 Schema；</li>
+<li>ID 唯一；</li>
+<li>引用無懸空；</li>
+<li>Verified DDR 有人類 Reviewer；</li>
+<li>Profile 可回溯；</li>
+<li>版本與 Hash 完整；</li>
+<li>至少完成三組跨設計師比較重建。</li>
+</ul>
+<hr>
+<h1>第二十二部分　機器可讀範例</h1>
+<h2>一百三十、DDR 簡化範例</h2>
+<pre><code class="language-json">{
+  &quot;record_id&quot;: &quot;pldst:decision:guido-van-rossum:1991:explicit-self&quot;,
+  &quot;record_version&quot;: &quot;1.0.0&quot;,
+  &quot;status&quot;: &quot;reviewed&quot;,
+  &quot;title&quot;: &quot;方法接收者維持明示 self&quot;,
+  &quot;subject&quot;: {
+    &quot;designer_ids&quot;: [&quot;pldst:designer:guido-van-rossum&quot;],
+    &quot;language_ids&quot;: [&quot;pldst:language:python&quot;]
+  },
+  &quot;time_scope&quot;: {
+    &quot;start_date&quot;: &quot;1991&quot;,
+    &quot;precision&quot;: &quot;year&quot;
+  },
+  &quot;problem&quot;: &quot;方法接收者是否應由語言隱式綁定？&quot;,
+  &quot;decision&quot;: {
+    &quot;summary&quot;: &quot;Python 在方法定義中保留明示 self 參數。&quot;
+  },
+  &quot;evidence&quot;: [],
+  &quot;coding&quot;: {
+    &quot;assessments&quot;: []
+  },
+  &quot;provenance&quot;: {
+    &quot;created_at&quot;: &quot;2026-07-30T00:00:00+08:00&quot;,
+    &quot;schema_version&quot;: &quot;0.1.0&quot;
+  }
+}
+</code></pre>
+<p>完整範例與 Schema 隨本文件 ZIP 提供。</p>
+<hr>
+<h1>第二十三部分　PLDST 評估矩陣輸出格式</h1>
+<h2>一百三十一、Profile 表格</h2>
+<table>
+<thead>
+<tr>
+<th>Axis</th>
+<th align="right">Score</th>
+<th align="right">Confidence</th>
+<th align="right">Coverage</th>
+<th align="right">DDR Count</th>
+<th>Time Slice</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A04 Explicitness</td>
+<td align="right">4.4</td>
+<td align="right">0.88</td>
+<td align="right">0.74</td>
+<td align="right">11</td>
+<td>1991–2018</td>
+</tr>
+<tr>
+<td>A06 Compatibility</td>
+<td align="right">3.7</td>
+<td align="right">0.81</td>
+<td align="right">0.69</td>
+<td align="right">9</td>
+<td>1991–2018</td>
+</tr>
+<tr>
+<td>A12 Governance Concentration</td>
+<td align="right">4.8</td>
+<td align="right">0.95</td>
+<td align="right">0.90</td>
+<td align="right">14</td>
+<td>BDFL era</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>一百三十二、不可省略的附註</h2>
+<p>Profile MUST 顯示：</p>
+<ul>
+<li>時間；</li>
+<li>語言版本；</li>
+<li>Governance period；</li>
+<li>包含 DDR；</li>
+<li>聚合方法；</li>
+<li>缺值；</li>
+<li>最低與最高敏感度；</li>
+<li>主要反證。</li>
+</ul>
+<hr>
+<h1>第二十四部分　與 PLDST SKILL 的介面</h1>
+<h2>一百三十三、搜尋輸入</h2>
+<p>SKILL 將接收：</p>
+<pre><code class="language-text">designer
+language
+decision topic
+time scope
+source priority
+recency requirement
+</code></pre>
+<hr>
+<h2>一百三十四、抽取輸出</h2>
+<p>SKILL 應輸出 Candidate DDR，不直接輸出 Verified DDR。</p>
+<hr>
+<h2>一百三十五、風格判定輸出</h2>
+<p>任何風格回答應至少包含：</p>
+<pre><code class="language-text">判定
+主要 DDR
+來源
+反證
+時間範圍
+信心
+與其他設計者差異
+</code></pre>
+<hr>
+<h2>一百三十六、模擬輸入</h2>
+<p>未來 AI 模擬設計師風格時，應使用：</p>
+<h1>$$
+SimulationContext</h1>
+<p>StyleProfile
++
+DecisionCorpus
++
+CurrentConstraints
++
+DistortionWarnings
+$$</p>
+<p>而不是只輸入人物傳記摘要。</p>
+<hr>
+<h1>第二十五部分　正式規範要求</h1>
+<h2>一百三十七、MUST</h2>
+<p>實作 MUST：</p>
+<ul>
+<li>使用穩定 ID；</li>
+<li>保存 Schema version；</li>
+<li>保存來源；</li>
+<li>分開觀察與推論；</li>
+<li>保存時間範圍；</li>
+<li>允許 <code>null</code>；</li>
+<li>保存反證；</li>
+<li>追蹤修訂；</li>
+<li>驗證 JSON；</li>
+<li>讓 Profile 回溯 DDR。</li>
+</ul>
+<hr>
+<h2>一百三十八、SHOULD</h2>
+<p>實作 SHOULD：</p>
+<ul>
+<li>保存來源快照 Hash；</li>
+<li>使用至少兩種來源；</li>
+<li>對高影響 DDR 雙重編碼；</li>
+<li>產生 Corpus Card；</li>
+<li>計算一致性；</li>
+<li>支援 PROV 對映；</li>
+<li>提供 JSONL；</li>
+<li>支援敏感度分析。</li>
+</ul>
+<hr>
+<h2>一百三十九、MAY</h2>
+<p>實作 MAY：</p>
+<ul>
+<li>使用 RDF／JSON-LD；</li>
+<li>使用向量搜尋；</li>
+<li>使用圖資料庫；</li>
+<li>產生互動矩陣；</li>
+<li>連接 Git Commit；</li>
+<li>連接 DOI、ORCID、RFC、PEP；</li>
+<li>使用 AI 自動建立 Candidate。</li>
+</ul>
+<hr>
+<h1>第二十六部分　結論</h1>
+<h2>一百四十、從文章到方法</h2>
+<p>前二十六篇回答：</p>
+<ul>
+<li>什麼是設計風格；</li>
+<li>如何從人物與語言歷史辨認風格；</li>
+<li>如何比較機器、人本、簡單與治理。</li>
+</ul>
+<p>PLDST-027 回答：</p>
+<blockquote>
+<p>這些判定如何被保存成可驗證、可搜尋、可比較及可重新計算的研究資料？</p>
+</blockquote>
+<hr>
+<h2>一百四十一、評估矩陣的正確地位</h2>
+<p>矩陣不是結論本身，而是索引。</p>
+<h1>$$
+Matrix</h1>
+<p>IndexOfEvidence
+$$</p>
+<hr>
+<h2>一百四十二、語料庫的正確地位</h2>
+<p>語料庫不是名言倉庫，而是決策與代價的歷史紀錄。</p>
+<h1>$$
+Corpus</h1>
+<p>DecisionMemory
+$$</p>
+<hr>
+<h2>一百四十三、PLDST 方法核心</h2>
+<h1>$$
+\boxed{
+PLDST</h1>
+<p>Source
++
+Decision
++
+Burden
++
+Outcome
++
+Coding
++
+Provenance
+}
+$$</p>
+<hr>
+<h2>一百四十四、最終命題</h2>
+<blockquote>
+<p>設計風格只有在它能被具體決策支持、被反證挑戰、被時間切片修正、被他人重新編碼並回到原始來源時，才從人物印象轉為研究方法。</p>
+</blockquote>
+<hr>
+<h1>附錄 A　十八軸速查表</h1>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>名稱</th>
+<th>0 端</th>
+<th>5 端</th>
+<th>類型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A01</td>
+<td>Machine Proximity</td>
+<td>語義隔離</td>
+<td>機器暴露</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A02</td>
+<td>Abstraction Restraint</td>
+<td>高元機制</td>
+<td>強限制</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A03</td>
+<td>Surface Convergence</td>
+<td>多慣用法</td>
+<td>強收斂</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A04</td>
+<td>Explicitness</td>
+<td>高隱式</td>
+<td>高明示</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A05</td>
+<td>Reader Priority</td>
+<td>作者優先</td>
+<td>讀者團隊優先</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A06</td>
+<td>Compatibility Priority</td>
+<td>Clean slate</td>
+<td>高相容</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A07</td>
+<td>Core Extensibility</td>
+<td>封閉核心</td>
+<td>語言內生成</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A08</td>
+<td>State Separation</td>
+<td>高交纏</td>
+<td>明確分離</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A09</td>
+<td>Algebraic Reasoning</td>
+<td>操作推理</td>
+<td>等式推理</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A10</td>
+<td>Implementation Coupling</td>
+<td>規格獨立</td>
+<td>實作／宿主中心</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A11</td>
+<td>Ecosystem Delegation</td>
+<td>核心承擔</td>
+<td>生態承擔</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A12</td>
+<td>Governance Concentration</td>
+<td>分散</td>
+<td>個人集中</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A13</td>
+<td>Proposal Openness</td>
+<td>封閉</td>
+<td>公開</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A14</td>
+<td>Change Conservatism</td>
+<td>快速變動</td>
+<td>高穩定</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A15</td>
+<td>Error Visibility</td>
+<td>Fail-soft／猜測</td>
+<td>Fail-loud／顯性</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A16</td>
+<td>Tool Dependence</td>
+<td>表面自足</td>
+<td>高工具依賴</td>
+<td>Ordinal</td>
+</tr>
+<tr>
+<td>A17</td>
+<td>Human Orientation</td>
+<td>多維標籤</td>
+<td>多維標籤</td>
+<td>Vector</td>
+</tr>
+<tr>
+<td>A18</td>
+<td>Simplicity Model</td>
+<td>多類別</td>
+<td>多類別</td>
+<td>Categorical</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>附錄 B　Corpus Release Manifest</h1>
+<pre><code class="language-json">{
+  &quot;corpus_id&quot;: &quot;pldst:corpus:first-batch&quot;,
+  &quot;corpus_version&quot;: &quot;0.1.0&quot;,
+  &quot;schema_version&quot;: &quot;0.1.0&quot;,
+  &quot;vocabulary_version&quot;: &quot;0.1.0&quot;,
+  &quot;released_at&quot;: &quot;2026-07-30T00:00:00+08:00&quot;,
+  &quot;record_count&quot;: 0,
+  &quot;source_count&quot;: 0,
+  &quot;profile_count&quot;: 0,
+  &quot;license&quot;: &quot;TBD&quot;,
+  &quot;checksums&quot;: &quot;SHA256SUMS.txt&quot;
+}
+</code></pre>
+<hr>
+<h1>附錄 C　研究查核基礎</h1>
+<p>本輪重新查核並採納下列外部方法：</p>
+<ol>
+<li>W3C PROV-O：以 Entity、Activity、Agent 及衍生／歸因關係表達跨系統溯源。</li>
+<li>JSON Schema Draft 2020-12：作為機器可驗證資料結構基線。</li>
+<li>Architecture Decision Record：以 Context、Decision、Consequences 與 Status 保存重要設計決策。</li>
+<li>FAIR Guiding Principles：資料應可尋找、可存取、可互操作、可重用。</li>
+<li>Datasheets／Data Cards：資料文件本身應成為面向多種利害關係人的產品。</li>
+<li>NIST Research Data Framework：以生命週期、Metadata、Provenance、品質、角色及保存作資料治理框架。</li>
+<li>Cohen’s Kappa 與 Krippendorff’s Alpha：用於編碼一致性，但不得替代史實有效性。</li>
+<li>RFC 2119／8174：以 MUST、SHOULD、MAY 區分規範強度。</li>
+</ol>
+<hr>
+<h1>附錄 D　參考資料</h1>
+<p><strong>[R1]</strong> W3C, <em>PROV-O: The PROV Ontology</em>, W3C Recommendation, 2013.<br><strong>[R2]</strong> JSON Schema, <em>Draft 2020-12 Specification</em>, published 2022-06-16.<br><strong>[R3]</strong> Architecture Decision Record project, <em>Architecture Decision Record</em>.<br><strong>[R4]</strong> Stephen Bradner, <em>RFC 2119: Key words for use in RFCs to Indicate Requirement Levels</em>, IETF, 1997.<br><strong>[R5]</strong> Brian Leiba, <em>RFC 8174: Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words</em>, IETF, 2017.<br><strong>[R6]</strong> Mark D. Wilkinson et al., <em>The FAIR Guiding Principles for Scientific Data Management and Stewardship</em>, Scientific Data, 2016.<br><strong>[R7]</strong> Timnit Gebru et al., <em>Datasheets for Datasets</em>, 2018／2021.<br><strong>[R8]</strong> Mahima Pushkarna, Andrew Zaldivar, Oddur Kjartansson, <em>Data Cards: Purposeful and Transparent Dataset Documentation for Responsible AI</em>, 2022.<br><strong>[R9]</strong> NIST, <em>Research Data Framework (RDaF) Version 2.0</em>, NIST SP 1500-18r2.<br><strong>[R10]</strong> Jacob Cohen, <em>A Coefficient of Agreement for Nominal Scales</em>, 1960.<br><strong>[R11]</strong> Klaus Krippendorff, <em>Computing Krippendorff’s Alpha-Reliability</em>.<br><strong>[R12]</strong> PLDST-001–026，程式語言設計師風格譜系第一至第四部。</p>
+<p><strong>資料查核日期：</strong> 2026-07-30。</p>
+<hr>
+<h1>附錄 E　第二輪校對紀錄</h1>
+<h2>E.1 PROV-O 是對映而非強制儲存格式</h2>
+<p>本規格只要求保存足以對映 Entity、Activity、Agent 的欄位。</p>
+<p>不要求 MVP 立即部署 RDF Store 或 OWL Reasoner。</p>
+<hr>
+<h2>E.2 JSON Schema 不驗證史實</h2>
+<p>Schema 僅驗證：</p>
+<ul>
+<li>欄位；</li>
+<li>型別；</li>
+<li>格式；</li>
+<li>枚舉；</li>
+<li>結構關係。</li>
+</ul>
+<p>來源是否真實、推論是否合理，仍需研究覆核。</p>
+<hr>
+<h2>E.3 FAIR 不是「全部公開」</h2>
+<p>Accessible 不表示所有資料無條件公開。</p>
+<p>受限資料可以：</p>
+<ul>
+<li>保留 Metadata；</li>
+<li>說明存取條件；</li>
+<li>保存權限；</li>
+<li>不公開正文。</li>
+</ul>
+<hr>
+<h2>E.4 Kappa／Alpha 不設單一神聖門檻</h2>
+<p>不同軸、樣本量、風險及尺度需要不同標準。</p>
+<p>本規格要求報告指標與上下文，不規定一個適用所有 PLDST 任務的唯一門檻。</p>
+<hr>
+<h2>E.5 十八軸不是完整本體論</h2>
+<p>十八軸是第一批可操作核心。</p>
+<p>未來 MAY：</p>
+<ul>
+<li>增加領域專用軸；</li>
+<li>合併高度相關軸；</li>
+<li>調整 Anchor；</li>
+<li>建立多層矩陣。</li>
+</ul>
+<p>任何變動必須版本化並重算 Profile。</p>
+<hr>
+<h2>E.6 評分方向不是價值方向</h2>
+<p>例如：</p>
+<ul>
+<li>Governance Concentration 5 不表示優秀；</li>
+<li>Proposal Openness 5 不表示決策品質高；</li>
+<li>Machine Proximity 5 不表示落後；</li>
+<li>Tool Dependence 5 不表示不可用。</li>
+</ul>
+<p>軸只描述配置。</p>
+<hr>
+<h1>附錄 F　與下一篇的銜接</h1>
+<p>PLDST-027 已定義：</p>
+<pre><code class="language-text">資料模型
+評估矩陣
+DDR
+證據
+溯源
+編碼
+品質
+版本
+查詢
+MVP
+</code></pre>
+<p>下一篇將把這些規格封裝為可執行流程：</p>
+<p><strong>PLDST-028：PLDST SKILL 技術規格——資料搜尋、決策抽取與風格判定。</strong></p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-027.html">https://thisoneisneok.com/html/papers/pldst-027.html</a></footer>
+</body>
+</html>

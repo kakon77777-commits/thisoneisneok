@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SynCore v1.1：可組合核心融合的研究起源 | Neo.K</title>
+<meta name="description" content="本文重構 SynCore 最初的研究問題：當一個晶片擁有多個物理核心，而關鍵工作負載仍受單執行緒依賴鏈、分支、記憶體延遲或軟體遺產限制時，能否讓部分原本獨立的核心資源，暫時組成一個較大的邏輯執行域，以提高單執行緒性能或降低完成相同工作的能耗？">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/ccp-17.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / CCP</strong><span>計算機概念產品系列</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>CCP-17</span></div><div><b>版本</b><span>v1.1</span></div><div><b>日期</b><span>2025-11-01</span></div><div><b>作者</b><span>Neo.K（許筌崴）</span></div><div><b>狀態</b><span>歷史母稿／公開概念技術論文／可證偽研究提案</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ccp-17.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>SynCore v1.1：可組合核心融合的研究起源</h1>
+<h2>從單執行緒資源集中到可重構微架構的可驗證設計</h2>
+<p><strong>英文題名：</strong> SynCore v1.1: Research Origins of Composable Core Fusion<br><strong>文件編號：</strong> EML-SYNCORE-ORIGIN-2026-v1.1<br><strong>作者：</strong> Neo.K（許筌崴）<br><strong>協作修訂：</strong> Aletheia<br><strong>機構：</strong> 一言諾科技有限公司（EveMissLab）<br><strong>原始版本：</strong> 2025 年 11 月《SynCore 神核融合引擎：量子態邏輯與單核至尊的架構革命》<br><strong>修訂日期：</strong> 2026 年 7 月 30 日<br><strong>文件性質：</strong> 歷史母稿／公開概念技術論文／可證偽研究提案<br><strong>證據等級：</strong> E0（尚未完成專用模擬器、RTL、FPGA 或流片驗證）<br><strong>版本地位：</strong> 本文保存 SynCore 的「核心融合」起源；現行統一主架構為《SynCore v2.1：可重構融合—流動運算架構》<br><strong>授權：</strong> 公開發布前由作者確認最終授權條款</p>
+<hr>
+<h2>摘要</h2>
+<p>本文重構 SynCore 最初的研究問題：當一個晶片擁有多個物理核心，而關鍵工作負載仍受單執行緒依賴鏈、分支、記憶體延遲或軟體遺產限制時，能否讓部分原本獨立的核心資源，暫時組成一個較大的邏輯執行域，以提高單執行緒性能或降低完成相同工作的能耗？</p>
+<p>此問題不是全新的。Core Fusion、Composable Lightweight Processors、Core Federation、MorphCore、clustered microarchitecture 與 thread-level speculation 等研究，早已探索過可組合核心、可變粒度處理器或單執行緒跨多執行後端的可能性。因此，SynCore v1.1 不再宣稱首次提出「多核融合成大核」，也不把幾個核心的 ALU、L1 快取和功率預算相加，直接等同於數倍單核性能。</p>
+<p>本文保留原稿最有價值的核心命題：</p>
+<blockquote>
+<p>並行與串列不是兩種互斥硬體，而是同一運算基底在不同工作負載下的資源組織方式；若微架構在設計時即納入可組合性，則一組物理執行 tile 可以在獨立吞吐模式與融合單執行緒模式之間切換。</p>
+</blockquote>
+<p>新版提出四級融合模型：獨立核心模式、共享前端模式、叢集執行模式與完整融合模式；建立融合群組、分散式指令視窗、banked physical register file、operand network、load/store ordering、全域提交、檢查點／暖狀態緩衝與失效安全控制器。原稿中的「疊加態、儲存態、坍塌態」被重新解釋為<strong>預備、保存、融合</strong>三種工程狀態，不再借用量子疊加或波函數坍縮作為硬體證明。</p>
+<p>本文同時給出性能上界、重組成本、熱功率約束、軟體介面、比較基線、模擬與 FPGA 路線，以及六項可證偽命題。SynCore v1.1 的技術地位因此被明確限定為：它是 SynCore v2.1 中 <strong>Fusion Cluster</strong> 的歷史與理論基礎，而不是另一套獨立產品，也不是已被實驗證實的超級單核晶片。</p>
+<p><strong>關鍵詞：</strong> 核心融合、可組合處理器、單執行緒性能、指令級並行、可重構微架構、叢集執行、精確提交、檢查點、動態異質性</p>
+<hr>
+<h2>0. 修訂聲明與版本譜系</h2>
+<h3>0.1 為什麼保留這篇歷史母稿</h3>
+<p>原始 SynCore v1.0 首次建立了本系列的一條重要產品主線：</p>
+<p>$$
+\text{多個獨立核心}
+\longleftrightarrow
+\text{較大的邏輯執行域}.
+$$</p>
+<p>它後來被 DEO、O-Chip、DPCPS、DryCore、SDMCA 與 SynCore v2.1 吸收。然而，若只保留 v2.1，SynCore 從何處開始、最初試圖解決什麼問題，以及哪些概念後來被修正，將不再清楚。</p>
+<p>本文因此不與 v2.1 競爭，而負責三項工作：</p>
+<ol>
+<li>保存「多核為單執行緒服務」的原始問題意識；</li>
+<li>將原稿的物理與工程錯誤改造成可驗證的融合微架構；</li>
+<li>明確說明哪些元件已被移交給後續系列。</li>
+</ol>
+<h3>0.2 正式版本關係</h3>
+<p>$$
+\text{SynCore v1.0 原始概念}
+\rightarrow
+\text{SynCore v1.1 核心融合起源篇}
+\rightarrow
+\text{SynCore v2.1 統一主架構}.
+$$</p>
+<p>其中：</p>
+<ul>
+<li><strong>v1.1</strong> 只研究通用數位核心的可組合融合；</li>
+<li><strong>v2.1</strong> 進一步整合數位資料流陣列、振盪器加速器、驗證與提交引擎；</li>
+<li>本文任何新工程結論，均不得覆蓋 v2.1 的最新系統定義。</li>
+</ul>
+<h3>0.3 術語遷移</h3>
+<table>
+<thead>
+<tr>
+<th>原稿術語</th>
+<th>v1.1 正式術語</th>
+<th>處置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>神核模式</td>
+<td>Fusion Mode／融合模式</td>
+<td>保留暱稱，正式文件用融合模式</td>
+</tr>
+<tr>
+<td>Core Mesh Binding</td>
+<td>Fusion Fabric／融合織網</td>
+<td>重構</td>
+</tr>
+<tr>
+<td>Unistream Execution Engine</td>
+<td>Fusion Execution Domain／融合執行域</td>
+<td>重構</td>
+</tr>
+<tr>
+<td>Thread Monarch Controller</td>
+<td>Fusion Mode Controller／融合模式控制器</td>
+<td>去人格化</td>
+</tr>
+<tr>
+<td>Q-Storage</td>
+<td>Checkpoint and Warm-State Buffer／檢查點與暖狀態緩衝</td>
+<td>去量子化</td>
+</tr>
+<tr>
+<td>Thermo-Balancer Matrix</td>
+<td>DEO＋DPCPS＋DryCore 介面</td>
+<td>移交後續系列</td>
+</tr>
+<tr>
+<td>疊加／儲存／坍塌</td>
+<td>Armed／Checkpointed／Fused</td>
+<td>改為工程狀態</td>
+</tr>
+<tr>
+<td>錐形光刻製造 CPU</td>
+<td>先進封裝／hybrid bonding／UCIe 類互連</td>
+<td>移除未成立製程敘事</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>1. 研究問題：多核心時代仍存在的單執行緒瓶頸</h2>
+<h3>1.1 核心數量與單執行緒完成時間是不同問題</h3>
+<p>對一個具有 $N$ 條動態指令的單執行緒，其依賴關係可表示為有向無環圖：</p>
+<p>$$
+\mathcal{G}_I=(V_I,E_I).
+$$</p>
+<p>其中節點代表動態指令，邊代表資料、控制或記憶體次序依賴。若臨界路徑長度為：</p>
+<p>$$
+C(\mathcal{G}_I),
+$$</p>
+<p>則即使提供無限多個執行單元，完成時間仍不能低於此因果鏈所要求的時間。</p>
+<p>增加核心數量主要增加的是執行緒級並行能力：</p>
+<p>$$
+P_{\mathrm{TLP}}\uparrow,
+$$</p>
+<p>而單執行緒能否變快，取決於硬體能否揭露：</p>
+<ul>
+<li>指令級並行；</li>
+<li>記憶體級並行；</li>
+<li>分支級推測；</li>
+<li>value／address speculation；</li>
+<li>helper execution；</li>
+<li>更大的指令與資料工作集合。</li>
+</ul>
+<p>因此，原稿所說「其他核心閒置」只是資源現象，不是性能證明。真正問題是：</p>
+<blockquote>
+<p>能否在不使通訊、時序、功耗與控制複雜度失控的前提下，把一組獨立核心的部分微架構資源，重組為一個較大的單執行緒執行域？</p>
+</blockquote>
+<h3>1.2 串列不等於完全沒有並行</h3>
+<p>「單執行緒」只是程式對外呈現一條精確指令序列，不代表每條動態指令都必須逐一完成後才能開始下一條。亂序執行、推測執行、預取與記憶體級並行早已在單執行緒內利用局部獨立性。</p>
+<p>SynCore 的合法目標不是把真實串列依賴變成並行，而是擴大硬體可觀察和可利用的窗口：</p>
+<p>$$
+\text{Fusion Benefit}
+\approx
+f(
+W_{\mathrm{front}},
+W_{\mathrm{window}},
+W_{\mathrm{issue}},
+M_{\mathrm{MLP}},
+B_{\mathrm{cache}},
+L_{\mathrm{fabric}}
+).
+$$</p>
+<h3>1.3 單執行緒瓶頸的不同類型</h3>
+<p>融合不會對所有工作負載有效。至少需要區分：</p>
+<ol>
+<li><strong>前端受限</strong>：指令快取、取指、解碼或分支限制；</li>
+<li><strong>後端受限</strong>：執行單元或排程窗口不足；</li>
+<li><strong>延遲受限</strong>：單條長依賴鏈或高延遲運算；</li>
+<li><strong>記憶體受限</strong>：cache miss、TLB miss、DRAM 延遲；</li>
+<li><strong>頻寬受限</strong>：共享快取、記憶體或互連飽和；</li>
+<li><strong>同步受限</strong>：其實是多執行緒鎖與臨界區問題；</li>
+<li><strong>軟體／ISA 受限</strong>：動態翻譯、例外、序列化指令或自修改程式碼。</li>
+</ol>
+<p>只有第 1、2 類以及部分第 4 類，可能直接受益於更寬、更大的融合執行域。第 3 類若缺乏可推測或可預取空間，增加執行單元幾乎無效。</p>
+<hr>
+<h2>2. 既有研究與 SynCore 的非首創性</h2>
+<h3>2.1 Core Fusion</h3>
+<p>Core Fusion 探索由多個獨立小核心動態形成較大的亂序處理器。其關鍵問題包括：單執行緒如何由多個前端共同取指、指令如何 steering、跨核心 producer–consumer 如何喚醒、load/store forwarding 如何保持正確，以及多個 reorder buffer 如何精確提交。</p>
+<p>這條研究已證明「獨立核心融合」不是一句資源相加，而是必須重新處理整個處理器管線。</p>
+<h3>2.2 Composable Lightweight Processors</h3>
+<p>Composable Lightweight Processors 與 TFlex 以分散式執行結構、顯式資料圖和可組合 tile，探索從多個窄核心形成較寬邏輯處理器。其優點是結構分散、可形成較大動態性能範圍；代價則包括 operand network、控制網路、映射與跨 tile 通訊。</p>
+<h3>2.3 MorphCore 與反向變形</h3>
+<p>MorphCore 採取相反方向：以高性能亂序核心為基底，在執行緒級並行充足時轉成高執行緒數的順序 SMT。此研究指出，從小核心融合成大核心可能引入額外 pipeline latency、cache migration 與切換成本；因此「先有小核，再融合」不是唯一策略。</p>
+<h3>2.4 SynCore 能保留的差異性</h3>
+<p>SynCore v1.1 不以「第一個融合核心」作為貢獻，而以以下研究組合作為自身定位：</p>
+<ol>
+<li>以<strong>分級融合</strong>取代單一全開／全關模式；</li>
+<li>把重組成本、熱功率承諾和精確回退列為一等設計變數；</li>
+<li>將融合群組的控制介面與 O-Chip、DEO、DPCPS、DryCore 統一；</li>
+<li>保留檢查點、暖狀態與可逆切換，而非只比較穩態 IPC；</li>
+<li>將核心融合明確定位為 SynCore v2.1 的一個執行域。</li>
+</ol>
+<hr>
+<h2>3. 設計原則</h2>
+<h3>原則一：可組合性必須在製造前設計</h3>
+<p>SynCore 不能把任意現成核心在執行時以軟體命令「接起來」。可融合核心必須共享預定義的：</p>
+<ul>
+<li>時脈與重置域關係；</li>
+<li>operand transport；</li>
+<li>全域或分散式 rename／tag 空間；</li>
+<li>load/store ordering；</li>
+<li>精確提交協議；</li>
+<li>cache ownership；</li>
+<li>checkpoint 與 replay；</li>
+<li>power／thermal control hooks。</li>
+</ul>
+<h3>原則二：融合粒度必須有限</h3>
+<p>融合群組規模增加時，跨群組導線、喚醒、選擇、旁路、提交與 cache bank 通訊成本會上升。最初原型應限制為：</p>
+<p>$$
+G\in{2,4},
+$$</p>
+<p>而不是直接宣稱 8、16、32 核可形成單一超核心。</p>
+<h3>原則三：融合只揭露既有並行度</h3>
+<p>若工作負載的有效 ILP 為 $P_{\mathrm{ILP}}$，即使發射寬度增加到 $W_F$，可利用寬度仍受：</p>
+<p>$$
+W_{\mathrm{use}}
+\le
+\min(W_F,P_{\mathrm{ILP}},P_{\mathrm{front}},P_{\mathrm{mem}}).
+$$</p>
+<h3>原則四：模式切換必須可逆且失效安全</h3>
+<p>融合失敗、預測失誤、熱餘裕不足或性能退化時，系統必須可退回獨立模式。任何融合控制器都不能繞過：</p>
+<ul>
+<li>精確例外；</li>
+<li>ECC／parity；</li>
+<li>watchdog；</li>
+<li>熱關機；</li>
+<li>電壓護欄；</li>
+<li>記憶體保護；</li>
+<li>作業系統搶占。</li>
+</ul>
+<h3>原則五：控制不必依賴大型 AI</h3>
+<p>模式選擇可先使用：</p>
+<ul>
+<li>硬體計數器規則；</li>
+<li>EWMA；</li>
+<li>decision tree；</li>
+<li>lookup table；</li>
+<li>contextual bandit；</li>
+<li>model predictive control。</li>
+</ul>
+<p>只有當簡單控制器明顯不足，才加入較複雜模型。</p>
+<hr>
+<h2>4. 四級融合模型</h2>
+<p>SynCore v1.1 不再只有「普通多核／神核」二態，而採四級模式：</p>
+<h3>4.1 F0：Independent Mode</h3>
+<p>每個 Scalar Tile 獨立執行：</p>
+<ul>
+<li>自己的前端；</li>
+<li>自己的 rename／issue／commit；</li>
+<li>自己的 L1；</li>
+<li>共享或分區 LLC；</li>
+<li>適合多程式與高 TLP 工作負載。</li>
+</ul>
+<h3>4.2 F1：Front-End Cooperative Mode</h3>
+<p>多個 tile 仍各自提交，但共享部分前端資訊：</p>
+<ul>
+<li>branch history；</li>
+<li>instruction predecode；</li>
+<li>shared instruction cache bank；</li>
+<li>coordinated prefetch；</li>
+<li>helper thread 或 runahead。</li>
+</ul>
+<p>此模式不形成一個完整大核心，重組成本最低。</p>
+<h3>4.3 F2：Clustered Execution Mode</h3>
+<p>一條執行緒的指令可被映射到多個執行 backend，但保留分區式結構：</p>
+<ul>
+<li>分散式 instruction window；</li>
+<li>banked physical register file；</li>
+<li>operand network；</li>
+<li>clustered functional units；</li>
+<li>全域 tag／dependency protocol；</li>
+<li>統一或分層 commit。</li>
+</ul>
+<p>這是 v1.1 的主要研究模式。</p>
+<h3>4.4 F3：Full Fusion Mode</h3>
+<p>多個 tile 邏輯上組成一個較大的亂序執行域：</p>
+<ul>
+<li>統一前端或嚴格同步的分散式前端；</li>
+<li>較大的全域指令視窗；</li>
+<li>擴展的 load/store window；</li>
+<li>統一精確提交；</li>
+<li>跨 tile speculation recovery。</li>
+</ul>
+<p>F3 不一定比 F2 更快。若中央 steering、global wakeup 或 bypass latency 過高，F3 可能反而降低頻率或增加關鍵迴路延遲。</p>
+<h3>4.5 模式不是性能等級</h3>
+<p>$$
+F0&lt;F1&lt;F2&lt;F3
+$$</p>
+<p>只代表耦合程度，不代表性能必然單調增加。系統應根據工作負載與成本選擇：</p>
+<h1>$$
+F^{\star}</h1>
+<p>\arg\min_{F\in{F0,F1,F2,F3}}
+J(F).
+$$</p>
+<hr>
+<h2>5. 頂層架構</h2>
+<h3>5.1 Fusion Group</h3>
+<p>一個融合群組定義為：</p>
+<h1>$$
+\mathcal{F}_g</h1>
+<p>\left(
+\mathcal{T}_g,
+\mathcal{N}_g,
+\mathcal{R}_g,
+\mathcal{M}_g,
+\mathcal{C}_g,
+\mathcal{S}_g
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathcal{T}_g$：參與融合的 tile 集合；</li>
+<li>$\mathcal{N}_g$：operand／control network；</li>
+<li>$\mathcal{R}_g$：register／rename 資源；</li>
+<li>$\mathcal{M}_g$：memory ordering 與 cache 資源；</li>
+<li>$\mathcal{C}_g$：commit、checkpoint、recovery；</li>
+<li>$\mathcal{S}_g$：安全、功率與熱狀態。</li>
+</ul>
+<h3>5.2 Scalar Tile</h3>
+<p>每個 tile 至少包含：</p>
+<ul>
+<li>取指與解碼前端；</li>
+<li>branch predictor 或 predictor slice；</li>
+<li>rename／dispatch；</li>
+<li>local instruction window；</li>
+<li>ALU／FPU／vector units；</li>
+<li>banked PRF；</li>
+<li>L1 I／D cache；</li>
+<li>TLB；</li>
+<li>local ROB／commit metadata；</li>
+<li>Fusion Fabric interface。</li>
+</ul>
+<p>Tile 應能在 F0 完整獨立運作，避免融合邏輯失效時整顆晶片不可用。</p>
+<h3>5.3 Fusion Fabric</h3>
+<p>Fusion Fabric 不是一般 NoC 的別名。它需要支援低延遲的：</p>
+<ul>
+<li>instruction assignment；</li>
+<li>operand delivery；</li>
+<li>wakeup notification；</li>
+<li>branch resolution；</li>
+<li>load/store replay；</li>
+<li>commit coordination；</li>
+<li>checkpoint broadcast；</li>
+<li>mode transition。</li>
+</ul>
+<p>對 producer $i$ 與 consumer $j$，跨 tile 依賴延遲可表示為：</p>
+<h1>$$
+L_{i\rightarrow j}</h1>
+<p>L_{\mathrm{tag}}
++
+L_{\mathrm{route}}
++
+L_{\mathrm{queue}}
++
+L_{\mathrm{deliver}}.
+$$</p>
+<p>若此延遲高於把 producer 與 consumer 放在同一 tile 的收益，steering 策略必須優先共置依賴鏈。</p>
+<h3>5.4 Front-End Organization</h3>
+<p>三種候選：</p>
+<h4>A. 單一共享前端</h4>
+<p>優點：控制簡單、分支狀態統一。<br>缺點：前端可能成為單點瓶頸，且佈線集中。</p>
+<h4>B. 鎖步分散式前端</h4>
+<p>各 tile 取同一條指令流的不同區段，需共享：</p>
+<ul>
+<li>global history；</li>
+<li>return address stack；</li>
+<li>taken branch communication；</li>
+<li>instruction striping metadata。</li>
+</ul>
+<h4>C. 階層式前端</h4>
+<p>一個 lead frontend 負責方向和邊界，其餘 frontend 提供 fetch／decode bandwidth。v1.1 建議先以此作為原型。</p>
+<h3>5.5 Distributed Instruction Window</h3>
+<p>每個 tile 維持本地 window，但使用全域 tag。指令 $u$ 的就緒條件：</p>
+<h1>$$
+\operatorname{ready}(u,t)</h1>
+<p>\bigwedge_{v\in\operatorname{pred}(u)}
+\operatorname{valid}_{v\rightarrow u}(t).
+$$</p>
+<p>steering 目標同時最小化：</p>
+<h1>$$
+J_{\mathrm{steer}}</h1>
+<p>\alpha Q_k
++
+\beta D_{\mathrm{dep}}
++
+\gamma P_k
++
+\delta T_k,
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$Q_k$：目標 tile 佇列壓力；</li>
+<li>$D_{\mathrm{dep}}$：跨 tile 依賴距離；</li>
+<li>$P_k$：功率增量；</li>
+<li>$T_k$：熱風險。</li>
+</ul>
+<h3>5.6 Banked Physical Register File</h3>
+<p>原稿的「所有核心共享一個巨大暫存器池」會造成多埠、導線與時序爆炸。新版採 banked PRF：</p>
+<h1>$$
+\mathcal{R}</h1>
+<p>\bigcup_{k=1}^{G}
+\mathcal{R}_k.
+$$</p>
+<p>每個 physical register 具有 home bank。跨 bank 讀取透過 operand network 傳送，並使用：</p>
+<ul>
+<li>locality-aware renaming；</li>
+<li>replication for high fan-out values；</li>
+<li>producer–consumer co-location；</li>
+<li>limited bypass domains。</li>
+</ul>
+<h3>5.7 Load／Store Ordering</h3>
+<p>融合模式最難的部分之一是記憶體次序。必須支援：</p>
+<ul>
+<li>全域 load/store sequence number；</li>
+<li>store-to-load forwarding；</li>
+<li>memory dependence prediction；</li>
+<li>violation detection；</li>
+<li>replay；</li>
+<li>precise exception；</li>
+<li>fence／atomic semantics。</li>
+</ul>
+<p>對 load $l$，其提交前必須確認：</p>
+<p>$$
+\forall s&lt;l,
+\quad
+\neg\operatorname{alias}(s,l)
+\lor
+\operatorname{forwarded}(s,l)
+\lor
+\operatorname{resolved}(s,l).
+$$</p>
+<h3>5.8 Global Commit and Recovery</h3>
+<p>完整融合模式需要全域邏輯順序：</p>
+<p>$$
+I_1&lt;I_2&lt;\cdots&lt;I_n.
+$$</p>
+<p>但物理 ROB 可以分散。可採：</p>
+<ul>
+<li>global sequence number；</li>
+<li>local ROB slices；</li>
+<li>pre-commit watermark；</li>
+<li>distributed completion bitmap；</li>
+<li>centralized architectural state checkpoint。</li>
+</ul>
+<p>commit 條件：</p>
+<h1>$$
+\operatorname{commit}(I_k)</h1>
+<p>\operatorname{done}(I_k)
+\land
+\bigwedge_{j&lt;k}
+\operatorname{committable}(I_j)
+\land
+\neg\operatorname{exception}_{\le k}.
+$$</p>
+<hr>
+<h2>6. 三種工程狀態：去量子化的三態模型</h2>
+<p>原稿的三態邏輯具有直覺價值，但不應稱為量子態。新版改成：</p>
+<h3>6.1 Armed State／預備態</h3>
+<p>Tile 尚未加入融合執行，但已完成：</p>
+<ul>
+<li>時脈／電壓域準備；</li>
+<li>Fusion Fabric 連線自檢；</li>
+<li>必要 code／data 預取；</li>
+<li>cache way／bank 預留；</li>
+<li>checkpoint 空間配置。</li>
+</ul>
+<p>預備態的目標是降低進入融合模式的冷啟動成本。</p>
+<h3>6.2 Checkpointed State／保存態</h3>
+<p>原執行緒或背景任務的架構狀態被保存，以便 tile 資源暫時釋出。保存內容可分級：</p>
+<ul>
+<li>C0：architectural registers＋PC；</li>
+<li>C1：C0＋TLB／predictor hints；</li>
+<li>C2：C1＋selected cache lines；</li>
+<li>C3：C2＋microarchitectural replay metadata。</li>
+</ul>
+<p>並非所有內部流水線狀態都值得保存。保存越完整，切換成本與硬體面積越高。</p>
+<h3>6.3 Fused State／融合態</h3>
+<p>tile 已加入 Fusion Group，共同執行一條邏輯執行緒。此狀態必須具備：</p>
+<ul>
+<li>統一精確狀態；</li>
+<li>mode ownership；</li>
+<li>power／thermal certificate；</li>
+<li>watchdog；</li>
+<li>rollback checkpoint；</li>
+<li>OS preemption route。</li>
+</ul>
+<h3>6.4 狀態轉移</h3>
+<p>$$
+\text{Independent}
+\rightarrow
+\text{Armed}
+\rightarrow
+\text{Checkpointed}
+\rightarrow
+\text{Fused}.
+$$</p>
+<p>退出則反向進行，必要時：</p>
+<p>$$
+\text{Fused}
+\rightarrow
+\text{Rollback}
+\rightarrow
+\text{Independent}.
+$$</p>
+<p>這些是有限狀態機，不涉及量子疊加、相干性或測量坍縮。</p>
+<hr>
+<h2>7. 檢查點與暖狀態緩衝</h2>
+<h3>7.1 重新定義 Q-Storage</h3>
+<p>原稿的 Q-Storage 改名為：</p>
+<blockquote>
+<p><strong>Checkpoint and Warm-State Buffer, CWB</strong><br>檢查點與暖狀態緩衝</p>
+</blockquote>
+<p>它可以由：</p>
+<ul>
+<li>片上 SRAM；</li>
+<li>LLC 保留區；</li>
+<li>3D stacked SRAM／DRAM；</li>
+<li>coherent memory；</li>
+<li>persistent memory（遠期）；</li>
+</ul>
+<p>組成，但不同介質對應不同恢復時間。</p>
+<h3>7.2 不保存任意完整快取</h3>
+<p>若完整保存 $S$ bytes 狀態，通道頻寬為 $B$，最低資料搬移時間為：</p>
+<p>$$
+T_{\mathrm{save}}
+\ge
+\frac{S}{B}
++
+T_{\mathrm{quiesce}}
++
+T_{\mathrm{metadata}}.
+$$</p>
+<p>因此「完整快取與流水線微秒級凍結」不能普遍成立。CWB 應使用：</p>
+<ul>
+<li>selective state capture；</li>
+<li>dirty-line prioritization；</li>
+<li>compressed metadata；</li>
+<li>lazy cache warming；</li>
+<li>predictive prefetch。</li>
+</ul>
+<h3>7.3 暖狀態不是正確性要求</h3>
+<p>cache、predictor、TLB 等暖狀態只影響性能，不是架構正確性。恢復時可：</p>
+<ol>
+<li>先恢復 architectural state；</li>
+<li>立即正確執行；</li>
+<li>再以背景方式恢復性能狀態。</li>
+</ol>
+<p>這使回退更簡單。</p>
+<hr>
+<h2>8. Fusion Mode Controller</h2>
+<h3>8.1 控制器輸入</h3>
+<p>控制器觀察：</p>
+<h1>$$
+\mathbf{x}(t)</h1>
+<p>(
+IPC,
+MPKI,
+BMR,
+MLP,
+ROB_{\mathrm{occ}},
+IQ_{\mathrm{occ}},
+T,
+P,
+Q_{\mathrm{run}},
+C_{\mathrm{switch}}
+).
+$$</p>
+<p>其中包括：</p>
+<ul>
+<li>指令吞吐量；</li>
+<li>cache miss；</li>
+<li>branch misprediction；</li>
+<li>記憶體級並行；</li>
+<li>ROB／issue queue 壓力；</li>
+<li>溫度與功率；</li>
+<li>runnable thread 數；</li>
+<li>切換估計成本。</li>
+</ul>
+<h3>8.2 模式收益判斷</h3>
+<p>融合只在以下條件成立時啟動：</p>
+<p>$$
+\widehat{G}_{\mathrm{fusion}}</p>
+<blockquote>
+</blockquote>
+<p>C_{\mathrm{transition}}
++
+C_{\mathrm{opportunity}}
++
+C_{\mathrm{power}}
++
+M_{\mathrm{safety}}.
+$$</p>
+<p>其中 opportunity cost 表示被借用 tile 無法服務其他執行緒的損失。</p>
+<h3>8.3 遲滯與最短駐留時間</h3>
+<p>避免模式震盪：</p>
+<p>$$
+T_{\mathrm{res}}
+\ge
+T_{\min}(F_i,F_j).
+$$</p>
+<p>控制器使用不同進入與退出門檻：</p>
+<p>$$
+\theta_{\mathrm{enter}}</p>
+<blockquote>
+</blockquote>
+<p>\theta_{\mathrm{exit}}.
+$$</p>
+<h3>8.4 作業系統仍保有政策權</h3>
+<p>Fusion Mode Controller 提供機制與建議，但 OS／hypervisor 決定：</p>
+<ul>
+<li>哪個執行緒可獲得融合群組；</li>
+<li>是否允許借用其他 tile；</li>
+<li>優先級與配額；</li>
+<li>即時任務與安全域；</li>
+<li>何時搶占或強制退出。</li>
+</ul>
+<hr>
+<h2>9. 性能與成本模型</h2>
+<h3>9.1 單執行緒時間下界</h3>
+<p>對融合群組大小 $G$：</p>
+<p>$$
+T_G
+\ge
+\max\left(
+C(\mathcal{G}<em>I),
+\frac{N}{W</em>{\mathrm{eff}}(G)},
+T_{\mathrm{front}}(G),
+T_{\mathrm{mem}}(G)
+\right)
++
+T_{\mathrm{comm}}(G)
++
+T_{\mathrm{control}}(G).
+$$</p>
+<p>其中：</p>
+<p>$$
+W_{\mathrm{eff}}(G)
+\neq
+G\cdot W_1
+$$</p>
+<p>一般只會次線性增加。</p>
+<h3>9.2 融合加速比</h3>
+<h1>$$
+S_G</h1>
+<p>\frac{T_1}{T_G}.
+$$</p>
+<p>其上界受 Amdahl 類限制。若可被融合加速的比例為 $p$，該部分加速為 $s_G$：</p>
+<p>$$
+S_G
+\le
+\frac{1}{(1-p)+\frac{p}{s_G}}.
+$$</p>
+<p>因此，原稿所稱 $4$ 核必然帶來 $4$–$6$ 倍性能不成立。</p>
+<h3>9.3 淨收益</h3>
+<h1>$$
+G_{\mathrm{net}}</h1>
+<p>\frac{T_0}{
+T_{\mathrm{transition}}
++
+T_{\mathrm{run,fused}}
++
+T_{\mathrm{exit}}
+}.
+$$</p>
+<p>短任務即使融合穩態較快，也可能被切換成本抵銷。</p>
+<h3>9.4 功率與能量</h3>
+<p>融合群組功率：</p>
+<h1>$$
+P_F</h1>
+<p>P_{\mathrm{tiles}}
++
+P_{\mathrm{fabric}}
++
+P_{\mathrm{global}}
++
+P_{\mathrm{memory}}
++
+P_{\mathrm{cooling,share}}.
+$$</p>
+<p>完成任務能量：</p>
+<h1>$$
+E_F</h1>
+<p>\int_{t_0}^{t_1}P_F(t),dt.
+$$</p>
+<p>更高瞬時功率可能因縮短時間而降低總能量，也可能因互連與控制開銷而增加；必須實測。</p>
+<h3>9.5 系統機會成本</h3>
+<p>若 $G$ 個 tile 被一條執行緒占用，系統吞吐損失可表示為：</p>
+<h1>$$
+C_{\mathrm{opp}}</h1>
+<h2>\sum_{k\in\mathcal{T}_g}
+U_k^{\mathrm{alternative}}</h2>
+<p>U_g^{\mathrm{fusion}}.
+$$</p>
+<p>因此，融合模式最適合：</p>
+<ul>
+<li>runnable threads 少；</li>
+<li>前台延遲敏感；</li>
+<li>其他 tile 本來就閒置；</li>
+<li>或單執行緒完成時間的價值高於背景吞吐量。</li>
+</ul>
+<hr>
+<h2>10. 功率、熱與可靠度介面</h2>
+<h3>10.1 不再把功率預算直接相加</h3>
+<p>每個 tile 的額定功率不能無條件集中到單執行緒。融合前需取得：</p>
+<h1>$$
+\mathcal{C}_{\mathrm{power}}</h1>
+<p>(P_{\max},I_{\max},V_{\mathrm{range}},\tau_{\max}),
+$$</p>
+<p>以及：</p>
+<h1>$$
+\mathcal{C}_{\mathrm{thermal}}</h1>
+<p>(T_{\max},\Delta T_{\max},B_{\mathrm{th}},\tau_{\mathrm{cool}}).
+$$</p>
+<h3>10.2 系列分工</h3>
+<ul>
+<li><strong>DEO</strong>：選擇融合模式可使用的運作包絡；</li>
+<li><strong>DPCPS</strong>：提供電流、電壓與瞬態供電承諾；</li>
+<li><strong>DryCore</strong>：提供熱阻、冷卻與安全邊界；</li>
+<li><strong>SDMCA</strong>：提供模組位置與系統拓撲；</li>
+<li><strong>O-Chip</strong>：根據工作負載意圖決定是否請求融合；</li>
+<li><strong>SynCore Fusion Group</strong>：在證書範圍內執行。</li>
+</ul>
+<h3>10.3 熱輪換的限制</h3>
+<p>原稿提出「核心輪換讓熱核心休息」。在融合模式中，若依賴與狀態分布在多 tile，任意輪換會造成資料與狀態搬移。新版只允許：</p>
+<ul>
+<li>execution unit gating；</li>
+<li>bank-level throttling；</li>
+<li>steering bias；</li>
+<li>spare tile substitution；</li>
+<li>mode downgrade。</li>
+</ul>
+<p>而不是把正在執行的單執行緒每幾毫秒任意搬到另一組核心。</p>
+<h3>10.4 相變冷卻不是必要條件</h3>
+<p>液氮不屬於通用處理器產品路線。SynCore 必須先在一般封裝、冷板或兩相冷卻條件下成立。極端冷卻僅可作為實驗邊界，不得用來掩蓋架構本身的功耗問題。</p>
+<hr>
+<h2>11. 軟體與 ISA 合約</h2>
+<h3>11.1 透明模式</h3>
+<p>未修改應用可由硬體與 OS 自動選擇 F0–F2。透明模式不得改變：</p>
+<ul>
+<li>ISA 可見結果；</li>
+<li>memory model；</li>
+<li>exception order；</li>
+<li>debug semantics；</li>
+<li>timing-independent correctness。</li>
+</ul>
+<h3>11.2 提示模式</h3>
+<p>應用或 runtime 可提交：</p>
+<h1>$$
+\mathcal{H}</h1>
+<p>(
+q_{\mathrm{latency}},
+q_{\mathrm{throughput}},
+\tau_{\mathrm{phase}},
+p_{\mathrm{priority}},
+r_{\mathrm{preempt}},
+\epsilon_{\mathrm{energy}}
+).
+$$</p>
+<p>例如：</p>
+<ul>
+<li>下一階段為延遲敏感單執行緒；</li>
+<li>預計持續 $20\ \mathrm{ms}$；</li>
+<li>允許借用 3 個 tile；</li>
+<li>可被高優先級即時任務搶占。</li>
+</ul>
+<h3>11.3 編譯器協同</h3>
+<p>編譯器可提供：</p>
+<ul>
+<li>basic-block boundaries；</li>
+<li>dependency hints；</li>
+<li>code layout；</li>
+<li>likely long-latency loads；</li>
+<li>fusion-friendly regions；</li>
+<li>no-fuse regions；</li>
+<li>helper-thread candidates。</li>
+</ul>
+<p>但 v1.1 不要求新 ISA 才能開始模擬。</p>
+<h3>11.4 與 SynIR 的關係</h3>
+<p>SynCore v2.1 的 SynIR 可以標記某段程式偏好 Fusion Cluster，但 v1.1 不處理數位資料流與振盪器映射。本文只定義：</p>
+<p>$$
+\text{SynIR Region}
+\rightarrow
+\text{Fusion Eligibility}
+\rightarrow
+\text{F0／F1／F2／F3}.
+$$</p>
+<hr>
+<h2>12. 典型工作負載的重新評估</h2>
+<h3>12.1 舊遊戲與模擬器</h3>
+<p>原稿以特定遊戲宣稱數倍幀率提升。新版只保留它們作為候選基準，原因是：</p>
+<ul>
+<li>可能存在單一主執行緒；</li>
+<li>動態翻譯器可受益於大指令窗口和 cache；</li>
+<li>分支與 indirect branch 密集；</li>
+<li>幀時間具有延遲門檻。</li>
+</ul>
+<p>但性能可能受：</p>
+<ul>
+<li>遊戲引擎鎖；</li>
+<li>作業系統計時；</li>
+<li>GPU／driver；</li>
+<li>記憶體；</li>
+<li>模擬器 JIT；</li>
+<li>相容性同步；</li>
+</ul>
+<p>限制。不得預先宣稱 $2$–$6$ 倍。</p>
+<h3>12.2 即時音訊</h3>
+<p>低延遲音訊圖常受最長依賴鏈而非總 CPU 利用率限制。融合模式可能提高單一效果器鏈的 headroom，但其可行性要求：</p>
+<ul>
+<li>模式切換不可造成 dropout；</li>
+<li>p99／p999 延遲穩定；</li>
+<li>熱降頻可預測；</li>
+<li>OS 搶占與中斷可控。</li>
+</ul>
+<h3>12.3 編譯、資料庫與服務</h3>
+<p>這些工作負載常同時具有多執行緒與序列階段。Fusion Mode 應只在：</p>
+<ul>
+<li>link／serial pass；</li>
+<li>query coordinator；</li>
+<li>garbage collection critical section；</li>
+<li>transaction commit；</li>
+</ul>
+<p>等明確瓶頸區段啟用，而不是整個應用永久融合。</p>
+<h3>12.4 科學計算</h3>
+<p>分子動力學、氣候與 CFD 多數已有高度平行化路徑。不能因存在時間積分順序，就推論整個工作負載是單執行緒。SynCore 應以真實 profiling 找出：</p>
+<ul>
+<li>serial fraction；</li>
+<li>irregular kernels；</li>
+<li>reduction bottlenecks；</li>
+<li>control-heavy setup；</li>
+<li>sparse／pointer-heavy phases。</li>
+</ul>
+<hr>
+<h2>13. 驗證方法</h2>
+<h3>13.1 比較基線</h3>
+<p>至少比較：</p>
+<ul>
+<li>B0：單一窄核心；</li>
+<li>B1：同面積大亂序核心；</li>
+<li>B2：$G$ 個獨立核心；</li>
+<li>B3：異構 big／little＋執行緒遷移；</li>
+<li>B4：Core Fusion 類基線；</li>
+<li>B5：MorphCore 類基線；</li>
+<li>S1：SynCore F1；</li>
+<li>S2：SynCore F2；</li>
+<li>S3：SynCore F3。</li>
+</ul>
+<p>比較必須滿足相同或明確標示的：</p>
+<ul>
+<li>製程節點；</li>
+<li>面積；</li>
+<li>頻率；</li>
+<li>cache 容量；</li>
+<li>記憶體系統；</li>
+<li>功率限制；</li>
+<li>編譯器；</li>
+<li>workload input。</li>
+</ul>
+<h3>13.2 工作負載集合</h3>
+<ul>
+<li>SPEC CPU 類單執行緒基準；</li>
+<li>branch-heavy；</li>
+<li>pointer chasing；</li>
+<li>graph traversal；</li>
+<li>emulator／DBT microbenchmarks；</li>
+<li>audio DAG；</li>
+<li>legacy game logic synthetic trace；</li>
+<li>server serial phase；</li>
+<li>multiprogrammed mixes；</li>
+<li>high-TLP parallel suite。</li>
+</ul>
+<h3>13.3 指標</h3>
+<ul>
+<li>IPC；</li>
+<li>完成時間；</li>
+<li>p50／p95／p99 latency；</li>
+<li>branch MPKI；</li>
+<li>cache／TLB MPKI；</li>
+<li>MLP；</li>
+<li>Fusion Fabric traffic；</li>
+<li>transition latency；</li>
+<li>rollback rate；</li>
+<li>energy／task；</li>
+<li>peak power；</li>
+<li>temperature；</li>
+<li>system throughput；</li>
+<li>fairness；</li>
+<li>area；</li>
+<li>critical path／maximum frequency。</li>
+</ul>
+<h3>13.4 消融實驗</h3>
+<p>依序加入：</p>
+<ol>
+<li>共享前端；</li>
+<li>分散式 window；</li>
+<li>banked PRF；</li>
+<li>operand replication；</li>
+<li>enlarged load/store window；</li>
+<li>CWB；</li>
+<li>predictive mode control；</li>
+<li>power／thermal certificate。</li>
+</ol>
+<p>以辨識真正收益來源。</p>
+<hr>
+<h2>14. 實作路線</h2>
+<h3>V0：形式與 trace 模型</h3>
+<ul>
+<li>instruction DAG；</li>
+<li>ILP／MLP 上界；</li>
+<li>transition cost；</li>
+<li>thermal／power budget；</li>
+<li>workload phase detection。</li>
+</ul>
+<h3>V1：gem5 或同級週期模擬</h3>
+<p>先實作：</p>
+<ul>
+<li>2／4 tile fusion；</li>
+<li>F0／F1／F2；</li>
+<li>distributed window；</li>
+<li>operand network；</li>
+<li>global commit；</li>
+<li>CWB 的簡化模型。</li>
+</ul>
+<h3>V2：RTL microcluster</h3>
+<p>使用 RISC-V 或開放前端，建立：</p>
+<ul>
+<li>2 個可獨立 tile；</li>
+<li>共享／協作前端；</li>
+<li>banked register file；</li>
+<li>clustered ALU；</li>
+<li>精確 commit；</li>
+<li>mode switch。</li>
+</ul>
+<h3>V3：FPGA 原型</h3>
+<p>FPGA 主要驗證：</p>
+<ul>
+<li>功能正確性；</li>
+<li>mode transition；</li>
+<li>checkpoint／rollback；</li>
+<li>OS／runtime 介面；</li>
+<li>fault injection。</li>
+</ul>
+<p>FPGA 頻率和導線特性不能用來預測最終 ASIC IPC。</p>
+<h3>V4：實體設計與時序評估</h3>
+<p>進行：</p>
+<ul>
+<li>synthesis；</li>
+<li>place and route；</li>
+<li>timing closure；</li>
+<li>power analysis；</li>
+<li>area overhead；</li>
+<li>thermal map；</li>
+<li>Fusion Fabric congestion。</li>
+</ul>
+<h3>V5：小型測試晶片</h3>
+<p>只有在 V1–V4 證明：</p>
+<p>$$
+\Delta J_{\mathrm{end-to-end}}&gt;0
+$$</p>
+<p>且收益不是來自不公平面積或 cache 優勢時，才進入測試晶片。</p>
+<hr>
+<h2>15. 證據制度</h2>
+<h3>E0：概念與形式模型</h3>
+<p>本文目前狀態。</p>
+<h3>E1：軟體／trace 模型</h3>
+<p>公開：</p>
+<ul>
+<li>trace；</li>
+<li>成本模型；</li>
+<li>workload phase；</li>
+<li>模式策略。</li>
+</ul>
+<h3>E2：週期模擬</h3>
+<p>公開：</p>
+<ul>
+<li>simulator configuration；</li>
+<li>baseline；</li>
+<li>area／power model；</li>
+<li>raw results；</li>
+<li>confidence intervals。</li>
+</ul>
+<h3>E3：RTL／FPGA</h3>
+<p>公開：</p>
+<ul>
+<li>RTL 或可審查摘要；</li>
+<li>synthesis report；</li>
+<li>transition test；</li>
+<li>fault injection；</li>
+<li>correctness suite。</li>
+</ul>
+<h3>E4：測試晶片</h3>
+<p>公開：</p>
+<ul>
+<li>die／package；</li>
+<li>frequency；</li>
+<li>power；</li>
+<li>thermal；</li>
+<li>silicon bugs；</li>
+<li>reproducible benchmark。</li>
+</ul>
+<h3>E5：跨平台與第三方重現</h3>
+<p>由外部團隊重現核心結論。</p>
+<hr>
+<h2>16. 可證偽命題</h2>
+<h3>命題 H1：有限融合群組可提高部分單執行緒工作負載</h3>
+<p>在等面積、等功率或明確功率限制下，F2／F3 對至少一個預先註冊的工作負載集合，能顯著降低完成時間。</p>
+<p><strong>否證條件：</strong> 相對同面積大核與 big／little 基線，沒有穩定收益。</p>
+<h3>命題 H2：分級融合優於二態融合</h3>
+<p>F1／F2 能在部分工作負載上，以較低重組成本接近 F3 收益。</p>
+<p><strong>否證條件：</strong> F1／F2 始終被 F0 或 F3 支配。</p>
+<h3>命題 H3：跨 tile 依賴局部化是主要因素</h3>
+<p>locality-aware steering 顯著優於只做負載平衡的 steering。</p>
+<p><strong>否證條件：</strong> 兩者差異不顯著，或 locality 策略造成更差不平衡。</p>
+<h3>命題 H4：暖狀態緩衝可降低短階段融合成本</h3>
+<p>CWB 能降低 repeated phase 的進入／退出開銷。</p>
+<p><strong>否證條件：</strong> 保存與恢復能耗超過重新暖機收益。</p>
+<h3>命題 H5：預測控制必須勝過簡單遲滯控制</h3>
+<p>較複雜控制器只有在端到端收益與穩定性上顯著優於規則控制器時才值得採用。</p>
+<p><strong>否證條件：</strong> 簡單規則達到相同或更佳結果。</p>
+<h3>命題 H6：融合價值取決於整機而非 IPC</h3>
+<p>即使 IPC 上升，若系統吞吐、能耗、熱或公平性惡化，則該融合模式不合格。</p>
+<p><strong>否證條件：</strong> 以 IPC 單一指標便可穩定預測所有端到端收益。</p>
+<hr>
+<h2>17. 主要風險與失敗模式</h2>
+<table>
+<thead>
+<tr>
+<th>風險</th>
+<th>原因</th>
+<th>可能結果</th>
+<th>緩解</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>steering 瓶頸</td>
+<td>中央化分派延遲</td>
+<td>頻率下降</td>
+<td>階層式、分散式、區域化</td>
+</tr>
+<tr>
+<td>operand network 過熱</td>
+<td>跨 tile 值傳送</td>
+<td>能耗上升</td>
+<td>共置、複製、窄域 bypass</td>
+</tr>
+<tr>
+<td>global commit 複雜</td>
+<td>精確順序</td>
+<td>提交停滯</td>
+<td>ROB slices、watermark</td>
+</tr>
+<tr>
+<td>LSQ 擴展困難</td>
+<td>alias 與 replay</td>
+<td>時序／面積爆炸</td>
+<td>partition、predictor、限制群組</td>
+</tr>
+<tr>
+<td>模式切換過慢</td>
+<td>checkpoint／cache</td>
+<td>短任務無收益</td>
+<td>F1／F2、中間模式、遲滯</td>
+</tr>
+<tr>
+<td>失去 TLP 吞吐</td>
+<td>tile 被單執行緒占用</td>
+<td>系統性能下降</td>
+<td>OS 配額、opportunity cost</td>
+</tr>
+<tr>
+<td>熱點</td>
+<td>融合集中活動</td>
+<td>降頻</td>
+<td>DEO／DryCore 證書</td>
+</tr>
+<tr>
+<td>控制器誤判</td>
+<td>phase 不穩定</td>
+<td>震盪、回退</td>
+<td>calibration、simple fallback</td>
+</tr>
+<tr>
+<td>除錯困難</td>
+<td>分散式推測</td>
+<td>驗證成本高</td>
+<td>deterministic mode、trace、formal properties</td>
+</tr>
+<tr>
+<td>面積不公平</td>
+<td>額外融合結構</td>
+<td>假性能收益</td>
+<td>等面積比較</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>18. 與 SynCore v2.1 的正式接口</h2>
+<p>SynCore v1.1 在 v2.1 中對應：</p>
+<p>$$
+\text{Scalar Tiles}
++
+\text{Fusion Cluster}
++
+\text{Verification／Commit}.
+$$</p>
+<p>不包含：</p>
+<ul>
+<li>Digital Flow Array；</li>
+<li>Oscillator Compute Tile；</li>
+<li>Kuramoto 相位運算；</li>
+<li>跨晶片 CXL 融合；</li>
+<li>系統級 O-Chip 編排的完整規格。</li>
+</ul>
+<p>執行流程：</p>
+<p>$$
+\text{應用／SynIR 提示}
+\rightarrow
+\text{O-Chip／OS 決策}
+\rightarrow
+\text{DEO／DPCPS／DryCore 證書}
+\rightarrow
+\text{Fusion Mode Controller}
+\rightarrow
+\text{F0／F1／F2／F3}
+\rightarrow
+\text{精確提交或回退}.
+$$</p>
+<p>因此，v1.1 的成果應直接回填 v2.1 的 Fusion Cluster 章節，而不是形成第二條產品線。</p>
+<hr>
+<h2>19. 設計決策總表</h2>
+<table>
+<thead>
+<tr>
+<th>原始主張</th>
+<th>v1.1 判定</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>多核可以為單執行緒服務</td>
+<td>保留，但需專用可組合微架構</td>
+</tr>
+<tr>
+<td>4 核資源相加等於 4 倍以上單核</td>
+<td>取消</td>
+</tr>
+<tr>
+<td>所有 L1／暫存器直接合併</td>
+<td>改為 banked、分區與明確協議</td>
+</tr>
+<tr>
+<td>同時執行所有分支可消除誤判</td>
+<td>限定；只在成本可控時研究多路徑推測</td>
+</tr>
+<tr>
+<td>量子三態是硬體新邏輯</td>
+<td>取消，改成工程狀態機</td>
+</tr>
+<tr>
+<td>Q-Storage 可保存完整流水線並微秒恢復</td>
+<td>改為分級 checkpoint／warm state</td>
+</tr>
+<tr>
+<td>TMC 必須是 AI 君主控制器</td>
+<td>取消，改為可驗證模式控制器</td>
+</tr>
+<tr>
+<td>塔形與煙囪效應是必要硬體</td>
+<td>取消，移交封裝與 SDMCA</td>
+</tr>
+<tr>
+<td>錐形光刻是核心融合使能製程</td>
+<td>取消</td>
+</tr>
+<tr>
+<td>液氮／相變冷卻支撐神核</td>
+<td>非產品必要條件</td>
+</tr>
+<tr>
+<td>老遊戲必然提升數倍</td>
+<td>改為候選基準</td>
+</tr>
+<tr>
+<td>SynCore v1 是獨立現行主架構</td>
+<td>取消，改為 v2.1 的起源篇</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>20. 結論：從「單核至尊」到「動態資源粒度」</h2>
+<p>SynCore 最初以「神核」這個強烈名稱提出一個直覺：既然一顆晶片已經擁有大量核心，為何不能在單執行緒需要時，把部分資源集中起來？這個直覺值得保留，但不能由「資源存在」直接推導「資源可以無成本合併」。</p>
+<p>真正的核心融合必須面對：</p>
+<ul>
+<li>前端共同取指；</li>
+<li>分支狀態；</li>
+<li>指令 steering；</li>
+<li>跨 tile 依賴；</li>
+<li>register／operand transport；</li>
+<li>load/store ordering；</li>
+<li>精確提交；</li>
+<li>cache ownership；</li>
+<li>模式轉換；</li>
+<li>功率、熱與系統機會成本。</li>
+</ul>
+<p>因此，SynCore v1.1 的成熟命題不是：</p>
+<blockquote>
+<p>多核可以瞬間坍縮成一顆無敵單核。</p>
+</blockquote>
+<p>而是：</p>
+<blockquote>
+<p>處理器的核心粒度不必永久固定。若可組合性在微架構、互連、狀態、作業系統與安全控制中被共同設計，物理 tile 可以在獨立吞吐與融合單執行緒之間形成有限、可逆、可量測的動態異質性。</p>
+</blockquote>
+<p>這一命題仍然具有研究價值，但它的成敗只能由公平基線、端到端性能、能耗、熱、面積、切換成本與可重現性決定。</p>
+<p>SynCore v1.1 到此不再向外擴張。其後續工程工作，統一歸入 SynCore v2.1 的 Fusion Cluster 驗證路線。</p>
+<hr>
+<h2>參考文獻</h2>
+<ol>
+<li>E. Ipek, M. Kirman, N. Kirman, and J. F. Martínez, “Core Fusion: Accommodating Software Diversity in Chip Multiprocessors,” <em>Proceedings of ISCA</em>, 2007. DOI: 10.1145/1273440.1250686.</li>
+<li>C. Kim et al., “Composable Lightweight Processors,” <em>Proceedings of MICRO</em>, 2007.</li>
+<li>Khubaib et al., “MorphCore: An Energy-Efficient Microarchitecture for High Performance ILP and High Throughput TLP,” <em>Proceedings of MICRO</em>, 2012. DOI: 10.1109/MICRO.2012.36.</li>
+<li>M. S. S. B. Robatmili et al., “Scaling Power and Performance via Processor Composability,” University of Texas at Austin Technical Report TR-10-14, 2010.</li>
+<li>E. Ipek, M. Kirman, N. Kirman, and J. F. Martínez, “Retrospective: Core Fusion,” 2023.</li>
+<li>M. D. Hill and M. R. Marty, “Amdahl’s Law in the Multicore Era,” <em>Computer</em>, 2008. DOI: 10.1109/MC.2008.209.</li>
+<li>Neo.K and Aletheia, “SynCore v2.1: A Reconfigurable Fusion–Flow Computing Architecture,” EveMissLab, 2026.</li>
+</ol>
+<hr>
+<h2>附錄 A：最低公開資料包</h2>
+<p>若進入 E2 以上，最低公開：</p>
+<ul>
+<li>完整 simulator configuration；</li>
+<li>workload 與輸入；</li>
+<li>compiler flags；</li>
+<li>microarchitecture table；</li>
+<li>area／power assumptions；</li>
+<li>transition model；</li>
+<li>raw benchmark output；</li>
+<li>failure cases；</li>
+<li>random seeds；</li>
+<li>scripts；</li>
+<li>SHA-256；</li>
+<li>與 B0–B5 的公平性說明。</li>
+</ul>
+<h2>附錄 B：第一個最小實驗</h2>
+<p>第一個可執行研究節點：</p>
+<ol>
+<li>建立 2-tile baseline；</li>
+<li>實作 F0、F1、F2；</li>
+<li>不實作 F3；</li>
+<li>使用 8–12 個微基準；</li>
+<li>測量 transition cost；</li>
+<li>加入等面積大核；</li>
+<li>公開所有負結果。</li>
+</ol>
+<p>成功標準不是平均 IPC 最大，而是至少找到一個清楚的工作負載區域，使：</p>
+<p>$$
+\Delta T&lt;0,
+\qquad
+\Delta E\le0,
+\qquad
+\Delta A\text{ 可接受},
+\qquad
+\Delta \text{Correctness}=0.
+$$</p>
+<h2>附錄 C：術語使用規則</h2>
+<p>「神核」可以作為歷史名稱、產品暱稱或傳播語言；正式技術文獻中應使用：</p>
+<ul>
+<li>Fusion Group；</li>
+<li>Fusion Cluster；</li>
+<li>Fusion Mode；</li>
+<li>Fusion Execution Domain；</li>
+<li>Fusion Mode Controller。</li>
+</ul>
+<p>「量子態」「坍塌」「波函數」除非真的涉及量子硬體，不再作為 SynCore 數位微架構的物理術語。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/ccp-17.html">https://thisoneisneok.com/html/papers/ccp-17.html</a></footer>
+</body>
+</html>

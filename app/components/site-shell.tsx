@@ -8,6 +8,7 @@ import { canonical } from "../data/site";
 
 const navigation = [
   { href: "/", zh: "首頁", en: "Home" },
+  { href: "/papers", zh: "論文", en: "Papers" },
   { href: "/apps", zh: "應用", en: "Apps" },
   { href: "/mssp", zh: "MSSP", en: "MSSP" },
   { href: "/lean4", zh: "Lean4", en: "Lean4" },

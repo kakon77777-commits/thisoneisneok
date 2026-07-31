@@ -1,0 +1,1664 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>語法—語意—效果：程式語言的三層存在結構 | Neo.K</title>
+<meta name="description" content="前兩篇分別提出：程式語言不等於文字，文字只是程式結構的一種投影；符號也不等於靜態字元，而是具有輸入、輸出、前後條件、效果、授權、驗證與組合規則的受治理算子。本篇進一步建立程式語言的三層存在結構：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pu-2-03.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PU</strong><span>程式宇宙基礎</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PU-2-03</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-27</span></div><div><b>作者</b><span>Neo.K with Aletheia</span></div><div><b>狀態</b><span>初版完成</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pu-2-03.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>語法—語意—效果：程式語言的三層存在結構</h1>
+<h2>Syntax, Semantics, and Effects: The Three-Layer Ontology of Programming Languages</h2>
+<p><strong>論文編號：</strong> PU-2-03<br><strong>系列：</strong>「程式宇宙書系」第 2 冊《程式語言的本質》<br><strong>作者：</strong> Neo.K with Aletheia<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>版本：</strong> v0.1<br><strong>日期：</strong> 2026 年 7 月 27 日  </p>
+<hr>
+<h2>摘要</h2>
+<p>前兩篇分別提出：程式語言不等於文字，文字只是程式結構的一種投影；符號也不等於靜態字元，而是具有輸入、輸出、前後條件、效果、授權、驗證與組合規則的受治理算子。本篇進一步建立程式語言的三層存在結構：</p>
+<h1>$$
+\boxed{
+\mathcal L</h1>
+<p>\left\langle
+\mathcal Y,
+\mathcal M,
+\mathcal E
+\right\rangle
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathcal Y$：Syntax，語法層；</li>
+<li>$\mathcal M$：Semantics，語意層；</li>
+<li>$\mathcal E$：Effects，效果層。</li>
+</ul>
+<p>本文核心命題是：</p>
+<p>$$
+\boxed{
+\text{Syntax}
+\neq
+\text{Semantics}
+\neq
+\text{Effects}
+}
+$$</p>
+<p>語法回答「哪些結構可以形成」；語意回答「該結構在問題世界中代表什麼」；效果回答「當結構被執行時，實際改變了哪些數位、制度或物理世界狀態」。</p>
+<p>本文將語法定義為合法結構形成空間：</p>
+<h1>$$
+\mathcal Y</h1>
+<p>\left\langle
+\Sigma,
+G,
+A,
+B
+\right\rangle
+$$</p>
+<p>其中 $\Sigma$ 為符號集合，$G$ 為形成規則，$A$ 為抽象結構，$B$ 為局部邊界與作用域規則。語法合法只表示某一結構能被語言接受，不表示其名稱已解析、世界關係成立、權限合法或效果可承擔。</p>
+<p>語意則被定義為從語法結構到問題世界概念、狀態與規則的映射：</p>
+<h1>$$
+\llbracket y \rrbracket_{\Gamma,W}</h1>
+<p>m
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$y$：語法結構；</li>
+<li>$\Gamma$：型別、作用域、身份、權限與上下文環境；</li>
+<li>$W$：問題世界；</li>
+<li>$m$：語意結構。</li>
+</ul>
+<p>同一語法在不同上下文與問題世界下，可能具有不同語意：</p>
+<p>$$
+\llbracket y \rrbracket_{\Gamma_1,W_1}
+\neq
+\llbracket y \rrbracket_{\Gamma_2,W_2}
+$$</p>
+<p>因此，語法名稱不是語意本身。</p>
+<p>效果則被定義為語意結構在 Runtime 中造成的可觀測世界差分：</p>
+<h1>$$
+\boxed{
+\mathcal E(m,R,S_t)</h1>
+<p>\left\langle
+S_{t+1},
+Events,
+ExternalEffects,
+Evidence,
+Residual
+\right\rangle
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$R$：Runtime 與執行環境；</li>
+<li>$S_t$：執行前狀態；</li>
+<li>$S_{t+1}$：執行後權威狀態；</li>
+<li>$Events$：形成的事件；</li>
+<li>$ExternalEffects$：外部數位或物理效果；</li>
+<li>$Evidence$：可驗證證據；</li>
+<li>$Residual$：未完成、不確定、不可逆或補償殘差。</li>
+</ul>
+<p>本文提出三層合法性：</p>
+<ol>
+<li><strong>語法合法性</strong>：結構可被形成與解析；</li>
+<li><strong>語意合法性</strong>：結構指向有效世界身份、規則與狀態；</li>
+<li><strong>效果合法性</strong>：實際世界差分在權限、責任、風險與證據上可接受。</li>
+</ol>
+<p>形式上：</p>
+<p>$$
+\boxed{
+Valid_{\mathcal Y}
+\not\Rightarrow
+Valid_{\mathcal M}
+\not\Rightarrow
+Valid_{\mathcal E}
+}
+$$</p>
+<p>一段程式可以語法正確、型別正確、甚至語意明確，卻因未授權、外部結果不可驗證、效果不可逆或違反治理邊界，而仍不能合法執行。</p>
+<p>本文進一步建立「語意不完整」與「效果不完整」概念。傳統編譯器通常在語法與型別層拒絕錯誤，但對下列情形缺乏直接表示：</p>
+<ul>
+<li>名稱指向錯誤世界實體；</li>
+<li>狀態版本已過期；</li>
+<li>函式具有隱藏外部效果；</li>
+<li>權限只在 Runtime 外部檢查；</li>
+<li>呼叫成功不代表外部效果完成；</li>
+<li>部分成功與結果未知無法進入型別；</li>
+<li>回滾不能撤回世界影響。</li>
+</ul>
+<p>本文因此提出擴展判定：</p>
+<p>$$
+\Gamma;W;P;S
+\vdash
+y
+:
+T
+!
+\epsilon
+\triangleright
+Q
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$T$：值或結構型別；</li>
+<li>$\epsilon$：效果簽章；</li>
+<li>$Q$：執行後保證與證據條件；</li>
+<li>$P$：權限與授權環境；</li>
+<li>$S$：前置世界狀態。</li>
+</ul>
+<p>此判定比傳統：</p>
+<p>$$
+\Gamma\vdash y:T
+$$</p>
+<p>多保存世界、權限、狀態、效果與後置證據。</p>
+<p>本文區分六類效果：</p>
+<ol>
+<li><strong>值效果</strong>：產生新值；</li>
+<li><strong>狀態效果</strong>：讀寫權威狀態；</li>
+<li><strong>事件效果</strong>：建立或發布已發生事實；</li>
+<li><strong>外部效果</strong>：呼叫外部數位服務；</li>
+<li><strong>物理效果</strong>：作用於設備、資源與實體環境；</li>
+<li><strong>治理效果</strong>：授權、撤銷、批准、改規則與改責任。</li>
+</ol>
+<p>本文指出，效果不應只被理解為「副作用」。副作用一詞常暗示效果是純計算以外的次要污染，但在真實程式中，付款、寄信、部署、授權、控制設備與記錄研究證據，往往正是程式目的本身。因此本文提出：</p>
+<p>$$
+\boxed{
+\text{Effect}
+\neq
+\text{Accidental Side Effect}
+}
+$$</p>
+<p>效果是程式如何與世界耦合的正式結構。</p>
+<p>本文亦建立「效果保持」與「效果提升」。當高階語意被編譯到低階表示時，效果資訊不應消失。若某一高階節點標記為不可逆外部效果，任何低階生成碼、工作流與 Runtime 都應保留其授權、冪等、補償與證據要求。相反地，低階分析發現的外部寫入、網路呼叫與權限提升，也應回饋至高階語意與視圖。</p>
+<p>本文使用條件判斷、資料庫更新、付款、網站發布、AI Agent 工具、醫療處置與物理控制等案例，說明相同語法在不同語意與效果環境中的差異。本文最後提出可證偽研究綱領，包括語法—語意錯配率、語意—效果漂移率、效果簽章完整度、隱藏效果事故率、權限與效果聯合檢查、效果保持、部分成功型別化、Runtime 觀測回饋及 AI 生成程式的三層驗證。</p>
+<p>本文為下一篇〈意圖中介表示〉建立語言骨架：自然意圖必須先被轉換為可驗證語意結構，再產生明示效果與多重投影，而不能直接從一句話跳到不可逆世界行動。</p>
+<p><strong>關鍵詞：</strong> 語法、語意、效果系統、程式語意學、世界差分、權限、後置條件、效果保持</p>
+<hr>
+<h2>Abstract</h2>
+<p>This paper develops a three-layer ontology of programming languages:</p>
+<h1>$$
+\mathcal L</h1>
+<p>\left\langle
+\mathcal Y,
+\mathcal M,
+\mathcal E
+\right\rangle
+$$</p>
+<p>Syntax determines which structures can be formed. Semantics binds those structures to problem-world concepts, identities, states, and rules. Effects describe the actual digital, institutional, or physical world differences produced by execution.</p>
+<p>The paper introduces three levels of validity, an extended typing and effect judgment, six classes of effects, effect preservation across compilation, and bidirectional feedback between high-level semantics and runtime-observed effects.</p>
+<p><strong>Keywords:</strong> syntax, semantics, effects, effect systems, world difference, programming language ontology</p>
+<hr>
+<h1>一、問題的提出：能被解析，不代表它真的有意義</h1>
+<p>例如：</p>
+<pre><code class="language-python">account.close()
+</code></pre>
+<p>這段文字可能：</p>
+<ul>
+<li>語法合法；</li>
+<li>名稱解析成功；</li>
+<li>型別檢查通過；</li>
+<li>Runtime 可呼叫。</li>
+</ul>
+<p>但仍不知道：</p>
+<ul>
+<li><code>account</code> 指向哪一個帳號；</li>
+<li>關閉是暫停、停用還是永久刪除；</li>
+<li>誰有權執行；</li>
+<li>是否需通知；</li>
+<li>是否保留歷史；</li>
+<li>是否可恢復；</li>
+<li>是否影響其他服務；</li>
+<li>是否已產生法律與制度效果。</li>
+</ul>
+<p>因此，程式語言不能只在語法層理解程式。</p>
+<hr>
+<h1>二、三層存在結構</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+\mathcal L</h1>
+<p>\left\langle
+\mathcal Y,
+\mathcal M,
+\mathcal E
+\right\rangle
+}
+$$</p>
+<h2>2.1 語法層 $\mathcal Y$</h2>
+<p>決定合法構造。</p>
+<h2>2.2 語意層 $\mathcal M$</h2>
+<p>決定構造在問題世界中的身份、關係與規則。</p>
+<h2>2.3 效果層 $\mathcal E$</h2>
+<p>決定執行後實際產生的狀態、事件、外部效果與證據。</p>
+<h2>2.4 三層關係</h2>
+<p>$$
+y
+\xrightarrow{\llbracket\cdot\rrbracket}
+m
+\xrightarrow{Run}
+\Delta W
+$$</p>
+<p>文字或視覺結構先被解釋成語意，再由 Runtime 造成世界差分。</p>
+<hr>
+<h1>三、語法層：合法形成不等於合法世界</h1>
+<p>本文將語法層定義為：</p>
+<h1>$$
+\mathcal Y</h1>
+<p>\left\langle
+\Sigma,
+G,
+A,
+B
+\right\rangle
+$$</p>
+<h2>3.1 符號集合 $\Sigma$</h2>
+<p>包括：</p>
+<ul>
+<li>token；</li>
+<li>關鍵字；</li>
+<li>名稱；</li>
+<li>常值；</li>
+<li>操作符；</li>
+<li>節點種類；</li>
+<li>結構標籤。</li>
+</ul>
+<h2>3.2 形成規則 $G$</h2>
+<p>決定：</p>
+<ul>
+<li>哪些節點可包含哪些子節點；</li>
+<li>哪些操作符具有何種參數；</li>
+<li>哪些結構可嵌套；</li>
+<li>哪些語法具有優先順序。</li>
+</ul>
+<h2>3.3 抽象結構 $A$</h2>
+<p>語法經解析後形成：</p>
+<ul>
+<li>AST；</li>
+<li>節點圖；</li>
+<li>規則樹；</li>
+<li>工作流；</li>
+<li>狀態圖；</li>
+<li>結構化表單。</li>
+</ul>
+<h2>3.4 局部邊界 $B$</h2>
+<p>包括：</p>
+<ul>
+<li>作用域；</li>
+<li>名稱可見性；</li>
+<li>模組；</li>
+<li>區塊；</li>
+<li>節點所有權；</li>
+<li>局部參照。</li>
+</ul>
+<h2>3.5 語法合法性</h2>
+<p>$$
+Valid_{\mathcal Y}(y)
+$$</p>
+<p>只表示 $y$ 屬於語言可形成結構。</p>
+<p>它不保證：</p>
+<ul>
+<li>名稱已正確綁定；</li>
+<li>型別有效；</li>
+<li>世界狀態允許；</li>
+<li>權限存在；</li>
+<li>效果安全；</li>
+<li>目的合理。</li>
+</ul>
+<hr>
+<h1>四、語法錯誤與結構錯誤</h1>
+<h2>4.1 表面語法錯誤</h2>
+<p>例如：</p>
+<ul>
+<li>括號未閉合；</li>
+<li>關鍵字錯誤；</li>
+<li>節點缺失；</li>
+<li>非法標點；</li>
+<li>不合法縮排。</li>
+</ul>
+<h2>4.2 結構語法錯誤</h2>
+<p>即使字元可解析，結構也可能不完整：</p>
+<ul>
+<li>行動缺少目標；</li>
+<li>狀態轉移沒有來源；</li>
+<li>事件沒有身份；</li>
+<li>工作流沒有終止；</li>
+<li>效果節點沒有證據出口。</li>
+</ul>
+<h2>4.3 未完成結構</h2>
+<p>未完成程式可用 Hole 表示：</p>
+<p>$$
+\Box_T
+$$</p>
+<p>Hole 可以攜帶：</p>
+<ul>
+<li>預期型別；</li>
+<li>世界位置；</li>
+<li>需要的效果；</li>
+<li>可用權限；</li>
+<li>未決問題。</li>
+</ul>
+<h2>4.4 語法應容納形成過程</h2>
+<p>成熟語言不應只接受完整與錯誤二分，而應支援：</p>
+<pre><code class="language-text">draft
+incomplete
+unresolved
+ambiguous
+requires-binding
+</code></pre>
+<hr>
+<h1>五、語意層：結構如何指向世界</h1>
+<p>語意映射可表示為：</p>
+<h1>$$
+\llbracket y \rrbracket_{\Gamma,W}</h1>
+<p>m
+$$</p>
+<h2>5.1 環境 $\Gamma$</h2>
+<p>環境不只包含型別與變數，也包括：</p>
+<ul>
+<li>身份；</li>
+<li>作用域；</li>
+<li>模組責任；</li>
+<li>契約；</li>
+<li>權限；</li>
+<li>規則版本；</li>
+<li>資料來源；</li>
+<li>時間；</li>
+<li>Runtime 能力。</li>
+</ul>
+<h2>5.2 問題世界 $W$</h2>
+<p>同一語法只有在某一問題世界中才具有具體意義。</p>
+<p>例如 <code>approve()</code> 可能表示：</p>
+<ul>
+<li>批准文件；</li>
+<li>批准付款；</li>
+<li>批准醫療處置；</li>
+<li>批准部署；</li>
+<li>批准 Agent 行動。</li>
+</ul>
+<h2>5.3 綁定</h2>
+<p>語意綁定包括：</p>
+<ul>
+<li>名稱到身份；</li>
+<li>型別到世界類別；</li>
+<li>操作到責任模組；</li>
+<li>規則到權威來源；</li>
+<li>狀態到合法生命週期；</li>
+<li>效果到外部對象。</li>
+</ul>
+<h2>5.4 語意不是註解</h2>
+<p>註解可補充說明，但若語意只存在於註解與作者腦中，編譯器、AI 與 Runtime 就無法驗證。</p>
+<hr>
+<h1>六、指稱、操作與規範語意</h1>
+<h2>6.1 指稱語意</h2>
+<p>描述結構指向什麼數學或計算對象。</p>
+<h1>$$
+\llbracket e \rrbracket</h1>
+<p>v
+$$</p>
+<h2>6.2 操作語意</h2>
+<p>描述程式如何一步步轉移：</p>
+<p>$$
+\langle e,S\rangle
+\rightarrow
+\langle e&#39;,S&#39;\rangle
+$$</p>
+<h2>6.3 規範語意</h2>
+<p>描述：</p>
+<ul>
+<li>誰可以執行；</li>
+<li>哪些狀態合法；</li>
+<li>哪些效果禁止；</li>
+<li>哪些結果需要批准；</li>
+<li>哪些主體有申訴權。</li>
+</ul>
+<h2>6.4 世界語意</h2>
+<p>本文主張完整程式語意應同時包含：</p>
+<h1>$$
+\boxed{
+Meaning</h1>
+<p>Denotation
++
+OperationalBehavior
++
+NormativePosition
++
+WorldBinding
+}
+$$</p>
+<p>只描述值與步驟，仍不足以表示真實系統。</p>
+<hr>
+<h1>七、上下文依賴</h1>
+<h2>7.1 同語法異語意</h2>
+<p>$$
+\llbracket y \rrbracket_{\Gamma_1,W_1}
+\neq
+\llbracket y \rrbracket_{\Gamma_2,W_2}
+$$</p>
+<p>例如：</p>
+<pre><code class="language-python">user.delete()
+</code></pre>
+<p>在不同系統中可能表示：</p>
+<ul>
+<li>刪除 UI 草稿；</li>
+<li>軟刪除帳號；</li>
+<li>停用登入；</li>
+<li>匿名化個資；</li>
+<li>永久清除身份。</li>
+</ul>
+<h2>7.2 上下文必須可見</h2>
+<p>需要知道：</p>
+<ul>
+<li>語言版本；</li>
+<li>套件版本；</li>
+<li>作用域；</li>
+<li>schema；</li>
+<li>權限；</li>
+<li>部署環境；</li>
+<li>特性開關；</li>
+<li>規則版本。</li>
+</ul>
+<h2>7.3 隱含上下文風險</h2>
+<p>同一程式碼在測試與生產環境造成不同效果，通常不是語法差異，而是上下文與 Runtime 差異。</p>
+<hr>
+<h1>八、語意合法性</h1>
+<p>本文定義：</p>
+<p>$$
+Valid_{\mathcal M}(m)
+\iff
+Bound(m)
+\land
+Typed(m)
+\land
+StateValid(m)
+\land
+RuleConsistent(m)
+\land
+ResponsibilityLocated(m)
+$$</p>
+<h2>8.1 身份綁定</h2>
+<p>引用對象必須存在或被正式標示為未決。</p>
+<h2>8.2 型別合法</h2>
+<p>不只資料型別，也包括：</p>
+<ul>
+<li>單位；</li>
+<li>幣別；</li>
+<li>角色；</li>
+<li>狀態；</li>
+<li>事件；</li>
+<li>證據類型。</li>
+</ul>
+<h2>8.3 狀態合法</h2>
+<p>操作必須符合當前生命週期與版本。</p>
+<h2>8.4 規則一致</h2>
+<p>不得在未解決衝突下同時滿足互斥規則。</p>
+<h2>8.5 責任位置</h2>
+<p>必須知道哪個模組與主體對語意判定負責。</p>
+<hr>
+<h1>九、語意等價</h1>
+<p>兩個語法結構 $y_1,y_2$ 可有：</p>
+<p>$$
+y_1
+\neq
+y_2
+$$</p>
+<p>但：</p>
+<p>$$
+\llbracket y_1 \rrbracket_{\Gamma,W}
+\equiv
+\llbracket y_2 \rrbracket_{\Gamma,W}
+$$</p>
+<h2>9.1 重構</h2>
+<p>變數重命名、控制流改寫或抽象封裝，可能保持語意。</p>
+<h2>9.2 語意等價的條件</h2>
+<p>需比較：</p>
+<ul>
+<li>世界身份；</li>
+<li>狀態前置；</li>
+<li>規則；</li>
+<li>輸入與輸出；</li>
+<li>效果；</li>
+<li>失敗；</li>
+<li>權限；</li>
+<li>證據。</li>
+</ul>
+<h2>9.3 僅值等價不足</h2>
+<p>兩個程式回傳同一值，但一個寄信、一個不寄信，不能視為完整語意等價。</p>
+<hr>
+<h1>十、效果層：程式如何改變世界</h1>
+<p>本文將效果定義為：</p>
+<h1>$$
+\boxed{
+\mathcal E(m,R,S_t)</h1>
+<p>\left\langle
+S_{t+1},
+Events,
+ExternalEffects,
+Evidence,
+Residual
+\right\rangle
+}
+$$</p>
+<h2>10.1 狀態差分</h2>
+<h1>$$
+\Delta S</h1>
+<h2>S_{t+1}</h2>
+<p>S_t
+$$</p>
+<p>包括權威狀態的建立、更新、終止、關係變化與版本變更。</p>
+<h2>10.2 事件</h2>
+<p>執行可能形成：</p>
+<ul>
+<li>ActionAccepted；</li>
+<li>PaymentAuthorized；</li>
+<li>DeploymentStarted；</li>
+<li>PermissionRevoked；</li>
+<li>TreatmentAdministered。</li>
+</ul>
+<h2>10.3 外部效果</h2>
+<p>包括：</p>
+<ul>
+<li>網路呼叫；</li>
+<li>寄送訊息；</li>
+<li>金流；</li>
+<li>發布；</li>
+<li>寫入其他系統；</li>
+<li>控制設備。</li>
+</ul>
+<h2>10.4 證據</h2>
+<p>效果需具有：</p>
+<ul>
+<li>回執；</li>
+<li>事件身份；</li>
+<li>狀態版本；</li>
+<li>簽章；</li>
+<li>感測確認；</li>
+<li>人類接受。</li>
+</ul>
+<h2>10.5 殘差</h2>
+<p>Residual 表示：</p>
+<ul>
+<li>結果未知；</li>
+<li>部分成功；</li>
+<li>不可逆影響；</li>
+<li>補償未完成；</li>
+<li>未被模型完整表示的後果。</li>
+</ul>
+<hr>
+<h1>十一、效果不只是副作用</h1>
+<h2>11.1 副作用語言</h2>
+<p>在純函數中心語言中，狀態與 I/O 常被稱為 side effects。</p>
+<h2>11.2 真實目的常是效果</h2>
+<p>對許多系統而言，真正目的就是：</p>
+<ul>
+<li>完成付款；</li>
+<li>更新權限；</li>
+<li>發布網站；</li>
+<li>寄送通知；</li>
+<li>控制設備；</li>
+<li>保存研究證據。</li>
+</ul>
+<h2>11.3 正式命題</h2>
+<p>$$
+\boxed{
+\text{Effect}
+\neq
+\text{Accidental Side Effect}
+}
+$$</p>
+<p>效果不是純計算旁邊的污染，而是程式與世界耦合的核心。</p>
+<h2>11.4 純計算與世界耦合</h2>
+<p>純計算可被視為效果鏈中的可推理內部區域；效果邊界則負責真正世界差分。</p>
+<hr>
+<h1>十二、六類效果</h1>
+<h2>12.1 值效果</h2>
+<p>產生新值，但不修改權威世界。</p>
+<h2>12.2 狀態效果</h2>
+<p>讀取、建立或修改權威狀態。</p>
+<h2>12.3 事件效果</h2>
+<p>形成、發布或確認領域事件。</p>
+<h2>12.4 外部數位效果</h2>
+<p>作用於：</p>
+<ul>
+<li>第三方 API；</li>
+<li>郵件；</li>
+<li>金流；</li>
+<li>雲端服務；</li>
+<li>外部資料庫。</li>
+</ul>
+<h2>12.5 物理效果</h2>
+<p>作用於：</p>
+<ul>
+<li>馬達；</li>
+<li>門鎖；</li>
+<li>機器人；</li>
+<li>感測器；</li>
+<li>能源；</li>
+<li>生產設備。</li>
+</ul>
+<h2>12.6 治理效果</h2>
+<p>改變：</p>
+<ul>
+<li>權限；</li>
+<li>規則；</li>
+<li>身份；</li>
+<li>委任；</li>
+<li>責任；</li>
+<li>申訴位置；</li>
+<li>可用行動空間。</li>
+</ul>
+<hr>
+<h1>十三、效果簽章</h1>
+<p>本文提出：</p>
+<h1>$$
+\epsilon</h1>
+<p>\left\langle
+Read,
+Write,
+Emit,
+Call,
+Physical,
+Governance,
+Reversibility,
+Evidence
+\right\rangle
+$$</p>
+<h2>13.1 Read</h2>
+<p>讀取哪些資料與狀態，是否敏感。</p>
+<h2>13.2 Write</h2>
+<p>修改哪些權威狀態。</p>
+<h2>13.3 Emit</h2>
+<p>產生哪些事件。</p>
+<h2>13.4 Call</h2>
+<p>呼叫哪些外部系統。</p>
+<h2>13.5 Physical</h2>
+<p>是否可能造成物理效果。</p>
+<h2>13.6 Governance</h2>
+<p>是否改變權限、規則與責任。</p>
+<h2>13.7 Reversibility</h2>
+<p>效果是：</p>
+<ul>
+<li>可精確回復；</li>
+<li>數位可回滾；</li>
+<li>可補償；</li>
+<li>只能說明；</li>
+<li>不可逆。</li>
+</ul>
+<h2>13.8 Evidence</h2>
+<p>完成效果需提供什麼證據。</p>
+<hr>
+<h1>十四、擴展語言判定</h1>
+<p>傳統型別判定：</p>
+<p>$$
+\Gamma
+\vdash
+y:T
+$$</p>
+<p>本文擴展為：</p>
+<p>$$
+\boxed{
+\Gamma;W;P;S
+\vdash
+y
+:
+T
+!
+\epsilon
+\triangleright
+Q
+}
+$$</p>
+<h2>14.1 $\Gamma$</h2>
+<p>名稱、型別、身份與作用域環境。</p>
+<h2>14.2 $W$</h2>
+<p>問題世界與規則版本。</p>
+<h2>14.3 $P$</h2>
+<p>主體、權限、委任與批准環境。</p>
+<h2>14.4 $S$</h2>
+<p>執行前世界狀態。</p>
+<h2>14.5 $T$</h2>
+<p>值、事件、狀態或證據型別。</p>
+<h2>14.6 $\epsilon$</h2>
+<p>效果簽章。</p>
+<h2>14.7 $Q$</h2>
+<p>執行後保證，包括狀態、事件、證據與殘差條件。</p>
+<hr>
+<h1>十五、三層合法性</h1>
+<h2>15.1 語法合法</h2>
+<p>$$
+Valid_{\mathcal Y}(y)
+$$</p>
+<h2>15.2 語意合法</h2>
+<p>$$
+Valid_{\mathcal M}
+\left(
+\llbracket y\rrbracket
+\right)
+$$</p>
+<h2>15.3 效果合法</h2>
+<p>$$
+Valid_{\mathcal E}
+\left(
+\epsilon,
+P,
+S,
+B
+\right)
+$$</p>
+<p>其中 $B$ 是系統責任與安全邊界。</p>
+<h2>15.4 不可推出</h2>
+<p>$$
+\boxed{
+Valid_{\mathcal Y}
+\not\Rightarrow
+Valid_{\mathcal M}
+\not\Rightarrow
+Valid_{\mathcal E}
+}
+$$</p>
+<h2>15.5 執行門檻</h2>
+<p>只有三層均成立，且必要人類選擇完成後，程式才應取得實際執行權。</p>
+<hr>
+<h1>十六、效果合法性</h1>
+<p>本文定義：</p>
+<p>$$
+Valid_{\mathcal E}(\epsilon)
+\iff
+Authorized
+\land
+Bounded
+\land
+Observable
+\land
+RecoverableOrAccepted
+\land
+EvidenceDefined
+$$</p>
+<h2>16.1 授權</h2>
+<p>主體是否可產生此效果。</p>
+<h2>16.2 有界</h2>
+<p>影響是否位於明示作用域、資源與時間範圍。</p>
+<h2>16.3 可觀測</h2>
+<p>是否能確認效果已發生或未發生。</p>
+<h2>16.4 可恢復或已接受</h2>
+<p>可回復、可補償，或已經過必要主體明示接受不可逆性。</p>
+<h2>16.5 證據</h2>
+<p>成功、失敗與未知必須具有可判定證據。</p>
+<hr>
+<h1>十七、效果組合</h1>
+<p>若：</p>
+<p>$$
+y_1:T_1!\epsilon_1
+$$</p>
+<p>以及：</p>
+<p>$$
+y_2:T_2!\epsilon_2
+$$</p>
+<p>其複合效果不是簡單集合相加。</p>
+<h2>17.1 順序</h2>
+<p>$$
+\epsilon_2\circ\epsilon_1
+$$</p>
+<p>可能不同於：</p>
+<p>$$
+\epsilon_1\circ\epsilon_2
+$$</p>
+<h2>17.2 效果依賴</h2>
+<p>第二效果可能依賴第一效果的證據或狀態。</p>
+<h2>17.3 效果衝突</h2>
+<p>例如：</p>
+<ul>
+<li>寫入後刪除；</li>
+<li>授權後撤銷；</li>
+<li>發布後回滾；</li>
+<li>付款後取消。</li>
+</ul>
+<h2>17.4 效果摘要</h2>
+<p>複合節點應推導：</p>
+<ul>
+<li>整體讀寫集合；</li>
+<li>外部服務；</li>
+<li>不可逆節點；</li>
+<li>權限聯集；</li>
+<li>失敗聯集；</li>
+<li>補償順序；</li>
+<li>證據鏈。</li>
+</ul>
+<hr>
+<h1>十八、效果多態與效果限制</h1>
+<h2>18.1 效果多態</h2>
+<p>高階函式可以接受不同效果算子，但仍保留效果參數：</p>
+<p>$$
+map
+:
+(A\rightarrow B!\epsilon)
+\rightarrow
+List(A)
+\rightarrow
+List(B)!\epsilon^\ast
+$$</p>
+<h2>18.2 效果限制</h2>
+<p>某環境可限定：</p>
+<pre><code class="language-text">pure-only
+read-only
+no-external-call
+no-governance-effect
+human-approval-required
+</code></pre>
+<h2>18.3 沙盒</h2>
+<p>沙盒不是只隔離程序，也應限制效果能力。</p>
+<h2>18.4 Agent 工具環境</h2>
+<p>Agent 的工具集合可視為其可用效果代數，但真正可執行集合仍受權限、預算與人類批准限制。</p>
+<hr>
+<h1>十九、隱藏效果</h1>
+<h2>19.1 名稱無法顯示效果</h2>
+<pre><code class="language-python">save()
+process()
+execute()
+update()
+</code></pre>
+<p>可能隱藏完全不同世界影響。</p>
+<h2>19.2 Getter 也可能有效果</h2>
+<p>一個看似讀取的方法可能：</p>
+<ul>
+<li>觸發網路；</li>
+<li>寫快取；</li>
+<li>記錄追蹤；</li>
+<li>更新最後存取時間；</li>
+<li>產生費用。</li>
+</ul>
+<h2>19.3 隱藏效果的後果</h2>
+<ul>
+<li>測試不穩定；</li>
+<li>重試危險；</li>
+<li>權限越界；</li>
+<li>難以並行；</li>
+<li>無法預覽世界差分；</li>
+<li>AI 誤用工具。</li>
+</ul>
+<h2>19.4 效果透明原則</h2>
+<p>高風險外部、物理與治理效果必須能在結構、簽章或可查詢元資料中被識別。</p>
+<hr>
+<h1>二十、效果保持</h1>
+<h2>20.1 高階到低階</h2>
+<p>設高階結構 $h$ 被降低為低階表示 $l$：</p>
+<p>$$
+Lower(h)=l
+$$</p>
+<p>效果保持要求：</p>
+<p>$$
+Effects(l)
+\succeq
+Effects(h)
+$$</p>
+<p>也就是低階表示不能遺失高階已知的重要效果、權限與風險。</p>
+<h2>20.2 不可逆效果保持</h2>
+<p>若高階節點標記：</p>
+<pre><code class="language-text">irreversible
+requires-approval
+external-evidence-required
+</code></pre>
+<p>生成的程式碼、工作流與部署設定都必須保存這些要求。</p>
+<h2>20.3 失敗保持</h2>
+<p>高階語意中的：</p>
+<ul>
+<li>結果未知；</li>
+<li>部分成功；</li>
+<li>補償；</li>
+<li>人工接管；</li>
+</ul>
+<p>不能在低階投影中被壓成普通例外或布林值。</p>
+<h2>20.4 證據保持</h2>
+<p>高階完成條件必須映射到實際可觀測證據。</p>
+<h2>20.5 語意優化的限制</h2>
+<p>編譯器可重排、合併或消除純計算，但涉及外部效果時，需證明效果順序與觀測結果保持。</p>
+<hr>
+<h1>二十一、效果提升與 Runtime 回饋</h1>
+<h2>21.1 靜態宣告可能不完整</h2>
+<p>第三方套件、動態載入與反射可能引入未宣告效果。</p>
+<h2>21.2 Runtime 觀測</h2>
+<p>系統可觀測：</p>
+<ul>
+<li>真實資料寫入；</li>
+<li>網路呼叫；</li>
+<li>權限使用；</li>
+<li>事件發布；</li>
+<li>物理命令；</li>
+<li>延遲與失敗。</li>
+</ul>
+<h2>21.3 效果提升</h2>
+<p>若 Runtime 發現：</p>
+<p>$$
+ObservedEffects(y)
+\supset
+DeclaredEffects(y)
+$$</p>
+<p>就應建立差異：</p>
+<h1>$$
+\Delta\epsilon</h1>
+<h2>ObservedEffects</h2>
+<p>DeclaredEffects
+$$</p>
+<p>並回饋：</p>
+<ul>
+<li>語意模型；</li>
+<li>效果簽章；</li>
+<li>安全規則；</li>
+<li>測試；</li>
+<li>視圖；</li>
+<li>AI 工具描述。</li>
+</ul>
+<h2>21.4 宣告與觀測雙層</h2>
+<pre><code class="language-yaml">effects:
+  declared:
+    - &quot;read-order&quot;
+  observed:
+    - &quot;read-order&quot;
+    - &quot;write-access-log&quot;
+    - &quot;call-external-analytics&quot;
+</code></pre>
+<h2>21.5 未宣告效果</h2>
+<p>未宣告效果不必然惡意，但必須被審核，因為它可能改變隱私、費用、權限與恢復條件。</p>
+<hr>
+<h1>二十二、部分成功與效果型別</h1>
+<h2>22.1 單一回傳不足</h2>
+<p>外部工作流可能同時包含：</p>
+<ul>
+<li>已完成；</li>
+<li>失敗；</li>
+<li>等待；</li>
+<li>未知；</li>
+<li>補償中。</li>
+</ul>
+<h2>22.2 效果結果型別</h2>
+<p>可表示為：</p>
+<h1>$$
+EffectResult</h1>
+<p>Success
++
+Rejected
++
+Partial
++
+Unknown
++
+Compensating
++
+Irrecoverable
+$$</p>
+<h2>22.3 Partial</h2>
+<pre><code class="language-yaml">partial:
+  completed:
+    - &quot;payment-authorized&quot;
+  failed:
+    - &quot;inventory-reservation&quot;
+  unknown:
+    - &quot;notification-delivery&quot;
+</code></pre>
+<h2>22.4 Unknown</h2>
+<p>結果未知時，語言應禁止未經查詢的重複不可逆效果。</p>
+<h2>22.5 類型化恢復</h2>
+<p>不同結果型別只能接到相容恢復算子：</p>
+<ul>
+<li>RetrySafe；</li>
+<li>QueryOutcome；</li>
+<li>Compensate；</li>
+<li>Escalate；</li>
+<li>HumanReview。</li>
+</ul>
+<hr>
+<h1>二十三、語法糖與效果糖</h1>
+<h2>23.1 語法糖</h2>
+<p>語法糖改變表達便利，但理論上不改變核心語意。</p>
+<h2>23.2 效果糖</h2>
+<p>某些簡寫隱藏複雜效果，例如：</p>
+<pre><code class="language-python">publish(site)
+</code></pre>
+<p>可能展開為：</p>
+<pre><code class="language-text">validate
+build
+upload
+deploy
+verify
+shift-traffic
+notify
+</code></pre>
+<h2>23.3 危險簡寫</h2>
+<p>如果簡寫隱藏：</p>
+<ul>
+<li>不可逆效果；</li>
+<li>多階段失敗；</li>
+<li>人類批准；</li>
+<li>外部依賴；</li>
+<li>補償；</li>
+</ul>
+<p>就會降低世界可理解性。</p>
+<h2>23.4 安全語法糖</h2>
+<p>安全簡寫應能展開並查看完整效果圖，而不是永久遮蔽。</p>
+<hr>
+<h1>二十四、案例一：條件判斷</h1>
+<p>語法：</p>
+<pre><code class="language-python">if balance &gt;= amount:
+    approve()
+</code></pre>
+<h2>24.1 語法層</h2>
+<p>條件與呼叫合法。</p>
+<h2>24.2 語意層</h2>
+<p>需知道：</p>
+<ul>
+<li>balance 是可用餘額還是帳面餘額；</li>
+<li>amount 的幣別；</li>
+<li>approve 批准哪項行動；</li>
+<li>規則版本；</li>
+<li>是否允許透支。</li>
+</ul>
+<h2>24.3 效果層</h2>
+<p><code>approve()</code> 可能：</p>
+<ul>
+<li>只回傳值；</li>
+<li>寫入授權狀態；</li>
+<li>呼叫銀行；</li>
+<li>形成法律承諾。</li>
+</ul>
+<p>同一語法外觀可能跨越完全不同效果層級。</p>
+<hr>
+<h1>二十五、案例二：資料庫更新</h1>
+<pre><code class="language-sql">UPDATE users SET active = false WHERE id = ?;
+</code></pre>
+<h2>25.1 語法</h2>
+<p>SQL 合法。</p>
+<h2>25.2 語意</h2>
+<p><code>active=false</code> 可能表示：</p>
+<ul>
+<li>禁止登入；</li>
+<li>暫停服務；</li>
+<li>刪除帳號；</li>
+<li>法規封鎖；</li>
+<li>使用者自行退出。</li>
+</ul>
+<h2>25.3 效果</h2>
+<p>還可能需要：</p>
+<ul>
+<li>撤銷 token；</li>
+<li>停止排程；</li>
+<li>保留資料；</li>
+<li>通知使用者；</li>
+<li>發布 AccountSuspended；</li>
+<li>允許申訴。</li>
+</ul>
+<p>單一欄位更新不能自動代表完整世界效果。</p>
+<hr>
+<h1>二十六、案例三：付款</h1>
+<p>語法：</p>
+<pre><code class="language-typescript">await charge(card, amount)
+</code></pre>
+<h2>26.1 語意</h2>
+<p>需要綁定：</p>
+<ul>
+<li>客戶；</li>
+<li>訂單；</li>
+<li>幣別；</li>
+<li>金額權威來源；</li>
+<li>付款嘗試身份；</li>
+<li>冪等鍵。</li>
+</ul>
+<h2>26.2 效果</h2>
+<p>包括：</p>
+<ul>
+<li>外部金流；</li>
+<li>費用；</li>
+<li>付款事件；</li>
+<li>結果未知；</li>
+<li>可能補償；</li>
+<li>財務證據。</li>
+</ul>
+<h2>26.3 合法性</h2>
+<p>即使函式型別正確，若沒有授權、冪等與結果查詢，仍不可安全執行。</p>
+<hr>
+<h1>二十七、案例四：網站發布</h1>
+<p>語法：</p>
+<pre><code class="language-text">publish website
+</code></pre>
+<h2>27.1 語意展開</h2>
+<ul>
+<li>哪個版本；</li>
+<li>哪個環境；</li>
+<li>哪個網域；</li>
+<li>哪些批准；</li>
+<li>哪些完成條件。</li>
+</ul>
+<h2>27.2 效果鏈</h2>
+<pre><code class="language-text">build
+→ upload
+→ deploy
+→ verify
+→ shift traffic
+→ expose public content
+</code></pre>
+<h2>27.3 不可逆部分</h2>
+<p>公開內容可能已被：</p>
+<ul>
+<li>爬蟲抓取；</li>
+<li>使用者閱讀；</li>
+<li>外部快取；</li>
+<li>搜尋引擎索引。</li>
+</ul>
+<p>回滾部署不等於撤回所有世界效果。</p>
+<hr>
+<h1>二十八、案例五：AI Agent 工具</h1>
+<p>工具宣告：</p>
+<pre><code class="language-text">delete_file(path)
+</code></pre>
+<h2>28.1 語法與型別</h2>
+<p>只需要一個路徑字串。</p>
+<h2>28.2 語意</h2>
+<p>需知道：</p>
+<ul>
+<li>路徑屬於哪個工作區；</li>
+<li>檔案身份；</li>
+<li>是否為生成物；</li>
+<li>是否有版本或備份；</li>
+<li>是否為他人所有。</li>
+</ul>
+<h2>28.3 效果</h2>
+<ul>
+<li>刪除；</li>
+<li>可能不可恢復；</li>
+<li>破壞相依；</li>
+<li>改變發布；</li>
+<li>影響其他 Agent。</li>
+</ul>
+<h2>28.4 Agent 執行門檻</h2>
+<p>需要效果預覽、權限、備份與必要的人類批准，而非只通過參數型別。</p>
+<hr>
+<h1>二十九、案例六：醫療處置</h1>
+<p>語法節點：</p>
+<pre><code class="language-text">administer-treatment
+</code></pre>
+<h2>29.1 語意</h2>
+<p>必須綁定：</p>
+<ul>
+<li>病人；</li>
+<li>治療；</li>
+<li>醫師；</li>
+<li>同意；</li>
+<li>劑量；</li>
+<li>時間；</li>
+<li>適用條件。</li>
+</ul>
+<h2>29.2 效果</h2>
+<p>物理效果可能不可逆，且不能只依系統內部成功確認。</p>
+<h2>29.3 證據</h2>
+<p>需要：</p>
+<ul>
+<li>專業批准；</li>
+<li>病人同意；</li>
+<li>執行紀錄；</li>
+<li>真實處置確認；</li>
+<li>後續觀測。</li>
+</ul>
+<hr>
+<h1>三十、案例七：物理控制</h1>
+<pre><code class="language-python">door.unlock()
+</code></pre>
+<h2>30.1 語法</h2>
+<p>方法呼叫合法。</p>
+<h2>30.2 語意</h2>
+<p>需知道：</p>
+<ul>
+<li>哪一扇門；</li>
+<li>哪個區域；</li>
+<li>誰要求；</li>
+<li>現在是否緊急；</li>
+<li>是否有在場人員。</li>
+</ul>
+<h2>30.3 效果</h2>
+<p>命令送出不代表門鎖已打開。</p>
+<p>需要感測確認與失敗狀態：</p>
+<pre><code class="language-text">unlock-command-sent
+unlock-confirmed
+unlock-outcome-unknown
+mechanical-failure
+</code></pre>
+<h2>30.4 治理效果</h2>
+<p>開門也改變了物理空間的可進入權限。</p>
+<hr>
+<h1>三十一、主要失敗模式</h1>
+<ol>
+<li><strong>語法正確即程式正確：</strong> 可解析被誤認為完整合法。</li>
+<li><strong>型別正確即世界合法：</strong> 忽略狀態、權限與規則。</li>
+<li><strong>名稱即語意：</strong> 不做世界身份與責任綁定。</li>
+<li><strong>語意只存在註解：</strong> 編譯器、AI 與 Runtime 無法驗證。</li>
+<li><strong>上下文隱形：</strong> 版本、環境、特性開關與規則來源缺席。</li>
+<li><strong>值等價即程式等價：</strong> 忽略外部效果與證據。</li>
+<li><strong>效果等於副作用：</strong> 將程式真正目的降為次要污染。</li>
+<li><strong>普通函式隱藏高風險效果：</strong> 付款、發布與治理無法被辨識。</li>
+<li><strong>Getter 純度假設：</strong> 讀取操作暗中產生寫入、費用與追蹤。</li>
+<li><strong>授權在語言外部：</strong> 結構取得執行權前無法聯合檢查。</li>
+<li><strong>部分成功布林化：</strong> 多階段世界狀態被壓成 true／false。</li>
+<li><strong>結果未知錯誤化：</strong> 超時後直接重試不可逆效果。</li>
+<li><strong>效果順序無語意：</strong> 編譯器或開發者錯誤重排外部操作。</li>
+<li><strong>效果集合簡單相加：</strong> 忽略順序、衝突與相依。</li>
+<li><strong>低階投影遺失效果：</strong> 高階不可逆與批准要求在生成碼中消失。</li>
+<li><strong>Runtime 未宣告效果不回饋：</strong> 實際行為長期偏離語意模型。</li>
+<li><strong>語法糖隱藏責任：</strong> 一行簡寫遮蔽多階段失敗與補償。</li>
+<li><strong>沙盒只隔離程序：</strong> 未限制資料、外部與治理效果。</li>
+<li><strong>AI 只做語法驗證：</strong> 生成碼可編譯卻越權或不可恢復。</li>
+<li><strong>物理效果無感測證據：</strong> 命令送出被當成世界完成。</li>
+<li><strong>治理效果不可見：</strong> 權限與規則修改無法進入效果分析。</li>
+<li><strong>語意與效果版本分離：</strong> 語意宣告未隨 Runtime 行為更新。</li>
+</ol>
+<hr>
+<h1>三十二、可證偽研究綱領</h1>
+<h2>32.1 語法—語意錯配率</h2>
+<p>統計可解析、可型別檢查的結構中，有多少仍指向錯誤身份、狀態、規則或責任。</p>
+<h2>32.2 語意—效果漂移率</h2>
+<p>比較宣告語意與 Runtime 真實效果：</p>
+<h1>$$
+R_{ME}</h1>
+<p>\frac{
+|\text{observed effects absent from semantic declaration}|
+}{
+|\text{observed effects}|
+}
+$$</p>
+<h2>32.3 效果簽章完整度</h2>
+<p>對效果八元簽章評分，研究完整度與事故、重試錯誤、越權及恢復時間的關係。</p>
+<h2>32.4 隱藏效果事故率</h2>
+<p>統計看似純粹或低風險操作中，由未宣告網路、寫入、費用、發布或治理效果造成的事故。</p>
+<h2>32.5 權限—效果聯合檢查</h2>
+<p>比較只做權限中介層檢查，以及把權限與效果簽章納入語言判定的系統。</p>
+<h2>32.6 部分成功型別化</h2>
+<p>測量使用正式 Partial／Unknown／Compensating 型別，是否降低盲目重試與錯誤完成敘事。</p>
+<h2>32.7 效果保持</h2>
+<p>對高階語意到低階程式碼、工作流與部署投影，檢查不可逆性、批准、失敗與證據是否保持。</p>
+<h2>32.8 效果重排安全性</h2>
+<p>比較只依資料依賴重排，以及同時考慮效果順序、外部觀測與治理條件的最佳化。</p>
+<h2>32.9 Runtime 回饋閉環</h2>
+<p>測量觀測到未宣告效果後，能否自動建立差異、阻止執行、更新模型或觸發審核。</p>
+<h2>32.10 語意差分預測</h2>
+<p>比較文字 diff、AST diff、語意 diff 與效果 diff 對實際世界影響的預測能力。</p>
+<h2>32.11 AI 三層驗證</h2>
+<p>比較 AI 直接生成可編譯程式，以及依序通過語法、語意、效果驗證後再執行的錯誤率。</p>
+<h2>32.12 沙盒效果約束</h2>
+<p>測量只隔離 CPU／檔案程序，與同時限制網路、資料、費用、權限及治理效果的沙盒差異。</p>
+<h2>32.13 外部證據完整率</h2>
+<p>統計系統宣稱完成的外部與物理效果中，有多少具有足夠回執、感測或主體接受證據。</p>
+<h2>32.14 三層教學實驗</h2>
+<p>比較只教語法與型別，及同時教授問題世界語意和效果簽章的學習者，在真實系統設計上的表現。</p>
+<hr>
+<h1>三十三、本文的二十四項命題</h1>
+<ol>
+<li>程式語言具有語法、語意與效果三層存在。</li>
+<li>語法回答哪些結構可以形成，不回答世界是否合理。</li>
+<li>語意將結構綁定到問題世界身份、狀態、規則與責任。</li>
+<li>效果描述 Runtime 對數位、制度與物理世界造成的差分。</li>
+<li></li>
+</ol>
+<p>$$
+\text{Syntax}
+\neq
+\text{Semantics}
+\neq
+\text{Effects}
+$$
+6. 語法合法不推出語意合法，語意合法不推出效果合法。
+7. 同一語法在不同上下文與世界中可具有不同語意。
+8. 語意不只包含值與操作步驟，也包含規範位置與世界綁定。
+9. 兩個程式回傳同值，不代表具有相同語意與效果。
+10. 效果不是純計算之外的偶然副作用，而是程式與世界耦合的正式結構。
+11. 效果至少應區分值、狀態、事件、外部、物理與治理六類。
+12. 完整語言判定應包含世界、狀態、權限、效果與後置證據。
+13. 效果合法性要求授權、有界、可觀測、可恢復或已接受，以及證據明確。
+14. 複合效果不能只以集合聯集描述，還需保存順序、依賴、衝突與補償。
+15. 高階函式與 Agent 工具應保留效果多態與效果限制。
+16. 部分成功、結果未知與補償中應成為正式效果結果型別。
+17. 高階語意降低為低階表示時，不得遺失不可逆性、批准、失敗與證據。
+18. Runtime 發現未宣告效果時，應回饋語意模型與治理。
+19. 宣告效果與觀測效果的差異，是安全、隱私與維護的重要訊號。
+20. 語法糖可以簡化表達，但不能永久遮蔽高風險世界責任。
+21. 物理命令與治理操作必須具有比一般值運算更嚴格的效果判定。
+22. AI 生成程式不能只通過語法與型別檢查。
+23. 真正的程式審查應同時審查結構、意義與世界差分。
+24. 
+$$
+\boxed{
+\text{程式語言不是只告訴機器如何形成指令，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是必須同時說明這些指令代表什麼，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{以及它們取得執行權後，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{世界將因此發生什麼。}
+}
+$$</p>
+<hr>
+<h1>三十四、與前後篇的關係</h1>
+<h2>34.1 承接 PU-2-01</h2>
+<p>PU-2-01 將文字定位為語言的一種投影。</p>
+<p>本篇進一步指出，無論文字或視覺投影，都必須通過語法、語意與效果三層。</p>
+<h2>34.2 承接 PU-2-02</h2>
+<p>PU-2-02 將符號定義為受治理算子。</p>
+<p>本篇分解算子的三個核心面向：</p>
+<ul>
+<li>語法：算子如何形成與組合；</li>
+<li>語意：算子指向何種世界變換；</li>
+<li>效果：算子真正造成何種世界差分。</li>
+</ul>
+<h2>34.3 承接第 1 冊</h2>
+<p>第 1 冊建立的狀態、事件、責任、契約、失敗與恢復，現在可以正式進入語意環境與效果簽章。</p>
+<h2>34.4 銜接 PU-2-04</h2>
+<p>下一篇將建立意圖中介表示：</p>
+<p>$$
+Intent
+\rightarrow
+SemanticIR
+\rightarrow
+EffectPlan
+\rightarrow
+ExecutableProjection
+$$</p>
+<p>集中處理：</p>
+<ul>
+<li>自然意圖如何被分解；</li>
+<li>歧義如何被保存與消除；</li>
+<li>語意節點如何綁定問題世界；</li>
+<li>效果、權限與證據如何先於生成碼；</li>
+<li>同一 IR 如何生成程式碼、UI、工作流、測試與文件。</li>
+</ul>
+<hr>
+<h1>三十五、結論：語言必須把「能寫」推進到「能合法改變世界」</h1>
+<p>傳統語言工具首先判斷程式能否被解析。</p>
+<p>型別系統進一步判斷值與結構能否正確組合。</p>
+<p>這些能力極為重要，但對真實世界程式仍不完整。</p>
+<p>因為一段程式即使：</p>
+<ul>
+<li>可解析；</li>
+<li>型別正確；</li>
+<li>測試通過；</li>
+<li>Runtime 可執行；</li>
+</ul>
+<p>仍可能：</p>
+<ul>
+<li>指向錯誤身份；</li>
+<li>使用過期狀態；</li>
+<li>違反責任邊界；</li>
+<li>未經授權；</li>
+<li>造成不可逆效果；</li>
+<li>缺少外部證據；</li>
+<li>在部分成功後錯誤重試；</li>
+<li>把系統成功冒充目的完成。</li>
+</ul>
+<p>所以程式語言的合法性不能停在語法層。</p>
+<p>本文將完整語言判定收束為：</p>
+<h1>$$
+\boxed{
+\text{Program Validity}</h1>
+<p>\text{Syntactic Validity}
++
+\text{Semantic Validity}
++
+\text{Effect Legitimacy}
+}
+$$</p>
+<p>而程式執行則是：</p>
+<h1>$$
+\boxed{
+\text{Execution}</h1>
+<p>\text{Meaning Bound to a World}
++
+\text{Authority to Act}
++
+\text{Observable World Difference}
+}
+$$</p>
+<p>語法提供可構造性。</p>
+<p>語意提供可理解性。</p>
+<p>效果提供世界耦合。</p>
+<p>三者缺一，程式語言都無法成為完整的世界建構語言。</p>
+<p>如果只有語法，語言只是合法符號機器。</p>
+<p>如果只有語意，語言只是尚未執行的世界描述。</p>
+<p>如果只有效果而缺少語意與責任，系統就可能成為無法解釋與治理的世界修改器。</p>
+<p>因此，第 2 冊至此形成新的中心結構：</p>
+<p>$$
+\boxed{
+\text{Symbol}
+\rightarrow
+\text{Syntax}
+\rightarrow
+\text{Semantics}
+\rightarrow
+\text{Effects}
+\rightarrow
+\text{World Difference}
+}
+$$</p>
+<p>本文的最終命題是：</p>
+<p>$$
+\boxed{
+\text{好的程式語言，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{不只拒絕無法形成的句子，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{也應拒絕無法理解、無權執行、}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{無法驗證或無法承擔的世界效果。}
+}
+$$</p>
+<hr>
+<h1>附錄 A：三層語言節點</h1>
+<pre><code class="language-yaml">language_node:
+  node_id: &quot;publish-site&quot;
+
+  syntax:
+    node_type: &quot;effect-action&quot;
+    required_children:
+      - &quot;site&quot;
+      - &quot;release&quot;
+      - &quot;environment&quot;
+
+  semantics:
+    world_role: &quot;make approved release publicly accessible&quot;
+    responsibility_module: &quot;deployment&quot;
+    preconditions:
+      - &quot;release is approved&quot;
+      - &quot;environment is production&quot;
+
+  effects:
+    writes:
+      - &quot;deployment-state&quot;
+    external:
+      - &quot;upload artifact&quot;
+      - &quot;shift public traffic&quot;
+    irreversible:
+      - &quot;content may be externally cached&quot;
+    evidence:
+      - &quot;deployment receipt&quot;
+      - &quot;public journey verification&quot;
+</code></pre>
+<hr>
+<h1>附錄 B：擴展判定格式</h1>
+<pre><code class="language-yaml">language_judgment:
+  expression: &quot;AuthorizePayment(order-932)&quot;
+
+  environment:
+    world: &quot;commerce-v4&quot;
+    state_version: 18
+    actor: &quot;order-module&quot;
+    permissions:
+      - &quot;request-payment-authorization&quot;
+
+  type:
+    output: &quot;PaymentAuthorizationResult&quot;
+
+  effects:
+    reads:
+      - &quot;authoritative-order-total&quot;
+    external_calls:
+      - &quot;payment-provider&quot;
+    events:
+      - &quot;PaymentAuthorized&quot;
+      - &quot;PaymentDeclined&quot;
+      - &quot;PaymentOutcomeUnknown&quot;
+    reversibility: &quot;compensatable&quot;
+
+  postconditions:
+    evidence_required:
+      - &quot;provider-receipt&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：效果差異</h1>
+<pre><code class="language-yaml">effect_diff:
+  node: &quot;load-user-profile&quot;
+
+  declared:
+    - &quot;read user profile&quot;
+
+  observed:
+    - &quot;read user profile&quot;
+    - &quot;write last-accessed-at&quot;
+    - &quot;call analytics provider&quot;
+
+  undeclared:
+    - &quot;write last-accessed-at&quot;
+    - &quot;call analytics provider&quot;
+
+  governance:
+    review_required: true
+    privacy_impact: true
+</code></pre>
+<hr>
+<h1>附錄 D：部分成功型別</h1>
+<pre><code class="language-yaml">effect_result:
+  kind: &quot;partial&quot;
+
+  completed:
+    - effect: &quot;release-deployed&quot;
+      evidence: &quot;deployment-889&quot;
+
+  failed:
+    - effect: &quot;mobile-smoke-test&quot;
+      reason: &quot;authentication failure&quot;
+
+  unknown:
+    - effect: &quot;dns-propagation&quot;
+
+  allowed_next:
+    - &quot;hold-traffic&quot;
+    - &quot;rollback-deployment&quot;
+    - &quot;human-review&quot;
+
+  forbidden_next:
+    - &quot;declare-publication-complete&quot;
+</code></pre>
+<hr>
+<h1>附錄 E：第 2 冊六篇位置</h1>
+<ol>
+<li>PU-2-01　程式語言不等於文字：結構、語意與執行的基本分離</li>
+<li>PU-2-02　符號作為算子：從靜態字元到可組合計算閉包</li>
+<li><strong>PU-2-03　語法—語意—效果：程式語言的三層存在結構</strong></li>
+<li>PU-2-04　意圖中介表示：從自然意圖到多重可執行投影</li>
+<li>PU-2-05　可編譯世界：程式執行作為世界狀態差分</li>
+<li>PU-2-06　後文本程式語言：意圖、結構、驗證與物理耦合的統一框架</li>
+</ol>
+<hr>
+<h1>參考文獻</h1>
+<h2>Neo.K／EveMissLab 相關理論</h2>
+<ol>
+<li>Neo.K with Aletheia，《程式語言不等於文字：結構、語意與執行的基本分離》，2026。</li>
+<li>Neo.K with Aletheia，《符號作為算子：從靜態字元到可組合計算閉包》，2026。</li>
+<li>Neo.K with Aletheia，《程式不等於程式碼：可執行問題模型的基本定義》，2026。</li>
+<li>Neo.K with Aletheia，《資料—狀態—事件—行動：程式系統的四元動力結構》，2026。</li>
+<li>Neo.K with Aletheia，《責任、模組與契約：從檔案分類到系統邊界》，2026。</li>
+<li>Neo.K with Aletheia，《失敗也是程式：驗證、可觀測、恢復與長期維護》，2026。</li>
+<li>Neo.K with Aletheia，《可編譯世界：從程式執行到世界狀態演化》，2026。</li>
+</ol>
+<h2>一般理論背景</h2>
+<ol start="8">
+<li>Scott, D. and Strachey, C., “Toward a Mathematical Semantics for Computer Languages,” 1971.</li>
+<li>Plotkin, G. D., “A Structural Approach to Operational Semantics,” 1981.</li>
+<li>Hoare, C. A. R., “An Axiomatic Basis for Computer Programming,” 1969.</li>
+<li>Milner, R., “A Theory of Type Polymorphism in Programming,” 1978.</li>
+<li>Pierce, B. C., <em>Types and Programming Languages</em>, 2002.</li>
+<li>Reynolds, J. C., <em>Theories of Programming Languages</em>, 1998.</li>
+<li>Moggi, E., “Notions of Computation and Monads,” 1991.</li>
+<li>Wadler, P., “The Essence of Functional Programming,” 1992.</li>
+<li>Plotkin, G. D. and Power, J., “Algebraic Operations and Generic Effects,” 2003.</li>
+<li>Koka language documentation and research on row-polymorphic effect types.</li>
+<li>Bauer, A. and Pretnar, M., “Programming with Algebraic Effects and Handlers,” 2015.</li>
+<li>Nielson, F., Nielson, H. R., and Hankin, C., <em>Principles of Program Analysis</em>, 1999.</li>
+<li>Winskel, G., <em>The Formal Semantics of Programming Languages</em>, 1993.</li>
+</ol>
+<hr>
+<h1>版本紀錄</h1>
+<h2>v0.1 — 2026-07-27</h2>
+<ul>
+<li>完成十八篇地基論文第十五篇。</li>
+<li>建立語法、語意與效果三層存在模型。</li>
+<li>將語法定義為符號、形成規則、抽象結構與局部邊界。</li>
+<li>建立問題世界與上下文條件下的語意映射。</li>
+<li>擴展指稱、操作、規範與世界語意。</li>
+<li>建立語意合法性與語意等價條件。</li>
+<li>將效果定義為狀態、事件、外部效果、證據與殘差。</li>
+<li>建立值、狀態、事件、外部、物理與治理六類效果。</li>
+<li>建立效果八元簽章。</li>
+<li>將傳統型別判定擴展為世界、權限、狀態、效果與後置證據判定。</li>
+<li>建立三層合法性與效果合法性條件。</li>
+<li>分析效果組合、多態、限制與隱藏效果。</li>
+<li>建立效果保持、效果提升與 Runtime 回饋。</li>
+<li>將部分成功與結果未知納入效果型別。</li>
+<li>加入條件、資料庫、付款、發布、AI Agent、醫療與物理控制案例。</li>
+<li>提出二十二類失敗模式與十四項可證偽研究方向。</li>
+<li>完成與 PU-2-04《意圖中介表示》的銜接。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pu-2-03.html">https://thisoneisneok.com/html/papers/pu-2-03.html</a></footer>
+</body>
+</html>

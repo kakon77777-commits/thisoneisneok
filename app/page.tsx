@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { applications, books } from "./data/catalog";
+import { paperSeries, paperCount } from "./data/papers.generated";
 import { posts } from "./data/posts.generated";
 import { ProjectCard } from "./components/project-card";
 import { PendingPanel } from "./components/pending-panel";
@@ -60,9 +61,29 @@ export default function Home() {
           Swap it back to a live count once applications.length is non-zero. */}
       <section className="home-strip" aria-label={t({ zh: "網站範圍", en: "Site scope" })}>
         <div><strong>MSSP</strong><span>{t({ zh: "主要專區", en: "primary field" })}</span></div>
-        <div><strong>{books.length}</strong><span>{t({ zh: "書籍展示", en: "books on show" })}</span></div>
+        <div><strong>{paperCount}</strong><span>{t({ zh: "論文（4 系列）", en: "papers, 4 series" })}</span></div>
         <div><strong>ZH/EN</strong><span>{t({ zh: "自動語言切換", en: "automatic language" })}</span></div>
-        <div><strong>MD</strong><span>{t({ zh: "人類閱讀＋AI 原始檔", en: "human pages + AI source" })}</span></div>
+        <div><strong>HTML<br />PDF</strong><span>{t({ zh: "兩種發表格式", en: "two published formats" })}</span></div>
+      </section>
+
+      <section className="section-block papers-feature">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">PAPERS / {paperCount}</p>
+            <h2>{t({ zh: "四個系列，全部在計算機領域。", en: "Four series, all in computing." })}</h2>
+          </div>
+          <Link href="/papers" className="text-link">{t({ zh: "進入論文區", en: "Enter papers" })} ↗</Link>
+        </div>
+        <div className="series-rail">
+          {paperSeries.map((series) => (
+            <Link href={`/papers#${series.code}`} className="series-card" key={series.code}>
+              <span>{series.code}</span>
+              <strong>{language === "zh" ? series.title.zh : series.title.en}</strong>
+              <p>{language === "zh" ? series.blurb.zh : series.blurb.en}</p>
+              <b>{series.papers.length}</b>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section className="section-block">

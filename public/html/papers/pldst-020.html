@@ -1,0 +1,1280 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Anders Hejlsberg：工具驅動設計、漸進型別與平台折衷 | Neo.K</title>
+<meta name="description" content="Anders Hejlsberg 橫跨四十多年的語言與工具工作，常被濃縮成一串產品名稱：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-020.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-020</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第三部設計師個案正式研究</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-020.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>Anders Hejlsberg：工具驅動設計、漸進型別與平台折衷</h1>
+<h2>摘要</h2>
+<p>Anders Hejlsberg 橫跨四十多年的語言與工具工作，常被濃縮成一串產品名稱：</p>
+<p>$$
+Turbo\ Pascal
+\rightarrow
+Delphi
+\rightarrow
+C#
+\rightarrow
+TypeScript
+$$</p>
+<p>這種履歷式敘述容易掩蓋一個高度穩定的設計風格。Hejlsberg 並不主要以建立最純粹、最小或最激進的語言聞名；他的核心能力是把語言、Compiler、IDE、Runtime、Library、平台和遷移路徑設計成一個可以被真實開發者快速採用的整體。</p>
+<p>Turbo Pascal 的突破不只是 Pascal 方言，而是把編輯器、極快 Compiler、錯誤定位和執行流程壓縮成低摩擦回饋循環。Delphi 將這種整合擴張到視覺元件、事件、資料庫、Native code 和 Rapid Application Development。C# 則在 Windows／.NET 轉型中，重新配置 C／C++ 的熟悉表面、Java 式 Managed runtime、Component software、Versioning、Metadata、Delegate、Property、Event、Generics、LINQ 和非同步能力。TypeScript 更進一步：它沒有要求 JavaScript 生態改用一門不相容的新語言，而是以可擦除的型別註記、Structural typing、Inference 和編輯器服務，建立「可逐步加入的靜態證據」。[R1][R2][R3][R4]</p>
+<p>本文將 Hejlsberg 的設計生涯分成七個相位：</p>
+<ol>
+<li><strong>微型電腦 Compiler 期</strong>：Blue Label／Compas／PolyPascal 與資源限制下的快速 Compiler；</li>
+<li><strong>Turbo Pascal 回饋循環期</strong>：Compiler、Editor、低價格和個人開發工具的整合；</li>
+<li><strong>Delphi 元件平台期</strong>：Object Pascal、Visual design、Native performance 與 Component model；</li>
+<li><strong>C#／.NET 平台重建期</strong>：Managed runtime、Metadata、Component-oriented language 和版本治理；</li>
+<li><strong>LINQ 與語言—資料統一期</strong>：Lambda、Generic、Expression tree、Query comprehension 和型別推導；</li>
+<li><strong>TypeScript 漸進建模期</strong>：尊重 JavaScript 語義，以 Structural type system 建模既有慣用法；</li>
+<li><strong>TypeScript 7 原生工具鏈期</strong>：為超大型程式庫重寫 Compiler／Language service 基礎，將工具延遲本身視為語言規模問題。</li>
+</ol>
+<p>本文核心判斷為：</p>
+<p>$$
+\boxed{
+\text{Hejlsberg 的主要設計對象不是孤立語法，}
+\quad
+\text{而是開發者與整個平台之間的回饋迴路。}
+}
+$$</p>
+<p>其深層配置可以表示為：</p>
+<p>$$
+\boxed{
+\text{Familiar surface}
++
+\text{Rich tooling}
++
+\text{Strong inference}
++
+\text{Platform integration}
++
+\text{Incremental adoption}
+}
+$$</p>
+<p>這種風格並不等於一味追求便利。Hejlsberg 的 C# 設計論述反覆關注：</p>
+<ul>
+<li>Versioning；</li>
+<li>Component boundaries；</li>
+<li>Checked exception 的可擴展性；</li>
+<li>Virtual／Override 的演化風險；</li>
+<li>Delegate 與 Event 的一級支援；</li>
+<li>Runtime／Language 分工；</li>
+<li>可用性測試與設計品味。[R5]</li>
+</ul>
+<p>TypeScript 的官方設計目標更明確規定：</p>
+<ul>
+<li>靜態識別可能錯誤；</li>
+<li>為大型元件提供結構；</li>
+<li>不對輸出加入 Runtime overhead；</li>
+<li>發出 Clean、Idiomatic JavaScript；</li>
+<li>保留 JavaScript Runtime 行為；</li>
+<li>採用 Gradual／Structural type system；</li>
+<li>不以完全 Sound type system 為設計目標；</li>
+<li>不複製 Runtime type information；</li>
+<li>不以平台或 Library 為特定目標。[R4]</li>
+</ul>
+<p>因此 TypeScript 並不是「C# 編譯到 JavaScript」。它的型別系統刻意接受 JavaScript 世界中的開放物件、Prototype、Duck typing、Callback、Dynamic property 和漸進遷移；型別資訊主要服務於錯誤檢查、導航、Completion、Refactoring 和人機協作，Runtime 仍是 JavaScript。</p>
+<p>這種設計的力量與代價同樣來自折衷。TypeScript 可以在不重寫程式的情況下逐步增加工具價值；但 <code>any</code>、Assertion、Declaration file、Structural compatibility 和刻意不健全規則意味著型別正確不是完整 Runtime 安全證明。C# 具有更強的 Managed contract，卻也必須承擔 CLR、Framework、ABI、版本及平台整體複雜度。</p>
+<p>截至 2026 年 7 月，TypeScript 7 已以 Go 原生重寫 Compiler 和 Language service，官方報告典型完整建置可達 8–12 倍加速；但 7.0 尚未提供穩定 Programmatic API，部分 Vue、Angular、Svelte、MDX 等嵌入式工具鏈仍需與 TypeScript 6 並行。[R6] 這正好呈現 Hejlsberg 風格的最新階段：當語言服務延遲開始妨礙互動時，他不只微調型別規則，而會重新設計整個工具基礎，同時以 Compatibility package 和 Side-by-side transition 限制生態破壞。</p>
+<p>因此，Hejlsberg 不應只被分類成「商業語言設計者」或「語法保守派」。更精確的判定是：</p>
+<blockquote>
+<p>他以開發者回饋速度和平台採用為中心，反覆在更強型別、熟悉語法、Runtime 能力、工具可用性及既有生態之間建立可部署折衷。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> Anders Hejlsberg、Turbo Pascal、Delphi、C#、TypeScript、漸進型別、結構型別、工具鏈、IDE、平台、PLDST</p>
+<hr>
+<h1>第一部分　研究邊界與多主體歸因</h1>
+<h2>一、本文研究範圍</h2>
+<p>本文主要分析：</p>
+<ul>
+<li>Blue Label／Compas／PolyPascal；</li>
+<li>Turbo Pascal；</li>
+<li>Delphi；</li>
+<li>J++／WFC 作為過渡背景；</li>
+<li>C# 及 .NET；</li>
+<li>LINQ；</li>
+<li>TypeScript；</li>
+<li>TypeScript 原生 Go 重寫與 7.0。</li>
+</ul>
+<p>本文不把以下成果全部歸於 Hejlsberg：</p>
+<ul>
+<li>Pascal；</li>
+<li>Borland IDE 的全部產品策略；</li>
+<li>Delphi 全部元件和後續版本；</li>
+<li>CLR；</li>
+<li>.NET Framework；</li>
+<li>C# 所有語言功能；</li>
+<li>LINQ 全部研究；</li>
+<li>TypeScript 全部型別功能；</li>
+<li>Visual Studio／VS Code；</li>
+<li>TypeScript 7 全部實作。</li>
+</ul>
+<hr>
+<h2>二、個人權重與團隊權重</h2>
+<p>Hejlsberg 對以下事項具有高度個人權重：</p>
+<ul>
+<li>早期 Pascal Compiler；</li>
+<li>Turbo Pascal Compiler 架構；</li>
+<li>Delphi 首期總體架構；</li>
+<li>C# Lead architect；</li>
+<li>TypeScript 原始問題及型別／工具方向；</li>
+<li>TypeScript 7 原生 Port 的倡議和架構參與。</li>
+</ul>
+<p>但官方 C# 規格明確把 Principal inventors 列為：</p>
+<ul>
+<li>Anders Hejlsberg；</li>
+<li>Scott Wiltamuth；</li>
+<li>Peter Golde。[R2]</li>
+</ul>
+<p>C# 與 TypeScript 長期又涉及：</p>
+<ul>
+<li>Mads Torgersen；</li>
+<li>Eric Lippert；</li>
+<li>Neal Gafter；</li>
+<li>Peter Hallam；</li>
+<li>Erik Meijer；</li>
+<li>Don Syme；</li>
+<li>Luke Hoban；</li>
+<li>Jonathan Turner；</li>
+<li>Ryan Cavanaugh；</li>
+<li>Daniel Rosenwasser；</li>
+<li>TypeScript Core team；</li>
+<li>ECMA／ISO；</li>
+<li>.NET Runtime／Library team；</li>
+<li>IDE 和生態作者。</li>
+</ul>
+<p>因此：</p>
+<pre><code class="language-text">Turbo Pascal Compiler 原型：Hejlsberg 極高
+Turbo Pascal 產品／IDE：Borland 團隊
+Delphi 架構：Hejlsberg 高，產品團隊共同
+C# 核心：Hejlsberg、Wiltamuth、Golde 等
+C# 後續：Microsoft 團隊＋ECMA／ISO＋社群
+TypeScript 原始方向：Hejlsberg 高
+TypeScript 實作／演化：開源 Core team
+TypeScript 7：Hejlsberg倡議＋原生 Port 團隊
+</code></pre>
+<hr>
+<h1>第二部分　相位一：微型電腦 Compiler</h1>
+<h2>三、資源限制塑造方法</h2>
+<p>Hejlsberg 的早期 Compiler 面對：</p>
+<ul>
+<li>64KB 等級記憶體；</li>
+<li>慢速磁碟；</li>
+<li>微型電腦；</li>
+<li>個人使用者；</li>
+<li>不成熟 Toolchain。</li>
+</ul>
+<p>Compiler 必須：</p>
+<ul>
+<li>小；</li>
+<li>快；</li>
+<li>可在同一機器立即使用；</li>
+<li>生成實際可執行程式；</li>
+<li>提供低摩擦 Debug 循環。</li>
+</ul>
+<hr>
+<h2>四、從教材 Compiler 到產品</h2>
+<p>其早期 Pascal Compiler 受到 Wirth 教材中小型 Compiler 的啟發，但 Hejlsberg 逐步建立：</p>
+<ul>
+<li>Blue Label Pascal；</li>
+<li>Compas Pascal；</li>
+<li>PolyPascal；</li>
+<li>多平台版本。</li>
+</ul>
+<p>這個歷史顯示，他的第一項設計能力不是發明新語法，而是把語言規格轉成極高可用性的實際工具。</p>
+<hr>
+<h2>五、第一個深層風格：Feedback latency 是語言成本</h2>
+<p>令一次開發循環為：</p>
+<h1>$$
+T_{\text{loop}}</h1>
+<p>T_{\text{edit}}
++
+T_{\text{compile}}
++
+T_{\text{diagnose}}
++
+T_{\text{run}}
+$$</p>
+<p>Hejlsberg 的工具設計反覆試圖最小化 $T_{\text{loop}}$。</p>
+<p>語言若理論優秀，但每次修改等待太久，其可學習性和探索性都會降低。</p>
+<hr>
+<h1>第三部分　Turbo Pascal：語言與 IDE 的共同產品</h1>
+<h2>六、Turbo 不只表示生成程式快</h2>
+<p>Turbo Pascal 的突破包括：</p>
+<ul>
+<li>Compiler 快；</li>
+<li>編輯器整合；</li>
+<li>錯誤定位；</li>
+<li>Compile／Run 循環；</li>
+<li>低價格；</li>
+<li>單一 Package；</li>
+<li>個人電腦可用。</li>
+</ul>
+<p>因此其實際設計單位是：</p>
+<p>$$
+PascalDialect
++
+Compiler
++
+Editor
++
+RuntimeLibrary
++
+Distribution
+$$</p>
+<hr>
+<h2>七、開發者體驗先於完整性</h2>
+<p>Turbo Pascal 沒有先等待：</p>
+<ul>
+<li>完整標準覆蓋；</li>
+<li>巨大 Framework；</li>
+<li>多層工具；</li>
+<li>Enterprise deployment。</li>
+</ul>
+<p>它先使個人能迅速建立可執行程式。</p>
+<p>這種「先完成完整回饋閉環，再擴張能力」的模式延續至 Delphi 和 TypeScript。</p>
+<hr>
+<h2>八、Compiler speed 的認知作用</h2>
+<p>快速 Compiler 讓使用者：</p>
+<ul>
+<li>更敢試驗；</li>
+<li>更快發現錯誤；</li>
+<li>以小步重構；</li>
+<li>將語言當互動工具，而非批次提交系統。</li>
+</ul>
+<p>速度因此是一種教育及設計特徵。</p>
+<hr>
+<h1>第四部分　Delphi：元件、視覺工具與 Native code</h1>
+<h2>九、從語言產品到應用平台</h2>
+<p>Delphi 結合：</p>
+<ul>
+<li>Object Pascal；</li>
+<li>Visual form designer；</li>
+<li>Component palette；</li>
+<li>Event；</li>
+<li>Property；</li>
+<li>Native Compiler；</li>
+<li>Database；</li>
+<li>Windows API；</li>
+<li>IDE；</li>
+<li>Debugger。</li>
+</ul>
+<p>其問題是：</p>
+<blockquote>
+<p>如何讓 Windows GUI／Database 應用可以像組合元件一樣快速建造，又保留 Native performance 和靜態語言工具？</p>
+</blockquote>
+<hr>
+<h2>十、設計時與執行時的連接</h2>
+<p>Delphi 元件具有：</p>
+<ul>
+<li>Property；</li>
+<li>Event；</li>
+<li>Design-time metadata；</li>
+<li>Serialization；</li>
+<li>Visual representation；</li>
+<li>Runtime behavior。</li>
+</ul>
+<p>這預示 C#／.NET 對 Property、Event、Attribute、Metadata 和 Component 的重視。</p>
+<hr>
+<h2>十一、視覺工具不是取消程式</h2>
+<p>Form designer 處理：</p>
+<ul>
+<li>Layout；</li>
+<li>Component placement；</li>
+<li>Property editing；</li>
+<li>Event wiring。</li>
+</ul>
+<p>程式碼處理：</p>
+<ul>
+<li>Domain logic；</li>
+<li>Data；</li>
+<li>Algorithm；</li>
+<li>Custom behavior。</li>
+</ul>
+<p>工具將部分宣告性工作移出文字語法。</p>
+<hr>
+<h2>十二、RAD 的風險</h2>
+<p>快速建立介面可能造成：</p>
+<ul>
+<li>邏輯散落在 Event handler；</li>
+<li>Visual state 和 Code 耦合；</li>
+<li>Vendor platform 綁定；</li>
+<li>大型應用架構不足；</li>
+<li>元件市場品質差異。</li>
+</ul>
+<p>因此 Tool productivity 不等於 System design 自動良好。</p>
+<hr>
+<h1>第五部分　C# 與 .NET 平台重建</h1>
+<h2>十三、C# 不是只為改善 Java</h2>
+<p>C# 的問題背景包括：</p>
+<ul>
+<li>Windows API 的複雜性；</li>
+<li>COM 的 Component／Versioning 問題；</li>
+<li>C++ 開發安全和生產力；</li>
+<li>Java／J++ 經驗；</li>
+<li>需要新的 Managed platform；</li>
+<li>多語言 Runtime；</li>
+<li>Metadata 和 Deployment。</li>
+</ul>
+<hr>
+<h2>十四、語言與 CLR 分工</h2>
+<p>CLR 提供：</p>
+<ul>
+<li>Garbage collection；</li>
+<li>Verification；</li>
+<li>Metadata；</li>
+<li>JIT；</li>
+<li>Exception；</li>
+<li>Reflection；</li>
+<li>Common type system；</li>
+<li>Interlanguage boundary。</li>
+</ul>
+<p>C# 提供：</p>
+<ul>
+<li>熟悉的 C-family 表面；</li>
+<li>Static type；</li>
+<li>Class／Struct；</li>
+<li>Delegate；</li>
+<li>Property；</li>
+<li>Event；</li>
+<li>Attribute；</li>
+<li>Generics；</li>
+<li>Async 等後續能力。</li>
+</ul>
+<hr>
+<h2>十五、Component-oriented 設計</h2>
+<p>Property、Event、Attribute 和 Delegate 不只是 Syntax sugar，而是把 Component 慣例寫入語言和 Metadata。</p>
+<p>例如：</p>
+<h1>$$
+Event</h1>
+<p>TypedPublisherContract
++
+SubscriberList
++
+ToolVisibility
+$$</p>
+<p>它能被 IDE、Designer、Reflection 和 Framework 共同理解。</p>
+<hr>
+<h2>十六、Simplexity</h2>
+<p>Hejlsberg 在 C# 訪談中用「Simplexity」說明：表面簡單的 Component 操作可能由 Runtime、Metadata 和 Tool 承擔內部複雜度。[R5]</p>
+<p>這與 Ruby 的「Natural not simple」不同，但配置相似：</p>
+<p>$$
+UserSurfaceComplexity\downarrow
+\qquad
+PlatformComplexity\uparrow
+$$</p>
+<hr>
+<h2>十七、Checked exception 的拒絕</h2>
+<p>Hejlsberg 對 Java Checked exception 的批評包括：</p>
+<ul>
+<li>Versionability；</li>
+<li>API 演化；</li>
+<li>大型程式 Catch／Rethrow；</li>
+<li>開發者可能用空 Catch 逃避；</li>
+<li>Function composition 困難。[R5]</li>
+</ul>
+<p>C# 選擇：</p>
+<ul>
+<li>Exception type 不進入 Method signature 強制契約；</li>
+<li>依文件、分析和慣例治理。</li>
+</ul>
+<p>這提高演化彈性，降低靜態 Error effect 可見性。</p>
+<hr>
+<h2>十八、Virtual／Override 的版本策略</h2>
+<p>C# 要求 <code>virtual</code> 和 <code>override</code> 明示，新增 Base method 時減少意外改寫。</p>
+<p>這反映 Hejlsberg 對 Library evolution 的關注：</p>
+<p>$$
+LocalConvenience
+&lt;
+FutureVersionSafety
+$$</p>
+<hr>
+<h1>第六部分　LINQ：資料進入語言與工具</h1>
+<h2>十九、資料查詢的斷裂</h2>
+<p>在 LINQ 前，程式經常在：</p>
+<ul>
+<li>Object；</li>
+<li>SQL；</li>
+<li>XML；</li>
+<li>Collection；</li>
+</ul>
+<p>之間切換不同語言、型別和工具。</p>
+<hr>
+<h2>二十、LINQ 的共同基礎</h2>
+<p>LINQ 由多項能力組合：</p>
+<ul>
+<li>Generics；</li>
+<li>Lambda；</li>
+<li>Extension method；</li>
+<li>Type inference；</li>
+<li>Anonymous type；</li>
+<li>Expression tree；</li>
+<li>Query syntax。</li>
+</ul>
+<p>Query syntax 不是直接把 SQL 寫入 C#，而是翻譯成一般方法組合。</p>
+<hr>
+<h2>二十一、語言功能服務 Tooling</h2>
+<p>LINQ 讓 Compiler 和 IDE 能：</p>
+<ul>
+<li>檢查名稱；</li>
+<li>推導型別；</li>
+<li>Completion；</li>
+<li>Refactoring；</li>
+<li>跨資料來源提供共同模型。</li>
+</ul>
+<p>它延續「讓工具理解領域操作」的風格。</p>
+<hr>
+<h2>二十二、抽象洩漏</h2>
+<p>不同 Provider 仍可能具有：</p>
+<ul>
+<li>不同可翻譯 Operation；</li>
+<li>不同性能；</li>
+<li>Remote query；</li>
+<li>N+1；</li>
+<li>Runtime exception。</li>
+</ul>
+<p>語言統一表面不能消除資料源差異。</p>
+<hr>
+<h1>第七部分　TypeScript：在 JavaScript 上建模</h1>
+<h2>二十三、問題不是替換 JavaScript</h2>
+<p>2012 年的 TypeScript 面對：</p>
+<ul>
+<li>JavaScript 已是 Web Runtime；</li>
+<li>巨大既有程式和 Library；</li>
+<li>Prototype 與 Dynamic pattern；</li>
+<li>大型應用工具不足；</li>
+<li>Refactoring 和 Navigation 困難。</li>
+</ul>
+<p>建立完全不同的新語言會失去生態。</p>
+<hr>
+<h2>二十四、Strict superset 與 Clean JavaScript</h2>
+<p>TypeScript 原始承諾：</p>
+<ul>
+<li>JavaScript 程式可逐步成為 TypeScript；</li>
+<li>Type annotation 可擦除；</li>
+<li>生成可讀 JavaScript；</li>
+<li>Runtime behavior 保持 JavaScript；</li>
+<li>不強制 TypeScript Runtime。</li>
+</ul>
+<p>這是相容性優先的語言增量。</p>
+<hr>
+<h2>二十五、Structural typing</h2>
+<p>TypeScript 根據物件 Shape 判斷相容，而非要求共同名義宣告。</p>
+<p>這與 JavaScript Duck typing 對齊：</p>
+<p>$$
+Compatible(A,B)
+\Leftarrow
+RequiredMembers(B)
+\subseteq
+Members(A)
+$$</p>
+<hr>
+<h2>二十六、Type inference</h2>
+<p>TypeScript 盡量從：</p>
+<ul>
+<li>Initializer；</li>
+<li>Return；</li>
+<li>Context；</li>
+<li>Generic call；</li>
+<li>Control flow；</li>
+</ul>
+<p>推導型別，避免把 Java／C# 式完整 Annotation 樣板帶入 JavaScript。</p>
+<hr>
+<h2>二十七、Contextual typing</h2>
+<p>Callback parameter 可以由使用位置反向取得型別。</p>
+<p>這使既有 JavaScript Pattern 在不增加大量宣告下得到工具支援。</p>
+<hr>
+<h2>二十八、<code>any</code> 與漸進遷移</h2>
+<p><code>any</code> 允許：</p>
+<ul>
+<li>先接入未知 Library；</li>
+<li>逐步加入型別；</li>
+<li>處理動態模式；</li>
+<li>繞過 Checker。</li>
+</ul>
+<p>但也會傳播不安全。</p>
+<p>TypeScript 的選擇是：</p>
+<p>$$
+PartialEvidence</p>
+<blockquote>
+</blockquote>
+<p>NoAdoption
+$$</p>
+<hr>
+<h2>二十九、不追求完整 Soundness</h2>
+<p>官方設計目標明確把「建立一個可靠或可證明正確的 Type system」列入 Non-goal。[R4]</p>
+<p>原因不是安全不重要，而是：</p>
+<ul>
+<li>JavaScript 行為本身高度動態；</li>
+<li>完全 Sound 會拒絕大量既有慣用法；</li>
+<li>TypeScript 首要目標是錯誤偵測和工具；</li>
+<li>Runtime 不由 TypeScript 控制。</li>
+</ul>
+<hr>
+<h1>第八部分　工具驅動型別系統</h1>
+<h2>三十、TypeScript 型別的主要消費者</h2>
+<p>型別資訊同時服務：</p>
+<ul>
+<li>Compiler error；</li>
+<li>Completion；</li>
+<li>Hover；</li>
+<li>Navigation；</li>
+<li>Rename；</li>
+<li>Refactoring；</li>
+<li>Quick fix；</li>
+<li>Documentation；</li>
+<li>Language service。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+TypeSystemValue
+\neq
+OnlyProgramRejection
+$$</p>
+<hr>
+<h2>三十一、錯誤恢復</h2>
+<p>Editor 中的程式經常：</p>
+<ul>
+<li>未完成；</li>
+<li>有語法錯誤；</li>
+<li>缺少 Import；</li>
+<li>處於重構中。</li>
+</ul>
+<p>Language service 必須在錯誤狀態仍提供有用結果。</p>
+<p>這使工具型 Compiler 與 Batch theorem checker 的目標不同。</p>
+<hr>
+<h2>三十二、Proposal 從使用情境開始</h2>
+<p>TypeScript 官方的設計提案指南要求先描述：</p>
+<ul>
+<li>使用者有何困難；</li>
+<li>哪項常見任務需要改善；</li>
+<li>現有 Workaround；</li>
+<li>誰受影響；</li>
+<li>真實範例。[R7]</li>
+</ul>
+<p>這與 Hejlsberg 跨產品的情境驅動設計一致。</p>
+<hr>
+<h1>第九部分　TypeScript 7：重寫工具基礎</h1>
+<h2>三十三、為何用 TypeScript 重寫仍不夠</h2>
+<p>原有 TypeScript Compiler 以 TypeScript／JavaScript 實作，具有：</p>
+<ul>
+<li>自舉；</li>
+<li>可攜；</li>
+<li>社群熟悉；</li>
+<li>單一 Codebase。</li>
+</ul>
+<p>但大型專案面臨：</p>
+<ul>
+<li>Type checking 延遲；</li>
+<li>Language server 記憶體；</li>
+<li>單執行緒限制；</li>
+<li>CI 等待；</li>
+<li>Editor 不可用。</li>
+</ul>
+<hr>
+<h2>三十四、Go 原生 Port</h2>
+<p>2025 年，Hejlsberg 宣布將 Compiler 和 Language service Port 到 Go，目標利用：</p>
+<ul>
+<li>Native code；</li>
+<li>Shared-memory multithreading；</li>
+<li>較低 Memory；</li>
+<li>Parallel parsing／checking／emitting；</li>
+<li>更快 Language server。[R8]</li>
+</ul>
+<hr>
+<h2>三十五、相容優先的重寫</h2>
+<p>TypeScript 7 並未以重新設計語言為主要目標，而是：</p>
+<ul>
+<li>保持原 Codebase 結構和邏輯；</li>
+<li>使用數萬測試；</li>
+<li>比對兩個 Compiler；</li>
+<li>在真實大型 Codebase 驗證；</li>
+<li>提供 TypeScript 6 Compatibility package；</li>
+<li>支援 Side-by-side。</li>
+</ul>
+<p>這是一種實作重寫、語義保守。</p>
+<hr>
+<h2>三十六、2026 年 TypeScript 7 邊界</h2>
+<p>官方 7.0 Release 表示：</p>
+<ul>
+<li>典型完整 Build 約 8–12 倍加速；</li>
+<li>Language server crash 和失敗命令下降；</li>
+<li>已在多個大型組織驗證；</li>
+<li>7.0 尚未提供穩定 Programmatic API；</li>
+<li>依賴 Compiler API 或 Plugin 的 Angular、Vue、Svelte、MDX 等工作流可能暫時仍需 TypeScript 6；</li>
+<li>7.1 預計提供新 API。[R6]</li>
+</ul>
+<p>所以：</p>
+<p>$$
+CompilerSpeedup
+\not\Rightarrow
+EcosystemMigrationComplete
+$$</p>
+<hr>
+<h1>第十部分　平台折衷</h1>
+<h2>三十七、Turbo Pascal：對微型電腦折衷</h2>
+<ul>
+<li>小記憶體；</li>
+<li>快 Compiler；</li>
+<li>Pascal 方言；</li>
+<li>單體 IDE。</li>
+</ul>
+<hr>
+<h2>三十八、Delphi：對 Windows／Native 折衷</h2>
+<ul>
+<li>視覺元件；</li>
+<li>Object Pascal；</li>
+<li>Windows API；</li>
+<li>Native code；</li>
+<li>Vendor Toolchain。</li>
+</ul>
+<hr>
+<h2>三十九、C#：對 Managed platform 折衷</h2>
+<ul>
+<li>C-family 熟悉性；</li>
+<li>CLR；</li>
+<li>GC；</li>
+<li>Metadata；</li>
+<li>Component；</li>
+<li>跨語言 Runtime。</li>
+</ul>
+<hr>
+<h2>四十、TypeScript：對 Web 生態折衷</h2>
+<ul>
+<li>JavaScript 語義；</li>
+<li>Structural types；</li>
+<li>Unsoundness；</li>
+<li>Erasure；</li>
+<li>Open-source Compiler；</li>
+<li>任意 JavaScript Runtime。</li>
+</ul>
+<hr>
+<h2>四十一、共通模式</h2>
+<h1>$$
+NewCapability</h1>
+<p>PlatformRespect
++
+IncrementalImprovement
+$$</p>
+<p>而不是：</p>
+<h1>$$
+NewCapability</h1>
+<p>PlatformReplacement
+$$</p>
+<hr>
+<h1>第十一部分　風格時間相位</h1>
+<h2>四十二、微型 Compiler 期</h2>
+<pre><code class="language-text">問題：個人電腦缺乏快速、完整 Compiler
+策略：小型一遍式 Compiler 和短回饋
+</code></pre>
+<hr>
+<h2>四十三、Turbo Pascal 期</h2>
+<pre><code class="language-text">問題：語言工具碎片化且昂貴
+策略：Editor＋Compiler＋Run 整合產品
+</code></pre>
+<hr>
+<h2>四十四、Delphi 期</h2>
+<pre><code class="language-text">問題：Windows 應用開發過慢
+策略：Visual component＋Native Object Pascal
+</code></pre>
+<hr>
+<h2>四十五、C#／.NET 期</h2>
+<pre><code class="language-text">問題：Native Windows Component／Versioning 複雜
+策略：Managed Runtime＋Component language
+</code></pre>
+<hr>
+<h2>四十六、LINQ 期</h2>
+<pre><code class="language-text">問題：程式與資料語言斷裂
+策略：Type inference＋Lambda＋Query abstraction
+</code></pre>
+<hr>
+<h2>四十七、TypeScript 期</h2>
+<pre><code class="language-text">問題：大型 JavaScript 缺乏靜態工具
+策略：可擦除漸進結構型別
+</code></pre>
+<hr>
+<h2>四十八、TypeScript 7 期</h2>
+<pre><code class="language-text">問題：工具延遲妨礙超大型程式
+策略：Native Go Compiler／LSP＋相容遷移
+</code></pre>
+<hr>
+<h1>第十二部分　PLDST 風格指紋</h1>
+<h2>四十九、問題 framing</h2>
+<p>Hejlsberg 的核心問題是：</p>
+<blockquote>
+<p>如何讓開發者在既有平台上更快獲得錯誤、理解和重構回饋，而不用先放棄現有程式、工具及生態？</p>
+</blockquote>
+<hr>
+<h2>五十、價值優先序</h2>
+<p>$$
+V_{\text{Hejlsberg}}
+\approx
+(
+DeveloperFeedback,
+Tooling,
+Usability,
+TypeInformation,
+PlatformFit,
+Performance,
+Compatibility,
+Evolution
+)
+$$</p>
+<hr>
+<h2>五十一、核心—擴張偏好</h2>
+<p>偏好：</p>
+<ul>
+<li>熟悉表面；</li>
+<li>高品質 Compiler；</li>
+<li>IDE；</li>
+<li>Library／Platform；</li>
+<li>Type inference；</li>
+<li>元資料；</li>
+<li>由工具擴張體驗。</li>
+</ul>
+<hr>
+<h2>五十二、顯式—推導偏好</h2>
+<p>C#：</p>
+<ul>
+<li>強型別；</li>
+<li>顯式 Public contract；</li>
+<li>Local inference；</li>
+<li>Attribute／Metadata。</li>
+</ul>
+<p>TypeScript：</p>
+<ul>
+<li>可選 Annotation；</li>
+<li>強推導；</li>
+<li>Contextual typing；</li>
+<li>Structural compatibility；</li>
+<li><code>any</code> Escape。</li>
+</ul>
+<hr>
+<h2>五十三、效率—可讀性偏好</h2>
+<p>Compiler／Tool speed 是核心體驗。</p>
+<p>Runtime 策略依平台：</p>
+<ul>
+<li>Turbo／Delphi：Native；</li>
+<li>C#：JIT／Managed；</li>
+<li>TypeScript：JavaScript Runtime、型別擦除；</li>
+<li>TypeScript 7：Native Toolchain。</li>
+</ul>
+<hr>
+<h2>五十四、安全—自由偏好</h2>
+<p>C# 偏向 Managed safety，但保留 <code>unsafe</code>。</p>
+<p>TypeScript 偏向漸進證據，明確不追求完全 Soundness。</p>
+<p>共同點是：</p>
+<blockquote>
+<p>提高安全預設，但保留平台必要能力和遷移出口。</p>
+</blockquote>
+<hr>
+<h2>五十五、相容性偏好</h2>
+<p>Hejlsberg 通常避免要求一次全面重寫：</p>
+<ul>
+<li>Turbo Pascal 延續 Pascal；</li>
+<li>Delphi 延續 Object Pascal；</li>
+<li>C# 採 C-family 語法及多語言 CLR；</li>
+<li>TypeScript 是 JavaScript Superset；</li>
+<li>TypeScript 7 提供 Side-by-side transition。</li>
+</ul>
+<hr>
+<h2>五十六、治理偏好</h2>
+<p>早期產品：</p>
+<ul>
+<li>小型集中團隊。</li>
+</ul>
+<p>C#：</p>
+<ul>
+<li>Microsoft 團隊＋ECMA／ISO＋公開設計。</li>
+</ul>
+<p>TypeScript：</p>
+<ul>
+<li>Open-source repository；</li>
+<li>Design goal；</li>
+<li>Issue／Proposal；</li>
+<li>Core team；</li>
+<li>高度實作與相容測試。</li>
+</ul>
+<hr>
+<h1>第十三部分　反例與限制</h1>
+<h2>五十七、工具好不等於語言好</h2>
+<p>IDE 可以隱藏：</p>
+<ul>
+<li>複雜語法；</li>
+<li>隱式規則；</li>
+<li>Framework 魔法；</li>
+<li>Vendor lock-in。</li>
+</ul>
+<p>語言離開工具後仍需可理解。</p>
+<hr>
+<h2>五十八、TypeScript 不保證 Runtime 資料</h2>
+<p>外部 JSON、Network 和 JavaScript 可以不符合 Declaration。</p>
+<p>需要 Runtime validation。</p>
+<hr>
+<h2>五十九、Structural typing 會接受意外相容</h2>
+<p>兩個物件 Shape 相同，不表示語義相同。</p>
+<p>Brand／Nominal pattern 有時仍必要。</p>
+<hr>
+<h2>六十、漸進型別可能永久停在 <code>any</code></h2>
+<p>若沒有：</p>
+<ul>
+<li>Strict mode；</li>
+<li>Boundary validation；</li>
+<li>Migration policy；</li>
+<li>CI；</li>
+</ul>
+<p>TypeScript 只會提供局部工具收益。</p>
+<hr>
+<h2>六十一、C# 的平台整合增加重量</h2>
+<p>CLR、Framework、Metadata、JIT、NuGet 和 IDE 帶來：</p>
+<ul>
+<li>學習；</li>
+<li>Deployment；</li>
+<li>Version；</li>
+<li>Startup；</li>
+<li>Toolchain；</li>
+</ul>
+<p>成本。</p>
+<hr>
+<h2>六十二、RAD 容易把架構延後</h2>
+<p>快速視覺或框架開發可能讓系統在規模增長後才暴露結構問題。</p>
+<hr>
+<h2>六十三、TypeScript 7 仍是遷移中制度</h2>
+<p>7.0 的 Compiler 和 LSP 已穩定發布，但 Programmatic API 和部分 Framework 嵌入尚未完成。</p>
+<p>不能把性能發布等同整個生態已完全切換。</p>
+<hr>
+<h1>第十四部分　設計決策語料</h1>
+<table>
+<thead>
+<tr>
+<th>時期</th>
+<th>問題</th>
+<th>決策</th>
+<th>複雜度去向</th>
+<th>風格</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1980s 初</td>
+<td>微型電腦 Compiler 過慢</td>
+<td>Poly／Compas Pascal</td>
+<td>Compiler</td>
+<td>快回饋</td>
+</tr>
+<tr>
+<td>1983+</td>
+<td>工具昂貴且分離</td>
+<td>Turbo Pascal</td>
+<td>整合 IDE</td>
+<td>產品化</td>
+</tr>
+<tr>
+<td>1995</td>
+<td>Windows 應用開發複雜</td>
+<td>Delphi</td>
+<td>Component／Tool</td>
+<td>RAD</td>
+</tr>
+<tr>
+<td>1999–2000</td>
+<td>Native Component／Versioning 困難</td>
+<td>C#／CLR</td>
+<td>Managed platform</td>
+<td>平台重建</td>
+</tr>
+<tr>
+<td>2004–07</td>
+<td>Data query 與語言分裂</td>
+<td>LINQ</td>
+<td>Compiler／Provider</td>
+<td>語言—資料統一</td>
+</tr>
+<tr>
+<td>2012</td>
+<td>大型 JavaScript 缺工具</td>
+<td>TypeScript</td>
+<td>Checker／Language service</td>
+<td>漸進建模</td>
+</tr>
+<tr>
+<td>2025–26</td>
+<td>TypeScript Tooling 達規模極限</td>
+<td>Go Native Port／TS7</td>
+<td>新 Compiler／LSP</td>
+<td>基礎重寫</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>第十五部分　人物原型判定</h1>
+<h2>六十四、主要原型</h2>
+<p>Anders Hejlsberg 同時屬於：</p>
+<ul>
+<li><strong>回饋循環導向工具設計者</strong>；</li>
+<li><strong>語言—IDE—平台共同建築師</strong>；</li>
+<li><strong>實用型別系統設計者</strong>；</li>
+<li><strong>漸進遷移設計者</strong>；</li>
+<li><strong>平台折衷與重寫工程師</strong>。</li>
+</ul>
+<hr>
+<h2>六十五、不適合的簡單標籤</h2>
+<p>不應只稱：</p>
+<pre><code class="language-text">C# 單一發明者
+TypeScript 單一作者
+商業語言設計者
+Java 模仿者
+靜態型別純粹主義者
+</code></pre>
+<p>較精確的描述是：</p>
+<blockquote>
+<p>反覆在既有平台上加入足以支撐大型開發的型別和工具能力，並把低延遲回饋、遷移及生態相容視為語言核心問題的設計者。</p>
+</blockquote>
+<hr>
+<h1>第十六部分　統一評價</h1>
+<h2>六十六、最重要的連續性</h2>
+<p>從 Turbo Pascal 到 TypeScript 7：</p>
+<p>$$
+\boxed{
+\text{縮短從意圖到可靠回饋的距離}
+}
+$$</p>
+<hr>
+<h2>六十七、最重要的變化</h2>
+<p>型別模型逐步從：</p>
+<pre><code class="language-text">Pascal／C# 的 Nominal static contract
+</code></pre>
+<p>轉向：</p>
+<pre><code class="language-text">TypeScript 對動態 JavaScript 的 Structural、Gradual model
+</code></pre>
+<p>這證明 Hejlsberg 不把自己的舊語言模型當成普遍答案。</p>
+<hr>
+<h2>六十八、最重要的工具判斷</h2>
+<p>當 Tool latency 破壞使用時，他願意：</p>
+<ul>
+<li>優化 Compiler；</li>
+<li>重建 Language service；</li>
+<li>甚至用另一門語言重寫整個工具基礎；</li>
+</ul>
+<p>但優先保持使用者語義和遷移路徑。</p>
+<hr>
+<h1>第十七部分　結論</h1>
+<p>Anders Hejlsberg 的語言設計不能只用功能清單理解。</p>
+<p>其完整方法是：</p>
+<ol>
+<li>從真實平台與開發流程開始；</li>
+<li>使編輯、編譯、診斷及執行形成短回饋；</li>
+<li>將語言、IDE、Runtime 和 Library 共同設計；</li>
+<li>使用熟悉表面降低遷移；</li>
+<li>讓型別資訊同時服務 Compiler 和工具；</li>
+<li>不追求超出平台現實的形式純度；</li>
+<li>在新能力與既有生態間建立漸進路徑；</li>
+<li>當實作架構達到規模極限時，重寫基礎但保護外部行為。</li>
+</ol>
+<p>本文對 Hejlsberg 的 PLDST 判定為：</p>
+<p>$$
+\boxed{
+\text{Fast-Feedback Compiler Engineer}
+\rightarrow
+\text{Integrated Platform Language Architect}
+\rightarrow
+\text{Gradual Tooling Systems Designer}
+}
+$$</p>
+<p>其核心優勢是：</p>
+<ul>
+<li>Compiler 和 IDE 回饋速度被視為一級設計目標；</li>
+<li>語言與平台能力高度協同；</li>
+<li>C# 對 Component、Versioning 和 Runtime 分工有明確思考；</li>
+<li>LINQ 讓型別和工具跨越資料邊界；</li>
+<li>TypeScript 尊重 JavaScript 生態並提供漸進工具價值；</li>
+<li>TypeScript 7 展示大型工具可在保持語義的前提下重建。</li>
+</ul>
+<p>其核心代價是：</p>
+<ul>
+<li>工具可能遮蔽語言本身複雜度；</li>
+<li>平台整合造成 Lock-in 和系統重量；</li>
+<li>TypeScript 的不健全性需要 Runtime validation；</li>
+<li>Structural typing 可能混淆形狀與語義；</li>
+<li>漸進遷移可以永久停在弱保證；</li>
+<li>原生重寫仍需處理巨大 API 和 Framework 生態。</li>
+</ul>
+<p>最終原則為：</p>
+<p>$$
+\boxed{
+\text{語言不是只有能編譯的文本}
+\quad
+\land
+\text{型別不是只有拒絕程式的證明}
+\quad
+\land
+\text{相容不是拒絕重寫內部}
+}
+$$</p>
+<p>Hejlsberg 的歷史提出了一個極具工程性的判斷：</p>
+<blockquote>
+<p>一門語言真正的使用介面，是開發者每次輸入之後得到的全部回饋；如果 Compiler、IDE、Runtime 或遷移成本讓回饋失效，再優雅的語法也沒有完成設計。</p>
+</blockquote>
+<hr>
+<h1>附錄 A　PLDST 個案卡</h1>
+<pre><code class="language-text">人物：Anders Hejlsberg
+主要語言／系統：Turbo Pascal、Delphi、C#、TypeScript
+核心時期：1980s–至今
+主要問題：語言能力與開發工具／平台之間的斷裂
+主要策略：快速 Compiler、IDE、型別推導、平台 Metadata、漸進型別
+複雜度去向：Compiler、IDE、Runtime、Library、Language service
+責任去向：工具提前回饋，平台承擔執行與版本
+主要保護對象：應用程式開發者、大型程式團隊、既有生態
+主要限制：平台重量、不健全型別、工具依賴、遷移和 API 相容
+歸因信心：高
+</code></pre>
+<hr>
+<h1>附錄 B　來源與參考文獻</h1>
+<p><strong>[R1]</strong> Anders Hejlsberg historical interviews and 2026 retrospective interviews on Turbo Pascal, Delphi, C# and TypeScript.<br>— Compiler 回饋、產品形成、小型團隊、平台和長期設計方法；後期訪談需與同期文件交叉校對。</p>
+<p><strong>[R2]</strong> Microsoft／ECMA, <em>C# Language Specification</em>, Introduction.<br>— C# 由 Microsoft 發展，Principal inventors 為 Anders Hejlsberg、Scott Wiltamuth 和 Peter Golde。</p>
+<p><strong>[R3]</strong> Microsoft, TypeScript launch talks and “What is TypeScript and Why?” interviews, 2012.<br>— Application-scale JavaScript、可選型別、Tooling 和 JavaScript 生成。</p>
+<p><strong>[R4]</strong> Microsoft TypeScript repository, “TypeScript Design Goals.”<br>— 靜態錯誤、大型元件、Clean JavaScript、Runtime 保持、Structural／Gradual typing 及 Non-goals。</p>
+<p><strong>[R5]</strong> Bill Venners, Artima C# Design Interviews with Anders Hejlsberg.<br>— C# 設計程序、Usability／Taste、Checked exception、Delegate、Component、Versioning 及 CLR 折衷。</p>
+<p><strong>[R6]</strong> Microsoft TypeScript Blog, “Announcing TypeScript 7.0,” 2026.<br>— Go 原生 Compiler、8–12 倍典型加速、真實專案驗證、7.0 API 缺口及 Side-by-side transition。</p>
+<p><strong>[R7]</strong> Microsoft TypeScript repository, “Writing Good Design Proposals.”<br>— 問題情境、受影響使用者、Workaround 及實例優先的提案方法。</p>
+<p><strong>[R8]</strong> Anders Hejlsberg, “A 10x Faster TypeScript,” Microsoft TypeScript Blog, 2025.<br>— Native Go Port 的動機、Compiler／Language service、Parallelism 和開源實作。</p>
+<p><strong>[R9]</strong> Microsoft, articles on LINQ evolution and C# design.<br>— Peter Golde、Anders Hejlsberg、Compiler extensibility、Query syntax 及多團隊貢獻。</p>
+<p><strong>[R10]</strong> Borland／Delphi historical materials and Hejlsberg interviews.<br>— PolyPascal、Turbo Pascal、Delphi 及產品／團隊歸因；部分史料需注意回顧與公司宣傳性質。</p>
+<hr>
+<h1>附錄 C　PLDST 標記</h1>
+<pre><code class="language-text">[T-P] Microcomputer Pascal phase
+[T-T] Turbo feedback-loop phase
+[T-D] Delphi component-platform phase
+[T-C] C#／.NET phase
+[T-L] LINQ phase
+[T-S] TypeScript gradual-modeling phase
+[T-7] TypeScript 7 native-toolchain phase
+
+[S-F] Fast feedback
+[S-I] IDE／language integration
+[S-P] Platform fit
+[S-T] Tool-driven type system
+[S-G] Gradual adoption
+[S-R] Internal rewrite with external compatibility
+
+
+---
+
+# 附錄 D　第二輪史實與歸因校對紀錄
+
+## D.1 Turbo Pascal 的作者與產品歸因
+
+第二輪重新核對 Hejlsberg 的歷史訪談與 Turbo Pascal 資料：
+
+- Hejlsberg 先開發 Blue Label／Compas／PolyPascal Compiler；
+- Borland 授權其 Compiler core，並將 Editor、Packaging、Distribution 和產品策略整合成 Turbo Pascal；
+- Hejlsberg 是 Compiler 架構的核心作者及後續版本的重要工程師；
+- Philippe Kahn 與 Borland 團隊對產品化、低價策略、IDE 和全球傳播具有獨立作用。
+
+本文因此沒有把 Turbo Pascal 的全部產品成功歸為 Hejlsberg 單人工作。
+
+---
+
+## D.2 Delphi 的歸因邊界
+
+Hejlsberg 是 Delphi 初期 Chief architect，但 Delphi 是：
+
+- Object Pascal 語言；
+- Native Compiler；
+- Visual Component Library；
+- Form designer；
+- Database tool；
+- IDE；
+- Windows platform integration；
+
+的團隊產品。
+
+本文只把「語言—Compiler—IDE—Component 平台共同設計」視為 Hejlsberg 的風格證據，不把全部 VCL、Database、Debugger 或後續 Delphi 版本歸於個人。
+
+---
+
+## D.3 C# 的正式主要發明者
+
+第二輪直接核對 Microsoft C# Language Specification：
+
+- C# 在 Microsoft 內部發展；
+- Principal inventors 是 Anders Hejlsberg、Scott Wiltamuth 和 Peter Golde；
+- 第一個廣泛發布實作在 2000 年 7 月作為 .NET Framework 計畫的一部分出現；
+- C# 後續規格由 Microsoft、ECMA、ISO、設計團隊和開源社群持續演化。
+
+本文因此將 Hejlsberg定位為 Lead architect／主要發明者之一，而非唯一作者。
+
+---
+
+## D.4 Checked exception、Versioning 和 Simplexity
+
+第二輪核對 2003–2004 年 Artima 系列訪談：
+
+- Hejlsberg 對 Checked exception 的主要疑慮確實是 Scalability 和 Versionability；
+- C# 對 `virtual`／`override` 的明示要求與 Library evolution 及意外 Override 有關；
+- Delegate、Property、Event 和 Metadata 反映 Component software 的一級支援；
+- “Simplexity” 表示以平台內部複雜度換取使用者表面簡潔。
+
+這些內容是 Hejlsberg 的一手訪談觀點，不代表所有 C# 團隊成員或研究界對 Checked exception 的唯一結論。
+
+---
+
+## D.5 LINQ 的多作者性
+
+第二輪核對 Microsoft 的 LINQ 歷史：
+
+- Anders Hejlsberg 和 Peter Golde 早期討論語言內查詢；
+- Erik Meijer、Peter Drayton、Matt Warren、Mads Torgersen 及多位 Compiler／Library 研究者具有重要作用；
+- LINQ 依賴 Generics、Lambda、Extension method、Expression tree、Anonymous type、Type inference 等多項共同成果；
+- Query syntax、Provider architecture 和各資料來源實作不可歸為 Hejlsberg 單人設計。
+
+---
+
+## D.6 TypeScript 官方設計目標
+
+第二輪直接核對 TypeScript Design Goals：
+
+正式目標包括：
+
+- 靜態識別可能錯誤；
+- 組織大型程式；
+- 不增加輸出程式 Runtime overhead；
+- 生成清楚、慣用且可辨識的 JavaScript；
+- 對齊 ECMAScript；
+- 保留所有 JavaScript Runtime 行為；
+- 使用可擦除的 Structural type system；
+- 跨平台；
+- 避免對 TypeScript 1.0 造成重大破壞。
+
+正式 Non-goals 包括：
+
+- 不精確模仿現有語言；
+- 不以 Runtime 性能最佳化為 TypeScript Compiler 的主要任務；
+- 不追求完全 Sound／可證明正確的 Type system，而是在 Correctness 與 Productivity 間取平衡。
+
+本文因此沒有把 TypeScript 描述為 C# 語法移植或完整安全證明系統。
+
+---
+
+## D.7 Structural／Gradual typing 的邊界
+
+TypeScript 使用：
+
+- Structural compatibility；
+- Inference；
+- Contextual typing；
+- Control-flow narrowing；
+- `any`／`unknown`；
+- Declaration file。
+
+這使其能建模 JavaScript 生態。
+
+但：
+
+- Type assertion 不會驗證 Runtime 資料；
+- `any` 可關閉檢查；
+- 外部 JSON 仍需 Runtime validation；
+- 形狀相容不保證領域語義相同。
+
+本文把其定位為工具與漸進證據，而非完整 Runtime contract。
+
+---
+
+## D.8 TypeScript 7 的當代狀態
+
+截至 2026 年 7 月 30 日：
+
+- TypeScript 7.0 已於 2026 年 7 月 8 日正式發布；
+- 官方 npm 版本在發布材料中為 7.0.2；
+- 新 Compiler 和 Language server 以 Go 實作；
+- 典型完整 Build 的官方觀察範圍約為 8–12 倍加速；
+- 7.0 目標是盡可能相容 TypeScript 6 的 Type checking 和 CLI 行為；
+- 7.0 尚未提供穩定 Programmatic API；
+- `@typescript/typescript6` 支援 6／7 並行；
+- 依賴 Compiler API 或特殊 Language-service plugin 的部分 Framework 仍可能需 TypeScript 6；
+- 7.1 預計建立新的 API。
+
+本文因此沒有把 7.0 寫成整個 JavaScript／TypeScript 生態已完成遷移。
+
+---
+
+## D.9 TypeScript 7 的性能數字
+
+官方性能結果來自：
+
+- TypeScript 自身測試；
+- Microsoft 及外部大型 Codebase；
+- 個別組織回饋；
+- Native code 和 Shared-memory multithreading。
+
+不同專案、硬體及工作流的加速不同。
+
+本文使用「典型 8–12 倍完整 Build」作有來源的官方範圍，而不是宣稱所有命令、Editor operation 或專案都固定快十倍。
+
+---
+
+## D.10 工具驅動設計的推論邊界
+
+「回饋循環導向工具設計者」是 PLDST 綜合推論，證據包括：
+
+- Turbo Pascal 快速 Compiler／IDE；
+- Delphi RAD；
+- C#／Visual Studio／Metadata；
+- LINQ 的 Editor／Type checking；
+- TypeScript Language service；
+- TypeScript 7 Native Port。
+
+它不表示所有具體 IDE 功能都由 Hejlsberg 設計，也不表示 Tooling 可以取代清楚語言規則。
+
+---
+
+## D.11 PLDST 原型邊界
+
+下列名稱為本文分析原型：
+
+```text
+回饋循環導向工具設計者
+語言—IDE—平台共同建築師
+實用型別系統設計者
+漸進遷移設計者
+</code></pre>
+<p>它們不是 Hejlsberg 自稱的正式學派名稱，而是跨四代產品決策形成的穩定風格判定。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-020.html">https://thisoneisneok.com/html/papers/pldst-020.html</a></footer>
+</body>
+</html>

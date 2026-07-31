@@ -1,0 +1,1547 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>問題世界建模：實體、關係、規則與系統邊界 | Neo.K</title>
+<meta name="description" content="前篇將程式定義為「可執行問題模型」，並指出來源文字只是程式在特定語言中的投影。本篇進一步處理程式設計中最常被跳過、卻又決定整個系統結構的前置工作：問題世界建模。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pu-1-02.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PU</strong><span>程式宇宙基礎</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PU-1-02</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-27</span></div><div><b>作者</b><span>Neo.K with Aletheia</span></div><div><b>狀態</b><span>初版完成</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pu-1-02.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>問題世界建模：實體、關係、規則與系統邊界</h1>
+<h2>Problem-World Modeling: Entities, Relations, Rules, and System Boundaries</h2>
+<p><strong>論文編號：</strong> PU-1-02<br><strong>系列：</strong>「程式宇宙書系」第 1 冊《系統性程式設計》<br><strong>作者：</strong> Neo.K with Aletheia<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>版本：</strong> v0.1<br><strong>日期：</strong> 2026 年 7 月 27 日  </p>
+<hr>
+<h2>摘要</h2>
+<p>前篇將程式定義為「可執行問題模型」，並指出來源文字只是程式在特定語言中的投影。本篇進一步處理程式設計中最常被跳過、卻又決定整個系統結構的前置工作：問題世界建模。</p>
+<p>本文將問題世界定義為：</p>
+<blockquote>
+<p><strong>系統為了理解、判斷與改變某一現實或數位領域，而主動選取、分類、關聯、約束與排除後形成的可執行認知世界。</strong></p>
+</blockquote>
+<p>形式上：</p>
+<h1>$$
+\boxed{
+\mathcal W_P</h1>
+<p>\left\langle
+E,
+A,
+R,
+S,
+V,
+C,
+B,
+X,
+U,
+H
+\right\rangle
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$E$：實體；</li>
+<li>$A$：屬性；</li>
+<li>$R$：關係；</li>
+<li>$S$：狀態；</li>
+<li>$V$：事件與變化；</li>
+<li>$C$：規則與約束；</li>
+<li>$B$：系統邊界；</li>
+<li>$X$：外部世界與相依；</li>
+<li>$U$：未知、爭議與未決內容；</li>
+<li>$H$：歷史、承諾與版本。</li>
+</ul>
+<p>本文主張，問題世界不是現實本身，也不是資料庫 schema、類別圖、需求清單或使用者故事。它是一個經過目的選擇與責任界定的中介世界：</p>
+<p>$$
+\boxed{
+\mathcal P
+\supsetneq
+\mathcal W_P
+\supsetneq
+\mathcal M_C
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathcal P$：更廣泛的物理與社會世界；</li>
+<li>$\mathcal W_P$：系統選定的問題世界；</li>
+<li>$\mathcal M_C$：實際進入計算模型的結構。</li>
+</ul>
+<p>因此，建模第一步不是問「要建立哪些資料表」，而是問：</p>
+<ul>
+<li>世界裡有哪些東西？</li>
+<li>哪些東西只是屬性，哪些具有持續身份？</li>
+<li>哪些關係決定責任、權限與歷史？</li>
+<li>哪些狀態合法，哪些狀態不可出現？</li>
+<li>哪些事件由系統處理，哪些只被觀測？</li>
+<li>哪些規則屬於領域，哪些只是目前實作限制？</li>
+<li>系統真正負責到哪裡？</li>
+<li>哪些內容尚未知道、不能決定或不應自動化？</li>
+</ul>
+<p>本文提出「實體最小判準」：若某對象具有可追蹤身份、跨時間狀態、關係責任或獨立生命週期，便應被優先視為實體，而非單純欄位。反之，僅為描述性值、無獨立身份且不參與關係的內容，可作為屬性。</p>
+<p>本文也區分六類關係：</p>
+<ol>
+<li><strong>組成關係</strong>：部分與整體；</li>
+<li><strong>擁有關係</strong>：控制與歸屬；</li>
+<li><strong>角色關係</strong>：主體在特定情境中的位置；</li>
+<li><strong>依賴關係</strong>：一方需要另一方才能存在或完成；</li>
+<li><strong>時序關係</strong>：事件與狀態的先後；</li>
+<li><strong>規範關係</strong>：權限、責任、義務與禁止。</li>
+</ol>
+<p>本文指出，真正複雜的系統通常不是被實體數量壓垮，而是被未明示的關係壓垮。兩個相同實體集合，若關係、權限與責任不同，就形成不同問題世界。</p>
+<p>本文進一步建立「規則分層」：</p>
+<ul>
+<li><strong>世界規則</strong>：領域本身或制度所要求的規則；</li>
+<li><strong>系統規則</strong>：為維持一致性、安全與可執行性而建立的規則；</li>
+<li><strong>實作規則</strong>：受目前技術與架構限制而存在的規則；</li>
+<li><strong>暫時規則</strong>：尚待驗證、遷移或人工處理的過渡規則。</li>
+</ul>
+<p>若四者不被區分，技術限制就會被誤認為世界必然，暫時補丁也可能固化為永久制度。</p>
+<p>本文將系統邊界定義為：</p>
+<h1>$$
+\boxed{
+B</h1>
+<p>\left\langle
+Responsibility,
+Authority,
+Observation,
+Guarantee,
+Dependency,
+NonGuarantee
+\right\rangle
+}
+$$</p>
+<p>邊界不是架構圖上的外框，而是對責任、控制、可觀測、保證、相依與非保證的明示。系統只能對自己能控制或能驗證的狀態負責；對邊界外效果，必須提供證據接口、補償與人類接管，而不能以單一成功旗標僭稱完成。</p>
+<p>本文提出「未知保留」與「爭議建模」：成熟問題世界不應強迫所有內容立即進入確定類型，而應正式保留：</p>
+<ul>
+<li>unknown；</li>
+<li>unresolved；</li>
+<li>contested；</li>
+<li>not-applicable；</li>
+<li>external-decision；</li>
+<li>human-review。</li>
+</ul>
+<p>本文使用待辦事項、訂單系統、醫療分流、網站部署、AI Agent 與研究計畫等案例，說明如何從開放現實中建立可執行問題世界。本文亦提出可證偽研究綱領，包括實體誤判率、關係遺漏率、規則層級混淆、邊界錯配、未知壓平、世界模型可解釋性及寫碼前建模對維護成本的影響。</p>
+<p>本文為下一篇〈資料—狀態—事件—行動〉建立靜態世界骨架：只有先知道世界裡有哪些實體、關係、規則與邊界，才能進一步定義它們如何隨時間變化。</p>
+<p><strong>關鍵詞：</strong> 問題世界、世界建模、實體、關係、規則、系統邊界、未知保留、程式設計方法論</p>
+<hr>
+<h2>Abstract</h2>
+<p>The previous paper defined a program as an executable problem model. This paper develops a systematic method for problem-world modeling.</p>
+<p>A problem world is defined as an executable cognitive world formed by selecting, classifying, relating, constraining, and excluding aspects of a broader physical or digital domain:</p>
+<h1>$$
+\mathcal W_P</h1>
+<p>\left\langle
+E,
+A,
+R,
+S,
+V,
+C,
+B,
+X,
+U,
+H
+\right\rangle
+$$</p>
+<p>The paper distinguishes entities from attributes, develops six classes of relations, separates world rules, system rules, implementation rules, and temporary rules, and defines system boundaries in terms of responsibility, authority, observation, guarantees, dependencies, and non-guarantees.</p>
+<p>It introduces unknown preservation and contested modeling and argues that problem-world modeling must precede data schemas, classes, folders, and source code.</p>
+<p><strong>Keywords:</strong> problem world, domain modeling, entities, relations, rules, system boundaries, unknown preservation</p>
+<hr>
+<h1>一、問題的提出：寫碼前，系統已經選擇了一個世界</h1>
+<p>任何程式都不可能處理全部現實。</p>
+<p>它必須選擇：</p>
+<ul>
+<li>哪些東西值得被命名；</li>
+<li>哪些關係值得被保存；</li>
+<li>哪些狀態需要區分；</li>
+<li>哪些事件需要回應；</li>
+<li>哪些規則必須執行；</li>
+<li>哪些外部效果不在自己控制範圍內。</li>
+</ul>
+<p>這些選擇共同形成問題世界。</p>
+<p>若設計者不主動建模，問題世界仍會出現，只是以隱含方式散落在：</p>
+<ul>
+<li>欄位名稱；</li>
+<li>函式參數；</li>
+<li>if 條件；</li>
+<li>UI 文案；</li>
+<li>權限判斷；</li>
+<li>資料表；</li>
+<li>例外處理；</li>
+<li>開發者記憶。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+\boxed{
+\text{No Explicit World Model}
+\not\Rightarrow
+\text{No World Model}
+}
+$$</p>
+<p>它只代表世界模型沒有被看見、驗證與共同治理。</p>
+<hr>
+<h1>二、問題世界的正式定義</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+\mathcal W_P</h1>
+<p>\left\langle
+E,
+A,
+R,
+S,
+V,
+C,
+B,
+X,
+U,
+H
+\right\rangle
+}
+$$</p>
+<h2>2.1 實體 $E$</h2>
+<p>具有身份、狀態、關係或生命週期的對象。</p>
+<h2>2.2 屬性 $A$</h2>
+<p>描述實體的值或特徵。</p>
+<h2>2.3 關係 $R$</h2>
+<p>實體間的結構、依賴、角色、權限與時序連接。</p>
+<h2>2.4 狀態 $S$</h2>
+<p>問題世界在特定時間的合法配置。</p>
+<h2>2.5 事件 $V$</h2>
+<p>使狀態需要重新評估的發生。</p>
+<h2>2.6 規則 $C$</h2>
+<p>限制實體、關係、狀態與事件的合法性。</p>
+<h2>2.7 邊界 $B$</h2>
+<p>系統的責任、控制、觀測、保證與非保證。</p>
+<h2>2.8 外部世界 $X$</h2>
+<p>系統依賴但不完全控制的主體、服務、制度與物理環境。</p>
+<h2>2.9 未知與爭議 $U$</h2>
+<p>尚未知道、尚未決定、不適合自動化或存在異議的內容。</p>
+<h2>2.10 歷史 $H$</h2>
+<p>實體與規則如何形成、變更、承諾與持續。</p>
+<hr>
+<h1>三、問題世界不是現實本身</h1>
+<p>問題世界是選定後的中介世界。</p>
+<p>$$
+\boxed{
+\mathcal P
+\supsetneq
+\mathcal W_P
+\supsetneq
+\mathcal M_C
+}
+$$</p>
+<h2>3.1 現實大於問題世界</h2>
+<p>現實中存在大量與當前目的無關的內容。</p>
+<h2>3.2 問題世界大於實際模型</h2>
+<p>即使某些內容已被認為相關，也可能尚未進入程式、資料或介面。</p>
+<h2>3.3 建模不是複製</h2>
+<p>建模包含：</p>
+<ul>
+<li>選擇；</li>
+<li>命名；</li>
+<li>分類；</li>
+<li>抽象；</li>
+<li>忽略；</li>
+<li>邊界；</li>
+<li>責任分配。</li>
+</ul>
+<p>因此，問題世界建模本身就是一種設計與治理活動。</p>
+<hr>
+<h1>四、實體與屬性</h1>
+<h2>4.1 實體最小判準</h2>
+<p>若某對象至少符合下列一項，應優先考慮為實體：</p>
+<ul>
+<li>具有穩定身份；</li>
+<li>跨時間改變狀態；</li>
+<li>參與重要關係；</li>
+<li>承擔權限或責任；</li>
+<li>有獨立生命週期；</li>
+<li>需要被歷史追蹤。</li>
+</ul>
+<h2>4.2 屬性判準</h2>
+<p>若某內容：</p>
+<ul>
+<li>無獨立身份；</li>
+<li>只描述另一實體；</li>
+<li>不承擔關係；</li>
+<li>不具有獨立生命週期；</li>
+</ul>
+<p>則較適合作為屬性。</p>
+<h2>4.3 實體化錯誤</h2>
+<p>把所有欄位都做成實體，會造成：</p>
+<ul>
+<li>過度複雜；</li>
+<li>無意義身份；</li>
+<li>關係爆炸；</li>
+<li>維護成本上升。</li>
+</ul>
+<h2>4.4 屬性化錯誤</h2>
+<p>把本應具有身份與歷史的對象壓成欄位，則會：</p>
+<ul>
+<li>失去生命週期；</li>
+<li>無法追蹤責任；</li>
+<li>無法表達關係；</li>
+<li>無法處理版本；</li>
+<li>無法遷移。</li>
+</ul>
+<h2>4.5 例子</h2>
+<p>地址可以只是文字屬性。</p>
+<p>但若系統需要：</p>
+<ul>
+<li>多地址；</li>
+<li>驗證；</li>
+<li>使用歷史；</li>
+<li>配送關係；</li>
+<li>法律地位；</li>
+</ul>
+<p>地址就可能成為實體。</p>
+<hr>
+<h1>五、六類關係</h1>
+<p>複雜系統真正困難的部分，往往不是實體數量，而是關係。</p>
+<h2>5.1 組成關係</h2>
+<p>描述部分與整體：</p>
+<p>$$
+PartOf(x,y)
+$$</p>
+<p>例如：</p>
+<ul>
+<li>訂單包含訂單項目；</li>
+<li>專案包含任務；</li>
+<li>文件包含章節。</li>
+</ul>
+<p>需區分：</p>
+<ul>
+<li>可獨立存在的部分；</li>
+<li>隨整體刪除的部分；</li>
+<li>可被共享的部分。</li>
+</ul>
+<h2>5.2 擁有關係</h2>
+<p>描述控制、歸屬或處分權：</p>
+<p>$$
+Owns(a,x)
+$$</p>
+<p>擁有可能包括：</p>
+<ul>
+<li>建立權；</li>
+<li>修改權；</li>
+<li>轉移權；</li>
+<li>刪除權；</li>
+<li>使用權。</li>
+</ul>
+<h2>5.3 角色關係</h2>
+<p>同一主體在不同情境可扮演不同角色：</p>
+<p>$$
+Role(a,c)=r
+$$</p>
+<p>例如同一人可以是：</p>
+<ul>
+<li>買家；</li>
+<li>賣家；</li>
+<li>審核者；</li>
+<li>管理者；</li>
+<li>被影響者。</li>
+</ul>
+<p>角色不應被過早固化為人格身份。</p>
+<h2>5.4 依賴關係</h2>
+<p>$$
+DependsOn(x,y)
+$$</p>
+<p>若 $y$ 失效，$x$ 的存在、完成或合法性會受影響。</p>
+<p>需區分：</p>
+<ul>
+<li>強依賴；</li>
+<li>弱依賴；</li>
+<li>可替代依賴；</li>
+<li>外部依賴。</li>
+</ul>
+<h2>5.5 時序關係</h2>
+<p>事件與狀態具有：</p>
+<ul>
+<li>先於；</li>
+<li>晚於；</li>
+<li>同時；</li>
+<li>包含；</li>
+<li>重疊；</li>
+<li>期限。</li>
+</ul>
+<p>時序關係不等於單一時間戳。</p>
+<h2>5.6 規範關係</h2>
+<p>描述：</p>
+<ul>
+<li>權限；</li>
+<li>義務；</li>
+<li>責任；</li>
+<li>禁止；</li>
+<li>委任；</li>
+<li>申訴；</li>
+<li>承諾。</li>
+</ul>
+<p>規範關係會直接決定系統中的合法行動空間。</p>
+<hr>
+<h1>六、關係為何比欄位重要</h1>
+<h2>6.1 相同實體，不同世界</h2>
+<p>假設兩個系統都具有：</p>
+<pre><code class="language-text">User
+Document
+</code></pre>
+<p>若系統 A 中使用者擁有文件，系統 B 中使用者只能暫時存取文件，兩者就是不同世界。</p>
+<h2>6.2 關係決定責任</h2>
+<p>文件內容錯誤時，誰負責？</p>
+<ul>
+<li>作者；</li>
+<li>所有者；</li>
+<li>發布者；</li>
+<li>審核者；</li>
+<li>平台；</li>
+</ul>
+<p>答案取決於關係，而不是欄位。</p>
+<h2>6.3 關係具有時間</h2>
+<p>擁有、委任與角色通常有：</p>
+<ul>
+<li>生效時間；</li>
+<li>終止時間；</li>
+<li>暫停；</li>
+<li>版本；</li>
+<li>來源證據。</li>
+</ul>
+<h2>6.4 關係本身可能成為實體</h2>
+<p>若關係具有：</p>
+<ul>
+<li>自己的身份；</li>
+<li>狀態；</li>
+<li>權限；</li>
+<li>歷史；</li>
+<li>生命週期；</li>
+</ul>
+<p>它應被建模為關係實體。</p>
+<p>例如：</p>
+<ul>
+<li>合約；</li>
+<li>訂閱；</li>
+<li>婚姻；</li>
+<li>任務委任；</li>
+<li>會員資格。</li>
+</ul>
+<hr>
+<h1>七、角色與主體</h1>
+<h2>7.1 使用者不是唯一主體</h2>
+<p>問題世界中的主體可以包括：</p>
+<ul>
+<li>直接使用者；</li>
+<li>管理者；</li>
+<li>受影響者；</li>
+<li>第三方服務；</li>
+<li>審核者；</li>
+<li>法規機構；</li>
+<li>未來維護者；</li>
+<li>Agent。</li>
+</ul>
+<h2>7.2 角色不等於權限集合全部</h2>
+<p>角色可以提供預設權限，但實際行動還可能受：</p>
+<ul>
+<li>情境；</li>
+<li>對象；</li>
+<li>時間；</li>
+<li>委任；</li>
+<li>風險；</li>
+<li>人類批准；</li>
+</ul>
+<p>約束。</p>
+<h2>7.3 沉默主體</h2>
+<p>沒有登入系統的人，也可能受系統影響。</p>
+<p>例如：</p>
+<ul>
+<li>被推薦系統降低曝光的創作者；</li>
+<li>被公共模型分類的居民；</li>
+<li>被 AI 產生內容提及的人。</li>
+</ul>
+<h2>7.4 主體可見性</h2>
+<p>問題世界應記錄：</p>
+<pre><code class="language-yaml">actors:
+  direct_users: []
+  operators: []
+  affected_non_users: []
+  external_authorities: []
+  future_maintainers: []
+</code></pre>
+<hr>
+<h1>八、規則分層</h1>
+<h2>8.1 世界規則</h2>
+<p>源自領域、制度或現實要求。</p>
+<p>例如：</p>
+<ul>
+<li>已付款訂單才能出貨；</li>
+<li>未成年人需要特定同意；</li>
+<li>一項醫療決定需由合格專業者確認。</li>
+</ul>
+<h2>8.2 系統規則</h2>
+<p>為維持系統一致、安全與責任建立。</p>
+<p>例如：</p>
+<ul>
+<li>同一事件不得重複處理；</li>
+<li>高風險操作需要雙重批准；</li>
+<li>關鍵狀態修改必須留存證據。</li>
+</ul>
+<h2>8.3 實作規則</h2>
+<p>源自目前技術限制。</p>
+<p>例如：</p>
+<ul>
+<li>檔案大小上限；</li>
+<li>批次每次最多處理一百筆；</li>
+<li>只支援特定格式。</li>
+</ul>
+<h2>8.4 暫時規則</h2>
+<p>為遷移、試驗或人工過渡建立。</p>
+<p>例如：</p>
+<ul>
+<li>舊資料暫由人工審核；</li>
+<li>新功能只開放測試群體；</li>
+<li>某欄位等待重新分類。</li>
+</ul>
+<h2>8.5 層級混淆</h2>
+<p>若實作規則被說成世界規則，使用者會誤以為技術限制不可改變。</p>
+<p>若暫時規則沒有期限，便可能固化為制度。</p>
+<hr>
+<h1>九、規則的結構</h1>
+<p>完整規則至少包含：</p>
+<h1>$$
+Rule</h1>
+<p>\left\langle
+Trigger,
+Condition,
+Actor,
+Action,
+Effect,
+Evidence,
+Exception
+\right\rangle
+$$</p>
+<h2>9.1 觸發</h2>
+<p>何時需要評估規則。</p>
+<h2>9.2 條件</h2>
+<p>何種世界狀態下成立。</p>
+<h2>9.3 主體</h2>
+<p>誰要求或執行行動。</p>
+<h2>9.4 行動</h2>
+<p>允許、禁止或要求做什麼。</p>
+<h2>9.5 效果</h2>
+<p>狀態與外部世界如何改變。</p>
+<h2>9.6 證據</h2>
+<p>如何證明規則已被正確執行。</p>
+<h2>9.7 例外</h2>
+<p>哪些情境需要人工或特殊程序。</p>
+<hr>
+<h1>十、規則與不變量</h1>
+<h2>10.1 不變量</h2>
+<p>不變量描述無論經過何種合法行動都必須成立的條件：</p>
+<p>$$
+Inv(S_t)=true
+$$</p>
+<h2>10.2 轉換規則</h2>
+<h1>$$
+S_{t+1}</h1>
+<p>F
+\left(
+S_t,
+e_t,
+a_t
+\right)
+$$</p>
+<h2>10.3 規則衝突</h2>
+<p>兩條規則可能同時要求不同結果。</p>
+<p>例如：</p>
+<ul>
+<li>保護隱私；</li>
+<li>滿足稽核；</li>
+<li>提供資料可攜；</li>
+<li>遵守刪除要求。</li>
+</ul>
+<h2>10.4 衝突不能靠 if 順序解決</h2>
+<p>若規範衝突只由程式碼執行順序決定，就把制度選擇隱藏成技術偶然。</p>
+<p>應明示：</p>
+<ul>
+<li>優先原則；</li>
+<li>適用條件；</li>
+<li>人類決策；</li>
+<li>例外程序。</li>
+</ul>
+<hr>
+<h1>十一、系統邊界</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+B</h1>
+<p>\left\langle
+Responsibility,
+Authority,
+Observation,
+Guarantee,
+Dependency,
+NonGuarantee
+\right\rangle
+}
+$$</p>
+<h2>11.1 責任</h2>
+<p>系統承諾處理哪些狀態與失敗。</p>
+<h2>11.2 控制權</h2>
+<p>系統能直接改變哪些對象。</p>
+<h2>11.3 觀測範圍</h2>
+<p>系統能可靠知道哪些結果。</p>
+<h2>11.4 保證</h2>
+<p>在明示條件下，系統能保證什麼。</p>
+<h2>11.5 相依</h2>
+<p>需要哪些外部服務、主體與物理條件。</p>
+<h2>11.6 非保證</h2>
+<p>系統明確不能承諾什麼。</p>
+<hr>
+<h1>十二、控制、觀測與責任並不相同</h1>
+<h2>12.1 能控制但不能完整觀測</h2>
+<p>系統可能發出設備命令，卻沒有感測器確認物理效果。</p>
+<h2>12.2 能觀測但不能控制</h2>
+<p>監測系統可以看見氣候、交通或市場變化，卻不能直接改變它們。</p>
+<h2>12.3 有責任但依賴外部</h2>
+<p>訂單平台可能對使用者承擔服務責任，但配送由外部物流完成。</p>
+<h2>12.4 邊界矩陣</h2>
+<table>
+<thead>
+<tr>
+<th>對象</th>
+<th>可控制</th>
+<th>可觀測</th>
+<th>承擔責任</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>本地資料庫</td>
+<td>高</td>
+<td>高</td>
+<td>高</td>
+</tr>
+<tr>
+<td>第三方付款</td>
+<td>低</td>
+<td>中</td>
+<td>部分</td>
+</tr>
+<tr>
+<td>物流配送</td>
+<td>低</td>
+<td>低至中</td>
+<td>協調責任</td>
+</tr>
+<tr>
+<td>使用者真實感受</td>
+<td>無</td>
+<td>低</td>
+<td>不可直接保證</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>十三、外部世界與相依</h1>
+<h2>13.1 外部不等於不重要</h2>
+<p>位於邊界外的對象，仍可能決定系統成功。</p>
+<p>例如：</p>
+<ul>
+<li>銀行；</li>
+<li>郵件服務；</li>
+<li>使用者裝置；</li>
+<li>法律程序；</li>
+<li>實體配送；</li>
+<li>人類批准。</li>
+</ul>
+<h2>13.2 相依描述</h2>
+<p>每個重要相依應記錄：</p>
+<pre><code class="language-yaml">dependency:
+  name: &quot;payment-provider&quot;
+  provides:
+    - &quot;payment authorization&quot;
+  system_controls: false
+  observable:
+    - &quot;provider response&quot;
+  not_observable:
+    - &quot;final bank settlement&quot;
+  failure_modes:
+    - &quot;timeout&quot;
+    - &quot;duplicate callback&quot;
+    - &quot;delayed settlement&quot;
+</code></pre>
+<h2>13.3 外部成功不可假定</h2>
+<p>第三方 API 回傳成功，通常只能證明其接受請求或完成某階段。</p>
+<h2>13.4 相依替代性</h2>
+<p>需區分：</p>
+<ul>
+<li>唯一相依；</li>
+<li>可替代相依；</li>
+<li>多供應商；</li>
+<li>人工備援；</li>
+<li>無替代方案。</li>
+</ul>
+<hr>
+<h1>十四、未知、爭議與未決</h1>
+<h2>14.1 未知不是錯誤值</h2>
+<p>$$
+Unknown
+\neq
+Null
+\neq
+False
+\neq
+0
+$$</p>
+<p>它們具有不同語意。</p>
+<h2>14.2 爭議狀態</h2>
+<p>不同主體可能對同一事實有不同主張。</p>
+<p>例如：</p>
+<ul>
+<li>訂單是否已交付；</li>
+<li>文件是否已批准；</li>
+<li>任務是否真正完成；</li>
+<li>AI 是否正確引用來源。</li>
+</ul>
+<p>爭議不應被強迫壓成單一布林值。</p>
+<h2>14.3 未決狀態</h2>
+<p>某些問題需要：</p>
+<ul>
+<li>更多資料；</li>
+<li>人類選擇；</li>
+<li>外部判定；</li>
+<li>未來事件；</li>
+</ul>
+<p>才能完成。</p>
+<h2>14.4 正式保留</h2>
+<p>問題世界應允許：</p>
+<pre><code class="language-text">unknown
+unresolved
+contested
+not-applicable
+external-decision
+human-review
+</code></pre>
+<h2>14.5 未知的生命週期</h2>
+<p>未知也應記錄：</p>
+<ul>
+<li>來源；</li>
+<li>發現時間；</li>
+<li>影響；</li>
+<li>責任人；</li>
+<li>下一步；</li>
+<li>是否阻止執行。</li>
+</ul>
+<hr>
+<h1>十五、假設帳本</h1>
+<h2>15.1 假設必然存在</h2>
+<p>任何模型都依賴假設。</p>
+<p>例如：</p>
+<ul>
+<li>身份驗證服務可信；</li>
+<li>時鐘差異可接受；</li>
+<li>使用者能理解提示；</li>
+<li>外部服務最終會回覆；</li>
+<li>某狀態不會同時發生。</li>
+</ul>
+<h2>15.2 明示假設</h2>
+<h1>$$
+\mathcal A_H</h1>
+<p>\left{
+a_1,a_2,\ldots,a_n
+\right}
+$$</p>
+<p>每個假設應記錄：</p>
+<ul>
+<li>內容；</li>
+<li>來源；</li>
+<li>依據；</li>
+<li>適用域；</li>
+<li>驗證方式；</li>
+<li>失效後果。</li>
+</ul>
+<h2>15.3 假設不是保證</h2>
+<p>假設可用於簡化模型，但必須知道它可能失效。</p>
+<h2>15.4 隱含假設風險</h2>
+<p>事故往往不是程式違反已知規則，而是世界違反設計者從未寫下的假設。</p>
+<hr>
+<h1>十六、歷史與承諾</h1>
+<h2>16.1 當前狀態不夠</h2>
+<p>兩個當前狀態完全相同的實體，可能因歷史不同而具有不同責任。</p>
+<h2>16.2 歷史來源</h2>
+<ul>
+<li>建立；</li>
+<li>委任；</li>
+<li>核准；</li>
+<li>修改；</li>
+<li>撤回；</li>
+<li>爭議；</li>
+<li>補償；</li>
+<li>遷移。</li>
+</ul>
+<h2>16.3 承諾</h2>
+<p>承諾會限制未來合法行動。</p>
+<p>例如已接受付款後，系統不能任意把訂單當成從未存在。</p>
+<h2>16.4 版本</h2>
+<p>規則與模型更新後，需要知道：</p>
+<ul>
+<li>哪個版本處理哪個事件；</li>
+<li>舊資料是否遷移；</li>
+<li>舊承諾是否仍有效；</li>
+<li>新規則是否可追溯適用。</li>
+</ul>
+<hr>
+<h1>十七、世界建模流程</h1>
+<p>本文提出十一步流程。</p>
+<h2>第一步：寫出原始目的</h2>
+<p>不是功能，而是希望改變什麼。</p>
+<h2>第二步：列出直接主體與受影響主體</h2>
+<p>包括不使用系統但承受後果者。</p>
+<h2>第三步：找出具有身份與生命週期的實體</h2>
+<p>避免從資料表開始。</p>
+<h2>第四步：列出屬性與證據</h2>
+<p>區分描述值與權威證明。</p>
+<h2>第五步：建立重要關係</h2>
+<p>特別是擁有、責任、委任與依賴。</p>
+<h2>第六步：列出合法、非法、未知與爭議狀態</h2>
+<p>不要只列成功狀態。</p>
+<h2>第七步：列出事件與行動</h2>
+<p>區分世界發生與系統命令。</p>
+<h2>第八步：分層建立規則</h2>
+<p>區分世界、系統、實作與暫時規則。</p>
+<h2>第九步：劃定責任、控制與觀測邊界</h2>
+<p>明示保證與非保證。</p>
+<h2>第十步：建立假設與未知帳本</h2>
+<p>將隱含風險外部化。</p>
+<h2>第十一步：才開始建立資料、模組、介面與來源碼</h2>
+<hr>
+<h1>十八、建模產物</h1>
+<p>問題世界建模不必產生單一巨大文件。</p>
+<p>可使用多種投影：</p>
+<ul>
+<li>世界詞彙表；</li>
+<li>實體—關係圖；</li>
+<li>狀態圖；</li>
+<li>規則表；</li>
+<li>邊界矩陣；</li>
+<li>主體—權限表；</li>
+<li>外部相依清單；</li>
+<li>假設帳本；</li>
+<li>未知與爭議清單；</li>
+<li>歷史與版本圖。</li>
+</ul>
+<p>每一種投影回答不同問題。</p>
+<hr>
+<h1>十九、案例一：待辦事項系統</h1>
+<h2>19.1 原始目的</h2>
+<p>降低遺忘，協助個人與團隊協調工作。</p>
+<h2>19.2 實體</h2>
+<ul>
+<li>使用者；</li>
+<li>任務；</li>
+<li>專案；</li>
+<li>委任；</li>
+<li>提醒；</li>
+<li>完成證據。</li>
+</ul>
+<h2>19.3 關係</h2>
+<ul>
+<li>使用者擁有任務；</li>
+<li>任務屬於專案；</li>
+<li>任務被委任給執行者；</li>
+<li>審核者接受完成證據。</li>
+</ul>
+<h2>19.4 狀態</h2>
+<pre><code class="language-text">proposed
+active
+blocked
+completed
+cancelled
+disputed
+</code></pre>
+<h2>19.5 邊界</h2>
+<p>系統可保證：</p>
+<ul>
+<li>保存任務狀態；</li>
+<li>發出提醒請求；</li>
+<li>記錄完成主張。</li>
+</ul>
+<p>系統不能直接保證：</p>
+<ul>
+<li>使用者真正看見提醒；</li>
+<li>現實工作確實完成；</li>
+<li>任務本身值得完成。</li>
+</ul>
+<hr>
+<h1>二十、案例二：訂單系統</h1>
+<h2>20.1 實體</h2>
+<ul>
+<li>客戶；</li>
+<li>商家；</li>
+<li>商品；</li>
+<li>庫存單位；</li>
+<li>訂單；</li>
+<li>付款；</li>
+<li>配送；</li>
+<li>爭議。</li>
+</ul>
+<h2>20.2 重要關係</h2>
+<p>訂單不是單純屬於客戶，它同時連接：</p>
+<ul>
+<li>商家履約責任；</li>
+<li>付款提供者；</li>
+<li>物流委任；</li>
+<li>商品與庫存；</li>
+<li>退款與補償。</li>
+</ul>
+<h2>20.3 規則層級</h2>
+<p>世界規則：</p>
+<ul>
+<li>沒有付款承諾不得出貨。</li>
+</ul>
+<p>系統規則：</p>
+<ul>
+<li>付款通知必須冪等處理。</li>
+</ul>
+<p>實作規則：</p>
+<ul>
+<li>批次更新每次最多一百筆。</li>
+</ul>
+<p>暫時規則：</p>
+<ul>
+<li>舊訂單爭議由人工處理。</li>
+</ul>
+<h2>20.4 外部世界</h2>
+<p>系統不能完全控制：</p>
+<ul>
+<li>銀行結算；</li>
+<li>實體物流；</li>
+<li>客戶是否收到；</li>
+<li>法律爭議結果。</li>
+</ul>
+<hr>
+<h1>二十一、案例三：醫療分流系統</h1>
+<h2>21.1 原始目的</h2>
+<p>在有限資源下，協助辨識需要優先處理的病人，同時保留專業判斷與病人權利。</p>
+<h2>21.2 直接主體</h2>
+<ul>
+<li>病人；</li>
+<li>醫師；</li>
+<li>護理師；</li>
+<li>行政人員。</li>
+</ul>
+<h2>21.3 受影響主體</h2>
+<ul>
+<li>家屬；</li>
+<li>等候中的其他病人；</li>
+<li>醫療機構；</li>
+<li>緊急資源提供者。</li>
+</ul>
+<h2>21.4 實體與屬性</h2>
+<p>病人是實體。</p>
+<p>症狀若需要跨時間追蹤、來源與嚴重度歷史，也可成為獨立觀測實體，而不是單一文字欄位。</p>
+<h2>21.5 規則</h2>
+<p>系統可以計算風險，但不得將模型分數直接等同於完整醫療決定。</p>
+<h2>21.6 未知保留</h2>
+<p>需要正式表達：</p>
+<ul>
+<li>資料不足；</li>
+<li>症狀矛盾；</li>
+<li>模型適用域外；</li>
+<li>病人拒絕；</li>
+<li>等待專業覆核。</li>
+</ul>
+<hr>
+<h1>二十二、案例四：網站部署系統</h1>
+<h2>22.1 問題世界</h2>
+<p>網站部署不只是把檔案上傳。</p>
+<p>它包含：</p>
+<ul>
+<li>原始碼版本；</li>
+<li>建置產物；</li>
+<li>設定；</li>
+<li>憑證；</li>
+<li>網域；</li>
+<li>環境；</li>
+<li>發布；</li>
+<li>健康檢查；</li>
+<li>回滾；</li>
+<li>使用者流量。</li>
+</ul>
+<h2>22.2 實體</h2>
+<ul>
+<li>release；</li>
+<li>environment；</li>
+<li>deployment；</li>
+<li>artifact；</li>
+<li>approval；</li>
+<li>incident。</li>
+</ul>
+<h2>22.3 關係</h2>
+<p>部署使用某一 release，作用於某一 environment，並由特定批准授權。</p>
+<h2>22.4 邊界</h2>
+<p>部署系統可保證：</p>
+<ul>
+<li>產物被傳送；</li>
+<li>服務程序已啟動；</li>
+<li>健康檢查通過。</li>
+</ul>
+<p>不能直接保證：</p>
+<ul>
+<li>所有使用者都能正常操作；</li>
+<li>外部 DNS 已完全傳播；</li>
+<li>新功能符合商業目的。</li>
+</ul>
+<hr>
+<h1>二十三、案例五：AI Agent</h1>
+<h2>23.1 問題世界</h2>
+<p>Agent 世界至少包含：</p>
+<ul>
+<li>委任者；</li>
+<li>Agent 身分；</li>
+<li>目標；</li>
+<li>任務；</li>
+<li>記憶；</li>
+<li>計畫；</li>
+<li>工具；</li>
+<li>權限；</li>
+<li>預算；</li>
+<li>證據；</li>
+<li>檢查點；</li>
+<li>人類接管。</li>
+</ul>
+<h2>23.2 角色關係</h2>
+<p>模型不是 Agent。</p>
+<p>工具也不是 Agent。</p>
+<p>Agent 是在 Runtime 中承擔任務、持有狀態與接受治理的持續數位實體。</p>
+<h2>23.3 規則分層</h2>
+<p>世界規則：</p>
+<ul>
+<li>不得永久替主體完成不可撤回選擇。</li>
+</ul>
+<p>系統規則：</p>
+<ul>
+<li>不可逆操作需要人工批准。</li>
+</ul>
+<p>實作規則：</p>
+<ul>
+<li>每輪最多呼叫特定數量工具。</li>
+</ul>
+<p>暫時規則：</p>
+<ul>
+<li>新工具先在沙盒測試。</li>
+</ul>
+<h2>23.4 邊界</h2>
+<p>Agent 能保證提出計畫、執行獲准工具與保存證據。</p>
+<p>它不能保證外部世界完整符合使用者目的。</p>
+<hr>
+<h1>二十四、案例六：研究計畫</h1>
+<h2>24.1 問題世界</h2>
+<p>研究不只是文件集合。</p>
+<p>它包含：</p>
+<ul>
+<li>問題；</li>
+<li>假設；</li>
+<li>定義；</li>
+<li>命題；</li>
+<li>證據；</li>
+<li>反例；</li>
+<li>實驗；</li>
+<li>失敗；</li>
+<li>版本；</li>
+<li>研究者；</li>
+<li>後續節點。</li>
+</ul>
+<h2>24.2 關係</h2>
+<p>論文引用證據。</p>
+<p>命題依賴定義。</p>
+<p>實驗檢驗假設。</p>
+<p>失敗紀錄限制後續路徑。</p>
+<h2>24.3 邊界</h2>
+<p>研究系統可以保存與組織推理，不能因文件生成完成就保證真理。</p>
+<h2>24.4 未知</h2>
+<pre><code class="language-text">unproven
+partially-supported
+contradicted
+open-question
+requires-experiment
+</code></pre>
+<p>必須是正式研究狀態。</p>
+<hr>
+<h1>二十五、問題世界與資料模型的關係</h1>
+<h2>25.1 問題世界先於資料模型</h2>
+<p>資料模型應來自問題世界，而不是反過來。</p>
+<h2>25.2 一對多投影</h2>
+<p>一個實體可被投影到多個資料表、文件、索引與事件流。</p>
+<h2>25.3 多對一投影</h2>
+<p>多個問題世界概念也可能因效能或儲存被合併，但不能因此失去語意區分。</p>
+<h2>25.4 資料遷移不是世界遷移全部</h2>
+<p>若 schema 改變，還需處理：</p>
+<ul>
+<li>身份；</li>
+<li>關係；</li>
+<li>規則；</li>
+<li>歷史；</li>
+<li>承諾；</li>
+<li>權限；</li>
+<li>未知狀態。</li>
+</ul>
+<hr>
+<h1>二十六、問題世界與介面的關係</h1>
+<h2>26.1 介面是世界投影</h2>
+<p>UI 告訴使用者哪些實體、狀態與行動存在。</p>
+<h2>26.2 介面缺席</h2>
+<p>若某狀態在模型中存在，但介面沒有顯示，使用者仍可能無法理解或操作它。</p>
+<h2>26.3 多角色介面</h2>
+<p>同一問題世界應對不同角色提供不同投影：</p>
+<ul>
+<li>使用者；</li>
+<li>管理者；</li>
+<li>審核者；</li>
+<li>維護者；</li>
+<li>稽核者。</li>
+</ul>
+<h2>26.4 介面不得假造邊界</h2>
+<p>介面顯示「已完成」，若實際只是等待外部結果，就造成世界敘事錯配。</p>
+<hr>
+<h1>二十七、問題世界與模組的關係</h1>
+<h2>27.1 模組應承接責任</h2>
+<p>模組不是把相似檔案放在一起，而是承擔某一世界責任。</p>
+<h2>27.2 狀態擁有權</h2>
+<p>每項核心狀態應有明確維護者。</p>
+<h2>27.3 關係跨模組</h2>
+<p>跨模組關係需要契約、事件或明確接口。</p>
+<h2>27.4 邊界錯置</h2>
+<p>若模組邊界切斷一個必須保持一致的世界不變量，系統會以大量同步與補丁重新縫合。</p>
+<hr>
+<h1>二十八、主要失敗模式</h1>
+<ol>
+<li><strong>需求句子即世界：</strong> 一句需求被當成完整領域。</li>
+<li><strong>資料表先行：</strong> 從儲存格式反推世界。</li>
+<li><strong>實體過度化：</strong> 每個名詞都變成有身份對象。</li>
+<li><strong>屬性過度化：</strong> 有生命週期與責任的對象被壓成欄位。</li>
+<li><strong>關係遺漏：</strong> 只列對象，不建所有權、責任與依賴。</li>
+<li><strong>角色固化：</strong> 把情境角色永久寫成人格身份。</li>
+<li><strong>使用者中心狹化：</strong> 只看直接使用者，忽略受影響者。</li>
+<li><strong>世界規則與技術限制混淆：</strong> 暫時實作被當成必然。</li>
+<li><strong>規則藏於 if：</strong> 重要制度選擇沒有外部化。</li>
+<li><strong>規則衝突靠執行順序：</strong> 技術偶然取代明示優先原則。</li>
+<li><strong>邊界只畫外框：</strong> 沒有責任、控制與非保證。</li>
+<li><strong>外部成功假定：</strong> 第三方回應被當成最終世界結果。</li>
+<li><strong>未知歸零：</strong> 未知、爭議與不適用被壓成預設值。</li>
+<li><strong>假設隱形：</strong> 重要前提只存在於作者腦中。</li>
+<li><strong>當前狀態取代歷史：</strong> 忽略承諾與責任來源。</li>
+<li><strong>單一圖全知：</strong> 一張 ER 圖被當成完整世界模型。</li>
+<li><strong>介面僭位：</strong> 畫面能操作的被誤認為世界全部。</li>
+<li><strong>模組先於世界：</strong> 先分資料夾與服務，再猜領域責任。</li>
+<li><strong>自動化壓平爭議：</strong> 所有狀態都被迫立即確定。</li>
+<li><strong>世界模型永久化：</strong> 忽略領域、制度與目的會演化。</li>
+</ol>
+<hr>
+<h1>二十九、可證偽研究綱領</h1>
+<h2>29.1 實體誤判率</h2>
+<p>從後續需求變更、事故與資料遷移中統計：</p>
+<ul>
+<li>本應是實體卻被建成屬性；</li>
+<li>本應是屬性卻被建成實體；</li>
+</ul>
+<p>的比例與成本。</p>
+<h2>29.2 關係遺漏率</h2>
+<p>比較初始模型與後續事故中新增的重要關係：</p>
+<h1>$$
+R_{\mathrm{relation}}</h1>
+<p>\frac{
+|\text{later-discovered critical relations}|
+}{
+|\text{all critical relations identified}|
+}
+$$</p>
+<h2>29.3 規則層級混淆</h2>
+<p>測量世界規則、系統規則、實作規則與暫時規則被混用的事件數。</p>
+<h2>29.4 邊界錯配率</h2>
+<p>比較系統宣稱的保證與其實際控制、觀測及驗證能力。</p>
+<h2>29.5 未知壓平率</h2>
+<p>統計 unknown、contested、not-applicable 等狀態被轉為零、否定或預設值的比例。</p>
+<h2>29.6 沉默主體召回率</h2>
+<p>檢查問題世界能否辨識未直接使用系統但受到結果影響的主體。</p>
+<h2>29.7 假設失效事故率</h2>
+<p>追蹤事故中有多少源於未明示或未重新驗證的世界假設。</p>
+<h2>29.8 關係實體化效益</h2>
+<p>比較將重要長時關係建模為欄位與獨立實體，對歷史、權限與維護的影響。</p>
+<h2>29.9 寫碼前建模實驗</h2>
+<p>比較兩組團隊：</p>
+<ul>
+<li>直接從功能與資料表開始；</li>
+<li>先完成問題世界模型；</li>
+</ul>
+<p>在變更、除錯、交接與邊界說明上的差異。</p>
+<h2>29.10 世界模型可解釋性</h2>
+<p>測量新成員能否在有限時間內回答：</p>
+<ul>
+<li>世界有哪些實體；</li>
+<li>哪些狀態非法；</li>
+<li>誰有何責任；</li>
+<li>系統保證到哪裡。</li>
+</ul>
+<h2>29.11 模型演化成本</h2>
+<p>研究具有版本、未知與假設帳本的模型，是否能降低 schema、流程與模組演化成本。</p>
+<h2>29.12 多投影一致性</h2>
+<p>比較世界詞彙表、ER 圖、狀態圖、規則表、程式碼與 UI 的語意差異。</p>
+<hr>
+<h1>三十、本文的二十項命題</h1>
+<ol>
+<li>問題世界不是現實本身，而是為特定目的選取與組織的中介世界。</li>
+<li>沒有明示世界模型，不代表系統沒有世界模型。</li>
+<li>問題世界應先於資料表、類別、模組與來源碼。</li>
+<li>具有身份、狀態、關係責任或生命週期的對象，應優先被視為實體。</li>
+<li>無獨立身份且只描述其他實體的內容，較適合作為屬性。</li>
+<li>相同實體集合在不同關係下會形成不同問題世界。</li>
+<li>關係可能具有自己的身份、狀態、權限與歷史。</li>
+<li>直接使用者不是唯一需要被建模的主體。</li>
+<li>世界規則、系統規則、實作規則與暫時規則必須分離。</li>
+<li>重要規則不能只隱藏在 if、執行順序或人工習慣中。</li>
+<li>邊界是責任、控制、觀測、保證、相依與非保證的組合。</li>
+<li>可控制、可觀測與應負責三者並不相同。</li>
+<li>外部對象雖在系統邊界外，仍可能決定系統成功。</li>
+<li>unknown、null、false 與 zero 具有不同語意。</li>
+<li>爭議狀態不應被強迫壓成單一確定值。</li>
+<li>假設必須具備來源、適用域、驗證方式與失效後果。</li>
+<li>當前狀態不能取代歷史、承諾與規則版本。</li>
+<li>問題世界需要多投影共同呈現，而非依賴單一圖表。</li>
+<li>世界模型應能演化、分支、版本化並保留未知。</li>
+<li></li>
+</ol>
+<p>$$
+\boxed{
+\text{系統性程式設計的第一步，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{不是決定怎麼寫，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是決定程式究竟認為世界是什麼。}
+}
+$$</p>
+<hr>
+<h1>三十一、與前後篇的關係</h1>
+<h2>31.1 承接 PU-1-01</h2>
+<p>前篇將程式定義為可執行問題模型。</p>
+<p>本篇展開其中的「問題世界」，建立：</p>
+<ul>
+<li>實體；</li>
+<li>屬性；</li>
+<li>關係；</li>
+<li>規則；</li>
+<li>邊界；</li>
+<li>外部相依；</li>
+<li>未知；</li>
+<li>歷史。</li>
+</ul>
+<h2>31.2 銜接 PU-1-03</h2>
+<p>本篇主要建立世界的靜態骨架。</p>
+<p>下一篇將把它推進為動態四元結構：</p>
+<h1>$$
+\boxed{
+\mathbb S_P</h1>
+<p>\left\langle
+D,S,E,A
+\right\rangle
+}
+$$</p>
+<p>並集中回答：</p>
+<ul>
+<li>資料與狀態有何不同；</li>
+<li>事件與命令有何不同；</li>
+<li>行動如何改變狀態；</li>
+<li>不變量如何跨時間維持；</li>
+<li>失敗與重試如何進入狀態動力。</li>
+</ul>
+<hr>
+<h1>三十二、結論：問題世界是程式真正的第一份原始碼</h1>
+<p>多數系統錯誤在來源碼中出現，卻不一定在來源碼中誕生。</p>
+<p>它們可能更早產生於：</p>
+<ul>
+<li>把重要對象當成欄位；</li>
+<li>遺漏責任關係；</li>
+<li>把角色固化成身份；</li>
+<li>把技術限制誤認為世界規則；</li>
+<li>把外部服務回應當成最終結果；</li>
+<li>把未知壓成預設值；</li>
+<li>把邊界外效果納入虛假保證；</li>
+<li>把歷史承諾壓成當前狀態。</li>
+</ul>
+<p>所以，真正的系統性程式設計不能先問：</p>
+<pre><code class="language-text">要建立哪幾個 class？
+要開哪幾張資料表？
+要使用哪個框架？
+</code></pre>
+<p>而應先問：</p>
+<pre><code class="language-text">世界裡有哪些具有身份與生命週期的東西？
+它們之間有哪些責任、擁有、依賴與時序關係？
+哪些狀態合法？
+哪些規則來自領域，哪些只是目前技術限制？
+哪些外部效果系統無法控制？
+哪些內容尚未知道、仍有爭議或必須由人類決定？
+</code></pre>
+<p>本文將問題世界模型收束為：</p>
+<h1>$$
+\boxed{
+\text{Problem World}</h1>
+<p>\text{Entities}
++
+\text{Relations}
++
+\text{Legal States}
++
+\text{Rules}
++
+\text{Boundaries}
++
+\text{Unknowns}
++
+\text{History}
+}
+$$</p>
+<p>這個模型不是為了在寫碼前增加形式負擔，而是把原本必然存在於作者腦中、散落於程式碼中的假設，轉化為團隊可以共同檢查、反駁與修改的外部結構。</p>
+<p>因此：</p>
+<p>$$
+\boxed{
+\text{問題世界模型，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{才是程式真正的第一份原始碼。}
+}
+$$</p>
+<p>它不直接由 CPU 執行，卻決定後續所有可執行結構究竟代表哪一個世界。</p>
+<hr>
+<h1>附錄 A：問題世界最小格式</h1>
+<pre><code class="language-yaml">problem_world:
+  world_id: &quot;order-world-v1&quot;
+  purpose:
+    - &quot;coordinate purchase, payment, fulfillment, and dispute&quot;
+
+  actors:
+    direct:
+      - &quot;customer&quot;
+      - &quot;merchant&quot;
+    affected:
+      - &quot;recipient&quot;
+      - &quot;support-agent&quot;
+    external:
+      - &quot;payment-provider&quot;
+      - &quot;logistics-provider&quot;
+
+  entities:
+    order:
+      identity: true
+      lifecycle: true
+    payment:
+      identity: true
+      lifecycle: true
+    delivery:
+      identity: true
+      lifecycle: true
+
+  relations:
+    - &quot;customer places order&quot;
+    - &quot;merchant fulfills order&quot;
+    - &quot;payment authorizes order&quot;
+    - &quot;delivery fulfills shipment&quot;
+
+  states:
+    order:
+      - &quot;created&quot;
+      - &quot;payment-pending&quot;
+      - &quot;paid&quot;
+      - &quot;fulfilling&quot;
+      - &quot;completed&quot;
+      - &quot;disputed&quot;
+      - &quot;cancelled&quot;
+
+  unknowns:
+    - &quot;physical delivery confirmation&quot;
+    - &quot;recipient actual acceptance&quot;
+
+  boundary:
+    guarantees:
+      - &quot;local state consistency&quot;
+      - &quot;event traceability&quot;
+    non_guarantees:
+      - &quot;final bank settlement&quot;
+      - &quot;physical receipt by recipient&quot;
+</code></pre>
+<hr>
+<h1>附錄 B：規則分層表</h1>
+<pre><code class="language-yaml">rules:
+  world:
+    - id: &quot;paid-before-fulfillment&quot;
+      reason: &quot;merchant fulfillment obligation&quot;
+
+  system:
+    - id: &quot;payment-event-idempotency&quot;
+      reason: &quot;prevent duplicate transition&quot;
+
+  implementation:
+    - id: &quot;batch-limit-100&quot;
+      reason: &quot;current infrastructure capacity&quot;
+      revisable: true
+
+  temporary:
+    - id: &quot;legacy-dispute-manual-review&quot;
+      expires_after: &quot;migration-complete&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：邊界矩陣</h1>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th align="right">可控制</th>
+<th align="right">可觀測</th>
+<th align="right">可保證</th>
+<th>非保證</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>本地訂單狀態</td>
+<td align="right">高</td>
+<td align="right">高</td>
+<td align="right">一致性與歷史</td>
+<td>外部履約</td>
+</tr>
+<tr>
+<td>付款 API</td>
+<td align="right">低</td>
+<td align="right">中</td>
+<td align="right">請求與回應紀錄</td>
+<td>最終銀行結算</td>
+</tr>
+<tr>
+<td>物流配送</td>
+<td align="right">低</td>
+<td align="right">低至中</td>
+<td align="right">委任與狀態紀錄</td>
+<td>實體收件</td>
+</tr>
+<tr>
+<td>使用者滿意</td>
+<td align="right">無</td>
+<td align="right">低</td>
+<td align="right">收集回饋</td>
+<td>真實滿意</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>附錄 D：未知與假設帳本</h1>
+<pre><code class="language-yaml">world_knowledge:
+  unknowns:
+    - id: &quot;delivery-received&quot;
+      status: &quot;external-verification&quot;
+      blocks_completion: true
+
+  contested:
+    - id: &quot;item-condition&quot;
+      claims:
+        customer: &quot;damaged&quot;
+        merchant: &quot;intact&quot;
+
+  assumptions:
+    - id: &quot;provider-callback-eventual&quot;
+      statement: &quot;payment provider eventually retries callback&quot;
+      evidence: &quot;provider contract v3&quot;
+      failure_effect: &quot;manual reconciliation required&quot;
+</code></pre>
+<hr>
+<h1>附錄 E：第 1 冊六篇位置</h1>
+<ol>
+<li>PU-1-01　程式不等於程式碼：可執行問題模型的基本定義</li>
+<li><strong>PU-1-02　問題世界建模：實體、關係、規則與系統邊界</strong></li>
+<li>PU-1-03　資料—狀態—事件—行動：程式系統的四元動力結構</li>
+<li>PU-1-04　責任、模組與契約：從檔案分類到系統邊界</li>
+<li>PU-1-05　可視化作為外部結構記憶：多角色、多尺度的程式理解</li>
+<li>PU-1-06　失敗也是程式：驗證、可觀測、恢復與長期維護</li>
+</ol>
+<hr>
+<h1>參考文獻</h1>
+<h2>Neo.K／EveMissLab 相關理論</h2>
+<ol>
+<li>Neo.K with Aletheia，《程式不等於程式碼：可執行問題模型的基本定義》，2026。</li>
+<li>Neo.K with Aletheia，《三重宇宙論：意圖、計算與物理存在的基本區分》，2026。</li>
+<li>Neo.K with Aletheia，《表示落差：意圖、計算模型與物理現實之間的不可完備映射》，2026。</li>
+<li>Neo.K with Aletheia，《數位宇宙作為人工存在域：實體、狀態、規則與歷史》，2026。</li>
+<li>Neo.K with Aletheia，《生成與限制：計算機宇宙如何創造並封閉可能性》，2026。</li>
+<li>Neo.K with Aletheia，《我們到底想要什麼：計算目的、價值邊界與世界選擇》，2026。</li>
+<li>Neo.K，《世界編織論》，2026。</li>
+</ol>
+<h2>一般理論背景</h2>
+<ol start="8">
+<li>Jackson, M., <em>Problem Frames</em>, 2001.</li>
+<li>Evans, E., <em>Domain-Driven Design</em>, 2003.</li>
+<li>Parnas, D. L., “On the Criteria To Be Used in Decomposing Systems into Modules,” 1972.</li>
+<li>Harel, D., “Statecharts: A Visual Formalism for Complex Systems,” 1987.</li>
+<li>Lamport, L., <em>Specifying Systems</em>, 2002.</li>
+<li>Meyer, B., <em>Object-Oriented Software Construction</em>, 1997.</li>
+<li>Fowler, M., <em>Analysis Patterns</em>, 1997.</li>
+<li>Booch, G., Rumbaugh, J., and Jacobson, I., <em>The Unified Modeling Language User Guide</em>, 1999.</li>
+<li>Checkland, P., <em>Systems Thinking, Systems Practice</em>, 1981.</li>
+<li>Dijkstra, E. W., “On the Role of Scientific Thought,” 1974.</li>
+<li>Brooks, F. P., “No Silver Bullet,” 1986.</li>
+</ol>
+<hr>
+<h1>版本紀錄</h1>
+<h2>v0.1 — 2026-07-27</h2>
+<ul>
+<li>完成十八篇地基論文第八篇。</li>
+<li>建立問題世界十元模型。</li>
+<li>區分問題世界、物理世界與計算模型。</li>
+<li>提出實體與屬性最小判準。</li>
+<li>建立組成、擁有、角色、依賴、時序與規範六類關係。</li>
+<li>區分直接使用者、受影響者、外部權威與未來維護者。</li>
+<li>建立世界、系統、實作與暫時四層規則。</li>
+<li>形式化系統邊界六元結構。</li>
+<li>區分控制、觀測、責任、保證與非保證。</li>
+<li>建立未知、爭議、未決與假設帳本。</li>
+<li>提出十一步問題世界建模流程。</li>
+<li>加入待辦、訂單、醫療、網站部署、AI Agent 與研究計畫案例。</li>
+<li>提出二十類失敗模式與十二項可證偽研究方向。</li>
+<li>完成與 PU-1-03《資料—狀態—事件—行動》的銜接。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pu-1-02.html">https://thisoneisneok.com/html/papers/pu-1-02.html</a></footer>
+</body>
+</html>

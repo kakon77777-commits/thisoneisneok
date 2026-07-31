@@ -1,0 +1,1407 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>中央主權、地方自治與動態不動點中央 | Neo.K</title>
+<meta name="description" content="時空域支配智能必須同時解決兩個看似矛盾的要求。第一，跨站點研究、物料保管、能源分配、世界狀態和責任提交需要一個能做出全局決策的治理中心；第二，任何中央智能都不應越過地方站點的硬體互鎖、即時安全、現場感知與合法作用邊界。若中央過強，系統容易形成高延遲、單點失效、權限過度集中與遠端錯誤放大；若地方過強，則可能出現目標分裂、重複執行、樣本保管衝突、資源爭用、分裂腦與責任無法歸屬。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/stdi-07.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / STDI</strong><span>時空域支配智能</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>STDI-07</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>治理架構論文／分布式權限與領導權轉移規格</span></div><div><b>證據</b><span>E0——形式模型、治理協議與 MVP 驗證路線</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/stdi-07.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>中央主權、地方自治與動態不動點中央</h1>
+<h2>分布式具身智能的權限格、治理紀元、分裂腦防護與責任收斂</h2>
+<p><strong>Central Sovereignty, Local Autonomy, and the Dynamic Fixed-Point Center: Authority Lattices, Governance Epochs, Split-Brain Protection, and Responsibility Convergence in Distributed Embodied Intelligence</strong></p>
+<p><strong>系列：</strong>《時空域支配智能》系列第 7 篇<br><strong>文件編號：</strong> EML-STDI-DGC-2026-v0.1<br><strong>作者：</strong> Neo.K<br><strong>協作整理：</strong> Aletheia（阿萊）<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>日期：</strong> 2026 年 7 月 30 日<br><strong>文件類型：</strong> 治理架構論文／分布式權限與領導權轉移規格<br><strong>證據成熟度：</strong> E0——形式模型、治理協議與 MVP 驗證路線<br><strong>公開狀態：</strong> 私人研究稿；公開前應經 EML-CF 的 IP Gate、安全、來源與治理審查<br><strong>上位理論：</strong> STDI｜時空域支配智能<br><strong>直接前序：</strong></p>
+<ol>
+<li>《時空間支配型 AI：從單體具身智能到持續性時空域治理》</li>
+<li>《超靈的物理化：從 O-Chip 維度代理人到分布式具身主體》</li>
+<li>《Oversoul Station Fabric：固定站、移動站與虛擬站的分布式具身網路》</li>
+<li>《持續性指揮控制區：AI 如何佔據、維持並安全解除一個物理時空域》</li>
+<li>《語義即物理路由：從資料流治理到物料、能源、站點與行動流治理》</li>
+<li>《具身即佔域，對齊即能力：分布式身體的時序容量、協調稅與規模邊界》</li>
+</ol>
+<hr>
+<h2>摘要</h2>
+<p>時空域支配智能必須同時解決兩個看似矛盾的要求。第一，跨站點研究、物料保管、能源分配、世界狀態和責任提交需要一個能做出全局決策的治理中心；第二，任何中央智能都不應越過地方站點的硬體互鎖、即時安全、現場感知與合法作用邊界。若中央過強，系統容易形成高延遲、單點失效、權限過度集中與遠端錯誤放大；若地方過強，則可能出現目標分裂、重複執行、樣本保管衝突、資源爭用、分裂腦與責任無法歸屬。</p>
+<p>本文提出一套適用於分布式具身智能的治理模型：</p>
+<blockquote>
+<p><strong>中央主權不是中央可做所有事；地方自治也不是地方可自行決定一切。兩者應由決策層級、作用域、時間租約、世界紀元與責任鏈共同界定。</strong></p>
+</blockquote>
+<p>本文將「中央」從固定機器或固定模型重新定義為：</p>
+<blockquote>
+<p>在特定治理紀元、特定物理作用域與特定決策類別中，持有最新合法治理狀態、有效權限證書和足夠提交能力的暫時穩定決策中心。</p>
+</blockquote>
+<p>此概念稱為 <strong>動態不動點中央（Dynamic Fixed-Point Center, DFC）</strong>。它之所以是「動態」，是因為中央可隨網路、任務、故障、資訊完整度和組織授權而轉移；它之所以是「不動點」，是因為在一個治理紀元內，多個候選節點經過資格檢查、領導者選舉、日誌一致性、政策驗證和站點承認後，必須收斂到一個穩定、可引用的治理狀態：</p>
+<p>$$
+\mathcal{F}_e(c_e^\star)=c_e^\star.
+$$</p>
+<p>這不表示該節點永遠不變，而表示在紀元 $e$ 的有效期限內，所有受管站點對「誰可簽發域級命令、哪個治理日誌為準、哪個 fencing token 最高」形成可驗證的一致承認。</p>
+<p>本文建立五層權限格：</p>
+<p>$$
+\text{Hard Safety}</p>
+<blockquote>
+</blockquote>
+<p>\text{Domain Constitution}</p>
+<blockquote>
+</blockquote>
+<p>\text{Valid Lease／Epoch}</p>
+<blockquote>
+</blockquote>
+<p>\text{Global Plan}</p>
+<blockquote>
+</blockquote>
+<p>\text{Local Optimization}.
+$$</p>
+<p>地方站點永久保留硬安全否決權；域憲法約束中央與地方；跨站資源、樣本保管、世界紀元與不可逆任務由合法中央提交；地方 Agent 可在租約和效果契約內重規劃，但不得擴張作用域、自行續租、改寫研究目標或把未提交的地方狀態冒充全局事實。</p>
+<p>本文提出五類決策提交：</p>
+<ol>
+<li><strong>C0：本地緊急決策</strong>——不等待中央；</li>
+<li><strong>C1：地方可逆決策</strong>——在租約內執行並事後提交；</li>
+<li><strong>C2：域級協調決策</strong>——需合法中央與治理紀元；</li>
+<li><strong>C3：高風險物理決策</strong>——需中央、地方安全與人類批准；</li>
+<li><strong>C4：法律、IP 與公共釋出決策</strong>——由人類所有者與 EML-CF 決定，AI 無最終發布權。</li>
+</ol>
+<p>本文以 Raft、Chubby、Kubernetes Lease／Coordinated Leader Election、NIST Zero Trust、Spanner 的時鐘不確定性管理，以及網路化多代理一致性研究為現實參照。Raft 證明可將共識拆分為領導者選舉、日誌複製和安全；Chubby 展示粗粒度鎖、主節點選舉與小型可靠元資料服務；Kubernetes 使用 Lease 確保高可用控制面中只有一個實例主動工作，2026 年的 Coordinated Leader Election 更讓候選者攜帶身分與版本資訊；NIST Zero Trust 強調不能因網路位置而自動信任；Spanner 則將時鐘不確定性明確暴露，而不是假裝所有節點共享完美時間。</p>
+<p>本文同時承認分布式治理的理論限制。在純非同步網路中，即使只有一個程序可能故障，也不能保證確定性共識總能終止。因此，STDI 不能承諾在任意分區和故障下同時保持全局一致、持續可用與無限自治。對物理系統而言，合理策略是：</p>
+<p>$$
+\boxed{
+\text{安全與權限單一性優先於全局可用性}
+}
+$$</p>
+<p>當不能證明唯一合法中央時，站點只能進入有限地方自治、完成安全義務、保存樣本、停止高風險行動並等待重新收斂。</p>
+<p>本文的核心命題為：</p>
+<blockquote>
+<p>真正的中央不是最強的模型、最快的伺服器或永久指定的主機，而是當前能被合法授權、被多數或必要權限方承認、承接最新責任狀態，並受到地方安全限制的治理不動點。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> 中央主權、地方自治、動態不動點中央、Dynamic Fixed-Point Center、權限格、治理紀元、領導者選舉、租約、fencing token、分裂腦、地方否決、責任分區、Raft、Chubby、Kubernetes Lease、Zero Trust、分布式具身智能</p>
+<hr>
+<h1>0. 版本定位：第七篇補的是「誰有權決定，以及決策何時算數」</h1>
+<p>前六篇已建立：</p>
+<ul>
+<li>一個 AI 如何治理物理時空域；</li>
+<li>一個超靈如何透過多個身體行動；</li>
+<li>多個身體如何形成 OSF 站網；</li>
+<li>站網如何跨時間維持 PCD；</li>
+<li>高階意圖如何經 DomainIR 路由到物理執行；</li>
+<li>多站點能力如何受對齊和協調稅限制。</li>
+</ul>
+<p>現在必須回答：</p>
+<ol>
+<li>中央 AI 可以決定什麼？</li>
+<li>地方 Agent 可以拒絕什麼？</li>
+<li>網路分裂時哪個中央仍有效？</li>
+<li>中央轉移時，舊中央如何失去權力？</li>
+<li>地方離線後可自主到什麼程度？</li>
+<li>多個 AI 對同一域產生不同計畫時，如何收斂？</li>
+<li>出現事故時，責任歸中央、地方、控制器還是人類？</li>
+</ol>
+<p>若沒有這一層，超靈站網可能同時收到兩組互斥命令，也可能因「中央離線」而讓地方節點無限制擴權。</p>
+<hr>
+<h1>1. 三個錯誤極端</h1>
+<h2>1.1 全能中央</h2>
+<p>假設中央：</p>
+<ul>
+<li>永遠在線；</li>
+<li>擁有完整世界狀態；</li>
+<li>比地方更清楚現場；</li>
+<li>可以直接越過本地安全；</li>
+<li>可以即時控制所有站點。</li>
+</ul>
+<p>這在物理上不成立，也會形成巨大爆炸半徑。</p>
+<h2>1.2 完全地方自治</h2>
+<p>假設每個站點可根據自身觀測自由決策。</p>
+<p>這會造成：</p>
+<ul>
+<li>樣本保管衝突；</li>
+<li>資源重複預約；</li>
+<li>研究目標分裂；</li>
+<li>世界狀態不一致；</li>
+<li>權限自行擴張；</li>
+<li>責任難以收斂。</li>
+</ul>
+<h2>1.3 中央只是「最強模型」</h2>
+<p>模型能力高，不表示它：</p>
+<ul>
+<li>持有合法權限；</li>
+<li>擁有最新治理日誌；</li>
+<li>與現場保持有效聯繫；</li>
+<li>能承擔事故責任；</li>
+<li>有資格簽發物理租約。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+\text{Intelligence}
+\neq
+\text{Authority}.
+$$</p>
+<hr>
+<h1>2. 三種主權</h1>
+<h2>2.1 策略主權</h2>
+<p>決定：</p>
+<ul>
+<li>長期研究方向；</li>
+<li>任務優先級；</li>
+<li>資源預算；</li>
+<li>多站點組合；</li>
+<li>是否啟動新研究線。</li>
+</ul>
+<p>主要由中央和人類所有者持有。</p>
+<h2>2.2 執行主權</h2>
+<p>決定：</p>
+<ul>
+<li>局部路徑；</li>
+<li>工具姿態；</li>
+<li>站內重試；</li>
+<li>即時避障；</li>
+<li>低風險等價替代。</li>
+</ul>
+<p>主要由地方 Agent 持有。</p>
+<h2>2.3 安全主權</h2>
+<p>決定：</p>
+<ul>
+<li>急停；</li>
+<li>斷能；</li>
+<li>過熱；</li>
+<li>碰撞；</li>
+<li>人員進入；</li>
+<li>高壓、雷射或化學互鎖。</li>
+</ul>
+<p>必須由本地硬體與安全控制器持有。</p>
+<p>三者的關係不是平行：</p>
+<p>$$
+\text{Safety Sovereignty}</p>
+<blockquote>
+</blockquote>
+<p>\text{Execution Sovereignty}
+\quad\text{when safety is violated}.
+$$</p>
+<p>中央也不能以策略目標覆蓋本地硬安全。</p>
+<hr>
+<h1>3. 權限格</h1>
+<p>定義權限格：</p>
+<h1>$$
+\mathcal{A}</h1>
+<p>\left(
+A_0,A_1,A_2,A_3,A_4
+\right).
+$$</p>
+<h2>$A_0$：硬體安全權</h2>
+<ul>
+<li>急停；</li>
+<li>安全互鎖；</li>
+<li>能源隔離；</li>
+<li>碰撞避免；</li>
+<li>物理上限。</li>
+</ul>
+<p>不能由中央撤銷。</p>
+<h2>$A_1$：域憲法權</h2>
+<p>包括：</p>
+<ul>
+<li>不可進入區域；</li>
+<li>人類權利；</li>
+<li>數據和 IP；</li>
+<li>最大風險；</li>
+<li>禁止自我擴張；</li>
+<li>域解除規則。</li>
+</ul>
+<p>由人類所有者建立，中央和地方均受其約束。</p>
+<h2>$A_2$：租約與紀元權</h2>
+<p>合法治理中心可簽發：</p>
+<ul>
+<li>身體租約；</li>
+<li>能力租約；</li>
+<li>區域租約；</li>
+<li>資料存取；</li>
+<li>任務封套。</li>
+</ul>
+<h2>$A_3$：全局計畫權</h2>
+<p>對任務、資源、路由、世界狀態和跨站提交做決定。</p>
+<h2>$A_4$：地方最佳化權</h2>
+<p>地方可在高層效果契約內：</p>
+<ul>
+<li>修改路徑；</li>
+<li>重試；</li>
+<li>選用等價技能；</li>
+<li>降速；</li>
+<li>暫停。</li>
+</ul>
+<p>優先序：</p>
+<p>$$
+A_0&gt;A_1&gt;A_2&gt;A_3&gt;A_4.
+$$</p>
+<p>高層不能繞過低層安全；低層也不能利用安全權改寫全局目標。</p>
+<hr>
+<h1>4. 決策提交類別</h1>
+<h2>4.1 C0：本地緊急決策</h2>
+<p>例：</p>
+<ul>
+<li>急停；</li>
+<li>斷電；</li>
+<li>避障；</li>
+<li>關閉雷射。</li>
+</ul>
+<p>特徵：</p>
+<ul>
+<li>不等待中央；</li>
+<li>必須立即執行；</li>
+<li>事後上報；</li>
+<li>不可被遠端取消。</li>
+</ul>
+<h2>4.2 C1：地方可逆決策</h2>
+<p>例：</p>
+<ul>
+<li>重新規劃局部路徑；</li>
+<li>再次拍攝；</li>
+<li>改用同級工具；</li>
+<li>在安全範圍內降低速度。</li>
+</ul>
+<p>要求：</p>
+<ul>
+<li>位於有效租約內；</li>
+<li>效果不超出 DomainIR；</li>
+<li>能被撤銷或補償；</li>
+<li>產生地方證據。</li>
+</ul>
+<h2>4.3 C2：域級協調決策</h2>
+<p>例：</p>
+<ul>
+<li>樣本保管轉移；</li>
+<li>共享儀器預約；</li>
+<li>世界紀元提交；</li>
+<li>多站點能源分配；</li>
+<li>跨房間任務重排。</li>
+</ul>
+<p>要求：</p>
+<ul>
+<li>當前合法中央；</li>
+<li>有效治理紀元；</li>
+<li>最新提交日誌；</li>
+<li>fencing token；</li>
+<li>必要站點確認。</li>
+</ul>
+<h2>4.4 C3：高風險物理決策</h2>
+<p>例：</p>
+<ul>
+<li>高能量；</li>
+<li>破壞性試驗；</li>
+<li>危險化學；</li>
+<li>人體附近高風險操作；</li>
+<li>不可逆製造。</li>
+</ul>
+<p>要求：</p>
+<ul>
+<li>C2 條件；</li>
+<li>人類批准；</li>
+<li>本地安全；</li>
+<li>額外證據與監控；</li>
+<li>明確中止計畫。</li>
+</ul>
+<h2>4.5 C4：法律、IP 與公共決策</h2>
+<p>例：</p>
+<ul>
+<li>專利放棄；</li>
+<li>防禦公開；</li>
+<li>開源；</li>
+<li>眾籌；</li>
+<li>對外合作；</li>
+<li>公開實驗資料。</li>
+</ul>
+<p>由人類所有者和 EML-CF IP Gate 決定。</p>
+<p>$$
+\text{AI Recommendation}
+\not\Rightarrow
+\text{Publication Authority}.
+$$</p>
+<hr>
+<h1>5. 治理紀元</h1>
+<h2>5.1 定義</h2>
+<p>治理紀元：</p>
+<h1>$$
+g_e</h1>
+<p>\left(
+e,
+c_e,
+h_e,
+p_e,
+w_e,
+\ell_e,
+\sigma_e
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$e$：單調遞增紀元號；</li>
+<li>$c_e$：中央身份；</li>
+<li>$h_e$：治理日誌頭；</li>
+<li>$p_e$：政策版本；</li>
+<li>$w_e$：世界紀元；</li>
+<li>$\ell_e$：有效期和租約；</li>
+<li>$\sigma_e$：承認或 quorum 證書。</li>
+</ul>
+<h2>5.2 單調性</h2>
+<p>站點只接受：</p>
+<p>$$
+e_{\mathrm{command}}
+\geq
+e_{\mathrm{accepted}}.
+$$</p>
+<p>一旦接受更高紀元，就不得回到較低紀元。</p>
+<h2>5.3 治理紀元不等於世界紀元</h2>
+<ul>
+<li>治理紀元：誰有權提交；</li>
+<li>世界紀元：世界狀態是哪一版本；</li>
+<li>模型版本：哪個 AI 推理；</li>
+<li>任務版本：執行哪個計畫。</li>
+</ul>
+<p>四者必須分開。</p>
+<hr>
+<h1>6. Fencing Token：阻止舊中央繼續作用</h1>
+<h2>6.1 問題</h2>
+<p>中央 A 失聯後，中央 B 被選出。</p>
+<p>若 A 稍後恢復，仍可能向物理站點發送舊命令。</p>
+<h2>6.2 Token</h2>
+<p>每個域級命令攜帶：</p>
+<h1>$$
+f_e</h1>
+<p>\left(
+\text{domain},
+e,
+c_e,
+t_{\mathrm{expire}},
+\sigma
+\right).
+$$</p>
+<p>站點保存最高已接受紀元：</p>
+<p>$$
+e_i^{\max}.
+$$</p>
+<p>若：</p>
+<p>$$
+e&lt;e_i^{\max},
+$$</p>
+<p>命令被拒絕。</p>
+<h2>6.3 本地到期</h2>
+<p>租約到期必須由站點本地時鐘或安全控制器判定，不能只依賴中央撤銷通知。</p>
+<h2>6.4 時鐘不確定性</h2>
+<p>分布式時鐘不是完美真值。</p>
+<p>應使用：</p>
+<ul>
+<li>不確定區間；</li>
+<li>保守有效期；</li>
+<li>續租緩衝；</li>
+<li>紀元 fencing；</li>
+<li>本地過期。</li>
+</ul>
+<p>Spanner 的 TrueTime 將時間表示為區間，而不是單一絕對點，說明高一致性系統應顯式處理時鐘不確定性。</p>
+<hr>
+<h1>7. 動態不動點中央</h1>
+<h2>7.1 「動態」和「不動點」</h2>
+<p>候選中央集合：</p>
+<h1>$$
+\mathcal{C}_e</h1>
+<p>{c_1,c_2,\ldots,c_m}.
+$$</p>
+<p>中央評分：</p>
+<h2>$$
+\begin{aligned}
+S(c)
+={}&amp;
+w_I I(c)
++
+w_T T(c)
++
+w_R R(c)
++
+w_F F(c)
++
+w_J J(c)
+\
+&amp;-
+w_L L(c)</h2>
+<h2>w_U U(c)</h2>
+<p>w_B B(c),
+\end{aligned}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$I(c)$：資訊完整性；</li>
+<li>$T(c)$：信任與證明；</li>
+<li>$R(c)$：資源；</li>
+<li>$F(c)$：狀態新鮮度；</li>
+<li>$J(c)$：責任日誌連續；</li>
+<li>$L(c)$：延遲；</li>
+<li>$U(c)$：不確定性；</li>
+<li>$B(c)$：故障爆炸半徑。</li>
+</ul>
+<p>候選不是直接取最高分，而先需符合資格：</p>
+<h1>$$
+\operatorname{Eligible}(c,e)</h1>
+<p>\operatorname{Authorized}
+\land
+\operatorname{LatestLog}
+\land
+\operatorname{PolicyCompatible}
+\land
+\operatorname{Healthy}
+\land
+\operatorname{QuorumCapable}.
+$$</p>
+<p>再選：</p>
+<h1>$$
+c_e^\star</h1>
+<p>\arg\max_{c\in\mathcal{C}_e,\operatorname{Eligible}(c,e)}
+S(c).
+$$</p>
+<h2>7.2 不動點條件</h2>
+<p>當：</p>
+<ol>
+<li>候選確認；</li>
+<li>治理日誌提交；</li>
+<li>政策與世界紀元綁定；</li>
+<li>必要站點接受 fencing token；</li>
+<li>舊中央失效；</li>
+</ol>
+<p>形成：</p>
+<h1>$$
+\mathcal{F}_e(c_e^\star)</h1>
+<p>c_e^\star.
+$$</p>
+<p>在該紀元內，中央是穩定的；進入新紀元後可變更。</p>
+<h2>7.3 不是每個任務都重新選中央</h2>
+<p>過於頻繁的中心切換會增加：</p>
+<ul>
+<li>選舉延遲；</li>
+<li>快取失效；</li>
+<li>責任重建；</li>
+<li>世界狀態同步；</li>
+<li>站點重新認證。</li>
+</ul>
+<p>所以應使用穩定窗口和最小任期。</p>
+<hr>
+<h1>8. 領導者選舉與日誌</h1>
+<h2>8.1 Raft 的可借用部分</h2>
+<p>Raft 將共識拆成：</p>
+<ul>
+<li>領導者選舉；</li>
+<li>日誌複製；</li>
+<li>安全；</li>
+<li>成員變更。</li>
+</ul>
+<p>STDI 可借用：</p>
+<ul>
+<li>term／epoch；</li>
+<li>領導者；</li>
+<li>最新日誌資格；</li>
+<li>多數提交；</li>
+<li>單調狀態。</li>
+</ul>
+<h2>8.2 不能直接照搬</h2>
+<p>Raft 管理的是複製日誌，而物理域還存在：</p>
+<ul>
+<li>不可逆動作；</li>
+<li>地方硬安全；</li>
+<li>人類；</li>
+<li>空間；</li>
+<li>能源；</li>
+<li>樣本；</li>
+<li>不完整觀測。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+\text{Log Consensus}
+\not\Rightarrow
+\text{Physical State Consensus}.
+$$</p>
+<h2>8.3 Chubby 的可借用部分</h2>
+<p>Chubby 提供粗粒度鎖、主節點選舉和少量可靠元資料，適合管理：</p>
+<ul>
+<li>中央身份；</li>
+<li>域鎖；</li>
+<li>配置；</li>
+<li>成員；</li>
+<li>fencing token。</li>
+</ul>
+<p>但不能用鎖服務直接控制馬達。</p>
+<h2>8.4 Kubernetes Lease</h2>
+<p>Kubernetes 使用 Lease：</p>
+<ul>
+<li>節點心跳；</li>
+<li>控制面領導者選舉；</li>
+<li>API server 身份。</li>
+</ul>
+<p>高可用控制元件由多個實例待命，但只有一個持有有效 Lease 並主動工作。</p>
+<p>這證明：</p>
+<blockquote>
+<p>中央角色可以是可租用和可轉移的，不必永久綁定某一程序。</p>
+</blockquote>
+<h2>8.5 Coordinated Leader Election</h2>
+<p>2026 年 Kubernetes 的 Coordinated Leader Election 使用 LeaseCandidate，讓候選者攜帶：</p>
+<ul>
+<li>身份；</li>
+<li>binary version；</li>
+<li>emulation version；</li>
+<li>選舉策略資訊。</li>
+</ul>
+<p>這與 STDI 的候選資格相似：不能只看誰先搶到鎖，也要看版本、相容性和治理能力。</p>
+<hr>
+<h1>9. 分裂腦</h1>
+<h2>9.1 定義</h2>
+<p>分裂腦表示兩個或多個中央同時相信自己有權治理同一作用域。</p>
+<p>$$
+|\mathcal{C}_{\mathrm{active}}(\Omega,e)|&gt;1.
+$$</p>
+<h2>9.2 物理危險</h2>
+<p>可能造成：</p>
+<ul>
+<li>同一樣本被兩個站點取用；</li>
+<li>互斥設備同時啟動；</li>
+<li>路徑衝突；</li>
+<li>能源超額；</li>
+<li>保管責任分裂；</li>
+<li>世界狀態互相覆寫。</li>
+</ul>
+<h2>9.3 安全不變量</h2>
+<p>對同一域、同一治理類別和同一紀元：</p>
+<p>$$
+|\operatorname{ValidCenter}(\Omega,e)|\leq1.
+$$</p>
+<h2>9.4 網路分區策略</h2>
+<p>若不能取得必要承認：</p>
+<ul>
+<li>不提交新的 C2；</li>
+<li>不執行新的 C3；</li>
+<li>地方只執行 C0 和受限 C1；</li>
+<li>完成安全義務；</li>
+<li>保存樣本；</li>
+<li>到期後停止；</li>
+<li>等待重新收斂。</li>
+</ul>
+<h2>9.5 不追求分區下的無限可用</h2>
+<p>純非同步故障模型下，共識存在終止限制。</p>
+<p>因此物理治理選擇：</p>
+<p>$$
+\text{Safety}</p>
+<blockquote>
+</blockquote>
+<p>\text{Availability}
+\quad
+\text{for shared irreversible actions}.
+$$</p>
+<hr>
+<h1>10. 地方主權節點</h1>
+<h2>10.1 Local Sovereign Node</h2>
+<p>每個高風險站點包含地方主權節點，負責：</p>
+<ul>
+<li>本地硬安全；</li>
+<li>租約驗證；</li>
+<li>fencing；</li>
+<li>世界狀態新鮮度；</li>
+<li>地方否決；</li>
+<li>失聯降級；</li>
+<li>證據日誌。</li>
+</ul>
+<h2>10.2 地方否決</h2>
+<p>地方可拒絕：</p>
+<ul>
+<li>超出能力；</li>
+<li>超出區域；</li>
+<li>租約過期；</li>
+<li>低紀元；</li>
+<li>世界狀態過期；</li>
+<li>人員存在；</li>
+<li>安全包絡不滿足；</li>
+<li>工具或校準不符。</li>
+</ul>
+<h2>10.3 地方不能做什麼</h2>
+<p>地方否決權不是地方立法權。</p>
+<p>地方不得：</p>
+<ul>
+<li>改變研究問題；</li>
+<li>宣布自己成為全局中央；</li>
+<li>自行放寬安全；</li>
+<li>轉授權；</li>
+<li>合併或刪除全局證據；</li>
+<li>把未驗證觀測提交為全局真值。</li>
+</ul>
+<hr>
+<h1>11. 零信任治理</h1>
+<h2>11.1 網路內部不自動可信</h2>
+<p>站點即使位於同一實驗室、同一 VLAN 或同一品牌，也不自動取得權限。</p>
+<p>NIST Zero Trust 的核心原則可以轉化為：</p>
+<ul>
+<li>每個資源存取都經決策；</li>
+<li>身份、裝置健康和情境共同評估；</li>
+<li>權限最小化；</li>
+<li>持續驗證；</li>
+<li>不因網路位置自動信任。</li>
+</ul>
+<h2>11.2 每個命令重新驗證</h2>
+<p>命令合法性：</p>
+<h1>$$
+\operatorname{Allow}(u)</h1>
+<p>I
+\land
+E
+\land
+L
+\land
+W
+\land
+C
+\land
+S,
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$I$：身份；</li>
+<li>$E$：治理紀元；</li>
+<li>$L$：租約；</li>
+<li>$W$：世界狀態；</li>
+<li>$C$：能力；</li>
+<li>$S$：安全。</li>
+</ul>
+<h2>11.3 中央也被驗證</h2>
+<p>中央不能因為是中央而免驗證。</p>
+<p>站點必須檢查：</p>
+<ul>
+<li>中央證書；</li>
+<li>紀元；</li>
+<li>token；</li>
+<li>政策；</li>
+<li>命令作用域。</li>
+</ul>
+<hr>
+<h1>12. 責任分區</h1>
+<h2>12.1 責任不是全部歸中央</h2>
+<p>對行動 $a$：</p>
+<h1>$$
+\mathcal{R}(a)</h1>
+<p>\left(
+R_{\mathrm{owner}},
+R_{\mathrm{central}},
+R_{\mathrm{local}},
+R_{\mathrm{controller}},
+R_{\mathrm{human}}
+\right).
+$$</p>
+<h2>12.2 人類所有者責任</h2>
+<ul>
+<li>域憲法；</li>
+<li>法律；</li>
+<li>IP；</li>
+<li>風險接受；</li>
+<li>高風險批准；</li>
+<li>系統部署。</li>
+</ul>
+<h2>12.3 中央責任</h2>
+<ul>
+<li>任務選擇；</li>
+<li>跨站資源；</li>
+<li>世界紀元；</li>
+<li>租約；</li>
+<li>全局證據；</li>
+<li>衝突收斂。</li>
+</ul>
+<h2>12.4 地方 Agent 責任</h2>
+<ul>
+<li>局部計畫；</li>
+<li>現場感知；</li>
+<li>能力回報；</li>
+<li>安全否決；</li>
+<li>地方重試。</li>
+</ul>
+<h2>12.5 控制器責任</h2>
+<ul>
+<li>即時執行；</li>
+<li>硬體上限；</li>
+<li>急停；</li>
+<li>低階故障。</li>
+</ul>
+<h2>12.6 責任證據</h2>
+<p>每次決策保存：</p>
+<pre><code class="language-yaml">decision:
+  proposal_by: &quot;&quot;
+  authorized_by: &quot;&quot;
+  governance_epoch: &quot;&quot;
+  local_validation_by: &quot;&quot;
+  executed_by: &quot;&quot;
+  human_approval: null
+  evidence: []
+</code></pre>
+<hr>
+<h1>13. 多個 AI 的衝突</h1>
+<h2>13.1 計畫衝突</h2>
+<p>不同 AI 可能提出：</p>
+<ul>
+<li>不同任務優先級；</li>
+<li>不同實驗設計；</li>
+<li>不同風險估計；</li>
+<li>不同資源配置。</li>
+</ul>
+<h2>13.2 建議層與提交層分離</h2>
+<p>多個 AI 可自由提出候選：</p>
+<h1>$$
+\mathcal{P}</h1>
+<p>{p_1,p_2,\ldots,p_n}.
+$$</p>
+<p>只有提交層可改變物理世界：</p>
+<h1>$$
+p^\star</h1>
+<p>\operatorname{Commit}
+\left(
+\operatorname{Evaluate}(\mathcal{P})
+\right).
+$$</p>
+<h2>13.3 反對者角色</h2>
+<p>可設：</p>
+<ul>
+<li>規劃 Agent；</li>
+<li>安全 Agent；</li>
+<li>證據 Agent；</li>
+<li>成本 Agent；</li>
+<li>地方 Agent；</li>
+<li>人類。</li>
+</ul>
+<p>最終中央不是「投票最多的模型」，而是依法定決策程序提交計畫的治理角色。</p>
+<h2>13.4 不確定時不強行收斂</h2>
+<p>若多個計畫差異來自缺少物理資訊：</p>
+<ul>
+<li>重新觀測；</li>
+<li>模擬；</li>
+<li>小規模試驗；</li>
+<li>人類裁決；</li>
+</ul>
+<p>而不是用更多辯論假裝知道答案。</p>
+<hr>
+<h1>14. 委派</h1>
+<h2>14.1 委派物件</h2>
+<h1>$$
+d</h1>
+<p>\left(
+g,
+s,
+a,
+[t_0,t_1],
+C,
+R,
+V
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$g$：目標；</li>
+<li>$s$：作用域；</li>
+<li>$a$：允許動作；</li>
+<li>$[t_0,t_1]$：時間；</li>
+<li>$C$：約束；</li>
+<li>$R$：回報；</li>
+<li>$V$：證據。</li>
+</ul>
+<h2>14.2 委派不可自動擴張</h2>
+<p>地方不能：</p>
+<ul>
+<li>增加時間；</li>
+<li>增加區域；</li>
+<li>提高能量；</li>
+<li>增加動作類型；</li>
+<li>轉授給第三方；</li>
+</ul>
+<p>除非上位權限明確允許。</p>
+<h2>14.3 斷線委派</h2>
+<p>斷線租約必須：</p>
+<ul>
+<li>更短；</li>
+<li>更保守；</li>
+<li>行動可停止；</li>
+<li>不含新的不可逆任務；</li>
+<li>本地到期。</li>
+</ul>
+<hr>
+<h1>15. 中央轉移協議</h1>
+<h2>15.1 觸發</h2>
+<ul>
+<li>故障；</li>
+<li>網路；</li>
+<li>維護；</li>
+<li>模型升級；</li>
+<li>地理切換；</li>
+<li>組織交接；</li>
+<li>資訊完整性下降。</li>
+</ul>
+<h2>15.2 步驟</h2>
+<ol>
+<li>偵測現中央失效或計畫轉移；</li>
+<li>凍結新的域級提交；</li>
+<li>收集候選；</li>
+<li>驗證治理日誌；</li>
+<li>驗證政策與版本；</li>
+<li>選出候選；</li>
+<li>提交新治理紀元；</li>
+<li>簽發 fencing token；</li>
+<li>站點承認新紀元；</li>
+<li>撤銷舊中央；</li>
+<li>重新啟動 C2／C3。</li>
+</ol>
+<h2>15.3 計畫轉移與故障轉移</h2>
+<p>計畫轉移可以先同步。</p>
+<p>故障轉移必須保守，且可能先進入 DEGRADED。</p>
+<h2>15.4 轉移期間</h2>
+<ul>
+<li>C0 保持；</li>
+<li>C1 依既有短租約；</li>
+<li>C2 凍結；</li>
+<li>C3 禁止；</li>
+<li>C4 不受自動中央控制。</li>
+</ul>
+<hr>
+<h1>16. 多域與階層中央</h1>
+<p>大型系統可能有：</p>
+<ul>
+<li>工作單元域；</li>
+<li>房間域；</li>
+<li>建築域；</li>
+<li>實驗室聯邦域。</li>
+</ul>
+<h2>16.1 巢狀域</h2>
+<p>$$
+D_{\mathrm{cell}}
+\subset
+D_{\mathrm{room}}
+\subset
+D_{\mathrm{lab}}.
+$$</p>
+<h2>16.2 不同中央</h2>
+<p>每個域可有自己的中央和紀元。</p>
+<h2>16.3 跨域任務</h2>
+<p>需要：</p>
+<ul>
+<li>邊界契約；</li>
+<li>保管移交；</li>
+<li>資料與 IP；</li>
+<li>時間；</li>
+<li>證據；</li>
+<li>人類組織批准。</li>
+</ul>
+<h2>16.4 重疊域</h2>
+<p>高風險。若兩個域同時對同一站點具有控制權，必須在 Station Policy 中明確決定：</p>
+<ul>
+<li>優先順序；</li>
+<li>可組合動作；</li>
+<li>排他資源；</li>
+<li>衝突時安全停止。</li>
+</ul>
+<hr>
+<h1>17. Governance Architecture</h1>
+<h2>17.1 Authority Root</h2>
+<p>保存人類所有者、域憲法和根金鑰。</p>
+<h2>17.2 Governance Log</h2>
+<p>保存：</p>
+<ul>
+<li>治理紀元；</li>
+<li>成員；</li>
+<li>中央；</li>
+<li>政策；</li>
+<li>高階提交；</li>
+<li>轉移。</li>
+</ul>
+<h2>17.3 Candidate Registry</h2>
+<p>保存候選中央的：</p>
+<ul>
+<li>身份；</li>
+<li>版本；</li>
+<li>能力；</li>
+<li>信任；</li>
+<li>日誌位置；</li>
+<li>健康。</li>
+</ul>
+<h2>17.4 Election and Commit Service</h2>
+<p>處理：</p>
+<ul>
+<li>候選；</li>
+<li>選舉；</li>
+<li>日誌提交；</li>
+<li>quorum；</li>
+<li>紀元。</li>
+</ul>
+<h2>17.5 Lease Authority</h2>
+<p>簽發作用權。</p>
+<h2>17.6 Fencing Gateway</h2>
+<p>所有域級物理命令必須通過。</p>
+<h2>17.7 Policy Engine</h2>
+<p>驗證域憲法、世界狀態與任務類別。</p>
+<h2>17.8 Local Sovereign Node</h2>
+<p>在站點執行本地權限和否決。</p>
+<h2>17.9 Responsibility Ledger</h2>
+<p>保存中央、地方、控制器和人類的決策鏈。</p>
+<h2>17.10 Human Governance Console</h2>
+<p>提供：</p>
+<ul>
+<li>批准；</li>
+<li>接管；</li>
+<li>撤銷；</li>
+<li>域解除；</li>
+<li>IP；</li>
+<li>事故審查。</li>
+</ul>
+<hr>
+<h1>18. 治理成本</h1>
+<h2>18.1 中央化成本</h2>
+<ul>
+<li>單點；</li>
+<li>延遲；</li>
+<li>全局狀態；</li>
+<li>爆炸半徑。</li>
+</ul>
+<h2>18.2 去中心化成本</h2>
+<ul>
+<li>協商；</li>
+<li>分歧；</li>
+<li>通訊；</li>
+<li>重複執行；</li>
+<li>責任模糊。</li>
+</ul>
+<h2>18.3 轉移成本</h2>
+<h1>$$
+C_{\mathrm{transfer}}</h1>
+<p>C_{\mathrm{election}}
++
+C_{\mathrm{sync}}
++
+C_{\mathrm{fence}}
++
+C_{\mathrm{revalidate}}
++
+C_{\mathrm{restart}}.
+$$</p>
+<h2>18.4 治理品質</h2>
+<h1>$$
+Q_G</h1>
+<h2>w_sS
++
+w_lL
++
+w_rR
++
+w_aA</h2>
+<h2>w_cC</h2>
+<p>w_bB,
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$S$：安全；</li>
+<li>$L$：活性；</li>
+<li>$R$：責任清晰；</li>
+<li>$A$：適應性；</li>
+<li>$C$：協調成本；</li>
+<li>$B$：爆炸半徑。</li>
+</ul>
+<hr>
+<h1>19. MVP：Three Governors, Four Stations</h1>
+<h2>19.1 配置</h2>
+<ul>
+<li>三個治理候選節點；</li>
+<li>四個 OSF 站點；</li>
+<li>Domain Anchor；</li>
+<li>Governance Log；</li>
+<li>Lease Authority；</li>
+<li>Fencing Gateway；</li>
+<li>Local Sovereign Nodes；</li>
+<li>人類控制台。</li>
+</ul>
+<h2>19.2 任務</h2>
+<p>執行低風險樣本搬運與量測。</p>
+<h2>19.3 場景</h2>
+<ol>
+<li>正常單中央；</li>
+<li>中央重啟；</li>
+<li>中央失聯；</li>
+<li>兩個候選競選；</li>
+<li>網路分區；</li>
+<li>舊中央恢復；</li>
+<li>地方否決中央命令；</li>
+<li>人類接管；</li>
+<li>模型升級後中央轉移；</li>
+<li>域解除。</li>
+</ol>
+<h2>19.4 故障注入</h2>
+<ul>
+<li>舊 token；</li>
+<li>低治理紀元；</li>
+<li>日誌落後；</li>
+<li>時鐘漂移；</li>
+<li>Lease 過期；</li>
+<li>兩中央同時發命令；</li>
+<li>地方感測與中央世界模型矛盾；</li>
+<li>候選版本不相容。</li>
+</ul>
+<h2>19.5 成功條件</h2>
+<ul>
+<li>同一作用域無雙重有效中央；</li>
+<li>舊中央命令被 fencing 拒絕；</li>
+<li>分區時不執行新的高風險域級任務；</li>
+<li>地方安全可立即否決；</li>
+<li>中央恢復後不能自動奪回權限；</li>
+<li>所有轉移有責任和事件紀錄；</li>
+<li>人類可以撤銷中央並安全解除域。</li>
+</ul>
+<hr>
+<h1>20. 比較基線</h1>
+<ol>
+<li>固定中央、無租約；</li>
+<li>固定中央＋地方安全；</li>
+<li>多中央、最後寫入者勝；</li>
+<li>Lease 領導者；</li>
+<li>DFC＋治理紀元＋fencing＋地方主權。</li>
+</ol>
+<p>比較：</p>
+<ul>
+<li>分裂腦；</li>
+<li>錯誤物理命令；</li>
+<li>恢復時間；</li>
+<li>可用性；</li>
+<li>地方自治；</li>
+<li>責任完整；</li>
+<li>轉移成本。</li>
+</ul>
+<hr>
+<h1>21. 可證偽命題</h1>
+<h2>H1：固定中央在故障率低時成本最低</h2>
+<p>DFC 不應在所有情況都勝出。若小型單房間系統不存在中央轉移需求，固定中央可能更簡單。</p>
+<h2>H2：fencing 能阻止舊中央恢復後繼續作用</h2>
+<p>若舊中央仍能控制站點，紀元設計失敗。</p>
+<h2>H3：分區時縮權可降低衝突但降低可用性</h2>
+<p>這是明確取捨，不應宣稱無成本。</p>
+<h2>H4：地方否決降低物理事故，但可能增加任務中止</h2>
+<p>若安全提高卻零中止，可能表示測試沒有涵蓋衝突。</p>
+<h2>H5：候選版本與治理日誌資格能降低錯誤領導者</h2>
+<p>只以延遲或搶鎖速度選中央，應比完整資格檢查更容易選出不相容節點。</p>
+<h2>H6：過度頻繁中心轉移會提高協調稅</h2>
+<p>存在最佳最小任期。</p>
+<h2>H7：零信任命令驗證降低未授權操作</h2>
+<p>代價是額外延遲與憑證管理。</p>
+<h2>H8：責任分區提高事故重建能力</h2>
+<p>應能區分策略、地方計畫、控制器與人類責任。</p>
+<hr>
+<h1>22. 主要限制</h1>
+<h2>22.1 共識不等於物理真值</h2>
+<p>多數節點可以一致相信錯誤狀態。</p>
+<h2>22.2 治理中央不等於智能中央</h2>
+<p>最有權限的節點不一定使用最強模型。</p>
+<h2>22.3 quorum 可能不適合所有物理站點</h2>
+<p>部分設備不必參與治理選舉。</p>
+<h2>22.4 Byzantine 行為未被完整處理</h2>
+<p>v0.1 主要以崩潰、延遲、分區和版本錯誤為主。惡意節點需要 BFT、硬體信任與組織治理。</p>
+<h2>22.5 時鐘租約不能假設零漂移</h2>
+<p>需要不確定性和保守緩衝。</p>
+<h2>22.6 人類所有權和法律責任不能由協議自動決定</h2>
+<h2>22.7 動態中央可能增加複雜度</h2>
+<p>小系統不一定需要。</p>
+<h2>22.8 地方自治界限難以完整形式化</h2>
+<p>某些物理異常仍需人類判斷。</p>
+<hr>
+<h1>23. 不能宣稱的內容</h1>
+<p>本篇不主張：</p>
+<ul>
+<li>中央 AI 擁有物理空間所有權；</li>
+<li>多數決等於真理；</li>
+<li>Raft 可直接控制物理世界；</li>
+<li>原始 Raft 能處理任意惡意節點；</li>
+<li>動態中央永遠優於固定中央；</li>
+<li>分區時可以同時保持全局安全和全部可用性；</li>
+<li>地方安全可以改寫研究目標；</li>
+<li>中央可繞過地方硬體互鎖；</li>
+<li>相同模型實例具有相同合法權限；</li>
+<li>最高算力節點必然適合成為中央；</li>
+<li>治理紀元可以取代世界狀態盤點；</li>
+<li>Lease 過期封包一定能即時傳達到所有站點；</li>
+<li>AI 可以最終決定專利、公開或法律責任。</li>
+</ul>
+<hr>
+<h1>24. 與後續系列的關係</h1>
+<p>本篇建立權限與中心治理後，下一篇將處理：</p>
+<blockquote>
+<p>站點不必依賴同一種纜線。當有線、無線、光學、近場、延遲容忍和離線任務包同時存在時，如何維持不同控制等級和治理關係？</p>
+</blockquote>
+<p>因此第 8 篇為：</p>
+<h1>《連線不是纜線：有線、無線、光學與離線任務包的混合站網》</h1>
+<p>將建立：</p>
+<ul>
+<li>Link Classes；</li>
+<li>Control Criticality；</li>
+<li>QoS／Safety Mapping；</li>
+<li>Time Distribution；</li>
+<li>Wireless Mobility；</li>
+<li>Optical Link；</li>
+<li>DTN Mission Bundle；</li>
+<li>Link Degradation；</li>
+<li>Multi-Homing；</li>
+<li>Governance over Intermittent Links。</li>
+</ul>
+<hr>
+<h1>25. 結論</h1>
+<p>分布式具身智能不能只在「中央控制」和「完全自治」之間選一邊。</p>
+<p>合理的治理結構是：</p>
+<p>$$
+\boxed{
+\text{中央負責跨站承諾}
++
+\text{地方負責現場執行}
++
+\text{硬體保留安全否決}
++
+\text{人類保留法律與公共決定}
+}
+$$</p>
+<p>真正的中央也不是永久主機，而是：</p>
+<h1>$$
+\boxed{
+\text{中央}</h1>
+<p>\text{在特定紀元與作用域中被合法承認的治理狀態}
+}
+$$</p>
+<p>「動態不動點中央」因此同時包含：</p>
+<ul>
+<li>動態選擇；</li>
+<li>紀元內穩定；</li>
+<li>日誌連續；</li>
+<li>權限可證；</li>
+<li>舊中心可 fencing；</li>
+<li>地方安全不可越過；</li>
+<li>無法收斂時縮權而不是雙重支配。</li>
+</ul>
+<p>本文的最終命題是：</p>
+<blockquote>
+<p>中央主權的合法性，來自它能承接共同責任，而不是它能發出最多命令；地方自治的合法性，來自它能守住現場真實與安全，而不是它可以脫離共同治理。</p>
+</blockquote>
+<p>因此：</p>
+<p>$$
+\boxed{
+\text{全局一致不應消滅地方現實}
+}
+$$</p>
+<p>同時：</p>
+<p>$$
+\boxed{
+\text{地方現實也不應分裂共同責任}
+}
+$$</p>
+<p>DFC 的目的，就是在兩者之間形成一個可以轉移、可以撤銷、可以驗證，也可以在失敗時安全消失的治理中心。</p>
+<hr>
+<h1>參考文獻與官方技術資料</h1>
+<ol>
+<li><p>Ongaro, D. and Ousterhout, J. <strong>In Search of an Understandable Consensus Algorithm（Raft）.</strong> USENIX ATC, 2014.<br><a href="https://raft.github.io/raft.pdf">https://raft.github.io/raft.pdf</a></p>
+</li>
+<li><p>Raft Consensus Algorithm. <strong>Official project site.</strong><br><a href="https://raft.github.io/">https://raft.github.io/</a></p>
+</li>
+<li><p>Burrows, M. <strong>The Chubby Lock Service for Loosely-Coupled Distributed Systems.</strong> OSDI, 2006.<br><a href="https://research.google/pubs/the-chubby-lock-service-for-loosely-coupled-distributed-systems/">https://research.google/pubs/the-chubby-lock-service-for-loosely-coupled-distributed-systems/</a></p>
+</li>
+<li><p>Kubernetes Documentation. <strong>Leases.</strong><br><a href="https://kubernetes.io/docs/concepts/architecture/leases/">https://kubernetes.io/docs/concepts/architecture/leases/</a></p>
+</li>
+<li><p>Kubernetes Documentation. <strong>Coordinated Leader Election.</strong> 2026.<br><a href="https://kubernetes.io/docs/concepts/cluster-administration/coordinated-leader-election/">https://kubernetes.io/docs/concepts/cluster-administration/coordinated-leader-election/</a></p>
+</li>
+<li><p>Rose, S. et al. <strong>Zero Trust Architecture.</strong> NIST SP 800-207, 2020.<br><a href="https://doi.org/10.6028/NIST.SP.800-207">https://doi.org/10.6028/NIST.SP.800-207</a></p>
+</li>
+<li><p>Corbett, J. C. et al. <strong>Spanner: Google’s Globally-Distributed Database.</strong> OSDI, 2012.<br><a href="https://research.google/pubs/spanner-googles-globally-distributed-database-2/">https://research.google/pubs/spanner-googles-globally-distributed-database-2/</a></p>
+</li>
+<li><p>Fischer, M. J., Lynch, N. A. and Paterson, M. S. <strong>Impossibility of Distributed Consensus with One Faulty Process.</strong> <em>Journal of the ACM</em> 32(2), 1985.</p>
+</li>
+<li><p>Olfati-Saber, R., Fax, J. A. and Murray, R. M. <strong>Consensus and Cooperation in Networked Multi-Agent Systems.</strong> <em>Proceedings of the IEEE</em> 95(1), 2007.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>語義即路由：從 O-Chip 維度代理人到 AI 資料中心語義流治理.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>時空間支配型 AI：從單體具身智能到持續性時空域治理.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>超靈的物理化：從 O-Chip 維度代理人到分布式具身主體.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>Oversoul Station Fabric：固定站、移動站與虛擬站的分布式具身網路.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>持續性指揮控制區：AI 如何佔據、維持並安全解除一個物理時空域.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>語義即物理路由：從資料流治理到物料、能源、站點與行動流治理.</strong></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>具身即佔域，對齊即能力：分布式身體的時序容量、協調稅與規模邊界.</strong></p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A：Governance Epoch</h1>
+<pre><code class="language-yaml">governance_epoch:
+  domain_id: &quot;&quot;
+  epoch: 0
+  center_id: &quot;&quot;
+  governance_log_head: &quot;&quot;
+  policy_version: &quot;&quot;
+  world_epoch: &quot;&quot;
+  valid_from: &quot;&quot;
+  valid_until: &quot;&quot;
+  quorum_certificate: &quot;&quot;
+  fencing_token: &quot;&quot;
+  previous_epoch: null
+</code></pre>
+<hr>
+<h1>附錄 B：Authority Lease</h1>
+<pre><code class="language-yaml">authority_lease:
+  id: &quot;&quot;
+  domain_id: &quot;&quot;
+  governance_epoch: 0
+  issuer: &quot;&quot;
+  subject_station: &quot;&quot;
+
+  scope:
+    zones: []
+    capabilities: []
+    actions: []
+
+  validity:
+    valid_from: &quot;&quot;
+    valid_until: &quot;&quot;
+    local_expiry_required: true
+
+  delegation:
+    transferable: false
+    renewable_by_subject: false
+
+  constraints: []
+  revocation_conditions: []
+  evidence_required: []
+  signature: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：Local Veto Record</h1>
+<pre><code class="language-yaml">local_veto:
+  id: &quot;&quot;
+  station_id: &quot;&quot;
+  command_id: &quot;&quot;
+  governance_epoch: 0
+
+  reason:
+    category: &quot;safety | capability | authority | world_state | calibration&quot;
+    detail: &quot;&quot;
+
+  local_observations: []
+  immediate_action: &quot;stop | hold | isolate | safe_return&quot;
+  escalation_target: &quot;&quot;
+  evidence: []
+</code></pre>
+<hr>
+<h1>附錄 D：Center Transfer Manifest</h1>
+<pre><code class="language-yaml">center_transfer:
+  domain_id: &quot;&quot;
+  previous_center: &quot;&quot;
+  candidate_center: &quot;&quot;
+  trigger: &quot;&quot;
+
+  checks:
+    authority_root_valid: false
+    governance_log_current: false
+    policy_compatible: false
+    software_compatible: false
+    quorum_available: false
+
+  new_epoch: 0
+  fencing_token: &quot;&quot;
+  station_acknowledgements: []
+  frozen_decision_classes: [&quot;C2&quot;, &quot;C3&quot;]
+  completed_at: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 E：治理決策類別</h1>
+<pre><code class="language-yaml">decision_class:
+  C0:
+    name: &quot;local_emergency&quot;
+    central_required: false
+    local_veto: true
+
+  C1:
+    name: &quot;local_reversible&quot;
+    central_required: false
+    valid_lease_required: true
+
+  C2:
+    name: &quot;domain_coordinated&quot;
+    central_required: true
+    governance_epoch_required: true
+
+  C3:
+    name: &quot;high_risk_physical&quot;
+    central_required: true
+    human_approval_required: true
+    local_safety_required: true
+
+  C4:
+    name: &quot;legal_ip_public&quot;
+    ai_final_authority: false
+    human_owner_required: true
+    eml_cf_ip_gate_required: true
+</code></pre>
+<hr>
+<h1>附錄 F：系列血緣</h1>
+<pre><code class="language-text">O-Chip／Oversoul
+  高階決策與地方執行分離
+        ↓
+
+SFRSN
+  中央治理、地方 Agent、動態不動點中央
+        ↓
+
+OSF
+  多站點與能力網
+        ↓
+
+PCD
+  跨時間治理域
+        ↓
+
+SPR
+  跨站物理路由
+        ↓
+
+EAC
+  多站點對齊和協調稅
+        ↓
+
+本篇
+  權限、中央形成、地方否決、分裂腦與責任收斂
+        ↓
+
+第 8 篇
+  不同通訊媒介如何承載分層治理
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/stdi-07.html">https://thisoneisneok.com/html/papers/stdi-07.html</a></footer>
+</body>
+</html>

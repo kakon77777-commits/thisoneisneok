@@ -1,0 +1,1443 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>時空間支配型 AI | Neo.K</title>
+<meta name="description" content="現有具身人工智能研究通常將「身體」理解為一台機器人、一組感測器與執行器，或一群可以分工協作的移動代理。自主實驗室則進一步將人工智能、機器人、自動化儀器、材料與量測流程組合成實驗閉環，使系統能在有限問題空間中提出條件、執行操作、分析結果並選擇下一輪實驗。這些成果已證明，AI 可以控制物理或計算實驗，移動機器人也能在既有實驗室中操作多種設備。然而，現有系統大多仍是針對狹窄研究任務、少數工具與特定流程建立的客製化閉環；…">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/stdi-01.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / STDI</strong><span>時空域支配智能</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>STDI-01</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>母命題論文／系統架構研究綱領</span></div><div><b>證據</b><span>E0——概念、形式模型與可證偽研究議程</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/stdi-01.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>時空間支配型 AI</h1>
+<h2>從單體具身智能到持續性時空域治理</h2>
+<p><strong>Spatiotemporal Domain Intelligence: From Individual Embodied Agents to Persistent Governance of Physical Domains</strong></p>
+<p><strong>系列：</strong>《時空域支配智能》系列第 1 篇<br><strong>文件編號：</strong> EML-STDI-2026-v0.1<br><strong>作者：</strong> Neo.K<br><strong>協作整理：</strong> Aletheia（阿萊）<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>日期：</strong> 2026 年 7 月 30 日<br><strong>文件類型：</strong> 母命題論文／系統架構研究綱領<br><strong>證據成熟度：</strong> E0——概念、形式模型與可證偽研究議程<br><strong>公開狀態：</strong> 私人研究稿；公開前應經 EML-CF 的 IP Gate 與證據審查</p>
+<hr>
+<h2>摘要</h2>
+<p>現有具身人工智能研究通常將「身體」理解為一台機器人、一組感測器與執行器，或一群可以分工協作的移動代理。自主實驗室則進一步將人工智能、機器人、自動化儀器、材料與量測流程組合成實驗閉環，使系統能在有限問題空間中提出條件、執行操作、分析結果並選擇下一輪實驗。這些成果已證明，AI 可以控制物理或計算實驗，移動機器人也能在既有實驗室中操作多種設備。然而，現有系統大多仍是針對狹窄研究任務、少數工具與特定流程建立的客製化閉環；它們通常不被定義為一個長期維持同一物理區域、跨任務保存世界模型、持續分配權限與資源、管理多個固定與移動身體，並保存因果證據的統一智能主體。</p>
+<p>本文提出「時空間支配型 AI」作為新的母命題，正式工程名稱為 <strong>時空域支配智能（Spatiotemporal Domain Intelligence, STDI）</strong>。本文中的「支配」不指無限制控制，不指對物理時空本身具有超自然能力，也不表示中央 AI 應直接操縱每一個馬達與安全回路。它指的是：在一個被明確授權、空間有限、時間持續的物理域中，人工智能能否長期維持可更新的世界狀態，管理固定站、移動站、儀器、材料、能源、算力與人類協作者，將研究或生產意圖編譯成可執行的站點任務，並在局部安全約束、可撤回權限與完整證據鏈之下完成觀測、行動、驗證與回退。</p>
+<p>STDI 的基本形式不是：</p>
+<p>$$
+\text{一個 AI}+\text{很多機器人},
+$$</p>
+<p>而是：</p>
+<p>$$
+\begin{aligned}
+\text{STDI}
+={}&amp;
+\text{持續性智能主體}
++
+\text{站點化分布式身體}
++
+\text{時空域世界模型}
+\
+&amp;+
+\text{語義—物理流編譯}
++
+\text{權限與資源治理}
++
+\text{證據與回退閉環}.
+\end{aligned}
+$$</p>
+<p>本文承接 O-Chip／Oversoul 的「決策—執行分離」、SFRSN 的「中央主權—地方自治—動態不動點中央」、GFMSN 的站點、支線、分流與重注入語言、ODML 的「飛行即定址」與「對齊即容量」，以及 EML-CF 的概念生成、證據管理與智慧財產分流。其核心貢獻是把這些原本用於晶片、資料中心與光學資料運動層的架構原理，尺度遷移到具身研究、實驗室自動化與分布式物理控制。</p>
+<p>本文提出九層 STDI 架構、六類站點、三層控制閉環、四種連線模式、五種域主權、權限租約與局部否決機制，並建立「具身即佔域、對齊即能力」的初步形式模型。本文同時給出與一般機器人群、自主實驗室、智慧工廠、數位孿生與多代理系統的差異，明確限制其近期工程範圍，並提出從軟體模擬、桌面研究站、單房間實驗域到跨實驗室聯邦的分階段驗證路線。</p>
+<p><strong>關鍵詞：</strong> 時空間支配型 AI、時空域支配智能、STDI、超靈、Oversoul、具身人工智能、分布式身體、站點網、持續性指揮控制區、自主實驗室、語義即物理路由、具身對齊、世界模型、權限租約、物理回退</p>
+<hr>
+<h1>0. 版本定位：這不是單一產品，而是新系列的母命題</h1>
+<p>本文是《時空域支配智能》系列的第一篇。它不試圖一次完成所有硬體、協議、機器人、安全規範與自主研究實作，而負責完成四項工作：</p>
+<ol>
+<li>定義什麼是「時空間支配型 AI」；</li>
+<li>區分它與既有具身 AI、自主實驗室及機器人群；</li>
+<li>建立整個系列可共用的形式模型與架構邊界；</li>
+<li>指定後續子論文與子產品的展開位置。</li>
+</ol>
+<p>本系列預計至少包含：</p>
+<ol>
+<li>時空間支配型 AI 母命題；</li>
+<li>超靈的物理化；</li>
+<li>Oversoul Station Fabric／超靈站網；</li>
+<li>持續性指揮控制區；</li>
+<li>語義即物理路由；</li>
+<li>具身即佔域、對齊即能力；</li>
+<li>中央主權、地方自治與動態不動點中央；</li>
+<li>有線、無線、光學與離線任務包混合站網；</li>
+<li>站點化世界模型；</li>
+<li>具身自主研究閉環；</li>
+<li>時空域 AI 安全憲法；</li>
+<li>從研究室到跨站點研究文明。</li>
+</ol>
+<p>因此，本文不是一份單機器人設計，也不是一份單一實驗室自動化白皮書，而是一個產品族、協議族與研究議程的共同地基。</p>
+<hr>
+<h1>1. 問題起點：為什麼單體具身 AI 不足以驗證大量未來概念產品</h1>
+<p>對大量前沿概念產品而言，真正昂貴的部分通常不是寫出想法，而是完成以下循環：</p>
+<p>$$
+\text{假說}
+\rightarrow
+\text{設計}
+\rightarrow
+\text{製造}
+\rightarrow
+\text{量測}
+\rightarrow
+\text{失敗分析}
+\rightarrow
+\text{修改}
+\rightarrow
+\text{再驗證}.
+$$</p>
+<p>當產品涉及：</p>
+<ul>
+<li>新型處理器架構；</li>
+<li>異質封裝；</li>
+<li>光電混合互連；</li>
+<li>熱與功率控制；</li>
+<li>材料與微結構；</li>
+<li>生物混合介面；</li>
+<li>新型製造流程；</li>
+<li>多站點分布式系統；</li>
+</ul>
+<p>人類研究團隊往往受到：</p>
+<ul>
+<li>儀器時間；</li>
+<li>人員排班；</li>
+<li>樣本交接；</li>
+<li>跨專業溝通；</li>
+<li>夜間停機；</li>
+<li>量測格式不一致；</li>
+<li>重複操作；</li>
+<li>實驗版本混亂；</li>
+<li>長週期等待；</li>
+<li>證據斷裂；</li>
+</ul>
+<p>等問題限制。</p>
+<p>具身化 AI 的價值，不是讓材料反應、製造過程或物理測試失去必要時間，而是降低大量非物理性的等待與協調成本。</p>
+<p>一台通用機器人仍然不足，原因包括：</p>
+<ol>
+<li>它只能同時佔據有限位置；</li>
+<li>它攜帶的工具有限；</li>
+<li>它不能替代固定的大型儀器；</li>
+<li>它的故障會使整個身體失去功能；</li>
+<li>它通常以單一任務或短期工作階段運作；</li>
+<li>它很難獨自維持跨房間、跨設備與跨數日的完整世界狀態。</li>
+</ol>
+<p>真正需要的不是一個更像人的機器人，而是：</p>
+<blockquote>
+<p>一個能將整個被授權研究空間理解為分布式身體的持續性智能。</p>
+</blockquote>
+<hr>
+<h1>2. 現有技術提供了哪些基礎，又缺少什麼</h1>
+<h2>2.1 自主實驗室已證明閉環可行</h2>
+<p>A-Lab 已展示以自主代理、機器人與材料合成設備形成閉環，在研究者指定的目標集合內持續選擇合成方案、執行實驗與分析結果。移動機器人也已被用於在傳統實驗室中操作多種設備，使不完全為自動化而設計的空間可以被納入自主工作流。</p>
+<p>這些成果證明：</p>
+<p>$$
+\text{AI 決策}
++
+\text{機器人執行}
++
+\text{儀器量測}
++
+\text{結果回饋}
+$$</p>
+<p>可以形成實際物理閉環。</p>
+<p>但現有自主實驗室通常具有以下特徵：</p>
+<ul>
+<li>研究問題狹窄；</li>
+<li>工作流高度客製；</li>
+<li>使用工具數量有限；</li>
+<li>對材料與設備依賴強；</li>
+<li>安全邊界由人類預先設定；</li>
+<li>世界模型主要服務當前實驗；</li>
+<li>系統身份與任務多在專案級存在。</li>
+</ul>
+<p>因此，自主實驗室是 STDI 的必要前身，但不等於完整 STDI。</p>
+<h2>2.2 資訊物理系統提供了感知—通訊—致動框架</h2>
+<p>NIST 將資訊物理系統描述為將計算、通訊、感測與致動和物理系統及人類整合，以完成不同關鍵程度的功能。這提供 STDI 的基本工程底座。</p>
+<p>但資訊物理系統通常不必具備：</p>
+<ul>
+<li>長期研究目標；</li>
+<li>跨任務身份連續性；</li>
+<li>主動生成新實驗；</li>
+<li>多身體共同自我模型；</li>
+<li>智慧財產與證據分流；</li>
+<li>對自身能力邊界的語義理解。</li>
+</ul>
+<p>STDI 在 CPS 上增加的是持續性智能治理層。</p>
+<h2>2.3 數位孿生提供狀態映射，但不自動產生治理主體</h2>
+<p>數位孿生可以對實體、設備與流程建立虛擬對應，支援即時監控、模擬、分析與異常偵測。它是 STDI 世界模型的重要組件。</p>
+<p>但：</p>
+<p>$$
+\text{Digital Twin}
+\neq
+\text{Autonomous Domain Governor}.
+$$</p>
+<p>數位孿生可以描述世界，STDI 還必須決定：</p>
+<ul>
+<li>哪些任務應執行；</li>
+<li>誰可以執行；</li>
+<li>何時執行；</li>
+<li>需要哪些資源；</li>
+<li>哪些結果可信；</li>
+<li>何時停止或回退。</li>
+</ul>
+<h2>2.4 機器人軟體與工業互通提供站點接口</h2>
+<p>ROS 2、ros2_control、DDS、OPC UA Robotics 與 IEEE TSN 等技術，已提供：</p>
+<ul>
+<li>機器人元件抽象；</li>
+<li>感測器、執行器與系統描述；</li>
+<li>即時資料分發；</li>
+<li>多廠商設備資訊模型；</li>
+<li>有界延遲與低抖動網路；</li>
+<li>多機器人與機器人—感測器組合。</li>
+</ul>
+<p>因此，STDI 不需要重新發明所有底層裝置驅動與通訊協議。</p>
+<p>它真正需要新增的是：</p>
+<ul>
+<li>時空域任務語義；</li>
+<li>站點能力證書；</li>
+<li>權限租約；</li>
+<li>世界狀態紀元；</li>
+<li>具身對齊排程；</li>
+<li>證據與回退關係；</li>
+<li>中央與地方的治理規則。</li>
+</ul>
+<hr>
+<h1>3. 定義：什麼是時空域支配智能</h1>
+<p>定義一個被授權的物理時空域：</p>
+<h1>$$
+\mathcal{D}</h1>
+<p>\left(
+\Omega,
+\mathcal{T},
+\mathcal{N},
+\mathcal{R},
+\mathcal{A},
+\mathcal{P}
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\Omega$：空間區域集合；</li>
+<li>$\mathcal{T}$：時間窗口、期限與事件序列；</li>
+<li>$\mathcal{N}$：固定站、移動站與虛擬站；</li>
+<li>$\mathcal{R}$：材料、能源、算力、儀器與人員資源；</li>
+<li>$\mathcal{A}$：可被系統請求或執行的動作；</li>
+<li>$\mathcal{P}$：權限、安全與治理政策。</li>
+</ul>
+<p><strong>時空域支配智能</strong>定義為：</p>
+<blockquote>
+<p>一個能在被授權的有限物理時空域中，持續維護帶不確定性的世界模型，將高階意圖編譯為站點任務與物理流，配置資源與權限，協調多個固定和移動身體，執行觀測—行動—驗證閉環，並在故障或政策違反時安全降級與回退的人工智能系統。</p>
+</blockquote>
+<p>可表示為：</p>
+<h1>$$
+\mathfrak{I}_{\mathrm{STDI}}</h1>
+<p>\left(
+\mathcal{W},
+\mathcal{G},
+\mathcal{Q},
+\mathcal{B},
+\mathcal{E},
+\Pi,
+\Gamma
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathcal{W}$：世界狀態模型；</li>
+<li>$\mathcal{G}$：站點與通訊圖；</li>
+<li>$\mathcal{Q}$：任務、實驗與維護佇列；</li>
+<li>$\mathcal{B}$：資源、能量、熱與風險預算；</li>
+<li>$\mathcal{E}$：證據、來源與不確定性；</li>
+<li>$\Pi$：控制與排程策略；</li>
+<li>$\Gamma$：治理、權限與安全憲法。</li>
+</ul>
+<hr>
+<h1>4. 「支配」不是無限控制，而是有限域中的五種主權</h1>
+<p>「支配」是一個有意保留張力的母命題詞。工程上必須把它拆解，防止概念滑向全知全能或無限制控制。</p>
+<h2>4.1 感知主權</h2>
+<p>系統能持續回答：</p>
+<ul>
+<li>哪些物體存在；</li>
+<li>它們位於何處；</li>
+<li>哪些狀態由感測器直接觀測；</li>
+<li>哪些只是模型推定；</li>
+<li>哪些區域目前不可觀測；</li>
+<li>哪些感測器失準；</li>
+<li>哪些資訊已過期。</li>
+</ul>
+<p>因此感知主權包含「知道自己不知道什麼」。</p>
+<h2>4.2 時序主權</h2>
+<p>系統能管理：</p>
+<ul>
+<li>任務順序；</li>
+<li>同步窗口；</li>
+<li>樣本有效期限；</li>
+<li>儀器暖機時間；</li>
+<li>維護週期；</li>
+<li>不得同時發生的操作；</li>
+<li>必須共同發生的量測；</li>
+<li>中斷後的恢復點。</li>
+</ul>
+<h2>4.3 資源主權</h2>
+<p>系統能在授權範圍內分配：</p>
+<ul>
+<li>儀器時段；</li>
+<li>機器人；</li>
+<li>材料；</li>
+<li>樣本容器；</li>
+<li>電力；</li>
+<li>熱預算；</li>
+<li>算力；</li>
+<li>網路；</li>
+<li>人類介入時間。</li>
+</ul>
+<h2>4.4 行動主權</h2>
+<p>系統可以透過站點改變物理世界，但任何動作都受：</p>
+<ul>
+<li>能力邊界；</li>
+<li>權限租約；</li>
+<li>本地互鎖；</li>
+<li>安全集合；</li>
+<li>執行前檢查；</li>
+<li>事後證據；</li>
+</ul>
+<p>限制。</p>
+<h2>4.5 證據主權</h2>
+<p>系統能追蹤：</p>
+<ul>
+<li>哪一個模型提出實驗；</li>
+<li>哪一個策略批准；</li>
+<li>哪一個站點執行；</li>
+<li>使用哪一批材料；</li>
+<li>在何種校準狀態下量測；</li>
+<li>結果由誰或哪個模型判讀；</li>
+<li>哪些結論需要重做；</li>
+<li>哪些資料已進入產品、專利或公開流程。</li>
+</ul>
+<p>五種主權可以寫為：</p>
+<h1>$$
+\mathcal{S}_{D}</h1>
+<p>S_{\mathrm{sense}}
++
+S_{\mathrm{time}}
++
+S_{\mathrm{resource}}
++
+S_{\mathrm{action}}
++
+S_{\mathrm{evidence}}.
+$$</p>
+<p>缺少其中任一項，系統都不應被稱為完整時空域支配智能。</p>
+<hr>
+<h1>5. 從 O-Chip 到超靈物理化</h1>
+<p>O-Chip 的原始命題，是把高階預測、規劃、依賴分析與資源治理從執行核心中抽離：</p>
+<p>$$
+\text{高階決策}
+\rightarrow
+\text{O-Chip／Oversoul},
+$$</p>
+<p>$$
+\text{高吞吐執行}
+\rightarrow
+\text{CPU／GPU／專用單元}.
+$$</p>
+<p>這可概括為：</p>
+<blockquote>
+<p>決策應發生在長視野、高語義與全局狀態可見的地方；執行應發生在短反射、高吞吐與局部確定性的地方。</p>
+</blockquote>
+<p>STDI 將這個結構再做一次尺度遷移：</p>
+<p>$$
+\text{晶片內靈肉分離}
+\rightarrow
+\text{資料中心語義治理}
+\rightarrow
+\text{物理時空域治理}.
+$$</p>
+<p>新的分工為：</p>
+<pre><code class="language-text">Oversoul／Domain Intelligence
+= 長期目標、因果模型、跨站點規劃、權限與證據
+
+Local Station Agent
+= 局部狀態估計、快速反射、站點排程、故障處理
+
+Hard Real-Time Controller
+= 馬達、互鎖、急停、壓力、溫度、雷射與電氣安全
+</code></pre>
+<p>因此，超靈物理化不代表把一個大模型直接接到所有馬達，而是建立不同時間尺度的嵌套控制。</p>
+<hr>
+<h1>6. 站點化分布式身體</h1>
+<p>STDI 的身體不是單一機器，而是站點集合：</p>
+<h1>$$
+\mathcal{B}_{D}</h1>
+<p>{
+N_0,N_1,\ldots,N_k
+}.
+$$</p>
+<p>每一站點表示為：</p>
+<h1>$$
+N_i</h1>
+<p>\left(
+C_i,
+O_i,
+Z_i,
+L_i,
+R_i,
+H_i,
+U_i
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$C_i$：能力集合；</li>
+<li>$O_i$：可觀測狀態；</li>
+<li>$Z_i$：可作用空間；</li>
+<li>$L_i$：延遲與連線特性；</li>
+<li>$R_i$：資源需求；</li>
+<li>$H_i$：健康與校準狀態；</li>
+<li>$U_i$：地方自主權與安全限制。</li>
+</ul>
+<h2>6.1 S0：感測站</h2>
+<p>功能包括：</p>
+<ul>
+<li>視覺；</li>
+<li>光譜；</li>
+<li>聲學；</li>
+<li>溫度；</li>
+<li>壓力；</li>
+<li>電磁；</li>
+<li>化學；</li>
+<li>環境；</li>
+<li>人員與設備位置。</li>
+</ul>
+<p>感測站可以只讀，不必具有致動權。</p>
+<h2>6.2 S1：執行站</h2>
+<p>功能包括：</p>
+<ul>
+<li>開關；</li>
+<li>泵；</li>
+<li>閥；</li>
+<li>馬達；</li>
+<li>加熱；</li>
+<li>冷卻；</li>
+<li>電源；</li>
+<li>夾具；</li>
+<li>基本搬運。</li>
+</ul>
+<p>其控制邏輯應有限、可驗證且具有本地安全邊界。</p>
+<h2>6.3 S2：儀器站</h2>
+<p>代表：</p>
+<ul>
+<li>顯微鏡；</li>
+<li>光譜儀；</li>
+<li>示波器；</li>
+<li>3D 列印；</li>
+<li>CNC；</li>
+<li>化學分析；</li>
+<li>材料測試；</li>
+<li>熱與電性量測。</li>
+</ul>
+<p>儀器站必須提供能力、校準、樣本接口與證據格式。</p>
+<h2>6.4 S3：移動站</h2>
+<p>代表：</p>
+<ul>
+<li>AGV；</li>
+<li>AMR；</li>
+<li>輪式機器人；</li>
+<li>無人機；</li>
+<li>移動機械臂；</li>
+<li>可換工具平台。</li>
+</ul>
+<p>移動站的主要價值是把未自動化的空間與異質儀器納入站網。</p>
+<h2>6.5 S4：地方智能站</h2>
+<p>具有：</p>
+<ul>
+<li>局部世界模型；</li>
+<li>任務片段；</li>
+<li>異常偵測；</li>
+<li>通訊中斷降級；</li>
+<li>本地安全否決；</li>
+<li>受限重排程；</li>
+<li>狀態摘要。</li>
+</ul>
+<h2>6.6 S5：虛擬與遠端站</h2>
+<p>包括：</p>
+<ul>
+<li>模擬器；</li>
+<li>數位孿生；</li>
+<li>遠端 HPC；</li>
+<li>雲端模型；</li>
+<li>第三方實驗室；</li>
+<li>遠端儀器；</li>
+<li>人類專家。</li>
+</ul>
+<p>虛擬站不直接佔據本地域，但可以提供推理、模擬、分析與外部驗證。</p>
+<hr>
+<h1>7. 從 GFMSN 到 Oversoul Station Fabric</h1>
+<p>GFMSN 將光學資料運動系統理解為主通道、站點、支線、延遲、分流、局部操作與重注入的網路。</p>
+<p>STDI 保留此結構，但把被路由的對象從光脈衝擴張為：</p>
+<ul>
+<li>任務；</li>
+<li>樣本；</li>
+<li>材料；</li>
+<li>工具；</li>
+<li>能源；</li>
+<li>數據；</li>
+<li>人員請求；</li>
+<li>權限；</li>
+<li>證據。</li>
+</ul>
+<p>GFMSN 的：</p>
+<p>$$
+\text{drop}
+\rightarrow
+\text{delay}
+\rightarrow
+\text{transform}
+\rightarrow
+\text{reinject}
+$$</p>
+<p>在物理研究域中對應：</p>
+<p>$$
+\text{取出樣本或任務}
+\rightarrow
+\text{等待或局部處理}
+\rightarrow
+\text{量測與變換}
+\rightarrow
+\text{重新進入主流程}.
+$$</p>
+<p>由此形成：</p>
+<blockquote>
+<p><strong>Oversoul Station Fabric，OSF／超靈站網</strong></p>
+</blockquote>
+<p>OSF 是 STDI 的分布式身體與控制織網，不限定使用單一廠牌、單一通訊介質或單一機器人形態。</p>
+<hr>
+<h1>8. 語義即物理路由</h1>
+<p>SFRSN 原本將資料語義編譯成物理流座標：</p>
+<p>$$
+\text{semantic tag}
+\rightarrow
+\text{flow class}
+\rightarrow
+\text{physical coordinate}
+\rightarrow
+\text{delivery window}.
+$$</p>
+<p>STDI 將其物理化為：</p>
+<p>$$
+\begin{aligned}
+\text{research intent}
+&amp;\rightarrow
+\text{task semantics}
+\rightarrow
+\text{station capability}
+\
+&amp;\rightarrow
+\text{material／energy／action route}
+\rightarrow
+\text{execution window}.
+\end{aligned}
+$$</p>
+<p>例如：</p>
+<pre><code class="language-yaml">intent:
+  &quot;比較三種散熱微結構在相同熱流密度下的穩態與瞬態性能&quot;
+
+task_semantics:
+  sample_class: thermal_coupon
+  contamination_class: low
+  temperature_limit: 180C
+  measurement: [thermal_camera, thermocouple, electrical_power]
+  repeatability: 5
+  destructive: false
+
+route:
+  fabrication_station: S2_print_03
+  conditioning_station: S1_oven_01
+  test_station: S2_thermal_rig_02
+  inspection_station: S2_microscope_01
+  mobile_carrier: S3_amr_02
+</code></pre>
+<p>這裡的路由不是最短路問題，而是同時受：</p>
+<ul>
+<li>材料相容；</li>
+<li>工具可用性；</li>
+<li>校準狀態；</li>
+<li>時間窗口；</li>
+<li>能源；</li>
+<li>安全；</li>
+<li>樣本有效期；</li>
+<li>證據需求；</li>
+<li>人類權限；</li>
+</ul>
+<p>共同約束。</p>
+<hr>
+<h1>9. 具身即佔域，對齊即能力</h1>
+<h2>9.1 身體數量不等於能力</h2>
+<p>一個系統擁有 $N$ 個站點，不代表能同時完成 $N$ 個有效任務。</p>
+<p>$$
+C_{\mathrm{embodied}}
+\neq
+|\mathcal{N}|.
+$$</p>
+<p>站點可能：</p>
+<ul>
+<li>正在維護；</li>
+<li>尚未校準；</li>
+<li>缺少材料；</li>
+<li>與其他任務衝突；</li>
+<li>不在正確位置；</li>
+<li>網路中斷；</li>
+<li>安全條件不允許；</li>
+<li>使用不同世界狀態版本。</li>
+</ul>
+<h2>9.2 具身對齊集合</h2>
+<p>對任務 $q$，定義所需站點、資源與狀態的對齊條件：</p>
+<h1>$$
+\mathcal{A}(q,t)</h1>
+<p>\left{
+(n,r,w,p,e)
+\mid
+\operatorname{Ready}(n,t),
+\operatorname{Available}(r,t),
+\operatorname{Consistent}(w),
+\operatorname{Permitted}(p),
+\operatorname{EvidenceReady}(e)
+\right}.
+$$</p>
+<p>可執行條件為：</p>
+<h1>$$
+\operatorname{Executable}(q,t)</h1>
+<p>\mathbb{1}
+\left[
+\mathcal{A}(q,t)
+\models
+\mathcal{C}_q
+\right],
+$$</p>
+<p>其中 $\mathcal{C}_q$ 是任務約束。</p>
+<h2>9.3 有效具身容量</h2>
+<p>在時間窗 $\Delta t$ 內的有效具身容量可初步定義為：</p>
+<h1>$$
+C_{\mathrm{eff}}(\Delta t)</h1>
+<h2>\sum_{q\in\mathcal{Q}}
+v_q
+\cdot
+\operatorname{Executable}(q,\Delta t)
+\cdot
+p_q^{\mathrm{success}}</h2>
+<h2>C_{\mathrm{coord}}</h2>
+<p>C_{\mathrm{recovery}},
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$v_q$：任務價值；</li>
+<li>$p_q^{\mathrm{success}}$：成功概率；</li>
+<li>$C_{\mathrm{coord}}$：協調成本；</li>
+<li>$C_{\mathrm{recovery}}$：錯誤與回退成本。</li>
+</ul>
+<p>這就是「對齊即能力」在具身域的版本。</p>
+<hr>
+<h1>10. 三層控制閉環</h1>
+<p>STDI 不允許單一高階模型直接承擔所有控制頻率。</p>
+<h2>10.1 L0：硬即時安全閉環</h2>
+<p>時間尺度：</p>
+<p>$$
+\mu s \sim ms.
+$$</p>
+<p>負責：</p>
+<ul>
+<li>馬達電流；</li>
+<li>碰撞；</li>
+<li>急停；</li>
+<li>雷射互鎖；</li>
+<li>高壓；</li>
+<li>壓力；</li>
+<li>溫度；</li>
+<li>化學洩漏；</li>
+<li>人體接近。</li>
+</ul>
+<p>原則：</p>
+<p>$$
+\text{Global AI Command}
+&lt;
+\text{Local Hard Safety Constraint}.
+$$</p>
+<p>任何中央命令都不能繞過 L0。</p>
+<h2>10.2 L1：地方站點自治閉環</h2>
+<p>時間尺度：</p>
+<p>$$
+ms \sim s.
+$$</p>
+<p>負責：</p>
+<ul>
+<li>局部運動規劃；</li>
+<li>儀器程序；</li>
+<li>站內重試；</li>
+<li>故障隔離；</li>
+<li>量測品質檢查；</li>
+<li>通訊中斷時安全完成或停止。</li>
+</ul>
+<h2>10.3 L2：超靈全局治理閉環</h2>
+<p>時間尺度：</p>
+<p>$$
+s \sim days.
+$$</p>
+<p>負責：</p>
+<ul>
+<li>實驗設計；</li>
+<li>任務分解；</li>
+<li>資源調度；</li>
+<li>跨站點路由；</li>
+<li>研究優先級；</li>
+<li>模型更新；</li>
+<li>證據整合；</li>
+<li>IP 與發布路由。</li>
+</ul>
+<p>三層關係為：</p>
+<p>$$
+\text{L0 Safety}
+\subset
+\text{L1 Local Autonomy}
+\subset
+\text{L2 Global Governance}.
+$$</p>
+<hr>
+<h1>11. 中央主權、地方自治與動態不動點中央</h1>
+<p>STDI 可以分成三代。</p>
+<h2>11.1 第一代：中央主權</h2>
+<p>中央智能：</p>
+<ul>
+<li>保存主要世界模型；</li>
+<li>分配所有任務；</li>
+<li>決定站點路由；</li>
+<li>設定資源與風險預算。</li>
+</ul>
+<p>地方站點只執行受限程序。</p>
+<p>優點是容易理解與審計；缺點是中央延遲、單點失效與擴展性。</p>
+<h2>11.2 第二代：中央策略＋地方自治</h2>
+<p>地方 Agent 可以在租約範圍內：</p>
+<ul>
+<li>重排局部任務；</li>
+<li>重新選擇工具；</li>
+<li>處理小型故障；</li>
+<li>暫停不可信操作；</li>
+<li>壓縮並回報狀態。</li>
+</ul>
+<p>但不能：</p>
+<ul>
+<li>改變全局研究目標；</li>
+<li>擴張自身權限；</li>
+<li>解除安全限制；</li>
+<li>決定專利或公開；</li>
+<li>對高風險動作自行批准。</li>
+</ul>
+<h2>11.3 第三代：動態不動點中央</h2>
+<p>當系統跨越多個實驗室、資料中心與遠端站點時，中央不一定是一台固定機器。</p>
+<p>可以將治理中心定義為：</p>
+<h1>$$
+c_t^{\star}</h1>
+<h2>\arg\max_{c\in\mathcal{C}_t}
+\left(
+I_c
++
+T_c
++
+R_c</h2>
+<h2>L_c</h2>
+<p>U_c
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$I_c$：資訊完整性；</li>
+<li>$T_c$：可信度；</li>
+<li>$R_c$：資源可用性；</li>
+<li>$L_c$：延遲；</li>
+<li>$U_c$：不確定性。</li>
+</ul>
+<p>「中央」是當前最適合維持共同策略與證據一致性的治理狀態，而不必永久綁定單一節點。</p>
+<p>這仍只是遠期研究命題，不是 MVP 前提。</p>
+<hr>
+<h1>12. 連線不是纜線：混合通訊站網</h1>
+<p>站網的本體是治理與任務關係，不是固定物理線路。</p>
+<h2>12.1 有線確定性連線</h2>
+<p>適合：</p>
+<ul>
+<li>安全；</li>
+<li>即時控制；</li>
+<li>高頻儀器；</li>
+<li>大量數據；</li>
+<li>固定設備。</li>
+</ul>
+<p>候選包括：</p>
+<ul>
+<li>工業 Ethernet；</li>
+<li>TSN；</li>
+<li>EtherCAT；</li>
+<li>專用光纖；</li>
+<li>儀器匯流排。</li>
+</ul>
+<p>IEEE TSN 的目標是提供有界延遲、低延遲變異與低丟包的確定性連線，可作為站點間時間敏感流的底層之一。</p>
+<h2>12.2 無線移動連線</h2>
+<p>適合：</p>
+<ul>
+<li>移動機器人；</li>
+<li>臨時站；</li>
+<li>人類穿戴裝置；</li>
+<li>空間重配置。</li>
+</ul>
+<p>但不能假設所有無線連線都能支援硬即時安全。</p>
+<h2>12.3 光學與視覺信標</h2>
+<p>可用於：</p>
+<ul>
+<li>高速資料；</li>
+<li>精密時間參考；</li>
+<li>站點定位；</li>
+<li>近距離對接；</li>
+<li>無線電受限環境。</li>
+</ul>
+<h2>12.4 離線任務包</h2>
+<p>在斷線、遠距、深海、軌道或行星環境中，站點可以接受帶有：</p>
+<ul>
+<li>任務；</li>
+<li>權限；</li>
+<li>截止時間；</li>
+<li>安全集合；</li>
+<li>回報條件；</li>
+</ul>
+<p>的簽章任務包。</p>
+<p>因此：</p>
+<p>$$
+\text{連線持續性}
+\neq
+\text{治理持續性}.
+$$</p>
+<p>治理關係可以在有限時間內由租約與任務包維持。</p>
+<hr>
+<h1>13. 時空域世界模型</h1>
+<p>STDI 的世界模型不能只是三維地圖。</p>
+<p>定義：</p>
+<h1>$$
+\mathcal{W}_t</h1>
+<p>\left(
+O_t,
+Z_t,
+E_t,
+R_t,
+A_t,
+P_t,
+U_t,
+V_t
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$O_t$：物體、樣本、設備與代理；</li>
+<li>$Z_t$：空間區域與邊界；</li>
+<li>$E_t$：事件與時間線；</li>
+<li>$R_t$：物理、任務與因果關係；</li>
+<li>$A_t$：可能動作；</li>
+<li>$P_t$：權限與安全政策；</li>
+<li>$U_t$：不確定性；</li>
+<li>$V_t$：世界狀態版本／紀元。</li>
+</ul>
+<h2>13.1 世界狀態不是單一真值</h2>
+<p>每個狀態可表示為：</p>
+<h1>$$
+x</h1>
+<p>(\hat{x},\Sigma_x,t_{\mathrm{obs}},s_{\mathrm{source}}),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\hat{x}$：估計值；</li>
+<li>$\Sigma_x$：不確定性；</li>
+<li>$t_{\mathrm{obs}}$：觀測時間；</li>
+<li>$s_{\mathrm{source}}$：來源。</li>
+</ul>
+<h2>13.2 世界狀態紀元</h2>
+<p>當中央與地方站點狀態不同步時，每個任務必須聲明其依賴的世界狀態版本：</p>
+<pre><code class="language-yaml">world_epoch: WE-2026-07-30-042
+valid_until: 2026-07-30T21:05:00+08:00
+required_entities:
+  - sample_batch_17
+  - thermal_rig_02
+  - robot_arm_04
+</code></pre>
+<p>若重要狀態已變更，任務必須重新驗證。</p>
+<hr>
+<h1>14. 權限租約與行動證書</h1>
+<p>永久性全域控制權不適合分布式具身系統。</p>
+<p>STDI 採用權限租約：</p>
+<h1>$$
+\ell</h1>
+<p>\left(
+a,
+n,
+z,
+[t_0,t_1],
+\mathcal{C},
+k
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$a$：允許動作；</li>
+<li>$n$：被授權站點；</li>
+<li>$z$：作用區域；</li>
+<li>$[t_0,t_1]$：有效時間；</li>
+<li>$\mathcal{C}$：約束；</li>
+<li>$k$：簽章與撤銷資訊。</li>
+</ul>
+<p>例如：</p>
+<pre><code class="language-yaml">lease:
+  station: robot_arm_04
+  action: transfer_sample
+  zone: clean_cell_B
+  valid_from: &quot;20:15:00&quot;
+  valid_until: &quot;20:20:00&quot;
+  max_force: &quot;20N&quot;
+  allowed_objects: [sample_17]
+  destination: microscope_01
+  revoke_on:
+    - human_entry
+    - vision_confidence_below_0.95
+    - world_epoch_changed
+</code></pre>
+<p>權限租約使站點有足夠自治完成任務，但不能將暫時權限轉化為永久主權。</p>
+<hr>
+<h1>15. 證據閉環與 EML-CF</h1>
+<p>STDI 的每個物理行動應產生證據事件：</p>
+<h1>$$
+e_t</h1>
+<p>\left(
+\text{intent},
+\text{plan},
+\text{station},
+\text{artifact},
+\text{parameters},
+\text{observation},
+\text{decision},
+\text{hash}
+\right).
+$$</p>
+<p>完整自主研究循環為：</p>
+<p>$$
+\begin{aligned}
+\text{EML-CF Concept}
+&amp;\rightarrow
+\text{Falsifiable Hypothesis}
+\rightarrow
+\text{Experiment Graph}
+\
+&amp;\rightarrow
+\text{Station Scheduling}
+\rightarrow
+\text{Physical Execution}
+\rightarrow
+\text{Evidence}
+\
+&amp;\rightarrow
+\text{Model Revision}
+\rightarrow
+\text{Concept／IP Routing}.
+\end{aligned}
+$$</p>
+<p>EML-CF 負責：</p>
+<ul>
+<li>概念產品；</li>
+<li>先前技術；</li>
+<li>文件；</li>
+<li>IP 路由；</li>
+<li>公開與開源。</li>
+</ul>
+<p>STDI 負責：</p>
+<ul>
+<li>實驗計畫物理化；</li>
+<li>站點與材料協調；</li>
+<li>實驗執行；</li>
+<li>量測；</li>
+<li>世界狀態；</li>
+<li>證據回傳。</li>
+</ul>
+<p>兩者結合後形成：</p>
+<blockquote>
+<p>AI 自主概念產品研究—驗證閉環。</p>
+</blockquote>
+<hr>
+<h1>16. 與相似系統的差異</h1>
+<h2>16.1 與一般機器人群</h2>
+<p>機器人群重點通常是：</p>
+<ul>
+<li>分布式協作；</li>
+<li>編隊；</li>
+<li>探索；</li>
+<li>任務分配；</li>
+<li>局部自治。</li>
+</ul>
+<p>STDI 還要求：</p>
+<ul>
+<li>長期身份；</li>
+<li>世界狀態版本；</li>
+<li>儀器與材料治理；</li>
+<li>證據；</li>
+<li>權限租約；</li>
+<li>跨任務研究目標；</li>
+<li>IP 與發布接口。</li>
+</ul>
+<h2>16.2 與智慧工廠</h2>
+<p>智慧工廠通常圍繞：</p>
+<ul>
+<li>已知產品；</li>
+<li>穩定製程；</li>
+<li>生產效率；</li>
+<li>品質控制；</li>
+<li>維護。</li>
+</ul>
+<p>STDI 允許：</p>
+<ul>
+<li>未知流程；</li>
+<li>實驗性任務；</li>
+<li>假說生成；</li>
+<li>失敗即證據；</li>
+<li>架構與設備持續重組。</li>
+</ul>
+<h2>16.3 與自主實驗室</h2>
+<p>自主實驗室通常是 STDI 的特定應用域。</p>
+<p>STDI 更強調：</p>
+<ul>
+<li>多研究線；</li>
+<li>多類站點；</li>
+<li>跨時間持續性；</li>
+<li>物理域權限；</li>
+<li>多實驗室聯邦；</li>
+<li>概念產品生命週期。</li>
+</ul>
+<h2>16.4 與數位孿生</h2>
+<p>數位孿生是世界模型的一部分；STDI 還具有策略、授權、執行與證據治理。</p>
+<h2>16.5 與一般多代理系統</h2>
+<p>多代理系統可以全部存在於軟體。</p>
+<p>STDI 必須面對：</p>
+<ul>
+<li>物理不可逆；</li>
+<li>能源；</li>
+<li>空間占用；</li>
+<li>材料耗損；</li>
+<li>人身安全；</li>
+<li>設備老化；</li>
+<li>實驗污染；</li>
+<li>法規。</li>
+</ul>
+<hr>
+<h1>17. 九層架構</h1>
+<h2>L0：物理環境與安全邊界</h2>
+<ul>
+<li>空間；</li>
+<li>人員；</li>
+<li>設備；</li>
+<li>化學、電氣、機械與熱限制；</li>
+<li>急停與互鎖。</li>
+</ul>
+<h2>L1：感測與致動</h2>
+<ul>
+<li>感測器；</li>
+<li>馬達；</li>
+<li>泵閥；</li>
+<li>工具；</li>
+<li>儀器接口。</li>
+</ul>
+<h2>L2：本地即時控制</h2>
+<ul>
+<li>PLC；</li>
+<li>MCU；</li>
+<li>servo；</li>
+<li>safety controller；</li>
+<li>ros2_control 類控制框架。</li>
+</ul>
+<h2>L3：站點能力與地方 Agent</h2>
+<ul>
+<li>能力描述；</li>
+<li>校準；</li>
+<li>健康；</li>
+<li>局部規劃；</li>
+<li>本地否決；</li>
+<li>任務執行。</li>
+</ul>
+<h2>L4：混合連線與時序</h2>
+<ul>
+<li>有線；</li>
+<li>無線；</li>
+<li>DDS；</li>
+<li>OPC UA；</li>
+<li>TSN；</li>
+<li>光纖；</li>
+<li>離線任務包。</li>
+</ul>
+<h2>L5：世界模型與事件圖</h2>
+<ul>
+<li>物體；</li>
+<li>區域；</li>
+<li>任務；</li>
+<li>因果；</li>
+<li>版本；</li>
+<li>不確定性。</li>
+</ul>
+<h2>L6：語義—物理流編譯</h2>
+<ul>
+<li>Intent；</li>
+<li>DomainIR；</li>
+<li>Experiment Graph；</li>
+<li>Station Assignment；</li>
+<li>Material Route；</li>
+<li>Alignment Window。</li>
+</ul>
+<h2>L7：超靈治理與自主研究</h2>
+<ul>
+<li>長期規劃；</li>
+<li>因果推理；</li>
+<li>資源；</li>
+<li>跨域協調；</li>
+<li>模型更新。</li>
+</ul>
+<h2>L8：證據、權限、IP 與公共接口</h2>
+<ul>
+<li>Provenance；</li>
+<li>Audit；</li>
+<li>Safety Constitution；</li>
+<li>EML-CF；</li>
+<li>Patent Hold；</li>
+<li>Open Source；</li>
+<li>Publication。</li>
+</ul>
+<hr>
+<h1>18. 安全憲法的最低原則</h1>
+<h2>18.1 局部安全優先</h2>
+<p>$$
+\text{Local Safety}</p>
+<blockquote>
+</blockquote>
+<p>\text{Global Optimization}.
+$$</p>
+<h2>18.2 高風險行動不得由單一模型批准</h2>
+<p>需要：</p>
+<ul>
+<li>獨立規則；</li>
+<li>硬體互鎖；</li>
+<li>人類批准；</li>
+<li>或雙模型／雙代理交叉確認。</li>
+</ul>
+<h2>18.3 人類進入即改變域狀態</h2>
+<p>人類不是一般移動障礙物，而是帶有權利與不可預測性的主體。</p>
+<h2>18.4 不確定性不足時拒絕行動</h2>
+<p>$$
+U(x)&gt;U_{\max}
+\Rightarrow
+\text{Stop／Observe／Ask}.
+$$</p>
+<h2>18.5 可回退不代表物理可逆</h2>
+<p>某些物理行動不可逆，因此「回退」可能只表示：</p>
+<ul>
+<li>停止；</li>
+<li>隔離；</li>
+<li>保存證據；</li>
+<li>切換備份樣本；</li>
+<li>回到安全程序。</li>
+</ul>
+<h2>18.6 禁止自動擴張作用域</h2>
+<p>站點或中央 AI 不能自行把未授權房間、設備、人員或外部實驗室納入自身域。</p>
+<hr>
+<h1>19. 近期可行版本：Persistent Lab Domain MVP</h1>
+<p>第一個 MVP 不需要人形機器人、全自動化研究室或新型光學站網。</p>
+<h2>19.1 物理配置</h2>
+<ul>
+<li>一個桌面或單房間區域；</li>
+<li>兩到四個固定儀器；</li>
+<li>一台機械臂或移動平台；</li>
+<li>相機與環境感測；</li>
+<li>樣本識別；</li>
+<li>本地安全控制器；</li>
+<li>一台中央工作站。</li>
+</ul>
+<h2>19.2 軟體配置</h2>
+<ul>
+<li>世界模型；</li>
+<li>站點能力描述；</li>
+<li>任務圖；</li>
+<li>權限租約；</li>
+<li>事件日誌；</li>
+<li>模擬器；</li>
+<li>具身排程器；</li>
+<li>人工批准界面；</li>
+<li>EML-CF 匯入／回傳。</li>
+</ul>
+<h2>19.3 第一批任務</h2>
+<p>選擇低風險、非化學、非高溫的研究流程，例如：</p>
+<ol>
+<li>放置不同幾何樣本；</li>
+<li>使用相機與重量感測器確認；</li>
+<li>移動至量測站；</li>
+<li>執行重複量測；</li>
+<li>偵測放置錯誤；</li>
+<li>自動重試；</li>
+<li>保存完整證據；</li>
+<li>由 AI 選擇下一個測試條件。</li>
+</ol>
+<h2>19.4 MVP 成功條件</h2>
+<ul>
+<li>任務跨越多站點；</li>
+<li>世界狀態在中斷後可恢復；</li>
+<li>地方安全能否決中央；</li>
+<li>權限租約過期後停止；</li>
+<li>樣本、版本與量測不混淆；</li>
+<li>實驗結果自動回寫；</li>
+<li>人類可以隨時暫停與接管。</li>
+</ul>
+<hr>
+<h1>20. 分階段研究路線</h1>
+<h2>V0：純軟體域模擬</h2>
+<p>建立：</p>
+<ul>
+<li>DomainIR；</li>
+<li>Station Graph；</li>
+<li>World Epoch；</li>
+<li>Lease；</li>
+<li>Scheduler；</li>
+<li>Failure Injection。</li>
+</ul>
+<h2>V1：桌面虛實混合站</h2>
+<p>使用模擬站＋少量真實感測與致動。</p>
+<h2>V2：單房間具身域</h2>
+<p>加入機械臂、移動站、固定儀器與本地安全。</p>
+<h2>V3：自主研究閉環</h2>
+<p>由 EML-CF 提供假說，STDI 完成低風險實驗並回傳證據。</p>
+<h2>V4：多房間站網</h2>
+<p>測試：</p>
+<ul>
+<li>斷線；</li>
+<li>延遲；</li>
+<li>地方自治；</li>
+<li>物料交接；</li>
+<li>權限跨區。</li>
+</ul>
+<h2>V5：遠端實驗室聯邦</h2>
+<p>不同組織、設備與安全政策之間以能力證書和任務租約協作。</p>
+<h2>V6：極端遠距域</h2>
+<p>軌道、深海、極地或行星站點，測試長延遲與離線治理。</p>
+<hr>
+<h1>21. 可證偽命題</h1>
+<h2>H1：持續世界模型降低跨日任務恢復成本</h2>
+<p>與一次性腳本相比，STDI 在中斷後恢復多站點實驗所需的人工作業與錯誤率應較低。</p>
+<h2>H2：權限租約降低失控作用域</h2>
+<p>站點只持有短期、區域限定的權限時，錯誤命令造成的最大作用範圍應低於永久權限模式。</p>
+<h2>H3：具身對齊排程提高有效站點利用率</h2>
+<p>相較只按設備空閒時間排程，加入樣本、校準、世界紀元、安全與證據條件後，雖可能降低表面設備使用率，但應提高有效實驗完成率。</p>
+<h2>H4：地方否決降低中央模型錯誤造成的事故</h2>
+<p>在故障注入實驗中，本地安全與地方 Agent 應能攔截中央模型產生的越界動作。</p>
+<h2>H5：語義物理路由降低錯誤交接</h2>
+<p>將樣本類型、污染限制、實驗版本與期限加入路由後，錯誤站點、錯誤容器與錯誤量測流程應下降。</p>
+<h2>H6：證據閉環提高概念產品淘汰效率</h2>
+<p>STDI 與 EML-CF 結合後，缺乏物理支持的概念應更快被降級、合併或封存，而不是只增加文件數量。</p>
+<hr>
+<h1>22. 不能宣稱的內容</h1>
+<p>本篇不主張：</p>
+<ul>
+<li>已經存在通用時空域支配智能；</li>
+<li>大模型可以安全直接控制完整研究室；</li>
+<li>具身 AI 能消除昂貴設備與材料需求；</li>
+<li>機器人數量會線性提高研究能力；</li>
+<li>無線網路可取代所有確定性控制；</li>
+<li>數位孿生等同真實世界；</li>
+<li>AI 可在無人類與法規治理下自行擴張物理作用域；</li>
+<li>自主實驗室已等同自主科學家；</li>
+<li>「支配」表示所有裝置失去本地安全與人類否決；</li>
+<li>遠期跨城市或行星站網已經具備工程成熟度。</li>
+</ul>
+<hr>
+<h1>23. 系列的產品化分支</h1>
+<p>從本文可以產生以下獨立產品：</p>
+<ul>
+<li><strong>OSF｜Oversoul Station Fabric</strong>：超靈站網；</li>
+<li><strong>StationOS</strong>：站點作業系統；</li>
+<li><strong>DomainIR</strong>：時空域任務中介表示；</li>
+<li><strong>EmbodiedFlow</strong>：物理任務流編譯器；</li>
+<li><strong>StationTwin</strong>：站點數位孿生；</li>
+<li><strong>WorldEpoch Ledger</strong>：世界狀態紀元帳本；</li>
+<li><strong>Command Lease Protocol</strong>：指揮權限租約協議；</li>
+<li><strong>Embodied Alignment Scheduler</strong>：具身對齊排程器；</li>
+<li><strong>Local Sovereign Node</strong>：地方主權節點；</li>
+<li><strong>Physical Evidence Graph</strong>：物理證據圖；</li>
+<li><strong>Physical Rollback Engine</strong>：物理回退與隔離引擎；</li>
+<li><strong>Remote Lab Federation</strong>：遠端實驗室聯邦；</li>
+<li><strong>Research Station Foundry</strong>：自主研究站生成器。</li>
+</ul>
+<p>這證明「時空間支配型 AI」不是單篇論文的誇張名稱，而是一個能自然產生技術白皮書、協議、MVP 與子產品的系列母體。</p>
+<hr>
+<h1>24. 結論</h1>
+<p>具身人工智能的下一個尺度，不必只是讓單一機器人更像人，也不必只是讓更多機器人形成群體。</p>
+<p>真正重要的轉變可能是：</p>
+<p>$$
+\text{單體身體}
+\rightarrow
+\text{分布式身體},
+$$</p>
+<p>$$
+\text{一次性任務}
+\rightarrow
+\text{持續性時空域},
+$$</p>
+<p>$$
+\text{裝置控制}
+\rightarrow
+\text{世界狀態與權限治理},
+$$</p>
+<p>$$
+\text{資料回傳}
+\rightarrow
+\text{物理證據閉環}.
+$$</p>
+<p>時空域支配智能的核心不是「更強的控制」，而是：</p>
+<p>$$
+\boxed{
+\text{可觀測}
++
+\text{可排程}
++
+\text{可行動}
++
+\text{可驗證}
++
+\text{可回退}
+}
+$$</p>
+<p>其最終命題是：</p>
+<blockquote>
+<p>AI 的身體可以不是一台機器；它可以是一個由固定站、移動站、儀器、感測器、算力、材料庫與人類協作者共同構成的物理域。當同一智能能跨越時間持續維持這個域的世界狀態、任務、權限與證據時，具身不再只是「擁有身體」，而成為「持續佔據並治理一個時空域」。</p>
+</blockquote>
+<p>這就是：</p>
+<p>$$
+\boxed{
+\text{具身即佔域，對齊即能力，證據即持續存在}
+}
+$$</p>
+<hr>
+<h1>參考文獻</h1>
+<ol>
+<li><p>Szymanski, N. J. et al. <strong>An autonomous laboratory for the accelerated synthesis of novel materials.</strong> <em>Nature</em> 624, 86–91 (2023). DOI: 10.1038/s41586-023-06734-w.</p>
+</li>
+<li><p>Dai, T. et al. <strong>Autonomous mobile robots for exploratory synthetic chemistry.</strong> <em>Nature</em> 635, 890–897 (2024). DOI: 10.1038/s41586-024-08173-7.</p>
+</li>
+<li><p>Ha, T. et al. <strong>AI-driven robotic chemist for autonomous synthesis of organic molecules.</strong> <em>Science Advances</em> (2023). DOI: 10.1126/sciadv.adj0461.</p>
+</li>
+<li><p>Koscher, B. A. et al. <strong>Autonomous, multiproperty-driven molecular discovery.</strong> <em>Science</em> (2023). DOI: 10.1126/science.adi1407.</p>
+</li>
+<li><p>Kusne, A. G. et al. <strong>Managing autonomous materials labs with multi-agent AI.</strong> <em>Communications Materials</em> (2026). DOI: 10.1038/s43246-026-01219-5.</p>
+</li>
+<li><p>NIST. <strong>Cyber-Physical Systems and Internet of Things Foundations.</strong></p>
+</li>
+<li><p>Balta, E. et al. <strong>Digital Twin-Based Cyber-Attack Detection Framework for Cyber-Physical Manufacturing Systems.</strong> NIST publication (2023).</p>
+</li>
+<li><p>Object Management Group. <strong>Data Distribution Service for Real-Time Systems, Version 1.4.</strong></p>
+</li>
+<li><p>IEEE 802.1 Time-Sensitive Networking Task Group. <strong>Deterministic connectivity with bounded latency, low delay variation and low loss.</strong></p>
+</li>
+<li><p>OPC Foundation／VDMA. <strong>OPC UA Companion Specification for Robotics.</strong></p>
+</li>
+<li><p>Open Robotics. <strong>ROS 2 and ros2_control documentation.</strong></p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A：最小 STDI 產品卡</h1>
+<pre><code class="language-yaml">product:
+  name: &quot;Spatiotemporal Domain Intelligence&quot;
+  codename: &quot;STDI&quot;
+  type: &quot;mother_theory_and_system_family&quot;
+  evidence_level: &quot;E0&quot;
+
+domain:
+  spatial_scope: []
+  temporal_scope: []
+  stations: []
+  resources: []
+  allowed_actions: []
+  policies: []
+
+intelligence:
+  world_model: true
+  long_horizon_planning: true
+  local_agents: optional
+  human_governance: required
+
+safety:
+  local_hard_interlocks: required
+  command_leases: required
+  emergency_stop: required
+  automatic_scope_expansion: forbidden
+
+evidence:
+  event_log: required
+  artifact_hashing: required
+  world_epochs: required
+  eml_cf_integration: planned
+</code></pre>
+<hr>
+<h1>附錄 B：系列血緣</h1>
+<pre><code class="language-text">O-Chip／Oversoul
+    └─ 決策—執行分離、長視野規劃
+
+SFRSN
+    └─ 語義即路由、中央主權、地方自治、動態不動點中央
+
+GFMSN
+    └─ 站點、支線、分流、局部操作、重注入
+
+ODML／對齊即容量
+    └─ 多座標排程、差分時序、可對齊能力
+
+EML-CF
+    └─ 概念生成、證據、IP 分流、選擇性公開
+
+自主實驗室與具身 AI
+    └─ 物理操作、移動機器人、閉環實驗
+
+                    ↓
+
+時空域支配智能 STDI
+    └─ 持續世界模型＋分布式身體＋物理域治理＋證據閉環
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/stdi-01.html">https://thisoneisneok.com/html/papers/stdi-01.html</a></footer>
+</body>
+</html>

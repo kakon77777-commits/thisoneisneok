@@ -114,7 +114,7 @@ for (const post of posts) {
   }
 }
 
-const routes = ["/", "/apps", "/mssp", "/lean4", "/blog", "/about", "/source/site-source-guide.md"];
+const routes = ["/", "/papers", "/apps", "/mssp", "/lean4", "/blog", "/about", "/source/site-source-guide.md"];
 const sitemapEntries = [...routes, ...posts.map((post) => `/blog/${post.slug}`)]
   .map((route) => `  <url><loc>${siteUrl}${route}</loc></url>`)
   .join("\n");

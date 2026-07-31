@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AOCLS 觀察導向閉環製造平台：多模態量測、不確定性數位雙生與可驗證逆向製造 | Neo.K</title>
+<meta name="description" content="本文提出 AOCLS 第二版架構，將原始的 AI-driven Observation-based Conical Lithography System 重新定義為 AI-assisted Observation-guided Closed-Loop Synthesis，中文名稱為人工智慧輔助觀察導向閉環製造平台。此調整保留「觀察作為製造入口」與錐形相位光學的原始構想，但不再把 AOCLS 限縮為單一錐形透鏡，也…">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/ccp-11.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / CCP</strong><span>計算機概念產品系列</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>CCP-11</span></div><div><b>版本</b><span>v2.0</span></div><div><b>日期</b><span>2025-11-01</span></div><div><b>作者</b><span>Neo.K（許筌崴）</span></div><div><b>狀態</b><span>公開概念技術論文／可驗證系統架構提案</span></div><div><b>證據</b><span>本文提出系統模型、資料契約、控制流程、驗證協議與分階段原型；尚未宣稱完成端到端 AOCLS 設備、跨材料通用複製、半導體製程替代或安全關鍵零件認證</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ccp-11.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>AOCLS 觀察導向閉環製造平台：多模態量測、不確定性數位雙生與可驗證逆向製造</h1>
+<h2>摘要</h2>
+<p>本文提出 AOCLS 第二版架構，將原始的 <strong>AI-driven Observation-based Conical Lithography System</strong> 重新定義為 <strong>AI-assisted Observation-guided Closed-Loop Synthesis</strong>，中文名稱為<strong>人工智慧輔助觀察導向閉環製造平台</strong>。此調整保留「觀察作為製造入口」與錐形相位光學的原始構想，但不再把 AOCLS 限縮為單一錐形透鏡，也不再宣稱只要觀察一個物體，系統即可無損、無歧義地理解其全部幾何、材料、功能與內部結構，並一次曝光生成完全相同的實體。</p>
+<p>AOCLS v2.0 將觀察式製造表述為一個受限逆問題。系統從影像、深度、光譜、X 射線、超音波、熱像、力學量測、使用者意圖與既有設計資料中建立<strong>證據包</strong>，再推斷物體狀態的機率分布，而非只輸出單一確定模型。外部影像能提供表面外觀與部分幾何，但無法唯一決定被遮蔽區、內部空腔、材料配方、殘餘應力、製造歷史與功能目的；因此 AOCLS 必須保留多個假說、量化不確定性，並在資訊不足時主動要求補充掃描、非破壞檢測、材料測試或人工決策。</p>
+<p>本文將 AOCLS 分為八層：任務與授權、主動感測規劃、多模態配準與證據圖、物體假說與可編輯數位雙生、可製造性編譯、虛擬製程與不確定性預測、可插拔製造後端，以及製程監測、非破壞檢測與閉環更新。系統維護四個相互區分的數位對象：觀察雙生、目標雙生、製程雙生與實造雙生，避免把「看到的形狀」「想要的功能」「設備能做的結構」與「最後做出的零件」混為一談。</p>
+<p>AOCLS 的製造後端可以包含 CPOP 錐形相位光學、雙光子聚合、全像多焦點曝光、計算軸向光刻、DLP／SLA、微加工、沉積、蝕刻、模板自組裝與其他製程。錐形相位光學在此是延伸焦域、高深寬比能量沉積與結構光生成模組，而不是任意三維物體一次成形的充分條件。虛擬光刻引擎則提供高保真求解器與快速代理模型的混合預測，並在域外輸入或不確定性過高時自動回退至模擬、補量測或人工審核。</p>
+<p>本文提出「所見即所造」的工程化替代表述：<strong>所見形成證據，證據形成假說，假說經人工與製程約束轉化為可製造目標，製造結果再反向修正模型。</strong> 其核心價值不是取消 CAD、計量、材料科學與製程工程，而是讓參考物、自然語言、量測資料與設計意圖成為可追溯的製造入口，降低從實物參考到合格製程方案之間的轉譯成本。</p>
+<p><strong>關鍵詞</strong>：AOCLS、觀察導向製造、逆向工程、多模態量測、數位雙生、可製造性編譯、不確定性量化、閉環控制、虛擬光刻、CPOP、非破壞檢測、製程資格化</p>
+<hr>
+<h2>第一章　重新界定「觀察即製造」</h2>
+<h3>1.1 原始願景的價值</h3>
+<p>傳統數位製造通常從 CAD、網格、製程圖或參數化模型開始。對既有實物的複製、改良與局部重設計，則需要經過掃描、逆向工程、材料判斷、模型修補、可製造性修改與製程規劃。原始 AOCLS 提出的重要直覺是：</p>
+<blockquote>
+<p>實體參考物本身也可以成為製造介面，而不必要求使用者先把所有意圖翻譯成專業 CAD 指令。</p>
+</blockquote>
+<p>此構想對以下場景具有價值：</p>
+<ol>
+<li>缺少原始 CAD 的舊零件重建；</li>
+<li>依人體或自然物形態進行客製化設計；</li>
+<li>從手工原型、雕塑或材料樣品生成可編輯模型；</li>
+<li>量測既有微結構後進行尺度、材料或功能轉換；</li>
+<li>讓非專業使用者以參考物與語言描述共同表達目標；</li>
+<li>建立「觀察—模擬—製造—驗證」的資料閉環。</li>
+</ol>
+<p>問題不在於這個入口是否合理，而在於原始版本把多個尚未解決的逆問題壓縮成了「AI 理解」。第二版必須把這些中間層重新展開。</p>
+<h3>1.2 觀察不是完整狀態</h3>
+<p>令真實物體的潛在狀態為：</p>
+<h1>$$
+\mathbf{o}</h1>
+<p>\left(
+G,
+M,
+F,
+A,
+R,
+H
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$G$：外部與內部幾何；</li>
+<li>$M$：材料組成、微結構與空間分布；</li>
+<li>$F$：功能、邊界條件與允許的失效模式；</li>
+<li>$A$：零件、界面、接合與裝配關係；</li>
+<li>$R$：殘餘應力、缺陷、磨耗與當前狀態；</li>
+<li>$H$：製造、使用、維修與環境歷史。</li>
+</ul>
+<p>感測系統只能取得：</p>
+<h1>$$
+D</h1>
+<p>\mathcal{S}(\mathbf{o},\boldsymbol{\eta}),
+$$</p>
+<p>其中 $\mathcal{S}$ 是感測算子，$\boldsymbol{\eta}$ 包含噪聲、校準偏差、遮蔽、解析度與模型誤差。一般而言，$\mathcal{S}$ 不可逆；不同物體狀態可能產生相似觀測。因此 AOCLS 不應直接求唯一解：</p>
+<p>$$
+\widehat{\mathbf{o}}=\mathcal{S}^{-1}(D),
+$$</p>
+<p>而應估計後驗分布：</p>
+<p>$$
+p(\mathbf{o}\mid D,C),
+$$</p>
+<p>其中 $C$ 是先驗知識、物件類別、使用者說明、材料庫與製程背景。</p>
+<p>這表示系統的合法輸出可以是：</p>
+<ul>
+<li>一個高信心模型；</li>
+<li>多個互斥假說；</li>
+<li>某些已知區域與未知區域；</li>
+<li>需要補量測的問題清單；</li>
+<li>拒絕自動製造的判定。</li>
+</ul>
+<h3>1.3 從口號到閉環命題</h3>
+<p>原始口號「所見即所造」可以保留為傳播語言，但工程定義應改為：</p>
+<p>$$
+\text{觀察}
+\rightarrow
+\text{證據與不確定性}
+\rightarrow
+\text{可編輯目標}
+\rightarrow
+\text{可製造性轉換}
+\rightarrow
+\text{模擬與製程規劃}
+\rightarrow
+\text{製造}
+\rightarrow
+\text{量測與更新}.
+$$</p>
+<p>因此：</p>
+<blockquote>
+<p>AOCLS 不是把現實直接複製到現實，而是把參考物轉化為具證據血統、可人工修訂、可受製程約束並可被驗證的製造任務。</p>
+</blockquote>
+<h3>1.4 本文不主張的事項</h3>
+<p>本文不主張：</p>
+<ul>
+<li>單張影像足以確定任意物體的內部結構與材料配方；</li>
+<li>多模態 AI 可無條件理解物體的真實功能與設計意圖；</li>
+<li>錐形透鏡可一次曝光任意三維結構；</li>
+<li>AOCLS 已能取代 EUV、先進半導體晶圓廠或成熟量產製程；</li>
+<li>虛擬模型與實體結果在沒有校準和不確定性評估時等價；</li>
+<li>每次製造都會使模型精度指數成長；</li>
+<li>開源本身即可保證品質、安全、可重現性或公平取得；</li>
+<li>系統可以在沒有授權、智慧財產與安全審查的情況下複製任何物件。</li>
+</ul>
+<hr>
+<h2>第二章　AOCLS v2.0 的四種數位對象</h2>
+<h3>2.1 觀察雙生</h3>
+<p><strong>觀察雙生</strong> $\mathcal{T}_{\mathrm{obs}}$ 保存感測器實際支持的資訊：</p>
+<h1>$$
+\mathcal{T}_{\mathrm{obs}}</h1>
+<p>\left(
+D,
+\Pi,
+U,
+\mathcal{H}
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$D$：原始與校正後資料；</li>
+<li>$\Pi$：感測器、座標、時間與校準參數；</li>
+<li>$U$：量測與推斷不確定性；</li>
+<li>$\mathcal{H}$：多個可能物體假說。</li>
+</ul>
+<p>觀察雙生不得把模型補全的區域偽裝成已量測區域。每個面、體素、材料標籤與功能標籤都應標示來源：直接量測、跨模態推斷、資料庫先驗、生成式補全或人工指定。</p>
+<h3>2.2 目標雙生</h3>
+<p><strong>目標雙生</strong> $\mathcal{T}_{\mathrm{tar}}$ 表示使用者真正想製造的東西，而不是被掃描物的被動複製：</p>
+<h1>$$
+\mathcal{T}_{\mathrm{tar}}</h1>
+<p>\left(
+G^{\star},
+M^{\star},
+F^{\star},
+\boldsymbol{\tau},
+\mathcal{K},
+\mathcal{P}
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$G^{\star}$：目標幾何；</li>
+<li>$M^{\star}$：目標或替代材料；</li>
+<li>$F^{\star}$：功能需求；</li>
+<li>$\boldsymbol{\tau}$：尺寸、表面、性能與缺陷容差；</li>
+<li>$\mathcal{K}$：不可修改約束；</li>
+<li>$\mathcal{P}$：可調整偏好與優先順序。</li>
+</ul>
+<p>例如，參考物可能是金屬齒輪，但原型只需驗證咬合幾何，可以用聚合物製造；又或者外形可修改，但孔位與接口不可改。這些選擇必須由目標雙生明確記錄。</p>
+<h3>2.3 製程雙生</h3>
+<p><strong>製程雙生</strong> $\mathcal{T}_{\mathrm{proc}}$ 表示特定設備與材料下的製造方案：</p>
+<h1>$$
+\mathcal{T}_{\mathrm{proc}}</h1>
+<p>\left(
+\mathcal{M},
+\boldsymbol{\theta},
+\widehat{Y},
+U_Y,
+\mathcal{Q}
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathcal{M}$：設備、材料與製程圖；</li>
+<li>$\boldsymbol{\theta}$：光場、路徑、劑量、溫度與時間等控制參數；</li>
+<li>$\widehat{Y}$：預測結果；</li>
+<li>$U_Y$：製程預測不確定性；</li>
+<li>$\mathcal{Q}$：監測、檢查、停止與返工計畫。</li>
+</ul>
+<p>製程雙生不是目標雙生的複本。它包含補償後幾何、支撐、曝光分區、加工餘量、收縮補償、檢查特徵與設備限制。</p>
+<h3>2.4 實造雙生</h3>
+<p><strong>實造雙生</strong> $\mathcal{T}_{\mathrm{asbuilt}}$ 保存實際過程與成品證據：</p>
+<h1>$$
+\mathcal{T}_{\mathrm{asbuilt}}</h1>
+<p>\left(
+Y,
+Z_{\mathrm{proc}},
+Z_{\mathrm{post}},
+C_{\mathrm{part}}
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$Y$：實際幾何、材料與性能量測；</li>
+<li>$Z_{\mathrm{proc}}$：製程內監測資料；</li>
+<li>$Z_{\mathrm{post}}$：製後檢查與非破壞檢測；</li>
+<li>$C_{\mathrm{part}}$：零件證書、偏差、限制與處置結果。</li>
+</ul>
+<p>四種雙生之間的差異本身就是重要資料：</p>
+<h1>$$
+\Delta_{ot}</h1>
+<p>\mathcal{T}<em>{\mathrm{tar}}-
+\mathcal{T}</em>{\mathrm{obs}},
+$$</p>
+<h1>$$
+\Delta_{tp}</h1>
+<p>\mathcal{T}<em>{\mathrm{proc}}-
+\mathcal{T}</em>{\mathrm{tar}},
+$$</p>
+<h1>$$
+\Delta_{pa}</h1>
+<p>\mathcal{T}<em>{\mathrm{asbuilt}}-
+\mathcal{T}</em>{\mathrm{proc}}.
+$$</p>
+<p>它們分別對應設計修改、可製造性轉換與實際製程偏差。</p>
+<hr>
+<h2>第三章　多模態觀察與主動感測</h2>
+<h3>3.1 感測階梯</h3>
+<p>AOCLS 不應假設存在一套可以無損取得全部資訊的萬能掃描器。較合理的做法是建立分層感測階梯。</p>
+<table>
+<thead>
+<tr>
+<th>層級</th>
+<th>典型手段</th>
+<th>可觀察資訊</th>
+<th>主要限制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S0 外觀</td>
+<td>RGB、多角度攝影、偏振攝影</td>
+<td>顏色、紋理、可見表面</td>
+<td>光照與材質耦合；無內部資訊</td>
+</tr>
+<tr>
+<td>S1 表面幾何</td>
+<td>結構光、雷射掃描、攝影測量、共焦、OCT</td>
+<td>表面與部分透明結構</td>
+<td>遮蔽、反光、透明與解析度限制</td>
+</tr>
+<tr>
+<td>S2 表面材料</td>
+<td>高光譜、拉曼、FTIR、XRF、橢偏</td>
+<td>化學與光學成分代理</td>
+<td>穿透深度有限；光譜混合與校準需求</td>
+</tr>
+<tr>
+<td>S3 內部結構</td>
+<td>X-ray CT／micro-CT、超音波、太赫茲、MRI</td>
+<td>空腔、密度差、部分缺陷</td>
+<td>成本、劑量、材料對比、解析度與尺寸限制</td>
+</tr>
+<tr>
+<td>S4 性能與微結構</td>
+<td>硬度、拉伸、熱分析、切片、SEM／EDS</td>
+<td>力學、熱學、微結構與局部組成</td>
+<td>可能破壞樣品；只代表抽樣位置</td>
+</tr>
+<tr>
+<td>S5 歷史與功能</td>
+<td>文件、維修紀錄、操作測試、使用者說明</td>
+<td>設計意圖、載荷與失效條件</td>
+<td>資料可能缺失、偏誤或互相衝突</td>
+</tr>
+</tbody></table>
+<p>不同任務需要不同感測組合。只複製外觀的藝術模型，可能停在 S0–S1；需要內部通道的流體元件，通常至少需要 S3；安全關鍵結構則可能必須加入 S4–S5 與獨立工程審核。</p>
+<h3>3.2 主動感測而非固定掃描清單</h3>
+<p>若每個樣品都使用全部儀器，成本、時間與資料量會不可接受。AOCLS 應根據當前不確定性選擇下一個量測動作。</p>
+<p>令候選感測動作為 $a\in\mathcal{A}$，其成本為 $c(a)$，預期資訊增益為：</p>
+<h1>$$
+\operatorname{EIG}(a)</h1>
+<h2>\mathbb{E}_{d_a}
+\left[
+H\bigl(p(\mathbf{o}\mid D)\bigr)</h2>
+<p>H\bigl(p(\mathbf{o}\mid D,d_a)\bigr)
+\right],
+$$</p>
+<p>則下一個感測動作可選為：</p>
+<h1>$$
+a^{\star}</h1>
+<p>\arg\max_{a\in\mathcal{A}}
+\frac{
+\operatorname{EIG}(a)
++
+\lambda V_{\mathrm{decision}}(a)
+}{c(a)+\epsilon},
+$$</p>
+<p>其中 $V_{\mathrm{decision}}$ 衡量該量測是否會改變材料選擇、製程路徑或安全決策。</p>
+<p>例子包括：</p>
+<ul>
+<li>透明區域深度不確定時，要求 OCT 或改變照明角度；</li>
+<li>內部孔道會影響功能時，要求 micro-CT；</li>
+<li>外觀相似但材料可能不同時，要求拉曼、FTIR 或 XRF；</li>
+<li>模型對底面幾何不確定時，提示翻面重掃；</li>
+<li>若補量測成本高於重新設計成本，建議改採功能等效件。</li>
+</ul>
+<h3>3.3 多模態配準與證據圖</h3>
+<p>所有資料必須映射到共同座標系與時間基準。對第 $j$ 個感測器：</p>
+<h1>$$
+\mathbf{x}_{w}</h1>
+<p>\mathbf{T}<em>{wj}
+\mathbf{x}</em>{j},
+$$</p>
+<p>其中 $\mathbf{T}_{wj}$ 不是固定真值，而具有標定不確定性。AOCLS 應保存：</p>
+<ul>
+<li>內參、外參與時間同步；</li>
+<li>校準標準件與校準日期；</li>
+<li>原始資料與處理版本；</li>
+<li>配準殘差與局部失配；</li>
+<li>量測單位、解析度與適用範圍；</li>
+<li>軟體、模型與人工修訂紀錄。</li>
+</ul>
+<p>可將證據表示為圖：</p>
+<h1>$$
+\mathcal{G}_{E}</h1>
+<p>(V_E,E_E),
+$$</p>
+<p>節點包括原始量測、校正結果、特徵、幾何片段、材料假說與功能要求；邊則表示推導、對齊、支持、衝突或人工確認。如此可以追查一個材料標籤究竟來自光譜、影像先驗、資料庫或使用者輸入。</p>
+<h3>3.4 幾何、材料與功能必須分開推斷</h3>
+<p>幾何重建、材料估計與功能推理是不同問題：</p>
+<p>$$
+p(G,M,F\mid D)
+\neq
+p(G\mid D)p(M\mid D)p(F\mid D).
+$$</p>
+<p>它們相互依賴，但不能用單一「理解分數」取代。</p>
+<ul>
+<li>幾何可由多視角影像、深度、點雲與斷層資料估計；</li>
+<li>材料需要光譜、物性量測與材料先驗；</li>
+<li>功能往往需要裝配關係、載荷、操作紀錄與人的說明；</li>
+<li>外觀相同的零件可能具有不同熱處理與疲勞壽命；</li>
+<li>形狀不同的零件也可能實現同一功能。</li>
+</ul>
+<p>因此 AOCLS 的預設模式應是<strong>功能待確認</strong>，而不是由大型模型自動宣告已理解設計意圖。</p>
+<hr>
+<h2>第四章　物體假說與不確定性數位雙生</h2>
+<h3>4.1 從單一網格改為假說集合</h3>
+<p>系統可維護 $K$ 個候選假說：</p>
+<h1>$$
+\mathcal{H}</h1>
+<p>\left
+{
+(\mathbf{o}<em>k,w_k)
+\right}</em>{k=1}^{K},
+\qquad
+\sum_{k=1}^{K}w_k=1.
+$$</p>
+<p>候選差異可能包括：</p>
+<ul>
+<li>被遮蔽區的形狀；</li>
+<li>內部通道是否連通；</li>
+<li>表面塗層與基材的分界；</li>
+<li>某個亮面是金屬、鍍膜或塑膠；</li>
+<li>某個孔是功能孔、裝配孔或磨耗缺口；</li>
+<li>參考物是否已變形或損壞。</li>
+</ul>
+<p>使用者介面不應只顯示一個看似完整的彩色 3D 模型，而應用不同視覺符號標示：</p>
+<ul>
+<li>已直接量測；</li>
+<li>高信心推斷；</li>
+<li>低信心補全；</li>
+<li>人工指定；</li>
+<li>未知或不可觀察。</li>
+</ul>
+<h3>4.2 局部不確定性場</h3>
+<p>對幾何表面或體素可定義局部不確定性：</p>
+<h1>$$
+U_G(\mathbf{x})</h1>
+<p>\operatorname{Var}
+\left[
+\phi_G(\mathbf{x})
+\mid D
+\right],
+$$</p>
+<p>材料分布則可用熵：</p>
+<h1>$$
+U_M(\mathbf{x})</h1>
+<ul>
+<li></li>
+</ul>
+<p>\sum_{c=1}^{C}
+ p_c(\mathbf{x})
+ \log p_c(\mathbf{x}).
+$$</p>
+<p>功能需求的不確定性不宜被假裝成連續數值；可以保存為未決問題、衝突約束與所需責任人。例如：</p>
+<ul>
+<li>「此結構是否承受循環載荷？」</li>
+<li>「孔徑可否放大 $50\ \mu\mathrm{m}$？」</li>
+<li>「材料必須生物相容，還是只需幾何展示？」</li>
+<li>「是否允許拆解參考物？」</li>
+</ul>
+<h3>4.3 生成式補全的合法位置</h3>
+<p>生成模型可用於：</p>
+<ul>
+<li>提出被遮蔽區的候選形狀；</li>
+<li>修補網格與孔洞；</li>
+<li>從類似零件檢索先驗；</li>
+<li>產生功能等效的可製造設計；</li>
+<li>提議額外感測位置。</li>
+</ul>
+<p>但生成結果必須標為<strong>假說</strong>，不能覆蓋原始證據。對安全關鍵任務，生成式補全不得作為唯一幾何或材料依據。</p>
+<h3>4.4 人在迴路不是暫時缺陷</h3>
+<p>AOCLS 應把人工決策設計成正式狀態，而不是把它視為 AI 尚未進化的過渡。至少以下情況需要人工確認：</p>
+<ol>
+<li>功能與安全分類；</li>
+<li>是否允許材料替代；</li>
+<li>不確定區域是否可接受；</li>
+<li>智慧財產與製造授權；</li>
+<li>生物、醫療、化學與其他受管制用途；</li>
+<li>製程偏差是否可以讓步接受；</li>
+<li>失敗後應返工、報廢或降級使用。</li>
+</ol>
+<hr>
+<h2>第五章　可製造性編譯：從參考物到可做的目標</h2>
+<h3>5.1 直接複製通常不是最佳解</h3>
+<p>任何製造後端都有可達集合：</p>
+<h1>$$
+\mathcal{Y}_{\mathcal{M}}</h1>
+<p>\left{
+Y:\exists\boldsymbol{\theta},
+Y=\mathcal{F}_{\mathcal{M}}(\boldsymbol{\theta})
+\right}.
+$$</p>
+<p>若目標 $T$ 不在 $\mathcal{Y}_{\mathcal{M}}$ 內，系統必須修改設計、材料、尺度、分件方式或製程，而不是輸出一個不可能的參數組。</p>
+<p>可製造性編譯器記為：</p>
+<p>$$
+\Pi_{\mathcal{M}}:
+\mathcal{T}<em>{\mathrm{tar}}
+\mapsto
+\mathcal{T}</em>{\mathrm{proc}}.
+$$</p>
+<p>它可以執行：</p>
+<ul>
+<li>最小線寬與間隙修正；</li>
+<li>懸垂、支撐與排液設計；</li>
+<li>分件、拼接與裝配接口生成；</li>
+<li>材料替代與多材料分區；</li>
+<li>收縮、翹曲與光學像差預補償；</li>
+<li>加入量測特徵與校準標記；</li>
+<li>把不可見內部改為可檢查結構；</li>
+<li>將形狀複製改成功能等效設計。</li>
+</ul>
+<h3>5.2 多目標最佳化</h3>
+<p>設計轉換可寫為：</p>
+<h1>$$
+\boldsymbol{\theta}^{\star},T^{\star}</h1>
+<p>\arg\min_{\boldsymbol{\theta},T&#39;}
+\left[
+\lambda_G d_G(T&#39;,T)
++
+\lambda_F d_F(T&#39;,T)
++
+\lambda_M d_M(T&#39;,T)
++
+\lambda_C C(\boldsymbol{\theta})
++
+\lambda_R R(\boldsymbol{\theta})
++
+\lambda_U U(\boldsymbol{\theta})
+\right],
+$$</p>
+<p>並滿足：</p>
+<p>$$
+T&#39;\in\mathcal{Y}_{\mathcal{M}},
+$$</p>
+<p>$$
+\mathcal{K}(T&#39;)=\text{true}.
+$$</p>
+<p>這裡：</p>
+<ul>
+<li>$d_G$：幾何偏差；</li>
+<li>$d_F$：功能偏差；</li>
+<li>$d_M$：材料或物性偏差；</li>
+<li>$C$：時間、成本與資源；</li>
+<li>$R$：安全、缺陷與製程風險；</li>
+<li>$U$：模型與量測不確定性。</li>
+</ul>
+<p>權重不能由 AI 任意決定，必須來自任務規格與人工批准。</p>
+<h3>5.3 以功能等效取代材料神話</h3>
+<p>觀察到的材料不一定能以同一製程重製。AOCLS 應區分：</p>
+<ul>
+<li><strong>外觀等效</strong>：顏色、紋理與反射接近；</li>
+<li><strong>幾何等效</strong>：尺寸與拓撲接近；</li>
+<li><strong>功能等效</strong>：載荷、流量、光學或熱性能接近；</li>
+<li><strong>材料等效</strong>：成分與微結構接近；</li>
+<li><strong>歷史等效</strong>：製程與老化狀態接近。</li>
+</ul>
+<p>多數原型只能達成其中一部分。零件證書必須明確寫出達成哪一種等效，而不能籠統標記為「完全複製」。</p>
+<h3>5.4 製程圖而非單機魔法</h3>
+<p>完整製造往往是有向圖：</p>
+<h1>$$
+\mathcal{P}</h1>
+<p>(V_P,E_P),
+$$</p>
+<p>節點可以包含：</p>
+<ul>
+<li>清洗與表面準備；</li>
+<li>光敏材料配置；</li>
+<li>CPOP 結構光曝光；</li>
+<li>掃描或多角度投影；</li>
+<li>顯影與後固化；</li>
+<li>沉積、蝕刻與材料轉換；</li>
+<li>去模板、清洗與熱處理；</li>
+<li>量測、返工與報廢。</li>
+</ul>
+<p>AOCLS 的可擴展性來自製程圖與共用資料介面，而不是要求所有材料和結構都由同一台光刻設備完成。</p>
+<hr>
+<h2>第六章　製造後端與 CPOP 的正確角色</h2>
+<h3>6.1 可插拔製造後端</h3>
+<p>AOCLS v2.0 可以調度多種後端：</p>
+<ol>
+<li>DLP／SLA 與一般光聚合；</li>
+<li>雙光子聚合與多光子微製造；</li>
+<li>計算軸向光刻與其他體積光聚合；</li>
+<li>CPOP 延伸焦域與 Bessel–Gauss 類結構光；</li>
+<li>SLM／DMD 全像多焦點曝光；</li>
+<li>雷射燒蝕、切割與改質；</li>
+<li>微加工、沉積、蝕刻與電鍍；</li>
+<li>模板輔助自組裝與材料轉換；</li>
+<li>傳統 CNC、噴射、擠出與混合製程。</li>
+</ol>
+<p>對每個後端，系統需要一份能力描述：</p>
+<h1>$$
+\mathcal{C}_{m}</h1>
+<p>\left(
+\mathcal{R}<em>{m},
+\mathcal{M}</em>{m},
+\mathcal{E}<em>{m},
+\mathcal{U}</em>{m},
+\mathcal{S}_{m}
+\right),
+$$</p>
+<p>分別表示可達解析度與尺寸、材料、幾何能力、不確定性及安全限制。</p>
+<h3>6.2 CPOP 不是任意三維投影器</h3>
+<p>CPOP 可以提供：</p>
+<ul>
+<li>延伸焦線；</li>
+<li>高深寬比曝光或改質；</li>
+<li>環形、空心與渦旋光束；</li>
+<li>軸向多焦點；</li>
+<li>離軸與多通道結構光；</li>
+<li>對樣品高度偏差較有容忍度的曝光；</li>
+<li>光片成像與製程內觀察。</li>
+</ul>
+<p>標準 axicon 通常形成有限焦域，不會自然產生任意三維強度分布。任意或近似任意體積曝光仍需要：</p>
+<ul>
+<li>相位與振幅調制；</li>
+<li>多角度或時間序列；</li>
+<li>材料非線性與閾值；</li>
+<li>旁瓣抑制；</li>
+<li>像差和折射率失配補償；</li>
+<li>劑量與反應模型；</li>
+<li>顯影與後處理模型。</li>
+</ul>
+<h3>6.3 體積製造已存在，但不是無條件一次成形</h3>
+<p>計算軸向光刻等體積製造方法已證明，可以由多角度投影在光敏體積中累積劑量並形成三維結構。這表明「不逐層成形」具有實驗基礎；但它仍受材料閾值、散射、吸收、投影數、解析度、黏度、氧抑制、熱效應與重建演算法影響。</p>
+<p>AOCLS 可以把 CPOP 與體積投影視為互補工具：</p>
+<ul>
+<li>CPOP 擅長延伸焦域、軸向能量分配與高深寬比結構；</li>
+<li>斷層式投影擅長全體積劑量合成；</li>
+<li>雙光子聚合擅長高解析局部寫入；</li>
+<li>後處理決定最終材料與幾何是否成立。</li>
+</ul>
+<h3>6.4 虛擬光刻引擎</h3>
+<p>AOCLS 虛擬光刻引擎接收：</p>
+<h1>$$
+\Theta</h1>
+<p>(G,M,S,B,P),
+$$</p>
+<p>並輸出光場、熱、反應、聚合、位移、應力與最終幾何的預測分布。其運作原則為：</p>
+<ul>
+<li>高保真 FDTD、FEM 或其他求解器提供基準；</li>
+<li>神經算子與代理模型提供快速預覽；</li>
+<li>拓撲、幾何與物理殘差分開評估；</li>
+<li>模型輸出必須附帶適用域與不確定性；</li>
+<li>域外情境自動回退至高保真模擬、補資料或人工審核。</li>
+</ul>
+<p>AOCLS 不應把代理模型的單次高精度結果寫成普遍製程能力。</p>
+<hr>
+<h2>第七章　製程監測、非破壞檢測與閉環控制</h2>
+<h3>7.1 監測不等於零件合格</h3>
+<p>製程內影像、溫度、聲學與光學訊號可以識別異常或穩定性偏離，但「訊號異常」與「成品缺陷」之間的因果對應常需額外研究和地面真值。AOCLS 應分開：</p>
+<ul>
+<li><strong>製程監測</strong>：觀察設備與反應狀態；</li>
+<li><strong>製程內 NDE</strong>：嘗試檢測正在形成的實體缺陷；</li>
+<li><strong>製後 NDE</strong>：檢查成品內外部；</li>
+<li><strong>功能測試</strong>：驗證零件在目標載荷下是否工作；</li>
+<li><strong>資格化</strong>：證明製程在規定範圍內可持續產出合格零件。</li>
+</ul>
+<p>即時相機看到正常光斑，不代表材料內部不存在空腔、未反應區、殘餘應力或局部組成偏差。</p>
+<h3>7.2 狀態估計與控制</h3>
+<p>令製程狀態為 $\mathbf{x}_t$，控制為 $\mathbf{u}_t$，量測為 $\mathbf{y}_t$：</p>
+<h1>$$
+\mathbf{x}_{t+1}</h1>
+<p>f(\mathbf{x}_t,\mathbf{u}_t,\mathbf{w}_t),
+$$</p>
+<h1>$$
+\mathbf{y}_t</h1>
+<p>h(\mathbf{x}_t,\mathbf{v}_t),
+$$</p>
+<p>其中 $\mathbf{w}_t$ 與 $\mathbf{v}_t$ 分別是製程與量測噪聲。控制器可用模型預測控制、貝葉斯濾波、規則控制或其他方法，在安全集合內調整：</p>
+<ul>
+<li>雷射功率與脈衝；</li>
+<li>SLM／DMD 圖樣；</li>
+<li>掃描速度與路徑；</li>
+<li>曝光次序與角度；</li>
+<li>樣品位置與焦域；</li>
+<li>溫度、氣氛與等待時間。</li>
+</ul>
+<p>安全約束寫為：</p>
+<p>$$
+\mathbf{x}<em>t\in\mathcal{X}</em>{\mathrm{safe}},
+\qquad
+\mathbf{u}<em>t\in\mathcal{U}</em>{\mathrm{safe}}.
+$$</p>
+<p>AI 不得繞過硬體互鎖、功率限制、艙門、雷射安全與材料處置規則。</p>
+<h3>7.3 閉環學習不是必然單調提升</h3>
+<p>每次製造後，後驗模型可更新為：</p>
+<p>$$
+p(\boldsymbol{\psi}\mid\mathcal{D}_{1:n})
+\propto
+p(\mathcal{D}<em>n\mid\boldsymbol{\psi})
+ p(\boldsymbol{\psi}\mid\mathcal{D}</em>{1:n-1}),
+$$</p>
+<p>其中 $\boldsymbol{\psi}$ 是材料、設備或模型參數。但更多資料不保證精度必然增加：</p>
+<ul>
+<li>感測器可能漂移；</li>
+<li>材料批次可能改變；</li>
+<li>標籤與量測可能錯誤；</li>
+<li>新資料可能來自域外；</li>
+<li>線上微調可能造成災難性遺忘；</li>
+<li>控制策略改變後，資料分布也會改變。</li>
+</ul>
+<p>因此每次模型更新必須通過：</p>
+<ul>
+<li>凍結驗證集；</li>
+<li>回歸測試；</li>
+<li>校準度檢查；</li>
+<li>版本簽章；</li>
+<li>可回滾部署；</li>
+<li>高風險模型人工批准。</li>
+</ul>
+<h3>7.4 預測與零件證書</h3>
+<p>每次製造至少產生兩種證書。</p>
+<p><strong>預測證書</strong>包括：</p>
+<ul>
+<li>輸入資料與版本；</li>
+<li>感測覆蓋與未知區域；</li>
+<li>幾何、材料與功能不確定性；</li>
+<li>使用的模型、求解器與校準狀態；</li>
+<li>適用域判定；</li>
+<li>預測缺陷與風險；</li>
+<li>必須執行的量測項目。</li>
+</ul>
+<p><strong>零件證書</strong>包括：</p>
+<ul>
+<li>設備、材料批次與環境；</li>
+<li>實際控制軌跡；</li>
+<li>製程異常與人工介入；</li>
+<li>製後幾何、材料與功能測試；</li>
+<li>與目標和製程雙生的偏差；</li>
+<li>接受、返工、降級或報廢結論；</li>
+<li>適用用途與禁止用途。</li>
+</ul>
+<hr>
+<h2>第八章　AOCLS 八層系統架構</h2>
+<h3>8.1 L0：任務、權限與風險分類</h3>
+<p>輸入包括：</p>
+<ul>
+<li>參考物與其所有權；</li>
+<li>使用者想保留與修改的特徵；</li>
+<li>預期用途與載荷；</li>
+<li>材料、成本與時間限制；</li>
+<li>是否允許拆解或破壞性測試；</li>
+<li>智慧財產、出口管制、生物安全與其他限制。</li>
+</ul>
+<p>任何感測與製造前，先建立任務契約：</p>
+<h1>$$
+\mathcal{J}</h1>
+<p>(I,A,R,C),
+$$</p>
+<p>其中 $I$ 是意圖，$A$ 是授權，$R$ 是風險，$C$ 是約束。</p>
+<h3>8.2 L1：主動感測規劃</h3>
+<p>依任務需求選擇儀器、視角、解析度與校準標準件，並根據資訊增益迭代補量測。</p>
+<h3>8.3 L2：資料配準與證據血統</h3>
+<p>保留原始資料，建立共同座標系、單位、時間軸、校準與證據圖。任何後續模型都不得破壞原始資料的可追溯性。</p>
+<h3>8.4 L3：物體假說與可編輯雙生</h3>
+<p>分別建立幾何、材料、裝配與功能假說，顯示不確定區域，讓使用者確認、修正或要求補量測。</p>
+<h3>8.5 L4：可製造性編譯與後端選擇</h3>
+<p>根據設備能力、材料、容差、成本與風險選擇一個或多個製程圖，並產生幾何補償、支撐、分件與檢查策略。</p>
+<h3>8.6 L5：虛擬製程與風險分析</h3>
+<p>由高保真求解器與快速代理模型預測光場、反應、熱、變形和缺陷，執行不確定性傳播與穩健最佳化。</p>
+<h3>8.7 L6：製造執行與安全控制</h3>
+<p>調度 CPOP、SLM、DMD、位移台、材料系統、顯影與後處理設備。低延遲安全控制由確定性控制器與硬體互鎖承擔；AI 主要負責規劃、估計與受限調整。</p>
+<h3>8.8 L7：量測、資格化與持續學習</h3>
+<p>比較目標、製程與實造雙生，執行 NDE 與功能測試，生成證書，更新材料與設備模型。若新資料與舊模型矛盾，優先標記漂移而不是自動覆蓋歷史。</p>
+<hr>
+<h2>第九章　資料、介面與開源策略</h2>
+<h3>9.1 共用資料包</h3>
+<p>一個 AOCLS 任務包可包含：</p>
+<pre><code class="language-text">job/
+├── manifest.yaml
+├── authorization/
+├── raw_sensors/
+├── calibration/
+├── evidence_graph/
+├── observed_twin/
+├── target_twin/
+├── process_twin/
+├── simulation/
+├── machine_logs/
+├── as_built_twin/
+├── certificates/
+└── provenance/
+</code></pre>
+<p><code>manifest.yaml</code> 應記錄：</p>
+<ul>
+<li>任務 ID 與內容指紋；</li>
+<li>單位與座標系；</li>
+<li>感測器和設備版本；</li>
+<li>材料批次；</li>
+<li>模型與程式碼版本；</li>
+<li>授權與用途限制；</li>
+<li>人工決策與批准者；</li>
+<li>相關標準與驗收規格。</li>
+</ul>
+<h3>9.2 開源分層</h3>
+<p>合理的開源分層包括：</p>
+<ol>
+<li><strong>規格與資料格式</strong>：優先公開，促進互操作；</li>
+<li><strong>參考模擬器與評測工具</strong>：可使用寬鬆軟體授權；</li>
+<li><strong>硬體參考設計</strong>：可使用開放硬體授權；</li>
+<li><strong>材料配方與危險製程</strong>：依安全、專利與合作條件管理；</li>
+<li><strong>真實掃描資料</strong>：需處理智慧財產、隱私與使用權；</li>
+<li><strong>設備校準與商業參數</strong>：可以公開、延遲公開或保留。</li>
+</ol>
+<p>本文採 CC BY-SA 4.0，不代表未來程式碼、硬體、模型權重、材料資料與商標必須使用同一授權。</p>
+<h3>9.3 不應預先虛構成熟認證體系</h3>
+<p>在缺少標準件、跨實驗室重現、測量不確定性與治理結構時，不應直接宣告成立「AOCLS Foundation」並簽發產業認證。較合理順序為：</p>
+<ol>
+<li>公開詞彙、資料格式與測試工件；</li>
+<li>建立單機重複性與量測不確定性；</li>
+<li>執行多設備、多批次比較；</li>
+<li>進行跨實驗室互評；</li>
+<li>與既有標準組織、計量機構與產業合作；</li>
+<li>最後才考慮符合性標章或認證計畫。</li>
+</ol>
+<h3>9.4 資安與供應鏈安全</h3>
+<p>AOCLS 連接掃描、設計、模型與製造，會形成新的攻擊面：</p>
+<ul>
+<li>竄改幾何或材料標籤；</li>
+<li>在模型中加入隱藏缺陷；</li>
+<li>偽造校準或零件證書；</li>
+<li>竊取受保護物件的掃描資料；</li>
+<li>讓模型在特定圖樣上輸出危險參數；</li>
+<li>透過供應鏈替換模型、韌體或材料資料。</li>
+</ul>
+<p>因此需要：</p>
+<ul>
+<li>資料與模型簽章；</li>
+<li>最小權限與職責分離；</li>
+<li>不可變更稽核紀錄；</li>
+<li>離線與安全模式；</li>
+<li>受信任設備身分；</li>
+<li>安全更新與回滾；</li>
+<li>高風險製造雙人批准。</li>
+</ul>
+<hr>
+<h2>第十章　應用邊界與成熟度分層</h2>
+<h3>10.1 A 類：外觀與幾何參考製造</h3>
+<p>適用於：</p>
+<ul>
+<li>藝術、教育與展示模型；</li>
+<li>舊零件外形重建；</li>
+<li>包裝、握把與人體工學外殼；</li>
+<li>不承載或低風險原型。</li>
+</ul>
+<p>此類最適合驗證「觀察作為介面」，但不能用其成功推論材料與功能複製已成立。</p>
+<h3>10.2 B 類：微光學與聚合物微結構</h3>
+<p>適用於：</p>
+<ul>
+<li>微透鏡、光導與光柵；</li>
+<li>微流道與多孔支架；</li>
+<li>校準工件；</li>
+<li>高深寬比聚合物結構；</li>
+<li>雙光子與體積光聚合研究。</li>
+</ul>
+<p>這是 CPOP、虛擬光刻與閉環量測最自然的近期交集。</p>
+<h3>10.3 C 類：功能等效與多製程零件</h3>
+<p>適用於：</p>
+<ul>
+<li>允許材料替代的機械功能件；</li>
+<li>光、熱、流體或彈性功能結構；</li>
+<li>需要沉積、蝕刻或裝配的混合製程原型。</li>
+</ul>
+<p>此類需要明確區分幾何等效、材料等效與功能等效。</p>
+<h3>10.4 D 類：半導體與高可靠電子元件</h3>
+<p>AOCLS 可作為：</p>
+<ul>
+<li>特殊三維光子與微機電結構研究平台；</li>
+<li>小批量微結構原型工具；</li>
+<li>製程模擬與缺陷觀察平台；</li>
+<li>既有晶片上的微光學或聚合物後製程。</li>
+</ul>
+<p>但本文不宣稱它能以桌面設備替代先進邏輯製程、EUV 對準、離子佈植、原子層沉積、蝕刻、金屬互連、污染控制與晶圓級良率工程。</p>
+<h3>10.5 E 類：生醫與安全關鍵用途</h3>
+<p>個人化醫療植入物、組織支架、航空、核能與其他安全關鍵零件需要：</p>
+<ul>
+<li>生物相容性或材料資格；</li>
+<li>滅菌、老化與毒理驗證；</li>
+<li>完整功能與疲勞測試；</li>
+<li>受監管品質系統；</li>
+<li>獨立認證與責任界定。</li>
+</ul>
+<p>觀察到人體形狀，不等於已具備安全醫療製造能力。</p>
+<hr>
+<h2>第十一章　最小可行原型</h2>
+<h3>11.1 MVP-A：公分／毫米尺度觀察到製造</h3>
+<p><strong>目的</strong>：先驗證資料流、雙生分離、主動補掃描與閉環修正，不等待新型奈米設備。</p>
+<p><strong>參考工件</strong>：</p>
+<ul>
+<li>具有外部曲面、底部遮蔽、內部通道與已知 CAD 的聚合物校準件；</li>
+<li>表面包含霧面、亮面與不同顏色區；</li>
+<li>內部結構可由 micro-CT 提供地面真值。</li>
+</ul>
+<p><strong>流程</strong>：</p>
+<ol>
+<li>RGB 與結構光掃描；</li>
+<li>建立第一版觀察雙生；</li>
+<li>顯示遮蔽與內部未知區；</li>
+<li>主動感測模組建議翻面與 micro-CT；</li>
+<li>建立目標雙生，允許修改孔徑或材料；</li>
+<li>由 DLP／SLA 或其他成熟後端製造；</li>
+<li>再掃描並比較；</li>
+<li>修正幾何補償與不確定性校準。</li>
+</ol>
+<p><strong>比較組</strong>：</p>
+<ul>
+<li>只用單次表面掃描直接列印；</li>
+<li>固定全套感測；</li>
+<li>主動感測 AOCLS；</li>
+<li>有無可製造性編譯；</li>
+<li>有無不確定性拒絕。</li>
+</ul>
+<h3>11.2 MVP-B：微尺度 CPOP／雙光子後端</h3>
+<p><strong>目的</strong>：驗證 AOCLS 與 CPOP、虛擬光刻引擎的真正介面。</p>
+<p><strong>參考工件</strong>：</p>
+<ul>
+<li>已知 CAD 的聚合物微光學或微流道校準件；</li>
+<li>尺寸和材料先限制於單一已校準範圍；</li>
+<li>包含直線、曲面、孔洞與高深寬比特徵。</li>
+</ul>
+<p><strong>流程</strong>：</p>
+<ol>
+<li>共焦、OCT 或顯微影像重建；</li>
+<li>建立目標與容差；</li>
+<li>比較高斯焦點、標準 axicon、數位多焦點三種光場；</li>
+<li>由虛擬光刻預測劑量與幾何；</li>
+<li>製造後以顯微、輪廓、SEM 或 micro-CT 量測；</li>
+<li>檢查旁瓣串擾、軸向均勻度、收縮與拓撲錯誤。</li>
+</ol>
+<h3>11.3 MVP 評估指標</h3>
+<p>幾何指標：</p>
+<h1>$$
+E_G</h1>
+<h2>\frac{1}{|\Omega|}
+\int_{\Omega}
+\left|
+\phi_{\mathrm{asbuilt}}(\mathbf{x})</h2>
+<p>\phi_{\mathrm{target}}(\mathbf{x})
+\right|d\mathbf{x}.
+$$</p>
+<p>拓撲指標：</p>
+<h1>$$
+E_T</h1>
+<h2>\sum_{i=0}^{2}
+\omega_i
+\left|
+\beta_i^{\mathrm{asbuilt}}</h2>
+<p>\beta_i^{\mathrm{target}}
+\right|.
+$$</p>
+<p>不確定性校準可用覆蓋率：</p>
+<h1>$$
+\operatorname{Coverage}_{1-\alpha}</h1>
+<p>\frac{1}{N}
+\sum_{n=1}^{N}
+\mathbf{1}
+\left[
+Y_n\in\mathcal{I}_{1-\alpha}(X_n)
+\right].
+$$</p>
+<p>其他指標包括：</p>
+<ul>
+<li>感測時間與成本；</li>
+<li>每單位資訊增益；</li>
+<li>未知區域比例；</li>
+<li>製造成功率；</li>
+<li>$p95$、$p99$ 局部尺寸誤差；</li>
+<li>材料識別混淆矩陣；</li>
+<li>域外偵測率；</li>
+<li>不必要拒絕率；</li>
+<li>閉環後的批次變異；</li>
+<li>人工介入時間；</li>
+<li>證據追溯完整度。</li>
+</ul>
+<hr>
+<h2>第十二章　證據分級與驗證路線</h2>
+<h3>12.1 證據等級</h3>
+<table>
+<thead>
+<tr>
+<th>等級</th>
+<th>定義</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E0</td>
+<td>概念、數學模型與架構提案</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>軟體原型、合成資料與單元測試</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>校準標準件、單一設備與單一材料實驗</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>多幾何、多批次、域外測試與閉環製造</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>跨設備或跨實驗室重現、參考件互評</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>針對特定用途完成品質系統、資格化或監管認可</td>
+</tr>
+</tbody></table>
+<p>本文整體屬 E0；CPOP、體積光聚合、雙光子微製造、逆向渲染與閉環增材製造等子技術已有不同程度的外部實驗基礎，但不能自動合併成 AOCLS 端到端證據。</p>
+<h3>12.2 驗證階段</h3>
+<p><strong>V0：詞彙、資料契約與威脅模型</strong><br>定義四種雙生、感測來源標記、未知區域、授權與證書格式。</p>
+<p><strong>V1：觀察與不確定性基準</strong><br>以具有 CAD 與 CT 地面真值的工件測試幾何重建、材料分類和未知區域校準。</p>
+<p><strong>V2：可製造性編譯</strong><br>比較直接複製與受製程約束轉換的成功率、偏差和成本。</p>
+<p><strong>V3：成熟後端閉環</strong><br>先以 DLP／SLA 或其他成熟設備完成觀察—製造—再量測閉環。</p>
+<p><strong>V4：CPOP 與微尺度製程</strong><br>加入 axicon、數位相位、雙光子材料與虛擬光刻。</p>
+<p><strong>V5：多後端與多材料</strong><br>驗證製程圖、材料替代、沉積／蝕刻／後處理與資料互操作。</p>
+<p><strong>V6：跨實驗室與特定用途資格化</strong><br>使用共同標準件、盲測、獨立量測與既有標準程序。</p>
+<h3>12.3 五項可證偽命題</h3>
+<p><strong>命題 H1：主動感測具有淨效益。</strong><br>在相同成本預算下，主動感測相較固定掃描策略，應降低關鍵幾何或材料後驗不確定性；若不能，感測規劃器無效。</p>
+<p><strong>命題 H2：可製造性編譯優於直接複製。</strong><br>對超出後端能力的目標，經編譯的設計應提高合格率或降低總偏差；若只增加複雜度而無改善，編譯器應被否證或限制適用域。</p>
+<p><strong>命題 H3：不確定性拒絕能降低高代價失敗。</strong><br>在相近產出率下，具域外偵測和拒絕機制的系統應降低嚴重缺陷率；若校準不佳導致同時高漏報與高拒絕，證書不可採信。</p>
+<p><strong>命題 H4：閉環控制降低批次變異。</strong><br>在固定材料與設備範圍內，閉環控制應相較開環基線降低關鍵品質指標的變異；若只有平均值改善而尾部風險惡化，不能宣稱整體提升。</p>
+<p><strong>命題 H5：CPOP 的優勢是條件式而非普遍式。</strong><br>在預先定義的高深寬比或延伸焦域任務中，CPOP 應在幾何誤差、加工時間或高度容差至少一項優於匹配能量的高斯基線，且旁瓣缺陷不超過門檻；若無法成立，該任務不應使用 CPOP。</p>
+<hr>
+<h2>第十三章　研發路線與產品邊界</h2>
+<h3>13.1 第一階段：Observation Compiler</h3>
+<p>先建立與製造設備相對獨立的軟體核心：</p>
+<ul>
+<li>多模態資料匯入；</li>
+<li>共同座標與證據血統；</li>
+<li>幾何假說與未知區域；</li>
+<li>目標雙生編輯器；</li>
+<li>後端能力描述；</li>
+<li>可製造性檢查；</li>
+<li>任務證書與版本管理。</li>
+</ul>
+<p>此階段可直接服務逆向工程與既有 3D 列印，不必等待完整光刻硬體。</p>
+<h3>13.2 第二階段：AOCLS Virtual Lab</h3>
+<p>整合：</p>
+<ul>
+<li>CPOP 光場模擬；</li>
+<li>AOCLS 虛擬光刻引擎；</li>
+<li>材料資料庫；</li>
+<li>參數掃描與逆向設計；</li>
+<li>不確定性證書；</li>
+<li>硬體在迴路測試。</li>
+</ul>
+<p>此階段的產品可以是軟體與開放資料格式，而非宣稱已完成桌面奈米工廠。</p>
+<h3>13.3 第三階段：Closed-Loop Fabrication Cell</h3>
+<p>建立單一材料、單一尺度、有限幾何族的閉環設備。例如：</p>
+<ul>
+<li>聚合物微光學；</li>
+<li>微流道；</li>
+<li>高深寬比孔；</li>
+<li>校準與研究用微結構。</li>
+</ul>
+<p>先證明特定用途的重複性，再擴展材料和尺度。</p>
+<h3>13.4 第四階段：多製程研究平台</h3>
+<p>加入沉積、蝕刻、材料轉換、去模板、組裝與多設備排程，使 AOCLS 成為研究型製程編排平台。</p>
+<h3>13.5 商業化原則</h3>
+<p>早期商業價值更可能來自：</p>
+<ul>
+<li>觀察資料到可編輯數位雙生；</li>
+<li>逆向工程與可製造性轉換；</li>
+<li>虛擬製程與參數推薦；</li>
+<li>封閉設備的量測與資料整合；</li>
+<li>高價值小批量微結構服務；</li>
+<li>材料與設備模型管理。</li>
+</ul>
+<p>不應以「桌面設備取代晶圓廠」作為近期收入或投資承諾。</p>
+<hr>
+<h2>第十四章　討論：AOCLS 真正改變的是介面，而不是物理定律</h2>
+<p>AOCLS 最有力量的地方，不是宣稱所有製造困難都能被 AI、錐形光學或一次曝光消除，而是重新安排製造系統的入口與回饋：</p>
+<ul>
+<li>參考物可以和 CAD 一樣成為設計來源；</li>
+<li>自然語言可以表達保留、修改與禁止條件；</li>
+<li>感測規劃可以由不確定性驅動；</li>
+<li>生成模型可以提出假說，但必須保留證據邊界；</li>
+<li>可製造性編譯可以把「像」與「能做」分開；</li>
+<li>多種製程可以共用數位雙生與證書；</li>
+<li>模擬、製造與檢查可以形成可追溯閉環。</li>
+</ul>
+<p>這種轉變不會取消專業知識，反而要求專業知識以更清楚的介面進入系統：材料模型需要適用域，感測器需要校準，AI 需要不確定性，設備需要能力描述，成品需要用途限定，人工需要正式決策點。</p>
+<p>因此，AOCLS 的成熟形態不是「對著任何物體看一眼，機器就製造出完全相同的東西」，而是：</p>
+<blockquote>
+<p>對一個具體任務，系統知道自己看到了什麼、沒有看到什麼、推斷了什麼、誰批准了什麼、設備能做到什麼、最後實際做出了什麼，以及這個結果可以被用在哪裡。</p>
+</blockquote>
+<hr>
+<h2>結論</h2>
+<p>本文完成 AOCLS 從概念宣言到可驗證系統架構的第二版重構。新版保留「觀察作為製造入口」「AI 輔助跨模態理解」「虛擬製程」「錐形相位光學」「閉環自我校正」五項原始精神，但做出六項根本修正：</p>
+<ol>
+<li>將觀察視為不完整、帶噪聲且通常不可逆的證據，而非物體真值；</li>
+<li>以物體後驗分布、假說集合與未知區域取代單一確定數位雙生；</li>
+<li>區分觀察雙生、目標雙生、製程雙生與實造雙生；</li>
+<li>加入可製造性編譯，允許功能等效、材料替代與製程補償；</li>
+<li>將 CPOP 定位為可插拔結構光後端，而非任意三維一次曝光器；</li>
+<li>將閉環資料、NDE、模型更新與零件證書納入同一證據制度。</li>
+</ol>
+<p>AOCLS 因此不再是一台承諾「複製萬物」的單機，而是一套將實物參考、量測科學、逆向設計、多物理模擬、製程控制與資格化連接起來的開放式製造作業框架。</p>
+<p>其最小可行版本不必從奈米半導體開始。先以已知標準件、成熟掃描設備與 DLP／SLA 完成可追溯的觀察—製造閉環，再進入微光學、CPOP、雙光子與體積製造，將比直接承諾桌面晶圓廠更容易產生可重現、可否證與可累積的技術成果。</p>
+<hr>
+<h2>參考文獻</h2>
+<ol>
+<li>McLeod, J. H. “The Axicon: A New Type of Optical Element.” <em>Journal of the Optical Society of America</em>, 44(8), 592–597, 1954. <a href="https://doi.org/10.1364/JOSA.44.000592">https://doi.org/10.1364/JOSA.44.000592</a></li>
+<li>Durnin, J., Miceli, J. J., and Eberly, J. H. “Diffraction-Free Beams.” <em>Physical Review Letters</em>, 58, 1499–1501, 1987. <a href="https://doi.org/10.1103/PhysRevLett.58.1499">https://doi.org/10.1103/PhysRevLett.58.1499</a></li>
+<li>Kelly, B. E. et al. “Volumetric Additive Manufacturing via Tomographic Reconstruction.” <em>Science</em>, 363(6431), 1075–1079, 2019. <a href="https://doi.org/10.1126/science.aau7114">https://doi.org/10.1126/science.aau7114</a></li>
+<li>Toombs, J. T. et al. “Volumetric Additive Manufacturing of Silica Glass with Microscale Computed Axial Lithography.” <em>Science</em>, 376(6590), 308–312, 2022. <a href="https://doi.org/10.1126/science.abm6459">https://doi.org/10.1126/science.abm6459</a></li>
+<li>Saha, S. K. et al. “Scalable Submicrometer Additive Manufacturing.” <em>Science</em>, 366(6461), 105–109, 2019. <a href="https://doi.org/10.1126/science.aax8760">https://doi.org/10.1126/science.aax8760</a></li>
+<li>Brion, D. A. J. et al. “Generalisable 3D Printing Error Detection and Correction via Multi-Head Neural Networks.” <em>Nature Communications</em>, 13, 4654, 2022. <a href="https://doi.org/10.1038/s41467-022-31985-y">https://doi.org/10.1038/s41467-022-31985-y</a></li>
+<li>Mieszczanek, P. et al. “Towards Industry-Ready Additive Manufacturing: AI-Enabled Closed-Loop Control for 3D Melt Electrowriting.” <em>Communications Engineering</em>, 3, 2024. <a href="https://doi.org/10.1038/s44172-024-00302-4">https://doi.org/10.1038/s44172-024-00302-4</a></li>
+<li>Lu, Y. et al. “An Overarching Quality Evaluation Framework for Additive Manufacturing Digital Twin.” National Institute of Standards and Technology, 2024. <a href="https://doi.org/10.1109/CASE59546.2024.10711607">https://doi.org/10.1109/CASE59546.2024.10711607</a></li>
+<li>Donmez, M. A. et al. <em>In-Process Monitoring and Non-Destructive Evaluation for Metal Additive Manufacturing Processes</em>. NIST IR 8538, 2024. <a href="https://doi.org/10.6028/NIST.IR.8538">https://doi.org/10.6028/NIST.IR.8538</a></li>
+<li>Mildenhall, B. et al. “NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis.” <em>ECCV</em>, 2020. <a href="https://doi.org/10.1007/978-3-030-58452-8_24">https://doi.org/10.1007/978-3-030-58452-8_24</a></li>
+<li>Wang, H. et al. “MAGE: Single Image to Material-Aware 3D via the Multi-View G-Buffer Estimation.” <em>CVPR</em>, 2025.</li>
+<li>Lin, C.-H. et al. “IRIS: Inverse Rendering of Indoor Scenes from Low Dynamic Range Images.” <em>CVPR</em>, 2025.</li>
+<li>NIST. “Digital Twins for Advanced Manufacturing.” Measurement Science and Standards Program, 2024.</li>
+<li>Neo.K. “AOCLS 虛擬光刻模擬引擎：物理約束神經算子、格點收斂與拓撲驗證框架.” EveMissLab, v2.0, 2026.</li>
+<li>Neo.K. “錐形相位光學平台：從軸錐透鏡、Bessel–Gauss 光束到可程式化延伸焦域.” EveMissLab, v2.0, 2026.</li>
+</ol>
+<hr>
+<p><strong>版本狀態</strong>：v2.0 公開修訂版<br><strong>當前證據等級</strong>：E0——架構、數學與驗證路線提案<br><strong>下一個自然工程節點</strong>：AOCLS Observation Compiler MVP，先完成多模態資料包、四種雙生、主動補掃描與成熟 3D 列印後端閉環</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/ccp-11.html">https://thisoneisneok.com/html/papers/ccp-11.html</a></footer>
+</body>
+</html>

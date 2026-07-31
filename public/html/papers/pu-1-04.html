@@ -1,0 +1,1690 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>責任、模組與契約：從檔案分類到系統邊界 | Neo.K</title>
+<meta name="description" content="前兩篇分別建立了問題世界模型，以及資料、狀態、事件、行動的四元動力結構。本篇處理系統設計的下一個核心問題：當世界中已有實體、狀態、事件與行動後，究竟由誰負責維持它們？哪些狀態屬於哪個模組？模組之間應交換命令、事件、查詢、資料還是證據？跨邊界失敗由誰承擔？契約又應包含哪些內容？">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pu-1-04.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PU</strong><span>程式宇宙基礎</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PU-1-04</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-27</span></div><div><b>作者</b><span>Neo.K with Aletheia</span></div><div><b>狀態</b><span>初版完成</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pu-1-04.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>責任、模組與契約：從檔案分類到系統邊界</h1>
+<h2>Responsibility, Modules, and Contracts: From File Classification to System Boundaries</h2>
+<p><strong>論文編號：</strong> PU-1-04<br><strong>系列：</strong>「程式宇宙書系」第 1 冊《系統性程式設計》<br><strong>作者：</strong> Neo.K with Aletheia<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>版本：</strong> v0.1<br><strong>日期：</strong> 2026 年 7 月 27 日  </p>
+<hr>
+<h2>摘要</h2>
+<p>前兩篇分別建立了問題世界模型，以及資料、狀態、事件、行動的四元動力結構。本篇處理系統設計的下一個核心問題：當世界中已有實體、狀態、事件與行動後，究竟由誰負責維持它們？哪些狀態屬於哪個模組？模組之間應交換命令、事件、查詢、資料還是證據？跨邊界失敗由誰承擔？契約又應包含哪些內容？</p>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+\text{Module}
+\neq
+\text{Folder}
+\neq
+\text{Package}
+\neq
+\text{Process}
+\neq
+\text{Service}
+\neq
+\text{Deployment Unit}
+}
+$$</p>
+<p>資料夾是檔案組織；套件是語言或建置單位；程序是執行單位；服務是可被網路或程序邊界存取的運作單位；部署單元是發布與資源配置單位。模組則是對一組問題世界狀態、規則與失敗承擔一致責任的語意邊界。</p>
+<p>本文將模組定義為：</p>
+<h1>$$
+\boxed{
+\mathcal M</h1>
+<p>\left\langle
+W_M,
+S_M,
+I_M,
+A_M,
+E_M,
+C_M,
+F_M,
+O_M,
+D_M
+\right\rangle
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$W_M$：模組負責的問題世界切片；</li>
+<li>$S_M$：模組擁有的權威狀態；</li>
+<li>$I_M$：模組必須維持的不變量；</li>
+<li>$A_M$：模組接受的行動與命令；</li>
+<li>$E_M$：模組發布的事件；</li>
+<li>$C_M$：模組對外契約；</li>
+<li>$F_M$：模組承擔的失敗、補償與恢復；</li>
+<li>$O_M$：可觀測性與證據；</li>
+<li>$D_M$：外部依賴與非責任。</li>
+</ul>
+<p>本文提出「權威狀態單一責任原則」：</p>
+<blockquote>
+<p><strong>每一項重要世界狀態，必須具有唯一可識別的權威責任者；它可以被複製、快取與投影，但不能由多個模組在沒有明示協議下共同直接改寫。</strong></p>
+</blockquote>
+<p>形式上：</p>
+<p>$$
+\forall s\in S_{\mathrm{critical}},
+\quad
+\exists !,M:
+Owner(M,s)
+$$</p>
+<p>此處的唯一不是要求單一機器、單一資料庫或單一程序，而是要求單一可追責的語意責任。分散式複本可以很多，但誰決定狀態合法、誰維持不變量、誰處理衝突，必須清楚。</p>
+<p>本文將責任定義為：</p>
+<h1>$$
+\mathcal R_s</h1>
+<p>\left\langle
+Purpose,
+StateOwnership,
+DecisionAuthority,
+Obligation,
+FailureOwnership,
+Evidence,
+NonResponsibility
+\right\rangle
+$$</p>
+<p>責任不只是「這個類別做什麼」，而是對目的、狀態、決策權、義務、失敗、證據與非責任的整體承諾。</p>
+<p>本文進一步提出完整契約模型：</p>
+<h1>$$
+\boxed{
+\mathcal K_{AB}</h1>
+<p>\left\langle
+Intent,
+Input,
+Precondition,
+Authorization,
+Effect,
+Event,
+Failure,
+Retry,
+Time,
+Evidence,
+Version,
+Governance
+\right\rangle
+}
+$$</p>
+<p>契約不等於函式簽章、API schema 或 JSON 格式。型別只能描述資料形狀，完整契約還必須說明：</p>
+<ul>
+<li>為何呼叫；</li>
+<li>呼叫前世界必須如何；</li>
+<li>誰有權要求；</li>
+<li>成功會改變什麼；</li>
+<li>會產生哪些事件；</li>
+<li>失敗如何分類；</li>
+<li>是否可重試與冪等；</li>
+<li>時間與期限；</li>
+<li>何種證據算完成；</li>
+<li>契約版本與相容；</li>
+<li>誰能修改契約及如何申訴。</li>
+</ul>
+<p>本文區分跨模組互動的五種基本形式：</p>
+<ol>
+<li><strong>Query</strong>：要求資料投影，不應改變世界；</li>
+<li><strong>Command／Action</strong>：要求另一模組執行世界變更；</li>
+<li><strong>Event</strong>：宣告某項已發生事實；</li>
+<li><strong>Evidence</strong>：提供完成、驗證或責任證明；</li>
+<li><strong>Shared State</strong>：多方直接存取同一狀態，僅在責任與一致性協議明確時使用。</li>
+</ol>
+<p>本文主張，共享資料庫不是免費整合。當多個模組直接修改同一資料表時，實際上形成隱藏共同責任：</p>
+<h1>$$
+\boxed{
+\text{Shared Write}</h1>
+<p>\text{Shared Invariant Responsibility}
+}
+$$</p>
+<p>如果團隊無法共同說明不變量、衝突、回復與版本，共享寫入便只是邊界消失。</p>
+<p>本文亦分析同步呼叫、非同步命令、事件發布、共享狀態與人工工作流。不同形式不只是技術選擇，而是對時間、責任、可用性與失敗傳播方式的選擇。同步呼叫讓依賴立即可見，卻容易形成時間與故障耦合；非同步互動提高解耦與恢復能力，卻需要顯式處理延遲、重複、順序與最終一致；事件發布降低發布者對訂閱者的依賴，卻不能用事件逃避對結果的責任。</p>
+<p>本文提出「契約邊界測試」：一個候選模組若無法獨立回答以下問題，就尚未形成真正邊界：</p>
+<ul>
+<li>它擁有什麼狀態？</li>
+<li>它維持什麼不變量？</li>
+<li>它接受哪些行動？</li>
+<li>它發布哪些事件？</li>
+<li>它承擔哪些失敗？</li>
+<li>它提供什麼證據？</li>
+<li>它依賴誰？</li>
+<li>它明確不保證什麼？</li>
+</ul>
+<p>本文使用訂單與付款、帳號與權限、網站部署、AI Agent 工具層、研究工作流與多團隊平台等案例，說明責任如何決定模組，而不是由檔案、類別、微服務數量或組織圖自動決定。</p>
+<p>本文最後提出可證偽研究綱領，包括共享寫入事故率、狀態擁有者辨識率、契約完整度、跨邊界失敗傳播、同步耦合成本、事件濫用率、模組交接時間、責任圖與依賴圖差異、契約版本破壞率及模組邊界與團隊邊界的關係。</p>
+<p>本文為下一篇〈可視化作為外部結構記憶〉建立組織骨架：當責任、狀態與契約被明確後，系統才能被不同角色、不同尺度與不同時間共同看見，而不再依賴少數工程師腦內的隱性架構。</p>
+<p><strong>關鍵詞：</strong> 模組、責任、契約、狀態擁有權、系統邊界、共享資料、同步耦合、事件驅動、軟體架構</p>
+<hr>
+<h2>Abstract</h2>
+<p>This paper defines modules as semantic boundaries of responsibility rather than folders, packages, processes, services, or deployment units.</p>
+<p>A module is modeled as:</p>
+<h1>$$
+\mathcal M</h1>
+<p>\left\langle
+W_M,
+S_M,
+I_M,
+A_M,
+E_M,
+C_M,
+F_M,
+O_M,
+D_M
+\right\rangle
+$$</p>
+<p>Each critical state must have one identifiable authoritative responsibility, even if it is replicated across multiple machines.</p>
+<p>The paper develops a full contract model that includes intent, input, preconditions, authorization, effects, events, failures, retries, time, evidence, versioning, and governance. It distinguishes queries, commands, events, evidence, and shared state, and analyzes synchronous, asynchronous, event-driven, shared-state, and human-mediated interactions.</p>
+<p>The paper argues that module boundaries should be derived from state ownership, invariants, decisions, failures, and evidence rather than file structure or deployment topology.</p>
+<p><strong>Keywords:</strong> modules, responsibility, contracts, state ownership, system boundaries, event-driven architecture</p>
+<hr>
+<h1>一、問題的提出：系統為何總是被拆錯</h1>
+<p>很多專案以下列方式拆分：</p>
+<pre><code class="language-text">controllers/
+services/
+models/
+utils/
+repositories/
+</code></pre>
+<p>或拆成：</p>
+<pre><code class="language-text">user-service
+order-service
+payment-service
+notification-service
+</code></pre>
+<p>但名稱相似不代表責任清楚。</p>
+<p>一個名為 <code>order-service</code> 的服務可能：</p>
+<ul>
+<li>直接改付款資料；</li>
+<li>直接扣庫存；</li>
+<li>直接寄信；</li>
+<li>直接修改會員狀態；</li>
+<li>同時維護多個互不相干不變量。</li>
+</ul>
+<p>反之，一項真正完整的「訂單責任」也可能分散在多個資料夾、程序與部署單元中。</p>
+<p>因此，模組不能由檔案或部署形式定義。</p>
+<p>它必須由責任定義。</p>
+<hr>
+<h1>二、模組不是什麼</h1>
+<h2>2.1 模組不等於資料夾</h2>
+<p>資料夾只表示檔案被放在一起。</p>
+<h2>2.2 模組不等於套件</h2>
+<p>套件是語言、建置或發布機制。</p>
+<h2>2.3 模組不等於類別</h2>
+<p>單一類別通常只承擔局部行為或資料結構。</p>
+<h2>2.4 模組不等於程序</h2>
+<p>程序是 Runtime 隔離與資源單位。</p>
+<h2>2.5 模組不等於服務</h2>
+<p>服務可以承載一個或多個模組，也可能只是一個技術接口。</p>
+<h2>2.6 模組不等於部署單元</h2>
+<p>同一模組可以被多個部署實例承載；多個模組也可以暫時共同部署。</p>
+<p>因此：</p>
+<p>$$
+\boxed{
+\text{Semantic Boundary}
+\neq
+\text{Physical Deployment Boundary}
+}
+$$</p>
+<hr>
+<h1>三、模組的正式定義</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+\mathcal M</h1>
+<p>\left\langle
+W_M,
+S_M,
+I_M,
+A_M,
+E_M,
+C_M,
+F_M,
+O_M,
+D_M
+\right\rangle
+}
+$$</p>
+<h2>3.1 問題世界切片 $W_M$</h2>
+<p>模組負責理解哪一部分世界。</p>
+<h2>3.2 權威狀態 $S_M$</h2>
+<p>哪些狀態由此模組決定與維護。</p>
+<h2>3.3 不變量 $I_M$</h2>
+<p>無論如何轉移都必須成立的條件。</p>
+<h2>3.4 接受行動 $A_M$</h2>
+<p>外部主體可以要求此模組做什麼。</p>
+<h2>3.5 發布事件 $E_M$</h2>
+<p>模組會對外宣告哪些已發生事實。</p>
+<h2>3.6 對外契約 $C_M$</h2>
+<p>其他模組如何合法互動。</p>
+<h2>3.7 失敗責任 $F_M$</h2>
+<p>哪些失敗由本模組重試、補償、回復或升級。</p>
+<h2>3.8 觀測與證據 $O_M$</h2>
+<p>如何證明模組做了什麼、目前如何、為何失敗。</p>
+<h2>3.9 相依與非責任 $D_M$</h2>
+<p>模組依賴誰，以及不保證什麼。</p>
+<hr>
+<h1>四、責任的正式結構</h1>
+<p>本文定義：</p>
+<h1>$$
+\mathcal R_s</h1>
+<p>\left\langle
+Purpose,
+StateOwnership,
+DecisionAuthority,
+Obligation,
+FailureOwnership,
+Evidence,
+NonResponsibility
+\right\rangle
+$$</p>
+<h2>4.1 目的</h2>
+<p>模組為何存在，試圖維持或改變哪一部分世界。</p>
+<h2>4.2 狀態擁有權</h2>
+<p>哪些權威狀態由此模組維護。</p>
+<h2>4.3 決策權</h2>
+<p>哪些世界判定只有此模組能正式作出。</p>
+<h2>4.4 義務</h2>
+<p>模組收到合法行動後必須提供什麼回應、狀態與證據。</p>
+<h2>4.5 失敗擁有權</h2>
+<p>失敗發生後，誰負責：</p>
+<ul>
+<li>重試；</li>
+<li>回復；</li>
+<li>補償；</li>
+<li>升級；</li>
+<li>通知；</li>
+<li>人類接管。</li>
+</ul>
+<h2>4.6 證據</h2>
+<p>模組如何證明其決策與效果。</p>
+<h2>4.7 非責任</h2>
+<p>模組明確不保證什麼。</p>
+<p>非責任不是卸責，而是防止邊界外效果被虛假承諾。</p>
+<hr>
+<h1>五、權威狀態單一責任原則</h1>
+<p>本文提出：</p>
+<p>$$
+\forall s\in S_{\mathrm{critical}},
+\quad
+\exists !,M:
+Owner(M,s)
+$$</p>
+<h2>5.1 唯一責任不等於單一副本</h2>
+<p>一項狀態可以具有：</p>
+<ul>
+<li>主副本；</li>
+<li>唯讀複本；</li>
+<li>快取；</li>
+<li>搜尋索引；</li>
+<li>分析投影；</li>
+<li>離線副本。</li>
+</ul>
+<p>但必須知道哪個模組有權判定其合法狀態。</p>
+<h2>5.2 單一責任不等於單一人</h2>
+<p>責任可由團隊、制度與 Runtime 共同承擔。</p>
+<p>重點是責任位置可識別。</p>
+<h2>5.3 多模組直接寫入</h2>
+<p>若多個模組直接寫入同一狀態，則必須共同維持所有相關不變量。</p>
+<p>這通常意味著它們尚未真正分離。</p>
+<h2>5.4 狀態變更應經由擁有者</h2>
+<p>外部模組不應直接修改另一模組的權威狀態，而應提出行動：</p>
+<p>$$
+M_A
+\xrightarrow{Command}
+M_B
+\xrightarrow{Decision}
+E_B
+$$</p>
+<h2>5.5 讀取與寫入不同</h2>
+<p>其他模組可以讀取投影，但必須知道：</p>
+<ul>
+<li>是否過時；</li>
+<li>更新延遲；</li>
+<li>可否用於決策；</li>
+<li>是否需要再次向擁有者確認。</li>
+</ul>
+<hr>
+<h1>六、不變量決定模組凝聚力</h1>
+<h2>6.1 不變量</h2>
+<p>不變量是模組必須始終維持的世界條件。</p>
+<p>例如：</p>
+<ul>
+<li>同一訂單不得被重複結算；</li>
+<li>未授權主體不能修改權限；</li>
+<li>發布版本必須對應唯一建置產物；</li>
+<li>Agent 不得超出委任權限。</li>
+</ul>
+<h2>6.2 凝聚力</h2>
+<p>若一組狀態與行動共同維持同一組不變量，它們通常應位於相同責任邊界。</p>
+<h2>6.3 切斷不變量</h2>
+<p>若將一項必須原子維持的不變量拆到多個模組，系統會產生：</p>
+<ul>
+<li>雙重寫入；</li>
+<li>補償；</li>
+<li>同步鎖定；</li>
+<li>分散式交易；</li>
+<li>競爭；</li>
+<li>不一致窗口。</li>
+</ul>
+<h2>6.4 過度聚合</h2>
+<p>反之，把沒有共同不變量的責任放在同一模組，會造成：</p>
+<ul>
+<li>修改互相影響；</li>
+<li>測試範圍擴張；</li>
+<li>權限過大；</li>
+<li>部署耦合；</li>
+<li>團隊知識過載。</li>
+</ul>
+<h2>6.5 模組邊界問題</h2>
+<p>因此模組設計不是追求最大或最小，而是尋找：</p>
+<p>$$
+\boxed{
+\text{High Internal Responsibility Coherence}
++
+\text{Explicit External Contracts}
+}
+$$</p>
+<hr>
+<h1>七、責任圖</h1>
+<p>定義責任圖：</p>
+<h1>$$
+G_R</h1>
+<p>\left(
+M,
+K,
+O,
+D
+\right)
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$M$：模組節點；</li>
+<li>$K$：契約邊；</li>
+<li>$O$：狀態與決策擁有關係；</li>
+<li>$D$：相依與失敗傳播。</li>
+</ul>
+<h2>7.1 責任圖不同於呼叫圖</h2>
+<p>呼叫圖描述誰呼叫誰。</p>
+<p>責任圖描述：</p>
+<ul>
+<li>誰擁有狀態；</li>
+<li>誰作出決策；</li>
+<li>誰承擔失敗；</li>
+<li>誰提供證據。</li>
+</ul>
+<h2>7.2 呼叫方向不等於責任方向</h2>
+<p>前端呼叫付款模組，不代表前端對付款合法性負責。</p>
+<h2>7.3 資料流不等於權威流</h2>
+<p>資料從 A 流向 B，不代表狀態所有權也轉移。</p>
+<h2>7.4 失敗傳播</h2>
+<p>責任圖應標示：</p>
+<ul>
+<li>哪些失敗可局部吸收；</li>
+<li>哪些需要上游重試；</li>
+<li>哪些需要補償；</li>
+<li>哪些需要人工介入。</li>
+</ul>
+<hr>
+<h1>八、五種跨模組互動</h1>
+<h2>8.1 Query</h2>
+<p>Query 要求資料投影：</p>
+<p>$$
+Q
+:
+M_A
+\rightarrow
+M_B
+$$</p>
+<p>原則上不應改變問題世界。</p>
+<p>Query 契約需說明：</p>
+<ul>
+<li>資料是否權威；</li>
+<li>新鮮度；</li>
+<li>分頁；</li>
+<li>權限；</li>
+<li>遺漏；</li>
+<li>不確定性。</li>
+</ul>
+<h2>8.2 Command／Action</h2>
+<p>要求另一模組執行狀態變更。</p>
+<p>命令以祈使語意命名：</p>
+<pre><code class="language-text">AuthorizePayment
+CreateAccount
+DeployRelease
+RevokeAgentPermission
+</code></pre>
+<p>被要求者可以接受、拒絕、延遲或進入人工審核。</p>
+<h2>8.3 Event</h2>
+<p>宣告已發生事實：</p>
+<pre><code class="language-text">PaymentAuthorized
+AccountCreated
+ReleaseDeployed
+AgentPermissionRevoked
+</code></pre>
+<p>事件發布者對事件真實性負責，但不應命令所有訂閱者如何反應。</p>
+<h2>8.4 Evidence</h2>
+<p>證據支援：</p>
+<ul>
+<li>完成；</li>
+<li>驗證；</li>
+<li>稽核；</li>
+<li>外部效果；</li>
+<li>責任判定。</li>
+</ul>
+<p>證據不是普通資料附件，而是契約完成判準的一部分。</p>
+<h2>8.5 Shared State</h2>
+<p>多個模組直接讀寫同一狀態。</p>
+<p>共享狀態需要明示：</p>
+<ul>
+<li>權威；</li>
+<li>鎖定；</li>
+<li>衝突；</li>
+<li>不變量；</li>
+<li>遷移；</li>
+<li>稽核；</li>
+<li>失敗回復。</li>
+</ul>
+<p>否則共享只是隱藏共同責任。</p>
+<hr>
+<h1>九、共享資料庫不是免費整合</h1>
+<p>本文提出：</p>
+<h1>$$
+\boxed{
+\text{Shared Write}</h1>
+<p>\text{Shared Invariant Responsibility}
+}
+$$</p>
+<h2>9.1 表面便利</h2>
+<p>共享資料庫能快速：</p>
+<ul>
+<li>JOIN；</li>
+<li>直接更新；</li>
+<li>建立報表；</li>
+<li>跨模組交易。</li>
+</ul>
+<h2>9.2 隱藏代價</h2>
+<p>多個模組直接寫入同一表會使：</p>
+<ul>
+<li>schema 成為隱藏公共 API；</li>
+<li>修改需要多方協調；</li>
+<li>不變量分散；</li>
+<li>權限模糊；</li>
+<li>刪除與遷移困難；</li>
+<li>測試必須跨模組。</li>
+</ul>
+<h2>9.3 唯讀共享</h2>
+<p>唯讀分析與投影可以共享，但要標示：</p>
+<ul>
+<li>新鮮度；</li>
+<li>權威來源；</li>
+<li>不可反向寫入；</li>
+<li>敏感欄位；</li>
+<li>版本。</li>
+</ul>
+<h2>9.4 合法共享狀態</h2>
+<p>在以下條件下，共享狀態可能合理：</p>
+<ul>
+<li>真正共同責任；</li>
+<li>同一交易邊界；</li>
+<li>明示一致性協議；</li>
+<li>單一治理機制；</li>
+<li>失敗與回復共同設計。</li>
+</ul>
+<hr>
+<h1>十、契約不等於函式簽章</h1>
+<p>函式簽章可能描述：</p>
+<pre><code class="language-typescript">authorizePayment(orderId: string, amount: number): Promise&lt;Result&gt;
+</code></pre>
+<p>但它沒有完整說明：</p>
+<ul>
+<li>為何可呼叫；</li>
+<li>誰能呼叫；</li>
+<li>訂單必須處於何種狀態；</li>
+<li>金額以何者為權威；</li>
+<li>超時後能否重試；</li>
+<li>成功是否代表銀行結算；</li>
+<li>會發布哪些事件；</li>
+<li>需要保留什麼證據；</li>
+<li>版本如何演化。</li>
+</ul>
+<p>所以型別只描述契約的一部分。</p>
+<hr>
+<h1>十一、完整契約模型</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+\mathcal K_{AB}</h1>
+<p>\left\langle
+Intent,
+Input,
+Precondition,
+Authorization,
+Effect,
+Event,
+Failure,
+Retry,
+Time,
+Evidence,
+Version,
+Governance
+\right\rangle
+}
+$$</p>
+<h2>11.1 Intent</h2>
+<p>為何存在此契約，它服務哪個問題世界目的。</p>
+<h2>11.2 Input</h2>
+<p>需要哪些資料、身份與上下文。</p>
+<h2>11.3 Precondition</h2>
+<p>呼叫前世界必須滿足何種狀態。</p>
+<h2>11.4 Authorization</h2>
+<p>哪些主體可在何種情境下使用契約。</p>
+<h2>11.5 Effect</h2>
+<p>成功後會改變哪些權威狀態與外部世界。</p>
+<h2>11.6 Event</h2>
+<p>成功、拒絕、部分成功或補償後會發布哪些事件。</p>
+<h2>11.7 Failure</h2>
+<p>失敗類型及其語意：</p>
+<ul>
+<li>驗證失敗；</li>
+<li>權限拒絕；</li>
+<li>暫時不可用；</li>
+<li>永久拒絕；</li>
+<li>部分成功；</li>
+<li>結果未知。</li>
+</ul>
+<h2>11.8 Retry</h2>
+<p>是否可重試、使用何種冪等身份、何時停止。</p>
+<h2>11.9 Time</h2>
+<p>期限、超時、生效時間、資料新鮮度與最大延遲。</p>
+<h2>11.10 Evidence</h2>
+<p>什麼證據足以證明契約已履行。</p>
+<h2>11.11 Version</h2>
+<p>schema、語意、規則與相容策略。</p>
+<h2>11.12 Governance</h2>
+<p>誰能修改契約、如何審查、通知、異議與淘汰。</p>
+<hr>
+<h1>十二、契約的四個層次</h1>
+<h2>12.1 結構契約</h2>
+<p>描述資料形狀、型別與必要欄位。</p>
+<h2>12.2 語意契約</h2>
+<p>描述欄位與操作在問題世界中的意義。</p>
+<p>例如 <code>status = paid</code> 究竟表示：</p>
+<ul>
+<li>付款請求已送出；</li>
+<li>付款已授權；</li>
+<li>款項已結算；</li>
+<li>訂單可出貨；</li>
+</ul>
+<p>必須明確。</p>
+<h2>12.3 操作契約</h2>
+<p>描述：</p>
+<ul>
+<li>延遲；</li>
+<li>可用性；</li>
+<li>重試；</li>
+<li>順序；</li>
+<li>冪等；</li>
+<li>配額；</li>
+<li>失敗模式。</li>
+</ul>
+<h2>12.4 治理契約</h2>
+<p>描述：</p>
+<ul>
+<li>所有者；</li>
+<li>版本；</li>
+<li>棄用；</li>
+<li>法律與權利；</li>
+<li>稽核；</li>
+<li>申訴；</li>
+<li>人類接管。</li>
+</ul>
+<p>只有四層同時成立，契約才不會只停留在資料格式。</p>
+<hr>
+<h1>十三、同步互動</h1>
+<h2>13.1 同步請求—回應</h2>
+<p>上游等待下游立即回覆：</p>
+<p>$$
+M_A
+\xrightarrow{request}
+M_B
+\xrightarrow{response}
+M_A
+$$</p>
+<h2>13.2 優點</h2>
+<ul>
+<li>控制流清楚；</li>
+<li>即時結果；</li>
+<li>錯誤容易返回；</li>
+<li>適合短時判定；</li>
+<li>開發與除錯較直接。</li>
+</ul>
+<h2>13.3 代價</h2>
+<ul>
+<li>時間耦合；</li>
+<li>故障傳播；</li>
+<li>延遲累積；</li>
+<li>呼叫鏈放大；</li>
+<li>下游不可用使上游停滯。</li>
+</ul>
+<h2>13.4 同步不代表一致完成</h2>
+<p>下游回覆成功，可能只表示其內部階段完成。</p>
+<p>上游仍須理解回覆的證據層級。</p>
+<h2>13.5 適用情境</h2>
+<p>同步較適合：</p>
+<ul>
+<li>需要立即拒絕；</li>
+<li>短時間可完成；</li>
+<li>呼叫者必須根據結果繼續；</li>
+<li>依賴數量有限；</li>
+<li>失敗語意可清楚返回。</li>
+</ul>
+<hr>
+<h1>十四、非同步命令</h1>
+<h2>14.1 形式</h2>
+<p>$$
+M_A
+\xrightarrow{Command}
+Queue
+\xrightarrow{}
+M_B
+$$</p>
+<p>發送者不等待最終完成。</p>
+<h2>14.2 優點</h2>
+<ul>
+<li>時間解耦；</li>
+<li>緩衝尖峰；</li>
+<li>下游可恢復處理；</li>
+<li>適合長時工作；</li>
+<li>可建立重試與死信流程。</li>
+</ul>
+<h2>14.3 代價</h2>
+<ul>
+<li>完成延遲；</li>
+<li>重複；</li>
+<li>亂序；</li>
+<li>追蹤困難；</li>
+<li>使用者需要中間狀態；</li>
+<li>結果可能最終失敗。</li>
+</ul>
+<h2>14.4 接受不等於完成</h2>
+<p>命令入列只代表：</p>
+<pre><code class="language-text">accepted-for-processing
+</code></pre>
+<p>不代表世界效果已完成。</p>
+<h2>14.5 命令所有權</h2>
+<p>發送者對「為何要求」負責。</p>
+<p>接收者對「是否接受、如何執行與維持不變量」負責。</p>
+<hr>
+<h1>十五、事件發布</h1>
+<h2>15.1 形式</h2>
+<p>$$
+M_A
+\xrightarrow{Event}
+\left{
+M_B,
+M_C,
+M_D
+\right}
+$$</p>
+<h2>15.2 發布者責任</h2>
+<p>發布者必須保證：</p>
+<ul>
+<li>事件確實成立；</li>
+<li>身份可去重；</li>
+<li>語意與版本清楚；</li>
+<li>重要證據可取得；</li>
+<li>發布與狀態一致。</li>
+</ul>
+<h2>15.3 訂閱者責任</h2>
+<p>訂閱者決定：</p>
+<ul>
+<li>是否處理；</li>
+<li>如何處理；</li>
+<li>是否重試；</li>
+<li>如何維持自己的不變量。</li>
+</ul>
+<h2>15.4 事件不應偽裝成命令</h2>
+<p>若事件名稱是：</p>
+<pre><code class="language-text">SendEmailNow
+UpdateInventoryImmediately
+</code></pre>
+<p>它其實仍在要求特定下游行動。</p>
+<p>真正事件應描述已發生事實。</p>
+<h2>15.5 事件不能逃避責任</h2>
+<p>發布事件後，原模組不能宣稱：</p>
+<pre><code class="language-text">我已經發事件了，
+後面發生什麼不關我的事。
+</code></pre>
+<p>若原目的包含完整工作流，它仍需追蹤整體責任與完成證據。</p>
+<hr>
+<h1>十六、人工工作流</h1>
+<h2>16.1 人類也是契約參與者</h2>
+<p>部分決策需要：</p>
+<ul>
+<li>專業判斷；</li>
+<li>正當程序；</li>
+<li>不可代理選擇；</li>
+<li>例外；</li>
+<li>高風險批准。</li>
+</ul>
+<h2>16.2 人工節點不是空白</h2>
+<p>應正式建模：</p>
+<ul>
+<li>任務；</li>
+<li>角色；</li>
+<li>期限；</li>
+<li>所需證據；</li>
+<li>可選結果；</li>
+<li>未回應；</li>
+<li>委任；</li>
+<li>升級。</li>
+</ul>
+<h2>16.3 人工超時</h2>
+<p>人類未回覆不是成功，也不一定是拒絕。</p>
+<p>需保存：</p>
+<pre><code class="language-text">awaiting-human
+human-timeout
+escalated
+withdrawn
+</code></pre>
+<h2>16.4 人機契約</h2>
+<p>系統應讓人類知道：</p>
+<ul>
+<li>為何需要判斷；</li>
+<li>系統已知什麼；</li>
+<li>未知什麼；</li>
+<li>決策後果；</li>
+<li>是否可撤回。</li>
+</ul>
+<hr>
+<h1>十七、時間契約</h1>
+<h2>17.1 契約具有時間</h2>
+<p>需要說明：</p>
+<ul>
+<li>何時生效；</li>
+<li>何時過期；</li>
+<li>最長處理時間；</li>
+<li>資料新鮮度；</li>
+<li>回應與最終完成差異。</li>
+</ul>
+<h2>17.2 超時不是單一失敗</h2>
+<p>超時可能表示：</p>
+<ul>
+<li>尚未開始；</li>
+<li>正在處理；</li>
+<li>已成功但回覆遺失；</li>
+<li>下游不可用；</li>
+<li>結果未知。</li>
+</ul>
+<h2>17.3 結果未知</h2>
+<p><code>unknown-outcome</code> 應成為正式狀態，避免盲目重試。</p>
+<h2>17.4 服務水準不是世界保證</h2>
+<p>「99.9% 可用」不代表每一項世界效果都正確完成。</p>
+<hr>
+<h1>十八、版本與相容</h1>
+<h2>18.1 結構相容不等於語意相容</h2>
+<p>新增可選欄位可能結構相容，但若欄位改變決策語意，仍可能破壞契約。</p>
+<h2>18.2 契約版本</h2>
+<p>需版本化：</p>
+<ul>
+<li>schema；</li>
+<li>語意；</li>
+<li>規則；</li>
+<li>事件；</li>
+<li>錯誤；</li>
+<li>權限；</li>
+<li>時間承諾。</li>
+</ul>
+<h2>18.3 生產者與消費者相容</h2>
+<p>可分別檢查：</p>
+<ul>
+<li>生產者是否仍產生消費者可理解資料；</li>
+<li>消費者是否能忽略未知欄位；</li>
+<li>舊事件是否仍可重播；</li>
+<li>新規則是否錯誤套用舊歷史。</li>
+</ul>
+<h2>18.4 棄用</h2>
+<p>契約棄用需要：</p>
+<ul>
+<li>宣告；</li>
+<li>期限；</li>
+<li>替代方案；</li>
+<li>遷移工具；</li>
+<li>影響分析；</li>
+<li>退出條件。</li>
+</ul>
+<hr>
+<h1>十九、跨邊界失敗的所有權</h1>
+<h2>19.1 失敗不是自動屬於下游</h2>
+<p>上游選擇依賴下游，因此不能把所有結果責任全部推給下游。</p>
+<h2>19.2 三層責任</h2>
+<p>跨邊界失敗至少包含：</p>
+<ol>
+<li><strong>局部處理責任</strong>：哪個模組應修復自己的失敗；</li>
+<li><strong>流程協調責任</strong>：誰追蹤整體工作流；</li>
+<li><strong>使用者結果責任</strong>：誰向受影響主體解釋、補救與結案。</li>
+</ol>
+<h2>19.3 失敗吸收</h2>
+<p>模組可在邊界內吸收：</p>
+<ul>
+<li>暫時重試；</li>
+<li>快取失效；</li>
+<li>局部降級；</li>
+<li>備援切換。</li>
+</ul>
+<p>若失敗影響上游目的，則需對外發布或返回明確狀態。</p>
+<h2>19.4 失敗升級</h2>
+<p>需要升級的情境包括：</p>
+<ul>
+<li>重試耗盡；</li>
+<li>結果未知；</li>
+<li>部分成功；</li>
+<li>不可逆效果；</li>
+<li>契約違反；</li>
+<li>高風險權限問題。</li>
+</ul>
+<h2>19.5 失敗所有者</h2>
+<p>每一重大失敗應具有：</p>
+<pre><code class="language-yaml">failure:
+  local_owner: &quot;payment-module&quot;
+  workflow_owner: &quot;order-module&quot;
+  user_resolution_owner: &quot;support-process&quot;
+</code></pre>
+<hr>
+<h1>二十、委任不等於責任消失</h1>
+<h2>20.1 委任</h2>
+<p>模組可以將局部執行委任給另一模組、外部服務或 Agent。</p>
+<h2>20.2 原始責任</h2>
+<p>若 A 對使用者承諾結果，再把工作委任給 B：</p>
+<p>$$
+A
+\xrightarrow{delegate}
+B
+$$</p>
+<p>A 仍需對：</p>
+<ul>
+<li>委任選擇；</li>
+<li>追蹤；</li>
+<li>證據；</li>
+<li>替代；</li>
+<li>補救；</li>
+</ul>
+<p>負責。</p>
+<h2>20.3 接受責任</h2>
+<p>B 則對自己接受的契約、狀態與執行合法性負責。</p>
+<h2>20.4 責任鏈</h2>
+<p>$$
+\text{Commitment}
+\rightarrow
+\text{Delegation}
+\rightarrow
+\text{Execution}
+\rightarrow
+\text{Evidence}
+\rightarrow
+\text{Acceptance}
+$$</p>
+<p>任何斷點都應有責任位置。</p>
+<hr>
+<h1>二十一、模組拆分方法</h1>
+<p>本文提出九步模組拆分法。</p>
+<h2>第一步：列出問題世界責任</h2>
+<p>不要先列技術層，而是列：</p>
+<ul>
+<li>哪些世界結果必須被維持；</li>
+<li>哪些決策需要一致語意。</li>
+</ul>
+<h2>第二步：找出權威狀態</h2>
+<p>為每項重要狀態指定候選擁有者。</p>
+<h2>第三步：找出不變量群</h2>
+<p>將共同維持同一不變量的狀態與行動聚集。</p>
+<h2>第四步：列出接受行動</h2>
+<p>哪些外部意圖能進入此邊界。</p>
+<h2>第五步：列出發布事件</h2>
+<p>哪些已發生事實對外具有意義。</p>
+<h2>第六步：列出失敗與補償</h2>
+<p>誰負責重試、回復、升級與補救。</p>
+<h2>第七步：建立契約</h2>
+<p>將輸入、前置條件、權限、效果、證據與時間明示。</p>
+<h2>第八步：選擇物理部署</h2>
+<p>在語意邊界清楚後，再決定：</p>
+<ul>
+<li>同程序；</li>
+<li>不同套件；</li>
+<li>不同服務；</li>
+<li>不同資料庫；</li>
+<li>不同團隊。</li>
+</ul>
+<h2>第九步：持續以事故與變更校準</h2>
+<p>若跨邊界修改頻繁、契約大量洩漏或不變量持續被破壞，邊界需重新調整。</p>
+<hr>
+<h1>二十二、模組邊界測試</h1>
+<p>一個候選模組應能回答：</p>
+<ol>
+<li>它為何存在？</li>
+<li>它擁有什麼狀態？</li>
+<li>它維持什麼不變量？</li>
+<li>它接受哪些行動？</li>
+<li>它發布哪些事件？</li>
+<li>它拒絕哪些行動？</li>
+<li>它如何證明成功？</li>
+<li>它承擔哪些失敗？</li>
+<li>它依賴哪些外部模組？</li>
+<li>它明確不保證什麼？</li>
+<li>契約如何版本化？</li>
+<li>誰能修改其規則？</li>
+</ol>
+<p>若無法回答，多半只是檔案集合或技術組件，尚未形成完整責任模組。</p>
+<hr>
+<h1>二十三、模組過小與過大</h1>
+<h2>23.1 過小模組</h2>
+<p>症狀：</p>
+<ul>
+<li>一次功能需要穿越大量邊界；</li>
+<li>事件與命令爆炸；</li>
+<li>大量同步呼叫；</li>
+<li>每次變更需協調多個團隊；</li>
+<li>狀態不變量被切碎。</li>
+</ul>
+<h2>23.2 過大模組</h2>
+<p>症狀：</p>
+<ul>
+<li>內部責任互不相關；</li>
+<li>權限過寬；</li>
+<li>部署牽動所有功能；</li>
+<li>單一團隊無法理解；</li>
+<li>測試與修改成本持續增加。</li>
+</ul>
+<h2>23.3 評估原則</h2>
+<p>模組大小應依：</p>
+<ul>
+<li>不變量；</li>
+<li>狀態生命週期；</li>
+<li>決策語意；</li>
+<li>失敗責任；</li>
+<li>變更方向；</li>
+</ul>
+<p>判定，而不是依程式碼行數。</p>
+<hr>
+<h1>二十四、團隊邊界與模組邊界</h1>
+<h2>24.1 組織影響架構</h2>
+<p>團隊溝通結構會影響系統邊界。</p>
+<h2>24.2 不應直接等同</h2>
+<p>組織圖可能因預算與人事改變，問題世界責任不應隨意破碎。</p>
+<h2>24.3 團隊擁有權</h2>
+<p>每個模組應有明確維護團隊，但一個團隊可維護多個相近模組。</p>
+<h2>24.4 跨團隊契約</h2>
+<p>跨團隊邊界需要更強：</p>
+<ul>
+<li>文件；</li>
+<li>版本；</li>
+<li>可觀測；</li>
+<li>相容測試；</li>
+<li>事故責任；</li>
+<li>變更通知。</li>
+</ul>
+<h2>24.5 平台團隊</h2>
+<p>平台團隊應提供共通能力，但不應奪取所有領域狀態與決策權。</p>
+<hr>
+<h1>二十五、案例一：訂單與付款</h1>
+<h2>25.1 訂單模組</h2>
+<p>擁有：</p>
+<ul>
+<li>訂單生命週期；</li>
+<li>客戶購買承諾；</li>
+<li>履約進度；</li>
+<li>取消與爭議。</li>
+</ul>
+<h2>25.2 付款模組</h2>
+<p>擁有：</p>
+<ul>
+<li>付款嘗試；</li>
+<li>授權；</li>
+<li>結算主張；</li>
+<li>退款；</li>
+<li>金流證據。</li>
+</ul>
+<h2>25.3 互動</h2>
+<p>訂單模組提出：</p>
+<pre><code class="language-text">AuthorizePayment
+</code></pre>
+<p>付款模組發布：</p>
+<pre><code class="language-text">PaymentAuthorized
+PaymentDeclined
+PaymentOutcomeUnknown
+</code></pre>
+<h2>25.4 責任分離</h2>
+<p>付款模組不能直接把訂單設為 <code>completed</code>。</p>
+<p>訂單模組也不能直接修改付款授權狀態。</p>
+<h2>25.5 流程責任</h2>
+<p>訂單模組若向客戶承諾購買流程，仍需追蹤付款事件並處理結果，而不能只說「付款是另一個服務」。</p>
+<hr>
+<h1>二十六、案例二：帳號與權限</h1>
+<h2>26.1 帳號模組</h2>
+<p>擁有：</p>
+<ul>
+<li>帳號身份；</li>
+<li>啟用；</li>
+<li>暫停；</li>
+<li>關閉；</li>
+<li>驗證關係。</li>
+</ul>
+<h2>26.2 權限模組</h2>
+<p>擁有：</p>
+<ul>
+<li>角色；</li>
+<li>委任；</li>
+<li>資源存取；</li>
+<li>權限期限；</li>
+<li>撤銷。</li>
+</ul>
+<h2>26.3 邊界</h2>
+<p>刪除帳號不應由權限模組直接完成。</p>
+<p>權限模組可在帳號停用事件後撤銷存取。</p>
+<h2>26.4 契約</h2>
+<p>必須定義帳號停用與權限撤銷之間：</p>
+<ul>
+<li>延遲；</li>
+<li>順序；</li>
+<li>緊急封鎖；</li>
+<li>證據；</li>
+<li>失敗升級。</li>
+</ul>
+<hr>
+<h1>二十七、案例三：網站部署</h1>
+<h2>27.1 Release 模組</h2>
+<p>擁有版本、建置產物與發布候選。</p>
+<h2>27.2 Deployment 模組</h2>
+<p>擁有部署工作流、環境狀態、健康檢查與回滾。</p>
+<h2>27.3 Traffic 模組</h2>
+<p>擁有流量切換與路由狀態。</p>
+<h2>27.4 契約鏈</h2>
+<pre><code class="language-text">ApproveRelease
+→ ReleaseApproved
+→ DeployRelease
+→ DeploymentVerified
+→ ShiftTraffic
+→ TrafficShifted
+</code></pre>
+<h2>27.5 完成責任</h2>
+<p>部署模組可證明服務啟動與健康檢查，但產品流程是否符合目的，仍需外部驗收。</p>
+<hr>
+<h1>二十八、案例四：AI Agent 工具層</h1>
+<h2>28.1 Agent 核心</h2>
+<p>擁有：</p>
+<ul>
+<li>目標；</li>
+<li>計畫；</li>
+<li>記憶；</li>
+<li>任務狀態；</li>
+<li>人類委任。</li>
+</ul>
+<h2>28.2 工具模組</h2>
+<p>各自擁有：</p>
+<ul>
+<li>工具輸入驗證；</li>
+<li>外部操作；</li>
+<li>冪等；</li>
+<li>證據；</li>
+<li>局部錯誤。</li>
+</ul>
+<h2>28.3 權限模組</h2>
+<p>獨立維持：</p>
+<ul>
+<li>工具白名單；</li>
+<li>作用域；</li>
+<li>時間；</li>
+<li>預算；</li>
+<li>人類批准。</li>
+</ul>
+<h2>28.4 工具結果</h2>
+<p>工具回傳資料不應直接被 Agent 當成世界完成事件，需依契約轉換成證據與狀態。</p>
+<h2>28.5 不可逆操作</h2>
+<p>發布、付款、刪除與寄送等工具需要更高層契約與批准。</p>
+<hr>
+<h1>二十九、案例五：研究工作流</h1>
+<h2>29.1 文獻模組</h2>
+<p>擁有來源、引用與閱讀證據。</p>
+<h2>29.2 命題模組</h2>
+<p>擁有定義、命題、依賴與證明狀態。</p>
+<h2>29.3 實驗模組</h2>
+<p>擁有執行、參數、產物與結果證據。</p>
+<h2>29.4 出版模組</h2>
+<p>擁有文件版本、格式、發布與外部識別。</p>
+<h2>29.5 責任分離</h2>
+<p>文件發布不應直接把命題標記為已證明。</p>
+<p>實驗結果也不應直接修改論文結論，而應發布證據事件供命題模組判定。</p>
+<hr>
+<h1>三十、案例六：多團隊平台</h1>
+<p>平台可能包含：</p>
+<ul>
+<li>身份；</li>
+<li>內容；</li>
+<li>搜尋；</li>
+<li>推薦；</li>
+<li>計費；</li>
+<li>通知；</li>
+<li>稽核。</li>
+</ul>
+<p>若所有團隊直接共享使用者、內容與權限資料表，會形成巨大隱藏共同模組。</p>
+<p>更成熟的結構是：</p>
+<ul>
+<li>各責任擁有權威狀態；</li>
+<li>對外提供投影與契約；</li>
+<li>跨域工作流明示協調者；</li>
+<li>共同平台只提供不含領域決策的基礎能力。</li>
+</ul>
+<hr>
+<h1>三十一、主要失敗模式</h1>
+<ol>
+<li><strong>資料夾即模組：</strong> 檔案放在一起就被視為責任一致。</li>
+<li><strong>服務即邊界：</strong> 建立網路服務便假定語意邊界已成立。</li>
+<li><strong>部署即責任：</strong> 同時部署的內容被迫共享所有責任。</li>
+<li><strong>類別即領域：</strong> 單一類別名稱被當成完整問題世界模組。</li>
+<li><strong>狀態無主：</strong> 重要狀態沒有唯一可識別的權威責任者。</li>
+<li><strong>多方直接寫入：</strong> 多模組任意修改同一權威狀態。</li>
+<li><strong>共享資料庫免費論：</strong> 忽略 schema、權限、不變量與遷移耦合。</li>
+<li><strong>唯讀投影僭位：</strong> 快取或查詢投影被拿來作權威判定。</li>
+<li><strong>契約等於 schema：</strong> 只有資料形狀，沒有語意、時間與失敗。</li>
+<li><strong>成功語意模糊：</strong> 回傳成功卻不說完成到哪一層。</li>
+<li><strong>命令事件混用：</strong> 以事件名稱要求下游執行特定命令。</li>
+<li><strong>事件逃責：</strong> 發布事件後便放棄整體流程責任。</li>
+<li><strong>同步鏈蔓延：</strong> 服務間長鏈呼叫造成故障與延遲放大。</li>
+<li><strong>非同步即解耦：</strong> 改用佇列卻未處理重複、亂序與追蹤。</li>
+<li><strong>超時即失敗：</strong> 不保留結果未知狀態而盲目重試。</li>
+<li><strong>委任即卸責：</strong> 上游把工作交給下游後不再追蹤承諾。</li>
+<li><strong>失敗無流程所有者：</strong> 各模組只處理局部錯誤，無人負責使用者結果。</li>
+<li><strong>補償責任不明：</strong> 部分成功後無模組決定是否補償。</li>
+<li><strong>契約永久不變：</strong> 沒有版本、棄用、遷移與治理。</li>
+<li><strong>結構相容迷思：</strong> JSON 可解析就宣稱語意相容。</li>
+<li><strong>模組過小：</strong> 不變量被切碎，跨邊界協調成本爆炸。</li>
+<li><strong>模組過大：</strong> 無關責任集中，權限與修改範圍失控。</li>
+<li><strong>組織圖即架構：</strong> 人事分工被直接固化為世界邊界。</li>
+<li><strong>平台奪取領域：</strong> 共通平台集中所有狀態與決策權。</li>
+<li><strong>人工流程空白化：</strong> 人類節點沒有期限、證據、狀態與責任。</li>
+<li><strong>非責任未聲明：</strong> 模組被迫對無法控制的外部效果作承諾。</li>
+</ol>
+<hr>
+<h1>三十二、可證偽研究綱領</h1>
+<h2>32.1 狀態擁有者辨識率</h2>
+<p>測量團隊成員能否一致回答每項關鍵狀態由哪個模組權威維護。</p>
+<h2>32.2 共享寫入事故率</h2>
+<p>統計多模組直接寫入同一資料結構造成的：</p>
+<ul>
+<li>不變量破壞；</li>
+<li>資料競爭；</li>
+<li>遷移失敗；</li>
+<li>權限越界；</li>
+<li>責任爭議。</li>
+</ul>
+<h2>32.3 契約完整度</h2>
+<p>對契約十二元結構評分：</p>
+<h1>$$
+C_K</h1>
+<p>\frac{
+|\text{declared contract dimensions}|
+}{
+12
+}
+$$</p>
+<p>研究完整度與事故率、整合時間、交接成本的關係。</p>
+<h2>32.4 結構—語意相容差異</h2>
+<p>統計 schema 驗證通過但實際語意破壞的版本事件。</p>
+<h2>32.5 同步耦合成本</h2>
+<p>測量呼叫鏈深度與：</p>
+<ul>
+<li>延遲；</li>
+<li>故障傳播；</li>
+<li>部署協調；</li>
+<li>重試放大；</li>
+</ul>
+<p>之間的關係。</p>
+<h2>32.6 非同步追蹤完整率</h2>
+<p>檢查非同步工作流是否能從原始意圖追蹤到最終事件、狀態與證據。</p>
+<h2>32.7 事件濫用率</h2>
+<p>統計名為事件、實際要求特定下游行動的接口比例。</p>
+<h2>32.8 失敗所有權覆蓋</h2>
+<p>檢查每類重大失敗是否具有：</p>
+<ul>
+<li>局部所有者；</li>
+<li>流程所有者；</li>
+<li>使用者結案所有者。</li>
+</ul>
+<h2>32.9 模組交接時間</h2>
+<p>比較責任與契約明確、以及只依賴檔案結構的專案，新成員理解與接手時間。</p>
+<h2>32.10 責任圖—依賴圖差異</h2>
+<p>比較呼叫圖、部署圖與責任圖，研究哪些隱藏責任無法從技術拓撲看出。</p>
+<h2>32.11 邊界變更率</h2>
+<p>記錄事故與需求變更中，有多少需要重新調整模組責任，而非只修改內部實作。</p>
+<h2>32.12 契約版本破壞率</h2>
+<p>追蹤每次契約更新對既有消費者造成的結構、語意、時間與治理破壞。</p>
+<h2>32.13 模組大小與變更擴散</h2>
+<p>研究模組內責任凝聚度、跨模組契約數量與修改影響範圍的關係。</p>
+<h2>32.14 團隊—模組對齊效應</h2>
+<p>比較團隊與責任模組較一致、及高度交錯的組織，在交付、事故與知識集中上的差異。</p>
+<hr>
+<h1>三十三、本文的二十二項命題</h1>
+<ol>
+<li>模組是語意責任邊界，不是檔案、套件、程序、服務或部署單元。</li>
+<li>模組必須能說明其問題世界、狀態、不變量、行動、事件、契約、失敗與證據。</li>
+<li>每項關鍵狀態都需要唯一可識別的權威責任者。</li>
+<li>單一責任不要求單一機器或單一資料副本。</li>
+<li>外部模組應透過行動要求狀態擁有者修改權威狀態。</li>
+<li>共同維持同一不變量的狀態與行動，通常應位於相同責任邊界。</li>
+<li>呼叫圖、資料流圖與部署圖不能取代責任圖。</li>
+<li>Query、Command、Event、Evidence 與 Shared State 具有不同語意。</li>
+<li>Query 原則上不應改變問題世界。</li>
+<li>Command 是世界變更請求，Event 是已發生事實。</li>
+<li></li>
+</ol>
+<h1>$$
+\boxed{
+\text{Shared Write}</h1>
+<p>\text{Shared Invariant Responsibility}
+}
+$$
+12. 契約不等於函式簽章或資料 schema。
+13. 完整契約必須包含意圖、條件、授權、效果、失敗、時間、證據、版本與治理。
+14. 同步互動造成時間與故障耦合；非同步互動要求顯式處理延遲、重複與最終狀態。
+15. 發布事件不能消除原始承諾與流程責任。
+16. 人類工作流必須具備正式狀態、證據、期限與升級。
+17. 超時可能代表結果未知，而非單純失敗。
+18. 委任局部執行，不會自動消除原始責任。
+19. 跨邊界失敗需要局部、流程與使用者結果三層所有者。
+20. 模組大小應依不變量、狀態生命週期、決策語意與變更方向決定。
+21. 團隊邊界可以承接模組，但不應任意取代問題世界責任。
+22. 
+$$
+\boxed{
+\text{架構的核心不是把程式拆開，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是讓每一項世界責任都有清楚的擁有者，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{並讓責任之間只透過可理解、可驗證、}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{可演化的契約連接。}
+}
+$$</p>
+<hr>
+<h1>三十四、與前後篇的關係</h1>
+<h2>34.1 承接 PU-1-01</h2>
+<p>PU-1-01 將程式定義為可執行問題模型。</p>
+<p>本篇進一步說明：程式的世界責任不能全部集中在一份來源碼中，而必須形成可識別模組。</p>
+<h2>34.2 承接 PU-1-02</h2>
+<p>PU-1-02 建立實體、關係、規則與系統邊界。</p>
+<p>本篇把世界邊界轉化為：</p>
+<ul>
+<li>狀態擁有權；</li>
+<li>決策權；</li>
+<li>契約；</li>
+<li>失敗責任；</li>
+<li>非保證。</li>
+</ul>
+<h2>34.3 承接 PU-1-03</h2>
+<p>PU-1-03 區分資料、狀態、事件與行動。</p>
+<p>本篇決定：</p>
+<ul>
+<li>哪個模組擁有狀態；</li>
+<li>哪個模組接受行動；</li>
+<li>哪個模組發布事件；</li>
+<li>哪個資料只是跨邊界投影；</li>
+<li>哪個證據足以完成契約。</li>
+</ul>
+<h2>34.4 銜接 PU-1-05</h2>
+<p>下一篇將研究如何把責任、狀態、事件、契約、依賴與失敗投影成多種可視結構，讓：</p>
+<ul>
+<li>使用者；</li>
+<li>設計者；</li>
+<li>工程師；</li>
+<li>維護者；</li>
+<li>稽核者；</li>
+<li>AI Agent；</li>
+</ul>
+<p>能在不同尺度理解同一系統，而不把所有知識鎖在少數人腦中。</p>
+<hr>
+<h1>三十五、結論：模組不是切割程式碼，而是承擔世界</h1>
+<p>程式碼可以依任何方式切割。</p>
+<p>可以按語言、檔案類型、功能、框架、部署或團隊分類。</p>
+<p>但只有其中一部分切割能形成真正模組。</p>
+<p>真正模組必須承擔世界：</p>
+<ul>
+<li>擁有某些權威狀態；</li>
+<li>維持某些不變量；</li>
+<li>作出某些合法判定；</li>
+<li>接受某些行動；</li>
+<li>宣告某些事件；</li>
+<li>承受某些失敗；</li>
+<li>提供某些證據；</li>
+<li>明示某些非責任。</li>
+</ul>
+<p>因此，模組不是容器，而是承諾。</p>
+<p>契約也不是資料格式，而是模組間對世界變化的可驗證承諾。</p>
+<p>本文將系統架構收束為：</p>
+<h1>$$
+\boxed{
+\text{System Architecture}</h1>
+<p>\text{Responsibility Modules}
++
+\text{State Ownership}
++
+\text{Explicit Contracts}
++
+\text{Failure Ownership}
+}
+$$</p>
+<p>一個成熟架構不應只回答：</p>
+<pre><code class="language-text">有哪些服務？
+它們如何呼叫？
+部署在哪裡？
+</code></pre>
+<p>還必須回答：</p>
+<pre><code class="language-text">誰決定這項狀態？
+誰維持這條不變量？
+誰可以要求改變？
+成功究竟代表什麼？
+失敗由誰重試、補償與結案？
+哪些資料只是投影？
+契約改變時誰受影響？
+哪一部分世界沒有任何模組負責？
+</code></pre>
+<p>如果這些問題沒有答案，即使系統擁有漂亮的資料夾、微服務、API Gateway 與事件匯流排，也仍可能只是被技術拓撲切碎的責任混合物。</p>
+<p>本文的最終命題是：</p>
+<p>$$
+\boxed{
+\text{好的模組，使責任聚合；}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{好的契約，使邊界可穿越；}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{好的架構，使世界能改變，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{卻不讓責任在改變中消失。}
+}
+$$</p>
+<hr>
+<h1>附錄 A：模組描述格式</h1>
+<pre><code class="language-yaml">module:
+  module_id: &quot;payment&quot;
+
+  purpose:
+    - &quot;maintain payment attempts, authorization, settlement claims, and refunds&quot;
+
+  owned_state:
+    - &quot;payment-attempt&quot;
+    - &quot;payment-authorization&quot;
+    - &quot;refund&quot;
+
+  invariants:
+    - &quot;same payment action cannot produce duplicate charge&quot;
+    - &quot;refund cannot exceed captured amount&quot;
+
+  accepts:
+    commands:
+      - &quot;AuthorizePayment&quot;
+      - &quot;RefundPayment&quot;
+
+  emits:
+    events:
+      - &quot;PaymentAuthorized&quot;
+      - &quot;PaymentDeclined&quot;
+      - &quot;PaymentOutcomeUnknown&quot;
+      - &quot;PaymentRefunded&quot;
+
+  failure_ownership:
+    local:
+      - &quot;provider timeout retry&quot;
+      - &quot;duplicate callback deduplication&quot;
+    escalates:
+      - &quot;unknown settlement outcome&quot;
+
+  evidence:
+    - &quot;provider receipt&quot;
+    - &quot;idempotency record&quot;
+
+  non_responsibilities:
+    - &quot;order fulfillment&quot;
+    - &quot;physical delivery&quot;
+</code></pre>
+<hr>
+<h1>附錄 B：完整契約格式</h1>
+<pre><code class="language-yaml">contract:
+  contract_id: &quot;authorize-payment-v2&quot;
+  provider: &quot;payment-module&quot;
+  consumer: &quot;order-module&quot;
+
+  intent: &quot;request payment authorization for an order&quot;
+
+  input:
+    order_id: &quot;string&quot;
+    amount: &quot;money&quot;
+    payment_method_ref: &quot;token&quot;
+    idempotency_key: &quot;string&quot;
+
+  preconditions:
+    - &quot;order is payment-pending&quot;
+    - &quot;amount matches authoritative order amount&quot;
+
+  authorization:
+    allowed_callers:
+      - &quot;order-module&quot;
+
+  effects:
+    authoritative:
+      - &quot;create or reuse payment attempt&quot;
+    external:
+      - &quot;request authorization from provider&quot;
+
+  events:
+    success:
+      - &quot;PaymentAuthorized&quot;
+    rejection:
+      - &quot;PaymentDeclined&quot;
+    uncertain:
+      - &quot;PaymentOutcomeUnknown&quot;
+
+  retry:
+    safe: true
+    identity: &quot;idempotency_key&quot;
+
+  time:
+    request_timeout: &quot;10s&quot;
+    final_outcome_deadline: &quot;24h&quot;
+
+  evidence:
+    required:
+      - &quot;provider receipt&quot;
+
+  version:
+    schema: &quot;2.0&quot;
+    semantics: &quot;2.1&quot;
+
+  governance:
+    owner: &quot;payments-team&quot;
+    deprecation_notice: &quot;90d&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：責任圖邊格式</h1>
+<pre><code class="language-yaml">responsibility_edge:
+  from: &quot;order-module&quot;
+  to: &quot;payment-module&quot;
+  interaction: &quot;command&quot;
+
+  purpose: &quot;authorize payment&quot;
+  contract: &quot;authorize-payment-v2&quot;
+
+  upstream_responsibility:
+    - &quot;customer purchase workflow&quot;
+    - &quot;order completion tracking&quot;
+
+  downstream_responsibility:
+    - &quot;payment legality&quot;
+    - &quot;provider interaction&quot;
+    - &quot;payment evidence&quot;
+
+  failure:
+    local_owner: &quot;payment-module&quot;
+    workflow_owner: &quot;order-module&quot;
+    user_resolution_owner: &quot;support-process&quot;
+</code></pre>
+<hr>
+<h1>附錄 D：模組邊界檢查表</h1>
+<table>
+<thead>
+<tr>
+<th>問題</th>
+<th>必須回答</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>為何存在</td>
+<td>問題世界目的</td>
+</tr>
+<tr>
+<td>擁有什麼</td>
+<td>權威狀態</td>
+</tr>
+<tr>
+<td>保護什麼</td>
+<td>不變量</td>
+</tr>
+<tr>
+<td>接受什麼</td>
+<td>Query／Command</td>
+</tr>
+<tr>
+<td>宣告什麼</td>
+<td>Event</td>
+</tr>
+<tr>
+<td>如何證明</td>
+<td>Evidence</td>
+</tr>
+<tr>
+<td>如何失敗</td>
+<td>Retry／Compensation／Escalation</td>
+</tr>
+<tr>
+<td>依賴什麼</td>
+<td>外部模組與服務</td>
+</tr>
+<tr>
+<td>不保證什麼</td>
+<td>Non-responsibility</td>
+</tr>
+<tr>
+<td>如何演化</td>
+<td>Version／Governance</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>附錄 E：第 1 冊六篇位置</h1>
+<ol>
+<li>PU-1-01　程式不等於程式碼：可執行問題模型的基本定義</li>
+<li>PU-1-02　問題世界建模：實體、關係、規則與系統邊界</li>
+<li>PU-1-03　資料—狀態—事件—行動：程式系統的四元動力結構</li>
+<li><strong>PU-1-04　責任、模組與契約：從檔案分類到系統邊界</strong></li>
+<li>PU-1-05　可視化作為外部結構記憶：多角色、多尺度的程式理解</li>
+<li>PU-1-06　失敗也是程式：驗證、可觀測、恢復與長期維護</li>
+</ol>
+<hr>
+<h1>參考文獻</h1>
+<h2>Neo.K／EveMissLab 相關理論</h2>
+<ol>
+<li>Neo.K with Aletheia，《程式不等於程式碼：可執行問題模型的基本定義》，2026。</li>
+<li>Neo.K with Aletheia，《問題世界建模：實體、關係、規則與系統邊界》，2026。</li>
+<li>Neo.K with Aletheia，《資料—狀態—事件—行動：程式系統的四元動力結構》，2026。</li>
+<li>Neo.K with Aletheia，《數位宇宙作為人工存在域：實體、狀態、規則與歷史》，2026。</li>
+<li>Neo.K with Aletheia，《Agent Runtime：能力規劃、工具調用與可恢復執行》，2026。</li>
+<li>Neo.K with Aletheia，《人類可見狀態：意圖程式系統的稽核、解釋與可逆治理》，2026。</li>
+</ol>
+<h2>一般理論背景</h2>
+<ol start="7">
+<li>Parnas, D. L., “On the Criteria To Be Used in Decomposing Systems into Modules,” 1972.</li>
+<li>Meyer, B., <em>Object-Oriented Software Construction</em>, 1997.</li>
+<li>Evans, E., <em>Domain-Driven Design</em>, 2003.</li>
+<li>Fowler, M., <em>Patterns of Enterprise Application Architecture</em>, 2002.</li>
+<li>Hoare, C. A. R., “An Axiomatic Basis for Computer Programming,” 1969.</li>
+<li>Liskov, B. and Wing, J., “A Behavioral Notion of Subtyping,” 1994.</li>
+<li>Gamma, E. et al., <em>Design Patterns</em>, 1994.</li>
+<li>Hohpe, G. and Woolf, B., <em>Enterprise Integration Patterns</em>, 2003.</li>
+<li>Newman, S., <em>Building Microservices</em>, 2015.</li>
+<li>Kleppmann, M., <em>Designing Data-Intensive Applications</em>, 2017.</li>
+<li>Conway, M. E., “How Do Committees Invent?”, 1968.</li>
+<li>Team Topologies, Skelton, M. and Pais, M., 2019.</li>
+</ol>
+<hr>
+<h1>版本紀錄</h1>
+<h2>v0.1 — 2026-07-27</h2>
+<ul>
+<li>完成十八篇地基論文第十篇。</li>
+<li>區分模組、資料夾、套件、類別、程序、服務與部署單元。</li>
+<li>建立模組九元模型與責任七元結構。</li>
+<li>提出權威狀態單一責任原則。</li>
+<li>以不變量、狀態生命週期與失敗責任決定模組凝聚力。</li>
+<li>建立責任圖並區分呼叫圖、資料流與部署圖。</li>
+<li>區分 Query、Command、Event、Evidence 與 Shared State。</li>
+<li>提出共享寫入等於共同不變量責任。</li>
+<li>建立十二元完整契約模型。</li>
+<li>區分結構、語意、操作與治理四層契約。</li>
+<li>分析同步、非同步、事件發布與人工工作流。</li>
+<li>建立跨邊界失敗三層所有權。</li>
+<li>提出委任不消除原始責任。</li>
+<li>建立九步模組拆分法與十二項邊界測試。</li>
+<li>加入訂單付款、帳號權限、網站部署、AI Agent、研究工作流與多團隊平台案例。</li>
+<li>提出二十六類失敗模式與十四項可證偽研究方向。</li>
+<li>完成與 PU-1-05《可視化作為外部結構記憶》的銜接。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pu-1-04.html">https://thisoneisneok.com/html/papers/pu-1-04.html</a></footer>
+</body>
+</html>

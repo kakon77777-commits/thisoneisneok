@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DryCore 模組化熱管理與氣候控制架構 | Neo.K</title>
+<meta name="description" content="高性能 CPU、GPU、AI 加速器、記憶體與電源模組的熱管理問題，不能只用單一「瓦數」衡量。晶片熱通量、熱源面積、封裝熱阻、冷卻介質溫度、污染累積、噪音、露點、材料相容性、液路可靠度與服務維護共同決定系統能否長時間維持性能。當運算模組走向高密度封裝、立體堆疊與模組化互連時，傳統「在熱源上堆更大的風冷器」將逐漸失去可擴展性，但液冷本身也引入接頭、腐蝕、過濾、壓力、冷凝與漏液風險。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/ccp-14.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / CCP</strong><span>計算機概念產品系列</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>CCP-14</span></div><div><b>版本</b><span>v2.0</span></div><div><b>日期</b><span>2026-07-29</span></div><div><b>作者</b><span>Neo.K（許筌崴）</span></div><div><b>狀態</b><span>公開概念技術論文／可驗證架構提案</span></div><div><b>證據</b><span>尚未完成整合原型與第三方實驗驗證；文中數值若未明確標示為文獻資料，均屬設計參數、測試條件或驗收門檻，而非既成成果</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ccp-14.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>DryCore 模組化熱管理與氣候控制架構</h1>
+<h2>隔離式熱路徑、雙區污染控制、被動兩相循環與低品位廢熱利用</h2>
+<p><strong>DryCore Modular Thermal and Environmental Control Architecture</strong><br><strong>Isolated Heat Paths, Dual-Zone Contamination Control, Passive Two-Phase Circulation, and Low-Grade Heat Utilization</strong></p>
+<hr>
+<p><strong>作者</strong>：Neo.K（許筌崴）<br><strong>機構</strong>：一言諾科技有限公司（EveMissLab），台灣<br><strong>原始版本</strong>：2025 年 12 月<br><strong>公開修訂版</strong>：v2.0，2026 年 7 月 29 日<br><strong>文件性質</strong>：公開概念技術論文／可驗證架構提案<br><strong>系列定位</strong>：立體運算與高功率運算模組的配套熱管理架構<br><strong>證據狀態</strong>：尚未完成整合原型與第三方實驗驗證；文中數值若未明確標示為文獻資料，均屬設計參數、測試條件或驗收門檻，而非既成成果<br><strong>論文授權</strong>：CC BY-SA 4.0；CAD、韌體、測試資料與其他工程資產應於實際釋出時另行指定授權</p>
+<hr>
+<h2>修訂聲明</h2>
+<p>本文由《開源散熱系統 Series 7：DryCore 氣候控制架構》重構而來。原稿最重要的洞察，是把高功率運算設備視為一個需要主動管理熱、濕度、灰塵、噪音與維護風險的微型環境，而不是只在晶片上加裝一個更大的散熱器。此一系統觀具有保留價值。</p>
+<p>然而，原稿同時把推演數據寫成「實測」、把單相虹吸誤解為可持續的無泵閉環、把高壓氣體導熱係數假設為與壓力線性成長、把負壓吸塵場宣稱為能在機殼周圍大範圍消除灰塵，並把低溫差熱電模組描述成足以讓整套散熱系統自給自足。v2.0 因此進行以下根本修正：</p>
+<ol>
+<li><strong>刪除所有未有原始量測紀錄支撐的實測結果</strong>，包括固定溫度、噪音、流量、發電量、六個月零故障與千瓦級負載驗證。</li>
+<li><strong>將 DryCore 從「液體永不進入機殼」的絕對宣稱，改為可設計的服務邊界</strong>：使用者可維護的接頭與循環液體留在電子艙外；穿越艙壁的熱傳輸元件可採密封熱管、均熱板、固態熱橋或經認證的冷板模組。</li>
+<li><strong>將 DustVoid 改為雙壓區污染控制</strong>：濾網髒側維持局部負壓，電子潔淨側維持微正壓，避免整個機殼負壓反而從縫隙吸入未過濾空氣。</li>
+<li><strong>將 GravityFlow 改為被動兩相熱虹吸</strong>：循環驅動來自蒸發段與冷凝段的密度差、壓差及重力回流，而非封閉單相水路中的靜態高度差。</li>
+<li><strong>將 ThermoHarvest 從「以 TEG 供應全部風扇」降為兩級廢熱利用</strong>：桌面級系統以感測器微能量採集為可選功能；機櫃或設施級系統優先回收溫水熱能。</li>
+<li><strong>移除 QAC 高壓氣體導熱主張</strong>。在一般連續介質區間，氣體導熱係數不會按壓力簡單線性增加；高壓氣體還引入壓力容器與安全成本。</li>
+<li><strong>將 HydroPeak 超頻壽命數字移出主論文</strong>。熱管理可以提供功率與溫度裕度，但不能單憑溫度推定固定壽命，也不能保證任意晶片達成特定頻率。</li>
+<li><strong>加入露點守護、材料相容性、壓力測試、漏液偵測、失效安全與標準化聲學量測</strong>。</li>
+</ol>
+<p>因此，v2.0 不再是一組宣稱已完成的產品，而是一套可被分解、驗證、否證與逐級整合的熱管理研究計畫。</p>
+<hr>
+<h2>摘要</h2>
+<p>高性能 CPU、GPU、AI 加速器、記憶體與電源模組的熱管理問題，不能只用單一「瓦數」衡量。晶片熱通量、熱源面積、封裝熱阻、冷卻介質溫度、污染累積、噪音、露點、材料相容性、液路可靠度與服務維護共同決定系統能否長時間維持性能。當運算模組走向高密度封裝、立體堆疊與模組化互連時，傳統「在熱源上堆更大的風冷器」將逐漸失去可擴展性，但液冷本身也引入接頭、腐蝕、過濾、壓力、冷凝與漏液風險。</p>
+<p>本文提出 DryCore 模組化熱管理與氣候控制架構。其核心不是宣稱一種單一冷卻方式全面優於其他方式，而是把熱管理拆成四個可獨立驗證的支柱：第一，<strong>DryCore Thermal Spine</strong> 以隔離式熱路徑將高熱通量從電子艙導向外部可維護冷端；第二，<strong>DustVoid Dual-Zone</strong> 以髒側負壓、潔淨側微正壓及壓差監測控制顆粒污染；第三，<strong>GravityFlow Thermosyphon</strong> 以密封兩相熱虹吸提供無主循環泵的被動熱傳輸選項；第四，<strong>ThermoHarvest Interface</strong> 將廢熱利用分為微功率感測供能與設施級溫水回收，而不讓能量回收妨礙主要散熱路徑。</p>
+<p>本文建立總熱阻、單相與兩相傳熱、濾網壓降、露點安全、熱電轉換上限與多目標控制模型；提出從加熱器試驗台、單模組原型、故障注入到整合設備艙的分階段驗證流程；並明確規定所有性能主張必須附帶環境條件、熱負載、量測位置、穩態判據、感測器不確定度與基線系統。DryCore 的可檢驗假說是：透過可服務的外部冷端、較清楚的熱與液體邊界、污染控制、被動優先熱傳輸與硬體級失效保護，可降低高功率設備的維護風險與性能衰減，並為立體運算架構提供比單一散熱器更可擴展的熱管理介面。</p>
+<p>本文不宣稱系統已支撐任何特定超頻、已達成零噪音、零灰塵、零故障或能源自給。其價值必須由熱阻、壓降、聲學、污染、可靠度、冷凝安全及全生命週期成本實驗共同判定。</p>
+<p><strong>關鍵詞</strong>：液冷、熱管理、熱虹吸、直接液冷、外部冷端、污染控制、露點守護、廢熱回收、熱電採集、模組化運算、失效安全</p>
+<hr>
+<h1>第一章　問題重述：散熱不是一個元件，而是一條受約束的能量路徑</h1>
+<h2>1.1 從晶片結溫到最終熱排放</h2>
+<p>運算設備所消耗的電能，除少部分以訊號、機械運動或其他形式離開外，最終幾乎都會轉化為熱。系統必須建立一條連續熱路徑：</p>
+<p>$$
+	ext{晶片接面}
+\rightarrow
+	ext{封裝與介面材料}
+\rightarrow
+	ext{熱擷取元件}
+\rightarrow
+	ext{熱傳輸元件}
+\rightarrow
+	ext{外部冷端}
+\rightarrow
+	ext{室內或設施環境}.
+$$</p>
+<p>若穩態熱流率為 $\dot Q$，可用總熱阻近似接面溫度：</p>
+<h1>$$
+T_j</h1>
+<p>T_{\mathrm{sink}}
++
+\dot Q R_{\mathrm{th,total}},
+$$</p>
+<p>其中</p>
+<h1>$$
+R_{\mathrm{th,total}}</h1>
+<p>R_{j-c}
++R_{\mathrm{TIM}}
++R_{\mathrm{acq}}
++R_{\mathrm{trans}}
++R_{\mathrm{reject}}.
+$$</p>
+<p>各項分別代表晶片接面至封裝表面、熱介面材料、熱擷取、熱傳輸及最終排熱的熱阻。這一表示法揭示：即使外部冷水非常低溫，只要介面材料、冷板或熱橋存在高熱阻，晶片仍可能過熱；反之，單純增大冷排也無法修正封裝內部瓶頸。</p>
+<h2>1.2 「高瓦數」不是完整規格</h2>
+<p>相同的 $400\text{ W}$ 熱負載，若分布於 $400\text{ cm}^2$ 與 $4\text{ cm}^2$，其局部熱通量差異為兩個數量級：</p>
+<p>$$
+q&#39;&#39;=\frac{\dot Q}{A}.
+$$</p>
+<p>因此，DryCore 的設計輸入至少必須包括：</p>
+<ul>
+<li>總熱負載 $\dot Q$；</li>
+<li>熱源面積與熱通量分布 $q&#39;&#39;(\mathbf{x})$；</li>
+<li>可容許接面溫度與封裝表面溫度；</li>
+<li>冷卻介質入口溫度與流量；</li>
+<li>環境乾球溫度、相對濕度與露點；</li>
+<li>姿態、振動、海拔與服務條件；</li>
+<li>噪音、成本、體積與維護限制。</li>
+</ul>
+<p>沒有這些條件，單獨寫「可散熱 $600\text{ W}$」並不具工程可比性。</p>
+<h2>1.3 空冷與液冷不是道德二分</h2>
+<p>液體具有較高的體積熱容量，能在較小流道中搬運較多熱量，因此高熱密度設備正逐步採用直接液冷。ASHRAE 對資料中心液冷的分析也指出，隨著處理器功率上升與所需熱阻下降，液冷的重要性持續增加；但液冷同時需要水質隔離、溫度控制、壓力管理、過濾、漏液偵測與設施協調。[1][2]</p>
+<p>因此本文不採取「空冷必然落後、液冷必然先進」的敘事，而是按熱負載與風險選擇：</p>
+<ul>
+<li>中低熱密度元件可繼續使用空冷；</li>
+<li>高熱通量 CPU／GPU 可採直接冷板或兩相熱傳輸；</li>
+<li>記憶體、VRM、SSD 與 I/O 仍可能需要受控風流或次級冷板；</li>
+<li>外部熱排放可採風冷冷排、冷卻水、冷水機、乾式冷卻器或設施水系統。</li>
+</ul>
+<p>DryCore 的目的，是定義這些層級如何接合，而不是強迫所有設備使用同一介質。</p>
+<h2>1.4 本文不主張的事項</h2>
+<p>本文不主張：</p>
+<ul>
+<li>一個外掛冷端必然比所有 AIO 或客製液冷溫度更低；</li>
+<li>液體與電路只要物理隔離就能消除全部漏液風險；</li>
+<li>負壓能在機殼周圍形成可量產的「吸塵氣場」；</li>
+<li>單相封閉水路能單靠靜態高度差永久循環；</li>
+<li>熱虹吸在任何方向、任何負載與任何填充率下都能正常啟動；</li>
+<li>熱電模組可在一般桌面溫差下穩定供應所有風扇；</li>
+<li>密閉機殼不需要把熱量排向外部環境；</li>
+<li>較低溫度必然等於固定年限的壽命提升；</li>
+<li>所有冷卻液、金屬、密封件與添加劑都能長期相容。</li>
+</ul>
+<hr>
+<h1>第二章　系統定義：四支柱與六層熱管理堆疊</h1>
+<h2>2.1 四個可分離的工程支柱</h2>
+<p>DryCore v2.0 將原始四件套重構如下：</p>
+<table>
+<thead>
+<tr>
+<th>支柱</th>
+<th>核心問題</th>
+<th>v2.0 工程定義</th>
+<th>主要驗證量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DryCore Thermal Spine</td>
+<td>如何把高熱通量安全導出電子艙</td>
+<td>密封熱擷取、艙壁熱橋、外部可服務冷端</td>
+<td>總熱阻、熱擴散均勻度、接觸可靠度</td>
+</tr>
+<tr>
+<td>DustVoid Dual-Zone</td>
+<td>如何降低污染與維護衰減</td>
+<td>髒側負壓、潔淨側微正壓、過濾與壓差監測</td>
+<td>顆粒數、灰塵質量、濾網壓降、風量</td>
+</tr>
+<tr>
+<td>GravityFlow Thermosyphon</td>
+<td>如何降低主循環泵依賴</td>
+<td>密封兩相蒸發—冷凝循環，必要時輔助啟動</td>
+<td>啟動時間、熱阻、乾涸極限、姿態敏感度</td>
+</tr>
+<tr>
+<td>ThermoHarvest Interface</td>
+<td>廢熱如何被合理利用</td>
+<td>微功率感測採集與溫水熱回收介面</td>
+<td>淨電功率、附加熱阻、可用熱品位、經濟性</td>
+</tr>
+</tbody></table>
+<p>四支柱可以分開實作。任何一個模組未成熟，都不應阻止其他模組接受獨立驗證。</p>
+<h2>2.2 六層熱管理堆疊</h2>
+<p>系統可分為六層：</p>
+<ol>
+<li><strong>L0：晶片與封裝層</strong>——接面、IHS、裸晶、HBM、VRM 與局部熱點；</li>
+<li><strong>L1：熱擷取層</strong>——冷板、均熱板、熱管蒸發器、導熱介面與機械夾持；</li>
+<li><strong>L2：熱傳輸層</strong>——單相液路、兩相熱虹吸、熱管、固態熱橋或液冷歧管；</li>
+<li><strong>L3：外部冷端層</strong>——冷排、風扇、乾式冷卻器、冷水機、CDU 或設施水；</li>
+<li><strong>L4：環境控制層</strong>——潔淨氣流、濕度、露點、噪音與機殼內循環；</li>
+<li><strong>L5：監測安全層</strong>——溫度、壓力、流量、液位、漏液、壓差、硬體互鎖與紀錄。</li>
+</ol>
+<p>此分層避免把「冷板很強」誤當成整機已被解決。若 L3 無法排熱、L4 發生結露或 L5 感測失效，L1 的高性能沒有意義。</p>
+<h2>2.3 三種產品邊界</h2>
+<p>DryCore 可形成三種不同實作，而不是一個固定機殼：</p>
+<h3>2.3.1 桌面工作站型</h3>
+<ul>
+<li>高熱源使用密封熱管或冷板；</li>
+<li>外部冷排或小型冷卻模組可在斷電後快速維護；</li>
+<li>機殼內保留低速潔淨氣流，服務記憶體、VRM 與儲存裝置；</li>
+<li>以露點保護與漏液感測為最低安全條件。</li>
+</ul>
+<h3>2.3.2 模組化運算節點型</h3>
+<ul>
+<li>多個運算模組共用外部冷卻匯流排；</li>
+<li>每個模組有可隔離閥、流量與溫度遙測；</li>
+<li>冷卻分配單元負責水質、壓力、熱交換與備援；</li>
+<li>熱支柱與資料／電源接口共同成為模組規格。</li>
+</ul>
+<h3>2.3.3 機櫃／設施型</h3>
+<ul>
+<li>直接液冷捕捉主要熱量；</li>
+<li>溫水回水可供設施端回收；</li>
+<li>空氣只處理未被液路捕捉的殘餘熱；</li>
+<li>必須符合設施水質、壓力、排水、維護與建築管理系統要求。</li>
+</ul>
+<hr>
+<h1>第三章　DryCore Thermal Spine：隔離式熱路徑與外部冷端</h1>
+<h2>3.1 核心定義</h2>
+<p>DryCore Thermal Spine 不再宣稱「所有液體都不在機殼內」，而是區分兩種邊界：</p>
+<ul>
+<li><strong>使用者可維護液體邊界</strong>：快拆接頭、軟管、儲液槽、泵、冷排與冷水機留在電子艙外；</li>
+<li><strong>密封熱傳輸邊界</strong>：艙內可存在工廠密封的熱管、均熱板、焊接冷板或其他無日常接頭的元件。</li>
+</ul>
+<p>其目標是降低在主機板上方拆裝液管與接頭的需求，而不是宣稱密封元件永不失效。</p>
+<h2>3.2 四段熱路徑</h2>
+<p>建議結構為：</p>
+<p>$$
+	ext{晶片}
+\rightarrow
+	ext{熱擷取頭}
+\rightarrow
+	ext{艙壁熱脊}
+\rightarrow
+	ext{外部 ColdDock}
+\rightarrow
+	ext{最終熱排放}.
+$$</p>
+<h3>3.2.1 熱擷取頭</h3>
+<p>可採：</p>
+<ul>
+<li>單相微流道冷板；</li>
+<li>均熱板或蒸氣室；</li>
+<li>兩相蒸發器；</li>
+<li>高導熱金屬底板配合可控夾持力。</li>
+</ul>
+<p>選型必須依熱通量、壓降、材料相容性與可製造性，而非只追求最細微流道。微流道縮小通常能提高換熱面積，但也會提高壓降、堵塞敏感度與製造成本。ASHRAE 的水冷伺服器指南亦指出，冷板鰭片間距、壓降、熱阻與過濾能力之間存在直接權衡。[2]</p>
+<h3>3.2.2 艙壁熱脊</h3>
+<p>艙壁熱脊可採：</p>
+<ul>
+<li>扁平熱管；</li>
+<li>毛細芯均熱板；</li>
+<li>銅／石墨複合熱橋；</li>
+<li>工廠焊接的液體通道；</li>
+<li>兩相熱虹吸蒸發器與蒸氣管。</li>
+</ul>
+<p>此段的關鍵是穿越機殼邊界時仍維持低熱阻、可固定、可承受振動，並避免讓服務接頭直接位於電子元件上方。</p>
+<h3>3.2.3 外部 ColdDock</h3>
+<p>ColdDock 是外部熱交換與維護模組。可包含：</p>
+<ul>
+<li>風冷冷排；</li>
+<li>液對液熱交換器；</li>
+<li>乾式冷卻器；</li>
+<li>冷水機；</li>
+<li>CDU；</li>
+<li>溫水回收接口。</li>
+</ul>
+<p>v2.0 不預設 ColdDock 可帶載熱插拔。除非快拆接頭、旁路、壓力隔離、滴液控制與韌體流程已通過驗證，預設服務程序應是：降載、停止運算、隔離液路、確認壓力、拆卸與重新檢漏。</p>
+<h3>3.2.4 最終熱排放</h3>
+<p>冷卻系統不會消滅熱，只會移動熱。若 ColdDock 位於同一室內，則計算設備與冷卻設備消耗的功率最終仍進入房間：</p>
+<p>$$
+\dot Q_{\mathrm{room}}
+\approx
+P_{\mathrm{IT}}
++P_{\mathrm{cooling}}
+-P_{\mathrm{exported}}.
+$$</p>
+<p>因此，小型冷水機雖可降低晶片溫度，卻可能增加室內總熱量。若目標是降低房間熱負擔，必須把冷凝端、設施水或回收熱真正導向室外或其他使用端。</p>
+<h2>3.3 單相液路的基本設計</h2>
+<p>單相液路的熱量搬運可寫為：</p>
+<h1>$$
+\dot Q</h1>
+<p>\dot m c_p
+\left(T_{\mathrm{out}}-T_{\mathrm{in}}\right).
+$$</p>
+<p>若以水為近似，$c_p\approx4.18\text{ kJ/(kg·K)}$。例如搬運 $500\text{ W}$，並允許水溫上升 $5\text{ K}$，理論所需質量流率約為：</p>
+<h1>$$
+\dot m</h1>
+<p>\frac{500}{4180\times5}
+\approx0.0239\text{ kg/s},
+$$</p>
+<p>約等於 $1.43\text{ L/min}$。這只是能量平衡下限；實際流量還須滿足冷板熱阻、流量分配、局部沸騰、材料限制與控制裕度。</p>
+<p>泵浦功率可近似為：</p>
+<h1>$$
+P_{\mathrm{pump}}</h1>
+<p>\frac{\Delta p,\dot V}{\eta_{\mathrm{pump}}}.
+$$</p>
+<p>因此，流道設計不能只追求更高換熱係數，還必須避免讓壓降與泵浦功耗失控。</p>
+<h2>3.4 機械與材料邊界</h2>
+<p>DryCore 不預先指定唯一材料配方。設計者必須建立濕潤材料清單並評估：</p>
+<ul>
+<li>銅、鋁、鎳、不鏽鋼與焊料的電化學相容性；</li>
+<li>O-ring、軟管、黏著劑與冷卻液的化學相容性；</li>
+<li>腐蝕、結垢、生物污染與顆粒脫落；</li>
+<li>熱循環造成的膨脹差異；</li>
+<li>壓力脈動、振動與運輸衝擊；</li>
+<li>製造殘留物與清洗程序。</li>
+</ul>
+<p>ASHRAE 指南將設施水與技術冷卻系統水區分處理，正是因為冷板與細流道對水質、腐蝕與顆粒更敏感。[2] 因此，不應在公開概念稿中直接指定單一防腐劑比例，並假設它對所有材料都安全。</p>
+<hr>
+<h1>第四章　DustVoid Dual-Zone：從吸塵氣場到受控污染邊界</h1>
+<h2>4.1 為何整機負壓通常不是答案</h2>
+<p>若機殼內壓力低於環境，空氣會從所有縫隙進入。只有設計過的進氣口有濾網時，未密封縫隙便可能吸入未過濾灰塵。因此，DustVoid v2.0 採用雙區架構：</p>
+<ol>
+<li><strong>髒側區域</strong>：位於濾網與集塵盒之前，由風機形成局部負壓；</li>
+<li><strong>潔淨側區域</strong>：位於濾網之後與電子艙內，維持相對環境的微正壓。</li>
+</ol>
+<p>氣流方向為：</p>
+<p>$$
+	ext{環境空氣}
+\rightarrow
+	ext{預分離／粗濾}
+\rightarrow
+	ext{主濾網}
+\rightarrow
+	ext{潔淨正壓艙}
+\rightarrow
+	ext{受控排氣口}.
+$$</p>
+<p>如此保留原始「把污染物集中在可維護區域」的想法，但不再宣稱在機殼外形成半徑數十公分的無塵場。</p>
+<h2>4.2 壓差、風量與濾網負荷</h2>
+<p>風機工作點由系統阻抗曲線與風機曲線交會決定。濾網壓降增加時，實際風量通常下降；若只提高轉速，噪音與功耗會增加。</p>
+<p>潔淨側控制量可寫為：</p>
+<p>$$
+\Delta p_{\mathrm{clean}}
+=p_{\mathrm{inside}}-p_{\mathrm{ambient}}.
+$$</p>
+<p>設計目標不是追求巨大壓差，而是維持足以讓縫隙主要向外漏氣的微正壓，同時避免機殼面板受力與風噪。實際目標值必須由機殼洩漏面積、濾網與風扇測試決定。</p>
+<p>濾網壽命可由壓差變化與顆粒負荷共同判定：</p>
+<p>$$
+\Delta p_{\mathrm{filter}}(t)
+=p_{\mathrm{dirty}}(t)-p_{\mathrm{clean}}(t).
+$$</p>
+<p>當壓差超過設備驗證門檻時，系統應降載、提高風量或提示更換，而不是用固定月份推定所有環境的濾網壽命。</p>
+<h2>4.3 顆粒控制的正確驗證</h2>
+<p>「看起來沒有灰」不是充分量測。建議採用：</p>
+<ul>
+<li>進氣與潔淨側光學粒子計數；</li>
+<li>標準試驗粉塵或可追蹤粒子；</li>
+<li>散熱器、風扇與 PCB 前後質量差；</li>
+<li>影像分析沉積覆蓋率；</li>
+<li>相同風量下的熱阻變化；</li>
+<li>濾網壓降與風機功耗變化。</li>
+</ul>
+<p>顆粒穿透率可表示為：</p>
+<h1>$$
+P_d(d_p)</h1>
+<p>\frac{C_{\mathrm{clean}}(d_p)}{C_{\mathrm{dirty}}(d_p)},
+$$</p>
+<p>其中 $d_p$ 為粒徑，$C$ 為粒子濃度。過濾效率為：</p>
+<p>$$
+\eta_f(d_p)=1-P_d(d_p).
+$$</p>
+<p>任何「減少 $95%$ 灰塵」的主張，都必須說明粒徑、流量、濾材狀態、洩漏率與量測不確定度。</p>
+<h2>4.4 噪音量測</h2>
+<p>風扇數量、轉速、葉片通過頻率、機構共振、流道轉折與濾網阻力都會影響聲音。多項降噪措施的分貝值不能直接線性相加。v2.0 建議依 ECMA-74 或相容程序測量資訊設備聲功率與發射聲壓，並記錄：</p>
+<ul>
+<li>麥克風位置與距離；</li>
+<li>背景噪音；</li>
+<li>設備工作狀態；</li>
+<li>A 加權與頻譜；</li>
+<li>量測空間與不確定度。[8]</li>
+</ul>
+<p>「$20\text{ dB}$ 深夜靜音」若沒有上述條件，不應作為公開性能資料。</p>
+<hr>
+<h1>第五章　GravityFlow Thermosyphon：被動兩相熱傳輸</h1>
+<h2>5.1 為何單相虹吸不能構成永久閉環</h2>
+<p>原稿以</p>
+<p>$$
+\Delta p=\rho g\Delta h
+$$</p>
+<p>計算儲液槽與冷排高度差，再推論封閉水路可永久產生約 $10\text{ L/min}$ 流量。這忽略了閉合回路中上升柱與下降柱的靜水壓大致互相抵消。若流體密度相同、沒有泵、沒有熱引起的浮力差或相變，靜態高度差不會提供持續淨驅動功。</p>
+<p>可持續自然循環需要回路不同區段存在密度差。對單相自然循環，可概念化為：</p>
+<h1>$$
+\Delta p_{\mathrm{drive}}</h1>
+<p>g\int_H
+\left(\rho_{\mathrm{cold}}-
+\rho_{\mathrm{hot}}\right)dz.
+$$</p>
+<p>但水在一般電子冷卻溫差下的密度差有限，且流道阻力可能壓過驅動壓差。兩相熱虹吸則利用蒸發形成低密度蒸氣／兩相混合物，通常能提供較明顯的自然循環驅動。</p>
+<h2>5.2 兩相熱虹吸循環</h2>
+<p>GravityFlow v2.0 的基本元件為：</p>
+<ol>
+<li>蒸發器；</li>
+<li>蒸氣上升管；</li>
+<li>位於蒸發器上方的冷凝器；</li>
+<li>液體下降管；</li>
+<li>儲液與充填控制；</li>
+<li>壓力、溫度與安全保護。</li>
+</ol>
+<p>熱源使工作流體蒸發，蒸氣上升至冷凝器釋熱，液體再由重力回流。其熱搬運可近似包含顯熱與潛熱：</p>
+<p>$$
+\dot Q
+\approx
+\dot m
+\left(
+\Delta h_{\mathrm{sens}}+x h_{fg}
+\right),
+$$</p>
+<p>其中 $h_{fg}$ 為汽化潛熱，$x$ 為有效蒸發品質。這不代表所有輸入熱都理想轉化為汽化；實際性能受沸騰、流型、壓降、充填率、非凝結氣體、乾涸、冷凝與姿態影響。</p>
+<p>近年的兩相熱虹吸研究顯示，此類系統可用於電子冷卻與伺服器，但其啟動、填充率、冷凝條件與流動狀態具有明顯設計敏感性，不能只靠一條靜水壓公式推定性能。[4][5][6]</p>
+<h2>5.3 被動優先，而非被動教條</h2>
+<p>GravityFlow 的系統模式可分為：</p>
+<ul>
+<li><strong>P0 純被動模式</strong>：適用固定直立姿態與穩定負載；</li>
+<li><strong>P1 被動＋啟動輔助</strong>：冷啟動或低負載時由微型泵、加熱器或閥門短暫協助；</li>
+<li><strong>P2 混合備援模式</strong>：正常由熱虹吸傳熱，異常時啟動輔助泵並限制功率；</li>
+<li><strong>P3 主動回退模式</strong>：若姿態、流量或溫度超出安全範圍，切換到傳統液冷或關機。</li>
+</ul>
+<p>移除主循環泵可以降低一個機械故障源，但不等於零故障。仍須考慮：</p>
+<ul>
+<li>非凝結氣體累積；</li>
+<li>密封洩漏；</li>
+<li>冷凝器風扇故障；</li>
+<li>蒸發器乾涸；</li>
+<li>工作流體劣化；</li>
+<li>姿態改變；</li>
+<li>凍結與過壓；</li>
+<li>啟動遲滯與脈動流。</li>
+</ul>
+<h2>5.4 工作流體與壓力安全</h2>
+<p>工作流體不能僅按導熱係數選擇。還須考慮：</p>
+<ul>
+<li>飽和壓力與設計溫度；</li>
+<li>潛熱、黏度、表面張力與潤濕性；</li>
+<li>可燃性、毒性、環境影響；</li>
+<li>金屬與密封材料相容性；</li>
+<li>充填、回收、運輸與法規；</li>
+<li>失效時對電子設備與人員的風險。</li>
+</ul>
+<p>壓力邊界必須按最大可能溫度與工作流體飽和壓力設計，並以合格元件、壓力釋放與測試程序驗證。DIY 原型不應用壓縮氣體進行高能量「爆破式」檢漏；在條件允許時，應採低危害的液壓／水壓測試、分段升壓、遠端隔離與防護屏障，且試驗壓力不得脫離元件額定值與適用規範。</p>
+<hr>
+<h1>第六章　ThermoHarvest Interface：從發電幻想到熱品位管理</h1>
+<h2>6.1 廢熱的能量與可用功不同</h2>
+<p>一個 $500\text{ W}$ 處理器會產生約 $500\text{ W}$ 熱流，但這不代表可以再發出接近 $500\text{ W}$ 電力。熱能轉化為功受到溫度品位限制。理想可用功上限可由熱源溫度 $T_h$ 與環境溫度 $T_0$ 的火用近似：</p>
+<h1>$$
+\dot X_{\max}</h1>
+<p>\dot Q
+\left(1-\frac{T_0}{T_h}\right).
+$$</p>
+<p>當熱源只比環境高數十 Kelvin 時，可用功比例本來就低，實際裝置還有材料、接觸與電力電子損失。</p>
+<h2>6.2 熱電模組的正確定位</h2>
+<p>熱電發電器的理想化效率可寫為：</p>
+<h1>$$
+\eta_{\mathrm{TEG}}</h1>
+<p>\frac{T_h-T_c}{T_h}
+\frac{\sqrt{1+\overline{ZT}}-1}
+{\sqrt{1+\overline{ZT}}+T_c/T_h},
+$$</p>
+<p>其中 $\overline{ZT}$ 為平均無因次熱電優值。低溫差首先受到 Carnot 因子限制；同時 TEG 置入主熱路徑會增加熱阻，可能抬高晶片溫度。</p>
+<p>因此桌面級 ThermoHarvest 的合理用途是：</p>
+<ul>
+<li>為無線溫度／流量感測器提供微功率；</li>
+<li>維持關機後短時間紀錄或警示；</li>
+<li>驗證材料與介面的研究平台；</li>
+<li>在不增加主熱阻時回收旁路熱流。</li>
+</ul>
+<p>它不應預設能供應全部風扇、泵浦或冷水機。低溫廢熱發電至今仍是材料、成本、界面與系統整合上的挑戰。[7]</p>
+<h2>6.3 機櫃與設施級熱回收</h2>
+<p>在較大尺度下，直接使用熱通常比先轉電更合理。若回水溫度足夠，可考慮：</p>
+<ul>
+<li>生活熱水預熱；</li>
+<li>建築供暖回路；</li>
+<li>除濕再生；</li>
+<li>吸收式或熱驅動系統；</li>
+<li>鄰近製程的低溫預熱；</li>
+<li>季節性熱儲存。</li>
+</ul>
+<p>ASHRAE 對液冷資料中心的討論也強調，液冷的效率優勢需要與較高溫的熱排放設備與熱利用系統整合，不能只看晶片端溫度。[1]</p>
+<p>因此，ThermoHarvest 的優先順序為：</p>
+<p>$$
+	ext{避免不必要功耗}</p>
+<blockquote>
+</blockquote>
+<pre><code>ext{提高熱排放效率}
+</code></pre>
+<blockquote>
+</blockquote>
+<pre><code>ext{直接利用溫水}
+</code></pre>
+<blockquote>
+</blockquote>
+<pre><code>ext{低溫差發電}.
+</code></pre>
+<p>$$</p>
+<h2>6.4 淨收益判據</h2>
+<p>若加入能量回收模組，必須計算淨收益：</p>
+<h1>$$
+P_{\mathrm{net}}</h1>
+<h2>P_{\mathrm{harvest}}</h2>
+<h2>\Delta P_{\mathrm{fan}}</h2>
+<h2>\Delta P_{\mathrm{pump}}</h2>
+<h2>\Delta P_{\mathrm{control}}</h2>
+<p>P_{\mathrm{performance\ loss}}.
+$$</p>
+<p>最後一項表示回收模組增加熱阻後造成的降頻或額外冷卻代價。若 $P_{\mathrm{net}}\le0$，即使 TEG 端測到電壓，系統仍不應宣稱節能。</p>
+<hr>
+<h1>第七章　設備艙氣候控制：從「完全密閉」到可控熱濕邊界</h1>
+<h2>7.1 半密閉設備艙</h2>
+<p>原稿的 SilentBox HydroZero 宣稱完全密閉、零外部排風與自給自足。v2.0 將其改為<strong>半密閉、受控換氣或全熱耦合設備艙</strong>。</p>
+<p>若所有主要熱源都能直接耦合至液路，電子艙可減少外界空氣交換。但仍需處理：</p>
+<ul>
+<li>VRM、記憶體、SSD、網路晶片與電源轉換器的殘餘熱；</li>
+<li>內部空氣均溫；</li>
+<li>材料釋氣與濕氣；</li>
+<li>壓力平衡；</li>
+<li>維護開艙後的污染；</li>
+<li>感測器與控制器自身熱量。</li>
+</ul>
+<p>可採內部空氣—液體熱交換器，使艙內空氣封閉循環，熱量仍由液路排出。這不是「不排熱」，而是把對外空氣交換改為固體／液體熱交換。</p>
+<h2>7.2 露點守護</h2>
+<p>若冷板、管路或熱橋表面低於空氣露點，可能產生凝結水。可用 Magnus 近似估算露點：</p>
+<h1>$$
+\gamma(T,RH)</h1>
+<p>\ln\left(\frac{RH}{100}\right)
++
+\frac{aT}{b+T},
+$$</p>
+<h1>$$
+T_{dp}</h1>
+<p>\frac{b\gamma}{a-\gamma},
+$$</p>
+<p>在一般室溫範圍可取 $a\approx17.62$、$b\approx243.12^\circ\mathrm{C}$ 作估算。控制條件為：</p>
+<p>$$
+T_{\mathrm{surface,min}}
+\ge
+T_{dp}+\Delta T_{\mathrm{guard}}.
+$$</p>
+<p>ASHRAE 的水冷伺服器指南建議供水溫度至少保持在室內露點以上約 $2^\circ\mathrm{C}$，以提供感測誤差裕度。[2] 實際產品可依感測器精度、局部濕度與表面溫差採用更大安全裕度。</p>
+<p>露點保護不應只依相對濕度判斷。控制器至少需要：</p>
+<ul>
+<li>入口空氣溫度與濕度；</li>
+<li>冷卻液供回水溫；</li>
+<li>最冷表面溫度；</li>
+<li>感測器交叉檢查；</li>
+<li>低溫旁路或混水閥；</li>
+<li>異常時升高供水溫度、降低負載或停止冷卻。</li>
+</ul>
+<h2>7.3 壓力平衡與防塵</h2>
+<p>完全剛性密閉艙在溫度與海拔變化下會產生壓差。可採：</p>
+<ul>
+<li>疏水透氣膜；</li>
+<li>膨脹囊；</li>
+<li>受控微量換氣；</li>
+<li>壓力感測與機械安全閥。</li>
+</ul>
+<p>任何 IP 等級都必須由具體完成品依適用測試認證，不能因使用 O-ring 或透氣膜便自行宣稱 IP65／IP67。</p>
+<hr>
+<h1>第八章　控制、可靠度與失效安全</h1>
+<h2>8.1 控制目標</h2>
+<p>DryCore 控制器不是單純追求最低溫度，而是解多目標問題：</p>
+<h1>$$
+\min_{\mathbf{u}(t)}
+J</h1>
+<p>w_T J_T
++w_E J_E
++w_N J_N
++w_R J_R
++w_C J_C,
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$J_T$：溫度與熱點代價；</li>
+<li>$J_E$：風扇、泵浦與冷水機能耗；</li>
+<li>$J_N$：聲學代價；</li>
+<li>$J_R$：可靠度與冷凝風險；</li>
+<li>$J_C$：元件循環、維護與成本代價。</li>
+</ul>
+<p>控制輸入可包括：</p>
+<ul>
+<li>風扇轉速；</li>
+<li>主動液路流量；</li>
+<li>三通／旁路閥；</li>
+<li>冷水機設定點；</li>
+<li>輔助泵啟停；</li>
+<li>設備功率上限；</li>
+<li>濾網維護提示；</li>
+<li>熱回收路徑選擇。</li>
+</ul>
+<h2>8.2 AI 的合法角色</h2>
+<p>AI 或預測模型可以：</p>
+<ul>
+<li>預測工作負載造成的熱慣性；</li>
+<li>提前調整風扇或冷卻設定；</li>
+<li>辨識濾網堵塞、流量衰退與感測器漂移；</li>
+<li>建立不同環境與姿態下的性能模型；</li>
+<li>協助找出能耗、噪音與溫度的 Pareto 前緣。</li>
+</ul>
+<p>但安全功能不得只依賴 AI。下列保護應具備獨立硬體或確定性邏輯：</p>
+<ul>
+<li>過溫關機；</li>
+<li>過壓釋放；</li>
+<li>漏液互鎖；</li>
+<li>流量／冷凝異常降載；</li>
+<li>感測器斷線偵測；</li>
+<li>看門狗與失效預設狀態。</li>
+</ul>
+<h2>8.3 最低感測集合</h2>
+<p>建議最小感測集合為：</p>
+<ul>
+<li>晶片或封裝溫度；</li>
+<li>熱擷取元件入口／出口溫度；</li>
+<li>外部冷端入口／出口溫度；</li>
+<li>液路壓力與流量；</li>
+<li>電子艙溫度、相對濕度與露點；</li>
+<li>最冷表面溫度；</li>
+<li>濾網前後壓差；</li>
+<li>漏液繩或漏液墊；</li>
+<li>風扇／泵轉速回饋；</li>
+<li>系統功率。</li>
+</ul>
+<p>所有感測器應記錄校準、量程、精度、更新率與失效行為。</p>
+<h2>8.4 失效模式與反應</h2>
+<table>
+<thead>
+<tr>
+<th>失效模式</th>
+<th>可觀測訊號</th>
+<th>第一反應</th>
+<th>第二反應</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>冷端風扇失效</td>
+<td>轉速為零、回水升溫</td>
+<td>啟動備援風扇／降載</td>
+<td>安全關機</td>
+</tr>
+<tr>
+<td>主動泵失效</td>
+<td>流量下降、壓差異常</td>
+<td>切換備援或被動模式</td>
+<td>降載／關機</td>
+</tr>
+<tr>
+<td>熱虹吸未啟動</td>
+<td>蒸發器升溫、冷凝器無溫差</td>
+<td>啟動輔助模式</td>
+<td>限制功率</td>
+</tr>
+<tr>
+<td>蒸發器乾涸</td>
+<td>熱阻急升、局部溫度突升</td>
+<td>立即降載</td>
+<td>關機檢查</td>
+</tr>
+<tr>
+<td>液體洩漏</td>
+<td>漏液感測、壓力／液位下降</td>
+<td>關閉閥、斷開相關電源</td>
+<td>排液與維護</td>
+</tr>
+<tr>
+<td>濾網堵塞</td>
+<td>壓差上升、風量下降</td>
+<td>提高風量或降載</td>
+<td>更換濾網</td>
+</tr>
+<tr>
+<td>結露風險</td>
+<td>表面溫度接近露點</td>
+<td>提高供液溫度</td>
+<td>降載／停止冷卻</td>
+</tr>
+<tr>
+<td>感測器漂移</td>
+<td>多感測器不一致</td>
+<td>使用保守估計</td>
+<td>維護／更換</td>
+</tr>
+<tr>
+<td>控制器失效</td>
+<td>看門狗、通訊中斷</td>
+<td>切換硬體安全曲線</td>
+<td>關機</td>
+</tr>
+</tbody></table>
+<p>ASHRAE 液冷資料也建議在關鍵設備下方使用集液盤、漏液偵測與排水，並協調液路、電力與網路配置。[1]</p>
+<hr>
+<h1>第九章　可重現驗證協議</h1>
+<h2>9.1 證據分級</h2>
+<p>DryCore 後續文件應使用以下標記：</p>
+<table>
+<thead>
+<tr>
+<th>等級</th>
+<th>意義</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E0</td>
+<td>概念或物理推論</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>解析計算、CFD／FEA／系統模擬</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>單模組加熱器試驗台</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>整合原型與故障注入</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>真實運算設備長時間測試</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>第三方重現、認證或量產資料</td>
+</tr>
+</tbody></table>
+<p>本文本身主要位於 E0–E1，不得把計算推演寫成 E3–E5。</p>
+<h2>9.2 共通量測規則</h2>
+<p>每個測試至少報告：</p>
+<ul>
+<li>熱源類型、面積、位置與校準功率；</li>
+<li>環境溫度、濕度、氣壓與露點；</li>
+<li>冷卻液、入口溫度、流量與壓力；</li>
+<li>溫度量測點與感測器不確定度；</li>
+<li>穩態判據；</li>
+<li>基線系統；</li>
+<li>噪音量測方法；</li>
+<li>控制器設定；</li>
+<li>原始時間序列與異常事件；</li>
+<li>是否含冷水機、泵浦與風扇能耗。</li>
+</ul>
+<p>建議穩態判據可定義為：在至少 $30\text{ min}$ 視窗內，關鍵溫度斜率絕對值低於預先設定門檻，且能量平衡誤差在允許範圍內。具體門檻須按試驗精度指定。</p>
+<h2>9.3 V0：基準熱路徑台</h2>
+<p>目的：建立可重現基線。</p>
+<ul>
+<li>使用電阻加熱器或可校準加熱塊，不先使用昂貴 CPU／GPU；</li>
+<li>測試 $50$、$100$、$200$、$300$、$500\text{ W}$ 等多個負載點；</li>
+<li>比較傳統冷板、DryCore 熱脊與外部 ColdDock；</li>
+<li>輸出總熱阻：</li>
+</ul>
+<h1>$$
+R_{\mathrm{th}}</h1>
+<p>\frac{T_{\mathrm{heater}}-T_{\mathrm{sink}}}{\dot Q}.
+$$</p>
+<p>驗收重點不是達到某固定溫度，而是辨識各段熱阻、重複性與失效模式。</p>
+<h2>9.4 V1：DryCore 單模組</h2>
+<p>測試項目：</p>
+<ul>
+<li>接觸壓力與熱阻；</li>
+<li>艙壁熱脊均溫性；</li>
+<li>外部冷端更換後的重複性；</li>
+<li>熱循環與機械循環；</li>
+<li>震動、運輸與接頭維護；</li>
+<li>壓力保持與漏液偵測；</li>
+<li>冷端失效時的熱暫態。</li>
+</ul>
+<h2>9.5 V2：DustVoid 污染試驗</h2>
+<p>建立對照艙與實驗艙：</p>
+<ul>
+<li>相同風量或相同噪音基線；</li>
+<li>受控試驗粉塵；</li>
+<li>粒子計數器量測濾前／濾後濃度；</li>
+<li>濾網壓降與風機功耗；</li>
+<li>散熱器沉積質量與熱阻變化；</li>
+<li>模擬縫隙洩漏與門板開啟。</li>
+</ul>
+<p>不得只用「肉眼無塵」作為結論。</p>
+<h2>9.6 V3：GravityFlow 熱虹吸試驗</h2>
+<p>掃描參數：</p>
+<ul>
+<li>充填率；</li>
+<li>蒸發器與冷凝器高差；</li>
+<li>管徑與長度；</li>
+<li>工作流體；</li>
+<li>冷凝器入口溫度；</li>
+<li>熱負載與熱通量；</li>
+<li>姿態偏角；</li>
+<li>啟動與停止循環。</li>
+</ul>
+<p>輸出：</p>
+<ul>
+<li>啟動時間；</li>
+<li>穩態熱阻；</li>
+<li>溫度脈動；</li>
+<li>壓力脈動；</li>
+<li>最大穩定熱負載；</li>
+<li>乾涸與回流限制；</li>
+<li>失效後安全反應。</li>
+</ul>
+<h2>9.7 V4：ThermoHarvest 淨收益試驗</h2>
+<p>對 TEG 或其他採集裝置，必須同時測量：</p>
+<ul>
+<li>開路電壓、最大功率點與轉換器效率；</li>
+<li>加入裝置前後的熱阻；</li>
+<li>為維持相同晶片溫度增加的風扇／泵功率；</li>
+<li>長時間熱循環衰減；</li>
+<li>每瓦成本。</li>
+</ul>
+<p>只有在 $P_{\mathrm{net}}&gt;0$ 且不降低設備可靠度時，才能稱為有效回收。</p>
+<p>對溫水回收，則測量：</p>
+<h1>$$
+\dot Q_{\mathrm{recovered}}</h1>
+<p>\dot m c_p
+\left(T_{\mathrm{return}}-T_{\mathrm{supply}}\right),
+$$</p>
+<p>並記錄實際有多少熱被下游使用，而不是只計算理論回水熱量。</p>
+<h2>9.8 V5：整合原型</h2>
+<p>首個整合原型建議限制在 $250$–$500\text{ W}$ 可控熱源，而不是直接宣稱千瓦級運算節點。測試包括：</p>
+<ul>
+<li>$72\text{ h}$ 穩態負載；</li>
+<li>循環負載與快速功率變化；</li>
+<li>高溫高濕露點情境；</li>
+<li>冷端風扇、泵浦、感測器與濾網故障注入；</li>
+<li>開關機與冷啟動；</li>
+<li>外部冷端拆裝後重複測試；</li>
+<li>聲學測試；</li>
+<li>至少數百次熱循環後的密封與性能檢查。</li>
+</ul>
+<p>通過後才進入真實 CPU／GPU 測試。</p>
+<hr>
+<h1>第十章　工程實作路線</h1>
+<h2>10.1 第一階段：低風險模組</h2>
+<p>優先實作 DustVoid 雙區氣流試驗艙與感測系統，因其不必接觸昂貴電子設備，且可快速驗證：</p>
+<ul>
+<li>微正壓是否減少縫隙進塵；</li>
+<li>濾網壓差如何影響風量與噪音；</li>
+<li>顆粒感測是否足以預測維護時間。</li>
+</ul>
+<h2>10.2 第二階段：DryCore 熱脊</h2>
+<p>使用加熱器與商用冷板／熱管建立：</p>
+<ul>
+<li>熱擷取頭；</li>
+<li>穿艙壁熱脊；</li>
+<li>外部冷排；</li>
+<li>溫度、流量與漏液紀錄。</li>
+</ul>
+<p>此階段不追求新奇材料，先證明模組邊界與服務流程。</p>
+<h2>10.3 第三階段：GravityFlow</h2>
+<p>在獨立防護試驗台驗證兩相熱虹吸。第一版不與真實電腦整合，先完成：</p>
+<ul>
+<li>工作流體與壓力邊界審查；</li>
+<li>啟動、姿態與填充率地圖；</li>
+<li>冷凝器風扇失效測試；</li>
+<li>輔助啟動與安全回退。</li>
+</ul>
+<h2>10.4 第四階段：ThermoHarvest</h2>
+<p>先以旁路熱源驗證微能量採集，避免增加主熱路徑熱阻。設施級熱回收則應與暖通、熱交換與實際熱需求共同設計，不能只在桌面原型上推演。</p>
+<h2>10.5 第五階段：統一控制器</h2>
+<p>當各模組已有可用資料後，再建立控制器：</p>
+<ul>
+<li>確定性安全層；</li>
+<li>規則式基線控制；</li>
+<li>模型預測控制；</li>
+<li>最後才加入機器學習預測。</li>
+</ul>
+<p>順序不能顛倒。沒有安全基線與故障資料，AI 不應成為唯一控制核心。</p>
+<hr>
+<h1>第十一章　限制、被否決假說與研究邊界</h1>
+<h2>11.1 QAC 高壓氣體導熱</h2>
+<p>原稿使用：</p>
+<p>$$
+k_{\mathrm{gas}}
+=k_0\frac{P}{P_0},
+$$</p>
+<p>並推論 $10\text{ atm}$ 空氣的導熱係數約為常壓十倍。此模型不適用於一般連續介質氣體。常見氣體在非稀薄、非極端狀態下的導熱係數主要由分子性質與溫度決定，並不隨壓力簡單線性增加。提高壓力可改變密度與自然／強制對流行為，但也需要壓力容器、密封、檢驗與安全管理。</p>
+<p>因此 QAC 從產品路線中移除。若未來研究高壓氦氣、超臨界流體或特定氣隙熱傳，應另立專門論文與壓力安全框架。</p>
+<h2>11.2 HydroPeak 與壽命預測</h2>
+<p>熱管理可降低溫度、減少熱降頻並改變電遷移與材料老化速率，但處理器壽命還受電壓、電流密度、製程差異、時序裕度、熱循環與封裝應力影響。不能把「$42^\circ\mathrm{C}$」直接換算成「壽命只損失 $8%$」。</p>
+<p>HydroPeak 因此改列為跨層性能控制的後續子題，只允許使用：</p>
+<ul>
+<li>原廠允許的遙測與功率控制；</li>
+<li>實際穩定性測試；</li>
+<li>不超出元件額定範圍的設定；</li>
+<li>明確的風險與保固邊界。</li>
+</ul>
+<p>本文不提供固定超頻頻率或壽命承諾。</p>
+<h2>11.3 「零」字眼的限制</h2>
+<p>下列用語在未完成長期統計與第三方驗證前不得使用：</p>
+<ul>
+<li>零漏液；</li>
+<li>零故障；</li>
+<li>零維護；</li>
+<li>零噪音；</li>
+<li>零灰塵；</li>
+<li>零外部功耗；</li>
+<li>永久壽命；</li>
+<li>絕對安全。</li>
+</ul>
+<p>可替代為：降低風險、移除特定故障源、被動優先、可維護、低噪音目標、污染受控、具備備援。</p>
+<h2>11.4 開源邊界</h2>
+<p>CC BY-SA 4.0 主要處理本文文字與圖表的著作權分享，不自動等同於完整硬體專利授權、產品安全認證或工程擔保。若未來釋出 CAD、韌體、BOM、測試資料或正式專利不主張承諾，應分別附上：</p>
+<ul>
+<li>可識別的版本與內容指紋；</li>
+<li>明確授權文本；</li>
+<li>專利範圍與例外；</li>
+<li>安全警告與責任邊界；</li>
+<li>可重現測試資料。</li>
+</ul>
+<p>「概念公開」與「完成可安全複製的開源硬體」是不同成熟度。</p>
+<hr>
+<h1>第十二章　結論</h1>
+<p>DryCore v2.0 保留了原始版本最有價值的系統直覺：高功率運算設備不應只被視為一顆需要降溫的晶片，而應被視為一個具有熱流、液流、氣流、污染、濕度、噪音與維護邊界的微型環境。</p>
+<p>但真正可工程化的「溫度主權」不是讓系統無視物理限制，也不是用革命性語言代替量測，而是讓每一條能量路徑、每一個服務接頭、每一個壓差、每一個露點裕度與每一種故障反應都可被觀察、計算與驗證。</p>
+<p>本文提出四個可獨立發展的支柱：</p>
+<ol>
+<li><strong>DryCore Thermal Spine</strong>：將高熱通量導向外部可維護冷端，降低液路服務與電子艙直接交錯；</li>
+<li><strong>DustVoid Dual-Zone</strong>：以髒側負壓與潔淨側微正壓控制污染，而非建立不可驗證的吸塵氣場；</li>
+<li><strong>GravityFlow Thermosyphon</strong>：以真正的兩相自然循環取代錯誤的單相虹吸推論；</li>
+<li><strong>ThermoHarvest Interface</strong>：以淨收益與熱品位判斷廢熱利用，而非預設桌面 TEG 能使散熱自給自足。</li>
+</ol>
+<p>DryCore 的下一個合理成果，不是再次預測某顆處理器能在何種頻率下維持多少度，而是建立一個 $250$–$500\text{ W}$ 的可校準加熱器原型，公開原始量測、熱阻分解、故障注入、露點控制與長期循環資料。只有完成這一步，DryCore 才會從概念產品真正進入工程產品。</p>
+<hr>
+<h1>參考資料</h1>
+<p>[1] ASHRAE, <em>Emergence and Expansion of Liquid Cooling in Mainstream Data Centers</em>, 2021.</p>
+<p>[2] ASHRAE TC 9.9, <em>Water-Cooled Servers: Common Designs, Components, and Processes</em>, ASHRAE White Paper.</p>
+<p>[3] Open Compute Project, <em>Open Edge Servers Meet Liquid Cooling: A Feasibility Study</em>, 2024.</p>
+<p>[4] J. Caner et al., “Simulation of a Two-Phase Loop Thermosyphon Using a New Flow Model,” <em>International Journal of Heat and Mass Transfer</em>, 2024.</p>
+<p>[5] “An Experimental Evaluation of the Performance of a Remote 2U Loop Thermosyphon,” <em>Applied Thermal Engineering</em>, 2024, Article 123243.</p>
+<p>[6] “An Experimental Study on a Novel Two-Phase Loop Thermosyphon Applicable for Cooling in 2U Servers,” <em>Applied Thermal Engineering</em>, 2025.</p>
+<p>[7] <em>Tellurium-Free Thermoelectric Materials and Devices for Low-Temperature Energy Harvesting</em>, <em>Nature Reviews Materials</em>, 2026.</p>
+<p>[8] Ecma International, <em>ECMA-74: Measurement of Airborne Noise Emitted by Information Technology and Telecommunications Equipment</em>, current edition.</p>
+<p>[9] ISO, <em>ISO 3744:2025 — Acoustics: Determination of Sound Power Levels of Noise Sources Using Sound Pressure</em>.</p>
+<hr>
+<h1>附錄 A　證據帳本範本</h1>
+<p>每項性能聲明應附：</p>
+<pre><code class="language-yaml">claim_id: DC-0001
+module: DryCore | DustVoid | GravityFlow | ThermoHarvest
+claim: &quot;待驗證的明確敘述&quot;
+evidence_level: E0 | E1 | E2 | E3 | E4 | E5
+baseline: &quot;對照系統與設定&quot;
+heat_load_W: null
+heat_source_area_mm2: null
+ambient_temperature_C: null
+relative_humidity_percent: null
+dew_point_C: null
+coolant_supply_C: null
+flow_rate_L_min: null
+measurement_method: &quot;&quot;
+uncertainty: &quot;&quot;
+raw_data_path: &quot;&quot;
+limitations: &quot;&quot;
+status: proposed | simulated | measured | reproduced | rejected
+</code></pre>
+<h1>附錄 B　最低公開資料包</h1>
+<p>當原型完成時，建議一次發布：</p>
+<ul>
+<li>原理圖與系統邊界圖；</li>
+<li>BOM 與濕潤材料清單；</li>
+<li>CAD／製造圖；</li>
+<li>感測器與校準紀錄；</li>
+<li>原始時間序列；</li>
+<li>熱負載校準方法；</li>
+<li>壓力與漏液測試紀錄；</li>
+<li>露點與冷凝測試；</li>
+<li>聲學量測配置；</li>
+<li>故障注入紀錄；</li>
+<li>失敗版本與修改歷史；</li>
+<li>授權與內容指紋。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/ccp-14.html">https://thisoneisneok.com/html/papers/ccp-14.html</a></footer>
+</body>
+</html>

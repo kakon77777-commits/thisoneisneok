@@ -1,0 +1,1405 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>空間解耦模組運算架構 | Neo.K</title>
+<meta name="description" content="先進運算系統正同時面臨四種耦合壓力：運算與記憶體頻寬需求增加、封裝內互連密度提高、功率傳輸路徑縮短，以及局部熱通量與系統維護複雜度上升。2.5D、3DIC、hybrid bonding 與 chiplet 技術已證明，異質元件可以透過先進封裝在更小距離內整合；但整合密度提高並不自動解決熱、翹曲、供電、測試與良率問題。相反地，系統技術協同最佳化必須同時決定裸晶分割、互連介面、功率傳輸、熱路徑、封裝、冷卻與軟體映射。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/ccp-05.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / CCP</strong><span>計算機概念產品系列</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>CCP-05</span></div><div><b>版本</b><span>v2.0</span></div><div><b>日期</b><span>2026-07-29</span></div><div><b>作者</b><span>Neo.K（許筌崴）</span></div><div><b>狀態</b><span>公開概念技術論文／可驗證架構提案</span></div><div><b>證據</b><span>E0 架構提案；尚未完成整合原型、第三方 CFD／結構／訊號完整性驗證或量產資格化</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ccp-05.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>空間解耦模組運算架構</h1>
+<h2>樓梯式、環形與螺旋式佈局的熱—電—互連協同設計</h2>
+<p><strong>Spatially Decoupled Modular Compute Architecture</strong><br><strong>Thermal–Power–Interconnect Co-Design for Staircase, Annular, and Helical Layouts</strong></p>
+<hr>
+<p><strong>作者</strong>：Neo.K（許筌崴）<br><strong>機構</strong>：一言諾科技有限公司（EveMissLab），台灣<br><strong>原始版本</strong>：2025 年 12 月<br><strong>公開修訂版</strong>：v2.0，2026 年 7 月 29 日<br><strong>文件性質</strong>：公開概念技術論文／可驗證架構提案<br><strong>建議縮寫</strong>：SDMCA（Spatially Decoupled Modular Compute Architecture，空間解耦模組運算架構）<br><strong>系列定位</strong>：立體運算主幹；銜接 SynCore、DPCPS、DryCore 與後續拓撲計算系統<br><strong>證據狀態</strong>：E0 架構提案；尚未完成整合原型、第三方 CFD／結構／訊號完整性驗證或量產資格化<br><strong>論文授權</strong>：CC BY-SA 4.0；CAD、PCB、韌體、測試資料與製造文件於實際釋出時另行指定授權</p>
+<hr>
+<h2>修訂聲明</h2>
+<p>本文由《立體運算的工程實作路徑：樓梯形與螺旋渦輪架構》重構而來。原稿的重要洞察是：當運算系統從平面走向三維時，不應只追求把更多熱源垂直壓縮在一起，而應重新設計每個模組的散熱出口、供電路徑、資料通道、維修空間與故障邊界。原稿提出的樓梯式錯位與螺旋式排列，提供了一種把「立體」理解為系統空間編排，而非只理解為裸晶垂直堆疊的起點。</p>
+<p>然而，原稿混合了裸晶、封裝、主板、機箱與資料中心五個尺度，並將多項未執行的 CFD、成本、TRL、性能倍率及量產時程寫成既成結果。部分物理機制亦需要修正：垂直堆疊不必然使每一層熱量依序流經上層；錯位模組也不能用斜向 TSV 跨越數毫米至數公分；靜止的螺旋外殼不會自動產生離心散熱；物理距離縮短也不必然等比例降低系統延遲；密度、性能、功率與成本增益不能直接相乘。</p>
+<p>v2.0 因此進行以下重構：</p>
+<ol>
+<li><strong>把「立體運算」分成封裝級、模組級、機箱級與機櫃級四個尺度</strong>，每個尺度使用不同的互連、冷卻與製造技術。</li>
+<li><strong>將樓梯式與螺旋式從晶片形狀改為模組佈局族</strong>。它們是幾何候選解，不是固定產品外形，更不是自動帶來性能增益的物理定律。</li>
+<li><strong>移除斜向 TSV、錐形光刻一次成形數公分互連與「垂直蟲洞」等不適用機制</strong>。封裝內可使用 hybrid bonding、TSV、RDL 與 UCIe 類介面；板級與機箱級則使用背板、線纜、光電模組、retimer 或經驗證的近距離介面。</li>
+<li><strong>將熱模型從獨立標量熱阻改為耦合熱阻矩陣</strong>，承認模組之間仍會透過空氣、結構、冷板與匯流排互相影響。</li>
+<li><strong>將螺旋渦輪改為環形／螺旋模組艙</strong>。若需要旋流，必須由風扇、葉片或泵提供壓升；幾何本身不創造免費的離心輸運。</li>
+<li><strong>刪除所有未有原始模型與邊界條件支撐的 CFD 數字、12 倍總性能、200 倍機櫃密度、固定成本與 2026–2030 量產承諾</strong>。</li>
+<li><strong>將產品價值改為可測量的系統指標</strong>：同等噪音與進氣溫度下的熱節流減少、每單位體積有效算力、維修時間、故障隔離、互連能耗與全生命週期成本。</li>
+<li><strong>正式接入 DPCPS 與 DryCore</strong>：DPCPS 管理分布式近負載供電，DryCore 管理隔離熱路徑、冷端與污染控制。</li>
+<li><strong>加入拓撲感知排程、機械可靠度、測試可及性、已知良品模組、證據分級與可否證 MVP</strong>。</li>
+<li><strong>保留樓梯與螺旋作為設計語彙，但取消其宇宙必然性與哲學優越性</strong>。形狀是約束的具象化，不是性能證明。</li>
+</ol>
+<p>因此，新版不再宣稱已經找到取代平面處理器的唯一形狀，而是提出一套可比較、可模擬、可製造、可維修與可被否證的空間模組化方法。</p>
+<hr>
+<h2>摘要</h2>
+<p>先進運算系統正同時面臨四種耦合壓力：運算與記憶體頻寬需求增加、封裝內互連密度提高、功率傳輸路徑縮短，以及局部熱通量與系統維護複雜度上升。2.5D、3DIC、hybrid bonding 與 chiplet 技術已證明，異質元件可以透過先進封裝在更小距離內整合；但整合密度提高並不自動解決熱、翹曲、供電、測試與良率問題。相反地，系統技術協同最佳化必須同時決定裸晶分割、互連介面、功率傳輸、熱路徑、封裝、冷卻與軟體映射。</p>
+<p>本文提出空間解耦模組運算架構 SDMCA。其核心命題是：在封裝外與機箱內的尺度，運算模組不必全部共用同一平面、同一風道、同一冷板、同一電源區與同一故障域；系統可以透過受控的空間位移與拓撲連接，把高功率模組的熱出口、服務面與電力入口分開，同時保留足夠的資料局部性。本文將候選佈局分為三族：<strong>樓梯式佈局</strong>以錯位模組建立獨立服務面與橫向或液冷熱路徑；<strong>環形佈局</strong>將模組分布於中央匯流排或流體歧管周圍；<strong>螺旋式佈局</strong>在高度方向引入角位移，以換取更長的服務面、分區流道或可擴展的模組節距。三者都不是固定最佳解，必須依功率密度、互連半徑、冷卻方式、維修頻率與機械限制選擇。</p>
+<p>本文建立四尺度架構：封裝級處理 hybrid bonding、TSV、RDL 與短距離 die-to-die 介面；模組級處理 chiplet 封裝、記憶體、近負載供電與冷板；機箱級處理背板、線纜、光電互連、風道、液路、服務面與故障隔離；機櫃級處理電力、冷卻液、網路與管理。熱行為以耦合熱阻矩陣描述，資料互連以帶寬、距離、能耗、序列化與拓撲擁塞共同評估，並以多目標最佳化在有效算力密度、尾端延遲、冷卻功率、聲學、可靠度、維修時間及成本之間求解。</p>
+<p>SDMCA 不主張樓梯或螺旋本身可以產生 12 倍性能，也不主張成熟製程晶片只要重新排列就等效於先進製程。其可檢驗假說是：在相同模組、功率、冷卻設備與互連技術下，空間解耦佈局可能降低熱回流與局部節流、改善模組可維修性、提高已部署設備的有效利用率，並使供電、冷卻與故障控制更容易模組化。本文提出平面基線、四模組樓梯原型與六模組環形原型的比較方法，要求同時量測結溫、熱節流、壓降、泵／風扇功率、噪音、互連延遲、錯誤率、拆裝時間與失效傳播。</p>
+<p>本文目前屬 E0 架構提案。若在公平基線下，樓梯或環形佈局不能降低熱耦合、不能改善服務性，或其互連與機械成本抵銷全部收益，則相應形狀應被否證、縮減為特定產品選項，或回退到平面模組化方案。</p>
+<p><strong>關鍵詞</strong>：立體運算、chiplet、3DIC、模組化運算、熱—電協同、熱感知佈局、UCIe、hybrid bonding、冷板、環形背板、樓梯式佈局、螺旋式佈局、可維修性、故障隔離</p>
+<hr>
+<h1>第一章　問題重述：立體不是把所有東西往上疊</h1>
+<h2>1.1 「三維整合」至少包含四個尺度</h2>
+<p>「三維運算」常被混用來描述完全不同的工程問題。若不先區分尺度，就容易把封裝內可行的技術錯誤放大到機箱，或把機箱幾何誤當成裸晶互連。</p>
+<p>本文定義四個尺度：</p>
+<h3>封裝級</h3>
+<p>典型距離從微米到毫米，對象包括：</p>
+<ul>
+<li>logic-on-logic；</li>
+<li>logic-on-memory；</li>
+<li>計算 chiplet 與 I/O die；</li>
+<li>hybrid bonding；</li>
+<li>TSV；</li>
+<li>RDL；</li>
+<li>矽橋與中介層；</li>
+<li>UCIe-3D 類 die-to-die 介面。</li>
+</ul>
+<p>此尺度追求極高互連密度與低能耗，但也受熱通量、翹曲、對準、良率、測試與材料相容性限制。</p>
+<h3>模組級</h3>
+<p>典型距離從毫米到數公分，對象包括：</p>
+<ul>
+<li>一個多晶粒封裝；</li>
+<li>HBM 或其他近端記憶體；</li>
+<li>板上電壓調節器；</li>
+<li>冷板、均熱板或熱虹吸蒸發器；</li>
+<li>管理控制器；</li>
+<li>高速連接器。</li>
+</ul>
+<p>此尺度是 SDMCA 的最小實體單位。模組應盡可能成為可測試、可更換、可降級與可追蹤的故障域。</p>
+<h3>機箱級</h3>
+<p>典型距離從數公分到一公尺，對象包括：</p>
+<ul>
+<li>多個運算模組；</li>
+<li>背板、線纜或光電連接；</li>
+<li>風道與液體歧管；</li>
+<li>區域供電；</li>
+<li>機械框架；</li>
+<li>維修通道；</li>
+<li>機箱管理。</li>
+</ul>
+<p>樓梯、環形與螺旋主要屬於這一尺度。</p>
+<h3>機櫃級</h3>
+<p>典型距離從一公尺到數十公尺，對象包括：</p>
+<ul>
+<li>機櫃匯流排；</li>
+<li>冷卻液供回水；</li>
+<li>網路交換；</li>
+<li>管理平面；</li>
+<li>儲存與記憶體池；</li>
+<li>多機箱故障域。</li>
+</ul>
+<p>在此尺度，幾何佈局的價值通常表現在纜線、冷卻、維修與部署，而不是裸晶級延遲。</p>
+<p>因此：</p>
+<p>$$
+\text{3D integration}
+\neq
+\text{單一種堆疊}.
+$$</p>
+<p>更完整的表述是：</p>
+<h1>$$
+\mathcal{S}_{3D}</h1>
+<p>\mathcal{P}<em>{\mathrm{package}}
+\oplus
+\mathcal{M}</em>{\mathrm{module}}
+\oplus
+\mathcal{C}<em>{\mathrm{chassis}}
+\oplus
+\mathcal{R}</em>{\mathrm{rack}}.
+$$</p>
+<p>不同尺度之間可以協同，但不能用同一組製程、距離與熱模型描述。</p>
+<h2>1.2 產業基線：先進封裝已是系統工程</h2>
+<p>TSMC 的 CoWoS 與 SoIC、Intel 的 Foveros 與 EMIB，以及 UCIe 對 chiplet 互連與 3D 封裝的標準化，說明產業已從「單一裸晶微縮」走向異質系統整合。這些平台的價值包括更高的封裝內頻寬密度、不同製程節點的組合，以及計算、I/O、記憶體與專用加速器的分割。</p>
+<p>但這些平台也揭示一個重要事實：先進封裝不是只把晶片黏在一起。設計必須同時考慮：</p>
+<ul>
+<li>裸晶分割；</li>
+<li>known-good-die 測試；</li>
+<li>die-to-die 介面；</li>
+<li>電源與接地；</li>
+<li>熱圖；</li>
+<li>封裝翹曲；</li>
+<li>機械應力；</li>
+<li>冷卻；</li>
+<li>EDA 與系統管理。</li>
+</ul>
+<p>因此，SDMCA 不以「產業仍停留在平面」作為前提。它的研究空間在於：當封裝與模組已完成後，機箱是否還能透過空間解耦改善熱、供電、維修與部署。</p>
+<h2>1.3 高密度的真正成本</h2>
+<p>提高密度可能縮短部分互連，但也會增加：</p>
+<ul>
+<li>局部熱通量；</li>
+<li>熱耦合；</li>
+<li>電源完整性難度；</li>
+<li>結構與材料應力；</li>
+<li>失效傳播；</li>
+<li>測試盲區；</li>
+<li>維修成本；</li>
+<li>冷卻基礎設施需求。</li>
+</ul>
+<p>因此，密度不是單向目標。本文定義有效密度：</p>
+<h1>$$
+D_{\mathrm{eff}}</h1>
+<p>\frac{
+W_{\mathrm{useful}}
+}{
+V_{\mathrm{deployed}}
+},
+$$</p>
+<p>其中 $W_{\mathrm{useful}}$ 是在功率、熱、可靠度與軟體利用率約束下真正完成的有效工作量，而不是峰值理論算力。</p>
+<p>若系統因熱節流、故障、維護或通訊擁塞只使用一半設備，則名義密度再高也不代表有效密度更高。</p>
+<h2>1.4 空間解耦的五個對象</h2>
+<p>SDMCA 所謂的「解耦」不是完全隔離，而是讓不同物理功能不必共用同一條最壞路徑。</p>
+<p>五個主要對象為：</p>
+<ol>
+<li><strong>熱解耦</strong>：每個高功率模組具有可識別的主要熱出口。</li>
+<li><strong>供電解耦</strong>：不同區域可以配置獨立的近負載調節與保護。</li>
+<li><strong>資料解耦</strong>：高速、本地與管理流量使用不同介面與拓撲。</li>
+<li><strong>故障解耦</strong>：單一模組、冷卻支路或電源支路失效時，系統可降級而非整體失效。</li>
+<li><strong>服務解耦</strong>：更換模組不必拆除所有上層元件或排空整套液路。</li>
+</ol>
+<p>這五者之間存在衝突。例如，增加機械間距有利於散熱與維修，卻可能增加互連長度；增加冷板共用面積可降低熱阻，卻可能擴大漏液故障域。因此需要多目標協同，而不是單一形狀崇拜。</p>
+<hr>
+<h1>第二章　核心形式模型：熱、電、資料與服務的共同拓撲</h1>
+<h2>2.1 模組圖</h2>
+<p>令系統包含模組集合：</p>
+<p>$$
+V={v_1,v_2,\ldots,v_N}.
+$$</p>
+<p>每個模組 $v_i$ 具有狀態：</p>
+<h1>$$
+\mathbf{s}_i</h1>
+<p>(P_i,T_i,B_i,E_i,R_i,M_i),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$P_i$：功率與瞬態功率需求；</li>
+<li>$T_i$：結溫、封裝溫度與冷卻介面溫度；</li>
+<li>$B_i$：資料帶寬需求；</li>
+<li>$E_i$：每位元或每筆交易能耗；</li>
+<li>$R_i$：可靠度與健康狀態；</li>
+<li>$M_i$：維修與可及性狀態。</li>
+</ul>
+<p>系統同時包含四種邊：</p>
+<h1>$$
+G</h1>
+<p>(V,E_{\mathrm{data}},E_{\mathrm{power}},E_{\mathrm{thermal}},E_{\mathrm{service}}).
+$$</p>
+<p>同一對模組可以在資料上高度耦合，但在熱上盡量弱耦合；也可以共用管理匯流排，但不共用主功率支路。</p>
+<h2>2.2 熱耦合矩陣</h2>
+<p>原稿把每一層視為完全獨立熱阻，這在實際系統中通常不成立。即使每個模組都有自己的散熱器，仍會透過：</p>
+<ul>
+<li>共用進氣；</li>
+<li>排氣回流；</li>
+<li>機械框架；</li>
+<li>背板銅層；</li>
+<li>冷板與液體歧管；</li>
+<li>輻射與鄰近對流；</li>
+</ul>
+<p>產生交叉加熱。</p>
+<p>穩態近似可寫成：</p>
+<h1>$$
+\Delta\mathbf{T}</h1>
+<p>\mathbf{R}_{\theta}\mathbf{P},
+$$</p>
+<p>其中：</p>
+<h1>$$
+\mathbf{R}_{\theta}</h1>
+<p>\begin{bmatrix}
+R_{11} &amp; R_{12} &amp; \cdots &amp; R_{1N}\
+R_{21} &amp; R_{22} &amp; \cdots &amp; R_{2N}\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots\
+R_{N1} &amp; R_{N2} &amp; \cdots &amp; R_{NN}
+\end{bmatrix}.
+$$</p>
+<p>$R_{ii}$ 是模組自身到環境或冷卻液的熱阻，$R_{ij}$ 則描述模組 $j$ 的功率對模組 $i$ 溫度的影響。</p>
+<p>空間解耦的目標不是讓所有 $R_{ij}$ 精確等於零，而是降低關鍵高功率模組之間的交叉項：</p>
+<p>$$
+\min
+\sum_{i\neq j}
+w_{ij}R_{ij}.
+$$</p>
+<p>對動態系統，可使用熱阻—熱容網路：</p>
+<h1>$$
+\mathbf{C}<em>{\theta}\dot{\mathbf{T}}
++
+\mathbf{G}</em>{\theta}\mathbf{T}</h1>
+<p>\mathbf{P}
++
+\mathbf{u}_{\mathrm{cool}},
+$$</p>
+<p>其中 $\mathbf{u}_{\mathrm{cool}}$ 表示風扇、泵、閥與冷卻液溫度等控制輸入。</p>
+<h2>2.3 資料延遲與能耗</h2>
+<p>資料路徑延遲不能只由幾何長度決定。對一條連線 $e$：</p>
+<h1>$$
+L_e</h1>
+<p>L_{\mathrm{prop}}
++
+L_{\mathrm{serdes}}
++
+L_{\mathrm{retimer}}
++
+L_{\mathrm{switch}}
++
+L_{\mathrm{queue}}
++
+L_{\mathrm{protocol}}.
+$$</p>
+<p>其中傳播延遲只是其中一項。數公分的距離差，可能小於序列化、協定、交換與排隊延遲；反之，在封裝內極高頻寬介面中，微小距離與寄生仍非常重要。</p>
+<p>每位元能耗可近似寫為：</p>
+<h1>$$
+\varepsilon_e</h1>
+<p>\varepsilon_{\mathrm{PHY}}
++
+\varepsilon_{\mathrm{channel}}(d_e)
++
+\varepsilon_{\mathrm{retimer}}
++
+\varepsilon_{\mathrm{switch}}.
+$$</p>
+<p>因此，樓梯或環形佈局只有在資料拓撲、通道損耗與交換層級同時改善時，才可能降低通訊成本。</p>
+<h2>2.4 供電網路</h2>
+<p>模組 $i$ 的負載端電壓偏差可抽象為：</p>
+<h1>$$
+\Delta V_i(\omega)</h1>
+<p>Z_{\mathrm{PDN},i}(\omega)I_i(\omega)
++
+\sum_{j\neq i}
+Z_{ij}(\omega)I_j(\omega).
+$$</p>
+<p>DPCPS 需要在 SDMCA 中提供：</p>
+<ul>
+<li>區域匯流排；</li>
+<li>近負載調節器；</li>
+<li>局部去耦；</li>
+<li>模組級電流與溫度量測；</li>
+<li>支路隔離；</li>
+<li>預測式功率配置；</li>
+<li>故障時的快速限流與關斷。</li>
+</ul>
+<p>空間模組化的價值之一，是讓每個模組的功率支路更容易被量測、限制與替換；但額外的連接器與匯流排也可能增加損耗，必須納入效率與可靠度比較。</p>
+<h2>2.5 服務與維修成本</h2>
+<p>對可部署系統，平均修復時間與故障隔離能力可能比峰值密度更重要。定義服務成本：</p>
+<h1>$$
+C_{\mathrm{service}}</h1>
+<p>\alpha t_{\mathrm{diagnose}}
++
+\beta t_{\mathrm{remove}}
++
+\gamma t_{\mathrm{restore}}
++
+\delta C_{\mathrm{collateral}},
+$$</p>
+<p>其中 $C_{\mathrm{collateral}}$ 表示為更換一個模組而必須拆除其他模組、排空液路、重新校準或停機的附帶成本。</p>
+<p>樓梯式架構的主要可檢驗價值之一，就是降低：</p>
+<p>$$
+t_{\mathrm{remove}}
++
+C_{\mathrm{collateral}}.
+$$</p>
+<hr>
+<h1>第三章　樓梯式佈局：錯位、獨立服務面與方向性熱路徑</h1>
+<h2>3.1 定義</h2>
+<p>樓梯式佈局不是把裸晶切成樓梯，而是讓模組沿一個或兩個方向產生受控位移：</p>
+<h1>$$
+\mathbf{x}_i</h1>
+<p>(i\Delta x,0,i\Delta z)
+$$</p>
+<p>或</p>
+<h1>$$
+\mathbf{x}_{i,j}</h1>
+<p>(i\Delta x,j\Delta y,(i+j)\Delta z).
+$$</p>
+<p>其中 $\Delta x$、$\Delta y$ 與 $\Delta z$ 由以下條件決定：</p>
+<ul>
+<li>冷板或散熱器厚度；</li>
+<li>接頭與線纜彎曲半徑；</li>
+<li>服務工具空間；</li>
+<li>背板介面；</li>
+<li>結構強度；</li>
+<li>模組重量；</li>
+<li>可接受互連長度。</li>
+</ul>
+<p>它可以表現為斜坡、抽屜、金字塔或雙面階梯，但這些只是產品外形，不改變其核心原則。</p>
+<h2>3.2 熱路徑</h2>
+<p>樓梯式佈局可採三種熱路徑。</p>
+<h3>獨立橫向風道</h3>
+<p>每個模組具有獨立或半獨立進氣與排氣。設計重點不是「熱完全互不干擾」，而是避免下游模組直接吸入上游高溫排氣。</p>
+<p>需要量測：</p>
+<ul>
+<li>入口溫度分布；</li>
+<li>排氣再循環率；</li>
+<li>風道壓降；</li>
+<li>風扇工作點；</li>
+<li>模組間熱耦合；</li>
+<li>濾網髒堵後性能。</li>
+</ul>
+<h3>共用冷卻液、獨立冷板支路</h3>
+<p>每個模組使用 DryCore 或標準冷板，支路連接共用歧管。可採並聯、串並聯或主動閥控。</p>
+<p>並聯流量近似滿足：</p>
+<h1>$$
+\Delta p_1(Q_1)</h1>
+<h1>\Delta p_2(Q_2)</h1>
+<h1>\cdots</h1>
+<p>\Delta p_N(Q_N),
+$$</p>
+<p>總流量為：</p>
+<h1>$$
+Q_{\mathrm{tot}}</h1>
+<p>\sum_i Q_i.
+$$</p>
+<p>需要避免低阻支路奪流、氣泡滯留、接頭負載與維修時全系統排液。</p>
+<h3>獨立密封熱擷取、外部冷端</h3>
+<p>每個模組透過熱管、均熱板或兩相熱虹吸把熱傳到可維修冷端。這最符合 DryCore 的服務邊界，但需要評估姿態、啟動、熱通量與長期密封。</p>
+<h2>3.3 互連</h2>
+<p>樓梯式模組不使用斜向 TSV 跨越機箱距離。互連應依尺度選擇：</p>
+<ul>
+<li>封裝內：hybrid bonding、TSV、RDL、UCIe-3D；</li>
+<li>同一模組板：短距離平行或高速 SerDes；</li>
+<li>相鄰模組：高密度正交連接器、短線纜或光電模組；</li>
+<li>跨多階：交換晶片、光纖或專用背板；</li>
+<li>管理與遙測：低速冗餘管理網路。</li>
+</ul>
+<p>若相鄰階具有高流量，應優先把交換、記憶體或資料生產者放在拓撲中心，而不是假設資料永遠只從底層單向流到頂層。</p>
+<h2>3.4 適合的工作負載</h2>
+<p>樓梯形幾何不等於流水線計算，但可以支援具有方向性的資料流，例如：</p>
+<ul>
+<li>感測輸入、前處理、推理與控制；</li>
+<li>編解碼與媒體處理；</li>
+<li>儲存、壓縮與網路封包處理；</li>
+<li>模型服務中的前處理、加速器與後處理；</li>
+<li>實驗設備中的資料擷取、重建與分析。</li>
+</ul>
+<p>是否有效取決於資料圖是否與物理拓撲相符。令工作負載圖為：</p>
+<p>$$
+G_W=(V_W,E_W),
+$$</p>
+<p>硬體拓撲為：</p>
+<p>$$
+G_H=(V_H,E_H).
+$$</p>
+<p>映射函數：</p>
+<p>$$
+\pi:V_W\rightarrow V_H
+$$</p>
+<p>應最小化：</p>
+<h1>$$
+J_{\mathrm{map}}</h1>
+<p>\sum_{(u,v)\in E_W}
+b_{uv}L_{\pi(u),\pi(v)}
++
+\lambda C_{\mathrm{congestion}}
++
+\mu C_{\mathrm{thermal}}.
+$$</p>
+<h2>3.5 優勢與限制</h2>
+<p>可能優勢：</p>
+<ul>
+<li>模組頂面或側面較容易接觸冷板；</li>
+<li>可建立獨立服務面；</li>
+<li>更換下層模組時不必拆除所有上層；</li>
+<li>可將高功率模組與敏感 I/O 分區；</li>
+<li>易於建立模組級供電與故障隔離。</li>
+</ul>
+<p>主要限制：</p>
+<ul>
+<li>機械框架與外殼體積增加；</li>
+<li>背板與線纜長度不一定最短；</li>
+<li>重心、振動與運輸衝擊更複雜；</li>
+<li>若風道設計不當，仍可能形成排氣回流；</li>
+<li>高速連接器與接頭數量增加；</li>
+<li>模組錯位可能降低單純幾何填充率。</li>
+</ul>
+<p>因此樓梯式不是「密度最大化」方案，而是服務性、熱出口與模組邊界的平衡方案。</p>
+<hr>
+<h1>第四章　環形與螺旋式佈局：中央脊椎、周向模組與分區流道</h1>
+<h2>4.1 先區分環形與螺旋</h2>
+<p>環形佈局的模組位於近似相同高度，沿中央軸排列：</p>
+<h1>$$
+\mathbf{x}_i</h1>
+<p>(R\cos\theta_i,R\sin\theta_i,z_0).
+$$</p>
+<p>螺旋佈局則同時改變角度與高度：</p>
+<h1>$$
+\mathbf{x}_i</h1>
+<p>(R\cos\theta_i,R\sin\theta_i,z_0+h\theta_i).
+$$</p>
+<p>環形適合：</p>
+<ul>
+<li>中央電力或液體歧管；</li>
+<li>周向對稱服務；</li>
+<li>多個等價模組；</li>
+<li>中央交換或管理脊椎。</li>
+</ul>
+<p>螺旋適合：</p>
+<ul>
+<li>模組需要高度錯位；</li>
+<li>服務面需要連續展開；</li>
+<li>風道或管路需要逐級分區；</li>
+<li>機械裝配希望沿單一路徑進行。</li>
+</ul>
+<p>不應在沒有必要時使用真正螺旋。螺旋會增加製造、線纜、結構與校準複雜度；若環形或多面柱已能滿足需求，應優先採用較簡單方案。</p>
+<h2>4.2 中央脊椎</h2>
+<p>中央區域可以容納：</p>
+<ul>
+<li>電力匯流排；</li>
+<li>液體供回歧管；</li>
+<li>光纖或電背板；</li>
+<li>管理控制器；</li>
+<li>交換器；</li>
+<li>安全關斷與漏液監測。</li>
+</ul>
+<p>但中央脊椎不應成為單一不可維修故障點。至少需要：</p>
+<ul>
+<li>分段匯流排；</li>
+<li>雙路管理；</li>
+<li>支路閥與止回；</li>
+<li>支路保險與電子斷路；</li>
+<li>可旁路交換；</li>
+<li>模組熱插拔定序；</li>
+<li>壓力與流量平衡。</li>
+</ul>
+<h2>4.3 旋流不是免費散熱</h2>
+<p>若空氣只是流經靜止的螺旋外殼，系統不會憑空獲得持續的離心壓升。旋流必須由風扇、鼓風機、葉片或切向入口建立，壓力提升來自外部功。</p>
+<p>風扇功率近似為：</p>
+<h1>$$
+P_{\mathrm{fan}}</h1>
+<p>\frac{\Delta p Q}{\eta_{\mathrm{fan}}}.
+$$</p>
+<p>增加旋流可能：</p>
+<ul>
+<li>改善部分表面的混合；</li>
+<li>延長流路；</li>
+<li>均化周向溫度；</li>
+</ul>
+<p>但也可能：</p>
+<ul>
+<li>增加壓降；</li>
+<li>引入二次流與死區；</li>
+<li>增加噪音；</li>
+<li>使灰塵分離與沉積位置變得複雜；</li>
+<li>降低風扇效率。</li>
+</ul>
+<p>因此，「渦輪」只能作為經 CFD 與實驗驗證的流道選項，不是螺旋形狀的必然效果。</p>
+<h2>4.4 液冷比空氣旋流更適合高功率環形模組</h2>
+<p>對高功率模組，環形架構更合理的路徑通常是：</p>
+<ul>
+<li>中央供液；</li>
+<li>周向短支路；</li>
+<li>每模組獨立冷板；</li>
+<li>外圈回液；</li>
+<li>支路流量感測與閥控。</li>
+</ul>
+<p>模組吸熱量為：</p>
+<h1>$$
+\dot Q_i</h1>
+<h2>\dot m_i c_p
+\left(
+T_{\mathrm{out},i}</h2>
+<p>T_{\mathrm{in},i}
+\right).
+$$</p>
+<p>中央歧管必須使不同角度模組獲得接近的入口壓力與溫度，並避免最遠支路流量不足。</p>
+<p>若採兩相冷卻，還需處理：</p>
+<ul>
+<li>流動不穩定；</li>
+<li>乾涸；</li>
+<li>壓降；</li>
+<li>蒸氣分配；</li>
+<li>冷凝回流；</li>
+<li>姿態與啟動；</li>
+<li>支路間耦合。</li>
+</ul>
+<h2>4.5 周期拓撲的真實價值</h2>
+<p>環形連接可形成週期邊界：</p>
+<p>$$
+v_i
+\leftrightarrow
+v_{(i+1)\bmod N}.
+$$</p>
+<p>其直徑約為：</p>
+<h1>$$
+D_{\mathrm{ring}}</h1>
+<p>\left\lfloor
+\frac{N}{2}
+\right\rfloor.
+$$</p>
+<p>單純環形並不比所有拓撲都快。若需要低直徑，可加入：</p>
+<ul>
+<li>中央交換；</li>
+<li>弦連接；</li>
+<li>雙環；</li>
+<li>小世界跳接；</li>
+<li>分層 Clos；</li>
+<li>光交換。</li>
+</ul>
+<p>因此，螺旋的通訊價值不在「垂直蟲洞」，而在於它提供規則模組節距與可設計的周向、徑向及軸向連接。</p>
+<h2>4.6 優勢與限制</h2>
+<p>可能優勢：</p>
+<ul>
+<li>模組到中央供電、冷卻或交換的距離較均勻；</li>
+<li>可沿周向增加或替換模組；</li>
+<li>適合等價加速器或記憶體節點；</li>
+<li>可建立多個獨立扇區故障域；</li>
+<li>外圈服務面積較大。</li>
+</ul>
+<p>主要限制：</p>
+<ul>
+<li>中央脊椎可能形成瓶頸；</li>
+<li>外殼與框架複雜；</li>
+<li>模組與連接器需要角度或曲面適配；</li>
+<li>風冷死區與高壓降風險；</li>
+<li>真正螺旋的裝配公差與線纜管理困難；</li>
+<li>震動、運輸與地震荷載需專門驗證。</li>
+</ul>
+<hr>
+<h1>第五章　互連分層：不要讓所有尺度都變成 TSV</h1>
+<h2>5.1 封裝內互連</h2>
+<p>先進封裝可使用：</p>
+<ul>
+<li>hybrid bonding；</li>
+<li>micro-bump；</li>
+<li>TSV；</li>
+<li>RDL；</li>
+<li>silicon bridge；</li>
+<li>passive／active interposer；</li>
+<li>UCIe-3D 或專用 die-to-die PHY。</li>
+</ul>
+<p>此處可追求高互連密度與低每位元能耗，但每增加一層都需要重新分析熱、功率、時序、良率與測試。</p>
+<h2>5.2 模組間電互連</h2>
+<p>在數公分尺度，候選包括：</p>
+<ul>
+<li>高速差分背板；</li>
+<li>twinax；</li>
+<li>mezzanine connector；</li>
+<li>cable assembly；</li>
+<li>retimer；</li>
+<li>PCIe／CXL 類連接；</li>
+<li>專用低延遲 fabric。</li>
+</ul>
+<p>設計必須以眼圖、插入損耗、回波損耗、串擾、抖動與 BER 驗證，不能只以幾何最短路徑判定。</p>
+<h2>5.3 光互連</h2>
+<p>光互連可能降低長距離電通道損耗並提供高帶寬，但它不等於「光不導熱，所以完全沒有熱橋」。光模組仍包含：</p>
+<ul>
+<li>雷射；</li>
+<li>調變器；</li>
+<li>驅動器；</li>
+<li>接收器；</li>
+<li>DSP；</li>
+<li>耦合器；</li>
+<li>封裝與溫控。</li>
+</ul>
+<p>光互連適合：</p>
+<ul>
+<li>跨多模組；</li>
+<li>高帶寬長距離；</li>
+<li>需要電氣隔離；</li>
+<li>電通道損耗或連接器數量過高；</li>
+</ul>
+<p>但未必適合最低延遲的相鄰模組。</p>
+<h2>5.4 柔性 PCB 與彈簧接點</h2>
+<p>柔性 PCB 可以吸收機械位移並支援曲面佈局，但高速性能取決於：</p>
+<ul>
+<li>材料損耗；</li>
+<li>層疊；</li>
+<li>參考平面連續性；</li>
+<li>彎曲半徑；</li>
+<li>連接器；</li>
+<li>製造變異；</li>
+<li>彎折壽命。</li>
+</ul>
+<p>Pogo pin 適合測試、低速管理或特定可更換模組，不應在未驗證 SI／PI 的情況下作為高頻寬主互連。</p>
+<h2>5.5 管理與測試網路</h2>
+<p>每個模組應具有獨立於主資料面的管理通道，用於：</p>
+<ul>
+<li>身分與韌體版本；</li>
+<li>溫度、電流、流量與壓力；</li>
+<li>錯誤計數；</li>
+<li>邊界掃描與自我測試；</li>
+<li>熱插拔定序；</li>
+<li>安全關斷；</li>
+<li>壽命與維修紀錄。</li>
+</ul>
+<p>UCIe 2.0 將管理、測試、遙測與除錯納入多 chiplet 系統考量，顯示可管理性不是封裝完成後才補上的功能。SDMCA 將相同原則延伸到模組與機箱。</p>
+<hr>
+<h1>第六章　與 DPCPS、DryCore、DEO 與 SynCore 的系統整合</h1>
+<h2>6.1 DPCPS：空間供電</h2>
+<p>SDMCA 提供可辨識的模組與支路，DPCPS 則決定：</p>
+<ul>
+<li>哪些區域調節器啟動；</li>
+<li>每個模組的功率上限；</li>
+<li>局部去耦與儲能；</li>
+<li>支路限流；</li>
+<li>故障隔離；</li>
+<li>工作負載前饋。</li>
+</ul>
+<p>整合關係為：</p>
+<p>$$
+\text{機櫃匯流排}
+\rightarrow
+\text{區域轉換}
+\rightarrow
+\text{模組近負載供電}
+\rightarrow
+\text{封裝 PDN}.
+$$</p>
+<p>樓梯式可沿階梯分區供電；環形可沿扇區供電。任何形狀都必須避免單一中央節點失效導致全系統掉電。</p>
+<h2>6.2 DryCore：空間散熱</h2>
+<p>DryCore 提供：</p>
+<ul>
+<li>模組熱脊；</li>
+<li>可服務的外部冷端；</li>
+<li>雙區污染控制；</li>
+<li>被動兩相熱傳輸選項；</li>
+<li>露點、漏液與硬體互鎖。</li>
+</ul>
+<p>在樓梯式佈局中，DryCore 冷端可沿側面排列；在環形佈局中，冷板支路可連接中央或雙環歧管。</p>
+<p>SDMCA 不要求所有模組使用同一冷卻方式。低功率 I/O 可風冷，高功率加速器可液冷，儲存模組可採獨立溫控。</p>
+<h2>6.3 DEO：運作包絡</h2>
+<p>DEO 可把空間與熱狀態納入包絡決策。例如：</p>
+<ul>
+<li>某扇區入口溫度升高；</li>
+<li>某液冷支路流量下降；</li>
+<li>某階模組熱耦合增加；</li>
+<li>某電源支路接近電流上限；</li>
+</ul>
+<p>系統可降低相應模組包絡、遷移工作負載或使用其他模組的爆發餘裕。</p>
+<h2>6.4 SynCore：邏輯與物理拓撲</h2>
+<p>SynCore 的神核、流動或混合模式不應假設所有執行單元位於同一物理距離。若跨模組協同，必須把：</p>
+<ul>
+<li>同步延遲；</li>
+<li>資料局部性；</li>
+<li>一致性；</li>
+<li>容錯；</li>
+<li>記憶體位置；</li>
+<li>拓撲擁塞；</li>
+</ul>
+<p>納入模式選擇。</p>
+<p>較合理的分層是：</p>
+<ul>
+<li>封裝內進行最緊密的融合；</li>
+<li>模組間進行較粗粒度工作共享；</li>
+<li>機箱間進行任務、記憶體或資料流分配。</li>
+</ul>
+<h2>6.5 統一控制迴路</h2>
+<p>整體控制可表示為：</p>
+<p>$$
+\text{遙測}
+\rightarrow
+\text{狀態估計}
+\rightarrow
+\text{拓撲與熱預測}
+\rightarrow
+\text{DEO 包絡}
+\rightarrow
+\begin{cases}
+\text{SynCore 模式}\
+\text{DPCPS 功率配置}\
+\text{DryCore 冷卻配置}\
+\text{工作負載映射}
+\end{cases}
+\rightarrow
+\text{安全監督}.
+$$</p>
+<p>控制器不應直接覆蓋硬體保護。過溫、過流、漏液、風扇失效與泵失效必須具有獨立安全路徑。</p>
+<hr>
+<h1>第七章　多目標設計：形狀只是最佳化變數之一</h1>
+<h2>7.1 目標函數</h2>
+<p>令設計變數為：</p>
+<h1>$$
+\boldsymbol{\theta}</h1>
+<p>(\text{模組位置、角度、間距、互連、冷卻、供電、材料、控制}).
+$$</p>
+<p>多目標成本為：</p>
+<h1>$$
+J(\boldsymbol{\theta})</h1>
+<p>w_TJ_T
++
+w_LJ_L
++
+w_EJ_E
++
+w_VJ_V
++
+w_RJ_R
++
+w_SJ_S
++
+w_CJ_C.
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$J_T$：溫度、熱耦合與節流；</li>
+<li>$J_L$：延遲與擁塞；</li>
+<li>$J_E$：運算、互連與冷卻能耗；</li>
+<li>$J_V$：體積與重量；</li>
+<li>$J_R$：可靠度與失效傳播；</li>
+<li>$J_S$：服務與維修成本；</li>
+<li>$J_C$：製造與生命週期成本。</li>
+</ul>
+<p>不同產品權重不同。桌面工作站可能重視噪音與升級；邊緣設備重視重量與震動；資料中心重視有效密度、服務時間與設施效率。</p>
+<h2>7.2 約束</h2>
+<p>典型約束包括：</p>
+<p>$$
+T_i(t)\le T_{i,\max},
+$$</p>
+<p>$$
+\Delta V_i(t)\in[-V_{i,\mathrm{droop}},V_{i,\mathrm{overshoot}}],
+$$</p>
+<p>$$
+\operatorname{BER}<em>e\le \operatorname{BER}</em>{\max},
+$$</p>
+<p>$$
+\sigma_{\mathrm{mech}}\le \sigma_{\mathrm{allow}},
+$$</p>
+<p>$$
+\Delta p\le \Delta p_{\max},
+$$</p>
+<p>$$
+L_{\mathrm{sound}}\le L_{\max},
+$$</p>
+<p>$$
+t_{\mathrm{service}}\le t_{\max}.
+$$</p>
+<h2>7.3 不把增益相乘</h2>
+<p>原稿使用：</p>
+<h1>$$
+G_{\mathrm{total}}</h1>
+<p>G_{\mathrm{therm}}
+G_{\mathrm{conn}}
+G_{\mathrm{dense}}
+$$</p>
+<p>得到固定總倍率。這種做法容易重複計數。例如，熱改善帶來的性能增加可能已經反映在利用率；密度增加也可能增加熱節流與互連擁塞。</p>
+<p>新版使用完整系統量測：</p>
+<h1>$$
+\eta_{\mathrm{sys}}</h1>
+<p>\frac{
+W_{\mathrm{useful}}
+}{
+E_{\mathrm{compute}}
++
+E_{\mathrm{network}}
++
+E_{\mathrm{cool}}
++
+E_{\mathrm{power}}
+}.
+$$</p>
+<p>並比較：</p>
+<ul>
+<li>相同功率下的有效工作量；</li>
+<li>相同噪音下的有效工作量；</li>
+<li>相同體積下的持續性能；</li>
+<li>相同可用度下的生命週期成本。</li>
+</ul>
+<h2>7.4 帕累托前沿</h2>
+<p>不存在對所有用途都最好的形狀。應尋找帕累托前沿：</p>
+<h1>$$
+\mathcal{P}</h1>
+<p>\left{
+\boldsymbol{\theta}:
+\nexists\boldsymbol{\theta}&#39;
+\text{ 在所有目標不劣且至少一項更優}
+\right}.
+$$</p>
+<p>可能結果是：</p>
+<ul>
+<li>平面方案成本最低；</li>
+<li>樓梯方案維修最好；</li>
+<li>環形方案供液最均勻；</li>
+<li>螺旋方案只在特定外形或連續服務面下有利。</li>
+</ul>
+<p>這種結果不是失敗，而是有效工程結論。</p>
+<hr>
+<h1>第八章　機械、製造、測試與可靠度</h1>
+<h2>8.1 模組化不等於容易製造</h2>
+<p>每增加一個可更換模組，系統也增加：</p>
+<ul>
+<li>連接器；</li>
+<li>接頭；</li>
+<li>公差鏈；</li>
+<li>緊固件；</li>
+<li>密封；</li>
+<li>韌體版本；</li>
+<li>測試步驟；</li>
+<li>人為裝配錯誤。</li>
+</ul>
+<p>因此模組化必須以標準接口和自動測試抵銷其複雜度。</p>
+<h2>8.2 已知良品與分階段測試</h2>
+<p>建議測試階層：</p>
+<ol>
+<li>裸晶／封裝 known-good-die；</li>
+<li>模組電性與冷卻介面測試；</li>
+<li>背板與通道合規；</li>
+<li>機箱級功率與熱測試；</li>
+<li>故障注入；</li>
+<li>運輸與振動；</li>
+<li>長時間老化；</li>
+<li>現場可維修性演練。</li>
+</ol>
+<p>測試可及性必須在幾何設計初期保留，而不是完成螺旋外殼後才尋找探針位置。</p>
+<h2>8.3 機械載荷</h2>
+<p>需要考慮：</p>
+<ul>
+<li>自重；</li>
+<li>冷板與管路拉力；</li>
+<li>連接器插拔力；</li>
+<li>熱膨脹；</li>
+<li>風扇振動；</li>
+<li>運輸衝擊；</li>
+<li>地震；</li>
+<li>長期蠕變；</li>
+<li>軟管脈動。</li>
+</ul>
+<p>模組位移可寫為：</p>
+<h1>$$
+\mathbf{K}\mathbf{u}</h1>
+<p>\mathbf{F}<em>{\mathrm{static}}
++
+\mathbf{F}</em>{\mathrm{thermal}}
++
+\mathbf{F}_{\mathrm{dynamic}}.
+$$</p>
+<p>高速連接器、光耦合器與冷板接觸壓力都可能受到位移影響。</p>
+<h2>8.4 故障模式</h2>
+<p>最低 FMEA 應包含：</p>
+<ul>
+<li>模組過溫；</li>
+<li>冷板接觸不良；</li>
+<li>漏液；</li>
+<li>支路堵塞；</li>
+<li>風扇或泵失效；</li>
+<li>背板通道失效；</li>
+<li>連接器鬆脫；</li>
+<li>電源支路短路；</li>
+<li>管理網路中斷；</li>
+<li>韌體版本不相容；</li>
+<li>感測器漂移；</li>
+<li>模組拆裝錯位。</li>
+</ul>
+<p>每種故障需定義：</p>
+<ul>
+<li>偵測方式；</li>
+<li>安全反應；</li>
+<li>隔離範圍；</li>
+<li>降級模式；</li>
+<li>修復程序；</li>
+<li>重新資格化條件。</li>
+</ul>
+<h2>8.5 散熱與互連共設計</h2>
+<p>銅互連、背板與機械支撐同時也是熱橋；低導熱結構又可能降低接地、剛性或屏蔽。不能簡單宣稱「資料可通過而熱完全不通過」。</p>
+<p>合理策略包括：</p>
+<ul>
+<li>將高導熱結構導向冷端；</li>
+<li>在敏感方向使用熱中斷；</li>
+<li>分離主資料通道與機械支撐；</li>
+<li>使用光互連降低部分電熱耦合；</li>
+<li>透過材料與幾何共同最佳化；</li>
+<li>以實測熱矩陣取代理想絕熱假設。</li>
+</ul>
+<hr>
+<h1>第九章　軟體與拓撲感知執行</h1>
+<h2>9.1 硬體拓撲必須可見</h2>
+<p>作業系統與執行環境至少需要知道：</p>
+<ul>
+<li>模組距離與頻寬；</li>
+<li>記憶體位置；</li>
+<li>冷卻支路；</li>
+<li>電源支路；</li>
+<li>熱耦合；</li>
+<li>故障域；</li>
+<li>當前健康狀態；</li>
+<li>維修與降級狀態。</li>
+</ul>
+<p>拓撲不應只是一個靜態 NUMA 表。它會隨：</p>
+<ul>
+<li>模組熱插拔；</li>
+<li>通道降速；</li>
+<li>冷卻故障；</li>
+<li>功率限制；</li>
+<li>工作負載；</li>
+<li>維修；</li>
+</ul>
+<p>而動態改變。</p>
+<h2>9.2 熱感知與資料感知排程</h2>
+<p>排程成本可寫成：</p>
+<h1>$$
+C_{\mathrm{sched}}</h1>
+<p>w_1C_{\mathrm{data}}
++
+w_2C_{\mathrm{thermal}}
++
+w_3C_{\mathrm{power}}
++
+w_4C_{\mathrm{fault}}
++
+w_5C_{\mathrm{migration}}.
+$$</p>
+<p>若只把工作移到最冷模組，可能增加大量資料搬移；若只追求資料局部性，可能形成持續熱點。控制器應在時間尺度上分層：</p>
+<ul>
+<li>微秒至毫秒：硬體節流與局部 DVFS；</li>
+<li>毫秒至秒：DEO 包絡與程序排程；</li>
+<li>秒至分鐘：工作遷移與冷卻控制；</li>
+<li>小時至天：維修、老化與容量規劃。</li>
+</ul>
+<h2>9.3 流水線映射</h2>
+<p>若工作負載本身接近 DAG，可使用樓梯式方向映射。但需要驗證：</p>
+<ul>
+<li>階段是否平衡；</li>
+<li>回邊比例；</li>
+<li>中間資料量；</li>
+<li>批次與延遲要求；</li>
+<li>故障恢復；</li>
+<li>動態工作負載變化。</li>
+</ul>
+<p>對高度全互連或 collective-heavy 的 AI 訓練，單一鏈式樓梯通常不是合適拓撲；可能需要中央交換、Clos、torus 或光網路。</p>
+<h2>9.4 軟體可攜性</h2>
+<p>第一代原型不應要求全新 ISA。可使用：</p>
+<ul>
+<li>Linux 拓撲與 NUMA；</li>
+<li>PCIe／CXL 裝置；</li>
+<li>容器與作業調度器；</li>
+<li>管理控制器；</li>
+<li>遙測匯流排；</li>
+<li>使用者態拓撲庫。</li>
+</ul>
+<p>專用執行環境只在證明現有軟體無法表達必要控制後再建立。</p>
+<hr>
+<h1>第十章　MVP：公平比較幾何，而不是展示造型</h1>
+<h2>10.1 研究問題</h2>
+<p>第一個 MVP 只回答三個問題：</p>
+<ol>
+<li>在相同運算模組、總功率與冷卻硬體下，樓梯或環形佈局能否降低熱耦合與節流？</li>
+<li>幾何改變是否改善模組拆裝、故障隔離與維修時間？</li>
+<li>額外互連、風道、框架與控制成本是否抵銷收益？</li>
+</ol>
+<p>不在第一階段驗證：</p>
+<ul>
+<li>新 CPU 微架構；</li>
+<li>SynCore 核心融合；</li>
+<li>AOCLS 製造；</li>
+<li>光子主互連；</li>
+<li>12 倍性能；</li>
+<li>原子級封裝。</li>
+</ul>
+<h2>10.2 三組公平基線</h2>
+<h3>B0：平面基線</h3>
+<ul>
+<li>四個相同加熱器或 COTS 加速模組；</li>
+<li>同一平面；</li>
+<li>共用風道或冷板；</li>
+<li>相同總體積上限；</li>
+<li>相同電源與網路。</li>
+</ul>
+<h3>B1：四模組樓梯</h3>
+<ul>
+<li>相同模組；</li>
+<li>可調 $\Delta x$ 與 $\Delta z$；</li>
+<li>獨立服務面；</li>
+<li>橫向風道或獨立冷板支路；</li>
+<li>相同總冷卻設備。</li>
+</ul>
+<h3>B2：六模組環形</h3>
+<ul>
+<li>模組沿中央脊椎排列；</li>
+<li>分區供電；</li>
+<li>中央或雙環歧管；</li>
+<li>可替換扇區；</li>
+<li>不使用未驗證的自然渦輪效應。</li>
+</ul>
+<p>若需要研究真正螺旋，作為 B3 第二階段，且只改變高度與角位移，不同時更換風扇、冷板與模組。</p>
+<h2>10.3 量測</h2>
+<p>熱：</p>
+<ul>
+<li>晶片或加熱器溫度；</li>
+<li>模組入口與出口溫度；</li>
+<li>熱耦合矩陣；</li>
+<li>穩態與瞬態；</li>
+<li>熱節流時間；</li>
+<li>冷卻液流量與壓差。</li>
+</ul>
+<p>能源：</p>
+<ul>
+<li>模組功率；</li>
+<li>風扇或泵功率；</li>
+<li>電源轉換損耗；</li>
+<li>每單位有效工作量能耗。</li>
+</ul>
+<p>互連：</p>
+<ul>
+<li>吞吐量；</li>
+<li>$p50$、$p95$、$p99$ 延遲；</li>
+<li>BER；</li>
+<li>重傳；</li>
+<li>連接器溫升；</li>
+<li>retimer 功率。</li>
+</ul>
+<p>聲學與機械：</p>
+<ul>
+<li>聲功率或規範化聲壓；</li>
+<li>振動；</li>
+<li>位移；</li>
+<li>接觸壓力；</li>
+<li>管路與線纜應力。</li>
+</ul>
+<p>服務：</p>
+<ul>
+<li>故障定位時間；</li>
+<li>模組拆除時間；</li>
+<li>恢復時間；</li>
+<li>必須拆除的旁系模組數；</li>
+<li>是否需要排液；</li>
+<li>重新校準時間。</li>
+</ul>
+<h2>10.4 實驗控制</h2>
+<p>所有幾何比較必須保持：</p>
+<ul>
+<li>相同模組；</li>
+<li>相同韌體與工作負載；</li>
+<li>相同總輸入功率；</li>
+<li>相同環境溫度與濕度；</li>
+<li>相同冷卻設備額定能力；</li>
+<li>相同噪音或相同泵／風扇功率條件；</li>
+<li>相同總外形限制；</li>
+<li>相同量測方法。</li>
+</ul>
+<p>若樓梯方案使用液冷而平面基線使用風冷，結果只能證明冷卻方式不同，不能證明幾何優越。</p>
+<h2>10.5 成功門檻</h2>
+<p>第一輪不預設固定百分比，但應事先註冊判定規則。例如：</p>
+<ul>
+<li>至少一個形狀在相同冷卻功率下顯著降低最熱模組溫度；</li>
+<li>熱耦合矩陣的關鍵非對角項下降；</li>
+<li>維修時間下降且不增加錯誤率；</li>
+<li>互連能耗與延遲增加不超過預設容許值；</li>
+<li>可靠度與機械測試沒有新增不可接受失效。</li>
+</ul>
+<p>若只改善外觀或名義體積而無系統收益，應判定假說未成立。</p>
+<hr>
+<h1>第十一章　驗證路線與證據分級</h1>
+<h2>11.1 證據分級</h2>
+<h3>E0：概念</h3>
+<ul>
+<li>幾何；</li>
+<li>方程；</li>
+<li>邊界；</li>
+<li>失效模式；</li>
+<li>可否證命題。</li>
+</ul>
+<p>本文目前位於 E0。</p>
+<h3>E1：單物理模擬</h3>
+<ul>
+<li>CFD；</li>
+<li>熱網路；</li>
+<li>SI／PI；</li>
+<li>結構；</li>
+<li>單一條件。</li>
+</ul>
+<h3>E2：多物理共模擬</h3>
+<ul>
+<li>熱—流；</li>
+<li>熱—機械；</li>
+<li>電—熱；</li>
+<li>供電—熱；</li>
+<li>工作負載—熱。</li>
+</ul>
+<h3>E3：實驗台</h3>
+<ul>
+<li>加熱器；</li>
+<li>COTS 模組；</li>
+<li>可重複幾何；</li>
+<li>校準感測器；</li>
+<li>公開原始資料。</li>
+</ul>
+<h3>E4：整合原型</h3>
+<ul>
+<li>真實運算負載；</li>
+<li>DPCPS；</li>
+<li>DryCore；</li>
+<li>故障注入；</li>
+<li>長時間運作。</li>
+</ul>
+<h3>E5：外部重現與產品資格</h3>
+<ul>
+<li>第三方測試；</li>
+<li>多批次；</li>
+<li>標準合規；</li>
+<li>運輸與可靠度；</li>
+<li>維修流程；</li>
+<li>量產成本。</li>
+</ul>
+<p>任何 TRL、量產與性能倍率都應建立在 E3 以上證據，不應由概念文件自行宣告。</p>
+<h2>11.2 模擬最低要求</h2>
+<p>CFD 報告至少提供：</p>
+<ul>
+<li>幾何檔或可重建尺寸；</li>
+<li>網格獨立性；</li>
+<li>邊界條件；</li>
+<li>風扇曲線或泵曲線；</li>
+<li>材料性質；</li>
+<li>接觸熱阻；</li>
+<li>輻射與湍流模型；</li>
+<li>收斂條件；</li>
+<li>基線；</li>
+<li>實驗校準。</li>
+</ul>
+<p>訊號完整性至少提供：</p>
+<ul>
+<li>通道材料與層疊；</li>
+<li>連接器模型；</li>
+<li>頻率範圍；</li>
+<li>S 參數；</li>
+<li>眼圖；</li>
+<li>BER；</li>
+<li>抖動預算；</li>
+<li>溫度與製造變異。</li>
+</ul>
+<h2>11.3 可否證命題</h2>
+<h3>H1：樓梯熱解耦</h3>
+<p>在相同模組、總體積與冷卻功率下，樓梯佈局可降低指定高功率模組間的熱耦合係數。</p>
+<h3>H2：服務性</h3>
+<p>在預定故障情境下，樓梯或扇區化環形佈局可降低模組更換與恢復時間。</p>
+<h3>H3：環形供應均勻性</h3>
+<p>在相同歧管與總流量下，經最佳化的環形分配可使各模組入口壓力與溫度變異低於基線。</p>
+<h3>H4：拓撲映射</h3>
+<p>對具有方向性 DAG 的工作負載，拓撲感知映射可降低資料搬移能耗或尾端延遲；對 collective-heavy 工作負載，此優勢可能消失。</p>
+<h3>H5：系統淨收益</h3>
+<p>幾何收益在納入互連、冷卻、框架、服務與控制成本後仍為正。</p>
+<p>若 H5 不成立，SDMCA 應保留為服務性或特定場景設計，而不是性能架構。</p>
+<hr>
+<h1>第十二章　產品路線：從測試框架到開放模組規格</h1>
+<h2>12.1 第一階段：幾何測試框架</h2>
+<p>建立可快速切換平面、樓梯與環形的開放式框架，使用加熱器與標準化模組介面。產品價值是：</p>
+<ul>
+<li>CFD 校準；</li>
+<li>熱耦合量測；</li>
+<li>冷板與歧管測試；</li>
+<li>風道與污染測試；</li>
+<li>互連與維修比較。</li>
+</ul>
+<h2>12.2 第二階段：模組運算底座</h2>
+<p>使用 COTS CPU／GPU／FPGA 模組，提供：</p>
+<ul>
+<li>統一機械接口；</li>
+<li>模組電源遙測；</li>
+<li>冷板快速接頭；</li>
+<li>管理網路；</li>
+<li>可更換背板；</li>
+<li>故障隔離；</li>
+<li>拓撲感知軟體。</li>
+</ul>
+<h2>12.3 第三階段：開放模組規格</h2>
+<p>規格應至少定義：</p>
+<ul>
+<li>外形與服務面；</li>
+<li>功率等級；</li>
+<li>冷卻介面；</li>
+<li>電氣與資料接口；</li>
+<li>管理與遙測；</li>
+<li>熱插拔定序；</li>
+<li>安全與故障行為；</li>
+<li>測試與合規；</li>
+<li>數位模型格式。</li>
+</ul>
+<p>UCIe 處理封裝內 chiplet 互連；SDMCA 規格若成立，應聚焦封裝外模組與機箱，不重複定義 die-to-die PHY。</p>
+<h2>12.4 第四階段：專用封裝協同</h2>
+<p>只有在機箱級原型證明幾何與控制確實有淨收益後，才值得進一步設計：</p>
+<ul>
+<li>專用 SynCore 模組；</li>
+<li>封裝內 DPCPS；</li>
+<li>DryCore 熱脊；</li>
+<li>光電 I/O；</li>
+<li>量身定制 chiplet；</li>
+<li>封裝—模組—機箱聯合最佳化。</li>
+</ul>
+<hr>
+<h1>第十三章　討論：保留形狀，但拒絕形狀決定論</h1>
+<h2>13.1 樓梯不是過渡羞恥</h2>
+<p>樓梯形的價值不在於它「不夠未來」，而在於它可以把模組暴露於可維修面、減少堆疊拆裝依賴，並為熱路徑提供方向性。若它在公平實驗中優於更複雜螺旋，就應被視為最終產品，而不是過渡品。</p>
+<h2>13.2 螺旋不是宇宙保證</h2>
+<p>自然界中的螺旋可由生長、角動量、最佳填充、材料應力與演化歷史形成。這些例子不能直接證明螺旋是處理器的最優形狀。</p>
+<p>工程上應問：</p>
+<ul>
+<li>它降低了哪一個成本？</li>
+<li>它增加了哪一個自由度？</li>
+<li>它是否比環形、多面柱或抽屜更好？</li>
+<li>它的製造與維修是否可接受？</li>
+</ul>
+<p>只有回答這些問題後，螺旋才從隱喻變成架構。</p>
+<h2>13.3 幾何的真正地位</h2>
+<p>本文保留「形狀即約束」的觀點，但不採取「形狀即命運」的強斷言。更準確的表述是：</p>
+<h1>$$
+\text{性能}</h1>
+<p>F(
+\text{幾何},
+\text{互連},
+\text{材料},
+\text{功率},
+\text{冷卻},
+\text{控制},
+\text{軟體},
+\text{製造}
+).
+$$</p>
+<p>幾何是函數中的重要變數，但不是單獨決定結果的充分條件。</p>
+<h2>13.4 立體運算的工程意義</h2>
+<p>立體運算的真正革命，可能不是把所有電晶體堆成最高的塔，而是讓系統設計者可以在不同尺度自由選擇：</p>
+<ul>
+<li>哪些功能應緊密堆疊；</li>
+<li>哪些模組應保持距離；</li>
+<li>哪些熱源應獨立冷卻；</li>
+<li>哪些資料應留在本地；</li>
+<li>哪些故障應被隔離；</li>
+<li>哪些部件應可在數分鐘內更換。</li>
+</ul>
+<p>這是一種從「最大密度」轉向「受約束的有效整合」的設計觀。</p>
+<hr>
+<h1>結論</h1>
+<p>本文提出 SDMCA 空間解耦模組運算架構，將原始樓梯形與螺旋渦輪構想重構為跨封裝、模組、機箱與機櫃的熱—電—互連協同方法。</p>
+<p>新版得到以下結論：</p>
+<ol>
+<li>先進 2.5D／3D 封裝已經是產業現實，SDMCA 不應以產業仍停留在純平面為前提。</li>
+<li>封裝內堆疊與機箱內幾何屬於不同尺度，不能用同一種 TSV、光刻與熱模型描述。</li>
+<li>樓梯式佈局的主要價值是獨立服務面、方向性熱路徑與模組故障邊界。</li>
+<li>環形佈局的主要價值是模組到中央供電、冷卻與交換脊椎的距離均衡。</li>
+<li>真正螺旋只有在高度錯位、連續服務面或流道需求明確時才合理。</li>
+<li>靜止螺旋外殼不會自動產生免費渦輪散熱；旋流需要外部壓升並付出能耗與壓降。</li>
+<li>物理距離縮短不能直接換算成系統性能倍率，互連必須包含 PHY、序列化、retimer、交換、排隊與協定成本。</li>
+<li>熱解耦必須由完整熱耦合矩陣驗證，而不是假設每個模組完全獨立。</li>
+<li>DPCPS、DryCore、DEO 與 SynCore 應作為同一系統的供電、冷卻、運作包絡與執行層，而不是彼此獨立的革命口號。</li>
+<li>第一個 MVP 應使用相同模組與相同冷卻設備，公平比較平面、樓梯與環形佈局。</li>
+<li>若幾何收益不能在互連、機械、維修與生命週期成本後保持為正，該形狀應被否證或限縮。</li>
+<li>立體運算的目標不是最高的塔，而是最有效、可維修、可降級且可持續運作的空間整合。</li>
+</ol>
+<p>本文目前不提供量產承諾與性能倍率。下一步是建立可重構測試框架、公開 CAD 與量測程序，取得第一組可重現的熱耦合、互連與服務性資料。</p>
+<hr>
+<h1>參考資料</h1>
+<ol>
+<li><p>Taiwan Semiconductor Manufacturing Company, <strong>CoWoS®</strong>, TSMC 3DFabric 官方技術頁面。<br><a href="https://3dfabric.tsmc.com/english/dedicatedFoundry/technology/cowos.htm">https://3dfabric.tsmc.com/english/dedicatedFoundry/technology/cowos.htm</a></p>
+</li>
+<li><p>Taiwan Semiconductor Manufacturing Company, <strong>Heterogeneous Package-Level Integration and System-Technology Co-Optimization</strong>, VLSI Technology Symposium material, 2020.<br><a href="https://www.tsmc.com/static/english/campaign/VLSI2020/index.htm">https://www.tsmc.com/static/english/campaign/VLSI2020/index.htm</a></p>
+</li>
+<li><p>Intel Foundry, <strong>Foveros Direct 3D Technology Brief</strong>, 2025.<br><a href="https://www.intel.com/content/dam/www/central-libraries/us/en/documents/2025-11/foveros-direct-3d-tech-brief.pdf">https://www.intel.com/content/dam/www/central-libraries/us/en/documents/2025-11/foveros-direct-3d-tech-brief.pdf</a></p>
+</li>
+<li><p>Intel Foundry, <strong>Advanced Packaging Innovations</strong>, including EMIB and Foveros Direct 3D.<br><a href="https://www.intel.com/content/www/us/en/foundry/packaging.html">https://www.intel.com/content/www/us/en/foundry/packaging.html</a></p>
+</li>
+<li><p>UCIe Consortium, <strong>UCIe Specifications</strong>, including 2.0 support for 3D packaging and 3.0 evolution.<br><a href="https://www.uciexpress.org/specifications">https://www.uciexpress.org/specifications</a></p>
+</li>
+<li><p>UCIe Consortium, <strong>UCIe 2.0 Specification: Continuing Innovation to Drive an Open Chiplet Ecosystem</strong>, official white paper.<br><a href="https://www.uciexpress.org/_files/ugd/0c1418_b6481ec611e24c6e91f1beb743b0c860.pdf">https://www.uciexpress.org/_files/ugd/0c1418_b6481ec611e24c6e91f1beb743b0c860.pdf</a></p>
+</li>
+<li><p>Wang, Y. et al., <strong>Electrothermal co-optimization of 2.5D power distribution networks with thermal TSVs and chiplet placement</strong>, <em>Scientific Reports</em>, 2025.<br><a href="https://www.nature.com/articles/s41598-025-09914-y">https://www.nature.com/articles/s41598-025-09914-y</a></p>
+</li>
+<li><p>Open Compute Project, <strong>Foundation Chiplet System Architecture</strong>, 2026.<br><a href="https://www.opencompute.org/documents/fcsa-1-0-0-pdf">https://www.opencompute.org/documents/fcsa-1-0-0-pdf</a></p>
+</li>
+<li><p>Open Compute Project, <strong>Proposed Standardization of Chiplet Models for Heterogeneous Integration</strong>, emphasizing STCO, thermal and mechanical analysis.<br><a href="https://www.opencompute.org/chiplets/24/proposed-standardization-of-chiplet-models-for-hetergenerous-integration">https://www.opencompute.org/chiplets/24/proposed-standardization-of-chiplet-models-for-hetergenerous-integration</a></p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A　術語對照</h1>
+<table>
+<thead>
+<tr>
+<th>原始術語</th>
+<th>v2.0 對應</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>塔形處理器</td>
+<td>垂直堆疊或多層模組，需明確標示尺度</td>
+</tr>
+<tr>
+<td>樓梯形處理器</td>
+<td>樓梯式模組佈局</td>
+</tr>
+<tr>
+<td>螺旋渦輪處理器</td>
+<td>環形／螺旋式模組艙</td>
+</tr>
+<tr>
+<td>斜向 TSV</td>
+<td>模組級背板、線纜或光電互連</td>
+</tr>
+<tr>
+<td>垂直蟲洞</td>
+<td>週期拓撲、弦連接或中央交換</td>
+</tr>
+<tr>
+<td>熱源並聯</td>
+<td>降低熱耦合並提供獨立主要熱出口</td>
+</tr>
+<tr>
+<td>12 倍總性能</td>
+<td>移除；改以公平系統量測判定</td>
+</tr>
+<tr>
+<td>200 倍機櫃密度</td>
+<td>移除；改以有效算力密度與可用度判定</td>
+</tr>
+<tr>
+<td>渦輪自然散熱</td>
+<td>移除；旋流必須由風機或泵建立</td>
+</tr>
+<tr>
+<td>絕熱資料中介層</td>
+<td>熱—電—機械共同最佳化互連與支撐</td>
+</tr>
+<tr>
+<td>2026 原型、2027 量產</td>
+<td>移除；改採 E0–E5 證據分級</td>
+</tr>
+</tbody></table>
+<h1>附錄 B　最小公開資料包</h1>
+<p>每次原型發布至少包含：</p>
+<ol>
+<li>CAD 與模組位置；</li>
+<li>風道或液路圖；</li>
+<li>冷卻設備曲線；</li>
+<li>電源與互連配置；</li>
+<li>感測器型號與校準；</li>
+<li>工作負載與韌體版本；</li>
+<li>原始時間序列；</li>
+<li>CFD／FEA／SI 模型與邊界；</li>
+<li>故障注入程序；</li>
+<li>統計分析與失敗案例；</li>
+<li>維修操作影片或逐步紀錄；</li>
+<li>版本與內容指紋。</li>
+</ol>
+<h1>附錄 C　內容指紋</h1>
+<p>本文件版本：SDMCA v2.0<br>公開修訂日期：2026-07-29<br>證據層級：E0<br>下一個工程節點：可重構平面／樓梯／環形熱—互連測試框架</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/ccp-05.html">https://thisoneisneok.com/html/papers/ccp-05.html</a></footer>
+</body>
+</html>

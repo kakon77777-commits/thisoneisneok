@@ -1,0 +1,1369 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>表示落差：意圖、計算模型與物理現實之間的不可完備映射 | Neo.K</title>
+<meta name="description" content="前兩篇論文分別建立了意圖宇宙、計算機宇宙與物理宇宙的基本區分，以及三者之間的耦合循環。本篇集中處理耦合過程中的核心難題：任何從意圖到模型、從模型到世界、再從世界回到資料與解釋的映射，都不是完備、無損或透明的。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pu-0-03.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PU</strong><span>程式宇宙基礎</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PU-0-03</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-27</span></div><div><b>作者</b><span>Neo.K with Aletheia</span></div><div><b>狀態</b><span>初版完成</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pu-0-03.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>表示落差：意圖、計算模型與物理現實之間的不可完備映射</h1>
+<h2>The Representation Gap: Incomplete Mappings Among Intent, Computational Models, and Physical Reality</h2>
+<p><strong>論文編號：</strong> PU-0-03<br><strong>系列：</strong>「程式宇宙書系」第 0 冊《程式之前》<br><strong>作者：</strong> Neo.K with Aletheia<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>版本：</strong> v0.1<br><strong>日期：</strong> 2026 年 7 月 27 日  </p>
+<hr>
+<h2>摘要</h2>
+<p>前兩篇論文分別建立了意圖宇宙、計算機宇宙與物理宇宙的基本區分，以及三者之間的耦合循環。本篇集中處理耦合過程中的核心難題：任何從意圖到模型、從模型到世界、再從世界回到資料與解釋的映射，都不是完備、無損或透明的。</p>
+<p>本文將此現象定義為「表示落差」：</p>
+<p>$$
+\boxed{
+\mathcal I
+\not\cong
+\mathcal C
+\not\cong
+\mathcal P
+}
+$$</p>
+<p>這不只是說三個宇宙不相同，而是指出它們之間不存在普遍、單一、無損、可逆的完整同構。意圖包含未決定、矛盾、價值、情境與不可代理部分；計算模型必須選擇變數、型別、狀態、規則與合法操作；物理世界則包含未建模因素、材料限制、噪聲、制度、身體、偶發事件與不可完全觀測的因果關係。</p>
+<p>本文提出五類主要落差：</p>
+<ol>
+<li><strong>意圖落差</strong>：主體真正想要的內容與其可表達要求之間的差異；</li>
+<li><strong>表示落差</strong>：已表達意圖與計算模型所保存結構之間的差異；</li>
+<li><strong>執行落差</strong>：計算模型預期世界差分與實際結果之間的差異；</li>
+<li><strong>觀測落差</strong>：物理世界與被感測、資料化、標註之世界之間的差異；</li>
+<li><strong>解釋落差</strong>：資料結構與人類或 AI 所形成意義之間的差異。</li>
+</ol>
+<p>總落差可寫為：</p>
+<h1>$$
+R_{\mathrm{total}}</h1>
+<p>R_I
++
+R_R
++
+R_X
++
+R_O
++
+R_M
+$$</p>
+<p>然而，本文反對把所有差異都視為可透過更多資料、更大模型、更精細感測器或更長規格完全消除。本文進一步區分：</p>
+<ul>
+<li><strong>工程性落差</strong>：可藉由更好的需求、模型、測試、資料與驗證降低；</li>
+<li><strong>結構性落差</strong>：源自跨存在域轉譯、有限表示與情境依賴，無法完全消除；</li>
+<li><strong>規範性落差</strong>：源自價值衝突、正當性與不可替代決策，不應被技術自動壓平；</li>
+<li><strong>生成性落差</strong>：系統執行後創造原先不存在的新情境、新意圖與新風險。</li>
+</ul>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+R_{\mathrm{min}}</p>
+<blockquote>
+</blockquote>
+<p>0
+}
+$$</p>
+<p>對任何涉及開放人類意圖、複雜物理世界與持續制度影響的系統而言，總落差的理論下界通常不為零。成熟系統的目標不是宣稱消除全部落差，而是顯示哪些部分已表示、保留哪些部分未決定、測量哪些差異可降低、揭露哪些差異不可消除，並為不可表示與不可逆部分保留治理權。</p>
+<p>本文建立「不完備表示原則」：</p>
+<blockquote>
+<p>任何計算模型只對其明示的變數、關係、規則、尺度與觀測條件負責；它不能因內部一致而自動取得對外部世界的完整代表權。</p>
+</blockquote>
+<p>本文也提出「剩餘保留原則」：未能進入模型的內容，不得自動被視為不存在、不重要、無效或已獲同意。這一原則尤其適用於少數情境、例外、弱勢主體、文化差異、體驗狀態、長期後果與新生成風險。</p>
+<p>本文使用醫療模型、公共政策、AI Agent、數位分身與待辦系統等案例，說明一個系統可以在語法、邏輯、測試與資料層面均正確，卻仍在意圖或現實層面失敗。本文最後提出可證偽研究綱領，包括意圖殘差測量、模型覆蓋率、未知未知事件率、觀測遺漏、價值衝突保留、模型外受影響者召回率、反事實失真與生成性落差追蹤。</p>
+<p>本文為下一篇〈數位宇宙作為人工存在域〉奠定限制論基礎：只有承認模型永遠不等於現實，才能進一步研究數位世界中的實體、狀態、規則與歷史究竟具有何種人工存在地位。</p>
+<p><strong>關鍵詞：</strong> 表示落差、不完備映射、意圖殘差、模型風險、觀測落差、規範性落差、數位治理、計算存在論</p>
+<hr>
+<h2>Abstract</h2>
+<p>The previous two papers distinguished the intentional, computational, and physical universes and developed their coupling dynamics. This paper focuses on a central problem: mappings from intent to model, model to world, world to data, and data to interpretation are never universally complete, lossless, transparent, or reversible.</p>
+<p>The representation gap is expressed as:</p>
+<p>$$
+\mathcal I
+\not\cong
+\mathcal C
+\not\cong
+\mathcal P
+$$</p>
+<p>The paper identifies five major gaps: intentional, representational, execution, observational, and interpretive. It further distinguishes engineering gaps, structural gaps, normative gaps, and generative gaps.</p>
+<p>For open human intentions and complex physical worlds, the theoretical minimum residual is generally nonzero:</p>
+<p>$$
+R_{\mathrm{min}}</p>
+<blockquote>
+</blockquote>
+<p>0
+$$</p>
+<p>The goal of mature systems is therefore not to claim complete elimination of residuals, but to reveal what has been represented, preserve unresolved content, measure reducible discrepancies, disclose irreducible limitations, and retain governance over unrepresented or irreversible effects.</p>
+<p>The paper proposes an incompleteness principle of representation and a residual preservation principle. It develops examples from medicine, public policy, AI agents, digital twins, and task systems, and concludes with a falsifiable research program.</p>
+<p><strong>Keywords:</strong> representation gap, incomplete mapping, model risk, intentional residual, observation gap, normative residual</p>
+<hr>
+<h1>一、問題的提出：模型為何總是比世界小</h1>
+<p>人類之所以建立模型，是因為無法在每次行動前直接處理全部現實。</p>
+<p>模型具有必要性：</p>
+<ul>
+<li>壓縮；</li>
+<li>比較；</li>
+<li>預測；</li>
+<li>規劃；</li>
+<li>驗證；</li>
+<li>溝通；</li>
+<li>自動化。</li>
+</ul>
+<p>但模型越有用，人們越容易忘記：</p>
+<blockquote>
+<p>模型之所以可用，正是因為它刪除了大量內容。</p>
+</blockquote>
+<p>資料庫不是世界。</p>
+<p>需求文件不是意圖全部。</p>
+<p>感測器數值不是物理現實全部。</p>
+<p>模型輸出也不是行動結果全部。</p>
+<p>因此，本篇的起點是：</p>
+<h1>$$
+\boxed{
+\text{Representation}</h1>
+<p>\text{Selection}
++
+\text{Compression}
++
+\text{Exclusion}
+}
+$$</p>
+<p>任何表示都同時保存一些內容，排除另一些內容。</p>
+<hr>
+<h1>二、表示落差的正式定義</h1>
+<p>設 $A$ 與 $B$ 為不同存在域，映射為：</p>
+<p>$$
+f
+:
+A
+\rightarrow
+B
+$$</p>
+<p>表示落差可定義為：</p>
+<h1>$$
+R_f(a)</h1>
+<p>a
+\setminus
+\operatorname{Recover}_f
+\left(
+f(a)
+\right)
+$$</p>
+<p>也就是，原對象中無法由其表示恢復的部分。</p>
+<p>若映射不可逆：</p>
+<p>$$
+f^{-1}(f(a))
+\neq
+a
+$$</p>
+<p>則存在非零落差。</p>
+<h2>2.1 三宇宙形式</h2>
+<p>$$
+\Phi_{IC}
+:
+\mathcal I
+\rightarrow
+\mathcal C
+$$</p>
+<p>$$
+\Phi_{CP}
+:
+\mathcal C
+\rightarrow
+\mathcal P
+$$</p>
+<p>$$
+\Phi_{PC}
+:
+\mathcal P
+\rightarrow
+\mathcal C
+$$</p>
+<p>$$
+\Phi_{CI}
+:
+\mathcal C
+\rightarrow
+\mathcal I
+$$</p>
+<p>一般而言：</p>
+<p>$$
+\Phi^{-1}<em>{XY}
+\left(
+\Phi</em>{XY}(x)
+\right)
+\neq
+x
+$$</p>
+<p>所以跨宇宙映射通常不是完整同構。</p>
+<hr>
+<h1>三、五類主要落差</h1>
+<h2>3.1 意圖落差 $R_I$</h2>
+<p>主體的真實目的、感受、矛盾、猶豫與未決定內容，往往大於其語言表達。</p>
+<p>例如「幫我做一個簡單的網站」，其中「簡單」可能包含視覺簡潔、操作簡單、容易維護、成本低、載入快、不需要登入或不暴露個資。</p>
+<h2>3.2 表示落差 $R_R$</h2>
+<p>即使要求已經表達，計算模型仍必須選擇哪些實體存在、哪些屬性重要、哪些狀態合法、哪些事件可發生、哪些例外被忽略、哪些主體具有身分，以及哪些時間尺度被保存。</p>
+<h2>3.3 執行落差 $R_X$</h2>
+<h1>$$
+R_X</h1>
+<p>d
+\left(
+\Delta W^\ast,
+\Delta W_{\mathrm{actual}}
+\right)
+$$</p>
+<p>原因包括硬體失敗、網路延遲、外部系統不同步、人類不配合、制度流程、物理誤差與權限不足。</p>
+<h2>3.4 觀測落差 $R_O$</h2>
+<h1>$$
+D</h1>
+<p>\Phi_{PC}(P)
+\subsetneq
+P
+$$</p>
+<p>未被量測的，不等於不存在。</p>
+<h2>3.5 解釋落差 $R_M$</h2>
+<p>$$
+M_1(D)
+\neq
+M_2(D)
+$$</p>
+<p>不同主體、模型、價值與歷史會形成不同解釋。</p>
+<hr>
+<h1>四、四種落差性質</h1>
+<h2>4.1 工程性落差</h2>
+<p>可藉由更完整需求、更好感測器、更多測試、更高資料品質、更細型別、更強驗證與更好的觀測降低。</p>
+<h2>4.2 結構性落差</h2>
+<p>源自有限表示、開放世界、情境依賴、多尺度、跨域轉譯、時間變化與巨大可能狀態空間。這類落差不能被完全消除。</p>
+<h2>4.3 規範性落差</h2>
+<p>源自價值衝突、正當性、權利、成本分配、不可代理選擇，以及某些即使有效也不應接受的結果。規範問題不能被更多資料自動解決。</p>
+<h2>4.4 生成性落差</h2>
+<p>系統執行後可能創造新使用方式、新風險、新主體、新依賴、新意圖與新制度問題。這些內容在原模型建立時尚不存在。</p>
+<hr>
+<h1>五、不完備表示原則</h1>
+<blockquote>
+<p><strong>任何計算模型只對其明示的變數、關係、尺度、規則、觀測條件與適用域負責。內部一致性不能自動轉化為對外部世界的完整代表權。</strong></p>
+</blockquote>
+<p>形式上：</p>
+<p>$$
+\operatorname{Valid}_C(M)
+\not\Rightarrow
+\operatorname{Complete}_P(M)
+$$</p>
+<p>同樣：</p>
+<p>$$
+\operatorname{Consistent}(M)
+\not\Rightarrow
+\operatorname{Legitimate}(M)
+$$</p>
+<p>一個模型可以邏輯一致，卻不公平、失真或不適用。</p>
+<hr>
+<h1>六、剩餘保留原則</h1>
+<p>本文提出：</p>
+<blockquote>
+<p><strong>任何未被模型表示的內容，都不得因此被自動判定為不存在、不重要、無效、非法或已獲同意。</strong></p>
+</blockquote>
+<p>形式上：</p>
+<p>$$
+x
+\notin
+M
+\not\Rightarrow
+\neg x
+$$</p>
+<p>這一原則特別適用於：</p>
+<ul>
+<li>少數案例；</li>
+<li>邊界情境；</li>
+<li>弱勢主體；</li>
+<li>無法量化的體驗；</li>
+<li>尚未出現的新風險；</li>
+<li>長期後果；</li>
+<li>未被詢問的反對；</li>
+<li>文化與語境差異。</li>
+</ul>
+<h2>6.1 未建模不等於不存在</h2>
+<p>系統中沒有某種欄位，只代表系統沒有表示它。</p>
+<p>例如醫療資料沒有記錄疼痛，不代表病人沒有疼痛。</p>
+<h2>6.2 未回答不等於同意</h2>
+<p>使用者沒有選擇某項設定，可能是：</p>
+<ul>
+<li>不知道；</li>
+<li>看不懂；</li>
+<li>沒有找到；</li>
+<li>無法操作；</li>
+<li>不願回答；</li>
+<li>尚未決定。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+\operatorname{NoResponse}
+\not\Rightarrow
+\operatorname{Consent}
+$$</p>
+<h2>6.3 未分類不等於非法</h2>
+<p>現實中的新對象可能尚未符合既有型別。</p>
+<p>成熟系統應允許：</p>
+<ul>
+<li>未知；</li>
+<li>待分類；</li>
+<li>爭議；</li>
+<li>例外；</li>
+<li>人類審查；</li>
+</ul>
+<p>而不是強迫所有對象立即落入既有類別。</p>
+<hr>
+<h1>七、為何總落差通常具有非零下界</h1>
+<h2>7.1 有限模型與開放世界</h2>
+<p>若模型狀態空間為 $\mathcal S_M$，現實相關狀態空間為 $\mathcal S_P$，通常：</p>
+<p>$$
+|\mathcal S_M|
+&lt;
+|\mathcal S_P|
+$$</p>
+<p>即使模型非常大，也仍只選擇有限變數與關係。</p>
+<h2>7.2 意圖具有未決定性</h2>
+<p>主體可能同時：</p>
+<ul>
+<li>想要便利；</li>
+<li>擔心隱私；</li>
+<li>希望快速；</li>
+<li>不願承擔風險；</li>
+<li>尚未決定優先順序。</li>
+</ul>
+<p>這不是資訊尚未收集完畢，而可能是意圖本身尚未完成。</p>
+<h2>7.3 世界會持續生成新狀態</h2>
+<p>系統投入使用後，使用者、競爭者、制度與環境會回應系統。</p>
+<p>因此適用域不是靜止的。</p>
+<h2>7.4 觀測具有成本</h2>
+<p>全面感測需要：</p>
+<ul>
+<li>能源；</li>
+<li>儲存；</li>
+<li>隱私代價；</li>
+<li>計算；</li>
+<li>人力；</li>
+<li>制度授權。</li>
+</ul>
+<p>所以不是所有可觀測內容都應被觀測。</p>
+<h2>7.5 規範衝突無法由單一最適解消除</h2>
+<p>「效率最高」不代表「最公平」。</p>
+<p>「總效益最大」也不代表每個受影響者都應接受。</p>
+<p>因此：</p>
+<p>$$
+\boxed{
+R_{\mathrm{min}}</p>
+<blockquote>
+</blockquote>
+<p>0
+}
+$$</p>
+<p>對開放、持續、多主體系統而言，是合理的基礎假設。</p>
+<hr>
+<h1>八、精確性與不完備性並不矛盾</h1>
+<p>承認模型不完備，不代表：</p>
+<ul>
+<li>不需要精確；</li>
+<li>所有模型都一樣；</li>
+<li>無法驗證；</li>
+<li>只能依賴直覺；</li>
+<li>任何錯誤都可被原諒。</li>
+</ul>
+<p>相反地，正因模型有限，更需要精確說明：</p>
+<ul>
+<li>表示了什麼；</li>
+<li>沒有表示什麼；</li>
+<li>適用於哪裡；</li>
+<li>在何種條件下成立；</li>
+<li>誤差多大；</li>
+<li>如何失效；</li>
+<li>誰能反駁。</li>
+</ul>
+<h2>8.1 適用域</h2>
+<p>定義模型適用域：</p>
+<h1>$$
+\mathcal D(M)</h1>
+<p>\left{
+x
+\mid
+M
+\text{ is validated for }x
+\right}
+$$</p>
+<p>若輸入超出適用域：</p>
+<p>$$
+x
+\notin
+\mathcal D(M)
+$$</p>
+<p>系統應拒絕、降級或轉交，而非假裝正常。</p>
+<h2>8.2 信心不是完整性</h2>
+<p>模型可對某結果具有高信心，但仍遺漏重要變數。</p>
+<p>$$
+\operatorname{HighConfidence}
+\not\Rightarrow
+\operatorname{HighCoverage}
+$$</p>
+<h2>8.3 精確錯誤</h2>
+<p>一個結果可以非常精確地計算錯誤問題。</p>
+<p>例如系統精確預測「誰最可能點擊」，但原始目的可能是「誰真正從內容中受益」。</p>
+<hr>
+<h1>九、模型內真與世界真</h1>
+<h2>9.1 模型內真</h2>
+<p>命題 $q$ 在模型 $M$ 中成立：</p>
+<p>$$
+M
+\models
+q
+$$</p>
+<p>這只表示它符合模型的公理、資料與規則。</p>
+<h2>9.2 世界真</h2>
+<p>命題在相關物理或社會世界中實際成立，需要額外證據：</p>
+<p>$$
+P
+\models
+q
+$$</p>
+<h2>9.3 二者不自動等價</h2>
+<p>$$
+M
+\models
+q
+\not\Rightarrow
+P
+\models
+q
+$$</p>
+<p>例如：</p>
+<ul>
+<li>模型判定「已送達」；</li>
+<li>世界中包裹仍在門外或送錯地址。</li>
+</ul>
+<h2>9.4 世界真也可能未進入模型</h2>
+<p>$$
+P
+\models
+q
+\not\Rightarrow
+M
+\models
+q
+$$</p>
+<p>某種傷害、需求或關係可能真實存在，但資料庫沒有欄位表示。</p>
+<hr>
+<h1>十、分類與型別的排除效應</h1>
+<h2>10.1 類別創造可計算性</h2>
+<p>計算需要將開放現實壓縮成：</p>
+<ul>
+<li>是／否；</li>
+<li>類型；</li>
+<li>數值；</li>
+<li>枚舉；</li>
+<li>狀態；</li>
+<li>身分。</li>
+</ul>
+<p>分類使自動化成為可能。</p>
+<h2>10.2 類別也創造盲點</h2>
+<p>任何分類都可能：</p>
+<ul>
+<li>合併差異；</li>
+<li>切斷連續性；</li>
+<li>固定邊界；</li>
+<li>排除混合情境；</li>
+<li>把暫時狀態當永久身分。</li>
+</ul>
+<h2>10.3 型別錯配</h2>
+<p>若現實對象 $x$ 被迫映射到不適合的型別 $T$：</p>
+<p>$$
+x
+\not\models
+T
+\quad
+\text{but}
+\quad
+M(x)=T
+$$</p>
+<p>後續所有計算都可能形式正確但語意錯誤。</p>
+<h2>10.4 開放型別</h2>
+<p>對高不確定領域，應保留：</p>
+<pre><code class="language-text">unknown
+unresolved
+contested
+mixed
+not-applicable
+human-review
+</code></pre>
+<p>這不是設計失敗，而是對剩餘的正式承認。</p>
+<hr>
+<h1>十一、尺度落差</h1>
+<h2>11.1 微觀與宏觀</h2>
+<p>同一系統在不同尺度會有不同性質。</p>
+<p>例如交通系統：</p>
+<ul>
+<li>微觀：單一車輛速度；</li>
+<li>中觀：道路流量；</li>
+<li>宏觀：都市通勤結構。</li>
+</ul>
+<p>只建模某一尺度，可能錯過跨尺度效應。</p>
+<h2>11.2 時間尺度</h2>
+<p>短期改善可能造成長期損失。</p>
+<p>$$
+\Delta W_{\mathrm{short}}</p>
+<blockquote>
+</blockquote>
+<p>0
+\quad
+\text{while}
+\quad
+\Delta W_{\mathrm{long}}
+&lt;
+0
+$$</p>
+<p>例如推薦系統提高短期互動，卻降低長期信任。</p>
+<h2>11.3 聚合落差</h2>
+<p>平均值可能遮蔽個體傷害。</p>
+<p>$$
+\operatorname{AverageBenefit}</p>
+<blockquote>
+</blockquote>
+<p>0
+\not\Rightarrow
+\forall i,\ Benefit_i&gt;0
+$$</p>
+<hr>
+<h1>十二、反事實落差</h1>
+<p>人類意圖常包含：</p>
+<ul>
+<li>如果不做會怎樣；</li>
+<li>是否存在更好方案；</li>
+<li>某結果是不是由系統造成；</li>
+<li>哪個選擇本來可以避免傷害。</li>
+</ul>
+<p>但計算資料通常只記錄實際發生的路徑。</p>
+<h2>12.1 反事實不可直接觀測</h2>
+<p>$$
+P(a)
+\quad
+\text{and}
+\quad
+P(\neg a)
+$$</p>
+<p>無法在完全相同世界中同時發生。</p>
+<h2>12.2 模擬不是實際反事實</h2>
+<p>模擬可提供候選比較，但仍依賴模型假設。</p>
+<h2>12.3 決策需要反事實謙遜</h2>
+<p>系統應區分：</p>
+<ul>
+<li>已觀測；</li>
+<li>推論；</li>
+<li>模擬；</li>
+<li>假設；</li>
+<li>未知。</li>
+</ul>
+<hr>
+<h1>十三、規範性內容不能被壓成純量</h1>
+<h2>13.1 價值不是單一分數</h2>
+<p>多數重要決策包含：</p>
+<ul>
+<li>效率；</li>
+<li>公平；</li>
+<li>安全；</li>
+<li>自由；</li>
+<li>隱私；</li>
+<li>可逆性；</li>
+<li>尊嚴。</li>
+</ul>
+<p>將其壓成單一效用值：</p>
+<h1>$$
+U</h1>
+<p>\sum_i
+w_i v_i
+$$</p>
+<p>只是某種規範選擇，不是自然真理。</p>
+<h2>13.2 權重由誰決定</h2>
+<p>權重 $w_i$ 代表：</p>
+<ul>
+<li>誰的價值；</li>
+<li>哪個時間尺度；</li>
+<li>誰承擔風險；</li>
+<li>哪些權利可以被交換。</li>
+</ul>
+<h2>13.3 不可交換約束</h2>
+<p>某些條件不應只是低權重，而應作為硬性邊界：</p>
+<p>$$
+v_j
+\notin
+\text{trade-off set}
+$$</p>
+<p>例如基本權利或不可撤回選擇。</p>
+<hr>
+<h1>十四、未知、未知未知與新生成未知</h1>
+<h2>14.1 已知未知</h2>
+<p>已知某項資料缺失。</p>
+<h2>14.2 未知未知</h2>
+<p>系統甚至不知道應該建模什麼。</p>
+<h2>14.3 新生成未知</h2>
+<p>系統部署後創造新的現象，使原本不存在的問題出現。</p>
+<p>例如：</p>
+<ul>
+<li>新型平台操縱；</li>
+<li>新職業依賴；</li>
+<li>新型詐騙；</li>
+<li>AI 與人類的新關係；</li>
+<li>新的數位財產爭議。</li>
+</ul>
+<h2>14.4 未知狀態應被保存</h2>
+<p>成熟模型不能把所有未知都壓成預設值。</p>
+<p>$$
+\operatorname{Unknown}
+\neq
+0
+$$</p>
+<p>也不等於否定。</p>
+<hr>
+<h1>十五、案例一：醫療風險模型</h1>
+<h2>15.1 意圖宇宙</h2>
+<p>醫療制度可能希望：</p>
+<ul>
+<li>早期發現疾病；</li>
+<li>分配有限資源；</li>
+<li>降低死亡率；</li>
+<li>避免過度治療；</li>
+<li>保護病人自主。</li>
+</ul>
+<p>這些目標彼此可能衝突。</p>
+<h2>15.2 計算模型</h2>
+<p>風險模型可能使用：</p>
+<ul>
+<li>年齡；</li>
+<li>檢驗值；</li>
+<li>病史；</li>
+<li>影像；</li>
+<li>家族史；</li>
+<li>既有診斷。</li>
+</ul>
+<h2>15.3 表示落差</h2>
+<p>模型可能未包含：</p>
+<ul>
+<li>病人主觀疼痛；</li>
+<li>生活環境；</li>
+<li>醫療可近性；</li>
+<li>文化差異；</li>
+<li>未被診斷的症狀；</li>
+<li>資料品質差異。</li>
+</ul>
+<h2>15.4 模型內正確、世界中失敗</h2>
+<p>模型可能對訓練資料具有高準確率，但在新族群上失效。</p>
+<p>因此：</p>
+<p>$$
+\operatorname{Validated}<em>{D_1}(M)
+\not\Rightarrow
+\operatorname{Valid}</em>{D_2}(M)
+$$</p>
+<h2>15.5 治理要求</h2>
+<p>高風險模型應提供：</p>
+<ul>
+<li>適用族群；</li>
+<li>缺失變數；</li>
+<li>不確定性；</li>
+<li>人類覆核；</li>
+<li>異議；</li>
+<li>新資料更新；</li>
+<li>錯誤補救。</li>
+</ul>
+<hr>
+<h1>十六、案例二：公共福利資格系統</h1>
+<h2>16.1 政策目的</h2>
+<p>制度希望把資源提供給真正需要者，同時控制詐欺與預算。</p>
+<h2>16.2 數位化</h2>
+<p>現實生活被壓縮成：</p>
+<ul>
+<li>收入；</li>
+<li>家戶；</li>
+<li>身分；</li>
+<li>工作；</li>
+<li>居住；</li>
+<li>財產；</li>
+<li>文件狀態。</li>
+</ul>
+<h2>16.3 模型外存在</h2>
+<p>某些人可能：</p>
+<ul>
+<li>沒有完整文件；</li>
+<li>居住狀態不穩；</li>
+<li>家庭關係複雜；</li>
+<li>收入不規則；</li>
+<li>無法使用數位介面。</li>
+</ul>
+<p>他們可能真實需要幫助，卻無法被模型合法表示。</p>
+<h2>16.4 分類造成制度效果</h2>
+<p>系統中的 <code>ineligible</code> 不只是標籤，可能導致：</p>
+<ul>
+<li>補助中止；</li>
+<li>住房風險；</li>
+<li>醫療中斷；</li>
+<li>申訴成本；</li>
+<li>社會污名。</li>
+</ul>
+<p>因此表示落差會被執行放大。</p>
+<hr>
+<h1>十七、案例三：AI Agent 的完成判定</h1>
+<h2>17.1 原始要求</h2>
+<pre><code class="language-text">幫我完成研究報告。
+</code></pre>
+<h2>17.2 模型化</h2>
+<p>Agent 可能把完成定義為：</p>
+<ul>
+<li>文件存在；</li>
+<li>字數達標；</li>
+<li>章節完整；</li>
+<li>引用格式正確；</li>
+<li>測試通過。</li>
+</ul>
+<h2>17.3 被遺漏的意圖</h2>
+<p>使用者可能真正要求：</p>
+<ul>
+<li>論證新穎；</li>
+<li>資料正確；</li>
+<li>與既有研究區分；</li>
+<li>適合出版；</li>
+<li>能承受批評。</li>
+</ul>
+<p>這些不容易被單一完成旗標表示。</p>
+<h2>17.4 完成落差</h2>
+<p>$$
+\operatorname{TaskComplete}_C
+\not\Rightarrow
+\operatorname{IntentSatisfied}_I
+$$</p>
+<h2>17.5 正確做法</h2>
+<p>Agent 應將完成拆成：</p>
+<ul>
+<li>已生成；</li>
+<li>已驗證；</li>
+<li>已外部檢查；</li>
+<li>尚有未知；</li>
+<li>等待人類接受。</li>
+</ul>
+<hr>
+<h1>十八、案例四：數位分身</h1>
+<h2>18.1 宣稱</h2>
+<p>數位分身常被描述為物理設備、城市或人體的數位副本。</p>
+<h2>18.2 實際狀態</h2>
+<p>它更精確地是：</p>
+<p>$$
+M_C(P \mid V,S,T)
+$$</p>
+<p>也就是在特定變數、感測器、尺度與時間下，對物理對象的模型。</p>
+<h2>18.3 主要落差</h2>
+<ul>
+<li>感測器故障；</li>
+<li>未建模部件；</li>
+<li>更新延遲；</li>
+<li>模型參數過時；</li>
+<li>維護行為未記錄；</li>
+<li>異常情境缺乏資料。</li>
+</ul>
+<h2>18.4 合理名稱</h2>
+<p>「分身」容易暗示完整同一。</p>
+<p>更精確的理解是：</p>
+<blockquote>
+<p>可更新、具適用域的物理對象計算投影。</p>
+</blockquote>
+<hr>
+<h1>十九、案例五：待辦事項與生活價值</h1>
+<p>待辦系統能表示：</p>
+<ul>
+<li>任務；</li>
+<li>期限；</li>
+<li>優先級；</li>
+<li>完成狀態。</li>
+</ul>
+<p>但生活中重要的內容還包括：</p>
+<ul>
+<li>是否值得做；</li>
+<li>是否應該休息；</li>
+<li>是否對他人有責任；</li>
+<li>是否因焦慮而過度安排；</li>
+<li>某件事完成後是否真的改善生活。</li>
+</ul>
+<p>因此，一個完美運作的待辦系統，仍可能讓人更有效率地追求錯誤目的。</p>
+<p>這是規範性落差，而不是普通程式錯誤。</p>
+<hr>
+<h1>二十、落差治理</h1>
+<p>表示落差不能只靠模型團隊內部處理。</p>
+<p>需要治理結構。</p>
+<h2>20.1 模型卡不足</h2>
+<p>模型卡可以描述限制，但若使用者：</p>
+<ul>
+<li>看不到；</li>
+<li>看不懂；</li>
+<li>無法反駁；</li>
+<li>無法停止；</li>
+<li>無法獲得補救；</li>
+</ul>
+<p>則限制揭露仍不足以形成治理。</p>
+<h2>20.2 落差帳本</h2>
+<p>本文建議建立：</p>
+<h1>$$
+\mathcal L_R</h1>
+<p>\left\langle
+R,
+S,
+O,
+E,
+A,
+G
+\right\rangle
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$R$：殘差內容；</li>
+<li>$S$：嚴重度；</li>
+<li>$O$：來源；</li>
+<li>$E$：證據；</li>
+<li>$A$：受影響主體；</li>
+<li>$G$：治理與補救。</li>
+</ul>
+<h2>20.3 殘差所有權</h2>
+<p>每個重大落差都應有人或制度負責：</p>
+<ul>
+<li>追蹤；</li>
+<li>更新；</li>
+<li>回報；</li>
+<li>降低；</li>
+<li>停止系統；</li>
+<li>補償損害。</li>
+</ul>
+<h2>20.4 模型外申訴</h2>
+<p>受影響者必須能說：</p>
+<pre><code class="language-text">我的情況不符合你們的分類。
+資料是錯的。
+規則不適用。
+結果雖符合規則但不正當。
+</code></pre>
+<p>這些陳述本身就是對模型邊界的證據。</p>
+<hr>
+<h1>二十一、表示謙遜不是介面上的免責聲明</h1>
+<p>單純寫上：</p>
+<pre><code class="language-text">AI 可能出錯
+結果僅供參考
+</code></pre>
+<p>不等於負責任地處理落差。</p>
+<p>真正的表示謙遜需要：</p>
+<ul>
+<li>具體適用域；</li>
+<li>已知限制；</li>
+<li>未知部分；</li>
+<li>信心與覆蓋分離；</li>
+<li>證據來源；</li>
+<li>失效條件；</li>
+<li>人類接管；</li>
+<li>可撤回或補救路徑。</li>
+</ul>
+<h2>21.1 結構化不確定性</h2>
+<p>不確定性應進入正式狀態，而不只放在備註。</p>
+<pre><code class="language-yaml">claim:
+  status: &quot;partially-verified&quot;
+  confidence: 0.82
+  coverage: 0.54
+  unknowns:
+    - &quot;long-term impact&quot;
+    - &quot;minority cases&quot;
+  human_review_required: true
+</code></pre>
+<h2>21.2 不確定性不可被單一機率取代</h2>
+<p>機率通常只描述模型內部的不確定。</p>
+<p>它未必涵蓋：</p>
+<ul>
+<li>模型選錯；</li>
+<li>適用域錯誤；</li>
+<li>變數遺漏；</li>
+<li>價值衝突；</li>
+<li>權限問題。</li>
+</ul>
+<hr>
+<h1>二十二、可逆性與表示落差</h1>
+<p>模型落差越大，越不應直接產生不可逆效果。</p>
+<p>定義風險：</p>
+<h1>$$
+Q</h1>
+<p>R_{\mathrm{total}}
+\times
+I_{\mathrm{impact}}
+\times
+U_{\mathrm{irreversibility}}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$R_{\mathrm{total}}$：總落差；</li>
+<li>$I_{\mathrm{impact}}$：影響；</li>
+<li>$U_{\mathrm{irreversibility}}$：不可逆程度。</li>
+</ul>
+<p>高 $Q$ 系統應增加：</p>
+<ul>
+<li>模擬；</li>
+<li>分支；</li>
+<li>人類審核；</li>
+<li>小範圍試行；</li>
+<li>暫停；</li>
+<li>回復；</li>
+<li>補償；</li>
+<li>多方批准。</li>
+</ul>
+<hr>
+<h1>二十三、何時應停止自動化</h1>
+<p>若以下條件同時出現，自動化應降低或停止：</p>
+<ul>
+<li>適用域不明；</li>
+<li>落差無法估計；</li>
+<li>結果高影響；</li>
+<li>不可逆；</li>
+<li>受影響者無法申訴；</li>
+<li>目標存在價值衝突；</li>
+<li>模型外案例大量出現。</li>
+</ul>
+<p>形式上：</p>
+<h1>$$
+\operatorname{Automate}(a)</h1>
+<p>0
+$$</p>
+<p>若：</p>
+<p>$$
+R(a)&gt;\theta_R
+\land
+I(a)&gt;\theta_I
+\land
+U(a)&gt;\theta_U
+$$</p>
+<p>這不是反技術，而是承認計算代表權具有邊界。</p>
+<hr>
+<h1>二十四、主要失敗模式</h1>
+<ol>
+<li><strong>模型即世界：</strong> 將資料結構視為現實本身。</li>
+<li><strong>更多資料萬能論：</strong> 認為增加資料即可消除價值與結構問題。</li>
+<li><strong>高準確率遮蔽：</strong> 用總體準確率掩蓋少數群體失效。</li>
+<li><strong>未知歸零：</strong> 把缺失、未決與不適用轉為零或預設值。</li>
+<li><strong>分類強迫：</strong> 所有對象都必須立即落入既有類型。</li>
+<li><strong>模型內真僭位：</strong> 內部一致被當成外部真實。</li>
+<li><strong>適用域漂移：</strong> 使用環境改變，模型仍被視為有效。</li>
+<li><strong>完成旗標僭位：</strong> 計算完成被當成意圖完成。</li>
+<li><strong>信心覆蓋混淆：</strong> 高信心被誤認為高世界覆蓋。</li>
+<li><strong>聚合傷害隱藏：</strong> 平均改善遮蔽個體或群體損害。</li>
+<li><strong>規範問題技術化：</strong> 把價值選擇偽裝成參數調整。</li>
+<li><strong>反事實過度自信：</strong> 將模擬方案視為真正未發生世界。</li>
+<li><strong>殘差無責任人：</strong> 限制被列出，卻沒有人負責處理。</li>
+<li><strong>免責式謙遜：</strong> 只用模糊警語轉移責任。</li>
+<li><strong>不可逆部署：</strong> 在高落差下直接產生永久效果。</li>
+<li><strong>模型外主體消失：</strong> 未被資料表示者不具申訴位置。</li>
+<li><strong>生成性未知遺忘：</strong> 未持續追蹤系統創造的新風險。</li>
+<li><strong>全面感測迷思：</strong> 為降低落差而犧牲隱私與自由。</li>
+</ol>
+<hr>
+<h1>二十五、可證偽研究綱領</h1>
+<h2>25.1 意圖殘差測量</h2>
+<p>比較：</p>
+<ul>
+<li>原始對話；</li>
+<li>形式規格；</li>
+<li>最終模型；</li>
+<li>使用者事後評價。</li>
+</ul>
+<p>定義：</p>
+<h1>$$
+R_I</h1>
+<p>d
+\left(
+I_{\mathrm{stated}},
+I_{\mathrm{retrospective}}
+\right)
+$$</p>
+<p>研究哪些類型意圖最容易在形式化中流失。</p>
+<h2>25.2 模型覆蓋率</h2>
+<h1>$$
+C_M</h1>
+<p>\frac{
+|\text{relevant states represented}|
+}{
+|\text{relevant states identified}|
+}
+$$</p>
+<p>覆蓋率不能完全知道，但可透過事故、申訴、專家審查與模型外案例持續估計。</p>
+<h2>25.3 未知未知事件率</h2>
+<p>追蹤部署後出現、且在設計時完全未被列入風險清單的事件。</p>
+<h2>25.4 適用域外失效率</h2>
+<p>比較模型在原始驗證域與新域中的表現差異。</p>
+<h2>25.5 模型外主體召回率</h2>
+<p>測量系統是否能辨識：</p>
+<ul>
+<li>未出現在訓練資料；</li>
+<li>無法使用介面；</li>
+<li>不符合主要分類；</li>
+<li>受到間接影響；</li>
+</ul>
+<p>的主體。</p>
+<h2>25.6 未知保留率</h2>
+<p>檢查系統是否把未知、爭議與不適用狀態正確保存，而不是壓成預設值。</p>
+<h2>25.7 規範衝突保留率</h2>
+<p>測量多價值衝突是否被保留給治理，或被默默壓成單一分數。</p>
+<h2>25.8 完成落差</h2>
+<h1>$$
+R_{\mathrm{complete}}</h1>
+<p>d
+\left(
+\operatorname{Complete}_C,
+\operatorname{Satisfied}_I
+\right)
+$$</p>
+<p>研究系統完成旗標與使用者真正目的之間的差異。</p>
+<h2>25.9 觀測遺漏率</h2>
+<p>透過多來源資料、人工抽查、事故與申訴估計感測系統漏掉的重要狀態。</p>
+<h2>25.10 反事實失真</h2>
+<p>比較模型預測的反事實結果與後續自然實驗、隨機試驗或替代證據。</p>
+<h2>25.11 生成性落差追蹤</h2>
+<p>記錄系統投入使用後出現的新行為、新依賴、新制度與新風險。</p>
+<h2>25.12 落差治理時間</h2>
+<p>測量從模型限制被發現，到：</p>
+<ul>
+<li>被記錄；</li>
+<li>被理解；</li>
+<li>被修正；</li>
+<li>被補救；</li>
+</ul>
+<p>所需時間。</p>
+<hr>
+<h1>二十六、本文的二十項命題</h1>
+<ol>
+<li>表示必然包含選擇、壓縮與排除。</li>
+<li>三宇宙之間不存在普遍、無損、單一、可逆的完整同構。</li>
+<li>意圖落差不只是語言能力不足，也可能來自意圖尚未決定。</li>
+<li>模型中的合法狀態空間小於相關現實可能空間。</li>
+<li>執行結果可能偏離模型預期，即使程式本身沒有語法錯誤。</li>
+<li>觀測資料只是物理世界的部分投影。</li>
+<li>相同資料可形成不同解釋與後續意圖。</li>
+<li>工程性落差可以降低，但結構性落差通常不能歸零。</li>
+<li>規範性落差不應被更多資料或更大模型自動消除。</li>
+<li>系統部署後會產生生成性落差。</li>
+<li></li>
+</ol>
+<p>$$
+\boxed{
+R_{\mathrm{min}}&gt;0
+}
+$$
+對開放、多主體、持續世界系統通常成立。
+12. 模型內部一致不代表對外部世界完整。
+13. 模型適用域必須被明示、版本化與持續驗證。
+14. 高信心不等於高覆蓋。
+15. 未建模不等於不存在。
+16. 未回答不等於同意。
+17. 未分類不等於非法或無效。
+18. 不確定性必須成為正式狀態，而非免責備註。
+19. 模型落差越大、影響越高、效果越不可逆，自動化權限就應越小。
+20. 
+$$
+\boxed{
+\text{成熟計算不是假裝完整，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是能精確地知道自己不完整在哪裡。}
+}
+$$</p>
+<hr>
+<h1>二十七、與前後篇的關係</h1>
+<h2>27.1 承接 PU-0-01</h2>
+<p>PU-0-01 建立了：</p>
+<ul>
+<li>三個存在域；</li>
+<li>三種存在判準；</li>
+<li>跨宇宙同一性。</li>
+</ul>
+<p>本篇進一步指出：跨宇宙同一性不能靠名稱保證，因為每次表示都會留下差異。</p>
+<h2>27.2 承接 PU-0-02</h2>
+<p>PU-0-02 建立了：</p>
+<ul>
+<li>四個基本映射；</li>
+<li>七類耦合算子；</li>
+<li>耦合殘差；</li>
+<li>反身回饋。</li>
+</ul>
+<p>本篇把殘差區分為：</p>
+<ul>
+<li>工程性；</li>
+<li>結構性；</li>
+<li>規範性；</li>
+<li>生成性。</li>
+</ul>
+<h2>27.3 銜接 PU-0-04</h2>
+<p>下一篇將研究：</p>
+<blockquote>
+<p>即使數位世界只是部分表示，它所建立的數位實體、身分、狀態、規則與歷史，是否仍具有真正的人工存在地位？</p>
+</blockquote>
+<p>也就是從「模型不等於現實」推進到：</p>
+<p>$$
+\boxed{
+\text{不等於物理現實}
+\not\Rightarrow
+\text{沒有任何實在性}
+}
+$$</p>
+<hr>
+<h1>二十八、結論：模型的價值不在於冒充世界</h1>
+<p>人類不可能在沒有表示、分類與模型的情況下建立複雜程式。</p>
+<p>沒有模型，就無法：</p>
+<ul>
+<li>溝通；</li>
+<li>推理；</li>
+<li>測試；</li>
+<li>預測；</li>
+<li>自動化；</li>
+<li>保存歷史；</li>
+<li>共同建構。</li>
+</ul>
+<p>但模型一旦成功，就容易取得過度權威。</p>
+<p>資料庫中的欄位開始取代生活狀態。</p>
+<p>風險分數開始取代個人。</p>
+<p>完成旗標開始取代真正目的。</p>
+<p>模型預測開始取代世界觀測。</p>
+<p>這不是因為模型無用，而是因為人們忘記模型的邊界。</p>
+<p>因此，表示理論的核心不是反對模型，而是建立四種能力：</p>
+<ol>
+<li><strong>表示能力：</strong> 精確保存需要被計算的結構；</li>
+<li><strong>殘差能力：</strong> 明確保存尚未表示或不能表示的內容；</li>
+<li><strong>邊界能力：</strong> 知道模型適用與失效的條件；</li>
+<li><strong>治理能力：</strong> 在高落差、高影響與不可逆情境下保留人類及受影響者的決定權。</li>
+</ol>
+<p>本文可以收束為：</p>
+<h1>$$
+\boxed{
+\text{Model}</h1>
+<p>\text{Represented World}
++
+\text{Declared Boundary}
++
+\text{Preserved Residual}
+}
+$$</p>
+<p>若只有第一項，模型容易僭位成世界。</p>
+<p>若加上邊界與剩餘，它才可能成為可信任的工具。</p>
+<p>因此，真正成熟的程式系統不應只回答：</p>
+<pre><code class="language-text">模型知道什麼？
+</code></pre>
+<p>還必須回答：</p>
+<pre><code class="language-text">模型不知道什麼？
+哪些內容被排除了？
+誰因排除而受到影響？
+哪些結論只在模型內成立？
+哪些世界效果尚未被證明？
+何時應停止自動化並把決定交還人類？
+</code></pre>
+<p>本文的最終命題是：</p>
+<p>$$
+\boxed{
+\text{計算模型不是因為完整才有價值，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是因為它能在承認不完整的前提下，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{仍提供可檢驗、可修正、可反駁與可治理的表示。}
+}
+$$</p>
+<hr>
+<h1>附錄 A：落差帳本範例</h1>
+<pre><code class="language-yaml">representation_gap_ledger:
+  model_id: &quot;eligibility-model-v3&quot;
+  version: &quot;3.2&quot;
+
+  intended_purpose:
+    - &quot;identify households needing support&quot;
+    - &quot;reduce fraudulent claims&quot;
+
+  represented:
+    variables:
+      - &quot;reported_income&quot;
+      - &quot;household_size&quot;
+      - &quot;registered_address&quot;
+    time_window: &quot;previous 12 months&quot;
+
+  unrepresented:
+    known:
+      - &quot;informal caregiving burden&quot;
+      - &quot;unstable housing&quot;
+      - &quot;unreported emergency expenses&quot;
+    unknown:
+      - &quot;new crisis conditions&quot;
+
+  applicability:
+    validated_for:
+      - &quot;households with stable documentation&quot;
+    excluded:
+      - &quot;people without fixed address&quot;
+
+  residuals:
+    - type: &quot;representation&quot;
+      severity: &quot;high&quot;
+      affected_parties:
+        - &quot;undocumented applicants&quot;
+      owner: &quot;policy-review-board&quot;
+
+  governance:
+    human_review_required: true
+    appeal_available: true
+    irreversible_action_allowed: false
+</code></pre>
+<hr>
+<h1>附錄 B：不確定性與覆蓋分離</h1>
+<pre><code class="language-yaml">model_claim:
+  statement: &quot;Applicant is unlikely to qualify&quot;
+
+  model_confidence: 0.91
+  world_coverage: 0.58
+
+  evidence:
+    observed:
+      - &quot;reported income&quot;
+      - &quot;household registration&quot;
+    missing:
+      - &quot;current emergency costs&quot;
+      - &quot;informal dependents&quot;
+
+  applicability:
+    status: &quot;borderline&quot;
+
+  decision:
+    automation_allowed: false
+    route_to: &quot;human-review&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：表示成熟度</h1>
+<table>
+<thead>
+<tr>
+<th>等級</th>
+<th>特徵</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R0</td>
+<td>模型輸出被當成現實</td>
+</tr>
+<tr>
+<td>R1</td>
+<td>有一般免責聲明</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>明示適用域與已知限制</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>保存未知、爭議與不適用狀態</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>建立落差帳本、申訴與人工覆核</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>持續量測生成性落差並調整自動化權限</td>
+</tr>
+<tr>
+<td>R6</td>
+<td>表示、殘差、治理與可逆性共同編譯</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>附錄 D：第 0 冊六篇位置</h1>
+<ol>
+<li>PU-0-01　三重宇宙論：意圖、計算與物理存在的基本區分</li>
+<li>PU-0-02　三宇宙耦合動力學：從想要、表示到世界改變</li>
+<li><strong>PU-0-03　表示落差：意圖、計算模型與物理現實之間的不可完備映射</strong></li>
+<li>PU-0-04　數位宇宙作為人工存在域：實體、狀態、規則與歷史</li>
+<li>PU-0-05　生成與限制：計算機宇宙如何創造並封閉可能性</li>
+<li>PU-0-06　我們到底想要什麼：計算目的、價值邊界與世界選擇</li>
+</ol>
+<hr>
+<h1>參考文獻</h1>
+<h2>Neo.K／EveMissLab 相關理論</h2>
+<ol>
+<li>Neo.K with Aletheia，《三重宇宙論：意圖、計算與物理存在的基本區分》，2026。</li>
+<li>Neo.K with Aletheia，《三宇宙耦合動力學：從想要、表示到世界改變》，2026。</li>
+<li>Neo.K with Aletheia，《意圖中介表示：從自然語言要求到可驗證能力計畫》，2026。</li>
+<li>Neo.K with Aletheia，《可編譯世界：從程式執行到世界狀態演化》，2026。</li>
+<li>Neo.K with Aletheia，《人類可見狀態：意圖程式系統的稽核、解釋與可逆治理》，2026。</li>
+<li>Neo.K，《認知解構學 2.0》，2026。</li>
+<li>Neo.K，《語義合法性橋接》，2026。</li>
+</ol>
+<h2>一般理論背景</h2>
+<ol start="8">
+<li>Korzybski, A., <em>Science and Sanity</em>, 1933.</li>
+<li>Tarski, A., “The Semantic Conception of Truth,” 1944.</li>
+<li>Simon, H. A., <em>The Sciences of the Artificial</em>, 1969.</li>
+<li>Box, G. E. P., “Robustness in the Strategy of Scientific Model Building,” 1979.</li>
+<li>Suchman, L. A., <em>Plans and Situated Actions</em>, 1987.</li>
+<li>Star, S. L. and Griesemer, J. R., “Institutional Ecology, Translations and Boundary Objects,” 1989.</li>
+<li>Bowker, G. C. and Star, S. L., <em>Sorting Things Out</em>, 1999.</li>
+<li>O’Neil, C., <em>Weapons of Math Destruction</em>, 2016.</li>
+<li>Selbst, A. D. et al., “Fairness and Abstraction in Sociotechnical Systems,” 2019.</li>
+<li>Mitchell, M. et al., “Model Cards for Model Reporting,” 2019.</li>
+<li>Raji, I. D. et al., “Closing the AI Accountability Gap,” 2020.</li>
+</ol>
+<hr>
+<h1>版本紀錄</h1>
+<h2>v0.1 — 2026-07-27</h2>
+<ul>
+<li>完成十八篇地基論文第三篇。</li>
+<li>將表示定義為選擇、壓縮與排除。</li>
+<li>建立意圖、表示、執行、觀測與解釋五類落差。</li>
+<li>區分工程性、結構性、規範性與生成性落差。</li>
+<li>提出非零最低殘差命題。</li>
+<li>建立不完備表示原則與剩餘保留原則。</li>
+<li>區分模型內真與世界真。</li>
+<li>分析分類、尺度、反事實、規範與未知落差。</li>
+<li>建立落差帳本、表示謙遜、可逆性風險與停止自動化條件。</li>
+<li>加入醫療、公共福利、AI Agent、數位分身與待辦系統案例。</li>
+<li>提出十八類失敗模式與十二項可證偽研究方向。</li>
+<li>完成與 PU-0-04《數位宇宙作為人工存在域》的銜接。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pu-0-03.html">https://thisoneisneok.com/html/papers/pu-0-03.html</a></footer>
+</body>
+</html>

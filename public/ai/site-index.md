@@ -5,6 +5,7 @@ Canonical site: https://thisoneisneok.com/
 ## Sections
 
 - https://thisoneisneok.com/
+- https://thisoneisneok.com/papers
 - https://thisoneisneok.com/apps
 - https://thisoneisneok.com/mssp
 - https://thisoneisneok.com/lean4

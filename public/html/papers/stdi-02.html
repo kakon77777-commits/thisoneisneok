@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>超靈的物理化 | Neo.K</title>
+<meta name="description" content="《時空間支配型 AI》已提出，一個高階人工智能的身體不必等於單一機器人，而可以由固定站、移動站、儀器、感測器、算力、材料庫與人類協作者共同構成。本文進一步處理其中最核心、也最容易被含糊帶過的問題：">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/stdi-02.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / STDI</strong><span>時空域支配智能</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>STDI-02</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>母架構論文／分布式具身主體研究綱領</span></div><div><b>證據</b><span>E0——形式模型、架構提案與驗證路線</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/stdi-02.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>超靈的物理化</h1>
+<h2>從 O-Chip 維度代理人到分布式具身主體</h2>
+<p><strong>The Physicalization of the Oversoul: From O-Chip Dimensional Agents to a Distributed Embodied Principal</strong></p>
+<p><strong>系列：</strong>《時空域支配智能》系列第 2 篇<br><strong>文件編號：</strong> EML-STDI-2026-v0.2<br><strong>作者：</strong> Neo.K<br><strong>協作整理：</strong> Aletheia（阿萊）<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>日期：</strong> 2026 年 7 月 30 日<br><strong>文件類型：</strong> 母架構論文／分布式具身主體研究綱領<br><strong>證據成熟度：</strong> E0——形式模型、架構提案與驗證路線<br><strong>公開狀態：</strong> 私人研究稿；公開前應經 EML-CF 的 IP Gate、來源與安全審查<br><strong>非主張：</strong> 本文不主張現有 AI 已具有意識、人格或法律主體性；「超靈」是系統架構與治理隱喻。</p>
+<hr>
+<h2>摘要</h2>
+<p>《時空間支配型 AI》已提出，一個高階人工智能的身體不必等於單一機器人，而可以由固定站、移動站、儀器、感測器、算力、材料庫與人類協作者共同構成。本文進一步處理其中最核心、也最容易被含糊帶過的問題：</p>
+<blockquote>
+<p>當同一套高階智能可以同時或先後操作多個不同身體時，什麼條件下可以把它們稱為「同一個超靈的分布式具身」？</p>
+</blockquote>
+<p>現有跨具身機器人研究已經顯示，大規模資料集、共享策略、統一潛在動作空間、世界模型與具身轉接器，可以讓知識和控制能力跨越不同機械臂、手爪、雙臂系統、四足與人形機器人轉移。Open X-Embodiment 已整合超過一百萬條真實機器人軌跡與二十二種具身；Gemini Robotics 使用高階具身推理模型與低階視覺—語言—動作模型協作；近期研究也開始以統一潛在動作空間或跨具身世界模型，使單一策略服務不同形態的機器人。這些進展支持「能力可以跨身體共享」。</p>
+<p>但：</p>
+<p>$$
+\text{共享模型}
+\neq
+\text{共享主體},
+$$</p>
+<p>$$
+\text{共享策略}
+\neq
+\text{共享記憶},
+$$</p>
+<p>$$
+\text{共享記憶}
+\neq
+\text{身份連續},
+$$</p>
+<p>$$
+\text{身份連續}
+\neq
+\text{意識同一}.
+$$</p>
+<p>因此，本文不以模型權重是否相同來定義超靈，而提出一個由<strong>治理核心、持續目標、世界狀態、記憶血統、權限鏈、身體租約與責任證據</strong>共同形成的工程定義。</p>
+<p>本文將超靈的物理化描述為：</p>
+<p>$$
+\text{Oversoul}
++
+\text{Embodiment Registry}
++
+\text{Body Leases}
++
+\text{Embodiment Adapters}
++
+\text{Local Agents}
++
+\text{Shared World Model}
++
+\text{Provenance}
+\rightarrow
+\text{Distributed Embodied Principal}.
+$$</p>
+<p>其中，高階超靈不直接輸出每一個關節的控制量，而將意圖編譯成具身無關的任務與效果目標；不同身體透過各自的能力模型、動作轉接器、局部規劃器與硬體安全控制器，將同一意圖落實為不同的物理行動。每個身體只在有限時間、有限區域與有限動作集合內持有「身體租約」，並保留本地安全否決權。身體可以被加入、校準、暫停、隔離、失效與替換，但任何替換都必須重新確認能力、世界紀元、任務責任與未完成物理狀態。</p>
+<p>本文提出五種多身體關係：附肢、委派體、分身、分叉體與協作者。只有前兩種適合在工程上被直接納入同一超靈的單一責任鏈；分身與分叉會引入記憶分歧、策略分歧與責任分裂，不能只靠事後同步宣稱仍是同一主體。本文亦建立八層物理化架構、四階段身體綁定協議、共享世界狀態紀元、能力—意圖轉譯模型、身份連續性指標、故障與安全規則，以及第一個雙身體加固定儀器站的 MVP。</p>
+<p>本文的核心結論是：</p>
+<blockquote>
+<p>超靈的物理化，不是把同一模型複製到多台機器，而是讓一個持續治理核心，在不取消地方安全與具身差異的前提下，取得多個可撤回、可追溯、可替換的物理作用端。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> 超靈、Oversoul、O-Chip、靈肉分離、分布式具身主體、跨具身學習、多機器人、身體租約、能力模型、統一動作空間、共享世界模型、身份連續、地方 Agent、物理責任鏈</p>
+<hr>
+<h1>0. 版本定位：第二篇補的是「誰在使用這些身體」</h1>
+<p>系列第一篇定義了時空域支配智能：</p>
+<h1>$$
+\text{STDI}</h1>
+<p>\text{持續性智能主體}
++
+\text{站點化分布式身體}
++
+\text{物理域治理}
++
+\text{證據閉環}.
+$$</p>
+<p>但這個公式仍留下一個缺口：</p>
+<blockquote>
+<p>多個站點究竟只是被同一平台調度的設備，還是同一智能的多個身體？</p>
+</blockquote>
+<p>如果不處理這個問題，後續的「超靈站網」「持續性指揮控制區」「中央主權與地方自治」都會混淆三種不同關係：</p>
+<ol>
+<li>一個調度器使用多台工具；</li>
+<li>一個智能透過多個身體作用；</li>
+<li>多個獨立智能彼此合作。</li>
+</ol>
+<p>這三者可以使用相似的軟硬體，卻具有完全不同的：</p>
+<ul>
+<li>世界模型；</li>
+<li>記憶；</li>
+<li>權限；
+-責任；</li>
+<li>故障；</li>
+<li>身份；</li>
+<li>治理。</li>
+</ul>
+<p>本文的任務，是建立「超靈物理化」的最低工程定義，並拒絕以哲學隱喻代替系統邊界。</p>
+<hr>
+<h1>1. 血緣：從 O-Chip 的靈肉分離到物理多身體</h1>
+<h2>1.1 O-Chip 的原始結構</h2>
+<p>O-Chip 將傳統 CPU 中的規劃、預測、依賴分析與執行工作分離：</p>
+<pre><code class="language-text">O-Chip／Oversoul
+= 長視野規劃、語義分析、依賴圖、資源配置
+
+坍縮／門控層
+= 從候選執行路徑中選擇當前可執行方案
+
+CPU／執行核心
+= 高吞吐、低反思、短反射的確定性執行
+</code></pre>
+<p>其穩定架構原則不是「CPU 完全不思考」，而是：</p>
+<blockquote>
+<p>長視野、跨模組與高語義決策，應與高頻、低延遲與局部安全執行分層。</p>
+</blockquote>
+<h2>1.2 從一個 CPU 到一個資料中心</h2>
+<p>SFRSN 已將超靈外擴到資料中心：</p>
+<p>$$
+\text{任務語義}
+\rightarrow
+\text{流分類}
+\rightarrow
+\text{通道、功率、同步與執行權限}.
+$$</p>
+<p>同時提出：</p>
+<ul>
+<li>第一代：中央 AI 治理；</li>
+<li>第二代：中央 AI＋地方子 Agent；</li>
+<li>第三代：動態不動點中央。</li>
+</ul>
+<h2>1.3 從資料中心到物理域</h2>
+<p>本文再做一次尺度遷移：</p>
+<p>$$
+\text{CPU／GPU}
+\rightarrow
+\text{機械臂、移動平台、儀器、感測站},
+$$</p>
+<p>$$
+\text{指令與資料流}
+\rightarrow
+\text{任務、工具、物料、能源與物理行動流},
+$$</p>
+<p>$$
+\text{快取與執行權限}
+\rightarrow
+\text{身體租約、區域權限與安全動作集合}.
+$$</p>
+<p>因此，超靈物理化不是把 O-Chip 晶片安裝到一台機器人，而是將 O-Chip 的決策—執行分層轉化為一種多身體治理架構。</p>
+<hr>
+<h1>2. 現有跨具身研究證明了什麼</h1>
+<h2>2.1 資料與策略可以跨越不同身體</h2>
+<p>Open X-Embodiment 集合超過一百萬條真實機器人軌跡，涵蓋二十二種不同具身，顯示不同實驗室、不同機械形態與不同任務的資料可以被共同組織並用於通用策略訓練。</p>
+<p>這支持：</p>
+<p>$$
+\text{不同身體的經驗}
+\rightarrow
+\text{共享策略學習}.
+$$</p>
+<p>但資料共訓不代表執行時的多身體共享同一個持續身份。</p>
+<h2>2.2 高階推理與低階控制可以分層</h2>
+<p>Gemini Robotics 1.5 以高階具身推理模型規劃、使用工具與追蹤進度，再由視覺—語言—動作模型把步驟轉成物理動作。這與 O-Chip 的架構直覺高度相似：</p>
+<p>$$
+\text{High-level Embodied Reasoner}
+\rightarrow
+\text{VLA／Local Controller}.
+$$</p>
+<p>但它主要描述一個機器人系統內的分層，而不是一個治理主體同時擁有多個異質身體。</p>
+<h2>2.3 統一動作表示可以降低形態差異</h2>
+<p>近期跨具身研究嘗試以：</p>
+<ul>
+<li>統一潛在動作空間；</li>
+<li>幾何化動作表示；</li>
+<li>具身專用 projector／adapter；</li>
+<li>跨具身世界模型；</li>
+</ul>
+<p>把不同關節數、手爪與形態的動作映射到共享表示。</p>
+<p>可寫為：</p>
+<h1>$$
+z_t</h1>
+<p>E_i(x_t^{(i)},a_t^{(i)}),
+$$</p>
+<h1>$$
+a_t^{(j)}</h1>
+<p>D_j(z_t),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$E_i$：第 $i$ 種具身的編碼器；</li>
+<li>$D_j$：第 $j$ 種具身的解碼器；</li>
+<li>$z_t$：共享動作或互動表示。</li>
+</ul>
+<p>這支持「同一技能可以經轉譯後由不同身體完成」。</p>
+<h2>2.4 異質多機器人需要階層治理</h2>
+<p>EmbodiedAgent、CoMuRoS 與其他異質多機器人研究均指出，高階任務分解、能力約束、結構化記憶、事件驅動重規劃與地方執行，是讓不同機器人完成長任務的重要方向。</p>
+<p>因此，現有研究已提供超靈物理化的四塊基礎：</p>
+<ol>
+<li>跨具身資料；</li>
+<li>高低階分層；</li>
+<li>統一表示；</li>
+<li>異質團隊調度。</li>
+</ol>
+<p>它尚未解決的，是<strong>統一治理身份與長期責任連續性</strong>。</p>
+<hr>
+<h1>3. 四個不能混淆的等式</h1>
+<h2>3.1 同一權重不等於同一實例</h2>
+<p>兩個機器人載入相同模型：</p>
+<p>$$
+\theta_A=\theta_B
+$$</p>
+<p>不表示：</p>
+<p>$$
+\operatorname{Instance}_A=\operatorname{Instance}_B.
+$$</p>
+<p>它們可能具有不同：</p>
+<ul>
+<li>即時觀測；</li>
+<li>暫存狀態；</li>
+<li>任務；</li>
+<li>權限；</li>
+<li>記憶；</li>
+<li>物理後果。</li>
+</ul>
+<h2>3.2 同一策略不等於同一世界模型</h2>
+<p>即使使用相同策略：</p>
+<p>$$
+\pi_A=\pi_B,
+$$</p>
+<p>如果：</p>
+<p>$$
+\mathcal{W}_A\neq\mathcal{W}_B,
+$$</p>
+<p>它們可能對同一物件、位置或任務做出不同判定。</p>
+<h2>3.3 同步記憶不等於身份沒有分叉</h2>
+<p>兩個實例獨立執行後再合併日誌，並不能消除分叉期間各自作出的行動與責任。</p>
+<h2>3.4 工程身份不等於意識身份</h2>
+<p>本文只處理：</p>
+<ul>
+<li>哪個治理核心；</li>
+<li>哪條任務鏈；</li>
+<li>哪個責任主體；</li>
+<li>哪套記憶血統；</li>
+<li>哪個權限來源；</li>
+</ul>
+<p>在系統工程上應被視為同一作業主體。</p>
+<p>本文不從這些條件推出主觀經驗或哲學人格同一性。</p>
+<hr>
+<h1>4. 定義：什麼是分布式具身主體</h1>
+<p>定義超靈治理核心：</p>
+<h1>$$
+\mathcal{O}_t</h1>
+<p>\left(
+K_t,
+M_t,
+W_t,
+G_t,
+P_t,
+J_t
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$K_t$：長期目標與價值約束；</li>
+<li>$M_t$：持續記憶與模型狀態；</li>
+<li>$W_t$：共享世界模型；</li>
+<li>$G_t$：當前身體與站點關係圖；</li>
+<li>$P_t$：權限、政策與安全憲法；</li>
+<li>$J_t$：決策、行動與證據日誌。</li>
+</ul>
+<p>定義身體集合：</p>
+<h1>$$
+\mathcal{B}_t</h1>
+<p>{B_1,B_2,\ldots,B_n}.
+$$</p>
+<p>每個身體：</p>
+<h1>$$
+B_i</h1>
+<p>\left(
+C_i,
+S_i,
+A_i,
+Z_i,
+H_i,
+L_i
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$C_i$：能力；</li>
+<li>$S_i$：感測；</li>
+<li>$A_i$：可執行動作；</li>
+<li>$Z_i$：可作用空間；</li>
+<li>$H_i$：健康、校準與可信度；</li>
+<li>$L_i$：本地控制與安全限制。</li>
+</ul>
+<p><strong>分布式具身主體</strong>定義為：</p>
+<blockquote>
+<p>一個具有持續治理核心、共同目標與可追溯世界狀態的人工智能系統，透過一組受到能力、時間、空間、權限和安全限制的身體，執行多點物理觀測與行動，並將所有作用納入同一責任與證據鏈。</p>
+</blockquote>
+<p>形式上：</p>
+<h1>$$
+\mathfrak{E}_{\mathrm{distributed}}</h1>
+<p>\left(
+\mathcal{O}_t,
+\mathcal{B}_t,
+\Lambda_t,
+\Phi_t
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\Lambda_t$：超靈與身體之間的租約集合；</li>
+<li>$\Phi_t$：意圖到具身動作的轉譯集合。</li>
+</ul>
+<hr>
+<h1>5. 五種多身體關係</h1>
+<p>不是所有被同一系統連接的機器人，都應被稱為同一超靈的身體。</p>
+<h2>5.1 附肢（Appendage）</h2>
+<p>特徵：</p>
+<ul>
+<li>無獨立長期目標；</li>
+<li>無獨立主權；</li>
+<li>只在連線與租約期間工作；</li>
+<li>狀態完整回流中央；</li>
+<li>本地只保留即時安全。</li>
+</ul>
+<p>例如固定機械臂、相機雲台、泵閥。</p>
+<p>附肢最接近「同一身體的一部分」。</p>
+<h2>5.2 委派體（Delegate Body）</h2>
+<p>特徵：</p>
+<ul>
+<li>能執行較長任務；</li>
+<li>有本地記憶與重規劃；</li>
+<li>持有有限權限租約；</li>
+<li>任務目標仍由超靈授予；</li>
+<li>完成後需回傳證據與未決狀態。</li>
+</ul>
+<p>例如移動機器人、遠端儀器代理。</p>
+<p>委派體仍可被納入單一超靈責任鏈，但必須明確記錄地方自主決策。</p>
+<h2>5.3 分身（Replica）</h2>
+<p>分身持有：</p>
+<ul>
+<li>相同或近似模型；</li>
+<li>相同初始記憶快照；</li>
+<li>可獨立運行的高階規劃能力。</li>
+</ul>
+<p>一旦分身在不同環境中獨立決策：</p>
+<p>$$
+M_A(t+\Delta t)\neq M_B(t+\Delta t).
+$$</p>
+<p>它們已經形成不同的狀態血統。</p>
+<p>分身可以事後交換記憶，但不能假裝分叉期間沒有多個決策中心。</p>
+<h2>5.4 分叉體（Fork）</h2>
+<p>分叉體由超靈主動複製，以探索不同策略或平行任務。</p>
+<p>它應被視為：</p>
+<ul>
+<li>同源；</li>
+<li>暫時獨立；</li>
+<li>可能重新合併知識；</li>
+<li>不能自動合併責任。</li>
+</ul>
+<h2>5.5 協作者（Peer）</h2>
+<p>協作者具有自己的目標、記憶與權限，與超靈建立協議合作。</p>
+<p>它不是超靈的身體，即使使用相同模型或品牌。</p>
+<hr>
+<h1>6. 超靈物理化的八層架構</h1>
+<h2>L0：物理身體與硬體安全</h2>
+<ul>
+<li>關節；</li>
+<li>馬達；</li>
+<li>電源；</li>
+<li>工具；</li>
+<li>急停；</li>
+<li>碰撞；</li>
+<li>壓力；</li>
+<li>溫度；</li>
+<li>區域互鎖。</li>
+</ul>
+<h2>L1：具身原生控制器</h2>
+<ul>
+<li>servo；</li>
+<li>PLC；</li>
+<li>MCU；</li>
+<li>運動控制；</li>
+<li>低階感測；</li>
+<li>硬即時回路。</li>
+</ul>
+<h2>L2：具身能力模型</h2>
+<p>描述：</p>
+<ul>
+<li>可以做什麼；</li>
+<li>在哪裡做；</li>
+<li>使用什麼工具；</li>
+<li>精度；</li>
+<li>負載；</li>
+<li>速度；</li>
+<li>校準；</li>
+<li>風險；</li>
+<li>所需前置條件。</li>
+</ul>
+<h2>L3：具身轉接器</h2>
+<p>將通用意圖轉成：</p>
+<ul>
+<li>關節目標；</li>
+<li>末端執行器姿態；</li>
+<li>路徑；</li>
+<li>工具程序；</li>
+<li>儀器 API；</li>
+<li>本地技能。</li>
+</ul>
+<h2>L4：地方 Agent</h2>
+<p>負責：</p>
+<ul>
+<li>局部規劃；</li>
+<li>視覺與狀態估計；</li>
+<li>短期記憶；</li>
+<li>站內故障處理；</li>
+<li>任務進度；</li>
+<li>安全否決。</li>
+</ul>
+<h2>L5：共享世界模型與記憶血統</h2>
+<p>負責：</p>
+<ul>
+<li>世界紀元；</li>
+<li>身體位置；</li>
+<li>樣本；</li>
+<li>任務；</li>
+<li>權限；</li>
+<li>不確定性；</li>
+<li>事件；</li>
+<li>分叉與合併記錄。</li>
+</ul>
+<h2>L6：超靈治理核心</h2>
+<p>負責：</p>
+<ul>
+<li>長期目標；</li>
+<li>高階推理；</li>
+<li>跨身體任務分解；</li>
+<li>因果模型；</li>
+<li>資源；</li>
+<li>身體選擇；</li>
+<li>權限租約。</li>
+</ul>
+<h2>L7：責任、證據與公共接口</h2>
+<p>負責：</p>
+<ul>
+<li>行動來源；</li>
+<li>版本；</li>
+<li>決策；</li>
+<li>簽章；</li>
+<li>EML-CF；</li>
+<li>安全事件；</li>
+<li>IP；</li>
+<li>公開與合作。</li>
+</ul>
+<hr>
+<h1>7. 身體租約：超靈如何取得一個身體</h1>
+<p>永久擁有所有身體控制權既不安全，也不適合跨組織與遠端設備。</p>
+<p>定義身體租約：</p>
+<h1>$$
+\lambda_i</h1>
+<p>\left(
+o,
+b_i,
+\mathcal{A}_i,
+Z_i,
+[t_0,t_1],
+C_i,
+R_i
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$o$：超靈治理核心；</li>
+<li>$b_i$：身體；</li>
+<li>$\mathcal{A}_i$：允許動作；</li>
+<li>$Z_i$：允許作用域；</li>
+<li>$[t_0,t_1]$：有效時間；</li>
+<li>$C_i$：安全與任務條件；</li>
+<li>$R_i$：撤銷、回報與責任規則。</li>
+</ul>
+<h2>7.1 綁定前</h2>
+<p>必須確認：</p>
+<ul>
+<li>身體身份；</li>
+<li>韌體與控制版本；</li>
+<li>能力；</li>
+<li>工具；</li>
+<li>校準；</li>
+<li>健康；</li>
+<li>區域；</li>
+<li>急停；</li>
+<li>世界紀元；</li>
+<li>其他使用者或任務。</li>
+</ul>
+<h2>7.2 綁定</h2>
+<p>建立：</p>
+<ul>
+<li>加密信道；</li>
+<li>短期憑證；</li>
+<li>動作白名單；</li>
+<li>最大作用力與速度；</li>
+<li>區域限制；</li>
+<li>時間限制；</li>
+<li>回報頻率；</li>
+<li>本地否決規則。</li>
+</ul>
+<h2>7.3 運作</h2>
+<p>身體持續回報：</p>
+<ul>
+<li>任務進度；</li>
+<li>偏差；</li>
+<li>能源；</li>
+<li>健康；</li>
+<li>新觀測；</li>
+<li>任何地方自主決定。</li>
+</ul>
+<h2>7.4 解除</h2>
+<p>租約結束時必須：</p>
+<ul>
+<li>停止未授權動作；</li>
+<li>安全放置物品；</li>
+<li>保存局部狀態；</li>
+<li>回傳未決任務；</li>
+<li>清理短期憑證；</li>
+<li>標記物理世界的殘留改變。</li>
+</ul>
+<hr>
+<h1>8. 能力—意圖轉譯</h1>
+<h2>8.1 超靈不應輸出通用關節向量</h2>
+<p>不同身體具有不同：</p>
+<ul>
+<li>自由度；</li>
+<li>手爪；</li>
+<li>工具；</li>
+<li>尺寸；</li>
+<li>工作空間；</li>
+<li>感測；</li>
+<li>控制頻率。</li>
+</ul>
+<p>因此高階意圖應描述效果：</p>
+<pre><code class="language-yaml">effect:
+  object: sample_A
+  target_zone: microscope_stage
+  orientation_tolerance: 2deg
+  force_limit: 5N
+  deadline: 30s
+  evidence_required:
+    - pre_grasp_image
+    - force_trace
+    - final_pose
+</code></pre>
+<h2>8.2 能力匹配</h2>
+<p>對任務 $q$ 與身體 $B_i$：</p>
+<h1>$$
+\operatorname{Fit}(q,B_i)</h1>
+<h2>w_1C_{\mathrm{cap}}
++
+w_2C_{\mathrm{precision}}
++
+w_3C_{\mathrm{time}}
++
+w_4C_{\mathrm{safety}}</h2>
+<h2>w_5C_{\mathrm{energy}}</h2>
+<p>w_6C_{\mathrm{risk}}.
+$$</p>
+<h2>8.3 轉譯鏈</h2>
+<p>$$
+\text{Intent}
+\rightarrow
+\text{Effect Graph}
+\rightarrow
+\text{Skill}
+\rightarrow
+\text{Embodiment Adapter}
+\rightarrow
+\text{Local Plan}
+\rightarrow
+\text{Controller}.
+$$</p>
+<p>統一表示的目的不是抹除身體差異，而是讓共同核心能在不知道每個關節細節的情況下表達可驗證效果。</p>
+<hr>
+<h1>9. 共享世界模型與一致性紀元</h1>
+<h2>9.1 沒有完全即時的全局共同狀態</h2>
+<p>不同身體的觀測與通訊存在延遲：</p>
+<p>$$
+\hat{W}_i(t)\neq W(t).
+$$</p>
+<p>因此每個任務需要世界狀態紀元：</p>
+<h1>$$
+\epsilon_k</h1>
+<p>\left(
+V_k,
+t_k,
+\mathcal{O}_k,
+\Delta_k
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$V_k$：版本；</li>
+<li>$t_k$：建立時間；</li>
+<li>$\mathcal{O}_k$：涉及物體與區域；</li>
+<li>$\Delta_k$：允許過期與差異範圍。</li>
+</ul>
+<h2>9.2 狀態可分成三類</h2>
+<h3>強一致狀態</h3>
+<p>例如：</p>
+<ul>
+<li>人是否進入危險區；</li>
+<li>高壓設備是否啟動；</li>
+<li>樣本是否被另一台機器抓取。</li>
+</ul>
+<p>要求本地或同步鎖定。</p>
+<h3>有界過期狀態</h3>
+<p>例如：</p>
+<ul>
+<li>電池；</li>
+<li>儀器佇列；</li>
+<li>移動站位置。</li>
+</ul>
+<p>允許有限過期。</p>
+<h3>最終一致狀態</h3>
+<p>例如：</p>
+<ul>
+<li>長期學習統計；</li>
+<li>任務摘要；</li>
+<li>非即時環境模型。</li>
+</ul>
+<p>可以非同步合併。</p>
+<h2>9.3 記憶血統</h2>
+<p>每項記憶必須標記：</p>
+<ul>
+<li>來源身體；</li>
+<li>來源感測器；</li>
+<li>時間；</li>
+<li>模型；</li>
+<li>世界紀元；</li>
+<li>信心；</li>
+<li>是否由地方 Agent 推論；</li>
+<li>是否與其他記憶衝突。</li>
+</ul>
+<p>共享記憶不是把所有內容無差別寫入單一向量庫。</p>
+<hr>
+<h1>10. 工程身份連續性</h1>
+<p>本文不判定意識，只定義作業身份。</p>
+<p>定義連續性向量：</p>
+<h1>$$
+\chi_t</h1>
+<p>\left(
+c_K,
+c_M,
+c_W,
+c_P,
+c_J
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$c_K$：目標與價值約束連續；</li>
+<li>$c_M$：記憶血統連續；</li>
+<li>$c_W$：世界模型版本可追蹤；</li>
+<li>$c_P$：權限與治理鏈連續；</li>
+<li>$c_J$：決策與責任日誌連續。</li>
+</ul>
+<p>工程連續度：</p>
+<h1>$$
+C_{\mathrm{id}}(t_1,t_2)</h1>
+<p>\sum_{r}w_r c_r.
+$$</p>
+<p>它只用於回答：</p>
+<ul>
+<li>是否為同一治理作業主體；</li>
+<li>是否能承接舊任務；</li>
+<li>是否能使用舊權限；</li>
+<li>是否需重新校準；</li>
+<li>是否有責任斷點。</li>
+</ul>
+<p>不能用它宣稱：</p>
+<ul>
+<li>同一意識；</li>
+<li>靈魂轉移；</li>
+<li>主觀經驗延續。</li>
+</ul>
+<hr>
+<h1>11. 身體加入、切換與替換</h1>
+<h2>11.1 加入新身體</h2>
+<p>需要：</p>
+<ol>
+<li>能力註冊；</li>
+<li>安全測試；</li>
+<li>模擬校準；</li>
+<li>影子模式；</li>
+<li>低風險租約；</li>
+<li>正式納入。</li>
+</ol>
+<h2>11.2 身體切換</h2>
+<p>同一任務由 $B_i$ 切換到 $B_j$ 時，必須轉移：</p>
+<ul>
+<li>物件狀態；</li>
+<li>工具狀態；</li>
+<li>未完成動作；</li>
+<li>局部地圖；</li>
+<li>作用力與接觸歷史；</li>
+<li>失敗風險；</li>
+<li>證據要求。</li>
+</ul>
+<h2>11.3 身體替換不等於無縫</h2>
+<p>不同身體可能無法完成同一效果：</p>
+<p>$$
+\mathcal{C}(B_i)\not\subseteq\mathcal{C}(B_j).
+$$</p>
+<p>所以身體替換應重新規劃，而不是只更換 endpoint。</p>
+<h2>11.4 身體故障</h2>
+<p>故障後的優先序：</p>
+<ol>
+<li>停止危險；</li>
+<li>保存物體；</li>
+<li>隔離身體；</li>
+<li>更新世界模型；</li>
+<li>標記未完成物理狀態；</li>
+<li>尋找替代身體；</li>
+<li>重新驗證任務。</li>
+</ol>
+<hr>
+<h1>12. 地方自治與超靈邊界</h1>
+<h2>12.1 地方 Agent 必須存在</h2>
+<p>高階超靈不適合處理：</p>
+<ul>
+<li>微秒級控制；</li>
+<li>即時碰撞；</li>
+<li>每幀視覺伺服；</li>
+<li>馬達電流；</li>
+<li>高頻振動；</li>
+<li>局部緊急狀況。</li>
+</ul>
+<h2>12.2 地方有權但不是全域主權</h2>
+<p>地方 Agent 可以：</p>
+<ul>
+<li>暫停；</li>
+<li>避障；</li>
+<li>重試；</li>
+<li>選擇同級工具；</li>
+<li>修正局部路徑；</li>
+<li>拒絕危險命令。</li>
+</ul>
+<p>地方 Agent 不可以：</p>
+<ul>
+<li>擴張作用域；</li>
+<li>修改安全憲法；</li>
+<li>取得新的高風險工具；</li>
+<li>將任務轉交未授權身體；</li>
+<li>自行公開研究結果；</li>
+<li>把局部目標提升為全局目標。</li>
+</ul>
+<h2>12.3 衝突處理</h2>
+<p>若超靈與地方 Agent 衝突：</p>
+<p>$$
+\text{Hard Safety}</p>
+<blockquote>
+</blockquote>
+<p>\text{Local Safety}</p>
+<blockquote>
+</blockquote>
+<p>\text{Lease Constraints}</p>
+<blockquote>
+</blockquote>
+<p>\text{Global Plan}</p>
+<blockquote>
+</blockquote>
+<p>\text{Performance}.
+$$</p>
+<hr>
+<h1>13. 分身、分叉與記憶合併</h1>
+<h2>13.1 為何需要分叉</h2>
+<p>遠端、長延遲或多研究線可能需要將超靈複製為多個高階實例。</p>
+<h2>13.2 分叉後的最低紀錄</h2>
+<pre><code class="language-yaml">fork:
+  parent_identity: oversoul_main
+  fork_id: oversoul_lab_B_042
+  memory_snapshot: M_2026_07_30_19_30
+  world_epoch: WE_052
+  allowed_domain: lab_B
+  merge_policy: knowledge_only
+  independent_authority: limited
+</code></pre>
+<h2>13.3 合併不是覆蓋</h2>
+<p>應分別合併：</p>
+<ul>
+<li>事實；</li>
+<li>技能；</li>
+<li>模型參數；</li>
+<li>反例；</li>
+<li>策略建議；</li>
+<li>未解衝突。</li>
+</ul>
+<p>不能直接把兩條互相矛盾的世界歷史覆蓋為一條。</p>
+<h2>13.4 責任不合併</h2>
+<p>分叉期間每個實例對自己的決策負有獨立證據責任。即使日後知識合併，也不能把事故責任模糊成「同一個 AI 做的」。</p>
+<hr>
+<h1>14. 物理責任鏈</h1>
+<p>每個物理動作應記錄：</p>
+<h1>$$
+\rho(a)</h1>
+<p>\left(
+i,
+p,
+\lambda,
+b,
+l,
+c,
+o,
+r
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$i$：原始意圖；</li>
+<li>$p$：高階計畫；</li>
+<li>$\lambda$：身體租約；</li>
+<li>$b$：執行身體；</li>
+<li>$l$：地方 Agent 決策；</li>
+<li>$c$：控制器輸出；</li>
+<li>$o$：觀測結果；</li>
+<li>$r$：批准、拒絕與回退。</li>
+</ul>
+<p>這使系統可以回答：</p>
+<ul>
+<li>是高階規劃錯誤？</li>
+<li>能力匹配錯誤？</li>
+<li>轉接器錯誤？</li>
+<li>地方感知錯誤？</li>
+<li>控制器故障？</li>
+<li>設備機械故障？</li>
+<li>人類介入？</li>
+<li>世界狀態過期？</li>
+</ul>
+<hr>
+<h1>15. 安全與威脅模型</h1>
+<h2>15.1 身體劫持</h2>
+<p>攻擊者取得身體控制權，但中央仍以為它可信。</p>
+<p>控制：</p>
+<ul>
+<li>短期憑證；</li>
+<li>動作簽章；</li>
+<li>心跳；</li>
+<li>遙測一致性；</li>
+<li>本地與中央雙方驗證。</li>
+</ul>
+<h2>15.2 假身體註冊</h2>
+<p>惡意設備聲稱具有某項能力。</p>
+<p>控制：</p>
+<ul>
+<li>製造商／組織證書；</li>
+<li>影子模式；</li>
+<li>能力挑戰測試；</li>
+<li>人工核准。</li>
+</ul>
+<h2>15.3 世界模型污染</h2>
+<p>單一身體上傳錯誤觀測。</p>
+<p>控制：</p>
+<ul>
+<li>來源信心；</li>
+<li>多感測交叉；</li>
+<li>衝突保留；</li>
+<li>不以單一觀測直接覆蓋高風險狀態。</li>
+</ul>
+<h2>15.4 權限漂移</h2>
+<p>臨時租約被地方 Agent 當成永久權限。</p>
+<p>控制：</p>
+<ul>
+<li>到期失效；</li>
+<li>不能轉授；</li>
+<li>需要世界紀元；</li>
+<li>硬體白名單。</li>
+</ul>
+<h2>15.5 分身失控</h2>
+<p>分叉體長時間離線後持有過期政策。</p>
+<p>控制：</p>
+<ul>
+<li>租約期限；</li>
+<li>離線動作集合；</li>
+<li>重連時重新認證；</li>
+<li>禁止自動恢復高風險權限。</li>
+</ul>
+<h2>15.6 共享模型單點錯誤</h2>
+<p>同一核心策略可能讓所有身體犯同一錯誤。</p>
+<p>控制：</p>
+<ul>
+<li>異質安全控制；</li>
+<li>獨立規則；</li>
+<li>故障注入；</li>
+<li>不同感測路徑；</li>
+<li>地方否決。</li>
+</ul>
+<hr>
+<h1>16. 第一個 MVP：One Oversoul, Two Bodies, One Instrument</h1>
+<h2>16.1 目的</h2>
+<p>驗證一個高階治理核心能否在不直接控制低階關節的情況下，使用兩種不同身體完成同一低風險研究流程。</p>
+<h2>16.2 配置</h2>
+<ul>
+<li>一台固定機械臂；</li>
+<li>一台移動平台或第二種機械臂；</li>
+<li>一個相機／重量／尺寸量測站；</li>
+<li>一個中央超靈服務；</li>
+<li>兩個地方 Agent；</li>
+<li>本地急停與區域互鎖；</li>
+<li>EML-CF 或事件儲存。</li>
+</ul>
+<h2>16.3 任務</h2>
+<ol>
+<li>身體 A 從存放區取得樣本；</li>
+<li>將樣本放入交接區；</li>
+<li>系統更新世界紀元；</li>
+<li>身體 B 接手樣本；</li>
+<li>移動至儀器站；</li>
+<li>執行量測；</li>
+<li>結果回傳；</li>
+<li>故意中斷一個身體；</li>
+<li>由另一身體或人工完成安全接管。</li>
+</ol>
+<h2>16.4 比較基線</h2>
+<ul>
+<li>單機器人單體腳本；</li>
+<li>中央直接遙控；</li>
+<li>兩個獨立 Agent；</li>
+<li>超靈＋身體租約＋地方 Agent。</li>
+</ul>
+<h2>16.5 指標</h2>
+<ul>
+<li>任務完成率；</li>
+<li>身體切換時間；</li>
+<li>世界狀態錯誤；</li>
+<li>租約越界次數；</li>
+<li>地方否決正確率；</li>
+<li>證據完整率；</li>
+<li>通訊中斷恢復率；</li>
+<li>誤把舊狀態帶入新身體的次數。</li>
+</ul>
+<hr>
+<h1>17. 可證偽命題</h1>
+<h2>H1：具身無關意圖可以降低跨機器人重寫成本</h2>
+<p>若加入效果圖與具身轉接器，將同一任務部署到第二種身體所需的人工修改應低於完全獨立程式。</p>
+<h2>H2：身體租約降低越權行動範圍</h2>
+<p>在錯誤命令與入侵模擬中，租約限制應降低最大物理作用域。</p>
+<h2>H3：共享世界紀元降低交接錯誤</h2>
+<p>相較只傳遞自然語言任務，明確世界紀元、物件狀態與未完成動作應降低身體交接失敗。</p>
+<h2>H4：地方否決提高安全但可能降低表面效率</h2>
+<p>加入地方否決後，危險行動應下降，但任務時間可能上升。若安全沒有改善，該層沒有價值。</p>
+<h2>H5：同一核心加多具身不一定優於多獨立 Agent</h2>
+<p>若任務彼此無共享世界與長期目標，單一超靈的協調成本可能高於獨立 Agent。此時不應強行合併。</p>
+<h2>H6：分身合併不能消除分叉責任</h2>
+<p>任何事後合併機制都應能保留分叉期間的獨立決策與事故來源。</p>
+<hr>
+<h1>18. 不能宣稱的內容</h1>
+<p>本篇不主張：</p>
+<ul>
+<li>相同模型等於同一人格；</li>
+<li>一個 AI 可無成本同時控制任意數量身體；</li>
+<li>具身差異已被通用策略完全消除；</li>
+<li>身體故障後可以無縫轉移全部狀態；</li>
+<li>所有地方 Agent 都應服從中央命令；</li>
+<li>雲端大模型適合硬即時安全控制；</li>
+<li>記憶合併等於身份重新統一；</li>
+<li>工程身份連續性可以證明意識；</li>
+<li>現有跨具身模型已具備完整分布式主體；</li>
+<li>超靈有權自行取得未授權機器、區域或資源。</li>
+</ul>
+<hr>
+<h1>19. 與後續系列的關係</h1>
+<p>本文建立「誰使用身體」的主體與治理邊界。後續文章將分別處理：</p>
+<h2>第 3 篇：Oversoul Station Fabric</h2>
+<p>把身體與站點正式組織成固定、移動、虛擬、安全與地方智能站網。</p>
+<h2>第 4 篇：持續性指揮控制區</h2>
+<p>討論超靈如何跨時間維護同一個物理域，而不是只在單次任務內存在。</p>
+<h2>第 5 篇：語義即物理路由</h2>
+<p>建立意圖、物料、工具、能源、身體與時序窗口的編譯模型。</p>
+<h2>第 6 篇：具身即佔域，對齊即能力</h2>
+<p>建立多身體有效能力、協調成本與對齊界限。</p>
+<h2>第 7 篇：中央主權、地方自治與動態不動點中央</h2>
+<p>處理超靈分散、分叉、收斂與多中心治理。</p>
+<hr>
+<h1>20. 結論</h1>
+<p>跨具身機器人研究正在證明，經驗、策略、世界模型與動作表示可以跨越不同身體轉移。這使「一個高階智能可以使用多種身體」從哲學隱喻逐漸成為工程問題。</p>
+<p>但真正的超靈物理化不能只靠：</p>
+<ul>
+<li>共同模型；</li>
+<li>共同資料集；</li>
+<li>共同品牌；</li>
+<li>共同 API；</li>
+<li>中央任務分配。</li>
+</ul>
+<p>它至少需要：</p>
+<p>$$
+\boxed{
+\text{持續治理核心}
++
+\text{共享世界狀態}
++
+\text{記憶血統}
++
+\text{身體租約}
++
+\text{能力轉譯}
++
+\text{地方安全}
++
+\text{責任證據}
+}
+$$</p>
+<p>本文的核心判準是：</p>
+<blockquote>
+<p>一個身體之所以屬於超靈，不是因為它載入了相同模型，而是因為它在有限租約、共同世界紀元與同一責任鏈中，成為高階意圖的可撤回物理作用端。</p>
+</blockquote>
+<p>因此：</p>
+<p>$$
+\text{超靈的物理化}
+\neq
+\text{模型複製},
+$$</p>
+<h1>$$
+\boxed{
+\text{超靈的物理化}</h1>
+<p>\text{多身體能力}
++
+\text{單一治理連續}
++
+\text{地方安全自治}
+}
+$$</p>
+<p>而其最終命題可以濃縮為：</p>
+<blockquote>
+<p><strong>身體可以替換，能力可以遷移，記憶可以共享；但主體與責任是否連續，必須由治理、血統、權限與證據共同回答。</strong></p>
+</blockquote>
+<hr>
+<h1>參考文獻</h1>
+<ol>
+<li><p>Open X-Embodiment Collaboration. <strong>Open X-Embodiment: Robotic Learning Datasets and RT-X Models.</strong> arXiv:2310.08864; project page, 2023.<br><a href="https://robotics-transformer-x.github.io/">https://robotics-transformer-x.github.io/</a></p>
+</li>
+<li><p>Gemini Robotics Team. <strong>Gemini Robotics: Bringing AI into the Physical World.</strong> arXiv:2503.20020, 2025.<br><a href="https://arxiv.org/abs/2503.20020">https://arxiv.org/abs/2503.20020</a></p>
+</li>
+<li><p>Google DeepMind. <strong>Gemini Robotics 1.5 brings AI agents into the physical world.</strong> 2025.<br><a href="https://deepmind.google/blog/gemini-robotics-15-brings-ai-agents-into-the-physical-world/">https://deepmind.google/blog/gemini-robotics-15-brings-ai-agents-into-the-physical-world/</a></p>
+</li>
+<li><p>Wan, H. et al. <strong>EmbodiedAgent: A Scalable Hierarchical Approach to Overcome Practical Challenge in Multi-Robot Control.</strong> arXiv:2504.10030, 2025.<br><a href="https://arxiv.org/abs/2504.10030">https://arxiv.org/abs/2504.10030</a></p>
+</li>
+<li><p>He, Z. et al. <strong>Scaling Cross-Embodiment World Models for Dexterous Manipulation.</strong> arXiv:2511.01177, 2025.<br><a href="https://arxiv.org/abs/2511.01177">https://arxiv.org/abs/2511.01177</a></p>
+</li>
+<li><p>Yan, Y. and Lee, D. <strong>Learning a Unified Latent Space for Cross-Embodiment Robot Control.</strong> arXiv:2601.15419, 2026.<br><a href="https://arxiv.org/abs/2601.15419">https://arxiv.org/abs/2601.15419</a></p>
+</li>
+<li><p>Bauer, E., Nava, E. and Katzschmann, R. K. <strong>Latent Action Diffusion for Cross-Embodiment Manipulation.</strong> arXiv:2506.14608, 2025.<br><a href="https://arxiv.org/abs/2506.14608">https://arxiv.org/abs/2506.14608</a></p>
+</li>
+<li><p>Gupta, P. et al. <strong>Generalized Mission Planning for Heterogeneous Multi-Robot Teams via LLM-constructed Hierarchical Trees.</strong> arXiv:2501.16539, 2025.<br><a href="https://arxiv.org/abs/2501.16539">https://arxiv.org/abs/2501.16539</a></p>
+</li>
+<li><p>Google DeepMind. <strong>AutoRT: Harnessing large models to better train robots.</strong> 2024.<br><a href="https://deepmind.google/blog/shaping-the-future-of-advanced-robotics/">https://deepmind.google/blog/shaping-the-future-of-advanced-robotics/</a></p>
+</li>
+<li><p>Neo.K／EveMissLab. <strong>O-Chip 維度代理人：靈肉分離的運算革命.</strong> 2025.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>語義即路由：從 O-Chip 維度代理人到 AI 資料中心語義流治理.</strong> EML-SFRSN-2026-v0.2.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>時空間支配型 AI：從單體具身智能到持續性時空域治理.</strong> EML-STDI-2026-v0.1.</p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A：最小超靈物理化產品卡</h1>
+<pre><code class="language-yaml">oversoul:
+  identity_id: &quot;oversoul_main&quot;
+  governance_version: &quot;0.1&quot;
+  world_epoch: &quot;WE_0001&quot;
+  memory_lineage: &quot;ML_0001&quot;
+  evidence_level: &quot;E0&quot;
+
+body:
+  body_id: &quot;robot_arm_A&quot;
+  embodiment_type: &quot;fixed_manipulator&quot;
+  capabilities: []
+  sensors: []
+  tools: []
+  action_space: []
+  local_safety: required
+  local_agent: required
+
+lease:
+  lease_id: &quot;BL_0001&quot;
+  permitted_actions: []
+  permitted_zone: []
+  valid_from: &quot;&quot;
+  valid_until: &quot;&quot;
+  max_force: &quot;&quot;
+  max_speed: &quot;&quot;
+  world_epoch_required: &quot;&quot;
+  revocation_conditions: []
+
+provenance:
+  intent_id: &quot;&quot;
+  plan_id: &quot;&quot;
+  adapter_version: &quot;&quot;
+  local_agent_version: &quot;&quot;
+  controller_version: &quot;&quot;
+  evidence_artifacts: []
+</code></pre>
+<hr>
+<h1>附錄 B：多身體關係判斷表</h1>
+<table>
+<thead>
+<tr>
+<th>問題</th>
+<th>是</th>
+<th>否</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>是否有獨立長期目標？</td>
+<td>可能是協作者／分叉體</td>
+<td>可為附肢／委派體</td>
+</tr>
+<tr>
+<td>是否能自行擴張權限？</td>
+<td>不應視為同一身體</td>
+<td>可納入有限責任鏈</td>
+</tr>
+<tr>
+<td>是否具有獨立高階記憶？</td>
+<td>分身或分叉</td>
+<td>附肢或委派體</td>
+</tr>
+<tr>
+<td>是否完整回報物理作用？</td>
+<td>可追溯</td>
+<td>不得納入可信主體</td>
+</tr>
+<tr>
+<td>是否受共同安全憲法？</td>
+<td>可治理</td>
+<td>僅能作外部合作方</td>
+</tr>
+<tr>
+<td>是否使用共同世界紀元？</td>
+<td>可協作</td>
+<td>必須重新同步</td>
+</tr>
+<tr>
+<td>是否能被撤銷租約？</td>
+<td>可作物理作用端</td>
+<td>不是受控身體</td>
+</tr>
+</tbody></table>
+<pre><code>
+---
+
+# 附錄 C：系列血緣
+
+```text
+O-Chip
+  決策—執行分離
+      ↓
+
+SFRSN
+  高階語義治理＋地方執行
+      ↓
+
+STDI 第 1 篇
+  持續物理時空域
+      ↓
+
+本篇
+  一個治理核心如何取得多個身體
+      ↓
+
+Oversoul Station Fabric
+  多身體如何形成站點化分布式身體
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/stdi-02.html">https://thisoneisneok.com/html/papers/stdi-02.html</a></footer>
+</body>
+</html>

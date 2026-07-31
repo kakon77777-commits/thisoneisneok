@@ -1,0 +1,1820 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>意圖中介表示：從自然意圖到多重可執行投影 | Neo.K</title>
+<meta name="description" content="前三篇已建立：程式語言不等於文字；符號應被理解為受治理算子；程式語言具有語法、語意與效果三層存在。本篇進一步處理意圖時代最核心的編譯問題：自然語言、圖形、表格、對話與人類未完成想法，如何被轉換為可驗證、可追蹤、可授權、可生成多種投影，並能安全進入 Runtime 的共同中介結構？">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pu-2-04.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PU</strong><span>程式宇宙基礎</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PU-2-04</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-27</span></div><div><b>作者</b><span>Neo.K with Aletheia</span></div><div><b>狀態</b><span>初版完成</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pu-2-04.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>意圖中介表示：從自然意圖到多重可執行投影</h1>
+<h2>Intent Intermediate Representation: From Natural Intent to Multiple Executable Projections</h2>
+<p><strong>論文編號：</strong> PU-2-04<br><strong>系列：</strong>「程式宇宙書系」第 2 冊《程式語言的本質》<br><strong>作者：</strong> Neo.K with Aletheia<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>版本：</strong> v0.1<br><strong>日期：</strong> 2026 年 7 月 27 日  </p>
+<hr>
+<h2>摘要</h2>
+<p>前三篇已建立：程式語言不等於文字；符號應被理解為受治理算子；程式語言具有語法、語意與效果三層存在。本篇進一步處理意圖時代最核心的編譯問題：自然語言、圖形、表格、對話與人類未完成想法，如何被轉換為可驗證、可追蹤、可授權、可生成多種投影，並能安全進入 Runtime 的共同中介結構？</p>
+<p>本文提出「意圖中介表示」：</p>
+<h1>$$
+\boxed{
+\mathcal I_R</h1>
+<p>\left\langle
+G,
+W,
+A,
+S,
+R,
+E,
+P,
+U,
+V,
+H
+\right\rangle
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$G$：Goal，目的與成功條件；</li>
+<li>$W$：World，問題世界與作用域；</li>
+<li>$A$：Actors，主體、角色與受影響者；</li>
+<li>$S$：State，前置狀態、目標狀態與合法轉移；</li>
+<li>$R$：Rules，規則、不變量與非目標；</li>
+<li>$E$：Effects，外部、物理與治理效果；</li>
+<li>$P$：Permissions，權限、委任與人類批准；</li>
+<li>$U$：Uncertainty，歧義、未知、爭議與未決選擇；</li>
+<li>$V$：Verification，證據、測試與完成判準；</li>
+<li>$H$：History，來源意圖、版本、決策與變更歷史。</li>
+</ul>
+<p>本文核心命題是：</p>
+<p>$$
+\boxed{
+\text{Natural Intent}
+\neq
+\text{Executable Program}
+}
+$$</p>
+<p>自然語言擅長表達目的、背景、例外、價值與尚未完成的思考，但它通常包含：</p>
+<ul>
+<li>歧義；</li>
+<li>省略；</li>
+<li>代詞；</li>
+<li>隱含常識；</li>
+<li>不明作用域；</li>
+<li>未明權限；</li>
+<li>未決成功條件；</li>
+<li>不可逆效果缺席；</li>
+<li>主體與責任位置不清。</li>
+</ul>
+<p>因此，從自然意圖直接跳到程式碼或工具執行，會把尚未解決的世界問題偽裝成已完成的編譯結果。</p>
+<p>本文提出五階意圖編譯鏈：</p>
+<p>$$
+\boxed{
+Intent
+\rightarrow
+ClarifiedIntent
+\rightarrow
+SemanticIR
+\rightarrow
+EffectPlan
+\rightarrow
+ExecutableProjection
+}
+$$</p>
+<p>其中：</p>
+<ol>
+<li><strong>Intent</strong>：原始自然意圖；</li>
+<li><strong>ClarifiedIntent</strong>：已顯示歧義、作用域與未決選擇的意圖；</li>
+<li><strong>Semantic IR</strong>：綁定問題世界身份、狀態、規則與責任；</li>
+<li><strong>Effect Plan</strong>：明示外部效果、權限、風險、證據與恢復；</li>
+<li><strong>Executable Projection</strong>：程式碼、工作流、UI、契約、測試、部署或 Agent 計畫。</li>
+</ol>
+<p>本文將意圖編譯定義為：</p>
+<h1>$$
+\boxed{
+Compile_I</h1>
+<p>Parse
++
+Bind
++
+Clarify
++
+Constrain
++
+Plan
++
+Verify
++
+Project
+}
+$$</p>
+<p>它不是把一句自然語言翻譯為另一種文字，而是把模糊的人類目的轉化為可被多角色共同理解與驗證的世界變更結構。</p>
+<p>本文區分四類不確定性：</p>
+<ol>
+<li><strong>詞彙歧義</strong>：同一詞具有多種可能語意；</li>
+<li><strong>指稱歧義</strong>：不知道指向哪個世界實體；</li>
+<li><strong>規範未決</strong>：沒有決定權限、優先級與例外；</li>
+<li><strong>效果未決</strong>：尚未決定世界要改變到哪一層。</li>
+</ol>
+<p>本文主張，不確定性不能被編譯器或 AI 靜默猜測後刪除，而應正式保存在 IR：</p>
+<pre><code class="language-text">unknown
+ambiguous
+contested
+requires-human-choice
+requires-external-evidence
+out-of-scope
+</code></pre>
+<p>本文提出「不可代理選擇保留」原則：</p>
+<blockquote>
+<p><strong>若某項選擇會永久改變主體權利、身份、財產、公開狀態或物理世界，而該選擇本應由特定主體完成，IR 必須保留該決策節點，不能因自動化便利而將其消除。</strong></p>
+</blockquote>
+<p>形式上：</p>
+<p>$$
+NonDelegableChoice(c)
+\Rightarrow
+PreserveHumanDecisionNode(c)
+$$</p>
+<p>本文進一步建立多重投影：</p>
+<h1>$$
+\Pi
+\left(
+\mathcal I_R
+\right)</h1>
+<p>\left{
+P_{code},
+P_{workflow},
+P_{ui},
+P_{contract},
+P_{test},
+P_{docs},
+P_{runtime},
+P_{audit}
+\right}
+$$</p>
+<p>同一意圖 IR 可以生成：</p>
+<ul>
+<li>程式碼；</li>
+<li>狀態機與工作流；</li>
+<li>使用者介面；</li>
+<li>API 與事件契約；</li>
+<li>測試與驗證條件；</li>
+<li>文件與可視圖；</li>
+<li>Runtime 執行計畫；</li>
+<li>稽核與證據規則。</li>
+</ul>
+<p>本文提出「多投影一致性」：</p>
+<p>$$
+\forall P_i,P_j\in\Pi(\mathcal I_R),
+\quad
+Consistent
+\left(
+P_i,P_j\mid\mathcal I_R
+\right)
+$$</p>
+<p>不同投影不必外觀相同，但必須保持核心世界身份、狀態、效果、權限、失敗與完成條件。</p>
+<p>本文也區分「生成」與「授權」。AI 或編譯器可以生成候選程式，但生成不等於取得執行權：</p>
+<p>$$
+\boxed{
+Generated
+\not\Rightarrow
+Authorized
+\not\Rightarrow
+Executed
+}
+$$</p>
+<p>IR 必須保留：</p>
+<ul>
+<li>候選；</li>
+<li>已驗證；</li>
+<li>已批准；</li>
+<li>已排程；</li>
+<li>已執行；</li>
+<li>已觀測；</li>
+<li>已接受；</li>
+</ul>
+<p>等不同生命週期。</p>
+<p>本文進一步提出「效果預覽」：</p>
+<h1>$$
+\widehat{\Delta W}</h1>
+<p>PredictEffects
+\left(
+\mathcal I_R,
+S_t
+\right)
+$$</p>
+<p>在執行前，系統應能向人類與 AI 顯示：</p>
+<ul>
+<li>預期修改哪些狀態；</li>
+<li>呼叫哪些外部服務；</li>
+<li>哪些效果不可逆；</li>
+<li>哪些主體受影響；</li>
+<li>哪些權限被使用；</li>
+<li>哪些失敗與補償可能發生；</li>
+<li>哪些結果仍不可確定。</li>
+</ul>
+<p>本文使用網站更新、訂單退款、資料報表、AI Agent 多工具任務、醫療提醒、研究論文發布與物理設備排程等案例，說明自然意圖如何被轉換為結構化 IR，再生成多個相互一致的執行與理解投影。本文最後提出可證偽研究綱領，包括意圖歧義率、未決選擇保留率、自然語言到 IR 的語意保持、效果預覽準確率、多投影一致性、人工確認負擔、AI 直接生成與 IR 生成之事故差異、IR 版本演化及人機共同編譯效率。</p>
+<p>本文為下一篇〈可編譯世界〉建立直接地基：當意圖已被轉換為具有世界身份、效果、權限與證據的 IR，程式執行就可被重新理解為對世界狀態差分的受治理提交。</p>
+<p><strong>關鍵詞：</strong> 意圖中介表示、自然語言編譯、多後端生成、效果預覽、不確定性保留、人機共同編譯、AI 程式設計</p>
+<hr>
+<h2>Abstract</h2>
+<p>This paper introduces Intent Intermediate Representation (Intent IR) as a structured bridge between natural intent and multiple executable projections.</p>
+<p>Intent IR preserves goals, problem-world scope, actors, state transitions, rules, effects, permissions, uncertainty, verification, and history.</p>
+<p>The paper distinguishes generation from authorization, preserves non-delegable choices, formalizes ambiguity and uncertainty, and supports multiple projections including code, workflows, user interfaces, contracts, tests, documentation, runtime plans, and audit rules.</p>
+<p><strong>Keywords:</strong> intent intermediate representation, natural-language compilation, multiple projections, effect preview, human-AI co-compilation</p>
+<hr>
+<h1>一、問題的提出：一句話不能直接成為世界修改權</h1>
+<p>使用者可能說：</p>
+<pre><code class="language-text">把網站更新後發布。
+</code></pre>
+<p>這句話具有清楚方向，卻缺少：</p>
+<ul>
+<li>哪個網站；</li>
+<li>更新哪些內容；</li>
+<li>使用哪個版本；</li>
+<li>發布到哪個環境；</li>
+<li>誰有權批准；</li>
+<li>是否先測試；</li>
+<li>發布成功如何證明；</li>
+<li>是否允許回滾；</li>
+<li>外部快取與爬蟲如何處理。</li>
+</ul>
+<p>如果 AI 直接從這句話生成並執行命令，它不是完成編譯，而是用猜測填滿未決世界。</p>
+<hr>
+<h1>二、意圖中介表示的十元結構</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+\mathcal I_R</h1>
+<p>\left\langle
+G,
+W,
+A,
+S,
+R,
+E,
+P,
+U,
+V,
+H
+\right\rangle
+}
+$$</p>
+<h2>2.1 Goal $G$</h2>
+<p>保存：</p>
+<ul>
+<li>原始目的；</li>
+<li>成功條件；</li>
+<li>非目標；</li>
+<li>可接受殘差；</li>
+<li>停止條件。</li>
+</ul>
+<h2>2.2 World $W$</h2>
+<p>保存：</p>
+<ul>
+<li>問題世界；</li>
+<li>實體；</li>
+<li>模組；</li>
+<li>環境；</li>
+<li>時間；</li>
+<li>外部依賴；</li>
+<li>作用域。</li>
+</ul>
+<h2>2.3 Actors $A$</h2>
+<p>保存：</p>
+<ul>
+<li>委任者；</li>
+<li>執行者；</li>
+<li>批准者；</li>
+<li>受影響者；</li>
+<li>責任者；</li>
+<li>外部權威。</li>
+</ul>
+<h2>2.4 State $S$</h2>
+<p>保存：</p>
+<ul>
+<li>當前狀態；</li>
+<li>目標狀態；</li>
+<li>合法轉移；</li>
+<li>版本；</li>
+<li>競爭與爭議。</li>
+</ul>
+<h2>2.5 Rules $R$</h2>
+<p>保存：</p>
+<ul>
+<li>世界規則；</li>
+<li>系統規則；</li>
+<li>實作限制；</li>
+<li>暫時規則；</li>
+<li>不變量；</li>
+<li>例外。</li>
+</ul>
+<h2>2.6 Effects $E$</h2>
+<p>保存：</p>
+<ul>
+<li>讀寫；</li>
+<li>事件；</li>
+<li>外部呼叫；</li>
+<li>物理效果；</li>
+<li>治理效果；</li>
+<li>可逆性；</li>
+<li>補償。</li>
+</ul>
+<h2>2.7 Permissions $P$</h2>
+<p>保存：</p>
+<ul>
+<li>能力；</li>
+<li>作用域；</li>
+<li>時效；</li>
+<li>委任；</li>
+<li>批准；</li>
+<li>不可代理選擇。</li>
+</ul>
+<h2>2.8 Uncertainty $U$</h2>
+<p>保存：</p>
+<ul>
+<li>歧義；</li>
+<li>未知；</li>
+<li>爭議；</li>
+<li>未決；</li>
+<li>假設；</li>
+<li>外部待確認。</li>
+</ul>
+<h2>2.9 Verification $V$</h2>
+<p>保存：</p>
+<ul>
+<li>測試；</li>
+<li>不變量；</li>
+<li>證據；</li>
+<li>完成；</li>
+<li>外部確認；</li>
+<li>人類接受。</li>
+</ul>
+<h2>2.10 History $H$</h2>
+<p>保存：</p>
+<ul>
+<li>原始意圖；</li>
+<li>澄清；</li>
+<li>選擇；</li>
+<li>拒絕；</li>
+<li>版本；</li>
+<li>生成與執行歷史。</li>
+</ul>
+<hr>
+<h1>三、意圖編譯的五階鏈</h1>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+Intent
+\rightarrow
+ClarifiedIntent
+\rightarrow
+SemanticIR
+\rightarrow
+EffectPlan
+\rightarrow
+ExecutableProjection
+}
+$$</p>
+<h2>3.1 Intent</h2>
+<p>原始意圖可能是：</p>
+<ul>
+<li>一句話；</li>
+<li>一段對話；</li>
+<li>一張草圖；</li>
+<li>一個表格；</li>
+<li>一組操作示範；</li>
+<li>一份舊系統範例。</li>
+</ul>
+<h2>3.2 Clarified Intent</h2>
+<p>把原始內容展開為：</p>
+<ul>
+<li>已知；</li>
+<li>未知；</li>
+<li>歧義；</li>
+<li>假設；</li>
+<li>必須由人選擇之處；</li>
+<li>可以由系統推導之處。</li>
+</ul>
+<h2>3.3 Semantic IR</h2>
+<p>將意圖綁定到：</p>
+<ul>
+<li>問題世界實體；</li>
+<li>狀態；</li>
+<li>規則；</li>
+<li>責任模組；</li>
+<li>契約；</li>
+<li>身份與時間。</li>
+</ul>
+<h2>3.4 Effect Plan</h2>
+<p>建立：</p>
+<ul>
+<li>預期世界差分；</li>
+<li>外部效果；</li>
+<li>不可逆節點；</li>
+<li>權限；</li>
+<li>失敗；</li>
+<li>補償；</li>
+<li>證據。</li>
+</ul>
+<h2>3.5 Executable Projection</h2>
+<p>生成：</p>
+<ul>
+<li>程式碼；</li>
+<li>工作流；</li>
+<li>UI；</li>
+<li>API；</li>
+<li>測試；</li>
+<li>部署設定；</li>
+<li>Agent 工具計畫。</li>
+</ul>
+<hr>
+<h1>四、意圖編譯不是文字翻譯</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+Compile_I</h1>
+<p>Parse
++
+Bind
++
+Clarify
++
+Constrain
++
+Plan
++
+Verify
++
+Project
+}
+$$</p>
+<h2>4.1 Parse</h2>
+<p>辨識自然語言、圖形或操作示範中的候選結構。</p>
+<h2>4.2 Bind</h2>
+<p>把名稱、代詞與描述綁定到世界身份。</p>
+<h2>4.3 Clarify</h2>
+<p>保留並處理歧義、未知與未決。</p>
+<h2>4.4 Constrain</h2>
+<p>加入：</p>
+<ul>
+<li>型別；</li>
+<li>狀態；</li>
+<li>規則；</li>
+<li>權限；</li>
+<li>不變量；</li>
+<li>非目標。</li>
+</ul>
+<h2>4.5 Plan</h2>
+<p>形成可執行步驟、依賴、失敗與恢復路徑。</p>
+<h2>4.6 Verify</h2>
+<p>檢查語意、效果、授權與完成條件。</p>
+<h2>4.7 Project</h2>
+<p>生成多種人類與機器投影。</p>
+<hr>
+<h1>五、四類不確定性</h1>
+<h2>5.1 詞彙歧義</h2>
+<p>例如「刪除」可能表示：</p>
+<ul>
+<li>從畫面隱藏；</li>
+<li>軟刪除；</li>
+<li>匿名化；</li>
+<li>停用；</li>
+<li>永久清除。</li>
+</ul>
+<h2>5.2 指稱歧義</h2>
+<p>例如「把那份文件發布」中的「那份文件」可能有多個候選。</p>
+<h2>5.3 規範未決</h2>
+<p>例如：</p>
+<ul>
+<li>誰能批准；</li>
+<li>哪項規則優先；</li>
+<li>是否允許例外；</li>
+<li>哪些資料可以公開。</li>
+</ul>
+<h2>5.4 效果未決</h2>
+<p>例如「更新網站」沒有說明：</p>
+<ul>
+<li>只更新草稿；</li>
+<li>建立預覽；</li>
+<li>發布測試環境；</li>
+<li>切換正式流量。</li>
+</ul>
+<h2>5.5 不確定性不是錯誤</h2>
+<p>未決狀態應被正式保存，而不是被編譯器或 AI 靜默填補。</p>
+<hr>
+<h1>六、不確定性節點</h1>
+<p>本文提出：</p>
+<pre><code class="language-text">unknown
+ambiguous
+contested
+requires-human-choice
+requires-external-evidence
+out-of-scope
+</code></pre>
+<h2>6.1 Unknown</h2>
+<p>目前沒有足夠資料。</p>
+<h2>6.2 Ambiguous</h2>
+<p>存在多個合理解釋。</p>
+<h2>6.3 Contested</h2>
+<p>不同主體對事實或規則有衝突主張。</p>
+<h2>6.4 Requires Human Choice</h2>
+<p>該選擇屬於特定主體，不能由系統代替。</p>
+<h2>6.5 Requires External Evidence</h2>
+<p>需要外部系統、感測或專業判定。</p>
+<h2>6.6 Out of Scope</h2>
+<p>明確不在本次意圖與授權範圍內。</p>
+<hr>
+<h1>七、不可代理選擇保留</h1>
+<p>本文提出：</p>
+<p>$$
+NonDelegableChoice(c)
+\Rightarrow
+PreserveHumanDecisionNode(c)
+$$</p>
+<h2>7.1 不可代理選擇</h2>
+<p>包括可能永久改變：</p>
+<ul>
+<li>身份；</li>
+<li>財產；</li>
+<li>權利；</li>
+<li>公開狀態；</li>
+<li>醫療決定；</li>
+<li>物理世界；</li>
+<li>長期承諾；</li>
+</ul>
+<p>的選擇。</p>
+<h2>7.2 保留方式</h2>
+<p>IR 應包含：</p>
+<pre><code class="language-yaml">decision:
+  type: &quot;human-required&quot;
+  actor: &quot;account-owner&quot;
+  options:
+    - &quot;deactivate&quot;
+    - &quot;anonymize&quot;
+    - &quot;permanently-delete&quot;
+  reversible: false
+</code></pre>
+<h2>7.3 自動化不能消除主體</h2>
+<p>AI 可以整理資訊、模擬後果與提出建議，但不能因「已能推測」而取得本應由主體完成的不可撤回選擇。</p>
+<hr>
+<h1>八、假設帳本</h1>
+<p>意圖轉換必然依賴假設。</p>
+<h2>8.1 假設格式</h2>
+<pre><code class="language-yaml">assumption:
+  statement: &quot;the provided document is the latest approved version&quot;
+  source: &quot;user reference&quot;
+  confidence: &quot;medium&quot;
+  validation: &quot;check release registry&quot;
+  failure_effect: &quot;publishing wrong version&quot;
+</code></pre>
+<h2>8.2 假設生命週期</h2>
+<pre><code class="language-text">proposed
+validated
+rejected
+expired
+superseded
+</code></pre>
+<h2>8.3 假設與事實分離</h2>
+<p>AI 推論、使用者主張、外部證據與權威狀態必須被區分。</p>
+<h2>8.4 假設失效</h2>
+<p>若關鍵假設失效，IR 應：</p>
+<ul>
+<li>阻止生成；</li>
+<li>降級為草稿；</li>
+<li>要求外部查證；</li>
+<li>重新規劃。</li>
+</ul>
+<hr>
+<h1>九、來源意圖與可追蹤性</h1>
+<h2>9.1 原始來源不能消失</h2>
+<p>IR 應保留：</p>
+<ul>
+<li>原句；</li>
+<li>對話上下文；</li>
+<li>圖形區域；</li>
+<li>表格欄位；</li>
+<li>示範步驟；</li>
+<li>使用者修改。</li>
+</ul>
+<h2>9.2 節點追蹤</h2>
+<p>每個語意節點應能回答：</p>
+<pre><code class="language-text">它來自哪一句？
+是直接表達、推導還是猜測？
+誰確認？
+何時修改？
+</code></pre>
+<h2>9.3 來源狀態</h2>
+<pre><code class="language-text">explicit
+derived
+inferred
+assumed
+human-confirmed
+externally-verified
+</code></pre>
+<h2>9.4 反向說明</h2>
+<p>執行計畫與生成程式應能反向說明其與原始意圖的關係。</p>
+<hr>
+<h1>十、語意節點</h1>
+<p>意圖 IR 不應只保存句子，而應保存可識別節點。</p>
+<h2>10.1 目的節點</h2>
+<p>描述：</p>
+<ul>
+<li>希望達成什麼；</li>
+<li>為誰達成；</li>
+<li>如何判斷成功；</li>
+<li>何時停止。</li>
+</ul>
+<h2>10.2 世界實體節點</h2>
+<p>綁定：</p>
+<ul>
+<li>身份；</li>
+<li>類型；</li>
+<li>所有者；</li>
+<li>生命週期；</li>
+<li>權威來源。</li>
+</ul>
+<h2>10.3 行動節點</h2>
+<p>保存：</p>
+<ul>
+<li>行動者；</li>
+<li>目標；</li>
+<li>前置條件；</li>
+<li>效果；</li>
+<li>失敗；</li>
+<li>證據。</li>
+</ul>
+<h2>10.4 規則節點</h2>
+<p>保存：</p>
+<ul>
+<li>規則來源；</li>
+<li>適用域；</li>
+<li>優先級；</li>
+<li>例外；</li>
+<li>版本；</li>
+<li>修改權。</li>
+</ul>
+<h2>10.5 決策節點</h2>
+<p>保存：</p>
+<ul>
+<li>誰決定；</li>
+<li>候選選項；</li>
+<li>後果；</li>
+<li>可撤回性；</li>
+<li>決策期限。</li>
+</ul>
+<h2>10.6 證據節點</h2>
+<p>保存：</p>
+<ul>
+<li>所證明主張；</li>
+<li>來源；</li>
+<li>時間；</li>
+<li>完整性；</li>
+<li>信任程度；</li>
+<li>有效期限。</li>
+</ul>
+<hr>
+<h1>十一、狀態與生命週期</h1>
+<h2>11.1 IR 自身也是持續實體</h2>
+<p>意圖中介表示具有生命週期：</p>
+<pre><code class="language-text">captured
+clarifying
+modeled
+validated
+awaiting-approval
+authorized
+projected
+executing
+observing
+accepted
+revised
+withdrawn
+</code></pre>
+<h2>11.2 生成不等於批准</h2>
+<p>$$
+\boxed{
+Generated
+\not\Rightarrow
+Authorized
+\not\Rightarrow
+Executed
+}
+$$</p>
+<h2>11.3 執行不等於接受</h2>
+<p>執行完成後仍需：</p>
+<ul>
+<li>效果觀測；</li>
+<li>證據核查；</li>
+<li>使用者或領域主體接受；</li>
+<li>殘差處理。</li>
+</ul>
+<h2>11.4 撤回</h2>
+<p>意圖可以在不可逆效果發生前被撤回。</p>
+<p>若已部分執行，撤回需轉化為補償與結案流程。</p>
+<hr>
+<h1>十二、效果計畫</h1>
+<p>意圖 IR 必須在生成低階程式前建立效果計畫。</p>
+<h1>$$
+\mathcal E_P</h1>
+<p>\left\langle
+Reads,
+Writes,
+Events,
+Calls,
+Physical,
+Governance,
+Failure,
+Recovery,
+Evidence
+\right\rangle
+$$</p>
+<h2>12.1 讀取</h2>
+<p>列出讀取哪些權威狀態與敏感資料。</p>
+<h2>12.2 寫入</h2>
+<p>列出修改哪些狀態，由誰擁有。</p>
+<h2>12.3 事件</h2>
+<p>列出將形成哪些領域事件。</p>
+<h2>12.4 外部呼叫</h2>
+<p>列出第三方、網路、費用與相依。</p>
+<h2>12.5 物理效果</h2>
+<p>列出可能作用於設備、位置、能源與人員的效果。</p>
+<h2>12.6 治理效果</h2>
+<p>列出權限、身份、規則與責任改變。</p>
+<h2>12.7 失敗與恢復</h2>
+<p>列出：</p>
+<ul>
+<li>拒絕；</li>
+<li>暫時失敗；</li>
+<li>結果未知；</li>
+<li>部分成功；</li>
+<li>重試；</li>
+<li>補償；</li>
+<li>人類接管。</li>
+</ul>
+<h2>12.8 證據</h2>
+<p>每一重要效果都應有完成與失敗證據。</p>
+<hr>
+<h1>十三、效果預覽</h1>
+<p>本文提出：</p>
+<h1>$$
+\widehat{\Delta W}</h1>
+<p>PredictEffects
+\left(
+\mathcal I_R,
+S_t
+\right)
+$$</p>
+<h2>13.1 預期狀態差分</h2>
+<p>顯示：</p>
+<ul>
+<li>哪些實體被建立；</li>
+<li>哪些狀態被修改；</li>
+<li>哪些關係被終止；</li>
+<li>哪些規則生效。</li>
+</ul>
+<h2>13.2 受影響主體</h2>
+<p>顯示：</p>
+<ul>
+<li>直接使用者；</li>
+<li>被提及者；</li>
+<li>管理者；</li>
+<li>外部合作方；</li>
+<li>未登入但受影響的人。</li>
+</ul>
+<h2>13.3 風險</h2>
+<p>顯示：</p>
+<ul>
+<li>不可逆；</li>
+<li>敏感資料；</li>
+<li>費用；</li>
+<li>對外公開；</li>
+<li>物理危險；</li>
+<li>權限提升。</li>
+</ul>
+<h2>13.4 恢復能力</h2>
+<p>顯示：</p>
+<ul>
+<li>可重試；</li>
+<li>可回滾；</li>
+<li>可補償；</li>
+<li>只能說明；</li>
+<li>完全不可逆。</li>
+</ul>
+<h2>13.5 預覽不是保證</h2>
+<p>預覽是模型推導，仍應標記：</p>
+<ul>
+<li>高信心；</li>
+<li>條件性；</li>
+<li>未知；</li>
+<li>需外部證據。</li>
+</ul>
+<hr>
+<h1>十四、多重投影</h1>
+<p>本文定義：</p>
+<h1>$$
+\Pi
+\left(
+\mathcal I_R
+\right)</h1>
+<p>\left{
+P_{code},
+P_{workflow},
+P_{ui},
+P_{contract},
+P_{test},
+P_{docs},
+P_{runtime},
+P_{audit}
+\right}
+$$</p>
+<h2>14.1 程式碼投影</h2>
+<p>生成具體語言來源碼與設定。</p>
+<h2>14.2 工作流投影</h2>
+<p>生成狀態、事件、等待、人工節點與恢復圖。</p>
+<h2>14.3 UI 投影</h2>
+<p>生成：</p>
+<ul>
+<li>可用操作；</li>
+<li>表單；</li>
+<li>狀態；</li>
+<li>確認；</li>
+<li>撤回；</li>
+<li>錯誤與部分成功敘事。</li>
+</ul>
+<h2>14.4 契約投影</h2>
+<p>生成：</p>
+<ul>
+<li>API；</li>
+<li>Command；</li>
+<li>Event；</li>
+<li>Query；</li>
+<li>Evidence；</li>
+<li>版本與失敗語意。</li>
+</ul>
+<h2>14.5 測試投影</h2>
+<p>生成：</p>
+<ul>
+<li>案例；</li>
+<li>不變量；</li>
+<li>權限測試；</li>
+<li>效果模擬；</li>
+<li>外部完成判準。</li>
+</ul>
+<h2>14.6 文件投影</h2>
+<p>生成對不同角色的說明與可視圖。</p>
+<h2>14.7 Runtime 投影</h2>
+<p>生成執行計畫、資源、權限、觀測與恢復設定。</p>
+<h2>14.8 稽核投影</h2>
+<p>生成證據保留、責任鏈與操作歷史要求。</p>
+<hr>
+<h1>十五、多投影一致性</h1>
+<p>本文提出：</p>
+<p>$$
+\forall P_i,P_j\in\Pi(\mathcal I_R),
+\quad
+Consistent
+\left(
+P_i,P_j\mid\mathcal I_R
+\right)
+$$</p>
+<h2>15.1 一致不等於相同</h2>
+<p>UI 不必顯示程式碼細節，程式碼也不必包含所有文件文字。</p>
+<h2>15.2 必須保持的核心</h2>
+<ul>
+<li>世界身份；</li>
+<li>狀態語意；</li>
+<li>規則；</li>
+<li>效果；</li>
+<li>權限；</li>
+<li>失敗；</li>
+<li>完成條件；</li>
+<li>版本。</li>
+</ul>
+<h2>15.3 常見漂移</h2>
+<ul>
+<li>UI 顯示完成，後端只完成入列；</li>
+<li>契約允許重試，效果實際不可冪等；</li>
+<li>文件說需批准，Runtime 可直接執行；</li>
+<li>測試只驗證回傳值，未驗證外部效果。</li>
+</ul>
+<h2>15.4 一致性檢查</h2>
+<p>可由 IR 對每個投影建立語意差分與缺失警告。</p>
+<hr>
+<h1>十六、投影不是權威本體</h1>
+<h2>16.1 共同權威</h2>
+<p>意圖 IR 或其驗證後語意核心應成為多投影共同來源。</p>
+<h2>16.2 手改生成物</h2>
+<p>直接修改生成碼或 UI，若未回寫語意核心，會造成分裂。</p>
+<h2>16.3 允許局部手工內容</h2>
+<p>格式、效能與平台細節可以在投影層補充，但必須標示：</p>
+<ul>
+<li>非語意；</li>
+<li>後端特定；</li>
+<li>不可反向覆蓋核心；</li>
+<li>需在再生成時保存。</li>
+</ul>
+<h2>16.4 投影回饋</h2>
+<p>低階發現的限制、效果與 Runtime 差異，應提升回 IR，而非長期藏於生成碼。</p>
+<hr>
+<h1>十七、人機共同編譯</h1>
+<h2>17.1 人類提供</h2>
+<p>人類較擅長提供：</p>
+<ul>
+<li>目的；</li>
+<li>價值；</li>
+<li>背景；</li>
+<li>例外；</li>
+<li>可接受風險；</li>
+<li>不可代理選擇。</li>
+</ul>
+<h2>17.2 AI 提供</h2>
+<p>AI 較適合：</p>
+<ul>
+<li>展開候選結構；</li>
+<li>找出歧義；</li>
+<li>對照既有規則；</li>
+<li>生成投影；</li>
+<li>模擬效果；</li>
+<li>建立測試與文件。</li>
+</ul>
+<h2>17.3 編譯器提供</h2>
+<p>編譯器與驗證器負責：</p>
+<ul>
+<li>結構合法；</li>
+<li>型別；</li>
+<li>身份；</li>
+<li>狀態；</li>
+<li>效果；</li>
+<li>權限；</li>
+<li>投影一致性。</li>
+</ul>
+<h2>17.4 Runtime 提供</h2>
+<p>Runtime 提供：</p>
+<ul>
+<li>真實執行；</li>
+<li>狀態轉移；</li>
+<li>外部回執；</li>
+<li>可觀測資料；</li>
+<li>恢復與補償。</li>
+</ul>
+<h2>17.5 共同鏈</h2>
+<p>$$
+HumanIntent
++
+AIStructuring
++
+CompilerVerification
++
+RuntimeEvidence
+$$</p>
+<p>形成可持續的人機共同編譯流程。</p>
+<hr>
+<h1>十八、AI 不能靜默消歧</h1>
+<h2>18.1 高信心也不是授權</h2>
+<p>AI 可以判斷某解釋最可能，但最可能不等於使用者已選擇。</p>
+<h2>18.2 可自動消歧的情況</h2>
+<p>只有當：</p>
+<ul>
+<li>選擇可逆；</li>
+<li>風險低；</li>
+<li>有明示預設；</li>
+<li>不改變他人權利；</li>
+<li>可在執行前預覽；</li>
+</ul>
+<p>時，才適合自動選用預設。</p>
+<h2>18.3 必須提出選擇的情況</h2>
+<p>涉及：</p>
+<ul>
+<li>永久刪除；</li>
+<li>對外發布；</li>
+<li>付款；</li>
+<li>身份；</li>
+<li>權限；</li>
+<li>醫療；</li>
+<li>法律承諾；</li>
+<li>物理控制；</li>
+</ul>
+<p>時，歧義必須保留到合法決策者完成選擇。</p>
+<h2>18.4 猜測標記</h2>
+<p>AI 推導應標示：</p>
+<pre><code class="language-text">high-confidence-inference
+low-confidence-inference
+default-assumption
+requires-confirmation
+</code></pre>
+<hr>
+<h1>十九、權限與委任</h1>
+<h2>19.1 意圖者不必是執行者</h2>
+<p>使用者可以提出目的，Agent 執行，外部服務完成效果。</p>
+<h2>19.2 權限鏈</h2>
+<p>$$
+Principal
+\rightarrow
+Delegation
+\rightarrow
+Agent
+\rightarrow
+Tool
+\rightarrow
+World
+$$</p>
+<p>每一層必須保存：</p>
+<ul>
+<li>作用域；</li>
+<li>時效；</li>
+<li>可再委任性；</li>
+<li>禁止效果；</li>
+<li>證據；</li>
+<li>撤銷。</li>
+</ul>
+<h2>19.3 能力不等於委任</h2>
+<p>Agent 有技術能力呼叫某工具，不代表本次意圖授權它使用。</p>
+<h2>19.4 投影權限</h2>
+<p>不同投影也需要最小權限：</p>
+<ul>
+<li>文件不應洩漏敏感資料；</li>
+<li>UI 不應顯示無權操作；</li>
+<li>測試資料不應攜帶真實秘密；</li>
+<li>Runtime 計畫不應超出委任範圍。</li>
+</ul>
+<hr>
+<h1>二十、IR 驗證階梯</h1>
+<h2>20.1 結構驗證</h2>
+<p>十元欄位、節點與關係是否完整。</p>
+<h2>20.2 指稱驗證</h2>
+<p>實體、規則、版本與外部服務是否正確綁定。</p>
+<h2>20.3 狀態驗證</h2>
+<p>當前狀態是否允許計畫中的轉移。</p>
+<h2>20.4 規則驗證</h2>
+<p>不變量、非目標與例外是否一致。</p>
+<h2>20.5 權限驗證</h2>
+<p>委任、批准與不可代理選擇是否完整。</p>
+<h2>20.6 效果驗證</h2>
+<p>世界差分是否有界、可觀測、可恢復或已接受。</p>
+<h2>20.7 投影驗證</h2>
+<p>各投影是否保持 IR 語意。</p>
+<h2>20.8 Runtime 驗證</h2>
+<p>執行環境、工具版本、資源與外部依賴是否符合計畫。</p>
+<hr>
+<h1>二十一、IR 版本與演化</h1>
+<h2>21.1 意圖會改變</h2>
+<p>使用者可能：</p>
+<ul>
+<li>補充條件；</li>
+<li>改變目的；</li>
+<li>撤回；</li>
+<li>降低範圍；</li>
+<li>接受新的殘差。</li>
+</ul>
+<h2>21.2 版本鏈</h2>
+<p>$$
+\mathcal I_R^{(1)}
+\rightarrow
+\mathcal I_R^{(2)}
+\rightarrow
+\cdots
+\rightarrow
+\mathcal I_R^{(n)}
+$$</p>
+<h2>21.3 語意差分</h2>
+<p>IR 差分應顯示：</p>
+<ul>
+<li>目的改變；</li>
+<li>作用域擴張；</li>
+<li>新增受影響者；</li>
+<li>新增不可逆效果；</li>
+<li>權限提升；</li>
+<li>完成條件改變。</li>
+</ul>
+<h2>21.4 已執行版本</h2>
+<p>執行後不能用新版本靜默覆寫舊版本，必須知道哪個 IR 版本實際造成世界效果。</p>
+<h2>21.5 分支</h2>
+<p>多個候選方案可形成分支，經比較後選擇，而不必過早刪除其他可能性。</p>
+<hr>
+<h1>二十二、IR 與記憶</h1>
+<h2>22.1 對話記憶不足</h2>
+<p>長對話可能包含重要決定，但難以直接作為執行依據。</p>
+<h2>22.2 結構記憶</h2>
+<p>IR 將對話中的：</p>
+<ul>
+<li>目的；</li>
+<li>選擇；</li>
+<li>限制；</li>
+<li>未決；</li>
+<li>批准；</li>
+</ul>
+<p>轉化為可查詢節點。</p>
+<h2>22.3 記憶來源</h2>
+<p>每個記憶應區分：</p>
+<ul>
+<li>使用者明示；</li>
+<li>系統觀測；</li>
+<li>AI 推論；</li>
+<li>外部文件；</li>
+<li>已過期內容。</li>
+</ul>
+<h2>22.4 遺忘與撤回</h2>
+<p>若主體撤回資訊或授權，IR 與投影必須能：</p>
+<ul>
+<li>標記失效；</li>
+<li>撤銷執行權；</li>
+<li>重新生成；</li>
+<li>保存必要稽核而不繼續使用內容。</li>
+</ul>
+<hr>
+<h1>二十三、案例一：網站更新與發布</h1>
+<p>原始意圖：</p>
+<pre><code class="language-text">把網站更新後發布。
+</code></pre>
+<h2>23.1 澄清後意圖</h2>
+<pre><code class="language-yaml">goal:
+  site: &quot;evemisslab.com&quot;
+  content_source: &quot;approved-release-2026-07&quot;
+  target_environment: &quot;production&quot;
+  success:
+    - &quot;public homepage shows approved version&quot;
+</code></pre>
+<h2>23.2 未決節點</h2>
+<ul>
+<li>是否先建立預覽；</li>
+<li>是否允許自動切流量；</li>
+<li>失敗時是否自動回滾；</li>
+<li>外部 CDN 完成如何確認。</li>
+</ul>
+<h2>23.3 效果計畫</h2>
+<pre><code class="language-text">read release
+→ build
+→ test
+→ deploy
+→ verify
+→ shift traffic
+→ observe public journey
+</code></pre>
+<h2>23.4 多投影</h2>
+<p>生成：</p>
+<ul>
+<li>部署程式；</li>
+<li>工作流；</li>
+<li>批准 UI；</li>
+<li>發布契約；</li>
+<li>smoke test；</li>
+<li>回滾計畫；</li>
+<li>發布紀錄。</li>
+</ul>
+<hr>
+<h1>二十四、案例二：訂單退款</h1>
+<p>原始意圖：</p>
+<pre><code class="language-text">把這筆訂單退掉。
+</code></pre>
+<h2>24.1 詞彙歧義</h2>
+<p>「退掉」可能是：</p>
+<ul>
+<li>取消未付款訂單；</li>
+<li>取消履約；</li>
+<li>退款；</li>
+<li>退貨；</li>
+<li>關閉爭議。</li>
+</ul>
+<h2>24.2 指稱</h2>
+<p>必須綁定訂單、付款、商品與申請者。</p>
+<h2>24.3 規則</h2>
+<p>需要：</p>
+<ul>
+<li>退款上限；</li>
+<li>期限；</li>
+<li>退貨條件；</li>
+<li>部分退款；</li>
+<li>手續費；</li>
+<li>人工批准。</li>
+</ul>
+<h2>24.4 效果</h2>
+<p>退款可能不可即時撤回，並涉及財務、庫存、通知與會計證據。</p>
+<h2>24.5 IR 價值</h2>
+<p>若未完成上述展開，直接呼叫 <code>refund(order)</code> 是把業務歧義壓入不可逆效果。</p>
+<hr>
+<h1>二十五、案例三：產生報表</h1>
+<p>原始意圖：</p>
+<pre><code class="language-text">幫我整理本月銷售報表。
+</code></pre>
+<h2>25.1 問題世界</h2>
+<p>需定義：</p>
+<ul>
+<li>本月的時區；</li>
+<li>銷售是下單、付款或結算；</li>
+<li>退貨與退款如何計算；</li>
+<li>幣別；</li>
+<li>稅；</li>
+<li>資料新鮮度。</li>
+</ul>
+<h2>25.2 權限</h2>
+<p>報表可能包含：</p>
+<ul>
+<li>客戶資料；</li>
+<li>財務資料；</li>
+<li>員工績效；</li>
+<li>商業機密。</li>
+</ul>
+<h2>25.3 投影</h2>
+<p>同一 IR 可生成：</p>
+<ul>
+<li>SQL；</li>
+<li>資料管線；</li>
+<li>試算表；</li>
+<li>圖表；</li>
+<li>管理摘要；</li>
+<li>資料來源說明。</li>
+</ul>
+<h2>25.4 驗證</h2>
+<p>報表生成成功不等於定義正確，仍需語意與資料品質核查。</p>
+<hr>
+<h1>二十六、案例四：AI Agent 多工具任務</h1>
+<p>原始意圖：</p>
+<pre><code class="language-text">整理研究資料，更新論文，然後發布。
+</code></pre>
+<h2>26.1 任務分解</h2>
+<ul>
+<li>搜尋與讀取資料；</li>
+<li>判斷證據；</li>
+<li>修改論文；</li>
+<li>執行格式與連結檢查；</li>
+<li>發布網站。</li>
+</ul>
+<h2>26.2 權限分層</h2>
+<p>讀取資料、修改草稿與正式發布應使用不同能力與批准。</p>
+<h2>26.3 決策保留</h2>
+<p>AI 可以提出論文修改，但關鍵斷言與正式發布仍可保留人類批准。</p>
+<h2>26.4 證據鏈</h2>
+<p>每項新主張應連到來源、分析與修改節點。</p>
+<h2>26.5 恢復</h2>
+<p>發布失敗不應回滾論文內容；兩者是不同世界責任。</p>
+<hr>
+<h1>二十七、案例五：醫療提醒</h1>
+<p>原始意圖：</p>
+<pre><code class="language-text">提醒病人記得吃藥。
+</code></pre>
+<h2>27.1 世界綁定</h2>
+<p>需知道：</p>
+<ul>
+<li>哪位病人；</li>
+<li>哪種藥；</li>
+<li>醫囑版本；</li>
+<li>時間與時區；</li>
+<li>是否已停藥；</li>
+<li>聯絡方式。</li>
+</ul>
+<h2>27.2 主體權利</h2>
+<p>病人可能選擇：</p>
+<ul>
+<li>提醒頻率；</li>
+<li>通知管道；</li>
+<li>是否向家屬顯示；</li>
+<li>暫停或撤回。</li>
+</ul>
+<h2>27.3 效果</h2>
+<p>提醒送出不等於病人已讀，更不等於已服藥。</p>
+<h2>27.4 完成層級</h2>
+<pre><code class="language-text">scheduled
+provider-accepted
+delivered
+read
+patient-confirmed
+</code></pre>
+<p>必須分開表示。</p>
+<hr>
+<h1>二十八、案例六：研究論文發布</h1>
+<p>原始意圖：</p>
+<pre><code class="language-text">把這篇研究發布出去。
+</code></pre>
+<h2>28.1 前置狀態</h2>
+<ul>
+<li>文件版本；</li>
+<li>作者；</li>
+<li>引用；</li>
+<li>證據狀態；</li>
+<li>公開授權；</li>
+<li>敏感內容；</li>
+<li>發布平台。</li>
+</ul>
+<h2>28.2 非目標</h2>
+<p>發布不等於：</p>
+<ul>
+<li>命題已被證明；</li>
+<li>同行評審完成；</li>
+<li>研究已獲共識。</li>
+</ul>
+<h2>28.3 投影</h2>
+<p>可生成：</p>
+<ul>
+<li>Markdown；</li>
+<li>HTML；</li>
+<li>PDF；</li>
+<li>metadata；</li>
+<li>citation；</li>
+<li>網站索引；</li>
+<li>AI 可讀層。</li>
+</ul>
+<h2>28.4 歷史</h2>
+<p>IR 應保存發布版本與當時主張強度。</p>
+<hr>
+<h1>二十九、案例七：物理設備排程</h1>
+<p>原始意圖：</p>
+<pre><code class="language-text">明天早上讓機器開始運作。
+</code></pre>
+<h2>29.1 歧義</h2>
+<ul>
+<li>明天是哪個日期；</li>
+<li>早上幾點；</li>
+<li>哪台機器；</li>
+<li>執行多久；</li>
+<li>誰在現場。</li>
+</ul>
+<h2>29.2 安全條件</h2>
+<ul>
+<li>維護狀態；</li>
+<li>安全區域；</li>
+<li>感測器；</li>
+<li>能源；</li>
+<li>緊急停止；</li>
+<li>操作者批准。</li>
+</ul>
+<h2>29.3 時間 IR</h2>
+<p>需保存絕對時間、時區、過期策略與重新確認條件。</p>
+<h2>29.4 物理效果</h2>
+<p>排程建立、命令送出、設備啟動與安全運行是不同完成層級。</p>
+<hr>
+<h1>三十、主要失敗模式</h1>
+<ol>
+<li><strong>自然意圖即程式：</strong> 一句話直接取得世界修改權。</li>
+<li><strong>翻譯即編譯：</strong> 只把自然語言換成程式語言文字。</li>
+<li><strong>歧義靜默消失：</strong> AI 以猜測代替合法選擇。</li>
+<li><strong>指稱未綁定：</strong> 「它」「那份」「網站」沒有穩定身份。</li>
+<li><strong>成功條件缺席：</strong> 不知道何時算完成。</li>
+<li><strong>非目標缺席：</strong> 系統擴張到未委任範圍。</li>
+<li><strong>不可代理選擇被自動化：</strong> 永久權利與身份選擇由 Agent 代做。</li>
+<li><strong>假設冒充事實：</strong> AI 推論未標記來源與信心。</li>
+<li><strong>來源意圖遺失：</strong> 無法說明生成節點來自哪句要求。</li>
+<li><strong>生成即批准：</strong> 候選程式被直接執行。</li>
+<li><strong>批准即完成：</strong> 取得批准後忽略 Runtime 與外部證據。</li>
+<li><strong>投影各自為政：</strong> 程式碼、UI、測試與文件語意分裂。</li>
+<li><strong>生成物手改：</strong> 低階修改未回饋共同 IR。</li>
+<li><strong>效果計畫缺席：</strong> 只生成步驟，不列不可逆、權限與補償。</li>
+<li><strong>預覽冒充保證：</strong> 模型預測被當成真實效果。</li>
+<li><strong>作用域膨脹：</strong> Agent 在執行過程自行擴大資料與工具範圍。</li>
+<li><strong>權限繼承過度：</strong> 子任務獲得整體任務全部能力。</li>
+<li><strong>對話即記憶：</strong> 關鍵決定只埋在長上下文中。</li>
+<li><strong>版本覆寫歷史：</strong> 新意圖靜默改寫已執行版本。</li>
+<li><strong>撤回無效：</strong> 使用者撤回後既有計畫仍保有執行權。</li>
+<li><strong>部分成功不可見：</strong> 多投影與多工具工作只顯示成功或失敗。</li>
+<li><strong>物理排程缺少再確認：</strong> 時間到便執行，忽略世界狀態已改變。</li>
+</ol>
+<hr>
+<h1>三十一、可證偽研究綱領</h1>
+<h2>31.1 原始意圖歧義率</h2>
+<p>統計自然意圖進入 IR 時，包含詞彙、指稱、規範與效果歧義的比例。</p>
+<h2>31.2 未決選擇保留率</h2>
+<p>測量系統是否把需要人類完成的不可代理選擇保存為正式決策節點，而非靜默填補。</p>
+<h2>31.3 自然語言—IR 語意保持</h2>
+<p>由人類評估原始目的、非目標、角色與成功條件在 IR 中的保存程度。</p>
+<h2>31.4 指稱綁定準確率</h2>
+<p>統計代詞、簡稱與描述被正確綁定到世界身份、版本與環境的比例。</p>
+<h2>31.5 假設透明度</h2>
+<p>檢查 AI 推導中有多少正確標記為：</p>
+<ul>
+<li>inferred；</li>
+<li>assumed；</li>
+<li>unverified；</li>
+<li>human-confirmed；</li>
+<li>externally-verified。</li>
+</ul>
+<h2>31.6 效果預覽準確率</h2>
+<p>比較：</p>
+<p>$$
+\widehat{\Delta W}
+$$</p>
+<p>與實際觀測：</p>
+<p>$$
+\Delta W
+$$</p>
+<p>的狀態、事件、外部效果、受影響主體與殘差差異。</p>
+<h2>31.7 多投影一致性</h2>
+<p>統計程式碼、UI、契約、測試、文件與 Runtime 計畫間的核心語意漂移。</p>
+<h2>31.8 人工確認負擔</h2>
+<p>研究 IR 是否能把人類確認集中在高風險與真正未決節點，而不是對每個低階步驟要求確認。</p>
+<h2>31.9 直接生成—IR 生成事故差異</h2>
+<p>比較 AI 直接生成並執行程式，與先建立、驗證、批准 IR 再生成投影的事故率、越權率與恢復成本。</p>
+<h2>31.10 授權作用域保持</h2>
+<p>檢查委任從主體到 Agent、工具與子任務時，是否出現權限擴張或時效遺失。</p>
+<h2>31.11 IR 版本可追蹤性</h2>
+<p>測量能否從每個世界效果反查實際執行的 IR 版本、來源意圖、批准與生成物。</p>
+<h2>31.12 撤回有效率</h2>
+<p>統計主體撤回意圖或權限後，尚未執行投影能否被可靠停止與重新生成。</p>
+<h2>31.13 人機共同編譯效率</h2>
+<p>比較純人工規格、純 AI 生成及人機共同 IR 流程，在需求理解、開發時間、驗證與維護上的差異。</p>
+<h2>31.14 跨後端語意保持</h2>
+<p>將同一 IR 生成至不同語言、工作流引擎與 Runtime，測量狀態、效果、權限、失敗與證據保持。</p>
+<h2>31.15 物理效果安全性</h2>
+<p>比較自然語言直接排程設備與使用含安全條件、感測證據、過期和再確認的 IR 控制方式。</p>
+<h2>31.16 長期維護效果</h2>
+<p>研究結構化意圖歷史是否降低規則變更、系統重構、AI 模型替換與團隊交接成本。</p>
+<hr>
+<h1>三十二、本文的二十四項命題</h1>
+<ol>
+<li>自然意圖不等於可執行程式。</li>
+<li>意圖編譯不是文字翻譯，而是世界綁定、消歧、限制、規劃、驗證與投影。</li>
+<li>意圖 IR 必須保存目的、世界、主體、狀態、規則、效果、權限、不確定性、驗證與歷史。</li>
+<li>原始意圖中的歧義、未知與爭議不能被靜默刪除。</li>
+<li>詞彙、指稱、規範與效果不確定性具有不同結構。</li>
+<li>不可代理選擇必須保留為由合法主體完成的決策節點。</li>
+<li>AI 的高信心推測不等於主體授權。</li>
+<li>假設、推論、使用者主張與外部證據必須區分。</li>
+<li>每個 IR 節點都應能追蹤回原始意圖與確認歷史。</li>
+<li>IR 自身具有從捕捉、澄清、驗證、批准到執行與接受的生命週期。</li>
+<li></li>
+</ol>
+<p>$$
+Generated
+\not\Rightarrow
+Authorized
+\not\Rightarrow
+Executed
+$$
+12. 意圖 IR 必須在生成低階程式前建立效果計畫。
+13. 效果預覽應顯示狀態差分、外部效果、受影響主體、權限、失敗與恢復。
+14. 效果預覽是條件性推導，不是真實世界保證。
+15. 同一 IR 可以生成程式碼、工作流、UI、契約、測試、文件、Runtime 與稽核投影。
+16. 多重投影外觀可以不同，但核心世界語意必須一致。
+17. 投影不應各自成為可獨立修改的競爭真相。
+18. 低階 Runtime 發現的限制與未宣告效果應回饋至 IR。
+19. 人類、AI、編譯器與 Runtime 在意圖編譯中具有不同責任。
+20. 權限必須沿主體、委任、Agent、工具與世界效果鏈保持作用域與時效。
+21. 對話內容只有被結構化後，才能成為可靠執行記憶。
+22. IR 版本必須保存實際造成世界效果的來源與批准。
+23. 意圖撤回應能撤銷尚未執行投影的執行權。
+24. 
+$$
+\boxed{
+\text{意圖時代的程式設計，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{不是讓一句話跳過所有結構直接改變世界，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是讓一句話能被展開為}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{可理解、可選擇、可驗證、可授權與可追蹤的世界計畫。}
+}
+$$</p>
+<hr>
+<h1>三十三、與前後篇的關係</h1>
+<h2>33.1 承接 PU-2-01</h2>
+<p>PU-2-01 指出文字只是程式的一種投影。</p>
+<p>本篇建立共同意圖 IR，使文字、視覺、UI、工作流與程式碼能由同一語意核心生成。</p>
+<h2>33.2 承接 PU-2-02</h2>
+<p>PU-2-02 將符號提升為受治理算子。</p>
+<p>本篇將自然意圖分解為具有身份、條件、效果、權限與證據的算子節點與算子圖。</p>
+<h2>33.3 承接 PU-2-03</h2>
+<p>PU-2-03 建立語法、語意與效果三層。</p>
+<p>本篇把意圖依序轉換為語意 IR 與效果計畫，再生成具體語法與 Runtime 投影。</p>
+<h2>33.4 銜接 PU-2-05</h2>
+<p>下一篇將建立：</p>
+<p>$$
+\boxed{
+CompileWorld
+:
+(W_t,\mathcal I_R)
+\rightarrow
+\left(
+W_{t+1},
+Evidence,
+Residual
+\right)
+}
+$$</p>
+<p>集中處理：</p>
+<ul>
+<li>世界狀態如何成為編譯輸入；</li>
+<li>程式執行如何成為世界差分提交；</li>
+<li>數位效果與物理效果如何分層確認；</li>
+<li>Runtime 如何維持交易、補償與觀測；</li>
+<li>可編譯世界如何拒絕非法狀態差分。</li>
+</ul>
+<hr>
+<h1>三十四、結論：意圖需要被保存，而不是被猜測取代</h1>
+<p>自然語言使程式設計的入口大幅擴張。</p>
+<p>人類不必先知道：</p>
+<ul>
+<li>語法；</li>
+<li>API；</li>
+<li>資料表；</li>
+<li>框架；</li>
+<li>Runtime；</li>
+<li>部署工具；</li>
+</ul>
+<p>就能先描述自己希望世界發生什麼。</p>
+<p>這是意圖時代真正重要的進步。</p>
+<p>但自然語言的便利，也帶來另一種危險：系統可能把理解、選擇、授權與世界責任全部隱藏在一次不可見的模型推論中。</p>
+<p>一句「幫我處理好」可以被展開為數十個狀態變更、外部呼叫、權限使用與不可逆效果。若這些結構不被外部化，使用者只能在執行前盲目信任，在執行後觀看結果。</p>
+<p>本文提出意圖 IR，就是為了打開這個黑箱。</p>
+<p>它不要求使用者閱讀所有低階程式碼，而是把真正重要的結構顯示出來：</p>
+<pre><code class="language-text">你想達成什麼？
+系統認為你指的是哪些對象？
+哪些內容仍有歧義？
+哪些假設尚未確認？
+哪些主體會受到影響？
+將產生哪些外部或不可逆效果？
+使用哪些權限？
+失敗時如何恢復？
+什麼證據代表完成？
+哪個選擇必須由你自己完成？
+</code></pre>
+<p>本文將意圖編譯收束為：</p>
+<h1>$$
+\boxed{
+\text{Intent Compilation}</h1>
+<p>\text{Meaning Preservation}
++
+\text{Uncertainty Preservation}
++
+\text{Effect Planning}
++
+\text{Authorization}
++
+\text{Multi-Projection Generation}
++
+\text{Evidence}
+}
+$$</p>
+<p>而意圖 IR 的角色是：</p>
+<h1>$$
+\boxed{
+\text{Intent IR}</h1>
+<p>\text{Shared Semantic Contract}
+}
+$$</p>
+<p>它位於人類意圖、AI 推理、編譯器驗證、Runtime 執行與世界證據之間，使所有參與者能以不同投影共享同一個可追蹤結構。</p>
+<p>這並不表示未來每個小操作都需要龐大規格。</p>
+<p>低風險、可逆、局部且具有穩定預設的意圖，可以被高度壓縮與自動化。真正需要被展開的，是那些：</p>
+<ul>
+<li>有歧義；</li>
+<li>跨模組；</li>
+<li>影響他人；</li>
+<li>使用敏感資料；</li>
+<li>產生費用；</li>
+<li>對外公開；</li>
+<li>修改權限；</li>
+<li>作用於物理世界；</li>
+<li>不可逆或難以補償；</li>
+</ul>
+<p>的世界變更。</p>
+<p>因此，意圖程式設計的成熟標準，不是 AI 能多快把一句話變成程式碼。</p>
+<p>而是：</p>
+<p>$$
+\boxed{
+\text{AI 能否知道哪些地方可以自動編譯，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{哪些地方必須保留未知，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{哪些地方需要人類選擇，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{以及每一項世界效果如何被驗證與承擔。}
+}
+$$</p>
+<hr>
+<h1>附錄 A：意圖 IR 最小格式</h1>
+<pre><code class="language-yaml">intent_ir:
+  intent_id: &quot;publish-site-20260727&quot;
+
+  goal:
+    statement: &quot;publish the approved site update&quot;
+    success:
+      - &quot;approved release is publicly visible&quot;
+    non_goals:
+      - &quot;change domain ownership&quot;
+
+  world:
+    site: &quot;evemisslab.com&quot;
+    environment: &quot;production&quot;
+    release: &quot;approved-release-2026-07&quot;
+
+  actors:
+    principal: &quot;site-owner&quot;
+    executor: &quot;deployment-agent&quot;
+    affected:
+      - &quot;site-visitors&quot;
+
+  state:
+    current: &quot;approved&quot;
+    target: &quot;public-and-verified&quot;
+
+  effects:
+    external:
+      - &quot;deploy artifact&quot;
+      - &quot;shift traffic&quot;
+    irreversible:
+      - &quot;public content may be cached&quot;
+
+  permissions:
+    required:
+      - &quot;production-deploy&quot;
+    human_approval:
+      - &quot;shift-public-traffic&quot;
+
+  uncertainty:
+    - id: &quot;cdn-propagation&quot;
+      kind: &quot;requires-external-evidence&quot;
+
+  verification:
+    - &quot;public homepage journey passes&quot;
+    - &quot;release hash matches approved artifact&quot;
+</code></pre>
+<hr>
+<h1>附錄 B：多投影登錄</h1>
+<pre><code class="language-yaml">projection_registry:
+  source_ir: &quot;publish-site-20260727&quot;
+
+  projections:
+    code:
+      path: &quot;deploy/generated/publish_site.ts&quot;
+      generated: true
+
+    workflow:
+      id: &quot;publish-site-workflow-v2&quot;
+
+    ui:
+      view: &quot;release-approval-panel&quot;
+
+    contract:
+      id: &quot;deploy-release-v3&quot;
+
+    test:
+      suite: &quot;public-journey-smoke&quot;
+
+    runtime:
+      plan: &quot;deployment-plan-889&quot;
+
+    audit:
+      evidence_chain: &quot;release-publication-889&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：未決選擇節點</h1>
+<pre><code class="language-yaml">unresolved_decision:
+  decision_id: &quot;delete-account-mode&quot;
+
+  source:
+    statement: &quot;delete my account&quot;
+
+  alternatives:
+    - id: &quot;deactivate&quot;
+      reversible: true
+    - id: &quot;anonymize&quot;
+      reversible: false
+    - id: &quot;permanent-delete&quot;
+      reversible: false
+
+  decision_owner: &quot;account-owner&quot;
+  delegation_allowed: false
+  execution_blocked_until_decided: true
+</code></pre>
+<hr>
+<h1>附錄 D：效果預覽</h1>
+<pre><code class="language-yaml">effect_preview:
+  intent_id: &quot;refund-order-932&quot;
+
+  predicted:
+    states:
+      - &quot;payment -&gt; refund-pending&quot;
+      - &quot;order -&gt; cancellation-review&quot;
+
+    external_calls:
+      - &quot;payment-provider.refund&quot;
+
+    affected_actors:
+      - &quot;customer&quot;
+      - &quot;merchant&quot;
+      - &quot;finance-team&quot;
+
+    irreversible:
+      - &quot;provider refund request&quot;
+
+    recovery:
+      - &quot;manual reconciliation&quot;
+
+    confidence:
+      overall: &quot;medium&quot;
+      unknown:
+        - &quot;provider final settlement time&quot;
+</code></pre>
+<hr>
+<h1>附錄 E：第 2 冊六篇位置</h1>
+<ol>
+<li>PU-2-01　程式語言不等於文字：結構、語意與執行的基本分離</li>
+<li>PU-2-02　符號作為算子：從靜態字元到可組合計算閉包</li>
+<li>PU-2-03　語法—語意—效果：程式語言的三層存在結構</li>
+<li><strong>PU-2-04　意圖中介表示：從自然意圖到多重可執行投影</strong></li>
+<li>PU-2-05　可編譯世界：程式執行作為世界狀態差分</li>
+<li>PU-2-06　後文本程式語言：意圖、結構、驗證與物理耦合的統一框架</li>
+</ol>
+<hr>
+<h1>參考文獻</h1>
+<h2>Neo.K／EveMissLab 相關理論</h2>
+<ol>
+<li>Neo.K with Aletheia，《程式語言不等於文字：結構、語意與執行的基本分離》，2026。</li>
+<li>Neo.K with Aletheia，《符號作為算子：從靜態字元到可組合計算閉包》，2026。</li>
+<li>Neo.K with Aletheia，《語法—語意—效果：程式語言的三層存在結構》，2026。</li>
+<li>Neo.K with Aletheia，《程式不等於程式碼：可執行問題模型的基本定義》，2026。</li>
+<li>Neo.K with Aletheia，《責任、模組與契約：從檔案分類到系統邊界》，2026。</li>
+<li>Neo.K with Aletheia，《可視化作為外部結構記憶：多角色、多尺度的程式理解》，2026。</li>
+<li>Neo.K with Aletheia，《可編譯世界：從程式執行到世界狀態演化》，2026。</li>
+</ol>
+<h2>一般理論背景</h2>
+<ol start="8">
+<li>Aho, A. V. et al., <em>Compilers: Principles, Techniques, and Tools</em>, 2006.</li>
+<li>Fowler, M., <em>Domain-Specific Languages</em>, 2010.</li>
+<li>Erdweg, S. et al., “The State of the Art in Language Workbenches,” 2013.</li>
+<li>Omar, C. et al., “Hazelnut: A Bidirectionally Typed Structure Editor Calculus,” 2017.</li>
+<li>Pierce, B. C., <em>Types and Programming Languages</em>, 2002.</li>
+<li>Scott, D. and Strachey, C., “Toward a Mathematical Semantics for Computer Languages,” 1971.</li>
+<li>Hoare, C. A. R., “An Axiomatic Basis for Computer Programming,” 1969.</li>
+<li>Harel, D., “Statecharts: A Visual Formalism for Complex Systems,” 1987.</li>
+<li>Knuth, D. E., “Literate Programming,” 1984.</li>
+<li>Green, T. R. G. and Petre, M., “Usability Analysis of Visual Programming Environments,” 1996.</li>
+<li>W3C PROV-O and provenance modeling standards.</li>
+<li>Research on program synthesis from natural language and neuro-symbolic program generation.</li>
+<li>Research on bidirectional transformations, lenses, and multi-view consistency.</li>
+</ol>
+<hr>
+<h1>版本紀錄</h1>
+<h2>v0.1 — 2026-07-27</h2>
+<ul>
+<li>完成十八篇地基論文第十六篇。</li>
+<li>建立意圖中介表示十元模型。</li>
+<li>提出自然意圖不等於可執行程式。</li>
+<li>建立意圖、澄清意圖、語意 IR、效果計畫與可執行投影五階鏈。</li>
+<li>將意圖編譯定義為解析、綁定、澄清、限制、規劃、驗證與投影。</li>
+<li>區分詞彙、指稱、規範與效果四類不確定性。</li>
+<li>建立未知、歧義、爭議、人類選擇、外部證據與域外節點。</li>
+<li>提出不可代理選擇保留原則。</li>
+<li>建立假設帳本、來源意圖與節點可追蹤。</li>
+<li>建立 IR 生命週期與生成、授權、執行分離。</li>
+<li>建立效果計畫與效果預覽。</li>
+<li>建立程式碼、工作流、UI、契約、測試、文件、Runtime 與稽核八類投影。</li>
+<li>建立多投影一致性與共同權威結構。</li>
+<li>建立人類、AI、編譯器與 Runtime 的共同編譯責任。</li>
+<li>建立權限鏈、IR 驗證階梯、版本、分支、撤回與結構記憶。</li>
+<li>加入網站、退款、報表、AI Agent、醫療提醒、研究發布與物理設備案例。</li>
+<li>提出二十二類失敗模式與十六項可證偽研究方向。</li>
+<li>完成與 PU-2-05《可編譯世界》的銜接。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pu-2-04.html">https://thisoneisneok.com/html/papers/pu-2-04.html</a></footer>
+</body>
+</html>

@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>John McCarthy：極小核心、符號計算與語言可延展性 | Neo.K</title>
+<meta name="description" content="John McCarthy 的程式語言設計風格通常被濃縮成幾個標籤：LISP、List、Recursion、`eval`、程式即資料。然而，這些特徵若脫離其原始問題，就容易被誤解成純粹的語法極簡或無限制元程式設計。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-012.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-012</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第三部設計師個案正式研究</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-012.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>John McCarthy：極小核心、符號計算與語言可延展性</h1>
+<h2>摘要</h2>
+<p>John McCarthy 的程式語言設計風格通常被濃縮成幾個標籤：LISP、List、Recursion、<code>eval</code>、程式即資料。然而，這些特徵若脫離其原始問題，就容易被誤解成純粹的語法極簡或無限制元程式設計。</p>
+<p>LISP 最初並不是為了展示一種漂亮的括號語法，而是為人工智慧研究建立一個能操作符號表達式、邏輯句子、可變大小結構與遞迴定義的計算系統。McCarthy 在 1960 年論文中明確說明，該系統源自 Advice Taker 所需要的形式化宣告與命令表達，並經多次簡化，最後建立在與特定 IBM 704 獨立的 S-expression 與 Recursive function 表示上。[R1]</p>
+<p>LISP 的設計核心包含：</p>
+<ul>
+<li>以 List structure 表示可變大小的符號資料；</li>
+<li>使用少量 Selector 與 Constructor；</li>
+<li>以 Conditional expression 和 Recursion 定義計算；</li>
+<li>以 Lambda expression 表示函數；</li>
+<li>讓程式與資料共享表示；</li>
+<li>用 <code>eval</code> 同時充當語言形式定義與 Interpreter；</li>
+<li>以 Garbage collection 解決自動回收；</li>
+<li>以最少 Declaration 支援互動式執行。[R1][R2]</li>
+</ul>
+<p>然而，把這些成果全部歸於 McCarthy 一人同樣失真。Steve Russell 看到 McCarthy 作為數學練習寫出的 <code>eval</code> 可以直接實作為 Interpreter，並將其手工編成 IBM 704 機器碼；Daniel J. Edwards、Timothy Hart、Michael Levin、Paul Abrahams、Phyllis Fox、Klim Maling 等人對 Interpreter、Garbage collector、Compiler、Reader／Printer、Manual 與實際系統作出關鍵貢獻。[R3][R4]</p>
+<p>本文使用 PLDST 模型，把 McCarthy 的語言設計分成四個相位：</p>
+<ol>
+<li><strong>符號問題形成期</strong>：AI、Advice Taker、邏輯表達與可變結構；</li>
+<li><strong>遞迴形式核心期</strong>：S-expression、S-function、Lambda、Conditional 與 <code>apply</code>／<code>eval</code>；</li>
+<li><strong>可執行元語言期</strong>：程式作為資料、Interpreter、互動環境與系統自我延展；</li>
+<li><strong>多分支語族期</strong>：LISP 1.5 之後由不同實作、機構和社群形成多條 Lisp 路線。</li>
+</ol>
+<p>本文的核心判斷是：</p>
+<blockquote>
+<p>McCarthy 的極簡不是「功能越少越好」，而是尋找一組能同時表示資料、程式與語言定義的生成性核心，使語言能由其使用者和實作者繼續擴張。</p>
+</blockquote>
+<p>其深層風格可表示為：</p>
+<p>$$
+\boxed{
+\text{統一表示}
++
+\text{遞迴定義}
++
+\text{可執行語義}
++
+\text{系統自我延展}
+}
+$$</p>
+<p>但這種風格也有代價：</p>
+<ul>
+<li>語法與資料的統一可能形成難以限制的元編程權力；</li>
+<li>動態表示與晚期檢查把部分安全責任交給使用者及工具；</li>
+<li>小核心可以生成龐大的方言與生態差異；</li>
+<li>原本計畫使用的 M-expression 沒有完成，S-expression 從中間表示變成主要表面語法，形成一次重要的事故性穩定；</li>
+<li>LISP 後來的成功不能被視為 McCarthy 個人持續治理的單一路線。</li>
+</ul>
+<p><strong>關鍵詞：</strong> John McCarthy、LISP、符號計算、S-expression、eval、遞迴、垃圾回收、程式即資料、語言延展、PLDST</p>
+<hr>
+<h1>第一部分　研究邊界與歸因</h1>
+<h2>一、本文研究對象</h2>
+<p>本文主要研究：</p>
+<ul>
+<li>1956–1958 年的 LISP 問題形成；</li>
+<li>1958–1962 年的設計與早期實作；</li>
+<li>1960 年〈Recursive Functions of Symbolic Expressions〉；</li>
+<li>LISP 1／1.5；</li>
+<li>McCarthy 1978／1979 年的歷史回顧；</li>
+<li>1980 年對 LISP 存續特徵的總結；</li>
+<li>後期口述歷史中的自我敘述。</li>
+</ul>
+<p>本文不把 Scheme、Common Lisp、Interlisp、Maclisp、Emacs Lisp、Clojure 等後代語言的全部設計歸於 McCarthy。</p>
+<hr>
+<h2>二、創始設計與實作必須分開</h2>
+<p>LISP 1.5 Programmer’s Manual 的原始歸因指出：</p>
+<ul>
+<li>整體設計：John McCarthy；</li>
+<li>Interpreter：Stephen R. Russell、Daniel J. Edwards；</li>
+<li>Reader／Printer：McCarthy、Klim Maling、Edwards、Paul W. Abrahams；</li>
+<li>Garbage collector 與 Arithmetic：Daniel J. Edwards；</li>
+<li>Compiler／Assembler：Timothy P. Hart、Michael I. Levin；</li>
+<li>早期 Compiler：Robert Brayton；</li>
+<li>LISP I Manual：Phyllis A. Fox；</li>
+<li>其他成員亦提供程式和建議。[R4]</li>
+</ul>
+<p>因此：</p>
+<pre><code class="language-text">問題設定與核心形式：McCarthy 高
+eval 的形式定義：McCarthy 高
+eval 成為實際 Interpreter：Russell 關鍵
+運行系統與 Compiler：團隊共同
+Lisp 語族後期演化：多共同體
+</code></pre>
+<hr>
+<h2>三、McCarthy 自己也承認歷史歸因不完整</h2>
+<p>他在〈History of Lisp〉開頭直接指出：</p>
+<ul>
+<li>該稿對許多實作者和思想貢獻者提及不足；</li>
+<li>自己過去曾在歸因上犯錯；</li>
+<li>後來發現其他文件研究者對部分歷史有更準確理解。[R2][R5]</li>
+</ul>
+<p>這使 McCarthy 個案非常適合 PLDST 的多主體歸因模型。</p>
+<hr>
+<h1>第二部分　相位一：問題先於語言</h1>
+<h2>四、Advice Taker 與符號推理</h2>
+<p>LISP 的起點是建立能操作：</p>
+<ul>
+<li>宣告句；</li>
+<li>命令句；</li>
+<li>邏輯關係；</li>
+<li>形式化知識；</li>
+<li>推論過程；</li>
+</ul>
+<p>的系統。</p>
+<p>這要求資料不是固定數值陣列，而是具有：</p>
+<ul>
+<li>可變大小；</li>
+<li>嵌套結構；</li>
+<li>任意深度；</li>
+<li>符號名稱；</li>
+<li>可被分解與重組；</li>
+</ul>
+<p>的表達。</p>
+<hr>
+<h2>五、為什麼是 List</h2>
+<p>McCarthy 在口述歷史中說明，List 能讓程式的結構與資料結構相互對應。</p>
+<p>例如一個和式可以表示為：</p>
+<pre><code class="language-text">PLUS
+├── term1
+├── term2
+└── term3
+</code></pre>
+<p>程式不需要先把整個表達式解析成固定長度陣列，而可以：</p>
+<ul>
+<li>取出 Operator；</li>
+<li>遍歷 Operand；</li>
+<li>對子式遞迴；</li>
+<li>重組新表達式。</li>
+</ul>
+<hr>
+<h2>六、Recursion 不是裝飾功能</h2>
+<p>形式微分的定義天然具有遞迴結構：</p>
+<h1>$$
+D(a+b)</h1>
+<p>D(a)+D(b)
+$$</p>
+<p>如果表達式是一個和，微分程式就對各子表達式再次呼叫自己。</p>
+<p>McCarthy 回顧，他在 1958 年發現 FORTRAN 不允許這種遞迴，因此判斷需要新語言。[R3]</p>
+<hr>
+<h2>七、問題—資料—控制三者對齊</h2>
+<p>McCarthy 的重要設計方式是讓：</p>
+<p>$$
+Structure_{\text{problem}}
+\approx
+Structure_{\text{data}}
+\approx
+Structure_{\text{program}}
+$$</p>
+<p>這是 Lisp 可讀性與元編程能力的共同來源。</p>
+<hr>
+<h1>第三部分　相位二：遞迴形式核心</h1>
+<h2>八、S-expression</h2>
+<p>S-expression 提供：</p>
+<ul>
+<li>Atom；</li>
+<li>Pair／List；</li>
+<li>Nested structure；</li>
+<li>統一外部表示；</li>
+<li>可由同一 Reader 解析；</li>
+<li>可由程式自身操作。</li>
+</ul>
+<p>其核心能力不是括號本身，而是規則化樹狀表示。</p>
+<hr>
+<h2>九、S-function 與 M-expression</h2>
+<p>McCarthy 原本區分：</p>
+<ul>
+<li><strong>S-expression</strong>：資料與內部表示；</li>
+<li><strong>M-expression</strong>：較接近一般數學符號的函數書寫法。</li>
+</ul>
+<p>1960 年論文承認，S-expression 表示可寫且有一定可讀性；若為提高表面可讀性而改變符號，也會降低結構規則性。[R1]</p>
+<p>原計畫是由 M-expression 翻譯為 S-expression，但這套外部語法沒有完成及普及。</p>
+<p>結果是：</p>
+<p>$$
+IntermediateRepresentation
+\rightarrow
+SurfaceLanguage
+$$</p>
+<p>這是一個典型的事故性穩定。</p>
+<hr>
+<h2>十、少量基本函數</h2>
+<p>早期核心包括：</p>
+<ul>
+<li><code>atom</code>；</li>
+<li><code>eq</code>；</li>
+<li><code>car</code>；</li>
+<li><code>cdr</code>；</li>
+<li><code>cons</code>；</li>
+<li><code>cond</code>；</li>
+<li><code>quote</code>；</li>
+<li><code>lambda</code>；</li>
+<li><code>label</code>；</li>
+<li><code>apply</code>；</li>
+<li><code>eval</code>。</li>
+</ul>
+<p>這些機制本身不多，卻能組成：</p>
+<ul>
+<li>Tree traversal；</li>
+<li>Substitution；</li>
+<li>Differentiation；</li>
+<li>Interpreter；</li>
+<li>Program transformation；</li>
+<li>Symbolic reasoning。</li>
+</ul>
+<hr>
+<h2>十一、Conditional expression</h2>
+<p>條件不是只作為控制陳述，而被放入表達式和函數定義。</p>
+<p>因此：</p>
+<p>$$
+Branch
+\in
+Expression
+$$</p>
+<p>而不需把計算分裂成表達式世界與陳述世界。</p>
+<hr>
+<h2>十二、Lambda 與 Recursive definition</h2>
+<p>Lambda expression 提供匿名函數與參數綁定；<code>label</code> 等機制使函數能以名稱遞迴引用自己。</p>
+<p>這讓語言核心同時具有：</p>
+<ul>
+<li>函數抽象；</li>
+<li>高階操作；</li>
+<li>遞迴；</li>
+<li>形式計算。</li>
+</ul>
+<hr>
+<h1>第四部分　<code>eval</code>：形式定義變成可執行系統</h1>
+<h2>十三、原始意圖</h2>
+<p>McCarthy 說明，他寫出 Universal function <code>eval</code>，主要是數學練習：</p>
+<ul>
+<li>展示該形式具有通用性；</li>
+<li>讓 Universal function 比 Universal Turing machine 更透明；</li>
+<li>向數學家說明遞迴函數形式的價值。[R3]</li>
+</ul>
+<hr>
+<h2>十四、Russell 的實作洞見</h2>
+<p>Steve Russell 看出：</p>
+<pre><code class="language-text">若把 eval 寫成機器程式
+它就是 LISP Interpreter
+</code></pre>
+<p>McCarthy 起初有所懷疑，Russell 仍完成實作。[R3]</p>
+<p>因此：</p>
+<p>$$
+FormalDefinition
+\xrightarrow{\text{Russell}}
+ExecutableInterpreter
+$$</p>
+<p>這不是單純把 McCarthy 的完整計畫照表實作，而是實作者對形式定義作出的關鍵再解讀。</p>
+<hr>
+<h2>十五、形式語義與實作合一</h2>
+<p><code>eval</code> 同時是：</p>
+<ul>
+<li>語言定義；</li>
+<li>解釋器模型；</li>
+<li>元循環能力的起點；</li>
+<li>程式分析工具；</li>
+<li>教學模型；</li>
+<li>自我描述機制。</li>
+</ul>
+<p>McCarthy 後來把「<code>eval</code> 同時作為形式定義與 Interpreter」列為 LISP 長期存續的重要特徵。[R6]</p>
+<hr>
+<h2>十六、這不是完整的自我實作神話</h2>
+<p>早期 Interpreter 仍依賴：</p>
+<ul>
+<li>IBM 704 機器碼；</li>
+<li>手工實作；</li>
+<li>Reader；</li>
+<li>Printer；</li>
+<li>Garbage collector；</li>
+<li>Arithmetic；</li>
+<li>Runtime convention；</li>
+<li>Compiler。</li>
+</ul>
+<p>所以：</p>
+<pre><code class="language-text">語言可用自己的表示描述語義
+≠
+整個系統不需要外部基礎
+</code></pre>
+<hr>
+<h1>第五部分　程式與資料共享表示</h1>
+<h2>十七、統一表示的能力</h2>
+<p>當程式也以 List／S-expression 表示，程式可以：</p>
+<ul>
+<li>讀取其他程式；</li>
+<li>建立新程式；</li>
+<li>轉換程式；</li>
+<li>解釋程式；</li>
+<li>儲存程式；</li>
+<li>在互動環境中修改定義。</li>
+</ul>
+<hr>
+<h2>十八、元編程與語言延展</h2>
+<p>統一表示使使用者可以建立：</p>
+<ul>
+<li>Macro；</li>
+<li>DSL；</li>
+<li>Compiler；</li>
+<li>Theorem prover；</li>
+<li>Symbolic algebra；</li>
+<li>Editor；</li>
+<li>Debugger；</li>
+<li>Language extension。</li>
+</ul>
+<p>McCarthy 1980 年總結認為，程式作為 LISP 資料，降低了 System programmer 與 Application programmer 的分隔，許多使用者的「改進」最後成為語言改進。[R6]</p>
+<hr>
+<h2>十九、不是所有語法樹都等同 Lisp</h2>
+<p>現代語言也有 AST，但 Lisp 的特殊之處在於：</p>
+<ul>
+<li>來源與資料表示非常接近；</li>
+<li>Reader 與 Printer 形成標準轉換；</li>
+<li>語言原生操作可處理表示；</li>
+<li><code>eval</code> 直接賦予表示執行含義；</li>
+<li>互動環境使修改立即可見。</li>
+</ul>
+<hr>
+<h2>二十、表達自由的代價</h2>
+<p>同一能力可能造成：</p>
+<ul>
+<li>Macro 方言；</li>
+<li>非局部展開；</li>
+<li>工具分析困難；</li>
+<li>隱藏控制流；</li>
+<li>Runtime Code generation；</li>
+<li>安全邊界擴大；</li>
+<li>不同專案形成不同有效語言。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+Extensibility\uparrow
+\Rightarrow
+GovernanceNeed\uparrow
+$$</p>
+<hr>
+<h1>第六部分　Garbage collection 與責任配置</h1>
+<h2>二十一、Erasure problem</h2>
+<p>List structure 會動態建立大量節點。</p>
+<p>若要求每個 AI 程式設計者手工追蹤：</p>
+<ul>
+<li>哪些 List 不再使用；</li>
+<li>哪些節點共享；</li>
+<li>哪些資料可回收；</li>
+</ul>
+<p>符號計算的抽象就會被記憶體管理摧毀。</p>
+<hr>
+<h2>二十二、自動回收</h2>
+<p>McCarthy 將 Garbage collection 列為 LISP 的長期核心特徵；早期實際 Garbage collector 則由 Daniel J. Edwards 等團隊成員完成。[R4][R6]</p>
+<p>複雜度配置為：</p>
+<p>$$
+C_{\text{manual lifetime}}\downarrow
+\qquad
+C_{\text{runtime}}\uparrow
+$$</p>
+<hr>
+<h2>二十三、與符號計算模型一致</h2>
+<p>GC 不是與語言無關的附加便利，而是使：</p>
+<ul>
+<li>動態 List；</li>
+<li>結構共享；</li>
+<li>遞迴生成；</li>
+<li>互動式實驗；</li>
+<li>程式轉換；</li>
+</ul>
+<p>可以實際運作的 Runtime 責任。</p>
+<hr>
+<h1>第七部分　互動式語言</h1>
+<h2>二十四、最少前置宣告</h2>
+<p>McCarthy 把「最少 Declaration，讓 LISP statement 可在 Online environment 中直接執行」列為 LISP 存續特徵。[R6]</p>
+<p>這使語言適合：</p>
+<ul>
+<li>試驗；</li>
+<li>即時修改；</li>
+<li>探索式 AI；</li>
+<li>REPL；</li>
+<li>增量建立系統；</li>
+<li>長時間運行環境。</li>
+</ul>
+<hr>
+<h2>二十五、互動性與動態性</h2>
+<p>互動環境需要：</p>
+<ul>
+<li>Late binding；</li>
+<li>Dynamic loading；</li>
+<li>Runtime inspection；</li>
+<li>可重新定義；</li>
+<li>立即回饋。</li>
+</ul>
+<p>它提高研究生產力，也增加：</p>
+<ul>
+<li>可重現性；</li>
+<li>靜態驗證；</li>
+<li>部署一致性；</li>
+<li>版本狀態；</li>
+</ul>
+<p>的治理問題。</p>
+<hr>
+<h1>第八部分　相位三：可延展系統</h1>
+<h2>二十六、極小核心不是封閉核心</h2>
+<p>McCarthy 的核心是生成性的：</p>
+<p>$$
+SmallKernel
++
+ProgramDataUnity
++
+Eval
++
+GC
++
+InteractiveEnvironment
+\rightarrow
+OpenEndedSystem
+$$</p>
+<hr>
+<h2>二十七、擴展能力放在哪裡</h2>
+<p>LISP 把大量能力放在：</p>
+<ul>
+<li>Library；</li>
+<li>User-defined functions；</li>
+<li>Program transformation；</li>
+<li>Macro；</li>
+<li>Runtime；</li>
+<li>Dialect；</li>
+<li>Interactive environment。</li>
+</ul>
+<p>因此語言核心可以小，整個 Lisp 系統卻可以極大。</p>
+<hr>
+<h2>二十八、可擴展性與標準化張力</h2>
+<p>當不同機構各自改進 Lisp，便產生：</p>
+<ul>
+<li>不同資料表示；</li>
+<li>不同 Scope；</li>
+<li>不同 Compiler；</li>
+<li>不同 Object system；</li>
+<li>不同 Macro；</li>
+<li>不同 Module；</li>
+<li>不同編輯器與 OS。</li>
+</ul>
+<p>這既是 Lisp 生命力，也形成方言分裂。</p>
+<hr>
+<h1>第九部分　相位四：從 LISP 到 Lisp 語族</h1>
+<h2>二十九、1962 後的多分支</h2>
+<p>McCarthy 自己將 LISP 歷史分為：</p>
+<ul>
+<li>1956–1958：主要思想形成；</li>
+<li>1958–1962：語言實作及 AI 應用；</li>
+<li>1962 後：發展成多條分支。[R2]</li>
+</ul>
+<p>這表示：</p>
+<p>$$
+Style_{\text{McCarthy}}
+\neq
+Style_{\text{all Lisp descendants}}
+$$</p>
+<hr>
+<h2>三十、後創始者制度</h2>
+<p>不同 Lisp 路線後來由：</p>
+<ul>
+<li>MIT；</li>
+<li>Stanford；</li>
+<li>BBN；</li>
+<li>Xerox；</li>
+<li>Symbolics；</li>
+<li>Scheme 社群；</li>
+<li>Common Lisp 標準化；</li>
+<li>Emacs；</li>
+<li>其他研究與商業機構；</li>
+</ul>
+<p>共同發展。</p>
+<p>McCarthy 很早便不再是所有 Lisp 的直接治理者。</p>
+<hr>
+<h2>三十一、Lisp 存續的判斷</h2>
+<p>McCarthy 1980 年把多項特徵視為某種程式語言空間中的近似局部最優：</p>
+<ul>
+<li>Symbolic expression；</li>
+<li>List representation；</li>
+<li>少量 Constructor／Selector；</li>
+<li>Composition；</li>
+<li>Recursion；</li>
+<li>Lambda；</li>
+<li>Program as data；</li>
+<li><code>eval</code>；</li>
+<li>GC；</li>
+<li>Online environment。[R6]</li>
+</ul>
+<p>這是後期回顧，不應被當成 1958 年已完整預見的固定設計藍圖。</p>
+<hr>
+<h1>第十部分　風格時間相位</h1>
+<h2>三十二、問題形成期</h2>
+<pre><code class="language-text">目標：讓機器操作形式知識與邏輯句子
+核心需要：可變結構、符號、遞迴
+</code></pre>
+<hr>
+<h2>三十三、形式核心期</h2>
+<pre><code class="language-text">目標：以少量遞迴函數描述符號計算
+核心：S-expression、Lambda、Conditional、Recursion
+</code></pre>
+<hr>
+<h2>三十四、可執行語義期</h2>
+<pre><code class="language-text">目標：讓語言定義直接成為 Interpreter
+轉折：Russell 實作 eval
+</code></pre>
+<hr>
+<h2>三十五、系統延展期</h2>
+<pre><code class="language-text">目標：讓使用者以程式操作程式、增量改進系統
+機制：Program as data、eval、GC、Online environment
+</code></pre>
+<hr>
+<h2>三十六、多分支語族期</h2>
+<pre><code class="language-text">結果：可延展性產生大量 Dialect 與制度
+權力：由創始者轉向多個共同體
+</code></pre>
+<hr>
+<h1>第十一部分　PLDST 風格指紋</h1>
+<h2>三十七、問題 framing</h2>
+<p>McCarthy 從問題結構出發：</p>
+<blockquote>
+<p>若計算對象是形式句子與符號結構，語言本身就應能自然表示、分解、重組和遞迴處理這些對象。</p>
+</blockquote>
+<hr>
+<h2>三十八、價值優先序</h2>
+<p>$$
+V_{\text{McCarthy}}
+\approx
+(
+FormalGenerality,
+SymbolicRepresentation,
+Recursion,
+Uniformity,
+Extensibility,
+Interactivity,
+MathematicalSemantics
+)
+$$</p>
+<hr>
+<h2>三十九、核心—擴張配置</h2>
+<pre><code class="language-text">核心：少量表達與列表操作
+擴張：函數、程式生成、Macro、Interpreter、Dialect
+</code></pre>
+<p>這是 <strong>生成式極簡</strong>，不是功能貧乏。</p>
+<hr>
+<h2>四十、複雜度配置</h2>
+<p>$$
+C_{\text{syntax core}}\downarrow
+$$</p>
+<p>$$
+C_{\text{runtime}}
++
+C_{\text{dynamic reasoning}}
++
+C_{\text{extension governance}}
+\uparrow
+$$</p>
+<hr>
+<h2>四十一、責任配置</h2>
+<p>語言與 Runtime 承擔：</p>
+<ul>
+<li>Memory recovery；</li>
+<li>Representation；</li>
+<li>Evaluation；</li>
+<li>Interactive execution。</li>
+</ul>
+<p>使用者承擔：</p>
+<ul>
+<li>動態資料契約；</li>
+<li>Program transformation correctness；</li>
+<li>Extension discipline；</li>
+<li>Macro／eval 安全；</li>
+<li>Dialect interoperability。</li>
+</ul>
+<hr>
+<h2>四十二、顯式—推導偏好</h2>
+<p>McCarthy 不是以靜態型別推導為主，而是：</p>
+<ul>
+<li>讓結構本身明示；</li>
+<li>讓 Interpreter 根據資料表示求值；</li>
+<li>以動態 Symbolic representation 保留彈性；</li>
+<li>以最少 Declaration 支援即時使用。</li>
+</ul>
+<hr>
+<h2>四十三、安全—自由配置</h2>
+<p>LISP 的自由來自：</p>
+<ul>
+<li>動態資料；</li>
+<li>Program as data；</li>
+<li><code>eval</code>；</li>
+<li>Runtime modification。</li>
+</ul>
+<p>安全主要依賴：</p>
+<ul>
+<li>Runtime checks；</li>
+<li>Programmer discipline；</li>
+<li>Library convention；</li>
+<li>後來 Dialect 的工具。</li>
+</ul>
+<p>這不是以現代 Memory-unsafe 意義為中心，而是語義、效果與元編程權力的治理問題。</p>
+<hr>
+<h1>第十二部分　反例與限制</h1>
+<h2>四十四、LISP 不只是 McCarthy 的作品</h2>
+<p>若沒有 Russell、Edwards、Hart、Levin、Fox、Abrahams、Maling 等人的工作，形式核心不會自動變成可使用系統。</p>
+<hr>
+<h2>四十五、S-expression 的表面成功具有偶然性</h2>
+<p>McCarthy 原本預期使用 M-expression 作外部語法；S-expression 長期成為 Lisp 表面，部分來自：</p>
+<ul>
+<li>Interpreter 已能直接使用；</li>
+<li>Reader／Printer；</li>
+<li>實作便利；</li>
+<li>使用者採用；</li>
+<li>原翻譯器未完成。</li>
+</ul>
+<p>因此括號語法不能完全被解釋成創始者預先規劃的最終美學。</p>
+<hr>
+<h2>四十六、<code>eval</code> 不是所有延展性的必要條件</h2>
+<p>Macro、Compiler API、Module、Template 與 AST transformation 也可提供延展性。</p>
+<p><code>eval</code> 的優勢與風險取決於：</p>
+<ul>
+<li>Scope；</li>
+<li>Environment；</li>
+<li>Security；</li>
+<li>Compilation；</li>
+<li>Tooling；</li>
+<li>Deployment。</li>
+</ul>
+<hr>
+<h2>四十七、小核心可能形成巨大有效語言</h2>
+<p>Lisp 的每個專案都可能：</p>
+<ul>
+<li>建立 Macro；</li>
+<li>修改 Reader；</li>
+<li>建立 DSL；</li>
+<li>使用不同慣例。</li>
+</ul>
+<p>這證明：</p>
+<p>$$
+SmallKernel
+\not\Rightarrow
+SmallEffectiveLanguage
+$$</p>
+<hr>
+<h2>四十八、動態符號模型不適合所有問題</h2>
+<p>數值密集、硬即時、靜態安全、嵌入式記憶體限制等領域，可能需要不同配置。</p>
+<hr>
+<h2>四十九、歷史回顧有記憶偏差</h2>
+<p>McCarthy 自己承認其 1978 歷史回憶並非所有細節最可靠版本，因此本文以：</p>
+<ul>
+<li>1960 原始論文；</li>
+<li>LISP 1.5 Manual；</li>
+<li>保存程式；</li>
+<li>口述歷史；</li>
+<li>後來文件研究；</li>
+</ul>
+<p>交叉使用。</p>
+<hr>
+<h1>第十三部分　設計決策語料</h1>
+<table>
+<thead>
+<tr>
+<th>時期</th>
+<th>問題</th>
+<th>決策</th>
+<th>複雜度去向</th>
+<th>風格</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1956–1958</td>
+<td>AI 需操作形式句子</td>
+<td>List／symbolic structure</td>
+<td>Runtime representation</td>
+<td>問題對齊</td>
+</tr>
+<tr>
+<td>1958</td>
+<td>FORTRAN 缺遞迴</td>
+<td>新語言＋Recursive functions</td>
+<td>語言語義</td>
+<td>遞迴核心</td>
+</tr>
+<tr>
+<td>1959–1960</td>
+<td>需要通用形式定義</td>
+<td><code>apply</code>／<code>eval</code></td>
+<td>Interpreter</td>
+<td>可執行語義</td>
+</tr>
+<tr>
+<td>1960</td>
+<td>動態 List 回收</td>
+<td>GC</td>
+<td>Runtime</td>
+<td>自動管理</td>
+</tr>
+<tr>
+<td>1960s</td>
+<td>使用者需改進語言</td>
+<td>Program as data</td>
+<td>使用者／系統共同</td>
+<td>可延展</td>
+</tr>
+<tr>
+<td>1962 後</td>
+<td>多機構需求</td>
+<td>多 Dialect</td>
+<td>社群與標準</td>
+<td>分支演化</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>第十四部分　人物原型判定</h1>
+<h2>五十、主要原型</h2>
+<p>McCarthy 同時屬於：</p>
+<ul>
+<li><strong>符號問題對齊設計者</strong>；</li>
+<li><strong>生成式極簡架構師</strong>；</li>
+<li><strong>可執行語義設計者</strong>；</li>
+<li><strong>元語言與延展性設計者</strong>；</li>
+<li><strong>形式計算理論建築師</strong>。</li>
+</ul>
+<hr>
+<h2>五十一、不適合的簡單標籤</h2>
+<p>不應只稱：</p>
+<pre><code class="language-text">括號語言發明者
+動態語言設計者
+函數式程式設計者
+eval 發明者
+AI 語言之父
+</code></pre>
+<p>較精確的描述是：</p>
+<blockquote>
+<p>把符號資料、程式表示與語言定義壓縮到同一個遞迴結構中，從而讓語言能操作並延展自身的設計者。</p>
+</blockquote>
+<hr>
+<h1>第十五部分　統一評價</h1>
+<h2>五十二、最重要的設計連續性</h2>
+<p>從 Advice Taker 到 LISP：</p>
+<p>$$
+KnowledgeStructure
+\rightarrow
+SymbolicData
+\rightarrow
+RecursiveProgram
+\rightarrow
+ExecutableRepresentation
+$$</p>
+<hr>
+<h2>五十三、最重要的制度不連續性</h2>
+<p>LISP 的核心由 McCarthy 強烈塑造，但 Lisp 語族的長期演化迅速進入：</p>
+<ul>
+<li>團隊實作；</li>
+<li>機構分支；</li>
+<li>方言競爭；</li>
+<li>標準化；</li>
+<li>生態治理。</li>
+</ul>
+<hr>
+<h2>五十四、最重要的事故性穩定</h2>
+<p>S-expression 從：</p>
+<pre><code class="language-text">統一內部表示
+</code></pre>
+<p>變成：</p>
+<pre><code class="language-text">長期表面語法與文化身份
+</code></pre>
+<p>這不是單純錯誤，而是實作、形式規則與使用者採用共同選出的結果。</p>
+<hr>
+<h1>第十六部分　結論</h1>
+<p>John McCarthy 的程式語言設計不是從「想做一門極簡語言」開始，而是從一個需要：</p>
+<ul>
+<li>表示知識；</li>
+<li>處理邏輯；</li>
+<li>操作不定長結構；</li>
+<li>定義遞迴計算；</li>
+<li>在互動環境中快速實驗；</li>
+</ul>
+<p>的問題開始。</p>
+<p>他最深刻的設計不是任何單一關鍵字，而是建立以下閉環：</p>
+<p>$$
+\boxed{
+\text{資料可表示程式}
+\rightarrow
+\text{程式可操作資料}
+\rightarrow
+\text{語言定義本身可執行}
+\rightarrow
+\text{使用者可繼續擴展語言}
+}
+$$</p>
+<p>本文對 McCarthy 的 PLDST 判定為：</p>
+<p>$$
+\boxed{
+\text{Symbolic Problem Modeler}
+\rightarrow
+\text{Recursive Core Architect}
+\rightarrow
+\text{Executable Metalanguage Designer}
+}
+$$</p>
+<p>其核心優勢是：</p>
+<ul>
+<li>少量機制具有極高生成能力；</li>
+<li>形式語義與實作可以直接連接；</li>
+<li>Program as data 使語言具備自我延展能力；</li>
+<li>GC 與 Online environment 讓符號實驗成為實際工作流。</li>
+</ul>
+<p>其核心風險是：</p>
+<ul>
+<li>小核心生成大規模方言差異；</li>
+<li><code>eval</code> 與 Macro 擴大安全和工具負擔；</li>
+<li>動態模型把部分錯誤延至 Runtime；</li>
+<li>統一表示不等於所有領域都具有最佳表達；</li>
+<li>創始思想容易掩蓋關鍵實作者與後期共同體。</li>
+</ul>
+<p>最終原則為：</p>
+<p>$$
+\boxed{
+\text{以最少核心統一資料、程式與語義}
+\quad\land\quad
+\text{讓系統可由使用者繼續生長}
+\quad\land\quad
+\text{承認生長必須帶來新的治理與安全邊界}
+}
+$$</p>
+<hr>
+<h1>附錄 A　PLDST 個案卡</h1>
+<pre><code class="language-text">人物：John McCarthy
+主要語言／系統：LISP、Advice Taker 相關形式
+核心時期：1956–1962
+主要問題：符號、邏輯與可變結構的計算
+主要策略：List、Recursion、Lambda、Conditional、eval
+核心擴張：Program as data、GC、Interactive environment
+複雜度去向：Runtime、動態推理、語言治理
+責任去向：Interpreter 與 GC 承擔執行細節
+主要保護對象：AI 研究者、符號程式設計者
+主要限制：方言分裂、安全、工具與動態錯誤
+歸因信心：高
+</code></pre>
+<hr>
+<h1>附錄 B　來源與參考文獻</h1>
+<p><strong>[R1]</strong> John McCarthy, “Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I,” <em>Communications of the ACM</em> 3(4), 1960, pp. 184–195.<br>— LISP 原始形式、S-expression、S-function、Lambda、Conditional、<code>apply</code>／<code>eval</code> 與 IBM 704 實作。</p>
+<p><strong>[R2]</strong> John McCarthy, “History of Lisp,” HOPL I draft, 1978／1979.<br>— LISP 前史、思想形成、實作、分支、M-expression 與歸因不確定性。</p>
+<p><strong>[R3]</strong> Nils J. Nilsson, “Oral History of John McCarthy,” Computer History Museum, 2007.<br>— FORTRAN 遞迴限制、List 選擇、<code>eval</code> 原意及 Steve Russell 的 Interpreter 洞見。</p>
+<p><strong>[R4]</strong> John McCarthy et al., <em>LISP 1.5 Programmer’s Manual</em>, MIT Press, 1962; Computer History Museum LISP 1.5 preservation materials.<br>— 整體設計、Interpreter、GC、Compiler、Reader／Printer、Manual 與團隊歸因。</p>
+<p><strong>[R5]</strong> John McCarthy historical pages, Stanford Formal Reasoning Group.<br>— McCarthy 對自身記憶限制、Herbert Stoyan 文件研究及歷史資料的說明。</p>
+<p><strong>[R6]</strong> John McCarthy, “LISP—Notes on Its Past and Future,” ACM LISP and Functional Programming Conference, 1980.<br>— LISP 長期存續特徵、Program as data、<code>eval</code>、GC 及 Online environment。</p>
+<p><strong>[R7]</strong> Computer History Museum Software Preservation Group, “LISP History Collection.”<br>— 原始程式、手冊、方言、實作、人物與多分支歷史。</p>
+<p><strong>[R8]</strong> John McCarthy, “A Basis for a Mathematical Theory of Computation,” 1961–1963.<br>— 遞迴函數、語言形式與程式變換的數學理論背景。</p>
+<hr>
+<h1>附錄 C　PLDST 標記</h1>
+<pre><code class="language-text">[T-P] Symbolic problem formation
+[T-R] Recursive formal core
+[T-E] Executable semantics
+[T-X] Extensible system
+[T-D] Dialect／community divergence
+
+[S-S] Symbolic representation
+[S-M] Minimal generative kernel
+[S-R] Recursive architecture
+[S-E] Eval／executable semantics
+[S-P] Program-data unity
+[S-I] Interactive extensibility
+</code></pre>
+<hr>
+<h1>附錄 D　第二輪史實與歸因校對紀錄</h1>
+<h2>D.1 LISP 的形成時期</h2>
+<p>第二輪重新核對 McCarthy 的〈History of Lisp〉：</p>
+<ul>
+<li>1956 年夏至 1958 年夏是多數關鍵思想的形成期；</li>
+<li>1958 年秋至 1962 年是實作與 AI 應用期；</li>
+<li>1962 年後發展轉為多條路線；</li>
+<li>這是 McCarthy 的歷史分期，不表示所有特徵在 1958 年已以最終形式存在。</li>
+</ul>
+<p>本文因此把「問題形成」「形式核心」「可執行系統」「多分支語族」分開，而沒有把後期 Lisp 特徵全部回寫到第一天。</p>
+<hr>
+<h2>D.2 <code>eval</code> 與 Interpreter 歸因</h2>
+<p>第二輪重新核對 1960 原始論文、McCarthy 口述歷史與 LISP 1.5 Manual：</p>
+<ul>
+<li>McCarthy 寫出 Universal S-function <code>apply</code>／<code>eval</code> 的形式；</li>
+<li>他主要把它視為展示通用性與數學透明度的練習；</li>
+<li>Steve Russell 看出將 <code>eval</code> 手工編成機器語言即可形成 Interpreter；</li>
+<li>McCarthy 表示自己一開始對此有所懷疑；</li>
+<li>LISP 1.5 Manual 把 Interpreter 程式歸於 Stephen B. Russell 與 Daniel J. Edwards。</li>
+</ul>
+<p>因此本文不使用「McCarthy 單人寫出第一個 Lisp Interpreter」的說法。</p>
+<hr>
+<h2>D.3 LISP 1.5 團隊歸因</h2>
+<p>第二輪直接核對 Programmer’s Manual Preface：</p>
+<pre><code class="language-text">整體設計：John McCarthy
+Manual：Michael I. Levin
+Interpreter：Stephen B. Russell、Daniel J. Edwards
+Read／Print：McCarthy、Klim Maling、Edwards、Paul W. Abrahams
+Garbage collector／Arithmetic：Daniel J. Edwards
+Compiler／Assembler：Timothy P. Hart、Michael I. Levin
+較早 Compiler：Robert Brayton
+LISP I Manual：Phyllis A. Fox
+</code></pre>
+<p>本文保留 Manual 的當時正式歸因，也承認後來文件研究可能對更細部貢獻作出修正。</p>
+<hr>
+<h2>D.4 Garbage collection</h2>
+<p>第二輪核對 McCarthy 1980 年回顧與 LISP 1.5 保存資料：</p>
+<ul>
+<li>McCarthy 把 Garbage collection 列為 LISP 長期可行特徵之一；</li>
+<li>實際 LISP 1.5 Garbage collector 與 Arithmetic feature 由 Daniel J. Edwards 完成；</li>
+<li>因此應分開：<ul>
+<li>將自動回收納入語言／系統方向的設計功勞；</li>
+<li>具體回收器的實作功勞。</li>
+</ul>
+</li>
+</ul>
+<p>本文沒有把 GC 的所有發明與後續演算法全部歸於 McCarthy。</p>
+<hr>
+<h2>D.5 M-expression 與 S-expression</h2>
+<p>第二輪重新核對 1960 論文與〈The Implementation of LISP〉：</p>
+<ul>
+<li>McCarthy 明確使用 M-expression 表示 Meta-level function notation；</li>
+<li>S-expression 用於符號資料與函數表示；</li>
+<li>原計畫包含精確定義及翻譯 M-expression；</li>
+<li>該專案既未正式完成，也未在某一時間點被明確宣布放棄；</li>
+<li><code>eval</code> Interpreter、Reader／Printer 和使用實踐使 S-expression 直接作為程式表示變得方便；</li>
+<li>因此「S-expression 原本只是一個短暫中間表示」是過度簡化；較準確的說法是：它原本主要承擔資料及規則化程式表示，而 M-expression 被預期作為較友善外部表示，但後者未完成，前者逐步成為實際表面。</li>
+</ul>
+<p>本文已用「事故性穩定」描述結果，而不是聲稱 McCarthy 完全反對 S-expression 語法。</p>
+<hr>
+<h2>D.6 「程式即資料」的邊界</h2>
+<p>第二輪核對 McCarthy 1980 年的存續特徵清單：</p>
+<ul>
+<li>LISP program 可表示為 LISP data；</li>
+<li>這使 Application programmer 能修改與改進系統；</li>
+<li><code>eval</code> 可同時作為語言形式定義與 Interpreter；</li>
+<li>這種結合是 Lisp 延展性的基礎之一。</li>
+</ul>
+<p>本文沒有把後來成熟 Macro system、Common Lisp Reader macro、Scheme hygiene 等全部歸於 McCarthy 的原始設計。</p>
+<hr>
+<h2>D.7 McCarthy 的歷史自我修正</h2>
+<p>McCarthy 的 Stanford 歷史頁明確說：</p>
+<ul>
+<li>1978 年的 LISP History 依其記憶撰寫；</li>
+<li>Herbert Stoyan 對原始文件的研究在若干地方更準確；</li>
+<li>McCarthy 的稿件也承認對實作者提及不足及歸因不確定。</li>
+</ul>
+<p>因此本文將：</p>
+<pre><code class="language-text">同期論文與手冊
+&gt;
+保存程式與正式 Preface
+&gt;
+後期口述與回憶
+</code></pre>
+<p>作為史實校準順序，而不是以創始者回憶壓過全部文件。</p>
+<hr>
+<h2>D.8 「極小核心」的分析邊界</h2>
+<p>「生成式極簡架構師」是 PLDST 推論，而不是 McCarthy 本人正式使用的流派名稱。</p>
+<p>它依據：</p>
+<ul>
+<li>少量 Selector／Constructor；</li>
+<li>Conditional；</li>
+<li>Recursion；</li>
+<li>Lambda；</li>
+<li>Program-data unity；</li>
+<li><code>eval</code>；</li>
+<li>GC；</li>
+<li>Online environment；</li>
+</ul>
+<p>共同產生高擴展能力。</p>
+<p>它不表示 LISP 1.5 完整系統、後代 Lisp 或所有 Lisp 程式都很小或容易理解。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-012.html">https://thisoneisneok.com/html/papers/pldst-012.html</a></footer>
+</body>
+</html>

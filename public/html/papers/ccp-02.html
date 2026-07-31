@@ -1,0 +1,1040 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>立體運算的設計空間 | Neo.K</title>
+<meta name="description" content="計算硬體正在從單一大型裸晶，轉向 chiplet、2.5D、3DIC、HBM、晶圓級處理器與模組化加速系統。這種轉變並不表示平面設計已經消失，而是表示「平面」與「立體」不再是二元對立：現代系統通常同時包含平面電晶體層、垂直互連、封裝內異質晶粒、板級模組與機箱級網路。空間幾何因而成為跨尺度系統技術協同最佳化的一部分。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/ccp-02.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / CCP</strong><span>計算機概念產品系列</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>CCP-02</span></div><div><b>版本</b><span>v2.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K（許筌崴）</span></div><div><b>狀態</b><span>概念譜系論文／架構設計空間／歷史母稿修訂版</span></div><div><b>證據</b><span>既有產業技術依各引用來源成立；本文提出的塔形、徑向與模組組合仍屬 E0–E1 架構假說</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ccp-02.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>立體運算的設計空間</h1>
+<h2>從塔形、徑向與晶圓級母概念到多尺度三維整合</h2>
+<p><strong>Design Space of Spatial Computing Hardware</strong><br><strong>From Tower, Radial, and Wafer-Scale Archetypes to Multi-Scale 3D Integration</strong></p>
+<hr>
+<p><strong>作者</strong>：Neo.K（許筌崴）<br><strong>機構</strong>：一言諾科技有限公司（EveMissLab），台灣<br><strong>原始版本</strong>：2025 年 11 月<br><strong>公開修訂版</strong>：v2.0，2026 年 7 月 30 日<br><strong>文件性質</strong>：概念譜系論文／架構設計空間／歷史母稿修訂版<br><strong>系列定位</strong>：計算機概念產品系列之二；SDMCA、SynCore、O-Chip、DPCPS 與 DryCore 的前置概念來源<br><strong>證據狀態</strong>：既有產業技術依各引用來源成立；本文提出的塔形、徑向與模組組合仍屬 E0–E1 架構假說<br><strong>授權建議</strong>：論文文字 CC BY-SA 4.0；CAD、RTL、PCB、韌體與測試資料於實際釋出時另行指定授權</p>
+<hr>
+<h2>修訂聲明</h2>
+<p>本文由 2025 年原稿《立體運算革命：塔形與圓形處理器架構的未來》重新建構而來。原稿的歷史價值，在於它很早便把「運算硬體的空間形狀」視為架構變數，而不只把效能提升理解成製程微縮、時脈提高或核心增加。原稿提出三種母概念：塔形垂直整合、圓形／徑向處理器，以及可插拔的 V-CORE STACK。後續的《空間解耦模組運算架構》、DryCore、DPCPS、O-Chip 與 SynCore，均可追溯到這三個早期幾何直覺。</p>
+<p>然而，原稿同時混合了裸晶、封裝、主板、機箱、晶圓級系統與製造工具六種尺度，並將多項尚未驗證的推演寫成確定結論。例如：</p>
+<ol>
+<li>把產業描述成仍以純平面單晶片為唯一範式，忽略 2.5D、3DIC、HBM、chiplet、hybrid bonding 與晶圓級處理器已經存在。</li>
+<li>將三維排列的理想幾何距離縮放，直接等同於晶片延遲、功耗與性能倍率。</li>
+<li>把塔形煙囪效應描述成密集主動晶粒堆疊的自然散熱解法，低估中間層熱阻、界面材料與熱點耦合。</li>
+<li>由「晶圓是圓形」推出「圓形 CPU 能接近百分之百利用晶圓」，忽略曝光視場、晶邊排除區、製程控制、封裝、測試、供電、容錯與散熱。</li>
+<li>把中央時脈源到同一半徑的等距，誤寫成全晶片自動同步；實際時脈仍受負載、緩衝、製程變異、電壓、溫度與網路拓撲影響。</li>
+<li>把標準軸錐透鏡視為任意三維半導體結構的一次曝光製造工具。新版 CPOP 與 AOCLS 已將其修正為結構光、延伸焦域、逆向製造與閉環量測平台，而非先進邏輯製程的直接替代品。</li>
+<li>將未完成的功耗、TFLOPS、成本、良率、能效與應用數字寫成已可預期的產品結果。</li>
+</ol>
+<p>v2.0 不再把原稿重寫成另一篇與 SDMCA 競爭的產品白皮書，而是將其定位為<strong>概念譜系與設計空間論文</strong>。新版保留塔形、徑向、環形、晶圓級與模組塔作為可比較的幾何原型，並建立以下分工：</p>
+<ul>
+<li><strong>封裝級垂直整合</strong>：由 3DIC、hybrid bonding、TSV、RDL、HBM 與 UCIe-3D 類介面承擔。</li>
+<li><strong>片上徑向／環形拓撲</strong>：作為時脈、電源、NoC、記憶體與容錯網路的候選嵌入方式，而非要求裸晶外形必須是圓形。</li>
+<li><strong>晶圓級運算</strong>：以跨光罩拼接、冗餘核心、可重路由互連、已知缺陷映射與系統級冷卻為核心。</li>
+<li><strong>模組塔／樓梯／環形機箱</strong>：交由 SDMCA 處理，其主要價值是熱、供電、維修與故障域解耦，不是裸晶級垂直互連。</li>
+<li><strong>製造研究工具</strong>：CPOP／AOCLS 可支援微結構、光子元件、冷卻通道、封裝原型與材料製程研究，但不預設取代 CMOS 前段製程。</li>
+</ul>
+<p>因此，新版的核心問題不再是「未來處理器究竟應該長成塔還是圓」，而是：</p>
+<blockquote>
+<p>在不同物理尺度、工作負載與製造條件下，哪些空間拓撲能夠把資料、功率、熱、故障與服務路徑配置得更合理？</p>
+</blockquote>
+<hr>
+<h2>摘要</h2>
+<p>計算硬體正在從單一大型裸晶，轉向 chiplet、2.5D、3DIC、HBM、晶圓級處理器與模組化加速系統。這種轉變並不表示平面設計已經消失，而是表示「平面」與「立體」不再是二元對立：現代系統通常同時包含平面電晶體層、垂直互連、封裝內異質晶粒、板級模組與機箱級網路。空間幾何因而成為跨尺度系統技術協同最佳化的一部分。</p>
+<p>本文重新整理塔形、徑向／圓形、晶圓級與模組堆疊四種立體運算母概念。塔形架構被重新定義為垂直晶粒與功能層的封裝原型，其主要可能收益是縮短部分邏輯—記憶體路徑、提高封裝內頻寬密度與允許異質製程組合；主要限制則是熱通量、功率傳輸、層間應力、良率、測試與維修。圓形架構被拆分成兩種不同命題：第一種是徑向或環形的片上網路與電源／時脈域，其價值必須由佈線、擁塞、延遲、容錯與物理設計共同驗證；第二種是晶圓級運算，其可行性來自冗餘、小故障域、可重路由互連、跨光罩連接與專用冷卻，而不是晶圓幾何本身。V-CORE STACK 則被保留為後續 SDMCA 的歷史前身，其研究尺度屬於模組與機箱，而非電晶體與裸晶。</p>
+<p>本文以圖嵌入、耦合熱模型、供電網路、簡化良率模型與服務性指標建立共同評估框架。對於固定密度的理想格點，線性尺度可由二維的 $\Theta(N^{1/2})$ 降為三維的 $\Theta(N^{1/3})$；但此結果只描述幾何上界，不等同於真實封裝的延遲或能耗倍率。實際系統必須同時計入鏈路能耗、路由器、序列化、重定時、熱節流、冷卻功率、電源完整性、測試、良率與軟體映射。</p>
+<p>本文提出四類可驗證原型：封裝級垂直記憶體—運算堆疊、徑向／環形片上互連模擬、具冗餘與故障繞行的晶圓級網路，以及 SDMCA 模組機箱。所有候選都必須與相同製程、面積、功率、記憶體容量、冷卻與工作負載的基線比較。若形狀帶來的互連、熱、良率或維修成本抵銷其空間收益，該幾何就應被否證或降為特定產品選項。</p>
+<p>本文的主要貢獻不是宣告一種終極處理器外形，而是將早期幾何想像轉換為一套可度量、可模擬、可製造、可被否證的立體運算設計空間。</p>
+<p><strong>關鍵詞</strong>：立體運算、3DIC、hybrid bonding、chiplet、晶圓級處理器、徑向網路、環形網路、熱—電協同、容錯、UCIe、SoIC、Foveros、SDMCA、計算機架構譜系</p>
+<hr>
+<h1>第一章　從「平面對立」轉向多尺度整合</h1>
+<h2>1.1 現代處理器並非單純平面</h2>
+<p>原稿以「所有現代處理器都遵循平面假設」作為問題起點。這個說法適合表達當時的直覺，卻不適合作為 2026 年的技術基線。</p>
+<p>現代運算系統可能同時包含：</p>
+<ul>
+<li>平面 CMOS 電晶體與多層金屬互連；</li>
+<li>多裸晶封裝與矽中介層；</li>
+<li>HBM 垂直記憶體堆疊；</li>
+<li>logic-on-logic 或 logic-on-memory；</li>
+<li>hybrid bonding；</li>
+<li>chiplet 與標準化 die-to-die 介面；</li>
+<li>板級 GPU、DPU、NIC 與儲存加速器；</li>
+<li>機箱與機櫃級光電或高速電互連。</li>
+</ul>
+<p>TSMC SoIC 已將晶圓級三維晶片堆疊與高密度鍵合用於 HPC 類整合，並公開說明其 3 nm 堆疊於 2025 年進入量產；Intel Foveros Direct 則使用直接銅—銅鍵合提高垂直互連密度。UCIe 2.0 之後亦加入 3D packaging 支援，使 3D chiplet 不只是一家公司的私有封裝實作，而開始具備開放介面的方向。</p>
+<p>因此，新版不再使用：</p>
+<p>$$
+\text{平面舊世界}
+\rightarrow
+\text{立體新世界}
+$$</p>
+<p>這種單向敘事，而改用：</p>
+<h1>$$
+\mathcal{S}</h1>
+<p>\mathcal{D}<em>{2D}
+\oplus
+\mathcal{I}</em>{2.5D}
+\oplus
+\mathcal{I}<em>{3D}
+\oplus
+\mathcal{M}</em>{\mathrm{module}}
+\oplus
+\mathcal{R}_{\mathrm{rack}}.
+$$</p>
+<p>立體運算不是消滅二維，而是在不同尺度上增加可用的空間自由度。</p>
+<h2>1.2 四個尺度不可混用</h2>
+<p>本文採用四個主要尺度。</p>
+<h3>裸晶與單片層級</h3>
+<p>典型距離為奈米到毫米。問題包括：</p>
+<ul>
+<li>電晶體與標準單元佈局；</li>
+<li>片上網路；</li>
+<li>時脈與電源網路；</li>
+<li>記憶體陣列；</li>
+<li>單片三維整合；</li>
+<li>層間奈米級或微米級互連。</li>
+</ul>
+<h3>封裝與晶粒層級</h3>
+<p>典型距離為微米到數公分。問題包括：</p>
+<ul>
+<li>chiplet 分割；</li>
+<li>hybrid bonding、TSV、RDL；</li>
+<li>HBM；</li>
+<li>UCIe 類介面；</li>
+<li>封裝供電與熱擴散；</li>
+<li>known-good-die 與封裝後測試。</li>
+</ul>
+<h3>模組與機箱層級</h3>
+<p>典型距離為毫米到一公尺。問題包括：</p>
+<ul>
+<li>運算卡與模組；</li>
+<li>背板、線纜、retimer、光電模組；</li>
+<li>冷板、風道、歧管；</li>
+<li>近負載供電；</li>
+<li>模組更換與故障隔離。</li>
+</ul>
+<h3>機櫃與資料中心層級</h3>
+<p>典型距離為一公尺以上。問題包括：</p>
+<ul>
+<li>機櫃匯流排；</li>
+<li>交換網路；</li>
+<li>冷卻水與熱回收；</li>
+<li>多節點調度；</li>
+<li>記憶體池與儲存；</li>
+<li>故障域與維運。</li>
+</ul>
+<p>原稿中的「塔形 CPU」「處理器塔」「模組塔」可能分別指向前三個尺度。新版要求每個命題明確標出尺度，否則不能比較延遲、互連或製造方法。</p>
+<h2>1.3 空間自由度不是免費增益</h2>
+<p>增加第三維可能縮短部分連線，也可能帶來：</p>
+<ul>
+<li>更高功率密度；</li>
+<li>更長或更受限的散熱路徑；</li>
+<li>層間熱膨脹與機械應力；</li>
+<li>更複雜的供電與接地；</li>
+<li>更難的測試與除錯；</li>
+<li>更高的封裝成本；</li>
+<li>更大的共同失效域；</li>
+<li>更複雜的工作負載映射。</li>
+</ul>
+<p>因此，本文拒絕以下推論：</p>
+<p>$$
+\text{維度增加}
+\Rightarrow
+\text{性能必然增加}.
+$$</p>
+<p>合理的命題是：</p>
+<p>$$
+\text{額外空間自由度}
++
+\text{共同最佳化}
+\Rightarrow
+\text{可能改善特定目標}.
+$$</p>
+<p>改善是否成立，取決於目標函數、工作負載與物理約束。</p>
+<hr>
+<h1>第二章　共同形式模型</h1>
+<h2>2.1 運算圖與空間嵌入</h2>
+<p>令工作負載或硬體資源圖為：</p>
+<p>$$
+\mathcal{G}=(V,E).
+$$</p>
+<p>每個節點 $v_i\in V$ 可以代表核心、記憶體庫、交換器、晶粒或模組；每條邊 $e_{ij}\in E$ 具有頻寬需求 $b_{ij}$、延遲敏感度 $\ell_{ij}$ 與資料量 $d_{ij}$。</p>
+<p>空間架構是一個嵌入：</p>
+<p>$$
+\varphi:V\rightarrow\mathbb{R}^{d},
+\qquad d\in{2,3}.
+$$</p>
+<p>幾何成本可先寫成：</p>
+<h1>$$
+C_{\mathrm{geo}}</h1>
+<p>\sum_{(i,j)\in E}
+\omega_{ij}
+\left|\varphi(v_i)-\varphi(v_j)\right|,
+$$</p>
+<p>其中 $\omega_{ij}$ 可以綜合資料量、頻率與延遲權重。</p>
+<p>但真正的鏈路成本不只由歐氏距離決定。更完整的模型為：</p>
+<h1>$$
+C_{ij}</h1>
+<p>C_{\mathrm{wire}}
++
+C_{\mathrm{router}}
++
+C_{\mathrm{serdes}}
++
+C_{\mathrm{retimer}}
++
+C_{\mathrm{protocol}}
++
+C_{\mathrm{queue}}.
+$$</p>
+<p>因此，短的垂直連線可以非常有效；但若資料必須跨越多個協議、佇列或橋接器，實際延遲仍可能高於較長的片上連線。</p>
+<h2>2.2 理想距離縮放的適用範圍</h2>
+<p>若 $N$ 個等密度節點排列在 $d$ 維規則格點，系統線性尺度約為：</p>
+<p>$$
+L_d(N)=\Theta\left(N^{1/d}\right).
+$$</p>
+<p>因此：</p>
+<p>$$
+L_2(N)=\Theta\left(N^{1/2}\right),
+\qquad
+L_3(N)=\Theta\left(N^{1/3}\right).
+$$</p>
+<p>這支持原稿的基本直覺：三維可能降低大型規則系統的平均幾何尺度。</p>
+<p>但這不是「所有通訊距離縮短五倍」的性能定律，因為：</p>
+<ol>
+<li>節點體積、功率密度與佈線通道不一定保持相同。</li>
+<li>不是所有節點都需要全互連。</li>
+<li>垂直互連數量受到鍵合間距、TSV、I/O 與良率限制。</li>
+<li>記憶體、I/O、冷卻與電源會占用空間。</li>
+<li>3D 網路可能增加路由器、層間壅塞與熱點。</li>
+<li>真實應用由工作圖與資料局部性決定，而非隨機點對平均距離。</li>
+</ol>
+<p>因此，此縮放律只應作為設計動機與理想上界。</p>
+<h2>2.3 熱模型</h2>
+<p>令第 $i$ 個功能區塊的功率為 $P_i$，溫升向量為 $\Delta\mathbf{T}$。一階穩態模型可寫成：</p>
+<h1>$$
+\Delta\mathbf{T}</h1>
+<p>\mathbf{R}_{\theta}\mathbf{P}.
+$$</p>
+<p>$\mathbf{R}_{\theta}$ 的對角項表示自身到冷端的熱阻，非對角項表示區塊間的熱耦合。</p>
+<p>在垂直堆疊中，新增層可能降低電互連距離，卻增加某些熱源到散熱器的等效熱阻。熱行為不能用「熱空氣上升」取代固體導熱與界面熱阻分析。真正的設計變數包括：</p>
+<ul>
+<li>功能層順序；</li>
+<li>高功率層與散熱面的距離；</li>
+<li>熱 TSV 或專用熱柱；</li>
+<li>backside power delivery 與背面冷卻；</li>
+<li>微流道；</li>
+<li>熱界面材料；</li>
+<li>冷板與兩相冷卻；</li>
+<li>動態熱感知排程。</li>
+</ul>
+<p>對暫態行為，可使用：</p>
+<h1>$$
+\mathbf{C}<em>{\theta}\dot{\mathbf{T}}
++
+\mathbf{G}</em>{\theta}\mathbf{T}</h1>
+<p>\mathbf{P}(t)
++
+\mathbf{u}_{\mathrm{cool}}(t).
+$$</p>
+<p>任何塔形架構都必須先通過電—熱共同模擬，而不能以幾何外形推定散熱優勢。</p>
+<h2>2.4 供電模型</h2>
+<p>運算單元的可用性能同時受功率傳輸網路限制。第 $i$ 個區域的電壓可寫成：</p>
+<h1>$$
+V_i(t)</h1>
+<h2>V_{\mathrm{src}}</h2>
+<h2>\Delta V_{R,i}</h2>
+<h2>\Delta V_{L,i}</h2>
+<p>\Delta V_{\mathrm{dyn},i}.
+$$</p>
+<p>其中包括電阻壓降、寄生電感瞬態與動態負載造成的 droop。垂直堆疊提高 I/O 密度時，必須同時配置電源與接地連接，不能把所有垂直通道都視為資料頻寬。</p>
+<p>本文將供電設計交由 DPCPS 與封裝 PDN 共同處理；幾何架構只能提供候選位置，不能自行保證功率可達。</p>
+<h2>2.5 良率、容錯與可用面積</h2>
+<p>最簡單的隨機缺陷模型為：</p>
+<p>$$
+Y(A)
+\approx
+\exp(-D_0A),
+$$</p>
+<p>其中 $D_0$ 是缺陷密度，$A$ 是需要完全無致命缺陷的面積。此模型雖然粗糙，仍說明單一不可容錯電路面積越大，完全良品機率通常越低。</p>
+<p>但晶圓級處理器的關鍵不在於讓整片晶圓沒有缺陷，而在於把系統設計成：</p>
+<p>$$
+\text{局部缺陷}
+\not\Rightarrow
+\text{整片失效}.
+$$</p>
+<p>可使用：</p>
+<ul>
+<li>小型可停用核心；</li>
+<li>備援列與備援鏈路；</li>
+<li>缺陷地圖；</li>
+<li>可重路由 NoC；</li>
+<li>分散式記憶體；</li>
+<li>軟體避障；</li>
+<li>分區測試與燒機；</li>
+<li>可降級性能等級。</li>
+</ul>
+<p>因此，晶圓級架構是一個<strong>容錯網路問題</strong>，不是「圓形材料利用率」問題。</p>
+<h2>2.6 多目標函數</h2>
+<p>本文以以下總成本描述候選架構：</p>
+<h1>$$
+J(\varphi,\Pi)</h1>
+<p>\alpha L_{\mathrm{end}}
++
+\beta E_{\mathrm{sys}}
++
+\gamma T_{\max}
++
+\delta V_{\mathrm{thermal}}
++
+\eta C_{\mathrm{manufacture}}
++
+\zeta R_{\mathrm{failure}}
++
+\xi C_{\mathrm{service}}
++
+\rho U_{\mathrm{software}}.
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$L_{\mathrm{end}}$：端到端延遲；</li>
+<li>$E_{\mathrm{sys}}$：含資料搬移與冷卻的系統能耗；</li>
+<li>$T_{\max}$：最高結溫；</li>
+<li>$V_{\mathrm{thermal}}$：溫度梯度或熱違規；</li>
+<li>$C_{\mathrm{manufacture}}$：製造、封裝與測試成本；</li>
+<li>$R_{\mathrm{failure}}$：故障與共同失效風險；</li>
+<li>$C_{\mathrm{service}}$：維修與更換成本；</li>
+<li>$U_{\mathrm{software}}$：軟體無法有效利用硬體的損失。</li>
+</ul>
+<p>沒有任何幾何可以同時無條件最小化所有項目。</p>
+<hr>
+<h1>第三章　塔形母概念：封裝級垂直整合</h1>
+<h2>3.1 塔形真正代表什麼</h2>
+<p>「塔形」不應被理解成把傳統桌上型 CPU 像積木般直接堆成高塔。它更合理的定義是：</p>
+<blockquote>
+<p>將不同功能晶粒或功能層沿垂直方向整合，使高頻通訊的元件在封裝內保持更短距離。</p>
+</blockquote>
+<p>塔形的候選單元包括：</p>
+<ul>
+<li>logic-on-logic；</li>
+<li>logic-on-cache；</li>
+<li>logic-on-memory；</li>
+<li>感測器—記憶體—運算堆疊；</li>
+<li>光電晶粒與電子晶粒堆疊；</li>
+<li>電源或 I/O 基礎晶粒；</li>
+<li>單片三維電晶體層。</li>
+</ul>
+<p>TSMC SoIC、Intel Foveros 與 HBM 已經證明，垂直整合不是純科幻。真正的研究問題是：應堆疊哪些功能、堆幾層、使用何種互連、如何供電與散熱，以及失效時能否測試和隔離。</p>
+<h2>3.2 功能分層而非固定樓層</h2>
+<p>原稿曾指定底層 I/O、中層 CPU、上層 GPU 與快取。新版不固定此順序，因為層序必須由熱、功率、互連與製程共同決定。</p>
+<p>令層集合為：</p>
+<h1>$$
+\mathcal{L}</h1>
+<p>{L_1,L_2,\ldots,L_K}.
+$$</p>
+<p>每層具有：</p>
+<h1>$$
+L_k</h1>
+<p>(F_k,P_k,Q_k,M_k,I_k),
+$$</p>
+<p>其中 $F_k$ 是功能，$P_k$ 是功率密度，$Q_k$ 是製程與材料限制，$M_k$ 是記憶體或狀態容量，$I_k$ 是互連需求。</p>
+<p>層序最佳化可寫成排列問題：</p>
+<h1>$$
+\pi^{\star}</h1>
+<p>\arg\min_{\pi}
+J_{\mathrm{stack}}(\pi).
+$$</p>
+<p>高功率邏輯不一定適合放在最遠離冷端的位置；高密度記憶體也可能成為熱源。所謂「底層」「頂層」必須由實際封裝方向與冷卻面定義。</p>
+<h2>3.3 塔形的可能收益</h2>
+<h3>層間頻寬密度</h3>
+<p>Hybrid bonding 與細間距垂直互連可以在較短距離提供大量連接，特別適合：</p>
+<ul>
+<li>快取與邏輯；</li>
+<li>記憶體與運算；</li>
+<li>類比／感測前端與數位處理；</li>
+<li>光子與電子晶粒。</li>
+</ul>
+<h3>異質製程</h3>
+<p>I/O、SRAM、邏輯、類比與光子元件可使用不同製程，再於封裝內整合，避免整顆單片系統被迫採用同一製程。</p>
+<h3>物理局部性</h3>
+<p>若工作負載中的高流量邊能映射到相鄰層，資料搬移能耗可能降低。但這需要編譯器、記憶體分配與 O-Chip 類編排層配合。</p>
+<h3>封裝面積與形式</h3>
+<p>垂直整合可在固定 footprint 內增加功能，但不代表單位體積有效算力必然增加；熱節流與良率必須納入。</p>
+<h2>3.4 塔形的主要反例</h2>
+<h3>熱路徑變差</h3>
+<p>中間層可能被低導熱介電層包圍，且離冷端更遠。堆疊越密，熱點越可能耦合。</p>
+<h3>功率傳輸受限</h3>
+<p>垂直連接同時要分配給訊號、電源與接地。若供電不足，新增運算層只能降低時脈或 duty cycle。</p>
+<h3>測試與返修困難</h3>
+<p>多晶粒堆疊需要 known-good-die、層間測試、邊界掃描、遙測、失效定位與封裝後驗證。不可拆解的垂直堆疊可能擴大報廢成本。</p>
+<h3>應力與翹曲</h3>
+<p>不同材料與晶粒尺寸會帶來熱膨脹係數差異、鍵合應力與翹曲，進而影響互連可靠度。</p>
+<h3>軟體利用不足</h3>
+<p>若應用不能利用更近的記憶體或額外執行層，堆疊只增加成本與靜態功耗。</p>
+<h2>3.5 塔形的合法 MVP</h2>
+<p>第一個塔形原型不應從十層高功率 CPU 開始，而應選擇：</p>
+<ul>
+<li>低功率 FPGA／加速器裸晶或模擬平台；</li>
+<li>一層邏輯與一層 SRAM／記憶體；</li>
+<li>可量測的垂直互連；</li>
+<li>兩種層序；</li>
+<li>兩種冷卻面；</li>
+<li>相同工作負載的平面基線。</li>
+</ul>
+<p>需量測：</p>
+<ul>
+<li>有效頻寬與延遲；</li>
+<li>每 bit 能耗；</li>
+<li>最大結溫與熱梯度；</li>
+<li>電壓 droop；</li>
+<li>封裝良率；</li>
+<li>壓力與熱循環可靠度；</li>
+<li>軟體映射收益。</li>
+</ul>
+<hr>
+<h1>第四章　圓形母概念之一：徑向與環形片上拓撲</h1>
+<h2>4.1 圓形裸晶外形不是必要條件</h2>
+<p>圓形母概念中最有價值的部分，不是要求裸晶必須切成圓，而是：</p>
+<ul>
+<li>徑向距離；</li>
+<li>同心環分區；</li>
+<li>中央樞紐；</li>
+<li>環形局部通訊；</li>
+<li>扇區化電源與故障域；</li>
+<li>旋轉對稱的物理規則。</li>
+</ul>
+<p>上述結構可以實現在矩形裸晶、晶圓級系統、FPGA 或多晶粒封裝中。因此，新版使用 <strong>Radial／Annular Fabric，徑向／環形織網</strong>，而不是把「圓形 CPU」限定為產品外形。</p>
+<h2>4.2 等半徑不等於零時脈偏移</h2>
+<p>若中央點到同一圓周上的理想幾何距離相同，確實可以簡化部分對稱分發問題。但實際時脈到達時間為：</p>
+<h1>$$
+t_i</h1>
+<p>\sum_{s\in\mathcal{P}<em>i}
+\left(
+R_sC_s
++
+t</em>{\mathrm{buf},s}
++
+t_{\mathrm{coupling},s}
+\right).
+$$</p>
+<p>即使幾何長度相同，以下因素仍會產生差異：</p>
+<ul>
+<li>不同負載；</li>
+<li>緩衝器與線寬；</li>
+<li>製程變異；</li>
+<li>電壓與溫度；</li>
+<li>串擾；</li>
+<li>局部供電噪聲；</li>
+<li>佈線阻塞。</li>
+</ul>
+<p>因此，徑向時脈網路是候選拓撲，而不是自動完美同步。</p>
+<h2>4.3 環形網路的適用條件</h2>
+<p>環形網路具有規則、佈線簡單與局部鄰接明確等優點，但其直徑與擁塞可能隨節點數增加。對 $N$ 節點單環，最壞 hop 數約為：</p>
+<p>$$
+H_{\max}
+\approx
+\left\lfloor\frac{N}{2}\right\rfloor.
+$$</p>
+<p>因此，大型系統通常需要：</p>
+<ul>
+<li>多環；</li>
+<li>快速徑向通道；</li>
+<li>階層式交換器；</li>
+<li>express links；</li>
+<li>分區流量；</li>
+<li>適應性路由。</li>
+</ul>
+<p>合理的候選包括：</p>
+<ol>
+<li><strong>內環</strong>：控制與低延遲共享狀態；</li>
+<li><strong>中環</strong>：記憶體與快取流量；</li>
+<li><strong>外環</strong>：I/O 與大容量串流；</li>
+<li><strong>徑向連接</strong>：跨環快速路徑；</li>
+<li><strong>扇區交換器</strong>：隔離擁塞與故障。</li>
+</ol>
+<p>這是一個 NoC 設計問題，必須與 mesh、torus、fat-tree、crossbar 或 hierarchical network 比較。</p>
+<h2>4.4 圓形熱均勻性的限制</h2>
+<p>圓形邊界不會自動帶來均勻溫度。熱分布取決於：</p>
+<ul>
+<li>功率地圖；</li>
+<li>材料與層結構；</li>
+<li>冷卻面；</li>
+<li>流道與壓降；</li>
+<li>TIM；</li>
+<li>邊界條件。</li>
+</ul>
+<p>如果高功率區集中於圓心，中心反而可能成為最難冷卻的熱點。若使用徑向流體冷卻，則入口與出口溫度、流量分布及壓降也可能不均。</p>
+<p>因此，徑向冷卻必須求解：</p>
+<p>$$
+\nabla\cdot(\rho\mathbf{u})=0,
+$$</p>
+<h1>$$
+\rho c_p
+\left(
+\frac{\partial T}{\partial t}
++
+\mathbf{u}\cdot\nabla T
+\right)</h1>
+<p>\nabla\cdot(k\nabla T)
++q&#39;&#39;&#39;.
+$$</p>
+<p>不能僅由外形對稱推導散熱結論。</p>
+<h2>4.5 徑向／環形織網 MVP</h2>
+<p>可先在 FPGA 或 NoC 模擬器建立相同節點與鏈路預算的：</p>
+<ul>
+<li>2D mesh；</li>
+<li>單環；</li>
+<li>多環＋徑向捷徑；</li>
+<li>階層式環形；</li>
+<li>小世界增補網路。</li>
+</ul>
+<p>工作負載包含：</p>
+<ul>
+<li>all-to-all；</li>
+<li>stencil；</li>
+<li>multicast；</li>
+<li>memory-centric；</li>
+<li>producer–consumer pipeline；</li>
+<li>局部熱點；</li>
+<li>故障繞行。</li>
+</ul>
+<p>評估：</p>
+<ul>
+<li>平均與 $p99$ 延遲；</li>
+<li>飽和吞吐量；</li>
+<li>每封包能耗；</li>
+<li>佈線面積；</li>
+<li>失效後連通性；</li>
+<li>時脈與供電開銷。</li>
+</ul>
+<p>若徑向／環形拓撲在相同鏈路與路由器預算下不優於基線，就不應只因視覺對稱而保留。</p>
+<hr>
+<h1>第五章　圓形母概念之二：晶圓級容錯運算</h1>
+<h2>5.1 晶圓級不是圓形 CPU 的同義詞</h2>
+<p>一片晶圓作為單一運算系統，真正重要的是：</p>
+<ul>
+<li>如何跨越單一光罩視場；</li>
+<li>如何連接大量局部計算單元；</li>
+<li>如何容忍製造缺陷；</li>
+<li>如何供應大電流；</li>
+<li>如何移除熱；</li>
+<li>如何測試與分級；</li>
+<li>如何讓軟體看到一致的機器。</li>
+</ul>
+<p>Cerebras Wafer-Scale Engine 已證明晶圓級運算可以透過小型容錯核心、冗餘鏈路、缺陷映射與可重路由互連實際部署。其意義不是「圓形比方形漂亮」，而是：</p>
+<blockquote>
+<p>當計算與記憶體分散成足夠小的故障域時，整片晶圓可以在存在缺陷的條件下工作。</p>
+</blockquote>
+<h2>5.2 材料利用率不是主要指標</h2>
+<p>傳統裸晶切割確實存在晶邊不可用區與切割道；晶圓級系統也能避免把大量內部連線轉換成封裝間 SerDes。但不能因此直接宣稱材料利用率接近百分之百。</p>
+<p>晶圓級系統仍需要：</p>
+<ul>
+<li>晶邊排除區；</li>
+<li>電源與 I/O 區；</li>
+<li>測試結構；</li>
+<li>缺陷備援；</li>
+<li>冷卻與機械固定；</li>
+<li>跨光罩 stitching 或重複單元；</li>
+<li>封裝與連接系統。</li>
+</ul>
+<p>合理指標是：</p>
+<h1>$$
+U_{\mathrm{wafer}}</h1>
+<p>\frac{
+\text{可用運算、記憶體與網路面積}
+}{
+\text{總晶圓面積}
+},
+$$</p>
+<p>以及：</p>
+<h1>$$
+D_{\mathrm{useful}}</h1>
+<p>\frac{
+\text{熱與功率約束下的有效工作量}
+}{
+\text{晶圓、封裝與冷卻總成本}
+}.
+$$</p>
+<h2>5.3 缺陷容忍的局部化</h2>
+<p>令晶圓包含 $N$ 個小型 tile，每個 tile 可用機率為 $p$。若系統要求全部 tile 無缺陷，良率為：</p>
+<p>$$
+Y_{\mathrm{strict}}=p^N,
+$$</p>
+<p>當 $N$ 很大時會迅速下降。</p>
+<p>若系統允許最多 $f$ 個 tile 故障，則可用機率變為：</p>
+<h1>$$
+Y_{\mathrm{FT}}</h1>
+<p>\sum_{k=0}^{f}
+\binom{N}{k}
+(1-p)^k
+p^{N-k},
+$$</p>
+<p>而實際架構還可透過拓撲重路由降低故障影響。這個簡化模型說明：容錯能力必須在設計階段內建，不能等製造後才補救。</p>
+<h2>5.4 晶圓級的真正優勢</h2>
+<h3>減少封裝邊界</h3>
+<p>大量計算單元可透過晶圓內部網路通訊，避免數百顆獨立封裝之間的高能耗 SerDes 與外部交換層。</p>
+<h3>分散式記憶體局部性</h3>
+<p>若每個 tile 附近都有 SRAM，資料可以停留在計算附近，降低記憶體牆影響。</p>
+<h3>大規模規則陣列</h3>
+<p>AI、稀疏線性代數、stencil、分子動力學與圖計算可映射到大量規則 tile，但收益取決於軟體與資料流。</p>
+<h3>單一系統映像</h3>
+<p>如果軟體能把整片晶圓視為一個裝置，可以減少多加速器模型切分與通訊複雜度。</p>
+<h2>5.5 晶圓級的主要限制</h2>
+<ul>
+<li>高總功率與電流；</li>
+<li>大面積溫度梯度；</li>
+<li>冷卻與熱膨脹；</li>
+<li>I/O 密度與外部記憶體；</li>
+<li>製造與封裝設備；</li>
+<li>軟體映射與故障透明；</li>
+<li>單一系統成本與供應鏈；</li>
+<li>不適合所有工作負載。</li>
+</ul>
+<p>因此，晶圓級是專用系統路徑，不是所有個人電腦與邊緣裝置的必然形態。</p>
+<h2>5.6 晶圓級 MVP 的合理順序</h2>
+<ol>
+<li>以 FPGA 或多板系統模擬數千 tile 與故障映射。</li>
+<li>在 reticle 內製造小型冗餘 tile 陣列。</li>
+<li>驗證跨視場連接、缺陷掃描與可重路由。</li>
+<li>建立電源、冷卻與機械原型。</li>
+<li>最後才進入整片晶圓級製造。</li>
+</ol>
+<hr>
+<h1>第六章　V-CORE STACK：從處理器塔到 SDMCA</h1>
+<h2>6.1 歷史定位</h2>
+<p>V-CORE STACK 是原稿中最接近後續 SDMCA 的概念。其核心不是裸晶垂直鍵合，而是：</p>
+<ul>
+<li>可插拔運算模組；</li>
+<li>標準化資料與管理介面；</li>
+<li>分區供電；</li>
+<li>不同冷卻方式；</li>
+<li>逐步升級；</li>
+<li>故障模組更換。</li>
+</ul>
+<p>這些問題屬於模組與機箱尺度。因此，新版不再把它稱為「垂直核心平台」的單一處理器，而稱為：</p>
+<blockquote>
+<p><strong>Modular Spatial Compute Stack，模組化空間運算堆疊。</strong></p>
+</blockquote>
+<h2>6.2 與封裝級 3D 的差異</h2>
+<table>
+<thead>
+<tr>
+<th>面向</th>
+<th>封裝級 3DIC</th>
+<th>模組化空間堆疊</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>距離</td>
+<td>微米至毫米</td>
+<td>毫米至數十公分</td>
+</tr>
+<tr>
+<td>互連</td>
+<td>Hybrid bonding、TSV、UCIe</td>
+<td>高速連接器、線纜、retimer、光電介面</td>
+</tr>
+<tr>
+<td>冷卻</td>
+<td>封裝、冷板、微流道</td>
+<td>模組冷板、歧管、風道、DryCore</td>
+</tr>
+<tr>
+<td>維修</td>
+<td>通常不可現場拆晶粒</td>
+<td>可更換模組</td>
+</tr>
+<tr>
+<td>失效域</td>
+<td>封裝內</td>
+<td>模組／電源／冷卻支路</td>
+</tr>
+<tr>
+<td>升級</td>
+<td>更換封裝或平台</td>
+<td>增減或替換模組</td>
+</tr>
+</tbody></table>
+<p>不能使用 TSV、微米級光刻或 hybrid bonding 解釋數公分模組間連接。</p>
+<h2>6.3 交由 SDMCA 處理的問題</h2>
+<p>後續 SDMCA 已將 V-CORE STACK 展開為：</p>
+<ul>
+<li>樓梯式模組佈局；</li>
+<li>環形模組艙；</li>
+<li>螺旋式服務面；</li>
+<li>熱—電—互連共同拓撲；</li>
+<li>可維修性；</li>
+<li>故障隔離；</li>
+<li>風道與液路；</li>
+<li>機械可靠度。</li>
+</ul>
+<p>因此，本篇只保留其譜系，不重複提出機箱級產品主張。</p>
+<hr>
+<h1>第七章　製造技術的重新分工</h1>
+<h2>7.1 半導體前段製程</h2>
+<p>先進邏輯與記憶體仍依賴：</p>
+<ul>
+<li>光刻；</li>
+<li>沉積；</li>
+<li>蝕刻；</li>
+<li>摻雜；</li>
+<li>平坦化；</li>
+<li>多層金屬；</li>
+<li>嚴格污染控制；</li>
+<li>奈米級量測與統計製程控制。</li>
+</ul>
+<p>標準軸錐或一般 3D 列印不能一次性取代這些步驟。</p>
+<h2>7.2 先進封裝</h2>
+<p>立體運算最直接的製造路徑是：</p>
+<ul>
+<li>wafer-to-wafer 或 die-to-wafer bonding；</li>
+<li>hybrid bonding；</li>
+<li>TSV；</li>
+<li>RDL；</li>
+<li>矽橋與中介層；</li>
+<li>molded interconnect；</li>
+<li>known-good-die；</li>
+<li>封裝後測試與管理。</li>
+</ul>
+<p>UCIe 2.0 對 3D packaging 的支援，以及後續規格對管理、測試、遙測與除錯的持續擴展，說明立體整合的可用性取決於完整生命週期，而不只是物理鍵合。</p>
+<h2>7.3 CPOP 與 AOCLS 的合理角色</h2>
+<p>CPOP／AOCLS 可研究：</p>
+<ul>
+<li>微光學元件；</li>
+<li>光子互連；</li>
+<li>微流道與冷卻結構；</li>
+<li>聚合物模板；</li>
+<li>封裝對準標記；</li>
+<li>三維感測與量測；</li>
+<li>可製造性編譯；</li>
+<li>非關鍵結構的快速原型。</li>
+</ul>
+<p>它們不應在沒有實驗證據時宣稱：</p>
+<ul>
+<li>單次曝光製造完整多層 CMOS；</li>
+<li>消除所有層間對準；</li>
+<li>取代 EUV；</li>
+<li>製造任意角度奈米互連；</li>
+<li>直接形成可量產晶圓級處理器。</li>
+</ul>
+<h2>7.4 3D 列印的合理角色</h2>
+<p>3D 列印可支援：</p>
+<ul>
+<li>機械框架；</li>
+<li>流體歧管；</li>
+<li>冷卻原型；</li>
+<li>光學支架；</li>
+<li>封裝治具；</li>
+<li>機箱風道；</li>
+<li>可更換模組外殼；</li>
+<li>毫米至微米尺度的功能結構。</li>
+</ul>
+<p>它不是奈米 CMOS 電晶體、金屬互連與超潔淨前段製程的直接替代品。</p>
+<hr>
+<h1>第八章　與計算機概念產品系列的統一關係</h1>
+<h2>8.1 系列分工</h2>
+<p>新版將各子系統的角色固定為：</p>
+<p>$$
+\text{空間設計空間}
+\rightarrow
+\text{SDMCA／3DIC／晶圓級實體拓撲}
+\rightarrow
+\begin{cases}
+\text{O-Chip：意圖與編排}\
+\text{SynCore：執行域}\
+\text{DEO：運作包絡}\
+\text{DPCPS：供電}\
+\text{DryCore：熱管理}
+\end{cases}
+\rightarrow
+\text{可驗證執行}.
+$$</p>
+<h3>本篇</h3>
+<p>提供塔形、徑向、晶圓級與模組塔的概念譜系與共同評估框架。</p>
+<h3>SDMCA</h3>
+<p>負責封裝外、機箱內的樓梯式、環形與螺旋式模組佈局。</p>
+<h3>SynCore</h3>
+<p>負責融合核心、數位資料流與特殊物理加速器的可重構執行。</p>
+<h3>O-Chip</h3>
+<p>負責依工作圖、資源圖、熱與功率承諾進行粗粒度跨層編排。</p>
+<h3>DEO</h3>
+<p>選擇合法的性能、功率、溫度、可靠度與模式包絡。</p>
+<h3>DPCPS</h3>
+<p>管理區域與近負載供電、局部儲能與多相調節。</p>
+<h3>DryCore</h3>
+<p>管理熱脊、外部冷端、污染控制、熱虹吸與故障安全。</p>
+<h3>CPOP／AOCLS／TGMSS</h3>
+<p>負責光學、逆向製造、模板、材料與閉環量測研究，不直接替代先進封裝與 CMOS 製程。</p>
+<h2>8.2 不再允許的功能重疊</h2>
+<ul>
+<li>本篇不再自行設計完整散熱器；交由 DryCore。</li>
+<li>本篇不再自行設計電源節點；交由 DPCPS。</li>
+<li>本篇不再自行宣稱 AI 會最佳化所有幾何；交由 O-Chip 或離線設計工具。</li>
+<li>本篇不再自行發明核心融合；交由 SynCore。</li>
+<li>本篇不再使用錐形透鏡作為一切製造的通用解；交由 CPOP／AOCLS 限定處理。</li>
+</ul>
+<hr>
+<h1>第九章　驗證路線</h1>
+<h2>9.1 V0：概念與尺度審查</h2>
+<p>每個提案必須回答：</p>
+<ol>
+<li>研究尺度是裸晶、封裝、模組還是機箱？</li>
+<li>互連技術在此距離是否適用？</li>
+<li>主要熱出口在哪裡？</li>
+<li>電源與接地如何抵達？</li>
+<li>故障能否被隔離？</li>
+<li>如何測試與維修？</li>
+<li>哪個工作負載會受益？</li>
+</ol>
+<p>無法回答者不得進入倍率估算。</p>
+<h2>9.2 V1：圖與成本模型</h2>
+<p>建立相同節點、記憶體與鏈路預算的：</p>
+<ul>
+<li>2D mesh；</li>
+<li>3D mesh；</li>
+<li>徑向／環形；</li>
+<li>層次式 chiplet；</li>
+<li>晶圓級容錯網路。</li>
+</ul>
+<p>比較：</p>
+<ul>
+<li>hop 數；</li>
+<li>鏈路長度；</li>
+<li>擁塞；</li>
+<li>每 bit 能耗；</li>
+<li>路由器面積；</li>
+<li>故障後連通性。</li>
+</ul>
+<h2>9.3 V2：電—熱共同模擬</h2>
+<p>對相同總功率與冷卻邊界，量測：</p>
+<ul>
+<li>峰值溫度；</li>
+<li>溫度梯度；</li>
+<li>熱節流；</li>
+<li>電壓 droop；</li>
+<li>冷卻功率；</li>
+<li>不同層序的敏感度；</li>
+<li>TIM 與界面熱阻變異。</li>
+</ul>
+<h2>9.4 V3：FPGA／多晶粒模擬原型</h2>
+<p>建立：</p>
+<ul>
+<li>FPGA 多 tile 網路；</li>
+<li>兩層邏輯—記憶體模擬；</li>
+<li>徑向／環形 NoC；</li>
+<li>缺陷注入與重路由；</li>
+<li>O-Chip 工作負載映射。</li>
+</ul>
+<h2>9.5 V4：封裝與冷卻測試載具</h2>
+<p>製作不含最先進邏輯的 test vehicle，驗證：</p>
+<ul>
+<li>鍵合；</li>
+<li>垂直鏈路；</li>
+<li>熱循環；</li>
+<li>翹曲；</li>
+<li>冷板或微流道；</li>
+<li>電源完整性；</li>
+<li>失效定位。</li>
+</ul>
+<h2>9.6 V5：應用級基準</h2>
+<p>工作負載至少包含：</p>
+<ul>
+<li>AI 推論與訓練核心；</li>
+<li>stencil／科學計算；</li>
+<li>圖與不規則記憶體；</li>
+<li>低延遲串列；</li>
+<li>串流 I/O；</li>
+<li>故障降級場景。</li>
+</ul>
+<p>報告端到端性能、能耗、熱、可靠度與軟體複雜度，不只報告峰值 TFLOPS。</p>
+<h2>9.7 證據分級</h2>
+<table>
+<thead>
+<tr>
+<th>等級</th>
+<th>定義</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E0</td>
+<td>概念、方程與可否證命題</td>
+</tr>
+<tr>
+<td>E1</td>
+<td>外部技術基線或局部模擬支援</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>可重現子系統模擬或軟體原型</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>實驗室硬體原型</td>
+</tr>
+<tr>
+<td>E4</td>
+<td>多批次、長時間與第三方重現</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>量產與場域驗證</td>
+</tr>
+</tbody></table>
+<p>本文的幾何候選目前主要屬 E0；SoIC、Foveros、UCIe-3D 與晶圓級處理器等外部基線依其公開資料分別具有更高證據層級，但不能轉移成 EveMissLab 架構自身成果。</p>
+<hr>
+<h1>第十章　可證偽命題</h1>
+<h2>命題 H1：三維嵌入的互連收益</h2>
+<p>在相同節點、路由器、鏈路頻寬、功率與冷卻約束下，對具有高局部性的工作圖，適當的三維嵌入可降低加權鏈路成本：</p>
+<p>$$
+C_{\mathrm{link}}^{3D}
+&lt;
+C_{\mathrm{link}}^{2D}.
+$$</p>
+<p>若路由、層間連接與熱限制使端到端成本不降，則 H1 在該工作負載下被否證。</p>
+<h2>命題 H2：塔形功能分層</h2>
+<p>對特定邏輯—記憶體工作負載，封裝級垂直堆疊在不超過相同熱與功率護欄時，可降低資料搬移能耗。</p>
+<p>若新增熱節流、封裝與控制開銷抵銷收益，則該層序被否證。</p>
+<h2>命題 H3：徑向／環形拓撲</h2>
+<p>在 multicast、分區記憶體或規則 pipeline 工作負載中，多環＋徑向捷徑可在相同鏈路預算下優於 2D mesh 的尾端延遲或能耗。</p>
+<p>若只在人工流量下成立，或失效後嚴重退化，則不具一般架構價值。</p>
+<h2>命題 H4：晶圓級容錯</h2>
+<p>小故障域、冗餘與可重路由可使晶圓級系統在存在製造缺陷時維持可用性能，而不要求整片完全無缺陷。</p>
+<p>若備援、測試與重路由面積成本過高，導致有效算力密度不優於多封裝系統，則相應晶圓級設計被否證。</p>
+<h2>命題 H5：模組塔的服務性</h2>
+<p>在相同模組與冷卻能力下，SDMCA 類模組塔可以降低更換時間或故障傳播，而不使互連與冷卻成本超過收益。</p>
+<p>此命題由 SDMCA 實驗驗證，本篇不重複宣告結果。</p>
+<hr>
+<h1>第十一章　歷史主張處置表</h1>
+<table>
+<thead>
+<tr>
+<th>原始主張</th>
+<th>v2.0 處置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>處理器產業仍受純平面範式支配</td>
+<td>改為 2D、2.5D、3DIC、晶圓級與模組級共存</td>
+</tr>
+<tr>
+<td>三維排列使平均距離由 $\sqrt{N}$ 降為 $\sqrt[3]{N}$，因此性能大幅提升</td>
+<td>保留理想格點尺度律；取消直接性能倍率</td>
+</tr>
+<tr>
+<td>塔形煙囪效應自然解決散熱</td>
+<td>改為必須求解固體導熱、界面熱阻、對流與冷卻功率</td>
+</tr>
+<tr>
+<td>圓形晶片到中心等距，因此時脈自動同步</td>
+<td>改為徑向時脈候選；仍受負載與 PVT 影響</td>
+</tr>
+<tr>
+<td>整片圓形晶圓能接近百分之百利用</td>
+<td>改為晶圓級容錯系統；計入邊緣、I/O、備援與冷卻</td>
+</tr>
+<tr>
+<td>晶圓級系統運算能力自然提升數百倍</td>
+<td>刪除；依工作負載、軟體、功率與冷卻驗證</td>
+</tr>
+<tr>
+<td>錐形透鏡可一次製造完整三維處理器</td>
+<td>刪除；CPOP／AOCLS 限定為光場與製造研究平台</td>
+</tr>
+<tr>
+<td>3D 列印可直接製造奈米處理器</td>
+<td>刪除；保留機械、流體、封裝與微結構原型用途</td>
+</tr>
+<tr>
+<td>V-CORE STACK 是可插拔裸晶塔</td>
+<td>改為 SDMCA 的模組／機箱級歷史前身</td>
+</tr>
+<tr>
+<td>固定 TFLOPS、能效、成本與年份</td>
+<td>全部移除，改為公平基線與證據分級</td>
+</tr>
+<tr>
+<td>立體運算是文明必然的唯一方向</td>
+<td>改為多個可比較、可否證的設計空間</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>結論</h1>
+<p>原稿所提出的塔形、圓形與垂直模組，不應被視為三個已完成的處理器產品，也不應被簡化成「平面錯、立體對」的二元革命。它們更適合被理解為三種早期空間原型：</p>
+<ul>
+<li>塔形提出了功能層垂直鄰接與異質堆疊；</li>
+<li>圓形提出了徑向、環形、扇區化與晶圓級尺度；</li>
+<li>V-CORE STACK 提出了模組化、可升級與可維修的空間系統。</li>
+</ul>
+<p>2026 年的產業基線已經部分實現這些直覺：3DIC 與 hybrid bonding 使高密度垂直整合進入量產路線；UCIe 開始為異質 chiplet 與 3D packaging 建立開放介面；晶圓級處理器則證明冗餘與可重路由可以把整片晶圓轉化為可工作的計算系統。這些成果同時也證明，空間自由度從來不是免費性能：熱、功率、良率、測試、封裝、維修與軟體，決定了幾何是否真正有價值。</p>
+<p>因此，本文留下的不是一個終極外形，而是一個方法：</p>
+<p>$$
+\text{先辨識尺度}
+\rightarrow
+\text{建立共同約束}
+\rightarrow
+\text{比較空間拓撲}
+\rightarrow
+\text{以實驗否證或保留}.
+$$</p>
+<p>形狀可以產生直覺，但只有證據能把直覺轉化為架構。</p>
+<hr>
+<h1>參考資料</h1>
+<ol>
+<li>TSMC, <strong>TSMC-SoIC®</strong>, 3DFabric technology platform.<br><a href="https://3dfabric.tsmc.com/english/dedicatedFoundry/technology/SoIC.htm">https://3dfabric.tsmc.com/english/dedicatedFoundry/technology/SoIC.htm</a></li>
+<li>TSMC, <strong>The Whats, Whys, and Hows of TSMC-SoIC™</strong>.<br><a href="https://www.tsmc.com/english/dedicatedFoundry/technology/SoIC_inDepth">https://www.tsmc.com/english/dedicatedFoundry/technology/SoIC_inDepth</a></li>
+<li>Intel Foundry, <strong>Foveros Direct 3D Technology Brief</strong>, 2025.<br><a href="https://www.intel.com/content/dam/www/central-libraries/us/en/documents/2025-11/foveros-direct-3d-tech-brief.pdf">https://www.intel.com/content/dam/www/central-libraries/us/en/documents/2025-11/foveros-direct-3d-tech-brief.pdf</a></li>
+<li>Intel, <strong>Foveros: 3D Integration and the Use of Face-to-Face Chip Stacking</strong>, 2019.<br><a href="https://ieeexplore.ieee.org/document/8993637/">https://ieeexplore.ieee.org/document/8993637/</a></li>
+<li>UCIe Consortium, <strong>Specifications</strong>, including UCIe 2.0／3.0 and 3D packaging support.<br><a href="https://www.uciexpress.org/specifications">https://www.uciexpress.org/specifications</a></li>
+<li>Cerebras Systems, <strong>100x Defect Tolerance: How Cerebras Solved the Yield Problem</strong>, 2025.<br><a href="https://www.cerebras.ai/blog/100x-defect-tolerance-how-cerebras-solved-the-yield-problem">https://www.cerebras.ai/blog/100x-defect-tolerance-how-cerebras-solved-the-yield-problem</a></li>
+<li>Cerebras Systems, <strong>Wafer-Scale AI</strong>, Hot Chips 2024.<br><a href="https://hc2024.hotchips.org/assets/program/conference/day2/72_HC2024.Cerebras.Sean.v03.final.pdf">https://hc2024.hotchips.org/assets/program/conference/day2/72_HC2024.Cerebras.Sean.v03.final.pdf</a></li>
+<li>F. Guo et al., <strong>Recent Developments in Thermal Management of 3D ICs</strong>, IEEE Access, 2025.<br><a href="https://ieeexplore.ieee.org/iel8/6287639/10820123/11003914.pdf">https://ieeexplore.ieee.org/iel8/6287639/10820123/11003914.pdf</a></li>
+<li>W. Y. Woon et al., <strong>Thermal management materials for 3D-stacked integrated circuits</strong>, 2025.<br><a href="https://faculty.ustb.edu.cn/_resources/group1/M00/00/16/cxk8b2niIWaAJdw_ACIlLv2OJzU744.pdf">https://faculty.ustb.edu.cn/_resources/group1/M00/00/16/cxk8b2niIWaAJdw_ACIlLv2OJzU744.pdf</a></li>
+<li>UCIe Consortium, <strong>UCIe 2.0 Specification Supporting Manageability System Architecture and 3D Packaging</strong>, 2024.<br><a href="https://www.uciexpress.org/press-releases">https://www.uciexpress.org/press-releases</a></li>
+</ol>
+<hr>
+<h2>文件狀態</h2>
+<ul>
+<li>本文件已完成公開措辭、數學格式、系列依賴與歷史定位修訂。</li>
+<li>本文件不宣稱 EveMissLab 已完成塔形、圓形、晶圓級或 3DIC 硬體原型。</li>
+<li>技術數字應以後續公開模型、原始測試資料與第三方重現為準。</li>
+<li>最新機箱級實作主稿為《空間解耦模組運算架構》v2.0；本篇保留為概念母稿與設計空間總論。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/ccp-02.html">https://thisoneisneok.com/html/papers/ccp-02.html</a></footer>
+</body>
+</html>

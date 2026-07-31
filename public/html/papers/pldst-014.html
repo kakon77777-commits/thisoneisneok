@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Niklaus Wirth：簡潔、教育與可實作性的設計倫理 | Neo.K</title>
+<meta name="description" content="Niklaus Wirth 常被簡化為「Pascal 的發明者」「極簡主義語言設計者」或「軟體膨脹的批評者」。這些標籤只描述了結果，卻未說明其極簡從何而來，也容易將他誤寫成反對所有功能與大型系統的保守派。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-014.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-014</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第三部設計師個案正式研究</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-014.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>Niklaus Wirth：簡潔、教育與可實作性的設計倫理</h1>
+<h2>摘要</h2>
+<p>Niklaus Wirth 常被簡化為「Pascal 的發明者」「極簡主義語言設計者」或「軟體膨脹的批評者」。這些標籤只描述了結果，卻未說明其極簡從何而來，也容易將他誤寫成反對所有功能與大型系統的保守派。</p>
+<p>Wirth 實際設計了一條持續修正的語言—系統鏈：</p>
+<p>$$
+Euler
+\rightarrow
+ALGOL\ W
+\rightarrow
+Pascal
+\rightarrow
+Modula
+\rightarrow
+Modula\text{-}2
+\rightarrow
+Oberon
+\rightarrow
+Oberon\text{-}07
+$$</p>
+<p>Pascal 將結構化程式設計與資料結構帶入教學；Modula／Modula-2 回應並行、模組、獨立編譯與系統程式需求；Oberon 則在對 Cedar 等大型軟體系統的實際經驗後，嘗試提高 Modula-2 的能力並同時減少複雜度，以少量型別延伸和模組機制支撐完整工作站系統。[R1][R2][R3]</p>
+<p>這表示 Wirth 的核心風格不是「永遠保留原語言」，而是：</p>
+<blockquote>
+<p>當既有語言的概念邊界不再適合新問題時，寧可建立更小、更一致、可完整實作的新系統，也不願在舊核心上無限堆疊補丁。</p>
+</blockquote>
+<p>Wirth 的教育觀同樣不是把語言變成只適合學生的玩具。他把程式設計視為：</p>
+<ul>
+<li>將模糊任務逐步精化；</li>
+<li>同時設計演算法與資料結構；</li>
+<li>以型別及結構表達不變量；</li>
+<li>將程式、語言、編譯器和機器共同理解；</li>
+<li>透過完整實作驗證設計是否真的清楚。</li>
+</ul>
+<p>其著名的 Stepwise refinement 強調把設計決策逐步分解，盡量解除彼此交纏；《Algorithms + Data Structures = Programs》則把資料表示與算法視為共同決定程式結構的兩部分。[R4][R5] Project Oberon 更把語言、編譯器、作業系統、圖形環境及後來的 RISC5 處理器放在同一可閱讀、可教學、可重建的工程中。[R3][R6]</p>
+<p>本文以 PLDST 方法把 Wirth 的生涯分為六個相位：</p>
+<ol>
+<li><strong>ALGOL 概念提煉期</strong>：Euler 與 ALGOL W；</li>
+<li><strong>結構化教育期</strong>：Pascal、資料結構及逐步精化；</li>
+<li><strong>模組與系統程式期</strong>：Modula、Modula-2、Lilith；</li>
+<li><strong>整體可理解系統期</strong>：Oberon、Ceres 與 Project Oberon；</li>
+<li><strong>軟體膨脹批判期</strong>：Lean Software；</li>
+<li><strong>語言—編譯器—硬體再統一期</strong>：Oberon-07、RISC5、Lola 及晚期教材。</li>
+</ol>
+<p>本文核心判斷為：</p>
+<p>$$
+\boxed{
+\text{Wirth 的簡潔不是功能數量崇拜，}
+\quad
+\text{而是要求整個計算系統仍可被人完整理解、實作和教授。}
+}
+$$</p>
+<p>其設計倫理可以表示為：</p>
+<p>$$
+\boxed{
+\text{概念必須清楚}
++
+\text{語言必須可實作}
++
+\text{實作必須可閱讀}
++
+\text{系統必須能被重建}
+}
+$$</p>
+<p>這種風格的代價也很明確：</p>
+<ul>
+<li>願意捨棄向上相容；</li>
+<li>可能低估大型生態的異質需求；</li>
+<li>有時把完整性和便利性留給外部實作者；</li>
+<li>小型研究團隊可掌握的整體性，不一定能直接擴展到全球產業；</li>
+<li>Pascal、Modula-2 及 Oberon 的實際生態又常超出 Wirth 本人的設計與治理。</li>
+</ul>
+<p><strong>關鍵詞：</strong> Niklaus Wirth、Pascal、Modula-2、Oberon、結構化程式設計、逐步精化、Compiler Construction、Project Oberon、Lean Software、PLDST</p>
+<hr>
+<h1>第一部分　研究邊界與歸因</h1>
+<h2>一、本文研究範圍</h2>
+<p>本文主要分析：</p>
+<ul>
+<li>Euler；</li>
+<li>ALGOL W；</li>
+<li>Pascal；</li>
+<li>Stepwise refinement；</li>
+<li>Modula／Modula-2；</li>
+<li>Lilith；</li>
+<li>Oberon；</li>
+<li>Project Oberon；</li>
+<li>Ceres／RISC；</li>
+<li>A Plea for Lean Software；</li>
+<li>Oberon-07、RISC5 與晚期 Compiler Construction。</li>
+</ul>
+<p>本文不把下列內容全部歸入 Wirth：</p>
+<ul>
+<li>UCSD Pascal；</li>
+<li>Turbo Pascal；</li>
+<li>Object Pascal／Delphi；</li>
+<li>ISO Pascal；</li>
+<li>ISO Modula-2；</li>
+<li>Oberon-2；</li>
+<li>Component Pascal；</li>
+<li>所有後代方言及編譯器。</li>
+</ul>
+<hr>
+<h2>二、語言創始與系統共同建造需要分離</h2>
+<p>Wirth 對 Pascal、Modula-2、Oberon 的語言核心具有高度個人設計權重，但其系統工作仍包含重要共同作者和團隊：</p>
+<ul>
+<li>Pascal 的早期編譯器、Pascal-P 可攜實作與公共報告涉及不同協作者；其中 Urs Ammann 與可攜編譯工作密切相關，Kathleen Jensen 是《Pascal User Manual and Report》共同作者，其他移植及編譯專案亦由 ETH 成員參與；</li>
+<li>Lilith 是最多約七名助手參與的整合硬體—軟體計畫；</li>
+<li>Project Oberon 由 Wirth 與 Jürg Gutknecht 共同完成；</li>
+<li>Oberon-2 與 Hanspeter Mössenböck 等後續研究相關；</li>
+<li>工作站、板卡及控制系統亦有硬體共同設計者和實作者。[R2][R3][R7]</li>
+</ul>
+<p>因此：</p>
+<pre><code class="language-text">核心語言取捨：Wirth 高
+編譯器與教材：Wirth 高，但有共同作者
+完整系統：Wirth＋Gutknecht／研究團隊
+後代生態：其他機構與社群
+</code></pre>
+<hr>
+<h2>三、Turing Award 的歷史定位</h2>
+<p>ACM 於 1984 年授予 Wirth 圖靈獎，表彰他發展 Euler、ALGOL W、Modula、Pascal 等一系列創新語言，以及 Pascal 對教育和後續語言、系統、架構研究的基礎作用。[R8]</p>
+<p>值得注意的是：</p>
+<ul>
+<li>獎項強調的是「一系列語言」；</li>
+<li>Wirth 的風格應從連續修正中辨識；</li>
+<li>不能只以 Pascal 一個成功作品定義其一生。</li>
+</ul>
+<hr>
+<h1>第二部分　相位一：從 ALGOL 提煉基本概念</h1>
+<h2>四、Euler：尋找基本且一般的語言概念</h2>
+<p>ETH 專案回顧將 Euler 描述為：</p>
+<ul>
+<li>從 ALGOL 60 中辨識並組合本質概念；</li>
+<li>探索語法分析與語義解釋的系統連接；</li>
+<li>建立高階語言實作方法；</li>
+<li>研究 Stack-oriented interpreter。[R2]</li>
+</ul>
+<p>這顯示 Wirth 的早期問題不是單純增加語法，而是：</p>
+<blockquote>
+<p>哪些概念是語言真正需要的，如何使它們有清楚語義並可有效實作？</p>
+</blockquote>
+<hr>
+<h2>五、ALGOL W：標準爭議中的個人設計</h2>
+<p>ALGOL W 起源於對 ALGOL 後繼設計的分歧。</p>
+<p>Wirth 與 C. A. R. Hoare 提出較克制、可實作的方向，但 ALGOL 68 委員會採取更廣泛設計。Wirth 隨後推進自己的 ALGOL W。</p>
+<p>這形成其治理風格的一個早期特徵：</p>
+<pre><code class="language-text">若委員會折衷無法形成一致系統
+→
+建立一個可完整實作的替代語言
+</code></pre>
+<hr>
+<h2>六、設計者的責任不止寫規格</h2>
+<p>Wirth 不滿足於：</p>
+<ul>
+<li>語法建議；</li>
+<li>委員會報告；</li>
+<li>抽象功能清單。</li>
+</ul>
+<p>他要求：</p>
+<ul>
+<li>完整定義；</li>
+<li>Compiler；</li>
+<li>教材；</li>
+<li>真實使用；</li>
+<li>由實作反饋設計。</li>
+</ul>
+<p>這一原則貫穿 Pascal 到 Oberon。</p>
+<hr>
+<h1>第三部分　相位二：Pascal 與結構化教育</h1>
+<h2>七、Pascal 的原始定位</h2>
+<p>Pascal 約於 1970 年形成，反映：</p>
+<ul>
+<li>Structured programming；</li>
+<li>明確控制結構；</li>
+<li>靜態型別；</li>
+<li>Record、Set、Array、Pointer 等資料結構；</li>
+<li>可由學生及實作者理解的語言核心。[R1][R9]</li>
+</ul>
+<p>它的教育目標不是：</p>
+<pre><code class="language-text">讓初學者最快寫出任何程式
+</code></pre>
+<p>而是：</p>
+<pre><code class="language-text">讓學生學習如何系統性建構算法與資料
+</code></pre>
+<hr>
+<h2>八、教學語言不等於不實用</h2>
+<p>Pascal 後來廣泛用於：</p>
+<ul>
+<li>大學課程；</li>
+<li>編譯器；</li>
+<li>作業系統；</li>
+<li>個人電腦；</li>
+<li>軟體工具；</li>
+<li>出版及研究。</li>
+</ul>
+<p>但 Wirth 的核心評價標準仍是：</p>
+<ul>
+<li>是否支持良好方法；</li>
+<li>是否讓語言本身不鼓勵混亂；</li>
+<li>是否能建立可教學 Compiler；</li>
+<li>是否使程式結構與思考結構一致。</li>
+</ul>
+<hr>
+<h2>九、結構化控制</h2>
+<p>Pascal 偏好：</p>
+<ul>
+<li><code>if</code>；</li>
+<li><code>case</code>；</li>
+<li><code>while</code>；</li>
+<li><code>repeat</code>；</li>
+<li><code>for</code>；</li>
+<li>Procedure／Function；</li>
+</ul>
+<p>而非任意 <code>goto</code> 驅動的控制圖。</p>
+<p>這將控制責任從：</p>
+<pre><code class="language-text">程式設計者手工維護任意跳轉
+</code></pre>
+<p>改為：</p>
+<pre><code class="language-text">語言提供具有局部入口和出口的控制構造
+</code></pre>
+<hr>
+<h2>十、資料結構是語言核心</h2>
+<p>Wirth 的設計不只追求控制結構，也重視：</p>
+<ul>
+<li>Type；</li>
+<li>Array；</li>
+<li>Record；</li>
+<li>Set；</li>
+<li>Pointer；</li>
+<li>Enumeration；</li>
+<li>Subrange。</li>
+</ul>
+<p>《Algorithms + Data Structures = Programs》的含義不是簡單加法公式，而是：</p>
+<h1>$$
+ProgramStructure</h1>
+<p>f(
+Algorithm,
+DataRepresentation
+)
+$$</p>
+<p>資料設計不是演算法完成後的附加工作。</p>
+<hr>
+<h1>第四部分　逐步精化</h1>
+<h2>十一、從任務到可執行細節</h2>
+<p>Stepwise refinement 將程式開發理解為：</p>
+<pre><code class="language-text">粗略任務
+→
+分解子任務
+→
+選擇表示
+→
+逐步加入細節
+→
+形成可執行程式
+</code></pre>
+<p>每一步應：</p>
+<ul>
+<li>保持先前目的；</li>
+<li>引入有限新決策；</li>
+<li>避免同時處理所有層級；</li>
+<li>盡量解除互相交纏的設計面向。[R4]</li>
+</ul>
+<hr>
+<h2>十二、精化不只是 Top-down 口號</h2>
+<p>Wirth 強調：</p>
+<ul>
+<li>資料和操作相互影響；</li>
+<li>某些決策需要返回修正；</li>
+<li>表示選擇會改變算法；</li>
+<li>每一步應能被人理解和檢查。</li>
+</ul>
+<p>因此它不是機械樹狀分解，而是一種控制認知複雜度的方法。</p>
+<hr>
+<h2>十三、責任配置</h2>
+<p>逐步精化把正確性責任放在：</p>
+<ul>
+<li>設計過程；</li>
+<li>每一層抽象；</li>
+<li>清楚的不變量；</li>
+<li>可追蹤決策。</li>
+</ul>
+<p>它不假設 Compiler 能自動推導全部正確程式，而要求人類將問題以可審查階段轉化。</p>
+<hr>
+<h2>十四、教育倫理</h2>
+<p>其教育立場可以表示為：</p>
+<blockquote>
+<p>不要只教會學生操作語法；應教會他們如何將問題逐步轉成結構清楚的演算法和資料。</p>
+</blockquote>
+<p>語言是思考訓練工具，而不只是市場技能。</p>
+<hr>
+<h1>第五部分　相位三：Modula、Modula-2 與系統程式</h1>
+<h2>十五、Pascal 的不足</h2>
+<p>Pascal 的原始核心適合結構化程式與教學，但大型系統需要：</p>
+<ul>
+<li>獨立編譯；</li>
+<li>Module；</li>
+<li>明確介面；</li>
+<li>隱藏實作；</li>
+<li>低階硬體存取；</li>
+<li>並行與同步；</li>
+<li>分離式開發。</li>
+</ul>
+<p>Wirth 沒有持續把所有功能塞入 Pascal，而是建立新語言系列。</p>
+<hr>
+<h2>十六、Modula：並行作為問題來源</h2>
+<p>Modula 約自 1973 年起探索：</p>
+<ul>
+<li>Concurrent process；</li>
+<li>Process generation；</li>
+<li>Synchronization；</li>
+<li>最小支援語言；</li>
+<li>PDP-11 上的實際系統。[R2]</li>
+</ul>
+<p>這顯示其極簡不是拒絕並行，而是：</p>
+<blockquote>
+<p>只有在問題真正需要時，才將一組具有清楚模型的機制納入語言。</p>
+</blockquote>
+<hr>
+<h2>十七、Modula-2：模組成為第一級構造</h2>
+<p>Modula-2 增加：</p>
+<ul>
+<li>Definition module；</li>
+<li>Implementation module；</li>
+<li>Separate compilation；</li>
+<li>Information hiding；</li>
+<li>System programming facilities；</li>
+<li>Coroutine／Process support。</li>
+</ul>
+<p>它把大型系統責任由非正式文件轉入語言結構。</p>
+<hr>
+<h2>十八、語言與工作站共同設計</h2>
+<p>Lilith 計畫整合：</p>
+<ul>
+<li>Hardware；</li>
+<li>Microcode；</li>
+<li>Operating system；</li>
+<li>Modula-2 Compiler；</li>
+<li>Editor；</li>
+<li>Application。</li>
+</ul>
+<p>這讓語言機制接受完整系統壓力測試。</p>
+<p>Wirth 的「可實作」不是 Compiler 能跑即可，而是：</p>
+<p>$$
+Language
++
+OS
++
+Tools
++
+Hardware
+$$</p>
+<p>能否形成可靠整體。</p>
+<hr>
+<h1>第六部分　相位四：Oberon 與整體可理解性</h1>
+<h2>十九、Cedar 的反面教材</h2>
+<p>Wirth 在 Xerox PARC 使用 Cedar 後，認為其雖具先進概念，卻呈現大型群體軟體的問題：</p>
+<ul>
+<li>體積龐大；</li>
+<li>結構交纏；</li>
+<li>難以理解；</li>
+<li>可靠性不足；</li>
+<li>完整系統無人能掌握。[R2]</li>
+</ul>
+<p>因此 Oberon 的目標不是建立另一個功能更完整的 Cedar，而是：</p>
+<blockquote>
+<p>保留重要觀念，但讓系統小到仍能被完整理解、記載和教授。</p>
+</blockquote>
+<hr>
+<h2>二十、先刪後加</h2>
+<p>Wirth 在 Modula-2／Oberon 回顧中說明，設計 Oberon 時先決定：</p>
+<ul>
+<li>哪些 Modula-2 功能可以刪除；</li>
+<li>哪些是真正缺少的基本能力。</li>
+</ul>
+<p>最重要新增是：</p>
+<ul>
+<li>Type extension。</li>
+</ul>
+<p>同時移除或簡化多種被視為次要或交互成本高的機制。[R1]</p>
+<p>這是 <strong>刪減式極簡</strong>：</p>
+<p>$$
+Power\uparrow
+\qquad
+FeatureCount\downarrow
+$$</p>
+<p>理想上可以同時成立。</p>
+<hr>
+<h2>二十一、型別延伸而非完整類別系統</h2>
+<p>Oberon 使用：</p>
+<ul>
+<li>Record；</li>
+<li>Pointer；</li>
+<li>Type extension；</li>
+<li>Type test；</li>
+<li>Procedure；</li>
+<li>Module。</li>
+</ul>
+<p>建立可擴展資料抽象，而沒有直接採用：</p>
+<ul>
+<li>完整類別語法；</li>
+<li>多重繼承；</li>
+<li>Overload；</li>
+<li>大型 Metaobject system。</li>
+</ul>
+<p>這是高覆蓋機制優先於功能清單的典型案例。</p>
+<hr>
+<h2>二十二、單一處理程序與事件系統</h2>
+<p>早期 Oberon System 採相對簡單的執行模型，仍能支撐：</p>
+<ul>
+<li>編輯器；</li>
+<li>網路；</li>
+<li>檔案；</li>
+<li>圖形；</li>
+<li>印表；</li>
+<li>郵件；</li>
+<li>互動命令。</li>
+</ul>
+<p>這展示 Wirth 偏好先使用最簡單可行模型，再以清楚組合擴展。</p>
+<p>但它不表示單一處理程序適合所有現代多核心和分散式工作負載。</p>
+<hr>
+<h1>第七部分　Project Oberon：教科書即完整系統</h1>
+<h2>二十三、可重建性</h2>
+<p>Project Oberon 的核心目標是：</p>
+<ul>
+<li>從零設計；</li>
+<li>完整實作；</li>
+<li>以書籍逐層解釋；</li>
+<li>讓讀者取得原始碼；</li>
+<li>使系統能在教學中重建。[R3][R6]</li>
+</ul>
+<p>這把文件責任提升到設計本體。</p>
+<hr>
+<h2>二十四、編譯器必須能被完整閱讀</h2>
+<p>Wirth 的 Compiler Construction 以精簡語言與 RISC 目標機器說明：</p>
+<ul>
+<li>Scanner；</li>
+<li>Parser；</li>
+<li>Symbol table；</li>
+<li>Type checking；</li>
+<li>Code generation；</li>
+<li>Loader；</li>
+<li>Target architecture。</li>
+</ul>
+<p>編譯器不是黑箱，而是教育與可信性的核心。</p>
+<hr>
+<h2>二十五、作業系統不是語言外部世界</h2>
+<p>Oberon 把：</p>
+<ul>
+<li>Module loader；</li>
+<li>File；</li>
+<li>Text；</li>
+<li>Viewer；</li>
+<li>Command；</li>
+<li>Input；</li>
+<li>Display；</li>
+</ul>
+<p>用同一語言和設計原則建構。</p>
+<p>因此：</p>
+<p>$$
+LanguageQuality
+\text{ 由完整系統驗證}
+$$</p>
+<p>而非只以小型範例驗證。</p>
+<hr>
+<h2>二十六、與 Jürg Gutknecht 的共同成果</h2>
+<p>Project Oberon 由 Wirth 和 Gutknecht 共同完成。</p>
+<p>一般可粗略區分：</p>
+<ul>
+<li>Wirth：語言、Compiler、部分系統與後來硬體；</li>
+<li>Gutknecht：作業系統、顯示與系統結構的重要共同設計；</li>
+<li>具體模組仍需依原始文件逐項歸因。</li>
+</ul>
+<p>不能把 Project Oberon 簡化成 Wirth 單人作品。</p>
+<hr>
+<h1>第八部分　相位五：Lean Software</h1>
+<h2>二十七、軟體為何膨脹</h2>
+<p>〈A Plea for Lean Software〉批評：</p>
+<ul>
+<li>硬體成長掩蓋軟體低效率；</li>
+<li>功能堆疊超過實際需要；</li>
+<li>使用者難以分辨必要與裝飾；</li>
+<li>大型工具鼓勵更大型軟體；</li>
+<li>複雜系統難以可靠理解。[R10]</li>
+</ul>
+<hr>
+<h2>二十八、「Wirth 定律」的歸因邊界</h2>
+<p>「軟體變慢的速度快於硬體變快」常被稱為 Wirth&#39;s Law。</p>
+<p>但 Wirth 在文中將相關觀察歸於 Martin Reiser 的 Oberon System 前言。較準確的寫法是：</p>
+<ul>
+<li>Wirth 普及並系統論證該問題；</li>
+<li>該句式不應被當成無來源的 Wirth 單人原創定律。</li>
+</ul>
+<hr>
+<h2>二十九、極簡不等於回到低階</h2>
+<p>Wirth 並不主張：</p>
+<ul>
+<li>捨棄高階語言；</li>
+<li>手寫組合語言；</li>
+<li>不使用圖形；</li>
+<li>不建立完整系統。</li>
+</ul>
+<p>相反地，他主張以：</p>
+<ul>
+<li>更好語言；</li>
+<li>模組；</li>
+<li>GC 或自動管理的適當使用；</li>
+<li>清楚工具；</li>
+<li>簡潔系統；</li>
+</ul>
+<p>提高生產力。</p>
+<p>批判對象是無法以功能收益解釋的體積與交纏。</p>
+<hr>
+<h2>三十、可理解性是一種安全</h2>
+<p>當系統大到無人理解：</p>
+<ul>
+<li>漏洞難發現；</li>
+<li>修改不可預測；</li>
+<li>故障難定位；</li>
+<li>知識只能依賴少數人；</li>
+<li>驗證成本爆炸。</li>
+</ul>
+<p>所以：</p>
+<p>$$
+Understandability
+\subset
+SystemSafety
+$$</p>
+<p>至少是安全的必要工程條件之一。</p>
+<hr>
+<h1>第九部分　相位六：語言、編譯器與硬體再統一</h1>
+<h2>三十一、RISC 與 Oberon</h2>
+<p>Wirth 後期以 FPGA 建立 RISC5，並更新 Project Oberon，使：</p>
+<ul>
+<li>處理器；</li>
+<li>Compiler；</li>
+<li>Operating system；</li>
+<li>Application；</li>
+</ul>
+<p>再次形成完整教學鏈。</p>
+<p>這不是追求市場最強性能，而是使所有層級可閱讀和實驗。</p>
+<hr>
+<h2>三十二、Lola</h2>
+<p>Lola 是硬體描述語言，延續 Wirth 的方法：</p>
+<ul>
+<li>少量語言構造；</li>
+<li>清楚結構；</li>
+<li>可編譯；</li>
+<li>與實際 FPGA 連接；</li>
+<li>作為教育工具。</li>
+</ul>
+<p>他把語言設計倫理從 Software 延伸至 Digital circuit。</p>
+<hr>
+<h2>三十三、Oberon-07</h2>
+<p>Oberon-07 再次修訂 Oberon：</p>
+<ul>
+<li>精簡語言；</li>
+<li>調整型別、迴圈及實作規則；</li>
+<li>與新 Compiler 和 RISC5 共同驗證；</li>
+<li>維持簡潔 Reference report。[R9]</li>
+</ul>
+<p>這表明 Wirth 並未把 1988 Oberon 化石化，而是持續修改。</p>
+<hr>
+<h1>第十部分　教育、實作與倫理</h1>
+<h2>三十四、為什麼稱為「設計倫理」</h2>
+<p>Wirth 的方法隱含一個責任主張：</p>
+<blockquote>
+<p>設計者不能只把功能交給使用者，再把所有理解與實作成本推給其他人。</p>
+</blockquote>
+<p>語言設計者應能：</p>
+<ul>
+<li>解釋核心；</li>
+<li>寫出 Compiler；</li>
+<li>展示 Runtime；</li>
+<li>建立真實系統；</li>
+<li>提供教材；</li>
+<li>說明功能的必要性。</li>
+</ul>
+<hr>
+<h2>三十五、功能的舉證責任</h2>
+<p>在 Wirth 風格中：</p>
+<p>$$
+BurdenOfProof(feature)</p>
+<blockquote>
+</blockquote>
+<p>BurdenOfProof(omission)
+$$</p>
+<p>新增功能必須證明：</p>
+<ul>
+<li>不只是便利；</li>
+<li>無法由現有機制清楚表達；</li>
+<li>不會造成過度交互；</li>
+<li>能被實作與教授；</li>
+<li>對完整系統有實際價值。</li>
+</ul>
+<hr>
+<h2>三十六、整體理解的門檻</h2>
+<p>Wirth 不要求每位一般使用者都理解所有晶片細節，但他希望：</p>
+<ul>
+<li>至少有人能從語言追到機器；</li>
+<li>教材可以建立完整因果鏈；</li>
+<li>系統不依賴無人能說明的魔法層；</li>
+<li>實作與規格相互校驗。</li>
+</ul>
+<hr>
+<h1>第十一部分　複雜度與責任配置</h1>
+<h2>三十七、複雜度配置</h2>
+<p>Wirth 傾向降低：</p>
+<ul>
+<li>核心語言功能；</li>
+<li>特徵交互；</li>
+<li>Runtime 魔法；</li>
+<li>工具鏈依賴；</li>
+<li>不可理解框架；</li>
+<li>過度向後相容。</li>
+</ul>
+<p>將必要複雜度放入：</p>
+<ul>
+<li>程式結構；</li>
+<li>Module；</li>
+<li>Type；</li>
+<li>明確資料表示；</li>
+<li>可讀 Compiler；</li>
+<li>可理解系統。</li>
+</ul>
+<hr>
+<h2>三十八、責任配置</h2>
+<p>語言與 Compiler 負責：</p>
+<ul>
+<li>靜態檢查；</li>
+<li>結構化控制；</li>
+<li>模組邊界；</li>
+<li>型別；</li>
+<li>清楚翻譯。</li>
+</ul>
+<p>程式設計者負責：</p>
+<ul>
+<li>分解；</li>
+<li>資料表示；</li>
+<li>Algorithm；</li>
+<li>Module design；</li>
+<li>逐步精化。</li>
+</ul>
+<p>Wirth 不追求讓 Compiler 猜完一切，而是以語言約束協助人類形成可驗證設計。</p>
+<hr>
+<h2>三十九、安全—自由配置</h2>
+<p>Wirth 偏好：</p>
+<ul>
+<li>Safe structured subset；</li>
+<li>強型別；</li>
+<li>清楚 Pointer；</li>
+<li>模組封裝；</li>
+<li>受控低階 <code>SYSTEM</code> 能力。</li>
+</ul>
+<p>低階能力存在，但應集中並與一般語言分離。</p>
+<hr>
+<h2>四十、相容性配置</h2>
+<p>他願意：</p>
+<ul>
+<li>以 Modula-2 修正 Pascal；</li>
+<li>以 Oberon 修正 Modula-2；</li>
+<li>以 Oberon-07 再修正 Oberon。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+Coherence</p>
+<blockquote>
+</blockquote>
+<p>UpwardCompatibility
+$$</p>
+<p>在創建新語言時尤其明顯。</p>
+<p>這與 C++、Java 或 Web 語言的長期相容制度不同。</p>
+<hr>
+<h1>第十二部分　風格時間相位</h1>
+<h2>四十一、Euler／ALGOL W 期</h2>
+<pre><code class="language-text">目標：提煉 ALGOL 的基本概念並證明可實作
+</code></pre>
+<hr>
+<h2>四十二、Pascal 期</h2>
+<pre><code class="language-text">目標：讓結構化程式和資料結構可被系統教學
+</code></pre>
+<hr>
+<h2>四十三、Modula-2／Lilith 期</h2>
+<pre><code class="language-text">目標：將語言擴展到模組化系統與硬體控制
+</code></pre>
+<hr>
+<h2>四十四、Oberon／Ceres 期</h2>
+<pre><code class="language-text">目標：建立完整、可理解、可延展工作站系統
+</code></pre>
+<hr>
+<h2>四十五、Lean Software 期</h2>
+<pre><code class="language-text">目標：反駁以硬體成長合理化軟體膨脹
+</code></pre>
+<hr>
+<h2>四十六、RISC5／Oberon-07 期</h2>
+<pre><code class="language-text">目標：重新統一語言、Compiler、OS 與處理器教育
+</code></pre>
+<hr>
+<h1>第十三部分　PLDST 風格指紋</h1>
+<h2>四十七、問題 framing</h2>
+<p>Wirth 的核心問題是：</p>
+<blockquote>
+<p>如何使程式、語言與系統的結構清楚到人能逐步建造、完整理解並可靠實作？</p>
+</blockquote>
+<hr>
+<h2>四十八、價值優先序</h2>
+<p>$$
+V_{\text{Wirth}}
+\approx
+(
+Simplicity,
+Structure,
+Understandability,
+Implementability,
+Education,
+Efficiency,
+WholeSystemIntegrity
+)
+$$</p>
+<hr>
+<h2>四十九、核心—擴張偏好</h2>
+<p>偏好：</p>
+<ul>
+<li>小核心；</li>
+<li>正交機制；</li>
+<li>Module；</li>
+<li>Type extension；</li>
+<li>明確系統邊界；</li>
+<li>以新語言修正舊核心。</li>
+</ul>
+<p>不偏好：</p>
+<ul>
+<li>功能聯合體；</li>
+<li>大量語法糖；</li>
+<li>為相容保留所有歷史；</li>
+<li>Runtime 黑箱。</li>
+</ul>
+<hr>
+<h2>五十、顯式—推導偏好</h2>
+<p>偏好明示：</p>
+<ul>
+<li>Type；</li>
+<li>Module；</li>
+<li>Data structure；</li>
+<li>Control；</li>
+<li>Low-level boundary。</li>
+</ul>
+<p>自動化主要交給 Compiler：</p>
+<ul>
+<li>解析；</li>
+<li>型別檢查；</li>
+<li>Code generation；</li>
+<li>部分配置。</li>
+</ul>
+<hr>
+<h2>五十一、效率—可讀性偏好</h2>
+<p>希望：</p>
+<ul>
+<li>Source 結構直接對應清楚實作；</li>
+<li>Compiler 小而有效；</li>
+<li>Hardware model 可理解；</li>
+<li>性能不是依巨大最佳化黑箱獲得。</li>
+</ul>
+<p>但這不代表拒絕 Compiler 最佳化，而是拒絕以不可理解性作為性能前提。</p>
+<hr>
+<h2>五十二、治理偏好</h2>
+<p>Wirth 適合：</p>
+<ul>
+<li>小型專業團隊；</li>
+<li>集中設計；</li>
+<li>完整重建；</li>
+<li>快速修正；</li>
+<li>教學與研究。</li>
+</ul>
+<p>較不適合：</p>
+<ul>
+<li>全球多方委員會；</li>
+<li>永久向後相容；</li>
+<li>大型異質生態需求整合。</li>
+</ul>
+<hr>
+<h1>第十四部分　反例與限制</h1>
+<h2>五十三、Pascal 的缺陷不能忽略</h2>
+<p>原始 Pascal 在實務中曾受到批評，例如：</p>
+<ul>
+<li>字串；</li>
+<li>分離編譯；</li>
+<li>I/O；</li>
+<li>陣列邊界參數；</li>
+<li>系統程式能力；</li>
+<li>互操作。</li>
+</ul>
+<p>Modula-2 的出現本身就是 Wirth 對部分不足的回答。</p>
+<hr>
+<h2>五十四、小型設計可能轉移生態成本</h2>
+<p>若核心不提供常見能力，使用者可能建立：</p>
+<ul>
+<li>方言；</li>
+<li>非標準 Library；</li>
+<li>Vendor extension；</li>
+<li>不相容 Compiler；</li>
+<li>外部 Framework。</li>
+</ul>
+<p>Pascal 及 Modula-2 的多方言歷史證明，小核心不能自動保證小生態。</p>
+<hr>
+<h2>五十五、完整可理解系統難以全球化</h2>
+<p>Project Oberon 在小團隊、單一工作站與教學範圍內極具說服力。</p>
+<p>但全球系統還需要：</p>
+<ul>
+<li>國際文字；</li>
+<li>Accessibility；</li>
+<li>安全隔離；</li>
+<li>多核心；</li>
+<li>分散式；</li>
+<li>大型 Driver；</li>
+<li>供應鏈；</li>
+<li>多組織治理。</li>
+</ul>
+<p>整體可理解性與完整功能之間仍有張力。</p>
+<hr>
+<h2>五十六、教育價值不等於普遍產業最優</h2>
+<p>一種語言非常適合教導：</p>
+<ul>
+<li>資料結構；</li>
+<li>Compiler；</li>
+<li>Module；</li>
+<li>系統；</li>
+</ul>
+<p>不表示它在所有商業生態中都優於大型平台語言。</p>
+<hr>
+<h2>五十七、Lean Software 可能低估需求異質性</h2>
+<p>某些軟體體積來自：</p>
+<ul>
+<li>Accessibility；</li>
+<li>Localization；</li>
+<li>安全；</li>
+<li>向後相容；</li>
+<li>多硬體；</li>
+<li>法規；</li>
+<li>可觀察性；</li>
+<li>雲端容錯。</li>
+</ul>
+<p>不能把所有大型軟體都歸為無意義肥胖。</p>
+<hr>
+<h2>五十八、Wirth 不是所有工作之單一作者</h2>
+<p>Oberon System、Lilith、Pascal Compiler、教材和後續語言均有共同作者及實作者。PLDST 必須在每項決策上重新歸因。</p>
+<hr>
+<h1>第十五部分　設計決策語料</h1>
+<table>
+<thead>
+<tr>
+<th>時期</th>
+<th>問題</th>
+<th>決策</th>
+<th>複雜度去向</th>
+<th>風格</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1960s</td>
+<td>ALGOL 概念過多且規格分歧</td>
+<td>Euler／ALGOL W</td>
+<td>Compiler／形式語義</td>
+<td>概念提煉</td>
+</tr>
+<tr>
+<td>1970</td>
+<td>缺乏結構化教學語言</td>
+<td>Pascal</td>
+<td>Type／control structure</td>
+<td>教育結構</td>
+</tr>
+<tr>
+<td>1971</td>
+<td>程式開發決策交纏</td>
+<td>Stepwise refinement</td>
+<td>分階段設計</td>
+<td>方法紀律</td>
+</tr>
+<tr>
+<td>1973–79</td>
+<td>Pascal 不足以支援系統</td>
+<td>Modula／Modula-2</td>
+<td>Module／SYSTEM</td>
+<td>問題驅動擴張</td>
+</tr>
+<tr>
+<td>1977–81</td>
+<td>語言需經完整硬體驗證</td>
+<td>Lilith</td>
+<td>全棧共同設計</td>
+<td>可實作性</td>
+</tr>
+<tr>
+<td>1986–90</td>
+<td>Cedar 過大且難理解</td>
+<td>Oberon</td>
+<td>刪減＋Type extension</td>
+<td>整體簡潔</td>
+</tr>
+<tr>
+<td>1995</td>
+<td>軟體膨脹被硬體掩蓋</td>
+<td>Lean Software</td>
+<td>功能舉證責任</td>
+<td>反膨脹</td>
+</tr>
+<tr>
+<td>2007–2013+</td>
+<td>教學鏈再次分裂</td>
+<td>Oberon-07／RISC5</td>
+<td>語言—硬體統一</td>
+<td>可重建性</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>第十六部分　人物原型判定</h1>
+<h2>五十九、主要原型</h2>
+<p>Niklaus Wirth 同時屬於：</p>
+<ul>
+<li><strong>概念刪減式語言建築師</strong>；</li>
+<li><strong>結構化教育設計者</strong>；</li>
+<li><strong>完整實作驗證者</strong>；</li>
+<li><strong>語言—系統—硬體整合者</strong>；</li>
+<li><strong>軟體膨脹批判者</strong>。</li>
+</ul>
+<hr>
+<h2>六十、不適合的簡單標籤</h2>
+<p>不應只稱：</p>
+<pre><code class="language-text">Pascal 發明者
+極簡派
+反功能派
+教學語言設計者
+Wirth 定律提出者
+</code></pre>
+<p>較精確的描述是：</p>
+<blockquote>
+<p>把可理解性視為語言與系統的設計責任，並反覆以新語言和完整實作檢驗哪些概念真正必要的工程教育者。</p>
+</blockquote>
+<hr>
+<h1>第十七部分　統一評價</h1>
+<h2>六十一、最重要的連續性</h2>
+<p>Euler 到 Oberon-07 的共同規則是：</p>
+<p>$$
+\boxed{
+\text{以更少、更正交的概念}
+\quad
+\text{覆蓋當前真正需要的問題}
+}
+$$</p>
+<hr>
+<h2>六十二、最重要的不連續性</h2>
+<p>各語言使命不同：</p>
+<ul>
+<li>Pascal：教學與結構化程式；</li>
+<li>Modula-2：模組化系統；</li>
+<li>Oberon：可延展完整工作站；</li>
+<li>Lola：Digital circuit；</li>
+<li>PICL：Microcontroller。</li>
+</ul>
+<p>Wirth 的風格穩定，不代表功能集合固定。</p>
+<hr>
+<h2>六十三、最重要的倫理判斷</h2>
+<p>一個語言若需要：</p>
+<ul>
+<li>無法解釋的 Compiler；</li>
+<li>無人能完整理解的 Runtime；</li>
+<li>無限歷史補丁；</li>
+<li>僅因硬體便宜而存在的膨脹；</li>
+</ul>
+<p>在 Wirth 看來就不只是技術醜陋，而是設計者逃避責任。</p>
+<hr>
+<h1>第十八部分　結論</h1>
+<p>Niklaus Wirth 的程式語言設計不是單純做減法。</p>
+<p>他的真正方法是：</p>
+<ol>
+<li>先明確定義要解決的問題；</li>
+<li>從已有語言中保留必要概念；</li>
+<li>刪除不具足夠覆蓋率的機制；</li>
+<li>加入少量能改變整體能力的新構造；</li>
+<li>親自或與小團隊建立 Compiler；</li>
+<li>用真實作業系統、工具與硬體驗證；</li>
+<li>將結果寫成可教、可閱讀及可重建的材料；</li>
+<li>當新問題出現時，允許新語言取代舊核心。</li>
+</ol>
+<p>本文對 Wirth 的 PLDST 判定為：</p>
+<p>$$
+\boxed{
+\text{Conceptual Reductionist}
+\rightarrow
+\text{Educational Systems Engineer}
+\rightarrow
+\text{Whole-System Implementability Critic}
+}
+$$</p>
+<p>他的核心優勢是：</p>
+<ul>
+<li>語言概念與教學方法一致；</li>
+<li>功能需通過完整實作測試；</li>
+<li>模組與型別承擔結構責任；</li>
+<li>Compiler 和 OS 可被閱讀；</li>
+<li>願意修正自己的舊語言；</li>
+<li>將可理解性視為性能、可靠與教育的共同地基。</li>
+</ul>
+<p>其主要代價是：</p>
+<ul>
+<li>低相容容忍度；</li>
+<li>小團隊模型難以直接擴張；</li>
+<li>可能低估生態和多樣需求；</li>
+<li>完整系統示範與現代全球平台仍有距離；</li>
+<li>使用者可能以方言和 Vendor extension 補回被刪除能力。</li>
+</ul>
+<p>最終原則為：</p>
+<p>$$
+\boxed{
+\text{簡潔不是功能貧困}
+\quad
+\land
+\text{教育不是降低要求}
+\quad
+\land
+\text{可實作不是只要編譯成功}
+}
+$$</p>
+<p>Wirth 所要求的是一種更嚴格的設計責任：</p>
+<blockquote>
+<p>語言提出的每一個概念，都應能被清楚定義、有效編譯、完整解釋，並在真實系統中證明自己值得長期存在。</p>
+</blockquote>
+<hr>
+<h1>附錄 A　PLDST 個案卡</h1>
+<pre><code class="language-text">人物：Niklaus Wirth
+主要語言／系統：Euler、ALGOL W、Pascal、Modula-2、Oberon、Lola
+核心時期：1960s–2010s
+主要問題：語言與系統複雜度超過人類可理解範圍
+主要策略：結構化、型別、模組、刪減、完整實作
+複雜度去向：清楚程式結構、Compiler 與可讀系統
+責任去向：設計者需證明功能可教、可實作
+主要保護對象：學習者、實作者、系統維護者
+主要限制：相容、生態、現代平台規模與異質需求
+歸因信心：高
+</code></pre>
+<hr>
+<h1>附錄 B　來源與參考文獻</h1>
+<p><strong>[R1]</strong> Niklaus Wirth, “Modula-2 and Oberon,” HOPL III, revised 2006.<br>— Pascal、Modula-2、Oberon 的設計演化、先刪後增、Type extension、硬體與系統背景。</p>
+<p><strong>[R2]</strong> Niklaus Wirth, “Summary of Projects, 1962–1999,” ETH Zürich.<br>— Euler、Modula、Lilith、Ceres、Oberon、教學及硬體計畫的時間線與團隊背景。</p>
+<p><strong>[R3]</strong> Niklaus Wirth and Jürg Gutknecht, <em>Project Oberon: The Design of an Operating System, a Compiler, and a Computer</em>, 1992／2005／2013.<br>— 完整工作站系統、Compiler、OS、工具及後期 RISC5。</p>
+<p><strong>[R4]</strong> Niklaus Wirth, “Program Development by Stepwise Refinement,” <em>Communications of the ACM</em> 14(4), 1971.<br>— 分解設計決策、逐步精化及程式建構方法。</p>
+<p><strong>[R5]</strong> Niklaus Wirth, <em>Algorithms + Data Structures = Programs</em>, 1976; later Oberon edition.<br>— 算法、資料結構、程式表示及系統化教材。</p>
+<p><strong>[R6]</strong> Niklaus Wirth, <em>Compiler Construction</em>, ETH Zürich editions.<br>— Scanner、Parser、Type checking、Code generation、RISC 目標及可閱讀 Compiler。</p>
+<p><strong>[R7]</strong> ACM Turing Award Oral History Interview with Niklaus Wirth, 2018; ETH historical records.<br>— Pascal、個人電腦、語言標準爭議、教育與系統工作的後期回顧。</p>
+<p><strong>[R8]</strong> ACM, Niklaus Wirth A.M. Turing Award materials, 1984.<br>— Euler、ALGOL W、Modula、Pascal 及其教育、系統與架構影響。</p>
+<p><strong>[R9]</strong> Niklaus Wirth, “The Programming Language Pascal,” 1971; “The Programming Language Oberon／Oberon-07,” ETH reports.<br>— 語言正式定義、資料型別、結構化控制與 Type extension。</p>
+<p><strong>[R10]</strong> Niklaus Wirth, “A Plea for Lean Software,” <em>Computer</em> 28(2), 1995.<br>— 軟體膨脹、硬體掩護、Oberon 經驗與簡潔工程。</p>
+<p><strong>[R11]</strong> Kathleen Jensen and Niklaus Wirth, <em>Pascal User Manual and Report</em>, 1974.<br>— Pascal 的公共定義、教材與共同作者歸因。</p>
+<hr>
+<h1>附錄 C　PLDST 標記</h1>
+<pre><code class="language-text">[T-A] ALGOL concept-refinement phase
+[T-P] Pascal educational phase
+[T-M] Modula systems phase
+[T-O] Oberon whole-system phase
+[T-L] Lean-software critique phase
+[T-H] Language–hardware reunification phase
+
+[S-R] Conceptual reduction
+[S-E] Educational structure
+[S-I] Implementability
+[S-W] Whole-system understanding
+[S-C] Compatibility sacrifice
+[S-L] Lean-software discipline
+
+
+---
+
+# 附錄 D　第二輪史實與歸因校對紀錄
+
+## D.1 語言系列與時間
+
+第二輪重新核對 ACM、ETH 專案史及 Wirth 的 HOPL 回顧：
+
+```text
+Euler：1960s 初
+ALGOL W：1960s 中期
+Pascal：1970
+Modula：1973–1976
+Modula-2：1977–1980，定義報告 1979 前後
+Oberon：1986–1988 形成
+Oberon-07：2000s 後期起持續修訂
+</code></pre>
+<p>本文使用的是思想及工程相位，不把一個出版年份當作唯一設計日期。</p>
+<hr>
+<h2>D.2 Pascal 的作者與編譯器歸因</h2>
+<p>已重新檢查 ETH 專案史與 Wirth 的 Pascal 回顧：</p>
+<ul>
+<li>Pascal 語言的核心設計主要歸於 Wirth；</li>
+<li>第一批 Compiler、後來 Pascal-P／P-code、移植和公共文件由 ETH 多位成員共同推進；</li>
+<li>Kathleen Jensen 的明確角色是《Pascal User Manual and Report》共同作者，不應籠統寫成第一 Compiler 實作者；</li>
+<li>Pascal 的廣泛流通又受到 UCSD Pascal、微型電腦及外部廠商重大影響。</li>
+</ul>
+<p>本文因此把：</p>
+<pre><code class="language-text">語言核心
+編譯器工程
+公共規格
+可攜移植
+後期生態
+</code></pre>
+<p>分開歸因。</p>
+<hr>
+<h2>D.3 Modula-2 與向上相容</h2>
+<p>ETH 專案史及 Wirth 原文明確說明：</p>
+<ul>
+<li>Modula-2 被視為 Pascal 的更新版本；</li>
+<li>Wirth 願意犧牲 Upward compatibility，以避免 Pascal 的缺陷；</li>
+<li>主要新增包括 Separate-compilation module、Coroutine 及封裝 Machine-specific object 的 System facility；</li>
+<li>他後來承認自己曾天真地以為熟悉 Pascal 的使用者會自然接受轉換。</li>
+</ul>
+<p>本文因此沒有將低相容偏好描述成零成本美德，也將 Modula-2 未取得 Pascal 同等普及視為反例。</p>
+<hr>
+<h2>D.4 Oberon 的「先刪後加」</h2>
+<p>第二輪直接核對〈Modula-2 and Oberon〉：</p>
+<ul>
+<li>Wirth 明確把 Simplicity of design 稱為最重要 Guiding principle；</li>
+<li>其後果包括概念清楚、功能經濟、實作效率與可靠；</li>
+<li>Oberon 策略是先決定從 Modula-2 省略什麼，再決定需要增加什麼；</li>
+<li>其目標是提高能力並同時降低複雜度；</li>
+<li>Type extension 是核心新增能力。</li>
+</ul>
+<p>本文的「刪減式極簡」是對原始設計程序的結構化名稱，而非後人僅根據功能數量貼標籤。</p>
+<hr>
+<h2>D.5 Project Oberon 的共同作者</h2>
+<p>已重新核對 2013 Revised Edition Preface：</p>
+<ul>
+<li>Project Oberon 作者為 Niklaus Wirth 與 Jürg Gutknecht；</li>
+<li>1986–1989 年間兩人不只構想，也編寫整個書中系統及更多部分；</li>
+<li>主要目標是讓系統可被整體描述、解釋與理解；</li>
+<li>Program listing 被視為最終解釋的重要部分；</li>
+<li>Oberon 同時被用作 Implementation vehicle 與 Algorithm publication medium。</li>
+</ul>
+<p>本文因此不將 Oberon System 寫成 Wirth 單人作業系統。</p>
+<hr>
+<h2>D.6 Lilith 與小團隊效應</h2>
+<p>ETH 專案史記錄：</p>
+<ul>
+<li>Lilith 是硬體、Microcode、OS、Compiler 和應用整合工程；</li>
+<li>最多約七名助手的密集工作使其在三年內完成；</li>
+<li>Wirth 自己編寫部分 Editor 及工具；</li>
+<li>具體處理器、Compiler 和應用另有共同設計者。</li>
+</ul>
+<p>本文把「小團隊促進概念一致」視為該專案情境，不把它推廣成所有大型組織必然無法設計好系統。</p>
+<hr>
+<h2>D.7 Cedar 批判的範圍</h2>
+<p>Wirth 的 ETH 專案史明確把 Cedar 描述為先進但在日常使用中顯得：</p>
+<ul>
+<li>Bulky；</li>
+<li>Unreliable；</li>
+<li>結構交纏；</li>
+<li>難以整體理解。</li>
+</ul>
+<p>本文保留這是 Wirth 的使用經驗和設計動機，不把它升格為對 Cedar 所有技術貢獻的客觀否定。</p>
+<hr>
+<h2>D.8 「Wirth 定律」與 Martin Reiser</h2>
+<p>第二輪核對〈A Plea for Lean Software〉：</p>
+<ul>
+<li>Wirth 以軟體體積及遲鈍速度超過硬體進展的問題為文章核心；</li>
+<li>文章相關引文和參考將著名觀察連到 Martin Reiser 的 Oberon System；</li>
+<li>後來「Wirth&#39;s law」是對 Wirth 普及、系統論述該問題的命名；</li>
+<li>本文因此沒有把精確句子寫成 Wirth 無前例的單人發明。</li>
+</ul>
+<hr>
+<h2>D.9 高階工具與簡潔</h2>
+<p>第二輪核對 Lean Software 原文後確認：</p>
+<ul>
+<li>Wirth 的方案不是返回 Machine code；</li>
+<li>他仍支持 High-level language、良好 Compiler、Structured methodology 和適當工具；</li>
+<li>批判目標是功能和體積超出可證成收益，以及硬體進步掩護缺乏紀律；</li>
+<li>本文因此避免將他分類為反抽象或反自動化。</li>
+</ul>
+<hr>
+<h2>D.10 Oberon-07、RISC5 與晚期工程</h2>
+<p>ETH 官方頁面保存：</p>
+<ul>
+<li>Oberon-07 Language report；</li>
+<li>Compiler；</li>
+<li>Project Oberon 2013；</li>
+<li>RISC5 Verilog；</li>
+<li>FPGA 工具；</li>
+<li>Lola；</li>
+<li>完整 System module。</li>
+</ul>
+<p>這支持「晚期重新統一語言—Compiler—OS—Hardware」的判定。</p>
+<p>但具體版本和模組有後續修改者，本文只將 Wirth 主導的整合問題意識歸為其個人風格。</p>
+<hr>
+<h2>D.11 PLDST 推論邊界</h2>
+<p>下列名稱為本文分析原型，而非 Wirth 正式自稱：</p>
+<pre><code class="language-text">概念刪減式語言建築師
+結構化教育設計者
+完整實作驗證者
+語言—系統—硬體整合者
+</code></pre>
+<p>其證據來自跨語言重複決策，信心為高；「設計倫理」則是本文對責任配置的規範性詮釋，信心為中高。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-014.html">https://thisoneisneok.com/html/papers/pldst-014.html</a></footer>
+</body>
+</html>

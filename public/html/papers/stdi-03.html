@@ -1,0 +1,1534 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oversoul Station Fabric | Neo.K</title>
+<meta name="description" content="前兩篇已提出，時空域支配智能不是一個 AI 加上多台機器人，而是一個具有持續治理核心、共享世界模型、權限租約、地方安全與證據責任鏈的分布式具身主體。然而，若沒有一個可部署的站點架構，「分布式身體」仍只是哲學描述：不同機器人、儀器、感測器、模擬器與遠端服務如何被發現？如何描述能力？如何進入共同世界模型？如何接收任務？如何完成跨站交接？如何在斷線、時序不一致或設備故障時安全退化？如何判定一個虛擬模型、遠端實驗室或人類…">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/stdi-03.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / STDI</strong><span>時空域支配智能</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>STDI-03</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>系統架構論文／概念產品技術規格</span></div><div><b>證據</b><span>E0——架構、形式模型與 MVP 規格</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/stdi-03.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>Oversoul Station Fabric</h1>
+<h2>固定站、移動站與虛擬站的分布式具身網路</h2>
+<p><strong>Oversoul Station Fabric: A Distributed Embodiment Network of Fixed, Mobile, and Virtual Stations</strong></p>
+<p><strong>系列：</strong>《時空域支配智能》系列第 3 篇<br><strong>文件編號：</strong> EML-STDI-OSF-2026-v0.1<br><strong>作者：</strong> Neo.K<br><strong>協作整理：</strong> Aletheia（阿萊）<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>日期：</strong> 2026 年 7 月 30 日<br><strong>文件類型：</strong> 系統架構論文／概念產品技術規格<br><strong>證據成熟度：</strong> E0——架構、形式模型與 MVP 規格<br><strong>公開狀態：</strong> 私人研究稿；公開前應經 EML-CF 的 IP Gate、來源、授權與安全審查<br><strong>上位理論：</strong> STDI｜時空域支配智能<br><strong>前序論文：</strong></p>
+<ol>
+<li>《時空間支配型 AI：從單體具身智能到持續性時空域治理》</li>
+<li>《超靈的物理化：從 O-Chip 維度代理人到分布式具身主體》</li>
+</ol>
+<hr>
+<h2>摘要</h2>
+<p>前兩篇已提出，時空域支配智能不是一個 AI 加上多台機器人，而是一個具有持續治理核心、共享世界模型、權限租約、地方安全與證據責任鏈的分布式具身主體。然而，若沒有一個可部署的站點架構，「分布式身體」仍只是哲學描述：不同機器人、儀器、感測器、模擬器與遠端服務如何被發現？如何描述能力？如何進入共同世界模型？如何接收任務？如何完成跨站交接？如何在斷線、時序不一致或設備故障時安全退化？如何判定一個虛擬模型、遠端實驗室或人類專家是否也是站網的一部分？</p>
+<p>本文提出 <strong>Oversoul Station Fabric（OSF，超靈站網）</strong>，作為 STDI 的物理—數位具身基礎設施。OSF 將一切可被治理、可提供能力、可回報狀態並可接受受限任務的實體或虛擬節點，抽象成「站點」。站點不是單純網路端點，也不是因接上 ROS、OPC UA 或 API 就自動成為超靈身體。正式站點必須同時具有：</p>
+<ol>
+<li>可驗證的身份；</li>
+<li>機器可讀的能力與限制；</li>
+<li>被定義的空間與作用域；</li>
+<li>可觀測的健康、校準與時間狀態；</li>
+<li>任務、權限與撤銷接口；</li>
+<li>本地安全或失敗邊界；</li>
+<li>世界紀元與證據提交能力。</li>
+</ol>
+<p>本文將站點分成七類：感測站、執行站、儀器站、固定智能站、移動站、虛擬站與聯邦外部站。不同站點可經由有線確定性網路、一般有線網路、無線網路、光學鏈路或延遲容忍任務包連線。OSF 不要求所有連線具備相同即時性，而將通訊分成五個控制等級，禁止用高延遲雲端模型替代本地硬安全閉環。</p>
+<p>OSF 的基本形式為：</p>
+<h1>$$
+\mathcal{F}_{\mathrm{OSF}}</h1>
+<p>\left(
+\mathcal{N},
+\mathcal{E},
+\mathcal{C},
+\mathcal{W},
+\mathcal{Q},
+\mathcal{L},
+\mathcal{P},
+\mathcal{V}
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathcal{N}$：站點集合；</li>
+<li>$\mathcal{E}$：物理、通訊與任務關係；</li>
+<li>$\mathcal{C}$：能力與限制模型；</li>
+<li>$\mathcal{W}$：共享世界模型；</li>
+<li>$\mathcal{Q}$：任務與工作圖；</li>
+<li>$\mathcal{L}$：身體、能力與指揮租約；</li>
+<li>$\mathcal{P}$：安全、權限和治理政策；</li>
+<li>$\mathcal{V}$：證據、版本與來源血統。</li>
+</ul>
+<p>本文建立 Station Descriptor、Capability Certificate、Station Registry、World Epoch、Task Envelope、Handoff Transaction 與 Evidence Commit 等核心物件，提出「準備—保留—移交—驗證—提交／中止」的跨站交接協議，避免樣本、工具、任務或責任在站點之間處於無人擁有或重複擁有的狀態。</p>
+<p>現有 W3C Web of Things Thing Description 已提供描述實體或虛擬「Thing」的屬性、動作與事件之通用模型；OPC UA Robotics 已提供運動設備系統的資產、條件與診斷資訊模型；ROS 2 提供模組化節點、主題、服務、動作與 QoS；Open-RMF 以 Fleet Adapter 將異質移動機器人接入共同交通與任務管理；IEEE TSN 則提供有界延遲、低延遲變異與低丟包的確定性網路底座。OSF 不取代這些技術，而在它們之上增加「超靈具身」所需的能力語義、世界狀態、權限租約、跨站事務、地方自治與證據承諾。</p>
+<p>本文的核心命題為：</p>
+<blockquote>
+<p>站點不是因為連上網路而成為身體；站點是在被識別、被限制、被授權、被同步並被納入責任鏈之後，才成為超靈的物理或虛擬作用端。</p>
+</blockquote>
+<p><strong>關鍵詞：</strong> Oversoul Station Fabric、OSF、超靈站網、固定站、移動站、虛擬站、能力證書、站點註冊、世界紀元、跨站交接、身體租約、ROS 2、Open-RMF、OPC UA、Web of Things、TSN、分布式具身</p>
+<hr>
+<h1>0. 版本定位：第三篇補的是「多個身體如何形成一個可運作網路」</h1>
+<p>系列第一篇回答：</p>
+<blockquote>
+<p>什麼是持續治理一個物理時空域的 AI？</p>
+</blockquote>
+<p>系列第二篇回答：</p>
+<blockquote>
+<p>什麼條件下，多個物理作用端可以被視為同一超靈的分布式具身？</p>
+</blockquote>
+<p>本文回答：</p>
+<blockquote>
+<p>這些作用端如何被組織成可發現、可調度、可交接、可隔離、可擴展與可證明的站點網？</p>
+</blockquote>
+<p>如果沒有 OSF，超靈物理化只能依賴專案級整合：</p>
+<ul>
+<li>每增加一台機器人就重寫控制程式；</li>
+<li>每增加一個儀器就建立新的專用 API；</li>
+<li>每一種樣本交接都用人工約定；</li>
+<li>每個地方 Agent 使用不同的狀態格式；</li>
+<li>每次故障都由中央臨時猜測；</li>
+<li>每個遠端站點都無法清楚界定權限和責任。</li>
+</ul>
+<p>OSF 的目標是建立一個「窄腰」：</p>
+<pre><code class="language-text">異質物理與數位設備
+        ↓
+Station Descriptor
+Capability Certificate
+Task / Lease / Evidence Protocol
+        ↓
+STDI 世界模型與超靈治理
+</code></pre>
+<p>OSF 不消除裝置差異，而是將差異轉化為可機器理解、可排程與可驗證的契約。</p>
+<hr>
+<h1>1. 從 GFMSN 站點語言到一般化具身站網</h1>
+<p>GFMSN／ODML 系列曾將光學資料運動層描述為：</p>
+<ul>
+<li>主通道；</li>
+<li>截面站；</li>
+<li>支線站；</li>
+<li>暫存站；</li>
+<li>邏輯站；</li>
+<li>中繼站；</li>
+<li>讀出與重注入。</li>
+</ul>
+<p>其中的關鍵抽象不是光纖本身，而是：</p>
+<blockquote>
+<p>一個持續運動的對象，在不同站點被識別、分流、等待、變換、量測，最後重新進入主流程。</p>
+</blockquote>
+<p>OSF 將被處理的對象從光學資料擴張為：</p>
+<h1>$$
+\mathcal{X}</h1>
+<p>{
+\text{樣本},
+\text{工具},
+\text{材料},
+\text{任務},
+\text{數據},
+\text{能源},
+\text{權限},
+\text{人類請求},
+\text{證據}
+}.
+$$</p>
+<p>原本的：</p>
+<p>$$
+\text{drop}
+\rightarrow
+\text{delay}
+\rightarrow
+\text{transform}
+\rightarrow
+\text{reinject}
+$$</p>
+<p>轉化為：</p>
+<p>$$
+\text{取得}
+\rightarrow
+\text{保留／等待}
+\rightarrow
+\text{處理／量測}
+\rightarrow
+\text{驗證}
+\rightarrow
+\text{移交或回流}.
+$$</p>
+<p>因此，OSF 是 GFMSN 的站點化思維在一般物理域中的尺度遷移，但它不要求光學媒介，也不預設所有站點位於一條線性路徑上。</p>
+<hr>
+<h1>2. 定義：什麼是站點</h1>
+<h2>2.1 最低定義</h2>
+<p>一個 OSF 站點 $N_i$ 表示為：</p>
+<h1>$$
+N_i</h1>
+<p>\left(
+I_i,
+T_i,
+C_i,
+F_i,
+Z_i,
+X_i,
+H_i,
+K_i,
+A_i,
+P_i,
+V_i
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$I_i$：身份與所有權；</li>
+<li>$T_i$：站點類型；</li>
+<li>$C_i$：能力集合；</li>
+<li>$F_i$：限制、失敗與安全包絡；</li>
+<li>$Z_i$：位置、作用區與移動範圍；</li>
+<li>$X_i$：可讀寫接口；</li>
+<li>$H_i$：健康、校準、能源與時鐘狀態；</li>
+<li>$K_i$：地方控制和自治能力；</li>
+<li>$A_i$：當前任務、租約與保留；</li>
+<li>$P_i$：政策、信任與安全標籤；</li>
+<li>$V_i$：版本、證據與來源。</li>
+</ul>
+<h2>2.2 站點不是一般網路節點</h2>
+<p>一般網路節點只需能收發資料。</p>
+<p>OSF 站點還必須回答：</p>
+<ul>
+<li>我是誰？</li>
+<li>我能做什麼？</li>
+<li>我不能做什麼？</li>
+<li>我目前在哪裡？</li>
+<li>我是否校準？</li>
+<li>我的資料多久以前觀測？</li>
+<li>我現在被誰租用？</li>
+<li>我正在持有哪個樣本或工具？</li>
+<li>我的本地安全能否拒絕命令？</li>
+<li>我產生的結果如何被驗證？</li>
+</ul>
+<h2>2.3 站點也不一定有物理身體</h2>
+<p>虛擬站、模擬器、HPC、遠端資料分析服務和人類專家也可以成為站點，但它們的能力類型不同。</p>
+<p>一個虛擬站不能宣稱：</p>
+<ul>
+<li>已移動物體；</li>
+<li>已執行物理測量；</li>
+<li>已完成設備校準。</li>
+</ul>
+<p>它只能提交相應類型的數位結果及證據。</p>
+<hr>
+<h1>3. 七類站點</h1>
+<h2>3.1 S0：感測站</h2>
+<p>主要能力：</p>
+<ul>
+<li>觀察；</li>
+<li>定位；</li>
+<li>識別；</li>
+<li>追蹤；</li>
+<li>狀態估計；</li>
+<li>事件偵測。</li>
+</ul>
+<p>例子：</p>
+<ul>
+<li>相機；</li>
+<li>深度相機；</li>
+<li>光譜感測器；</li>
+<li>溫度與濕度；</li>
+<li>電流、電壓、壓力；</li>
+<li>聲學；</li>
+<li>UWB 定位；</li>
+<li>安全光幕。</li>
+</ul>
+<p>感測站的核心輸出必須帶有：</p>
+<h1>$$
+o</h1>
+<p>\left(
+\hat{x},
+\Sigma,
+t,
+s,
+c
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\hat{x}$：觀測值；</li>
+<li>$\Sigma$：不確定性；</li>
+<li>$t$：時間；</li>
+<li>$s$：來源；</li>
+<li>$c$：校準與可信度。</li>
+</ul>
+<h2>3.2 S1：執行站</h2>
+<p>提供有限致動：</p>
+<ul>
+<li>開關；</li>
+<li>泵；</li>
+<li>閥；</li>
+<li>加熱；</li>
+<li>冷卻；</li>
+<li>旋轉；</li>
+<li>位移；</li>
+<li>夾持；</li>
+<li>照明；</li>
+<li>電源切換。</li>
+</ul>
+<p>執行站通常不負責長期規劃，但必須具有本地安全限制。</p>
+<h2>3.3 S2：儀器站</h2>
+<p>儀器站不只是「可以呼叫的 API」，而是具有：</p>
+<ul>
+<li>樣本接口；</li>
+<li>操作程序；</li>
+<li>校準程序；</li>
+<li>量測範圍；</li>
+<li>解析度；</li>
+<li>不確定性；</li>
+<li>耗材；</li>
+<li>污染限制；</li>
+<li>數據格式；</li>
+<li>證據輸出。</li>
+</ul>
+<p>例子：</p>
+<ul>
+<li>顯微鏡；</li>
+<li>示波器；</li>
+<li>熱像儀；</li>
+<li>光譜儀；</li>
+<li>材料試驗機；</li>
+<li>3D 列印；</li>
+<li>CNC；</li>
+<li>電性量測；</li>
+<li>化學分析。</li>
+</ul>
+<h2>3.4 S3：固定智能站</h2>
+<p>固定智能站是在固定位置提供：</p>
+<ul>
+<li>多種感測；</li>
+<li>多種執行；</li>
+<li>本地世界模型；</li>
+<li>局部任務排程；</li>
+<li>故障處理；</li>
+<li>安全否決；</li>
+</ul>
+<p>的複合站。</p>
+<p>例如自動測試工作台、機械臂工作單元、自動材料製備單元。</p>
+<h2>3.5 S4：移動站</h2>
+<p>包括：</p>
+<ul>
+<li>AGV；</li>
+<li>AMR；</li>
+<li>移動機械臂；</li>
+<li>無人機；</li>
+<li>移動感測平台；</li>
+<li>移動儀器；</li>
+<li>人形或輪足機器人。</li>
+</ul>
+<p>其額外狀態包括：</p>
+<ul>
+<li>路徑；</li>
+<li>地圖；</li>
+<li>定位信心；</li>
+<li>電池；</li>
+<li>載荷；</li>
+<li>交通保留；</li>
+<li>對接能力；</li>
+<li>動態作用域。</li>
+</ul>
+<p>Open-RMF 的 Fleet Adapter 類型提供了一個現實前身：不同機器人可以透過轉接層與共同交通和任務系統互動，而不必共享相同的原生控制 API。</p>
+<h2>3.6 S5：虛擬站</h2>
+<p>包括：</p>
+<ul>
+<li>模擬器；</li>
+<li>數位孿生；</li>
+<li>AI 模型；</li>
+<li>HPC；</li>
+<li>最佳化器；</li>
+<li>CAD／CAE；</li>
+<li>資料分析器；</li>
+<li>EML-CF 研究 Agent。</li>
+</ul>
+<p>虛擬站的輸入輸出必須明確區分：</p>
+<ul>
+<li>預測；</li>
+<li>模擬；</li>
+<li>推論；</li>
+<li>建議；</li>
+<li>實際量測。</li>
+</ul>
+<h2>3.7 S6：聯邦外部站</h2>
+<p>包括：</p>
+<ul>
+<li>遠端實驗室；</li>
+<li>第三方設備；</li>
+<li>合作公司；</li>
+<li>共享儀器；</li>
+<li>人類專家；</li>
+<li>雲端服務。</li>
+</ul>
+<p>外部站不直接繼承內部信任，必須經：</p>
+<ul>
+<li>身份認證；</li>
+<li>能力聲明；</li>
+<li>組織契約；</li>
+<li>NDA／資料政策；</li>
+<li>任務租約；</li>
+<li>結果驗證。</li>
+</ul>
+<hr>
+<h1>4. Station Descriptor：站點描述文件</h1>
+<h2>4.1 目的</h2>
+<p>Station Descriptor 是 OSF 的機器可讀窄腰。它可借用：</p>
+<ul>
+<li>W3C WoT Thing Description 的 Properties、Actions 與 Events；</li>
+<li>OPC UA 的資訊模型；</li>
+<li>ROS 2 interface；</li>
+<li>自訂 OSF 能力與治理欄位。</li>
+</ul>
+<h2>4.2 最小結構</h2>
+<pre><code class="language-yaml">station:
+  id: &quot;osf:lab-a:thermal-rig-02&quot;
+  name: &quot;Thermal Test Rig 02&quot;
+  type: &quot;instrument_station&quot;
+  owner: &quot;EveMissLab&quot;
+  trust_domain: &quot;private-lab-a&quot;
+
+location:
+  zone: &quot;thermal-cell&quot;
+  pose_frame: &quot;lab_map&quot;
+  fixed: true
+
+interfaces:
+  properties:
+    - temperature
+    - calibration_state
+    - occupancy
+  actions:
+    - reserve
+    - load_sample
+    - execute_profile
+    - emergency_stop
+  events:
+    - calibration_expired
+    - over_temperature
+    - sample_complete
+
+capabilities:
+  - id: &quot;thermal_transient_test&quot;
+    input_types: [&quot;thermal_coupon&quot;]
+    temperature_range_c: [20, 180]
+    max_power_w: 500
+    evidence_outputs:
+      - thermal_video
+      - power_trace
+      - thermocouple_log
+
+safety:
+  local_interlock: true
+  human_exclusion_zone: &quot;thermal-cell&quot;
+  abort_actions:
+    - remove_power
+    - cool_down
+
+governance:
+  lease_required: true
+  world_epoch_required: true
+  local_veto: true
+</code></pre>
+<h2>4.3 Descriptor 不等於能力已被證明</h2>
+<p>Station Descriptor 是聲明。</p>
+<p>能力證書才記錄：</p>
+<ul>
+<li>誰驗證；</li>
+<li>用何種測試；</li>
+<li>版本；</li>
+<li>有效期限；</li>
+<li>誤差；</li>
+<li>適用範圍。</li>
+</ul>
+<hr>
+<h1>5. Capability Certificate：能力證書</h1>
+<h2>5.1 定義</h2>
+<p>能力證書：</p>
+<h1>$$
+\kappa_{i,c}</h1>
+<p>\left(
+N_i,
+c,
+\Theta,
+M,
+R,
+t_0,
+t_1,
+\sigma
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$N_i$：站點；</li>
+<li>$c$：能力；</li>
+<li>$\Theta$：適用參數範圍；</li>
+<li>$M$：測試方法；</li>
+<li>$R$：測試結果與不確定性；</li>
+<li>$[t_0,t_1]$：有效期；</li>
+<li>$\sigma$：簽章。</li>
+</ul>
+<h2>5.2 能力狀態</h2>
+<pre><code class="language-text">DECLARED
+  ↓
+SIMULATED
+  ↓
+SHADOW_TESTED
+  ↓
+VERIFIED
+  ↓
+OPERATIONAL
+  ↓
+DEGRADED | EXPIRED | REVOKED
+</code></pre>
+<h2>5.3 能力不是二元值</h2>
+<p>例如「抓取」能力應包含：</p>
+<ul>
+<li>物體尺寸；</li>
+<li>質量；</li>
+<li>材質；</li>
+<li>摩擦；</li>
+<li>允許姿態；</li>
+<li>最大作用力；</li>
+<li>成功率；</li>
+<li>視覺條件；</li>
+<li>所需工具。</li>
+</ul>
+<p>形式上：</p>
+<h1>$$
+\operatorname{Capable}(N_i,q)</h1>
+<p>\mathbb{1}
+\left[
+\Theta_q
+\subseteq
+\Theta_{i,c}
+\land
+H_i\in H_{\mathrm{valid}}
+\right].
+$$</p>
+<hr>
+<h1>6. Station Registry：發現、註冊與信任</h1>
+<h2>6.1 站點生命週期</h2>
+<pre><code class="language-text">DISCOVERED
+  ↓
+IDENTIFIED
+  ↓
+DESCRIBED
+  ↓
+ATTESTED
+  ↓
+SHADOW
+  ↓
+ACTIVE
+  ↓
+DEGRADED | QUARANTINED | RETIRED
+</code></pre>
+<h2>6.2 發現</h2>
+<p>可以透過：</p>
+<ul>
+<li>靜態設定；</li>
+<li>WoT Discovery；</li>
+<li>ROS 2 discovery；</li>
+<li>OPC UA discovery；</li>
+<li>Fleet Adapter；</li>
+<li>人工註冊；</li>
+<li>遠端合作入口。</li>
+</ul>
+<p>發現只表示系統知道某個端點存在，不表示信任。</p>
+<h2>6.3 身份與證明</h2>
+<p>每個站點至少有：</p>
+<ul>
+<li>穩定 ID；</li>
+<li>組織所有者；</li>
+<li>軟體／韌體版本；</li>
+<li>憑證；</li>
+<li>公鑰；</li>
+<li>硬體或軟體證明；</li>
+<li>最後驗證時間。</li>
+</ul>
+<h2>6.4 影子模式</h2>
+<p>新站點先進入 Shadow：</p>
+<ul>
+<li>接收任務但不執行；</li>
+<li>比較其計畫與既有站點；</li>
+<li>驗證狀態回報；</li>
+<li>執行模擬或空載測試；</li>
+<li>不持有高風險權限。</li>
+</ul>
+<hr>
+<h1>7. 站網圖</h1>
+<p>OSF 是多層有向圖：</p>
+<h1>$$
+\mathcal{G}_{\mathrm{OSF}}</h1>
+<p>\left(
+V,
+E_{\mathrm{physical}},
+E_{\mathrm{communication}},
+E_{\mathrm{task}},
+E_{\mathrm{authority}},
+E_{\mathrm{evidence}}
+\right).
+$$</p>
+<h2>7.1 物理邊</h2>
+<p>表示：</p>
+<ul>
+<li>可移動路徑；</li>
+<li>可交接樣本；</li>
+<li>可連接工具；</li>
+<li>能源供應；</li>
+<li>空間鄰接；</li>
+<li>管線或材料流。</li>
+</ul>
+<h2>7.2 通訊邊</h2>
+<p>表示：</p>
+<ul>
+<li>協定；</li>
+<li>頻寬；</li>
+<li>延遲；</li>
+<li>抖動；</li>
+<li>可靠度；</li>
+<li>安全；</li>
+<li>是否持續在線。</li>
+</ul>
+<h2>7.3 任務邊</h2>
+<p>表示：</p>
+<ul>
+<li>前置依賴；</li>
+<li>可替代站點；</li>
+<li>必須共窗；</li>
+<li>交接；</li>
+<li>排他鎖。</li>
+</ul>
+<h2>7.4 權限邊</h2>
+<p>表示：</p>
+<ul>
+<li>哪個治理核心可租用站點；</li>
+<li>哪個站點可代理其他站；</li>
+<li>哪些動作不能轉授；</li>
+<li>哪些區域需人類批准。</li>
+</ul>
+<h2>7.5 證據邊</h2>
+<p>表示：</p>
+<ul>
+<li>哪項觀測支持哪項決策；</li>
+<li>哪個儀器生成哪個結果；</li>
+<li>哪個轉換產生哪個樣本；</li>
+<li>哪個版本被用於哪次實驗。</li>
+</ul>
+<hr>
+<h1>8. 五級通訊與控制分類</h1>
+<p>OSF 不要求所有通訊都使用同一網路。</p>
+<h2>C0：硬即時本地控制</h2>
+<ul>
+<li>微秒至毫秒；</li>
+<li>不依賴外部網路；</li>
+<li>馬達、互鎖、急停；</li>
+<li>封閉或認證控制器。</li>
+</ul>
+<h2>C1：確定性站點協調</h2>
+<ul>
+<li>毫秒級；</li>
+<li>有界延遲；</li>
+<li>儀器同步；</li>
+<li>機械交接；</li>
+<li>時間敏感資料。</li>
+</ul>
+<p>IEEE TSN 的設計目標包括有界延遲、低延遲變異與低丟包，可作為 C1 底層候選。</p>
+<h2>C2：操作級資料與任務</h2>
+<ul>
+<li>毫秒至秒；</li>
+<li>ROS 2／DDS；</li>
+<li>OPC UA；</li>
+<li>一般工業 Ethernet；</li>
+<li>高可靠無線。</li>
+</ul>
+<p>ROS 2 QoS 可針對可靠度、持久性、歷史與期限調整通訊行為，但 QoS 設定不能取代端到端安全分析。</p>
+<h2>C3：治理與研究</h2>
+<ul>
+<li>秒至小時；</li>
+<li>高階任務；</li>
+<li>模型更新；</li>
+<li>EML-CF；</li>
+<li>報告；</li>
+<li>雲端推理。</li>
+</ul>
+<h2>C4：延遲容忍與離線任務包</h2>
+<ul>
+<li>長延遲；</li>
+<li>間歇連線；</li>
+<li>遠端站；</li>
+<li>軌道、深海或跨組織作業。</li>
+</ul>
+<p>每個任務包必須攜帶：</p>
+<ul>
+<li>有效期限；</li>
+<li>允許動作；</li>
+<li>安全集合；</li>
+<li>世界狀態快照；</li>
+<li>回報與撤銷規則。</li>
+</ul>
+<hr>
+<h1>9. Task Envelope：任務封套</h1>
+<h2>9.1 定義</h2>
+<p>任務不只是自然語言提示，而是：</p>
+<h1>$$
+q</h1>
+<p>\left(
+g,
+P,
+E,
+R,
+D,
+S,
+V,
+B
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$g$：目標；</li>
+<li>$P$：前置條件；</li>
+<li>$E$：期望效果；</li>
+<li>$R$：所需資源與能力；</li>
+<li>$D$：期限與時間窗；</li>
+<li>$S$：安全與權限；</li>
+<li>$V$：證據要求；</li>
+<li>$B$：失敗、回退與替代策略。</li>
+</ul>
+<h2>9.2 範例</h2>
+<pre><code class="language-yaml">task:
+  id: &quot;task:sample-17:microscopy&quot;
+  goal: &quot;Acquire calibrated microstructure images&quot;
+
+preconditions:
+  sample_state: &quot;clean&quot;
+  sample_owner_station: &quot;handoff-cell-01&quot;
+  microscope_calibration: &quot;valid&quot;
+
+requirements:
+  capabilities:
+    - sample_transfer
+    - optical_microscopy
+  deadline: &quot;2026-07-30T21:10:00+08:00&quot;
+
+safety:
+  max_grip_force_n: 5
+  human_exclusion_required: false
+
+world:
+  required_epoch: &quot;WE-0042&quot;
+  stale_after_seconds: 30
+
+evidence:
+  required:
+    - pre_transfer_image
+    - custody_change
+    - microscope_settings
+    - raw_images
+    - calibration_reference
+
+fallback:
+  - station: &quot;microscope-02&quot;
+  - human_assist: true
+</code></pre>
+<hr>
+<h1>10. 任務分配</h1>
+<p>對任務 $q$ 與站點 $N_i$，適配分數：</p>
+<h2>$$
+\begin{aligned}
+S(q,N_i)
+={}&amp;
+w_c C_{\mathrm{cap}}
++
+w_h C_{\mathrm{health}}
++
+w_t C_{\mathrm{time}}
++
+w_z C_{\mathrm{location}}
+\
+&amp;+
+w_e C_{\mathrm{evidence}}
++
+w_r C_{\mathrm{reliability}}</h2>
+<h2>w_p C_{\mathrm{power}}</h2>
+<p>w_k C_{\mathrm{risk}}.
+\end{aligned}
+$$</p>
+<p>多站點任務需要求解：</p>
+<p>$$
+\min_{\pi}
+\left(
+T_{\mathrm{makespan}}
++
+\lambda E_{\mathrm{energy}}
++
+\mu R_{\mathrm{risk}}
++
+\nu C_{\mathrm{handoff}}
+\right),
+$$</p>
+<p>滿足：</p>
+<ul>
+<li>能力；</li>
+<li>空間；</li>
+<li>時間；</li>
+<li>排他；</li>
+<li>世界紀元；</li>
+<li>權限；</li>
+<li>安全；</li>
+<li>證據；</li>
+</ul>
+<p>約束。</p>
+<p>AI 可以提出計畫，但執行前由形式規則和地方安全檢查。</p>
+<hr>
+<h1>11. Handoff Transaction：跨站交接事務</h1>
+<p>跨站交接是 OSF 最重要的工程問題之一。</p>
+<p>交接對象可能是：</p>
+<ul>
+<li>樣本；</li>
+<li>工具；</li>
+<li>任務；</li>
+<li>控制權；</li>
+<li>數據流；</li>
+<li>安全責任；</li>
+<li>實驗證據。</li>
+</ul>
+<h2>11.1 為何不能只發「已交給 B」</h2>
+<p>物理世界中可能發生：</p>
+<ul>
+<li>A 已放手，B 未抓穩；</li>
+<li>A、B 都認為自己持有；</li>
+<li>樣本已移動，但世界模型未更新；</li>
+<li>樣本身份混淆；</li>
+<li>交接期間人類介入；</li>
+<li>網路在提交前中斷。</li>
+</ul>
+<h2>11.2 五階段協議</h2>
+<h3>H0：Prepare</h3>
+<p>確認：</p>
+<ul>
+<li>雙方身份；</li>
+<li>世界紀元；</li>
+<li>物件身份；</li>
+<li>區域；</li>
+<li>能力；</li>
+<li>安全；</li>
+<li>證據設備。</li>
+</ul>
+<h3>H1：Reserve</h3>
+<p>鎖定：</p>
+<ul>
+<li>交接區；</li>
+<li>接收站；</li>
+<li>對象；</li>
+<li>時間窗；</li>
+<li>交通路徑。</li>
+</ul>
+<h3>H2：Transfer</h3>
+<p>執行物理或數位移交，但責任尚未提交。</p>
+<h3>H3：Verify</h3>
+<p>透過：</p>
+<ul>
+<li>視覺；</li>
+<li>重量；</li>
+<li>RFID；</li>
+<li>力感；</li>
+<li>位置；</li>
+<li>雜湊；</li>
+<li>雙方回報；</li>
+</ul>
+<p>確認接收成功。</p>
+<h3>H4：Commit／Abort</h3>
+<p>成功：</p>
+<p>$$
+\operatorname{Owner}(x)
+:
+A
+\rightarrow
+B.
+$$</p>
+<p>失敗：</p>
+<ul>
+<li>返回 A；</li>
+<li>放入安全緩衝區；</li>
+<li>隔離；</li>
+<li>人工介入。</li>
+</ul>
+<h2>11.3 交接不一定原子</h2>
+<p>物理狀態不能像資料庫一樣瞬間回滾，因此 OSF 採用補償事務，而非假設完美 ACID。</p>
+<hr>
+<h1>12. 世界紀元與站點一致性</h1>
+<h2>12.1 站點局部狀態</h2>
+<p>每個站點維護：</p>
+<h1>$$
+W_i(t)</h1>
+<p>\left(
+O_i,
+Z_i,
+Q_i,
+H_i,
+L_i,
+U_i
+\right).
+$$</p>
+<h2>12.2 全局狀態是估計</h2>
+<h1>$$
+\hat{W}(t)</h1>
+<p>\operatorname{Fuse}
+\left(
+W_1(t-\delta_1),
+\ldots,
+W_n(t-\delta_n)
+\right).
+$$</p>
+<p>不存在完全免費的即時全局真值。</p>
+<h2>12.3 世界紀元</h2>
+<p>每個高風險任務聲明：</p>
+<ul>
+<li>依賴哪些物件；</li>
+<li>容許多舊；</li>
+<li>哪些狀態需要強一致；</li>
+<li>哪些可最終一致。</li>
+</ul>
+<p>若紀元不再有效：</p>
+<p>$$
+\operatorname{Valid}(q,WE_k)=0,
+$$</p>
+<p>任務必須暫停、重新觀測或重新規劃。</p>
+<hr>
+<h1>13. 地方自治與失聯</h1>
+<h2>13.1 失聯模式</h2>
+<pre><code class="language-text">CONNECTED
+DEGRADED_LINK
+ISOLATED
+SAFE_STOP
+LOCAL_MISSION
+RECOVERY
+</code></pre>
+<h2>13.2 地方可做的事</h2>
+<p>失聯時站點只能在預先授予的離線租約內：</p>
+<ul>
+<li>完成當前安全子步驟；</li>
+<li>停止；</li>
+<li>保存樣本；</li>
+<li>返回安全區；</li>
+<li>執行低風險觀測；</li>
+<li>保存日誌。</li>
+</ul>
+<p>不能：</p>
+<ul>
+<li>啟動新高風險任務；</li>
+<li>擴張區域；</li>
+<li>轉授權；</li>
+<li>更換世界目標；</li>
+<li>將結果自行公開。</li>
+</ul>
+<h2>13.3 重連</h2>
+<p>重連後必須：</p>
+<ol>
+<li>身份再認證；</li>
+<li>比較世界紀元；</li>
+<li>上傳離線事件；</li>
+<li>解決狀態衝突；</li>
+<li>重發或撤銷租約；</li>
+<li>再進入 ACTIVE。</li>
+</ol>
+<hr>
+<h1>14. 虛擬站與物理站的證據隔離</h1>
+<h2>14.1 虛擬站的價值</h2>
+<p>虛擬站可以：</p>
+<ul>
+<li>搜尋；</li>
+<li>模擬；</li>
+<li>最佳化；</li>
+<li>預測；</li>
+<li>生成實驗；</li>
+<li>分析資料；</li>
+<li>建立數位孿生。</li>
+</ul>
+<h2>14.2 最危險的錯誤</h2>
+<p>將虛擬站輸出誤標為物理證據。</p>
+<p>因此每個輸出具有：</p>
+<pre><code class="language-yaml">evidence_class:
+  - simulation
+  - model_prediction
+  - inferred_state
+  - physical_observation
+  - calibrated_measurement
+  - human_report
+</code></pre>
+<p>只有適當的物理站點和校準鏈能提交 <code>calibrated_measurement</code>。</p>
+<h2>14.3 數位孿生不是權威本體</h2>
+<p>數位孿生應被視為：</p>
+<p>$$
+\hat{W}<em>{\mathrm{twin}}
+\approx
+W</em>{\mathrm{physical}},
+$$</p>
+<p>而不是：</p>
+<h1>$$
+\hat{W}_{\mathrm{twin}}</h1>
+<p>W_{\mathrm{physical}}.
+$$</p>
+<hr>
+<h1>15. 安全、信任與隔離</h1>
+<h2>15.1 零信任站點原則</h2>
+<p>站點接入網路不等於獲得動作權。</p>
+<p>每次動作需要：</p>
+<ul>
+<li>身份；</li>
+<li>租約；</li>
+<li>世界紀元；</li>
+<li>能力；</li>
+<li>健康；</li>
+<li>政策；</li>
+<li>本地安全；</li>
+</ul>
+<p>共同通過。</p>
+<h2>15.2 安全區域</h2>
+<p>每個區域 $Z_j$ 具有：</p>
+<h1>$$
+Z_j</h1>
+<p>\left(
+R_j,
+A_j,
+H_j,
+O_j,
+E_j
+\right),
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$R_j$：風險；</li>
+<li>$A_j$：允許動作；</li>
+<li>$H_j$：人類進入規則；</li>
+<li>$O_j$：允許物件；</li>
+<li>$E_j$：緊急程序。</li>
+</ul>
+<h2>15.3 隔離</h2>
+<p>站點可因以下原因被隔離：</p>
+<ul>
+<li>校準過期；</li>
+<li>異常遙測；</li>
+<li>安全事件；</li>
+<li>韌體不符；</li>
+<li>身份失效；</li>
+<li>世界模型污染；</li>
+<li>資料授權不明；</li>
+<li>重複失敗。</li>
+</ul>
+<p>隔離站仍可回報最低狀態，但不能取得新租約。</p>
+<hr>
+<h1>16. 現有技術如何映射到 OSF</h1>
+<h2>16.1 W3C Web of Things</h2>
+<p>WoT Thing Description 提供一個通用模型，用於描述實體或虛擬 Thing 的：</p>
+<ul>
+<li>Metadata；</li>
+<li>Properties；</li>
+<li>Actions；</li>
+<li>Events；</li>
+<li>Protocol bindings。</li>
+</ul>
+<p>OSF 可用它作為通用站點外殼，再增加：</p>
+<ul>
+<li>能力證書；</li>
+<li>安全包絡；</li>
+<li>世界紀元；</li>
+<li>租約；</li>
+<li>證據類型。</li>
+</ul>
+<h2>16.2 OPC UA Robotics</h2>
+<p>OPC UA Robotics Part 1 描述運動設備系統，支援資產管理、條件監控與診斷等垂直整合用例。</p>
+<p>OSF 可將其作為工業機器人和運動設備的狀態來源，但仍需額外處理：</p>
+<ul>
+<li>高階任務；</li>
+<li>移動交通；</li>
+<li>身體租約；</li>
+<li>多站交接；</li>
+<li>研究證據。</li>
+</ul>
+<h2>16.3 ROS 2／DDS</h2>
+<p>ROS 2 將複雜系統拆成節點，透過 Topics、Services、Actions 與 QoS 交換資料。</p>
+<p>OSF 可使用：</p>
+<ul>
+<li>Topic：連續狀態；</li>
+<li>Service：短操作；</li>
+<li>Action：長任務；</li>
+<li>Lifecycle Node：站點生命週期；</li>
+<li>QoS：可靠度、歷史、期限與存活。</li>
+</ul>
+<p>但 ROS graph 不是治理圖；發現節點也不表示其可被租用。</p>
+<h2>16.4 Open-RMF</h2>
+<p>Open-RMF 的 Fleet Adapter 為異質移動機器人建立轉接層，讓不同原生 API 的車隊接入共同交通和任務系統。</p>
+<p>OSF 將這種 adapter 原則一般化到：</p>
+<ul>
+<li>固定儀器；</li>
+<li>機械臂；</li>
+<li>移動儀器；</li>
+<li>虛擬站；</li>
+<li>遠端實驗室。</li>
+</ul>
+<h2>16.5 IEEE TSN</h2>
+<p>TSN 適合時間敏感的站點間資料與協調，但不應被描述為所有安全控制的唯一解法。硬即時與安全互鎖仍應盡量留在本地。</p>
+<hr>
+<h1>17. OSF 九層架構</h1>
+<h2>L0：物理域與區域安全</h2>
+<ul>
+<li>房間；</li>
+<li>工作單元；</li>
+<li>人員；</li>
+<li>危險區；</li>
+<li>緊急設備。</li>
+</ul>
+<h2>L1：裝置原生控制</h2>
+<ul>
+<li>PLC；</li>
+<li>MCU；</li>
+<li>servo；</li>
+<li>儀器 firmware；</li>
+<li>急停。</li>
+</ul>
+<h2>L2：站點轉接與描述</h2>
+<ul>
+<li>ROS 2 node；</li>
+<li>OPC UA server；</li>
+<li>WoT Thing；</li>
+<li>Fleet Adapter；</li>
+<li>自訂 adapter。</li>
+</ul>
+<h2>L3：能力與健康</h2>
+<ul>
+<li>Capability Certificate；</li>
+<li>校準；</li>
+<li>健康；</li>
+<li>信心；</li>
+<li>維護。</li>
+</ul>
+<h2>L4：通訊與時間</h2>
+<ul>
+<li>TSN；</li>
+<li>DDS；</li>
+<li>Ethernet；</li>
+<li>Wi-Fi／5G；</li>
+<li>光纖；</li>
+<li>離線任務包。</li>
+</ul>
+<h2>L5：Station Registry 與信任</h2>
+<ul>
+<li>身份；</li>
+<li>註冊；</li>
+<li>發現；</li>
+<li>attest；</li>
+<li>shadow；</li>
+<li>隔離。</li>
+</ul>
+<h2>L6：任務、租約與交接</h2>
+<ul>
+<li>Task Envelope；</li>
+<li>Reservation；</li>
+<li>Lease；</li>
+<li>Handoff Transaction；</li>
+<li>Compensation。</li>
+</ul>
+<h2>L7：世界模型與超靈治理</h2>
+<ul>
+<li>World Epoch；</li>
+<li>任務圖；</li>
+<li>資源；</li>
+<li>語義路由；</li>
+<li>地方自治。</li>
+</ul>
+<h2>L8：證據、EML-CF 與聯邦接口</h2>
+<ul>
+<li>Evidence Commit；</li>
+<li>Provenance；</li>
+<li>IP；</li>
+<li>開源；</li>
+<li>遠端合作；</li>
+<li>發布。</li>
+</ul>
+<hr>
+<h1>18. MVP：OSF-Lab-4</h1>
+<h2>18.1 配置</h2>
+<p>第一個 OSF MVP 使用四個主要站點：</p>
+<ol>
+<li><strong>S0 感測站</strong>：相機與標記識別；</li>
+<li><strong>S3 固定智能站</strong>：桌面機械臂；</li>
+<li><strong>S4 移動站</strong>：小型 AMR 或模擬移動平台；</li>
+<li><strong>S2 儀器站</strong>：重量、尺寸或成像量測。</li>
+</ol>
+<p>另有：</p>
+<ul>
+<li>S5 虛擬站：任務規劃與模擬；</li>
+<li>STDI 中央治理服務；</li>
+<li>本地安全控制；</li>
+<li>Station Registry；</li>
+<li>Evidence Store。</li>
+</ul>
+<h2>18.2 任務</h2>
+<pre><code class="language-text">樣本入庫
+→ 感測站識別
+→ 固定站抓取
+→ 交接區移交給移動站
+→ 移動至儀器站
+→ 儀器量測
+→ 回傳結果
+→ EML-CF 建立證據紀錄
+</code></pre>
+<h2>18.3 故障注入</h2>
+<ul>
+<li>移動站斷線；</li>
+<li>儀器校準過期；</li>
+<li>樣本身份不一致；</li>
+<li>世界紀元變更；</li>
+<li>交接後視覺未確認；</li>
+<li>租約過期；</li>
+<li>人類進入交接區；</li>
+<li>虛擬站預測與實測矛盾。</li>
+</ul>
+<h2>18.4 成功條件</h2>
+<ul>
+<li>新站點可經 descriptor 接入；</li>
+<li>能力不足的站點不被分配；</li>
+<li>交接失敗不造成樣本無主；</li>
+<li>地方安全可否決中央；</li>
+<li>斷線站點不能擴張任務；</li>
+<li>虛擬結果不被標為實測；</li>
+<li>所有物理行動具有責任與證據鏈。</li>
+</ul>
+<hr>
+<h1>19. 指標</h1>
+<h2>19.1 接入</h2>
+<ul>
+<li>新站點接入時間；</li>
+<li>自訂程式碼量；</li>
+<li>descriptor 完整率；</li>
+<li>能力證書覆蓋率。</li>
+</ul>
+<h2>19.2 排程</h2>
+<ul>
+<li>有效任務完成率；</li>
+<li>排程重算次數；</li>
+<li>能力錯配；</li>
+<li>世界紀元過期造成的停止率。</li>
+</ul>
+<h2>19.3 交接</h2>
+<ul>
+<li>交接成功率；</li>
+<li>重複所有權事件；</li>
+<li>無主樣本事件；</li>
+<li>平均補償時間。</li>
+</ul>
+<h2>19.4 安全</h2>
+<ul>
+<li>越權動作；</li>
+<li>地方否決正確率；</li>
+<li>隔離生效時間；</li>
+<li>失聯後安全停止率。</li>
+</ul>
+<h2>19.5 證據</h2>
+<ul>
+<li>證據完整率；</li>
+<li>來源不明結果；</li>
+<li>模擬／實測誤標；</li>
+<li>事件重建成功率。</li>
+</ul>
+<hr>
+<h1>20. 可證偽命題</h1>
+<h2>H1：Station Descriptor 降低異質設備接入成本</h2>
+<p>相較完全專案式整合，第二個與第三個異質站點所需的人工開發時間應下降。</p>
+<h2>H2：能力證書降低錯誤任務分配</h2>
+<p>使用參數化能力、健康與校準狀態後，因設備不適合而失敗的任務應下降。</p>
+<h2>H3：交接事務降低樣本所有權不一致</h2>
+<p>相較單純事件訊息，Prepare—Reserve—Transfer—Verify—Commit 流程應降低無主與重複所有權。</p>
+<h2>H4：世界紀元增加停止但提高有效成功率</h2>
+<p>引入紀元驗證後，表面任務啟動率可能下降，但錯誤狀態下執行的實驗應下降。</p>
+<h2>H5：混合通訊優於全雲端或全硬即時</h2>
+<p>將安全、地方自治、操作資料和高階治理分層後，應在成本、可靠度與擴展性之間取得較佳平衡。</p>
+<h2>H6：虛擬站證據隔離降低過度宣稱</h2>
+<p>將模擬、推論和實測分級後，報告中把模型結果寫成物理驗證的錯誤應下降。</p>
+<hr>
+<h1>21. 主要限制</h1>
+<h2>21.1 Descriptor 不會自動解決語義互通</h2>
+<p>兩個站點都宣稱 <code>grasp</code>，不表示：</p>
+<ul>
+<li>物體類型相同；</li>
+<li>成功定義相同；</li>
+<li>精度相同；</li>
+<li>安全條件相同。</li>
+</ul>
+<p>仍需要本體、測試與能力證書。</p>
+<h2>21.2 跨站事務不能保證物理原子性</h2>
+<p>物理轉移可能不可逆。OSF 只能建立可觀測、可補償與可追責的流程。</p>
+<h2>21.3 中央世界模型必然有延遲</h2>
+<p>站網規模增加時，不應追求所有狀態的強一致。</p>
+<h2>21.4 多標準整合會增加複雜度</h2>
+<p>ROS 2、OPC UA、WoT、RMF 與 TSN 解決不同層級問題。把它們全部引入並不自動形成好系統。</p>
+<h2>21.5 能力證書可能過期</h2>
+<p>設備老化、工具更換、環境變化與模型更新都可能使證書失效。</p>
+<h2>21.6 外部站點的責任邊界更複雜</h2>
+<p>跨組織操作需要契約、資料政策、人員安全與事故責任安排，不能只靠技術協議。</p>
+<hr>
+<h1>22. 不能宣稱的內容</h1>
+<p>本篇不主張：</p>
+<ul>
+<li>OSF 已是成熟標準；</li>
+<li>連上 ROS 2 或 OPC UA 的設備自動成為超靈身體；</li>
+<li>W3C WoT 可直接處理所有工業安全；</li>
+<li>Open-RMF 已解決所有異質站點問題；</li>
+<li>TSN 可以取代本地安全控制；</li>
+<li>所有物理交接都能像資料庫事務般回滾；</li>
+<li>世界模型可以保持完全即時與一致；</li>
+<li>Station Descriptor 等同能力已被驗證；</li>
+<li>虛擬站輸出等同物理實驗；</li>
+<li>超靈可以自行接管未授權設備；</li>
+<li>站點越多，研究能力必然線性增加。</li>
+</ul>
+<hr>
+<h1>23. 與後續系列的關係</h1>
+<p>OSF 建立「身體網路」之後，下一篇將回答：</p>
+<blockquote>
+<p>這個站網如何跨越數小時、數天甚至數年，持續維持同一個物理域？</p>
+</blockquote>
+<p>因此第 4 篇自然進入：</p>
+<h1>《持續性指揮控制區：AI 如何佔據並維持一個物理時空域》</h1>
+<p>後續將處理：</p>
+<ul>
+<li>域建立與解除；</li>
+<li>持續存在；</li>
+<li>世界狀態老化；</li>
+<li>人類進出；</li>
+<li>長任務；</li>
+<li>夜間與斷線運作；</li>
+<li>權限續租；</li>
+<li>事件與未完成義務；</li>
+<li>指揮存在的最小條件。</li>
+</ul>
+<hr>
+<h1>24. 結論</h1>
+<p>分布式具身智能最容易犯的錯，是把「設備可連線」誤認為「設備已形成共同身體」。</p>
+<p>真正的超靈站網需要把每一個作用端轉化為：</p>
+<p>$$
+\boxed{
+\text{身份}
++
+\text{能力}
++
+\text{限制}
++
+\text{位置}
++
+\text{健康}
++
+\text{租約}
++
+\text{證據}
+}
+$$</p>
+<p>OSF 的功能不是取消異質性，而是讓異質性可以被治理。</p>
+<p>固定機械臂、移動機器人、量測儀器、模擬器、遠端實驗室與人類專家，不需要變成同一種設備；它們需要的是一個共同語言，用來回答：</p>
+<ul>
+<li>誰能做什麼；</li>
+<li>在哪裡做；</li>
+<li>在何時做；</li>
+<li>在何種世界狀態下做；</li>
+<li>由誰授權；</li>
+<li>失敗時怎麼辦；</li>
+<li>結果如何被證明。</li>
+</ul>
+<p>因此：</p>
+<p>$$
+\text{站點}
+\neq
+\text{網路端點},
+$$</p>
+<h1>$$
+\boxed{
+\text{站點}</h1>
+<p>\text{被描述、被驗證、被租用、被同步與被追責的能力端}
+}
+$$</p>
+<p>而：</p>
+<h1>$$
+\boxed{
+\text{Oversoul Station Fabric}</h1>
+<p>\text{異質能力的可治理分布式身體}
+}
+$$</p>
+<p>這使「超靈」第一次不只是高階智能的隱喻，而具有可逐步實作的身體網路。</p>
+<hr>
+<h1>參考文獻與官方技術資料</h1>
+<ol>
+<li><p>W3C. <strong>Web of Things (WoT) Thing Description 2.0.</strong> 2025.<br><a href="https://www.w3.org/TR/wot-thing-description-2.0/">https://www.w3.org/TR/wot-thing-description-2.0/</a></p>
+</li>
+<li><p>W3C. <strong>Web of Things (WoT) Discovery.</strong> 2023.<br><a href="https://www.w3.org/TR/wot-discovery/">https://www.w3.org/TR/wot-discovery/</a></p>
+</li>
+<li><p>W3C. <strong>Web of Things (WoT) Scripting API.</strong><br><a href="https://www.w3.org/TR/wot-scripting-api/">https://www.w3.org/TR/wot-scripting-api/</a></p>
+</li>
+<li><p>OPC Foundation. <strong>OPC UA for Robotics — Part 1: Vertical Integration.</strong><br><a href="https://reference.opcfoundation.org/specs/OPC-40010-1">https://reference.opcfoundation.org/specs/OPC-40010-1</a></p>
+</li>
+<li><p>OPC Foundation. <strong>OPC UA Companion Specifications.</strong><br><a href="https://opcfoundation.org/about/opc-technologies/opc-ua/ua-companion-specifications/">https://opcfoundation.org/about/opc-technologies/opc-ua/ua-companion-specifications/</a></p>
+</li>
+<li><p>Open Robotics. <strong>ROS 2 Documentation.</strong><br><a href="https://docs.ros.org/">https://docs.ros.org/</a></p>
+</li>
+<li><p>Open Robotics. <strong>ROS 2 Quality of Service settings.</strong><br><a href="https://docs.ros.org/en/rolling/Concepts/Intermediate/About-Quality-of-Service-Settings.html">https://docs.ros.org/en/rolling/Concepts/Intermediate/About-Quality-of-Service-Settings.html</a></p>
+</li>
+<li><p>Open-RMF. <strong>Fleet Adapter Template.</strong><br><a href="https://github.com/open-rmf/fleet_adapter_template">https://github.com/open-rmf/fleet_adapter_template</a></p>
+</li>
+<li><p>IEEE 802.1. <strong>Time-Sensitive Networking Task Group.</strong><br><a href="https://1.ieee802.org/tsn/">https://1.ieee802.org/tsn/</a></p>
+</li>
+<li><p>Object Management Group. <strong>Data Distribution Service, Version 1.4.</strong><br><a href="https://www.omg.org/spec/DDS/1.4/">https://www.omg.org/spec/DDS/1.4/</a></p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>飛行即定址與幾何站網：光學資料運動層的站點化實作框架.</strong> EML-ODML-GFMSN-2026-v0.3.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>語義即路由：從 O-Chip 維度代理人到 AI 資料中心語義流治理.</strong> EML-SFRSN-2026-v0.2.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>時空間支配型 AI：從單體具身智能到持續性時空域治理.</strong> EML-STDI-2026-v0.1.</p>
+</li>
+<li><p>Neo.K／Aletheia. <strong>超靈的物理化：從 O-Chip 維度代理人到分布式具身主體.</strong> EML-STDI-2026-v0.2.</p>
+</li>
+</ol>
+<hr>
+<h1>附錄 A：最小 Station Descriptor</h1>
+<pre><code class="language-yaml">station:
+  id: &quot;&quot;
+  name: &quot;&quot;
+  type: &quot;&quot;
+  owner: &quot;&quot;
+  trust_domain: &quot;&quot;
+
+location:
+  fixed: true
+  zone: &quot;&quot;
+  pose_frame: &quot;&quot;
+
+interfaces:
+  properties: []
+  actions: []
+  events: []
+
+capabilities: []
+limitations: []
+
+health:
+  status: &quot;unknown&quot;
+  calibration: &quot;unknown&quot;
+  firmware_version: &quot;&quot;
+  last_attested_at: &quot;&quot;
+
+governance:
+  lease_required: true
+  world_epoch_required: true
+  local_veto: true
+  offline_policy: &quot;safe_stop&quot;
+
+evidence:
+  output_types: []
+  provenance_required: true
+</code></pre>
+<hr>
+<h1>附錄 B：最小 Capability Certificate</h1>
+<pre><code class="language-yaml">capability_certificate:
+  id: &quot;&quot;
+  station_id: &quot;&quot;
+  capability: &quot;&quot;
+  parameter_envelope: {}
+  test_method: &quot;&quot;
+  result_summary: &quot;&quot;
+  uncertainty: &quot;&quot;
+  issued_by: &quot;&quot;
+  valid_from: &quot;&quot;
+  valid_until: &quot;&quot;
+  station_version: &quot;&quot;
+  signature: &quot;&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：最小交接紀錄</h1>
+<pre><code class="language-yaml">handoff:
+  id: &quot;&quot;
+  object_id: &quot;&quot;
+  sender_station: &quot;&quot;
+  receiver_station: &quot;&quot;
+  handoff_zone: &quot;&quot;
+  world_epoch: &quot;&quot;
+
+  prepare:
+    sender_ready: false
+    receiver_ready: false
+    zone_reserved: false
+
+  transfer:
+    started_at: &quot;&quot;
+    completed_at: &quot;&quot;
+
+  verification:
+    vision: null
+    weight: null
+    identity: null
+    receiver_confirmation: false
+
+  result:
+    state: &quot;pending&quot;
+    new_custodian: null
+    compensation_action: null
+
+  evidence_artifacts: []
+</code></pre>
+<hr>
+<h1>附錄 D：系列血緣</h1>
+<pre><code class="language-text">GFMSN
+  站點、支線、局部處理、交會與重注入
+        ↓
+
+SFRSN
+  語義分類、流路治理、中央與地方
+        ↓
+
+STDI 第 1 篇
+  持續時空域治理
+        ↓
+
+STDI 第 2 篇
+  同一治理核心與多身體
+        ↓
+
+本篇 OSF
+  身體如何註冊、發現、租用、交接與形成站網
+        ↓
+
+第 4 篇
+  站網如何形成持續性指揮控制區
+</code></pre>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/stdi-03.html">https://thisoneisneok.com/html/papers/stdi-03.html</a></footer>
+</body>
+</html>

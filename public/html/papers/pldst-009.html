@@ -1,0 +1,1544 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>安全約束與表達自由：語言應禁止多少錯誤，又應允許多少逃生？ | Neo.K</title>
+<meta name="description" content="安全不只是「編譯器拒絕更多程式」，而是對特定錯誤類別建立可說明的保證；自由也不只是「任何位元都能被任意操作」，而包括表達新抽象、連接外部系統、控制資源、實作 Runtime，以及在現有分析能力之外建立新機制的能力。">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pldst-009.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PLDST</strong><span>程式語言設計師風格譜系</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PLDST-009</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第二部核心風格原型正式論文</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-009.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>安全約束與表達自由：語言應禁止多少錯誤，又應允許多少逃生？</h1>
+<h2>摘要</h2>
+<p>程式語言安全經常被描述成一條單軸：</p>
+<pre><code class="language-text">自由、低階、可做任何事 ←────────→ 安全、受限、只能做被允許的事
+</code></pre>
+<p>這個模型同時誤解安全與自由。</p>
+<p>安全不只是「編譯器拒絕更多程式」，而是對特定錯誤類別建立可說明的保證；自由也不只是「任何位元都能被任意操作」，而包括表達新抽象、連接外部系統、控制資源、實作 Runtime，以及在現有分析能力之外建立新機制的能力。</p>
+<p>Rust 將 Safe Rust 與 Unsafe Rust 以 <code>unsafe</code> 邊界分開：<code>unsafe fn</code>、<code>unsafe trait</code> 等建立額外安全契約，<code>unsafe {}</code>、<code>unsafe impl</code> 等表示程式設計者聲稱已履行契約；<code>unsafe</code> 並不宣告任意行為正確，而是把原本由編譯器承擔的部分證明義務轉交給人。SPARK 透過 Ada 子集、Flow analysis、契約與 GNATprove 排除或證明多類運行期錯誤，同時對 <code>Unchecked_Conversion</code>、外部呼叫與不支援構造建立明確限制。Haskell 以 <code>IO</code> 區隔純運算與效果，但 <code>unsafePerformIO</code> 允許突破此邊界；官方文件因此要求極強的使用前提，並警告副作用順序可能不確定。TypeScript 為 JavaScript 生態提供漸進型別安全，卻刻意保留 <code>any</code>、Type assertion 與部分不健全相容規則；<code>unknown</code> 則作為較安全的逃生入口，要求先 Narrow 才能操作。C# 以可驗證安全程式作為主要模式，透過 <code>unsafe</code> Context 開放 Pointer、Function pointer 與手動 Memory 操作；Go 的 <code>unsafe</code> Package 則明確提供繞過型別安全的操作，並警告相關程式可能不可攜，且不受 Go 1 相容承諾完整保護。[R1][R2][R3][R4][R5][R6]</p>
+<p>這些語言證明：成熟的安全設計通常不是消滅所有危險能力，而是建立一個 <strong>安全包絡</strong>（Safety Envelope），並控制危險能力如何穿越包絡。</p>
+<p>本文提出 <strong>安全—自由配置模型</strong>（Safety–Freedom Allocation Model, SFAM）：</p>
+<h1>$$
+\mathcal{S}</h1>
+<p>(
+\mathbf{G},
+\mathbf{H},
+\mathbf{O},
+\mathbf{C},
+\mathbf{A},
+\mathbf{F},
+\mathbf{R}
+)
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$\mathbf{G}$：Guarantees，安全子語言提供的保證；</li>
+<li>$\mathbf{H}$：Hatches，逃生口與不安全操作；</li>
+<li>$\mathbf{O}$：Obligations，轉移給呼叫者或實作者的證明義務；</li>
+<li>$\mathbf{C}$：Containment，危險能力的局部化與封裝；</li>
+<li>$\mathbf{A}$：Auditability，標記、文件、工具與審計能力；</li>
+<li>$\mathbf{F}$：Fallback，失敗、未知與無法證明時的處理；</li>
+<li>$\mathbf{R}$：Recovery，事故後的圍堵、恢復與制度修正。</li>
+</ul>
+<p>本文將安全拆成八類：</p>
+<ol>
+<li>記憶體安全；</li>
+<li>型別與表示安全；</li>
+<li>初始化與資料有效性；</li>
+<li>控制流完整性；</li>
+<li>並行與資料競爭安全；</li>
+<li>效果與純度邊界；</li>
+<li>資源與終止安全；</li>
+<li>外部互操作與供應鏈信任。</li>
+</ol>
+<p>並提出七種逃生形式：</p>
+<ul>
+<li>安全但低階的受控 API；</li>
+<li>顯式局部不安全區塊；</li>
+<li>呼叫者承擔契約的不安全函式；</li>
+<li>未檢查轉換與型別斷言；</li>
+<li>外部函式與 ABI 邊界；</li>
+<li>可選關閉的檢查與漸進降級；</li>
+<li>全域或非局部不健全機制。</li>
+</ul>
+<p>本文核心命題為：</p>
+<p>$$
+\boxed{
+\text{存在逃生口}
+\not\Rightarrow
+\text{語言沒有安全保證}
+}
+$$</p>
+<p>真正關鍵是：</p>
+<p>$$
+\boxed{
+\text{逃生口是否局部、顯式、可審計、可封裝，}
+\quad
+\text{以及安全呼叫者是否仍能依賴穩定保證。}
+}
+$$</p>
+<p>相反地：</p>
+<p>$$
+\boxed{
+\text{禁止危險語法}
+\not\Rightarrow
+\text{系統安全}
+}
+$$</p>
+<p>因為規格錯誤、外部服務、資源耗盡、供應鏈、邏輯漏洞與錯誤的安全抽象，仍可能存在。</p>
+<p><strong>關鍵詞：</strong> 程式語言安全、表達自由、逃生口、Unsafe Rust、SPARK、unsafePerformIO、TypeScript any、C# unsafe、Go unsafe、PLDST</p>
+<hr>
+<h1>第一部分　安全不是單一屬性</h1>
+<h2>一、記憶體安全 $G_m$</h2>
+<p>涵蓋：</p>
+<ul>
+<li>Use-after-free；</li>
+<li>Double free；</li>
+<li>Dangling pointer；</li>
+<li>Out-of-bounds；</li>
+<li>Invalid alias；</li>
+<li>Data race 導致的未定義行為；</li>
+<li>錯誤資料表示；</li>
+<li>任意 Memory corruption。</li>
+</ul>
+<p>一種語言可以高度記憶體安全，卻仍允許：</p>
+<ul>
+<li>無限迴圈；</li>
+<li>業務邏輯錯誤；</li>
+<li>SQL injection；</li>
+<li>過量配置；</li>
+<li>外部服務誤用。</li>
+</ul>
+<hr>
+<h2>二、型別與表示安全 $G_t$</h2>
+<p>涵蓋：</p>
+<ul>
+<li>值是否符合宣告型別；</li>
+<li>Pattern 是否完整；</li>
+<li>Dynamic cast 是否檢查；</li>
+<li>表示轉換是否有效；</li>
+<li>外部資料是否驗證；</li>
+<li>ABI 是否一致。</li>
+</ul>
+<p>未檢查轉換往往不是只「改變型別名稱」，而是要求程式設計者證明底層表示真的相容。</p>
+<hr>
+<h2>三、初始化與資料有效性 $G_i$</h2>
+<p>涵蓋：</p>
+<ul>
+<li>變數是否初始化；</li>
+<li>Scalar 是否具有有效表示；</li>
+<li>物件不變量是否成立；</li>
+<li>Partial initialization；</li>
+<li>外部讀入資料；</li>
+<li><code>null</code>／Optional；</li>
+<li>Invalid enum value。</li>
+</ul>
+<p>SPARK 對資料有效性與 <code>Unchecked_Conversion</code> 的處理顯示：即使語言有強型別，外部表示與未檢查轉換仍需要額外證明或保守標記。[R2]</p>
+<hr>
+<h2>四、控制流完整性 $G_c$</h2>
+<p>涵蓋：</p>
+<ul>
+<li>跳轉與 Return address；</li>
+<li>Exception；</li>
+<li>Panic；</li>
+<li>Cancellation；</li>
+<li>非局部跳轉；</li>
+<li>Foreign callback；</li>
+<li>Stack unwinding；</li>
+<li>Control-flow integrity。</li>
+</ul>
+<p>記憶體安全通常有助於控制流安全，但不等同完整的控制流與業務流程正確性。</p>
+<hr>
+<h2>五、並行與資料競爭安全 $G_d$</h2>
+<p>涵蓋：</p>
+<ul>
+<li>Data race；</li>
+<li>Deadlock；</li>
+<li>Atomicity；</li>
+<li>Message ordering；</li>
+<li>Cancellation；</li>
+<li>Shared mutable state；</li>
+<li>Scheduler interaction。</li>
+</ul>
+<p>Rust 的型別與所有權能排除多類不安全共享，但仍不能自動消除：</p>
+<ul>
+<li>Deadlock；</li>
+<li>Starvation；</li>
+<li>邏輯 Race；</li>
+<li>分散式一致性錯誤。</li>
+</ul>
+<hr>
+<h2>六、效果與純度安全 $G_e$</h2>
+<p>涵蓋：</p>
+<ul>
+<li>I/O 是否可見；</li>
+<li>函式是否純；</li>
+<li>是否讀寫全域狀態；</li>
+<li>是否丟出例外；</li>
+<li>是否阻塞；</li>
+<li>是否使用時間、亂數與環境；</li>
+<li>是否可重放。</li>
+</ul>
+<p>Haskell <code>IO</code> 把效果放入型別，但 <code>unsafePerformIO</code> 能把 <code>IO a</code> 映射為表面純值 <code>a</code>。因此其安全前提不是 Memory safety，而是參照透明性、效果順序與最佳化穩定性。[R3]</p>
+<hr>
+<h2>七、資源與終止安全 $G_r$</h2>
+<p>涵蓋：</p>
+<ul>
+<li>記憶體上限；</li>
+<li>Stack；</li>
+<li>CPU；</li>
+<li>配額；</li>
+<li>終止；</li>
+<li>即時 Deadline；</li>
+<li>檔案描述符；</li>
+<li>Goroutine／Thread leak；</li>
+<li>外部請求。</li>
+</ul>
+<p>多數「Safe」語言並不保證終止或資源有界。</p>
+<hr>
+<h2>八、外部互操作與供應鏈安全 $G_x$</h2>
+<p>涵蓋：</p>
+<ul>
+<li>FFI；</li>
+<li>Native Library；</li>
+<li>ABI；</li>
+<li>Unsafe package；</li>
+<li>反序列化；</li>
+<li>編譯器插件；</li>
+<li>巨集；</li>
+<li>Dependency；</li>
+<li>Runtime；</li>
+<li>Build script。</li>
+</ul>
+<p>安全子語言通常建立在更大的 Trusted Computing Base 上。若 Runtime、Compiler、FFI 或 Native dependency 不可靠，語言內部保證可能被破壞。</p>
+<hr>
+<h2>九、安全向量</h2>
+<h1>$$
+\mathbf{G}</h1>
+<p>(
+G_m,
+G_t,
+G_i,
+G_c,
+G_d,
+G_e,
+G_r,
+G_x
+)
+$$</p>
+<p>PLDST 不使用一個「安全分數」抹去不同保證。</p>
+<hr>
+<h1>第二部分　自由也不是「可以做任何事」</h1>
+<h2>十、表達自由</h2>
+<p>能否自然表達：</p>
+<ul>
+<li>新資料模型；</li>
+<li>高階抽象；</li>
+<li>DSL；</li>
+<li>並行；</li>
+<li>資源；</li>
+<li>外部系統；</li>
+<li>Runtime；</li>
+<li>編譯器；</li>
+<li>Kernel；</li>
+<li>硬體。</li>
+</ul>
+<hr>
+<h2>十一、實作自由</h2>
+<p>語言實作者能否：</p>
+<ul>
+<li>建立垃圾回收器；</li>
+<li>實作同步原語；</li>
+<li>操作 Pointer；</li>
+<li>連接 C；</li>
+<li>使用 SIMD；</li>
+<li>控制布局；</li>
+<li>建立自訂配置器；</li>
+<li>寫作業系統與 Driver。</li>
+</ul>
+<p>安全語言若完全不能實作自己的安全基礎，就只能永遠依賴外部不安全語言。</p>
+<hr>
+<h2>十二、遷移自由</h2>
+<p>漸進型別語言保留：</p>
+<ul>
+<li>舊程式逐步加入型別；</li>
+<li>無法建模的外部 Library；</li>
+<li>動態資料；</li>
+<li>JavaScript 生態；</li>
+<li>Prototype。</li>
+</ul>
+<p>TypeScript 的 <code>any</code> 具有重大風險，但也是從既有 JavaScript 世界向靜態分析過渡的重要橋樑。[R4]</p>
+<hr>
+<h2>十三、研究自由</h2>
+<p>新資料結構、編譯技術與資源模型可能暫時超出現有型別系統。</p>
+<p>若完全禁止：</p>
+<ul>
+<li>Raw memory；</li>
+<li>自訂表示；</li>
+<li>未驗證原語；</li>
+<li>Runtime Hook；</li>
+</ul>
+<p>語言可能失去自我擴張能力。</p>
+<hr>
+<h2>十四、逃生自由與任意破壞不同</h2>
+<p>成熟逃生口通常不是：</p>
+<pre><code class="language-text">關掉所有檢查，任意執行。
+</code></pre>
+<p>而是：</p>
+<pre><code class="language-text">你可以執行一組額外操作，
+但必須承擔明確且可審查的安全契約。
+</code></pre>
+<hr>
+<h1>第三部分　七種逃生口</h1>
+<h2>十五、安全但低階的受控 API</h2>
+<p>有些能力看似低階，仍可由安全 API 提供：</p>
+<ul>
+<li>Safe slice；</li>
+<li>Checked pointer wrapper；</li>
+<li>Span；</li>
+<li>Arena；</li>
+<li>Pinned buffer；</li>
+<li>Managed handle；</li>
+<li>Atomic；</li>
+<li>Capability object。</li>
+</ul>
+<p>其目標是：</p>
+<blockquote>
+<p>將一次性不安全實作封裝成可重複使用的安全介面。</p>
+</blockquote>
+<hr>
+<h2>十六、顯式局部不安全區塊</h2>
+<p>代表：</p>
+<pre><code class="language-rust">unsafe {
+    // limited operations
+}
+</code></pre>
+<p>理想性質：</p>
+<ul>
+<li>範圍小；</li>
+<li>操作可列舉；</li>
+<li>周圍仍受普通語言規則約束；</li>
+<li>Reviewer 能集中審查；</li>
+<li>能以 Lint 或 Policy 統計；</li>
+<li>可由 Safe wrapper 隔離。</li>
+</ul>
+<p>Rust Reference 將 <code>unsafe</code> 描述為建立或履行額外安全義務，而不是取消所有語言規則。[R1]</p>
+<hr>
+<h2>十七、呼叫者承擔契約的不安全函式</h2>
+<p><code>unsafe fn</code> 的含義是：</p>
+<blockquote>
+<p>呼叫者必須保證額外前置條件。</p>
+</blockquote>
+<p>例如：</p>
+<ul>
+<li>Pointer 有效；</li>
+<li>對齊正確；</li>
+<li>範圍未重疊；</li>
+<li>生命週期足夠；</li>
+<li>外部資源狀態成立。</li>
+</ul>
+<p>如果條件無法在型別中完整表達，就必須透過 Safety documentation 保留。</p>
+<hr>
+<h2>十八、未檢查轉換與型別斷言</h2>
+<p>包括：</p>
+<ul>
+<li><code>Unchecked_Conversion</code>；</li>
+<li>Type assertion；</li>
+<li><code>transmute</code>；</li>
+<li>Reinterpret cast；</li>
+<li><code>any</code>；</li>
+<li>Double assertion；</li>
+<li>Raw representation view。</li>
+</ul>
+<p>這些機制可能：</p>
+<ol>
+<li>僅告訴 Checker「相信我」；</li>
+<li>真正重新解釋位元；</li>
+<li>插入 Runtime check；</li>
+<li>完全跳過檢查。</li>
+</ol>
+<p>PLDST 必須區分，不能都叫 Cast。</p>
+<hr>
+<h2>十九、外部函式與 ABI 邊界</h2>
+<p>FFI 的安全需要證明：</p>
+<ul>
+<li>ABI；</li>
+<li>Calling convention；</li>
+<li>Pointer；</li>
+<li>Ownership；</li>
+<li>Thread；</li>
+<li>Error；</li>
+<li>Callback；</li>
+<li>Layout；</li>
+<li>Lifetime；</li>
+<li>Unwind。</li>
+</ul>
+<p>Rust 2024 要求 <code>extern</code> Block 明示 <code>unsafe</code>，正是要讓定義外部項目本身具有安全義務這件事更可見。[R7]</p>
+<hr>
+<h2>二十、可選關閉的檢查與漸進降級</h2>
+<p>例如：</p>
+<ul>
+<li>TypeScript <code>strictNullChecks</code>；</li>
+<li><code>any</code>；</li>
+<li>Compiler warning disable；</li>
+<li>Proof Level；</li>
+<li>Runtime assertion profile；</li>
+<li>Unchecked build；</li>
+<li>Feature gate。</li>
+</ul>
+<p>其價值是：</p>
+<ul>
+<li>遷移；</li>
+<li>性能；</li>
+<li>相容；</li>
+<li>分階段證明。</li>
+</ul>
+<p>風險是：</p>
+<ul>
+<li>不同模組保證不同；</li>
+<li>使用者誤以為全系統已安全；</li>
+<li>弱保證可沿 API 傳播。</li>
+</ul>
+<hr>
+<h2>二十一、全域或非局部不健全機制</h2>
+<p>例如：</p>
+<ul>
+<li>全域關閉型別檢查；</li>
+<li>無邊界修改 Compiler；</li>
+<li><code>unsafePerformIO</code> 污染純介面；</li>
+<li>任意 Native plugin；</li>
+<li>未標記 ABI；</li>
+<li>全域 mutable state。</li>
+</ul>
+<p>這類逃生口最難審計，應具有最高准入門檻。</p>
+<hr>
+<h1>第四部分　安全包絡</h1>
+<h2>二十二、安全子語言</h2>
+<p>令 Safe fragment 為：</p>
+<p>$$
+L_s
+\subseteq
+L
+$$</p>
+<p>在特定 Trusted Computing Base 與前提下：</p>
+<p>$$
+Program\in L_s
+\Rightarrow
+Guarantees(\mathbf{G})
+$$</p>
+<p>這些保證必須明確列出，不能只說「Safe」。</p>
+<hr>
+<h2>二十三、不安全擴展</h2>
+<p>令逃生能力集合為：</p>
+<p>$$
+H={h_1,h_2,\dots,h_n}
+$$</p>
+<p>每個 $h_i$ 都應有：</p>
+<h1>$$
+h_i</h1>
+<p>(
+Operation,
+Precondition,
+Postcondition,
+Invariant,
+Scope,
+Evidence
+)
+$$</p>
+<hr>
+<h2>二十四、安全封裝</h2>
+<p>若不安全實作 $u$ 對外暴露 Safe API $a$：</p>
+<p>$$
+u
+\xrightarrow{proof\ obligation}
+a
+$$</p>
+<p>則需要證明：</p>
+<p>$$
+\forall x\in ValidInputs(a):
+Execution(a,x)
+\not\Rightarrow
+Violation(\mathbf{G})
+$$</p>
+<p>這可能依靠：</p>
+<ul>
+<li>人工推理；</li>
+<li>測試；</li>
+<li>Miri／Sanitizer；</li>
+<li>Proof；</li>
+<li>Code review；</li>
+<li>Representation invariant；</li>
+<li>Fuzzing；</li>
+<li>Platform guarantee。</li>
+</ul>
+<hr>
+<h2>二十五、安全包絡不變量</h2>
+<p>$$
+SafeCaller
++
+SafeInputs
+\Rightarrow
+SafeGuarantees
+$$</p>
+<p>即使內部使用逃生口，安全呼叫者也不應被迫承擔未公開的額外義務。</p>
+<p>這是 Safe abstraction 的核心。</p>
+<hr>
+<h2>二十六、錯誤封裝</h2>
+<p>若 Safe API 實際要求：</p>
+<ul>
+<li>特殊呼叫順序；</li>
+<li>隱藏有效期；</li>
+<li>未文件化對齊；</li>
+<li>不可見 Thread 限制；</li>
+<li>外部全域狀態；</li>
+</ul>
+<p>它只是「語法上 Safe」，而非真正 Sound。</p>
+<hr>
+<h1>第五部分　證明義務配置</h1>
+<h2>二十七、語言證明</h2>
+<p>由型別與語義保證：</p>
+<ul>
+<li>Safe references；</li>
+<li>Borrow rules；</li>
+<li>Definite initialization；</li>
+<li>Exhaustiveness；</li>
+<li>Pure type；</li>
+<li>Capability；</li>
+<li>Effect。</li>
+</ul>
+<hr>
+<h2>二十八、工具證明</h2>
+<p>由：</p>
+<ul>
+<li>Static analyzer；</li>
+<li>Model checker；</li>
+<li>SMT；</li>
+<li>GNATprove；</li>
+<li>Miri；</li>
+<li>Sanitizer；</li>
+<li>Linter；</li>
+</ul>
+<p>提供。</p>
+<p>工具必須區分：</p>
+<pre><code class="language-text">proved
+checked on tested path
+warning
+unknown
+unsupported
+tool unavailable
+</code></pre>
+<hr>
+<h2>二十九、人工證明</h2>
+<p>不安全區塊的正確性常依靠：</p>
+<ul>
+<li>Safety comment；</li>
+<li>Representation invariant；</li>
+<li>Code review；</li>
+<li>API contract；</li>
+<li>外部標準；</li>
+<li>對平台的假設。</li>
+</ul>
+<p>人工證明不是形式證明，但仍應結構化。</p>
+<hr>
+<h2>三十、環境假設</h2>
+<p>例如：</p>
+<ul>
+<li>C 函式遵守 ABI；</li>
+<li>OS 不違反 Memory mapping；</li>
+<li>外部 Pointer 仍有效；</li>
+<li>Compiler 正確；</li>
+<li>Native Library 無漏洞；</li>
+<li>Hardware 符合 Memory model。</li>
+</ul>
+<p>安全保證永遠相對於 Trusted assumptions。</p>
+<hr>
+<h1>第六部分　六種安全—自由風格</h1>
+<h2>三十一、局部契約式安全</h2>
+<p>代表：</p>
+<ul>
+<li>Rust。</li>
+</ul>
+<p>風格：</p>
+<ul>
+<li>Safe 子語言提供強保證；</li>
+<li><code>unsafe</code> 只開放特定額外操作；</li>
+<li>不安全義務局部標記；</li>
+<li>Safe wrapper 可重新封裝；</li>
+<li>可使用 <code>#![forbid(unsafe_code)]</code> 禁止整個 Crate 使用不安全程式碼。[R1]</li>
+</ul>
+<p>優勢：</p>
+<ul>
+<li>低階系統能力與 Safe API 共存；</li>
+<li>危險區域可搜尋與審查；</li>
+<li>程式庫可集中 Trusted code；</li>
+<li>一般使用者維持 Safe 體驗。</li>
+</ul>
+<p>風險：</p>
+<ul>
+<li>Soundness 依賴不安全實作者；</li>
+<li>Safety contract 可能文件不足；</li>
+<li>Unsafe code 仍受複雜 Alias、Provenance 與 FFI 規則限制；</li>
+<li>Safe wrapper 的一個漏洞可能影響大量呼叫者。</li>
+</ul>
+<hr>
+<h2>三十二、受限子集與證明式安全</h2>
+<p>代表：</p>
+<ul>
+<li>SPARK／Ada。</li>
+</ul>
+<p>風格：</p>
+<ul>
+<li>排除或限制難以分析的 Ada 功能；</li>
+<li>使用 Flow analysis、Contract 與 Proof；</li>
+<li>依保證等級逐步提高證據；</li>
+<li>對 Unchecked conversion、外部程式與不支援構造保守處理。[R2]</li>
+</ul>
+<p>優勢：</p>
+<ul>
+<li>高保證與認證領域；</li>
+<li>保證範圍可分級；</li>
+<li>Proof obligation 可追蹤；</li>
+<li>設計與實作責任清楚。</li>
+</ul>
+<p>風險：</p>
+<ul>
+<li>規格與 Proof 成本高；</li>
+<li>未分析外部程式形成 TCB；</li>
+<li>某些低階構造只能保守建模；</li>
+<li>Proof 仍相對於 Contract 與工具假設。</li>
+</ul>
+<hr>
+<h2>三十三、純度邊界與極端逃生</h2>
+<p>代表：</p>
+<ul>
+<li>Haskell <code>IO</code>／<code>unsafePerformIO</code>。</li>
+</ul>
+<p>風格：</p>
+<ul>
+<li>一般效果透過 <code>IO</code> 類型顯式化；</li>
+<li>純程式依賴參照透明；</li>
+<li>少數底層機制可以突破邊界；</li>
+<li>逃生口被明確標記為 Unsafe 且伴隨嚴格警告。[R3]</li>
+</ul>
+<p>優勢：</p>
+<ul>
+<li>純度與效果分離；</li>
+<li>大部分程式保持可推理；</li>
+<li>Runtime／Library 可實作特殊抽象。</li>
+</ul>
+<p>風險：</p>
+<ul>
+<li>一旦錯誤封裝，表面純函式可能具有隱藏效果；</li>
+<li>Compiler 可重排、共享或消除表達式；</li>
+<li>副作用順序可能不確定；</li>
+<li>錯誤可能跨越遠離逃生點的位置表現。</li>
+</ul>
+<hr>
+<h2>三十四、漸進與選擇性健全</h2>
+<p>代表：</p>
+<ul>
+<li>TypeScript。</li>
+</ul>
+<p>風格：</p>
+<ul>
+<li>與既有 JavaScript 相容；</li>
+<li>允許逐步增加型別；</li>
+<li>提供 Strict flags；</li>
+<li>保留 <code>any</code>、Assertion 與結構相容中的有意不健全；</li>
+<li>提供 <code>unknown</code> 作為需要 Narrow 的安全頂型別。[R4]</li>
+</ul>
+<p>優勢：</p>
+<ul>
+<li>遷移現有生態；</li>
+<li>可逐步提高安全；</li>
+<li>動態資料與第三方 Library 容易接入；</li>
+<li>工具價值高。</li>
+</ul>
+<p>風險：</p>
+<ul>
+<li><code>any</code> 會沿資料流傳播並關閉檢查；</li>
+<li>Type assertion 不執行 Runtime 驗證；</li>
+<li>不同專案 Strictness 不同；</li>
+<li>型別正確不代表 JavaScript Runtime 資料符合宣告；</li>
+<li>結構型別的刻意不健全需要使用者理解。</li>
+</ul>
+<hr>
+<h2>三十五、安全預設與顯式 Unverifiable 區域</h2>
+<p>代表：</p>
+<ul>
+<li>C#／.NET。</li>
+</ul>
+<p>風格：</p>
+<ul>
+<li>一般程式以 Managed memory、Reference safety 與 Runtime checks 為基礎；</li>
+<li>在既有穩定模型中，Pointer、Function pointer 與部分 Memory 操作需進入 <code>unsafe</code> Context；</li>
+<li>專案需允許編譯 Unsafe code；</li>
+<li>官方建議優先尋找 Safe API，只有必要時才採用不安全替代。[R5]</li>
+</ul>
+<p>截至本文日期，C# 15／.NET 11 正在預覽一套更新的 Memory safety model，嘗試讓 <code>unsafe</code> 更直接標記實際未受管理的 Memory access，並把部分安全審計義務傳遞給呼叫者。本文不將 Preview 行為當成現行穩定 C# 的既定規格。</p>
+<p>優勢：</p>
+<ul>
+<li>主流應用維持 Managed safe model；</li>
+<li>Native interop 與高性能路徑仍可實作；</li>
+<li>Unsafe 區域可被 Compiler 與 Review 辨識。</li>
+</ul>
+<p>風險：</p>
+<ul>
+<li>Unverifiable 不等於一定危險，但也不再由 .NET 驗證；</li>
+<li>Pointer 可繞過 Bounds 與 GC 安全；</li>
+<li>Raw IL、Interop 與 Runtime helper 擴大 TCB；</li>
+<li>性能理由可能導致過早使用 Unsafe。</li>
+</ul>
+<hr>
+<h2>三十六、Package 級型別安全逃生</h2>
+<p>代表：</p>
+<ul>
+<li>Go <code>unsafe</code>。</li>
+</ul>
+<p>風格：</p>
+<ul>
+<li>核心語言與一般 Standard library 維持簡單型別安全模型；</li>
+<li>低階表示操作集中於特殊 Package；</li>
+<li>Import 直接暴露使用；</li>
+<li>官方明確標示不可攜與相容性風險。[R6]</li>
+</ul>
+<p>優勢：</p>
+<ul>
+<li>語法核心不增加完整 Pointer arithmetic 子語言；</li>
+<li>低階 Runtime、Syscall、序列化與最佳化仍有出口；</li>
+<li>Package import 可被靜態搜尋。</li>
+</ul>
+<p>風險：</p>
+<ul>
+<li><code>unsafe.Pointer</code> 與 <code>uintptr</code> 轉換具有 GC／Pointer liveness 限制；</li>
+<li>程式可依賴實作布局；</li>
+<li>Go 1 Compatibility 不完整保護 Unsafe 程式；</li>
+<li>Package 級逃生本身不保證危險被局部封裝成 Safe API。</li>
+</ul>
+<hr>
+<h1>第七部分　代表案例</h1>
+<h2>三十七、Rust：<code>unsafe</code> 是義務標記，不是安全關閉按鈕</h2>
+<p>Rust Reference 指出，<code>unsafe</code> 一方面可標記額外安全條件的存在，另一方面表示程式設計者聲稱已履行條件。[R1]</p>
+<p>Unsafe Rust 額外允許的能力包括：</p>
+<ul>
+<li>Dereference raw pointer；</li>
+<li>Access union field；</li>
+<li>Access／modify mutable static；</li>
+<li>Call unsafe function；</li>
+<li>Implement unsafe trait；</li>
+<li>部分 FFI 與 unsafe attribute。</li>
+</ul>
+<p>但 <code>unsafe</code> 不代表：</p>
+<ul>
+<li>可以違反語法；</li>
+<li>可以忽略型別；</li>
+<li>Undefined behavior 變成合法；</li>
+<li>Safe code 保證自動失效；</li>
+<li>Compiler 替你證明契約。</li>
+</ul>
+<p>Rust Reference 對 Undefined behavior 的說明明確指出：Unsafe code 中發生 UB 仍是錯誤，只是避免它的責任落在程式設計者。[R8]</p>
+<hr>
+<h2>三十八、SPARK：排除、分析與證明的分層</h2>
+<p>SPARK 不只依賴一個「Safe」關鍵字，而是透過：</p>
+<ul>
+<li>Ada Feature restriction；</li>
+<li>Flow analysis；</li>
+<li>Contract；</li>
+<li>Data validity；</li>
+<li>Proof Level；</li>
+<li>GNATprove；</li>
+<li>Review；</li>
+</ul>
+<p>建立分層保證。</p>
+<p>Silver Level 可證明多類運行期錯誤不存在；Gold Level 進一步處理更完整的資料與控制流完整性目標。[R9][R10]</p>
+<p>但：</p>
+<ul>
+<li><code>Unchecked_Conversion</code> 可能導致 GNATprove 對結果資訊不足；</li>
+<li>某些構造不支援；</li>
+<li>Storage error、Compiler、Target、外部呼叫仍需要額外考量；</li>
+<li>Proof 成功不代表需求規格正確。</li>
+</ul>
+<hr>
+<h2>三十九、Haskell：<code>unsafePerformIO</code> 對最佳化模型提出契約</h2>
+<p><code>unsafePerformIO :: IO a -&gt; a</code> 看似只是移除 <code>IO</code>，實際卻要求：</p>
+<ul>
+<li>計算應在語義上可視為純；</li>
+<li>結果不應依賴執行環境；</li>
+<li>副作用不能依賴順序；</li>
+<li>需要考慮 Inlining、Common subexpression elimination 與 Sharing；</li>
+<li>多執行緒下還有重複或競態風險。[R3]</li>
+</ul>
+<p>它適合實作少數底層抽象，不適合作為逃避 <code>IO</code> 型別的一般工具。</p>
+<hr>
+<h2>四十、TypeScript：<code>any</code> 與 <code>unknown</code> 代表兩種自由</h2>
+<p><code>any</code> 表示：</p>
+<ul>
+<li>可以存入任何值；</li>
+<li>幾乎可以執行任何操作；</li>
+<li>型別檢查在相關資料流中被大幅削弱。</li>
+</ul>
+<p><code>unknown</code> 表示：</p>
+<ul>
+<li>可以接收任何值；</li>
+<li>但使用前必須 Narrow、檢查或 Assertion。</li>
+</ul>
+<p>因此：</p>
+<h1>$$
+any</h1>
+<p>\text{自由操作}
++
+\text{放棄檢查}
+$$</p>
+<h1>$$
+unknown</h1>
+<p>\text{自由接收}
++
+\text{延後證明}
+$$</p>
+<p>TypeScript 官方將 <code>unknown</code> 稱為 <code>any</code> 的 type-safe counterpart，並建議不需要 <code>any</code> 時避免使用它。[R4]</p>
+<hr>
+<h2>四十一、C#：Unsafe 不是「危險」的同義詞</h2>
+<p>Microsoft 文件明確說明：Unsafe code 不一定危險，它是 .NET 工具無法驗證安全性的程式碼。[R5]</p>
+<p>這個區分重要：</p>
+<ul>
+<li>某段 Pointer 程式可能人工證明正確；</li>
+<li>某段 Safe C# 也可能有邏輯或安全漏洞；</li>
+<li><code>unsafe</code> 表示驗證責任轉移，而不是事故已發生。</li>
+</ul>
+<p>但官方最佳實務同樣強調：</p>
+<ul>
+<li>Unsafe 可繞過安全檢查；</li>
+<li>可能造成 Memory corruption；</li>
+<li>應先尋找或提出 Safe API；</li>
+<li>需謹慎且限於必要場景。[R11]</li>
+</ul>
+<hr>
+<h2>四十二、Go：<code>unsafe</code> 連相容性也一起放棄部分保證</h2>
+<p>Go Specification 與 <code>unsafe</code> Package 文件指出：</p>
+<ul>
+<li>使用 <code>unsafe</code> 的 Package 必須人工審查型別安全；</li>
+<li>可能不可攜；</li>
+<li>不受 Go 1 Compatibility guidelines 完整保護。[R6]</li>
+</ul>
+<p>這表示逃生口不只降低型別保證，也可能降低：</p>
+<ul>
+<li>平台穩定；</li>
+<li>版本穩定；</li>
+<li>GC 行為穩定；</li>
+<li>表示穩定。</li>
+</ul>
+<hr>
+<h1>第八部分　逃生口的治理模型</h1>
+<h2>四十三、局部性 $C_l$</h2>
+<p>逃生口是否可以限制在：</p>
+<ul>
+<li>一個表達式；</li>
+<li>一個 Block；</li>
+<li>一個 Function；</li>
+<li>一個 Module；</li>
+<li>一個 Package；</li>
+<li>整個 Program。</li>
+</ul>
+<p>越局部越容易審計。</p>
+<hr>
+<h2>四十四、可搜尋性 $A_s$</h2>
+<p>能否使用：</p>
+<ul>
+<li>Keyword；</li>
+<li>Import；</li>
+<li>Attribute；</li>
+<li>Compiler flag；</li>
+<li>Lint；</li>
+<li>Manifest；</li>
+</ul>
+<p>找出全部逃生點。</p>
+<hr>
+<h2>四十五、契約完整性 $O_c$</h2>
+<p>每個逃生點是否記錄：</p>
+<ul>
+<li>Safety preconditions；</li>
+<li>Representation invariant；</li>
+<li>Ownership；</li>
+<li>Lifetime；</li>
+<li>Thread；</li>
+<li>Alignment；</li>
+<li>Failure；</li>
+<li>Platform；</li>
+<li>Evidence。</li>
+</ul>
+<hr>
+<h2>四十六、封裝性 $C_e$</h2>
+<p>危險能力是否可以：</p>
+<ul>
+<li>隱藏於 Private module；</li>
+<li>暴露 Safe API；</li>
+<li>禁止一般呼叫者進入；</li>
+<li>減少重複人工證明。</li>
+</ul>
+<hr>
+<h2>四十七、傳染性 $T$</h2>
+<p>令逃生能力的傳播範圍為：</p>
+<h1>$$
+T(h)</h1>
+<p>\text{需要知道或承擔該義務的呼叫者集合}
+$$</p>
+<p>理想 Safe abstraction：</p>
+<p>$$
+T(h)\approx InternalReviewers
+$$</p>
+<p>而非：</p>
+<p>$$
+T(h)=AllUsers
+$$</p>
+<hr>
+<h2>四十八、可撤銷性 $R_v$</h2>
+<p>能否：</p>
+<ul>
+<li>用 Safe API 取代；</li>
+<li>透過 Lint 禁用；</li>
+<li>在高保證 Profile 中禁止；</li>
+<li>逐步遷移；</li>
+<li>將 TCB 縮小。</li>
+</ul>
+<hr>
+<h1>第九部分　安全與自由的失敗模式</h1>
+<h2>四十九、禁止主義</h2>
+<p>假設只要禁止足夠多操作就安全。</p>
+<p>問題：</p>
+<ul>
+<li>使用者可能轉向 FFI；</li>
+<li>形成外部程式碼生成；</li>
+<li>把危險移到 Runtime；</li>
+<li>無法實作必要系統能力；</li>
+<li>規格與邏輯錯誤仍存在。</li>
+</ul>
+<hr>
+<h2>五十、逃生口正常化</h2>
+<p>當 <code>unsafe</code>、<code>any</code>、Assertion 或 Unchecked conversion 成為日常做法時：</p>
+<ul>
+<li>安全子語言縮小；</li>
+<li>Review 疲勞；</li>
+<li>人工證明重複；</li>
+<li>保證無法推理；</li>
+<li>新手無法識別風險。</li>
+</ul>
+<hr>
+<h2>五十一、安全標記儀式化</h2>
+<p>只寫：</p>
+<pre><code class="language-text">unsafe
+// SAFETY: trust me
+</code></pre>
+<p>不代表契約成立。</p>
+<p>安全註解必須回答：</p>
+<ul>
+<li>為何 Pointer 有效？</li>
+<li>誰維持 Invariant？</li>
+<li>哪些操作可能失效？</li>
+<li>跨 Thread 是否安全？</li>
+<li>何時釋放？</li>
+<li>平台假設是什麼？</li>
+</ul>
+<hr>
+<h2>五十二、安全封裝洩漏</h2>
+<p>Safe API 內部使用不安全程式碼，卻讓 Safe caller 能以合法輸入觸發 UB。</p>
+<p>這是 Soundness bug，不能歸咎於呼叫者。</p>
+<hr>
+<h2>五十三、漸進安全停滯</h2>
+<p>TypeScript／Gradual typing 專案可能永久停留在：</p>
+<ul>
+<li><code>any</code>；</li>
+<li>關閉 Strict flags；</li>
+<li>大量 Assertion；</li>
+<li>未驗證外部資料。</li>
+</ul>
+<p>漸進路徑需要：</p>
+<ul>
+<li>指標；</li>
+<li>CI；</li>
+<li>Boundary validation；</li>
+<li>Debt budget；</li>
+<li>遷移策略。</li>
+</ul>
+<hr>
+<h2>五十四、形式證明過度宣稱</h2>
+<p>Proof 只能證明：</p>
+<p>$$
+Model+Assumptions+Spec
+\Rightarrow
+Property
+$$</p>
+<p>不能自動證明：</p>
+<ul>
+<li>Spec 符合現實；</li>
+<li>Compiler 無 Bug；</li>
+<li>Hardware 無故障；</li>
+<li>外部依賴可信；</li>
+<li>安全政策合理。</li>
+</ul>
+<hr>
+<h2>五十五、性能作為無限豁免</h2>
+<p>以「性能」為由使用逃生口，卻沒有：</p>
+<ul>
+<li>Benchmark；</li>
+<li>Profile；</li>
+<li>Safe 替代比較；</li>
+<li>Regression；</li>
+<li>平台矩陣；</li>
+<li>審計。</li>
+</ul>
+<p>這是低品質工程，不是機器現實主義。</p>
+<hr>
+<h1>第十部分　設計原則</h1>
+<h2>五十六、先建立安全表達，再提供逃生</h2>
+<p>安全 API 若能表達大多數需求，逃生口才有可能保持稀缺。</p>
+<hr>
+<h2>五十七、逃生口應縮小證明表面</h2>
+<p>好的逃生機制不是讓更多程式變得不安全，而是讓少量底層程式承擔證明，供大量 Safe code 使用。</p>
+<p>$$
+UnsafeCore\downarrow
+\quad
+SafeSurface\uparrow
+$$</p>
+<hr>
+<h2>五十八、危險操作應與證明義務同時出現</h2>
+<p>語法或文件必須把：</p>
+<pre><code class="language-text">能力
++
+前置條件
++
+責任主體
+</code></pre>
+<p>綁在一起。</p>
+<hr>
+<h2>五十九、未知應保持未知</h2>
+<p>無法證明時，工具不應輸出「安全」。</p>
+<p>應輸出：</p>
+<ul>
+<li>Unknown；</li>
+<li>Unsupported；</li>
+<li>Requires review；</li>
+<li>Runtime check；</li>
+<li>Unsafe boundary。</li>
+</ul>
+<hr>
+<h2>六十、外部輸入應先驗證再降權</h2>
+<p>外部資料進入型別系統時：</p>
+<p>$$
+bytes
+\rightarrow
+unknown
+\rightarrow
+validated
+\rightarrow
+typed
+$$</p>
+<p>而不是直接 Assertion 成可信型別。</p>
+<hr>
+<h2>六十一、逃生口應有 Profile</h2>
+<p>可建立：</p>
+<pre><code class="language-text">General profile
+No-unsafe profile
+Verified profile
+Embedded profile
+FFI profile
+Migration profile
+</code></pre>
+<p>讓不同風險領域使用不同能力集合。</p>
+<hr>
+<h2>六十二、安全保證必須列出 TCB</h2>
+<p>至少列出：</p>
+<ul>
+<li>Compiler；</li>
+<li>Runtime；</li>
+<li>Unsafe modules；</li>
+<li>Native libraries；</li>
+<li>Build scripts；</li>
+<li>Generated code；</li>
+<li>Proof tools；</li>
+<li>Platform assumptions。</li>
+</ul>
+<hr>
+<h2>六十三、事故應反饋到安全抽象</h2>
+<p>若某類 Unsafe bug 重複出現，應考慮：</p>
+<ul>
+<li>新 Safe API；</li>
+<li>新型別；</li>
+<li>新 Lint；</li>
+<li>新 Proof；</li>
+<li>新工具；</li>
+<li>禁止舊模式。</li>
+</ul>
+<hr>
+<h1>第十一部分　PLDST 風格判定</h1>
+<h2>六十四、安全保證指紋</h2>
+<pre><code class="language-text">Memory
+Type
+Initialization
+Control
+Concurrency
+Effect
+Resource
+Interop
+</code></pre>
+<hr>
+<h2>六十五、逃生口指紋</h2>
+<pre><code class="language-text">Local block
+Unsafe function
+Unchecked conversion
+Dynamic top type
+FFI
+Compiler flag
+Unsafe package
+Global effect escape
+</code></pre>
+<hr>
+<h2>六十六、證明義務指紋</h2>
+<pre><code class="language-text">Compiler-proved
+Runtime-checked
+Tool-proved
+Caller-proved
+Reviewer-audited
+Environment-assumed
+Unspecified
+</code></pre>
+<hr>
+<h2>六十七、設計師比較問題</h2>
+<ol>
+<li>他首先保護哪種安全？</li>
+<li>哪些錯誤被語言禁止？</li>
+<li>哪些只被警告？</li>
+<li>哪些可在 Runtime 檢查？</li>
+<li>哪些能力必須逃生？</li>
+<li>逃生是 Expression、Module 還是全域？</li>
+<li>義務交給誰？</li>
+<li>是否能封裝成 Safe API？</li>
+<li>是否允許禁用逃生口？</li>
+<li>如何處理外部系統與既有生態？</li>
+<li>安全失敗時是拒絕、降級、Unknown 還是繼續？</li>
+<li>安全主張是否列出 TCB？</li>
+</ol>
+<hr>
+<h2>六十八、不能只給「安全／自由」分數</h2>
+<p>一位設計者可能：</p>
+<ul>
+<li>高記憶體安全；</li>
+<li>中型別健全；</li>
+<li>高 FFI 自由；</li>
+<li>低隱式逃生；</li>
+<li>高形式證明；</li>
+<li>低資源保證。</li>
+</ul>
+<p>必須保留多維描述。</p>
+<hr>
+<h1>第十二部分　PLDST SKILL 規格</h1>
+<h2>六十九、輸入</h2>
+<pre><code class="language-text">designer
+language
+version
+safety_feature
+escape_hatch
+official_reference
+compiler_options
+tooling
+governance_documents
+</code></pre>
+<hr>
+<h2>七十、分析管線</h2>
+<pre><code class="language-text">重新網路搜尋
+→ 安全保證向量
+→ 逃生操作抽取
+→ 證明義務
+→ 局部性與傳染性
+→ Safe wrapper 檢查
+→ TCB 抽取
+→ Unknown／unsupported 處理
+→ 事故與反例搜尋
+→ 第二輪校對
+→ 風格報告
+</code></pre>
+<hr>
+<h2>七十一、JSON 雛形</h2>
+<pre><code class="language-json">{
+  &quot;mechanism&quot;: &quot;unsafe block&quot;,
+  &quot;guarantees_relaxed&quot;: [
+    &quot;compiler verification of selected memory-safety preconditions&quot;
+  ],
+  &quot;still_enforced&quot;: [
+    &quot;syntax&quot;,
+    &quot;ordinary type checking&quot;,
+    &quot;lifetime rules not specifically escaped&quot;
+  ],
+  &quot;obligation_holder&quot;: &quot;unsafe code author&quot;,
+  &quot;scope&quot;: &quot;lexical block&quot;,
+  &quot;auditability&quot;: {
+    &quot;searchable_keyword&quot;: true,
+    &quot;safety_documentation&quot;: &quot;required by policy&quot;
+  },
+  &quot;safe_encapsulation&quot;: {
+    &quot;possible&quot;: true,
+    &quot;caller_obligation&quot;: &quot;none if wrapper is sound&quot;
+  },
+  &quot;failure&quot;: &quot;undefined behavior if contract is violated&quot;
+}
+</code></pre>
+<hr>
+<h2>七十二、SKILL 禁止事項</h2>
+<p>不得：</p>
+<ul>
+<li>把 Memory safety 寫成完整系統安全；</li>
+<li>把 <code>unsafe</code> 寫成關閉所有規則；</li>
+<li>把 Safe wrapper 寫成自動 Sound；</li>
+<li>把 SPARK Proof 寫成需求正確性；</li>
+<li>把 <code>unsafePerformIO</code> 當一般效能技巧；</li>
+<li>把 Type assertion 寫成 Runtime validation；</li>
+<li>把 <code>unknown</code> 與 <code>any</code> 寫成相同；</li>
+<li>把 C# Unverifiable 直接等同已發生 Memory corruption；</li>
+<li>把 Go <code>unsafe</code> 視為受完整 Go 1 相容保證；</li>
+<li>忽略 FFI、Compiler、Runtime 與 Native Library TCB；</li>
+<li>將 Preview 安全模型寫成 Stable 規格；</li>
+<li>不標示版本與 Profile。</li>
+</ul>
+<hr>
+<h1>第十三部分　限制</h1>
+<h2>七十三、安全性依賴威脅模型</h2>
+<p>嵌入式、瀏覽器、金融、遊戲、Kernel 與教學環境的必要保證不同。</p>
+<hr>
+<h2>七十四、安全子集可能過小</h2>
+<p>若 Safe fragment 無法有效完成工作，使用者會大量逃生，反而降低整體安全。</p>
+<hr>
+<h2>七十五、證明成本具有規模效應</h2>
+<p>Proof、Audit 與 Safe wrapper 在 Library 層可攤銷；若每個應用都重做，成本可能不可接受。</p>
+<hr>
+<h2>七十六、工具與規格會演化</h2>
+<p>Rust Unsafe 規則、C# Memory safety model、SPARK 支援範圍、TypeScript Strict flags 都可能改變。每篇個案需重新搜尋當時版本。</p>
+<hr>
+<h2>七十七、安全文化也很重要</h2>
+<p>即使語言提供良好標記，若社群：</p>
+<ul>
+<li>習慣忽略警告；</li>
+<li>不寫 Safety contract；</li>
+<li>缺少 Review；</li>
+<li>以性能為由濫用；</li>
+<li>不維護 TCB；</li>
+</ul>
+<p>形式邊界仍會失效。</p>
+<hr>
+<h1>第十四部分　結論</h1>
+<p>安全與自由不是一條只能選一端的直線。</p>
+<p>真正成熟的設計問題是：</p>
+<ul>
+<li>哪些錯誤可以由語言可靠禁止？</li>
+<li>哪些需要 Runtime 檢查？</li>
+<li>哪些需要工具與 Proof？</li>
+<li>哪些只能由領域專家承擔？</li>
+<li>哪些低階能力必須存在，語言才能實作自己的 Runtime、Interop 與高性能抽象？</li>
+<li>如何讓少量危險程式碼支撐大量安全程式，而不是讓危險義務傳染整個系統？</li>
+</ul>
+<p>本文提出：</p>
+<h1>$$
+\mathcal{S}</h1>
+<p>(
+\mathbf{G},
+\mathbf{H},
+\mathbf{O},
+\mathbf{C},
+\mathbf{A},
+\mathbf{F},
+\mathbf{R}
+)
+$$</p>
+<p>其成熟判準為：</p>
+<p>$$
+\boxed{
+\text{保證明確}
++
+\text{逃生稀缺}
++
+\text{義務可見}
++
+\text{危險局部}
++
+\text{封裝可靠}
++
+\text{證據可審}
++
+\text{失敗誠實}
+}
+$$</p>
+<p>因此：</p>
+<p>$$
+\boxed{
+EscapeHatch
+\not\Rightarrow
+NoSafety
+}
+$$</p>
+<p>前提是：</p>
+<p>$$
+\boxed{
+UnsafeImplementation
++
+ProvenInvariant
+\rightarrow
+SoundSafeInterface
+}
+$$</p>
+<p>同時：</p>
+<p>$$
+\boxed{
+SafeSyntax
+\not\Rightarrow
+SafeSystem
+}
+$$</p>
+<p>因為安全仍受：</p>
+<ul>
+<li>規格；</li>
+<li>TCB；</li>
+<li>外部系統；</li>
+<li>資源；</li>
+<li>供應鏈；</li>
+<li>組織；</li>
+</ul>
+<p>限制。</p>
+<p>PLDST 對設計師最關鍵的問題，不再是：</p>
+<blockquote>
+<p>他偏好安全，還是偏好自由？</p>
+</blockquote>
+<p>而是：</p>
+<blockquote>
+<p>他願意由語言排除哪些風險、哪些風險交給 Runtime 或工具、哪些能力必須保留逃生；當他把證明責任交還給人時，是否同時提供局部邊界、清楚契約、審計工具與重新封裝成安全抽象的路徑？</p>
+</blockquote>
+<p>最終原則為：</p>
+<p>$$
+\boxed{
+\text{讓安全成為預設}
+\quad\land\quad
+\text{讓低階能力仍可實作}
+\quad\land\quad
+\text{讓每一次逃生都帶著可見的證明義務}
+}
+$$</p>
+<hr>
+<h1>附錄 A　安全—自由分析卡</h1>
+<pre><code class="language-text">語言：
+版本／Profile：
+安全保證：
+不保證事項：
+逃生口：
+允許操作：
+證明義務：
+責任主體：
+作用範圍：
+是否傳染：
+能否封裝：
+Safe caller 是否增加義務：
+審計工具：
+Runtime 檢查：
+Proof：
+外部假設：
+TCB：
+相容性影響：
+失敗模式：
+替代 Safe API：
+證據：
+信心：
+</code></pre>
+<hr>
+<h1>附錄 B　逃生口准入卡</h1>
+<pre><code class="language-text">需求：
+為何 Safe fragment 不足：
+現有 Safe 替代：
+性能／互操作證據：
+最小逃生範圍：
+Safety contract：
+Representation invariant：
+平台假設：
+測試：
+Fuzz：
+Sanitizer／Miri／Proof：
+Review owner：
+Safe wrapper：
+下游義務：
+撤回計畫：
+</code></pre>
+<hr>
+<h1>附錄 C　來源與參考文獻</h1>
+<p><strong>[R1]</strong> Rust Project, <em>The Rust Reference</em>, “The <code>unsafe</code> keyword,” “Unsafety,” “Behavior considered undefined,” and <em>The Rustonomicon</em>, “How Safe and Unsafe Interact.”<br>— <code>unsafe</code> 建立／履行義務、Safe／Unsafe 邊界、Unsafe operations 與 UB 責任。</p>
+<p><strong>[R2]</strong> AdaCore, <em>SPARK User’s Guide</em>, “Language Restrictions,” “Specification Features,” “Applying SPARK in Practice,” and GNATprove limitations.<br>— SPARK 子集、Unchecked conversion、資料有效性、Flow analysis、Proof 與不支援範圍。</p>
+<p><strong>[R3]</strong> GHC／Haskell Base Libraries, <code>System.IO.Unsafe</code> and <code>GHC.IO.Unsafe</code>.<br>— <code>unsafePerformIO</code> 的純度前提、副作用順序、最佳化與多執行緒注意事項。</p>
+<p><strong>[R4]</strong> TypeScript Documentation, “Type Compatibility,” “Everyday Types,” <code>strictNullChecks</code>, TypeScript 3.0 <code>unknown</code>, and Declaration File Do’s and Don’ts.<br>— 有意不健全、<code>any</code>、<code>unknown</code>、Null safety 與遷移邊界。</p>
+<p><strong>[R5]</strong> Microsoft Learn, “Unsafe code, pointer types, and function pointers,” and “Unsafe code best practices.”<br>— C# 可驗證安全模式、Unsafe Context、Pointer 與風險治理。</p>
+<p><strong>[R6]</strong> Go Project, <em>The Go Programming Language Specification</em> and Package <code>unsafe</code> documentation.<br>— 繞過型別安全、人工審查、不可攜與相容性限制。</p>
+<p><strong>[R7]</strong> Rust Edition Guide, “Unsafe extern blocks,” Rust 2024.<br>— External definition 的 Safety obligation 與 <code>unsafe extern</code> 顯式化。</p>
+<p><strong>[R8]</strong> Rust Reference, “Behavior considered undefined.”<br>— Unsafe code 中 UB 仍不合法，責任轉移不等於行為合法化。</p>
+<p><strong>[R9]</strong> AdaCore, SPARK Silver Level documentation.<br>— 證明多類運行期錯誤不存在的保證範圍。</p>
+<p><strong>[R10]</strong> AdaCore, SPARK Gold Level documentation.<br>— Program integrity、資料與控制流安全邊界。</p>
+<p><strong>[R11]</strong> Microsoft Learn, “Unsafe code best practices.”<br>— Unsafe 可繞過 Memory safety，應優先尋找 Safe API 並限制必要用途。</p>
+<hr>
+<h1>附錄 D　PLDST 安全標記</h1>
+<pre><code class="language-text">[G-M] Memory guarantee
+[G-T] Type guarantee
+[G-I] Initialization guarantee
+[G-C] Control guarantee
+[G-D] Data-race／concurrency guarantee
+[G-E] Effect guarantee
+[G-R] Resource guarantee
+[G-X] Interop guarantee
+
+[H-B] Unsafe block
+[H-F] Unsafe function／caller contract
+[H-C] Unchecked conversion
+[H-A] Any／assertion
+[H-X] FFI
+[H-P] Unsafe package
+[H-G] Global escape
+
+[O-C] Compiler obligation
+[O-R] Runtime check
+[O-T] Tool proof
+[O-H] Human proof
+[O-E] Environment assumption
+</code></pre>
+<hr>
+<h1>附錄 E　第二輪事實與概念校對紀錄</h1>
+<h2>E.1 Rust <code>unsafe</code> 的兩種義務</h2>
+<p>已重新核對 Rust Reference、Rustonomicon 與 Rust 2024 Edition Guide：</p>
+<ul>
+<li><code>unsafe fn</code>、<code>unsafe trait</code>、<code>unsafe static</code> 等可用來宣告額外安全條件；</li>
+<li><code>unsafe {}</code>、<code>unsafe impl</code> 等表示程式設計者聲稱已履行其他位置所定義的安全條件；</li>
+<li><code>unsafe</code> 只開放特定操作，不會取消語法與整個型別系統；</li>
+<li>Unsafe code 造成 Undefined behavior 仍然是錯誤，只是避免 UB 的證明責任從 Compiler 移給程式設計者；</li>
+<li><code>#![forbid(unsafe_code)]</code> 可以用於禁止 Crate 中的 Unsafe code；</li>
+<li>Rust 2024 要求 <code>extern</code> Block 明示 <code>unsafe</code>，是為了讓外部宣告本身的 Safety obligation 更清楚。</li>
+</ul>
+<p>本文因此沒有把 <code>unsafe</code> 描述成全域「關閉安全模式」。</p>
+<hr>
+<h2>E.2 SPARK 保證等級</h2>
+<p>已重新核對 2026 年 SPARK User’s Guide：</p>
+<pre><code class="language-text">Stone：有效 SPARK
+Bronze：初始化與正確資料流
+Silver：Absence of Run-Time Errors
+Gold：關鍵完整性屬性
+Platinum：完整功能需求證明
+</code></pre>
+<ul>
+<li>Silver 的核心目標是證明不發生指定範圍內的意外運行期例外；</li>
+<li>Gold 不是「所有程式完全正確」，而是對關鍵完整性屬性提供證明；</li>
+<li>Platinum 成本很高，官方也說實際較少適用；</li>
+<li><code>Unchecked_Conversion</code> 的結果可能無法被 GNATprove 精確掌握；</li>
+<li>不支援構造會被報錯或需額外假設。</li>
+</ul>
+<p>本文已避免把 SPARK、Ada 與特定 Proof Level 混成同一種絕對安全聲明。</p>
+<hr>
+<h2>E.3 Haskell <code>unsafePerformIO</code></h2>
+<p>已重新核對最新 GHC Base Library 與 Safe Haskell 文件：</p>
+<ul>
+<li>若 <code>unsafePerformIO</code> 包裝的運算具有副作用，相對於主 I/O 路徑與其他 <code>unsafePerformIO</code> 呼叫的副作用順序可能不確定；</li>
+<li>Compiler Inlining、Common-subexpression elimination 與 Sharing 會影響執行次數及時機；</li>
+<li><code>unsafeDupablePerformIO</code> 甚至可能在多處或多執行緒執行，某次執行也可能中途被中斷；</li>
+<li>Safe Haskell 的 Safe dialect 會排除 <code>unsafePerformIO</code> 等可破壞型別或抽象邊界的機制；</li>
+<li>Safe Haskell 提供的是嚴格型別安全基礎，不直接等於完整 Untrusted-code sandbox。</li>
+</ul>
+<p>本文因此將它定位為效果與純度的極端逃生口，而不是一般 I/O 便利函式。</p>
+<hr>
+<h2>E.4 TypeScript <code>any</code>、<code>unknown</code> 與不健全性</h2>
+<p>已重新核對 TypeScript Handbook、Type Compatibility、<code>strictNullChecks</code> 與 <code>unknown</code> 發行文件：</p>
+<ul>
+<li>TypeScript 官方明確承認部分不健全行為是為了 JavaScript 生態與常見用法而有意保留；</li>
+<li><code>any</code> 會對相關值大幅停用型別檢查；</li>
+<li><code>unknown</code> 可以接收任何值，但使用前需 Narrow 或 Assertion；</li>
+<li>Type assertion 主要向 Type checker 提供信任，不會自動驗證 Runtime 資料；</li>
+<li><code>strictNullChecks=false</code> 時，<code>null</code> 與 <code>undefined</code> 的風險會被型別系統大幅忽略；</li>
+<li>官方建議在不知道值型別而仍需檢查時，優先考慮 <code>unknown</code> 而非 <code>any</code>。</li>
+</ul>
+<p>本文沒有將 TypeScript 寫成完全 Sound，也沒有把漸進型別描述成毫無安全價值。</p>
+<hr>
+<h2>E.5 C# Stable 與 Preview 邊界</h2>
+<p>已重新核對 2026 年 Microsoft Learn：</p>
+<ul>
+<li>現行既有模型以 <code>unsafe</code> Context 允許 Pointer、Function pointer、未受管理 Memory 等不可驗證操作；</li>
+<li>Unsafe code 不一定已經危險，而是安全性無法由 .NET 工具完整驗證；</li>
+<li>官方最佳實務警告它可繞過 Memory safety 並造成 Memory corruption；</li>
+<li>C# 15／.NET 11 正在 Preview 更新後的 Memory safety model；</li>
+<li>Preview 模型嘗試將 <code>unsafe</code> 更靠近實際 Memory access，並使 Caller safety obligation 更清楚。</li>
+</ul>
+<p>本篇以既有穩定模型為正式案例，只把新版模型當成帶有日期的演化訊號。</p>
+<hr>
+<h2>E.6 Go <code>unsafe</code></h2>
+<p>已重新核對 Go Specification、Package <code>unsafe</code> 與 Go 1.4 Release Notes：</p>
+<ul>
+<li><code>unsafe</code> 是 Compiler 知道的特殊 Built-in package；</li>
+<li>它提供會違反一般 Type system 的低階能力；</li>
+<li>使用 <code>unsafe</code> 的 Package 必須人工審查 Type safety；</li>
+<li>可能不可攜；</li>
+<li>Go 官方已明確說明 Unsafe code 不保證持續符合 Go 1 Compatibility promise。</li>
+</ul>
+<p>本文因此不將 <code>unsafe</code> 只描述成語法便利，而視為同時放棄部分型別、表示、平台與演化保證的邊界。</p>
+<hr>
+<h2>E.7 「安全語言」的用語限制</h2>
+<p>本文中的「安全子語言」只表示：</p>
+<blockquote>
+<p>在列明的 Trusted Computing Base、威脅模型與語言前提下，對特定錯誤類別提供保證。</p>
+</blockquote>
+<p>它不表示：</p>
+<ul>
+<li>無邏輯錯誤；</li>
+<li>無漏洞；</li>
+<li>無資源耗盡；</li>
+<li>必然終止；</li>
+<li>外部依賴可信；</li>
+<li>規格符合真實需求；</li>
+<li>Compiler、Runtime 與 Hardware 不會失效。</li>
+</ul>
+<hr>
+<h2>E.8 逃生口不是自動缺陷</h2>
+<p>第二輪校對維持本文核心區分：</p>
+<pre><code class="language-text">有逃生口
+≠
+安全設計失敗
+
+逃生口非局部、無契約、不可審計、無法封裝
+→
+安全設計失敗風險上升
+</code></pre>
+<p>評價重點是安全包絡是否仍能成立，而不是語言是否完全沒有低階能力。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pldst-009.html">https://thisoneisneok.com/html/papers/pldst-009.html</a></footer>
+</body>
+</html>

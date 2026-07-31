@@ -1,0 +1,1737 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>可編譯世界：程式執行作為世界狀態差分 | Neo.K</title>
+<meta name="description" content="前四篇依序建立：程式語言不等於文字；符號應被理解為受治理算子；程式語言具有語法、語意與效果三層；自然意圖需要先進入意圖中介表示，再生成多重可執行投影。本篇進一步處理最終執行問題：當一個已驗證的意圖 IR 取得執行權後，Runtime 真正做的事情是什麼？">
+<link rel="canonical" href="https://thisoneisneok.com/html/papers/pu-2-05.html">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:24px;font:12px/1.4 ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:56px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 46px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts dt,.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px;line-height:1.45}
+.tools{display:flex;gap:18px;margin:0 0 44px;font:12px ui-monospace,monospace}
+.tools a{color:var(--accent)}
+.content{font-family:"Noto Serif TC","Songti TC",Georgia,serif;font-size:18px;line-height:1.95;letter-spacing:.015em;overflow-wrap:break-word}
+.content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
+.content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
+.content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+.content p{margin:0 0 24px}
+.content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
+.content li{margin:.45em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e2dfd6;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 28px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){main{padding-top:38px}.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / PU</strong><span>程式宇宙基礎</span></header>
+<main>
+  <section class="facts"><div><b>編號</b><span>PU-2-05</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-07-27</span></div><div><b>作者</b><span>Neo.K with Aletheia</span></div><div><b>狀態</b><span>初版完成</span></div></section>
+  <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pu-2-05.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
+  <article class="content"><h1>可編譯世界：程式執行作為世界狀態差分</h1>
+<h2>The Compilable World: Program Execution as Governed World-State Difference</h2>
+<p><strong>論文編號：</strong> PU-2-05<br><strong>系列：</strong>「程式宇宙書系」第 2 冊《程式語言的本質》<br><strong>作者：</strong> Neo.K with Aletheia<br><strong>機構：</strong> EveMissLab／一言諾科技有限公司<br><strong>版本：</strong> v0.1<br><strong>日期：</strong> 2026 年 7 月 27 日  </p>
+<hr>
+<h2>摘要</h2>
+<p>前四篇依序建立：程式語言不等於文字；符號應被理解為受治理算子；程式語言具有語法、語意與效果三層；自然意圖需要先進入意圖中介表示，再生成多重可執行投影。本篇進一步處理最終執行問題：當一個已驗證的意圖 IR 取得執行權後，Runtime 真正做的事情是什麼？</p>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+\text{Program Execution}
+\neq
+\text{Instruction Consumption}
+}
+$$</p>
+<p>並將程式執行重新定義為：</p>
+<blockquote>
+<p><strong>在明示世界模型、權限、規則與證據條件下，提出、驗證、提交、觀測並核對一項世界狀態差分。</strong></p>
+</blockquote>
+<p>形式上：</p>
+<p>$$
+\boxed{
+CompileWorld
+:
+\left(
+W_t,
+\mathcal I_R,
+\Gamma,
+P
+\right)
+\rightarrow
+\left\langle
+\widehat{\Delta W},
+Plan,
+Obligations,
+Guards
+\right\rangle
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$W_t$：執行前世界狀態；</li>
+<li>$\mathcal I_R$：已結構化意圖；</li>
+<li>$\Gamma$：語意、型別、規則與 Runtime 環境；</li>
+<li>$P$：權限與委任；</li>
+<li>$\widehat{\Delta W}$：預測世界差分；</li>
+<li>$Plan$：可執行計畫；</li>
+<li>$Obligations$：證據、補償、通知與人類決策義務；</li>
+<li>$Guards$：狀態、不變量、資源與安全守衛。</li>
+</ul>
+<p>真正提交則為：</p>
+<p>$$
+\boxed{
+CommitWorld
+:
+\left(
+W_t,
+\widehat{\Delta W},
+Plan,
+P
+\right)
+\rightarrow
+\left\langle
+W_{t+1},
+Events,
+Evidence,
+Residual
+\right\rangle
+}
+$$</p>
+<p>本文核心命題是：</p>
+<p>$$
+\boxed{
+\widehat{\Delta W}
+\neq
+\Delta W
+}
+$$</p>
+<p>預測差分不等於實際世界差分。模型所預測的狀態變更、外部效果與受影響主體，可能因：</p>
+<ul>
+<li>世界狀態已變；</li>
+<li>外部服務失敗；</li>
+<li>物理設備未響應；</li>
+<li>訊息重複或延遲；</li>
+<li>權限被撤銷；</li>
+<li>規則版本改變；</li>
+<li>人類拒絕；</li>
+<li>模型遺漏；</li>
+</ul>
+<p>而與實際結果不同。</p>
+<p>本文因此建立世界提交六階鏈：</p>
+<p>$$
+\boxed{
+Propose
+\rightarrow
+Validate
+\rightarrow
+Authorize
+\rightarrow
+Commit
+\rightarrow
+Observe
+\rightarrow
+Reconcile
+}
+$$</p>
+<p>其中：</p>
+<ol>
+<li><strong>Propose</strong>：由 IR 建立候選世界差分；</li>
+<li><strong>Validate</strong>：檢查前置狀態、不變量、版本、資源與規則；</li>
+<li><strong>Authorize</strong>：確認主體、委任、批准與作用域；</li>
+<li><strong>Commit</strong>：實際改變權威數位狀態或發出外部作用；</li>
+<li><strong>Observe</strong>：收集事件、回執、感測與人類回應；</li>
+<li><strong>Reconcile</strong>：比較預測與實際差分，處理未知、部分成功與殘差。</li>
+</ol>
+<p>本文將可編譯世界表示為：</p>
+<h1>$$
+\boxed{
+W</h1>
+<p>\left\langle
+E,
+S,
+R,
+A,
+B,
+H,
+X,
+O
+\right\rangle
+}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>$E$：Entities，具有身份的世界實體；</li>
+<li>$S$：States，權威狀態與局部狀態；</li>
+<li>$R$：Rules，合法轉移與不變量；</li>
+<li>$A$：Actors，行動者、批准者與受影響者；</li>
+<li>$B$：Boundaries，責任、權限與系統邊界；</li>
+<li>$H$：History，事件、版本與承諾歷史；</li>
+<li>$X$：Externalities，外部數位、制度與物理世界；</li>
+<li>$O$：Observability，可取得證據與未知範圍。</li>
+</ul>
+<p>一個世界能被編譯，不表示世界可被完全計算。本文所謂「可編譯」，是指世界中至少有一部分狀態、規則、權限、效果與證據可被結構化，使候選差分能在提交前被檢查，在提交後被觀測與核對。</p>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+\text{Compilable}
+\neq
+\text{Fully Predictable}
+}
+$$</p>
+<p>外部世界、社會制度與物理環境具有不可完備觀測、延遲、他者意志與隨機性。可編譯世界的成熟性不在於消除未知，而在於把未知、不可觀測與不可控制邊界正式寫入執行模型。</p>
+<p>本文區分四種世界差分：</p>
+<ol>
+<li><strong>內部計算差分</strong>：記憶體、值與暫時結構；</li>
+<li><strong>權威數位差分</strong>：資料庫、身份、狀態機與事件歷史；</li>
+<li><strong>制度差分</strong>：權限、責任、承諾、批准與法律地位；</li>
+<li><strong>物理差分</strong>：設備、位置、能源、物體與人體狀態。</li>
+</ol>
+<p>四者的提交、觀測與可逆性不同。內部計算可能可自由重跑；權威數位狀態需交易與版本；制度差分需要合法主體與程序；物理差分則必須依賴感測、現場安全與不可逆風險治理。</p>
+<p>本文提出世界差分判定：</p>
+<p>$$
+\Gamma;W_t;P
+\vdash
+\Delta W
+:
+Legal
+!
+\epsilon
+\triangleright
+O
+$$</p>
+<p>表示在環境 $\Gamma$、世界狀態 $W_t$ 與權限 $P$ 下，差分 $\Delta W$ 合法，具有效果簽章 $\epsilon$，並產生觀測與證據義務 $O$。</p>
+<p>本文進一步建立「世界交易」概念。傳統資料庫交易主要維持資料一致性；世界交易則需同時處理：</p>
+<ul>
+<li>權威狀態；</li>
+<li>外部事件；</li>
+<li>物理效果；</li>
+<li>人類承諾；</li>
+<li>部分成功；</li>
+<li>結果未知；</li>
+<li>補償；</li>
+<li>證據；</li>
+<li>使用者接受。</li>
+</ul>
+<p>形式上：</p>
+<h1>$$
+\boxed{
+WorldTransaction</h1>
+<p>StateTransition
++
+ExternalEffects
++
+EvidenceObligations
++
+ResidualGovernance
+}
+$$</p>
+<p>本文特別區分「提交」與「完成」。本地資料庫寫入成功，只能證明局部提交；外部 API 接受，只能證明外部系統已受理；感測器確認，只能證明某一物理訊號；最終完成還可能需要人類接受、制度確認或長時程觀測。</p>
+<p>因此：</p>
+<p>$$
+\boxed{
+Committed
+\not\Rightarrow
+Completed
+\not\Rightarrow
+Accepted
+}
+$$</p>
+<p>本文也提出「世界版本」與「差分衝突」。意圖 IR 可能基於 $W_t$ 生成計畫，但執行時世界已進入 $W_{t+k}$。Runtime 必須檢查：</p>
+<h1>$$
+Version(W_{\mathrm{planned}})</h1>
+<p>Version(W_{\mathrm{current}})
+$$</p>
+<p>或重新評估差分是否仍合法。這使 optimistic concurrency、狀態版本、因果時鐘與人類再確認成為世界編譯的一部分，而不是只屬於資料庫技術。</p>
+<p>本文進一步處理模擬、dry-run、沙盒、分階段提交、兩階段批准、補償、重建與回放。模擬可以預測，但不能替代真實世界證據；dry-run 可以揭露預期差分，但不能保證外部世界不變；沙盒可以限制能力，但若仍可呼叫外部網路、產生費用或改變治理狀態，就不是真正效果沙盒。</p>
+<p>本文使用檔案修改、資料庫遷移、訂單付款、網站部署、AI Agent 多工具執行、研究發布與物理設備控制等案例，說明世界差分如何被提出、驗證、提交、觀測與核對。本文最後提出可證偽研究綱領，包括預測—實際差分誤差、提交—完成落差、世界版本衝突、外部效果證據率、部分成功治理、物理效果確認、世界交易恢復率、沙盒效果洩漏及 AI Agent 差分預覽對事故率的影響。</p>
+<p>本文為第 2 冊最後一篇〈後文本程式語言〉建立執行地基：當語言能表示意圖、算子、語意、效果與世界差分後，下一步就是統合文字、視覺、自然語言、驗證、Runtime 與物理耦合，形成後文本程式語言的完整框架。</p>
+<p><strong>關鍵詞：</strong> 可編譯世界、世界狀態差分、世界交易、Runtime、效果提交、物理耦合、結果未知、差分核對</p>
+<hr>
+<h2>Abstract</h2>
+<p>This paper redefines program execution as the governed proposal, validation, authorization, commitment, observation, and reconciliation of a world-state difference.</p>
+<p>A compilable world is not a fully predictable world. It is a world in which enough entities, states, rules, permissions, effects, and evidence obligations are structured to support pre-execution validation and post-execution reconciliation.</p>
+<p>The paper distinguishes predicted and actual world differences, local commitment and final completion, digital, institutional, and physical effects, world transactions, version conflicts, partial success, residuals, and evidence obligations.</p>
+<p><strong>Keywords:</strong> compilable world, world-state difference, world transaction, runtime, effect commitment, physical coupling</p>
+<hr>
+<h1>一、問題的提出：程式執行到底發生了什麼</h1>
+<p>傳統敘事常說：</p>
+<pre><code class="language-text">CPU 執行指令。
+</code></pre>
+<p>這在機器層正確，但對系統層不完整。</p>
+<p>使用者真正關心的不是：</p>
+<ul>
+<li>哪個 opcode 被執行；</li>
+<li>哪個暫存器改變；</li>
+<li>哪個函式回傳。</li>
+</ul>
+<p>而是：</p>
+<ul>
+<li>文件是否真的修改；</li>
+<li>付款是否真的完成；</li>
+<li>網站是否真的公開；</li>
+<li>權限是否真的撤銷；</li>
+<li>機器是否真的啟動；</li>
+<li>受影響者是否真的收到結果。</li>
+</ul>
+<p>因此，程式執行必須被提升為世界差分問題。</p>
+<hr>
+<h1>二、可編譯世界的八元結構</h1>
+<p>本文定義：</p>
+<h1>$$
+\boxed{
+W</h1>
+<p>\left\langle
+E,
+S,
+R,
+A,
+B,
+H,
+X,
+O
+\right\rangle
+}
+$$</p>
+<h2>2.1 實體 $E$</h2>
+<p>世界中具有身份、生命週期與關係的對象。</p>
+<h2>2.2 狀態 $S$</h2>
+<p>權威狀態、局部狀態、投影與未知狀態。</p>
+<h2>2.3 規則 $R$</h2>
+<p>合法轉移、不變量、例外與生效版本。</p>
+<h2>2.4 主體 $A$</h2>
+<p>提出意圖、批准、執行、受影響與承擔責任的主體。</p>
+<h2>2.5 邊界 $B$</h2>
+<p>系統控制、觀測、權限、責任與非保證邊界。</p>
+<h2>2.6 歷史 $H$</h2>
+<p>事件、承諾、版本、失敗、補償與決策歷史。</p>
+<h2>2.7 外部性 $X$</h2>
+<p>外部服務、制度、物理環境與他者意志。</p>
+<h2>2.8 可觀測性 $O$</h2>
+<p>可取得的回執、事件、感測、證據與未知範圍。</p>
+<hr>
+<h1>三、可編譯不等於完全可預測</h1>
+<h2>3.1 可編譯</h2>
+<p>若世界中的某一部分具有：</p>
+<ul>
+<li>可識別實體；</li>
+<li>可表示狀態；</li>
+<li>明示規則；</li>
+<li>可判定權限；</li>
+<li>可描述效果；</li>
+<li>可取得證據；</li>
+</ul>
+<p>則候選差分可以被編譯與驗證。</p>
+<h2>3.2 不可完備世界</h2>
+<p>真實世界仍包含：</p>
+<ul>
+<li>未知；</li>
+<li>隨機；</li>
+<li>延遲；</li>
+<li>人類自由選擇；</li>
+<li>感測誤差；</li>
+<li>外部制度；</li>
+<li>未被模型表示的關係。</li>
+</ul>
+<h2>3.3 正式命題</h2>
+<p>$$
+\boxed{
+\text{Compilable}
+\neq
+\text{Fully Predictable}
+}
+$$</p>
+<h2>3.4 成熟性的判準</h2>
+<p>成熟世界編譯器不是假裝未知不存在，而是明示：</p>
+<pre><code class="language-text">known
+assumed
+predicted
+unobservable
+externally-controlled
+human-dependent
+contested
+</code></pre>
+<hr>
+<h1>四、程式執行的六階鏈</h1>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+Propose
+\rightarrow
+Validate
+\rightarrow
+Authorize
+\rightarrow
+Commit
+\rightarrow
+Observe
+\rightarrow
+Reconcile
+}
+$$</p>
+<h2>4.1 Propose</h2>
+<p>由意圖 IR 產生候選世界差分：</p>
+<p>$$
+\widehat{\Delta W}
+$$</p>
+<h2>4.2 Validate</h2>
+<p>檢查：</p>
+<ul>
+<li>前置狀態；</li>
+<li>世界版本；</li>
+<li>不變量；</li>
+<li>規則；</li>
+<li>資源；</li>
+<li>依賴；</li>
+<li>安全守衛。</li>
+</ul>
+<h2>4.3 Authorize</h2>
+<p>檢查：</p>
+<ul>
+<li>主體；</li>
+<li>委任；</li>
+<li>作用域；</li>
+<li>時效；</li>
+<li>人類批准；</li>
+<li>不可代理選擇。</li>
+</ul>
+<h2>4.4 Commit</h2>
+<p>提交權威數位狀態變更，或向外部世界發出作用。</p>
+<h2>4.5 Observe</h2>
+<p>收集：</p>
+<ul>
+<li>事件；</li>
+<li>回執；</li>
+<li>日誌；</li>
+<li>追蹤；</li>
+<li>感測；</li>
+<li>人類回應。</li>
+</ul>
+<h2>4.6 Reconcile</h2>
+<p>比較：</p>
+<p>$$
+\widehat{\Delta W}
+\quad
+\text{與}
+\quad
+\Delta W
+$$</p>
+<p>並處理：</p>
+<ul>
+<li>部分成功；</li>
+<li>結果未知；</li>
+<li>額外效果；</li>
+<li>補償；</li>
+<li>重建；</li>
+<li>人類結案。</li>
+</ul>
+<hr>
+<h1>五、預測差分與實際差分</h1>
+<h2>5.1 預測差分</h2>
+<h1>$$
+\widehat{\Delta W}</h1>
+<p>Predict
+\left(
+W_t,
+\mathcal I_R
+\right)
+$$</p>
+<h2>5.2 實際差分</h2>
+<h1>$$
+\Delta W</h1>
+<h2>Observe
+\left(
+W_{t+1}
+\right)</h2>
+<p>Observe
+\left(
+W_t
+\right)
+$$</p>
+<h2>5.3 差分誤差</h2>
+<h1>$$
+\epsilon_W</h1>
+<h2>\Delta W</h2>
+<p>\widehat{\Delta W}
+$$</p>
+<h2>5.4 誤差來源</h2>
+<ul>
+<li>世界模型遺漏；</li>
+<li>外部服務行為；</li>
+<li>Runtime 漂移；</li>
+<li>並行行動；</li>
+<li>權限改變；</li>
+<li>人類拒絕；</li>
+<li>感測不足；</li>
+<li>物理故障。</li>
+</ul>
+<h2>5.5 誤差不是單純 bug</h2>
+<p>差分誤差可能揭示：</p>
+<ul>
+<li>模型邊界；</li>
+<li>外部性；</li>
+<li>受影響者遺漏；</li>
+<li>規則衝突；</li>
+<li>不可觀測世界。</li>
+</ul>
+<hr>
+<h1>六、四類世界差分</h1>
+<h2>6.1 內部計算差分</h2>
+<p>例如：</p>
+<ul>
+<li>記憶體值；</li>
+<li>暫時 AST；</li>
+<li>中間計算；</li>
+<li>快取；</li>
+<li>模擬狀態。</li>
+</ul>
+<p>此類差分通常：</p>
+<ul>
+<li>作用域小；</li>
+<li>可重算；</li>
+<li>可丟棄；</li>
+<li>不直接形成外部責任。</li>
+</ul>
+<h2>6.2 權威數位差分</h2>
+<p>例如：</p>
+<ul>
+<li>資料庫狀態；</li>
+<li>身份；</li>
+<li>事件歷史；</li>
+<li>權限表；</li>
+<li>版本；</li>
+<li>已發布數位內容。</li>
+</ul>
+<p>需要：</p>
+<ul>
+<li>交易；</li>
+<li>版本；</li>
+<li>不變量；</li>
+<li>稽核；</li>
+<li>恢復。</li>
+</ul>
+<h2>6.3 制度差分</h2>
+<p>例如：</p>
+<ul>
+<li>批准；</li>
+<li>委任；</li>
+<li>撤銷；</li>
+<li>合約承諾；</li>
+<li>規則生效；</li>
+<li>責任轉移。</li>
+</ul>
+<p>制度差分不能只以資料列修改理解，它需要合法主體、程序與生效條件。</p>
+<h2>6.4 物理差分</h2>
+<p>例如：</p>
+<ul>
+<li>馬達運轉；</li>
+<li>門鎖開啟；</li>
+<li>物品移動；</li>
+<li>能源消耗；</li>
+<li>人體處置；</li>
+<li>環境改變。</li>
+</ul>
+<p>需要感測、現場安全與不可逆性治理。</p>
+<hr>
+<h1>七、世界差分判定</h1>
+<p>本文提出：</p>
+<p>$$
+\boxed{
+\Gamma;W_t;P
+\vdash
+\Delta W
+:
+Legal
+!
+\epsilon
+\triangleright
+O
+}
+$$</p>
+<h2>7.1 $\Gamma$</h2>
+<p>包含：</p>
+<ul>
+<li>型別；</li>
+<li>語意；</li>
+<li>規則；</li>
+<li>Runtime；</li>
+<li>契約；</li>
+<li>工具版本。</li>
+</ul>
+<h2>7.2 $W_t$</h2>
+<p>當前權威世界狀態與外部觀測。</p>
+<h2>7.3 $P$</h2>
+<p>權限、委任、批准與禁止範圍。</p>
+<h2>7.4 Legal</h2>
+<p>差分是否符合世界規則與責任邊界。</p>
+<h2>7.5 $\epsilon$</h2>
+<p>效果簽章，包括讀寫、事件、外部、物理與治理效果。</p>
+<h2>7.6 $O$</h2>
+<p>提交後必須完成的觀測、證據、通知與核對義務。</p>
+<hr>
+<h1>八、守衛與不變量</h1>
+<h2>8.1 前置守衛</h2>
+<pre><code class="language-text">state-version matches
+actor authorized
+resource available
+external dependency healthy
+human approval valid
+</code></pre>
+<h2>8.2 不變量</h2>
+<p>提交前後均必須維持：</p>
+<p>$$
+Inv(W_t)
+\land
+Legal(\Delta W)
+\Rightarrow
+Inv(W_{t+1})
+$$</p>
+<h2>8.3 安全守衛</h2>
+<p>對物理與高風險效果還需：</p>
+<ul>
+<li>感測器有效；</li>
+<li>緊急停止可用；</li>
+<li>人員安全區域；</li>
+<li>最大效果範圍；</li>
+<li>雙重批准；</li>
+<li>失效安全模式。</li>
+</ul>
+<h2>8.4 守衛失效</h2>
+<p>守衛失效應產生正式結果：</p>
+<pre><code class="language-text">rejected
+stale-world
+permission-revoked
+unsafe-environment
+approval-expired
+</code></pre>
+<p>而不是繼續以舊計畫執行。</p>
+<hr>
+<h1>九、世界版本與狀態競爭</h1>
+<h2>9.1 計畫基準</h2>
+<p>IR 生成於世界版本：</p>
+<p>$$
+Version(W_{\mathrm{planned}})=v
+$$</p>
+<h2>9.2 執行時世界</h2>
+<p>執行時可能已是：</p>
+<p>$$
+Version(W_{\mathrm{current}})=v+k
+$$</p>
+<h2>9.3 版本檢查</h2>
+<p>若：</p>
+<p>$$
+v\neq v+k
+$$</p>
+<p>Runtime 需判定：</p>
+<ul>
+<li>差分仍合法；</li>
+<li>可自動重基；</li>
+<li>需要重新編譯；</li>
+<li>需要人類確認；</li>
+<li>必須拒絕。</li>
+</ul>
+<h2>9.4 樂觀並行</h2>
+<p>差分可攜帶：</p>
+<pre><code class="language-yaml">expected_world_version: 18
+</code></pre>
+<p>版本不符時不直接覆寫。</p>
+<h2>9.5 不只是資料列版本</h2>
+<p>世界版本還可能包含：</p>
+<ul>
+<li>規則版本；</li>
+<li>權限版本；</li>
+<li>外部服務狀態；</li>
+<li>感測狀態；</li>
+<li>人類批准狀態。</li>
+</ul>
+<hr>
+<h1>十、世界交易</h1>
+<p>本文提出：</p>
+<h1>$$
+\boxed{
+WorldTransaction</h1>
+<p>StateTransition
++
+ExternalEffects
++
+EvidenceObligations
++
+ResidualGovernance
+}
+$$</p>
+<h2>10.1 狀態轉移</h2>
+<p>修改權威世界狀態，並維持不變量與版本。</p>
+<h2>10.2 外部效果</h2>
+<p>可能涉及：</p>
+<ul>
+<li>第三方服務；</li>
+<li>通知；</li>
+<li>金流；</li>
+<li>公開網路；</li>
+<li>制度承諾；</li>
+<li>物理設備。</li>
+</ul>
+<h2>10.3 證據義務</h2>
+<p>每一重要效果應定義：</p>
+<ul>
+<li>成功證據；</li>
+<li>失敗證據；</li>
+<li>結果未知證據；</li>
+<li>人類接受；</li>
+<li>保存期限。</li>
+</ul>
+<h2>10.4 殘差治理</h2>
+<p>世界交易可能無法完全達到預測差分，需保存：</p>
+<ul>
+<li>未完成；</li>
+<li>不可逆；</li>
+<li>補償中；</li>
+<li>爭議；</li>
+<li>外部待確認；</li>
+<li>模型外影響。</li>
+</ul>
+<h2>10.5 資料庫交易只是子集</h2>
+<p>資料庫原子性、隔離性與持久性非常重要，但不能包住所有外部、制度與物理效果。</p>
+<hr>
+<h1>十一、提交、完成與接受</h1>
+<h2>11.1 Committed</h2>
+<p>權威系統已接受並保存差分，或外部命令已正式送出。</p>
+<h2>11.2 Completed</h2>
+<p>所有必要狀態、外部效果與證據義務已達成。</p>
+<h2>11.3 Accepted</h2>
+<p>合法主體或制度已接受結果，必要申訴與補救位置已滿足。</p>
+<h2>11.4 三者分離</h2>
+<p>$$
+\boxed{
+Committed
+\not\Rightarrow
+Completed
+\not\Rightarrow
+Accepted
+}
+$$</p>
+<h2>11.5 例子</h2>
+<p>付款請求已提交，不代表銀行已授權。</p>
+<p>銀行授權完成，也不代表客戶爭議已結案。</p>
+<p>部署已提交，不代表使用者旅程正常。</p>
+<p>訊息已送達，不代表收件人已閱讀與接受。</p>
+<hr>
+<h1>十二、分階段提交</h1>
+<h2>12.1 Prepare</h2>
+<p>建立候選差分、鎖定資源或保存檢查點。</p>
+<h2>12.2 Approve</h2>
+<p>由合法主體批准高風險節點。</p>
+<h2>12.3 Commit</h2>
+<p>正式修改權威狀態或啟動外部效果。</p>
+<h2>12.4 Verify</h2>
+<p>收集外部與 Runtime 證據。</p>
+<h2>12.5 Finalize</h2>
+<p>更新整體工作流為完成或接受。</p>
+<h2>12.6 優點</h2>
+<p>分階段提交可避免：</p>
+<ul>
+<li>一次性不可逆跳躍；</li>
+<li>舊批准套用新世界；</li>
+<li>低階成功冒充整體完成；</li>
+<li>無證據就關閉任務。</li>
+</ul>
+<hr>
+<h1>十三、模擬與 Dry-Run</h1>
+<h2>13.1 模擬</h2>
+<p>在模型世界中執行候選差分：</p>
+<h1>$$
+Simulate
+\left(
+W_t,
+\widehat{\Delta W}
+\right)</h1>
+<p>\widehat{W}_{t+1}
+$$</p>
+<h2>13.2 Dry-Run</h2>
+<p>執行真實解析、驗證與規劃，但阻止某些提交效果。</p>
+<h2>13.3 模擬價值</h2>
+<p>可提前發現：</p>
+<ul>
+<li>狀態衝突；</li>
+<li>權限不足；</li>
+<li>資源不足；</li>
+<li>影響範圍；</li>
+<li>不可逆節點；</li>
+<li>缺少證據。</li>
+</ul>
+<h2>13.4 模擬限制</h2>
+<p>模擬不能完整預測：</p>
+<ul>
+<li>真實網路；</li>
+<li>人類回應；</li>
+<li>外部制度；</li>
+<li>未知物理環境；</li>
+<li>並行世界行動。</li>
+</ul>
+<h2>13.5 Dry-Run 洩漏</h2>
+<p>若 dry-run 仍會：</p>
+<ul>
+<li>呼叫真實外部服務；</li>
+<li>寫入追蹤；</li>
+<li>產生費用；</li>
+<li>發出通知；</li>
+<li>修改配額；</li>
+</ul>
+<p>它就不是零效果執行。</p>
+<hr>
+<h1>十四、效果沙盒</h1>
+<h2>14.1 程序沙盒</h2>
+<p>限制：</p>
+<ul>
+<li>CPU；</li>
+<li>記憶體；</li>
+<li>檔案；</li>
+<li>系統呼叫。</li>
+</ul>
+<h2>14.2 世界效果沙盒</h2>
+<p>還需限制：</p>
+<ul>
+<li>網路；</li>
+<li>金流；</li>
+<li>公開發布；</li>
+<li>權限；</li>
+<li>敏感資料；</li>
+<li>外部設備；</li>
+<li>自動委任；</li>
+<li>費用。</li>
+</ul>
+<h2>14.3 虛擬效果</h2>
+<p>可以把外部效果替換為：</p>
+<ul>
+<li>模擬服務；</li>
+<li>假事件；</li>
+<li>測試帳戶；</li>
+<li>虛擬設備；</li>
+<li>暫存命名空間。</li>
+</ul>
+<h2>14.4 沙盒證據</h2>
+<p>系統必須能證明哪些效果被攔截、模擬或允許。</p>
+<h2>14.5 Agent 沙盒</h2>
+<p>AI Agent 的沙盒應按算子效果分類，而不只是限制其程式程序。</p>
+<hr>
+<h1>十五、外部效果提交</h1>
+<h2>15.1 請求送出</h2>
+<p>只表示本系統建立了外部作用嘗試。</p>
+<h2>15.2 外部接受</h2>
+<p>外部系統確認收到與受理。</p>
+<h2>15.3 外部完成</h2>
+<p>外部系統宣稱已完成。</p>
+<h2>15.4 本地觀測</h2>
+<p>本系統取得回執、回呼或再次查詢結果。</p>
+<h2>15.5 世界接受</h2>
+<p>必要主體或制度接受外部效果。</p>
+<h2>15.6 分層狀態</h2>
+<pre><code class="language-text">effect-proposed
+request-sent
+externally-accepted
+externally-claimed-complete
+locally-verified
+human-accepted
+</code></pre>
+<p>不同層級不能由同一個 <code>success=true</code> 取代。</p>
+<hr>
+<h1>十六、物理世界提交</h1>
+<h2>16.1 命令不是物理效果</h2>
+<p>$$
+CommandSent
+\not\Rightarrow
+PhysicalEffectOccurred
+$$</p>
+<h2>16.2 感測確認</h2>
+<p>物理效果需要：</p>
+<ul>
+<li>感測器；</li>
+<li>多重訊號；</li>
+<li>時間窗口；</li>
+<li>合理範圍；</li>
+<li>故障辨識；</li>
+<li>必要人工確認。</li>
+</ul>
+<h2>16.3 感測器也可能錯</h2>
+<p>因此證據應保存：</p>
+<ul>
+<li>感測器身份；</li>
+<li>校準；</li>
+<li>信心；</li>
+<li>時間；</li>
+<li>交叉驗證；</li>
+<li>不可觀測區域。</li>
+</ul>
+<h2>16.4 物理安全</h2>
+<p>若物理環境與計畫不同，Runtime 應拒絕、停止或進入安全降級。</p>
+<h2>16.5 物理殘差</h2>
+<p>即使控制效果被補償，也可能留下：</p>
+<ul>
+<li>能源消耗；</li>
+<li>機械磨損；</li>
+<li>人員影響；</li>
+<li>環境變化；</li>
+<li>時間延誤。</li>
+</ul>
+<hr>
+<h1>十七、制度世界提交</h1>
+<h2>17.1 制度狀態</h2>
+<p>例如：</p>
+<ul>
+<li>批准；</li>
+<li>撤銷；</li>
+<li>合約生效；</li>
+<li>角色任命；</li>
+<li>帳號停權；</li>
+<li>爭議結案。</li>
+</ul>
+<h2>17.2 合法主體</h2>
+<p>制度差分只有在合法主體、程序與證據成立時生效。</p>
+<h2>17.3 數位紀錄不等於制度有效</h2>
+<p>資料庫寫入 <code>approved=true</code> 不自動創造合法批准。</p>
+<h2>17.4 生效時間</h2>
+<p>制度差分可能：</p>
+<ul>
+<li>立即生效；</li>
+<li>未來生效；</li>
+<li>等待通知；</li>
+<li>等待冷靜期；</li>
+<li>可申訴；</li>
+<li>暫時有效。</li>
+</ul>
+<h2>17.5 治理 Runtime</h2>
+<p>未來 Runtime 必須能執行程序規則，而不只是技術流程。</p>
+<hr>
+<h1>十八、結果未知</h1>
+<h2>18.1 定義</h2>
+<p>執行後無法判斷效果是否發生：</p>
+<h1>$$
+Outcome</h1>
+<p>Unknown
+$$</p>
+<h2>18.2 常見原因</h2>
+<ul>
+<li>超時；</li>
+<li>回覆遺失；</li>
+<li>感測器故障；</li>
+<li>外部系統不可查；</li>
+<li>並行事件；</li>
+<li>身份不一致。</li>
+</ul>
+<h2>18.3 安全處理</h2>
+<p>結果未知時可：</p>
+<ul>
+<li>查詢原行動身份；</li>
+<li>等待外部回執；</li>
+<li>對帳；</li>
+<li>人工核對；</li>
+<li>阻止重複不可逆提交。</li>
+</ul>
+<h2>18.4 不得布林化</h2>
+<p>Unknown 不是 false。</p>
+<p>它表示世界狀態與系統認知之間存在未閉合差距。</p>
+<hr>
+<h1>十九、部分成功與差分分解</h1>
+<p>候選差分可拆為：</p>
+<h1>$$
+\widehat{\Delta W}</h1>
+<p>\left{
+\delta_1,\delta_2,\ldots,\delta_n
+\right}
+$$</p>
+<p>執行後：</p>
+<h1>$$
+\Delta W</h1>
+<p>\Delta W_{\mathrm{complete}}
+\cup
+\Delta W_{\mathrm{failed}}
+\cup
+\Delta W_{\mathrm{unknown}}
+$$</p>
+<h2>19.1 已完成子差分</h2>
+<p>具有足夠證據。</p>
+<h2>19.2 失敗子差分</h2>
+<p>明確未發生或被拒絕。</p>
+<h2>19.3 未知子差分</h2>
+<p>無法確認。</p>
+<h2>19.4 核對計畫</h2>
+<p>每一子差分需決定：</p>
+<ul>
+<li>保留；</li>
+<li>重試；</li>
+<li>補償；</li>
+<li>查詢；</li>
+<li>人工決策；</li>
+<li>接受殘差。</li>
+</ul>
+<hr>
+<h1>二十、回滾、補償與重建</h1>
+<h2>20.1 回滾</h2>
+<p>將權威數位狀態回到先前版本。</p>
+<h2>20.2 補償</h2>
+<p>以新差分抵銷已發生效果。</p>
+<h2>20.3 重建</h2>
+<p>由事件、快照、外部證據與人工核對重建世界狀態。</p>
+<h2>20.4 差異</h2>
+<p>$$
+Rollback
+\neq
+Compensation
+\neq
+Reconstruction
+$$</p>
+<h2>20.5 世界歷史不能被假裝刪除</h2>
+<p>任何回滾與補償都應保留事件、原因、責任與殘差。</p>
+<hr>
+<h1>二十一、觀測與核對</h1>
+<h2>21.1 執行後不是結束</h2>
+<p>世界提交後，Runtime 還需持續收集：</p>
+<ul>
+<li>狀態版本；</li>
+<li>領域事件；</li>
+<li>外部回執；</li>
+<li>感測；</li>
+<li>人類回應；</li>
+<li>錯誤與延遲。</li>
+</ul>
+<h2>21.2 核對函數</h2>
+<h1>$$
+Reconcile
+\left(
+\widehat{\Delta W},
+\Delta W,
+Evidence
+\right)</h1>
+<p>\left\langle
+Status,
+Residual,
+NextAction
+\right\rangle
+$$</p>
+<h2>21.3 核對結果</h2>
+<pre><code class="language-text">matched
+partially-matched
+diverged
+outcome-unknown
+compensation-required
+human-acceptance-required
+</code></pre>
+<h2>21.4 額外效果</h2>
+<p>若實際世界產生未預測效果：</p>
+<h1>$$
+\Delta W_{\mathrm{extra}}</h1>
+<h2>\Delta W</h2>
+<p>\widehat{\Delta W}
+$$</p>
+<p>就應觸發：</p>
+<ul>
+<li>效果提升；</li>
+<li>安全審查；</li>
+<li>IR 更新；</li>
+<li>使用者通知；</li>
+<li>停止後續提交。</li>
+</ul>
+<h2>21.5 遺漏效果</h2>
+<p>若預測效果未發生，則需判斷：</p>
+<ul>
+<li>失敗；</li>
+<li>延遲；</li>
+<li>外部拒絕；</li>
+<li>觀測不足；</li>
+<li>世界模型錯誤。</li>
+</ul>
+<hr>
+<h1>二十二、世界差分日誌</h1>
+<h2>22.1 不只是技術日誌</h2>
+<p>世界差分日誌應保存：</p>
+<ul>
+<li>原始意圖；</li>
+<li>IR 版本；</li>
+<li>差分預測；</li>
+<li>批准；</li>
+<li>提交；</li>
+<li>實際事件；</li>
+<li>證據；</li>
+<li>殘差；</li>
+<li>核對；</li>
+<li>補償。</li>
+</ul>
+<h2>22.2 差分身份</h2>
+<p>每一世界提交應具有：</p>
+<pre><code class="language-text">world_change_id
+intent_id
+plan_id
+actor_id
+authorization_id
+</code></pre>
+<h2>22.3 隱私與最小化</h2>
+<p>世界日誌可能含敏感資料，需：</p>
+<ul>
+<li>欄位最小化；</li>
+<li>分層存取；</li>
+<li>加密；</li>
+<li>保留期限；</li>
+<li>可撤回投影；</li>
+<li>稽核。</li>
+</ul>
+<h2>22.4 歷史用途</h2>
+<p>可用於：</p>
+<ul>
+<li>事故分析；</li>
+<li>世界重建；</li>
+<li>責任；</li>
+<li>語意差分；</li>
+<li>AI 學習；</li>
+<li>規則改進。</li>
+</ul>
+<hr>
+<h1>二十三、案例一：檔案修改</h1>
+<p>意圖：</p>
+<pre><code class="language-text">修改這份設定檔。
+</code></pre>
+<h2>23.1 預測差分</h2>
+<ul>
+<li>讀取檔案；</li>
+<li>修改指定節點；</li>
+<li>保存新版本；</li>
+<li>不改其他區域。</li>
+</ul>
+<h2>23.2 守衛</h2>
+<ul>
+<li>檔案身份；</li>
+<li>預期雜湊；</li>
+<li>工作區權限；</li>
+<li>語法與 schema；</li>
+<li>是否由其他程序修改。</li>
+</ul>
+<h2>23.3 提交</h2>
+<p>使用暫存檔、原子替換或版本控制提交。</p>
+<h2>23.4 觀測</h2>
+<p>重新讀取並比較語意結構，而不只相信寫入函式回傳。</p>
+<h2>23.5 殘差</h2>
+<p>格式化工具可能改變其他區域，因此文字差分與語意差分均需核對。</p>
+<hr>
+<h1>二十四、案例二：資料庫遷移</h1>
+<h2>24.1 候選差分</h2>
+<ul>
+<li>新增欄位；</li>
+<li>轉換資料；</li>
+<li>切換讀寫；</li>
+<li>移除舊結構。</li>
+</ul>
+<h2>24.2 世界版本</h2>
+<p>舊應用與新應用可能同時運作。</p>
+<h2>24.3 分階段提交</h2>
+<pre><code class="language-text">expand
+→ backfill
+→ dual-read
+→ switch-write
+→ verify
+→ contract
+</code></pre>
+<h2>24.4 證據</h2>
+<ul>
+<li>資料筆數；</li>
+<li>一致性；</li>
+<li>查詢結果；</li>
+<li>應用錯誤；</li>
+<li>回滾點；</li>
+<li>使用者流程。</li>
+</ul>
+<h2>24.5 失敗</h2>
+<p>遷移腳本執行成功，不代表所有歷史資料語意正確。</p>
+<hr>
+<h1>二十五、案例三：訂單付款</h1>
+<h2>25.1 意圖 IR</h2>
+<p>包含訂單、金額、幣別、客戶、付款身份與成功條件。</p>
+<h2>25.2 預測差分</h2>
+<ul>
+<li>建立付款嘗試；</li>
+<li>呼叫支付提供者；</li>
+<li>形成付款事件；</li>
+<li>更新訂單狀態；</li>
+<li>產生財務證據。</li>
+</ul>
+<h2>25.3 結果未知</h2>
+<p>超時後不能建立新的付款身份盲目重試。</p>
+<h2>25.4 核對</h2>
+<p>應以原行動身份向提供者查詢，再決定：</p>
+<ul>
+<li>記錄成功；</li>
+<li>標記拒絕；</li>
+<li>人工對帳；</li>
+<li>補償退款。</li>
+</ul>
+<h2>25.5 完成</h2>
+<p>付款授權、本地記錄、結算與訂單履約是不同世界差分。</p>
+<hr>
+<h1>二十六、案例四：網站部署</h1>
+<h2>26.1 預測差分</h2>
+<ul>
+<li>建置新產物；</li>
+<li>部署新版本；</li>
+<li>通過驗證；</li>
+<li>切換流量；</li>
+<li>公開新內容。</li>
+</ul>
+<h2>26.2 Dry-Run</h2>
+<p>可檢查配置、依賴、資源與預期路由，但不能保證真實流量正常。</p>
+<h2>26.3 提交層級</h2>
+<pre><code class="language-text">artifact-created
+deployment-committed
+health-verified
+traffic-shifted
+public-journey-accepted
+</code></pre>
+<h2>26.4 外部殘差</h2>
+<p>即使回滾：</p>
+<ul>
+<li>CDN 可能仍有快取；</li>
+<li>搜尋引擎可能已抓取；</li>
+<li>使用者可能已看見；</li>
+<li>外部連結可能已散布。</li>
+</ul>
+<h2>26.5 世界交易</h2>
+<p>發布不是單一資料庫交易，而是多層世界提交。</p>
+<hr>
+<h1>二十七、案例五：AI Agent 多工具執行</h1>
+<h2>27.1 計畫</h2>
+<p>Agent 可能依序：</p>
+<ul>
+<li>讀文件；</li>
+<li>修改檔案；</li>
+<li>執行測試；</li>
+<li>建立部署；</li>
+<li>發布；</li>
+<li>更新索引。</li>
+</ul>
+<h2>27.2 差分預覽</h2>
+<p>執行前必須列出：</p>
+<ul>
+<li>所有寫入；</li>
+<li>外部工具；</li>
+<li>不可逆操作；</li>
+<li>權限；</li>
+<li>費用；</li>
+<li>失敗與補償。</li>
+</ul>
+<h2>27.3 動態世界</h2>
+<p>執行途中，檔案、規則、權限與外部狀態可能改變。</p>
+<p>Agent 必須在高風險節點重新驗證世界版本。</p>
+<h2>27.4 工具回覆</h2>
+<p>工具回傳是證據候選，不自動等於世界差分成立。</p>
+<h2>27.5 停止條件</h2>
+<p>如果實際效果偏離預測，Agent 應停止、核對或請求人類，而不是繼續完成舊計畫。</p>
+<hr>
+<h1>二十八、案例六：研究論文發布</h1>
+<h2>28.1 預測差分</h2>
+<ul>
+<li>文件版本凍結；</li>
+<li>metadata 建立；</li>
+<li>網站公開；</li>
+<li>索引更新；</li>
+<li>引用識別建立。</li>
+</ul>
+<h2>28.2 非目標</h2>
+<p>發布不表示：</p>
+<ul>
+<li>命題被證明；</li>
+<li>同行評審完成；</li>
+<li>社群接受；</li>
+<li>研究無錯誤。</li>
+</ul>
+<h2>28.3 世界證據</h2>
+<p>需要：</p>
+<ul>
+<li>發布版本；</li>
+<li>公開頁面；</li>
+<li>內容雜湊；</li>
+<li>日期；</li>
+<li>作者；</li>
+<li>主張狀態。</li>
+</ul>
+<h2>28.4 修改與撤回</h2>
+<p>後續修訂應形成新版本；撤回公開內容也不能消除既有下載與引用歷史。</p>
+<hr>
+<h1>二十九、案例七：物理設備控制</h1>
+<p>意圖：</p>
+<pre><code class="language-text">讓機器開始運作。
+</code></pre>
+<h2>29.1 差分計畫</h2>
+<ul>
+<li>檢查設備身份；</li>
+<li>檢查安全感測；</li>
+<li>取得批准；</li>
+<li>啟動能源；</li>
+<li>發送命令；</li>
+<li>觀測運轉；</li>
+<li>持續監控。</li>
+</ul>
+<h2>29.2 物理確認</h2>
+<p>命令成功只表示控制系統接受，仍需轉速、位置、電流或其他感測證據。</p>
+<h2>29.3 偏差</h2>
+<p>設備可能：</p>
+<ul>
+<li>未啟動；</li>
+<li>部分啟動；</li>
+<li>以錯誤速度運轉；</li>
+<li>造成額外震動；</li>
+<li>觸發安全停止。</li>
+</ul>
+<h2>29.4 核對</h2>
+<p>實際物理差分與預測不同時，必須停止後續計畫並進入安全程序。</p>
+<hr>
+<h1>三十、主要失敗模式</h1>
+<ol>
+<li><strong>執行即指令消耗：</strong> 忽略程式真正提交世界差分。</li>
+<li><strong>預測即真實：</strong> 將模型差分當成已發生效果。</li>
+<li><strong>可編譯即完全可控：</strong> 否認未知、他者意志與物理不確定。</li>
+<li><strong>世界狀態無版本：</strong> 使用舊狀態直接提交新差分。</li>
+<li><strong>資料版本即世界版本：</strong> 忽略規則、權限、外部與感測變化。</li>
+<li><strong>驗證後永久有效：</strong> 計畫執行時不重新檢查高風險守衛。</li>
+<li><strong>提交即完成：</strong> 本地寫入成功便關閉整體工作流。</li>
+<li><strong>完成即接受：</strong> 忽略人類、制度與申訴位置。</li>
+<li><strong>資料庫交易等於世界交易：</strong> 外部與物理效果被排除於一致性之外。</li>
+<li><strong>請求送出即外部成功：</strong> API 入列被當成外部完成。</li>
+<li><strong>命令送出即物理效果：</strong> 缺少感測確認。</li>
+<li><strong>數位紀錄即制度有效：</strong> 權限或批准缺少合法程序。</li>
+<li><strong>Unknown 布林化：</strong> 結果未知被當成失敗或成功。</li>
+<li><strong>部分成功壓平：</strong> 多個子差分被單一狀態碼遮蔽。</li>
+<li><strong>Dry-run 零效果迷思：</strong> 模擬流程仍產生外部呼叫、費用或紀錄。</li>
+<li><strong>沙盒只限制程序：</strong> 網路、金流、治理與物理效果仍可洩漏。</li>
+<li><strong>回滾刪除世界歷史：</strong> 忽略外部觀測與不可逆殘差。</li>
+<li><strong>補償冒充完全復原：</strong> 信任、時間、費用與資訊效果未被表示。</li>
+<li><strong>觀測不足仍宣稱核對：</strong> 只根據單一回覆判定世界完成。</li>
+<li><strong>額外效果不回饋：</strong> Runtime 發現未預測作用後仍繼續執行。</li>
+<li><strong>世界日誌只記技術細節：</strong> 無原始意圖、批准、責任與殘差。</li>
+<li><strong>Agent 沿舊計畫前進：</strong> 世界偏離後不停止或重新編譯。</li>
+<li><strong>物理感測單點真相：</strong> 感測器故障未被交叉驗證。</li>
+<li><strong>研究發布等於研究成立：</strong> 發布效果與知識真值混淆。</li>
+</ol>
+<hr>
+<h1>三十一、可證偽研究綱領</h1>
+<h2>31.1 預測—實際差分誤差</h2>
+<p>測量：</p>
+<h1>$$
+\epsilon_W</h1>
+<h2>\Delta W</h2>
+<p>\widehat{\Delta W}
+$$</p>
+<p>在狀態、事件、外部效果、受影響主體與殘差上的差異。</p>
+<h2>31.2 提交—完成落差</h2>
+<p>統計已提交工作中，有多少未達外部完成、制度完成或人類接受。</p>
+<h2>31.3 世界版本衝突率</h2>
+<p>測量候選差分生成後，到實際提交前，世界、規則、權限與外部狀態改變的比例。</p>
+<h2>31.4 重新編譯效益</h2>
+<p>比較世界版本衝突後直接重試與重新建立 IR／差分計畫，對事故與錯誤提交的影響。</p>
+<h2>31.5 外部效果證據率</h2>
+<p>統計宣稱完成的 API、訊息、金流與發布效果中，有多少具有足夠外部回執與本地核對。</p>
+<h2>31.6 物理效果確認率</h2>
+<p>統計物理命令中，有多少具有感測確認、信心、時間與安全證據。</p>
+<h2>31.7 結果未知治理</h2>
+<p>研究正式 <code>Unknown</code> 狀態是否降低重複付款、重複通知與重複物理操作。</p>
+<h2>31.8 部分成功完整度</h2>
+<p>檢查多階段工作流是否能分別表示完成、失敗、未知、補償與人類接管。</p>
+<h2>31.9 世界交易恢復率</h2>
+<p>分別測量回滾、補償、重建與接受殘差後，世界狀態與責任是否真正閉合。</p>
+<h2>31.10 Dry-Run 效果洩漏</h2>
+<p>統計標示為 dry-run 或模擬的執行中，實際產生網路、費用、資料、權限或外部紀錄的比例。</p>
+<h2>31.11 世界沙盒完整度</h2>
+<p>比較程序隔離與效果沙盒，在限制資料、外部、物理與治理效果上的差異。</p>
+<h2>31.12 差分核對延遲</h2>
+<p>測量提交後多久能確認：</p>
+<ul>
+<li>matched；</li>
+<li>partial；</li>
+<li>diverged；</li>
+<li>unknown；</li>
+<li>compensation-required。</li>
+</ul>
+<h2>31.13 額外效果發現率</h2>
+<p>測量 Runtime 觀測對未宣告寫入、網路、權限與物理效果的檢出能力。</p>
+<h2>31.14 AI 差分預覽效益</h2>
+<p>比較 Agent 直接執行工具計畫，以及先展示預測世界差分、權限、不可逆節點與恢復後的事故率。</p>
+<h2>31.15 制度差分有效性</h2>
+<p>統計數位批准紀錄中，有多少真正滿足合法主體、程序、生效時間與申訴要求。</p>
+<h2>31.16 世界日誌可重建性</h2>
+<p>檢查僅依世界差分日誌，能否重建意圖、批准、提交、證據、殘差與補償歷史。</p>
+<h2>31.17 物理模型殘差</h2>
+<p>測量設備控制中預測運動、能源與安全狀態和實際感測結果的偏差。</p>
+<h2>31.18 跨世界層教學實驗</h2>
+<p>比較只教授函式執行，以及同時教授內部、權威數位、制度與物理差分的學習者，在真實系統設計上的表現。</p>
+<hr>
+<h1>三十二、本文的二十四項命題</h1>
+<ol>
+<li>程式執行不等於機器指令被消耗。</li>
+<li>程式執行是候選世界差分的提出、驗證、授權、提交、觀測與核對。</li>
+<li>可編譯世界不等於完全可預測、可觀測或可控制的世界。</li>
+<li>世界編譯器必須正式表示未知、外部性與控制邊界。</li>
+<li>預測世界差分不等於實際世界差分。</li>
+<li>差分誤差是世界模型、Runtime 與外部性的共同訊號。</li>
+<li>世界差分至少應區分內部計算、權威數位、制度與物理四層。</li>
+<li>世界差分合法性需要環境、世界狀態、權限、效果與觀測義務。</li>
+<li>高風險差分在提交前必須重新檢查世界版本與守衛。</li>
+<li>資料版本只是世界版本的一部分。</li>
+<li>世界交易由狀態轉移、外部效果、證據義務與殘差治理共同構成。</li>
+<li>資料庫交易不能完整取代世界交易。</li>
+<li></li>
+</ol>
+<p>$$
+Committed
+\not\Rightarrow
+Completed
+\not\Rightarrow
+Accepted
+$$
+14. 模擬與 dry-run 能揭露候選差分，但不能替代真實世界證據。
+15. 效果沙盒必須限制網路、費用、敏感資料、治理與物理能力，而不只限制程序。
+16. 外部請求送出、外部接受、外部宣稱完成、本地驗證與人類接受是不同狀態。
+17. 物理命令只有在感測與安全條件確認後，才能提升為物理效果事件。
+18. 數位紀錄只有在合法主體與程序成立時，才能構成制度差分。
+19. 結果未知是正式世界狀態，不是 false。
+20. 部分成功必須分解為已完成、失敗與未知子差分。
+21. 回滾、補償與重建是不同的世界恢復形式。
+22. 提交後必須比較預測與實際差分，並處理額外效果與遺漏效果。
+23. Agent 在世界偏離原計畫時，應停止、重新編譯或請求人類，而非機械完成舊計畫。
+24. 
+$$
+\boxed{
+\text{程式真正執行的，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{不是一串孤立指令，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是一項必須被世界接受、}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{被證據確認並對殘差負責的狀態差分。}
+}
+$$</p>
+<hr>
+<h1>三十三、與前後篇的關係</h1>
+<h2>33.1 承接 PU-2-01</h2>
+<p>PU-2-01 將程式從文字本體中釋放出來。</p>
+<p>本篇指出，無論程式以何種投影存在，執行都必須落到世界差分與實際證據。</p>
+<h2>33.2 承接 PU-2-02</h2>
+<p>PU-2-02 將符號定義為受治理算子。</p>
+<p>本篇將複合算子的效果簽章轉化為候選世界差分、守衛、提交與核對義務。</p>
+<h2>33.3 承接 PU-2-03</h2>
+<p>PU-2-03 建立語法、語意與效果三層。</p>
+<p>本篇集中展開效果層：語意如何在 Runtime 中成為數位、制度與物理差分。</p>
+<h2>33.4 承接 PU-2-04</h2>
+<p>PU-2-04 建立意圖 IR、效果計畫與多重投影。</p>
+<p>本篇讓 IR 進入執行生命週期，並區分預測、提交、完成、接受與殘差。</p>
+<h2>33.5 銜接 PU-2-06</h2>
+<p>下一篇將完成第 2 冊與整個十八篇地基系列，統合：</p>
+<ul>
+<li>非文本語言本體；</li>
+<li>符號算子；</li>
+<li>語法—語意—效果；</li>
+<li>意圖 IR；</li>
+<li>世界差分；</li>
+<li>多角色投影；</li>
+<li>AI 生成；</li>
+<li>驗證；</li>
+<li>Runtime；</li>
+<li>數位、制度與物理耦合。</li>
+</ul>
+<hr>
+<h1>三十四、結論：Runtime 是世界差分提交器，不只是指令機器</h1>
+<p>在低階計算觀中，Runtime 讀取指令、配置資源、更新記憶體並輸出結果。</p>
+<p>這個描述仍然成立。</p>
+<p>但當程式進入資料庫、網路、制度、Agent 與物理設備後，Runtime 的責任已經超越指令調度。</p>
+<p>它必須知道：</p>
+<ul>
+<li>目前世界版本；</li>
+<li>哪些狀態是權威；</li>
+<li>哪些規則仍有效；</li>
+<li>誰有權提交；</li>
+<li>哪些效果不可逆；</li>
+<li>哪些主體會受到影響；</li>
+<li>哪些證據代表外部完成；</li>
+<li>哪些結果仍未知；</li>
+<li>哪些殘差需要補償或接受。</li>
+</ul>
+<p>本文因此將 Runtime 重新定義為：</p>
+<h1>$$
+\boxed{
+\text{Runtime}</h1>
+<p>\text{World-Difference Committer}
++
+\text{Effect Observer}
++
+\text{Residual Reconciler}
+}
+$$</p>
+<p>而世界編譯器則是：</p>
+<h1>$$
+\boxed{
+\text{World Compiler}</h1>
+<p>\text{Intent-to-Difference Planner}
++
+\text{Legality Checker}
++
+\text{Obligation Generator}
+}
+$$</p>
+<p>兩者共同形成：</p>
+<p>$$
+\boxed{
+\text{Intent}
+\rightarrow
+\text{Candidate Difference}
+\rightarrow
+\text{Legal Commitment}
+\rightarrow
+\text{Observed Difference}
+\rightarrow
+\text{Reconciled World}
+}
+$$</p>
+<p>這個結構也重新定位「成功」。</p>
+<p>成功不再是函式沒有拋出例外，也不只是資料寫入完成。</p>
+<p>成功至少需要回答：</p>
+<pre><code class="language-text">預期世界差分是什麼？
+實際發生了什麼？
+哪些部分有證據？
+哪些部分仍未知？
+哪些額外效果出現？
+哪些主體尚未接受？
+哪些殘差仍需處理？
+</code></pre>
+<p>因此，世界編譯不是將現實幻想成完全可計算。</p>
+<p>相反地，它要求系統對自己的不可完備保持誠實。</p>
+<p>凡是不能控制的，必須標示外部。</p>
+<p>凡是不能觀測的，必須標示未知。</p>
+<p>凡是不能逆轉的，必須在提交前揭露。</p>
+<p>凡是必須由主體選擇的，必須保留決策節點。</p>
+<p>凡是已經改變世界的，都必須留下證據與責任。</p>
+<p>本文將可編譯世界收束為：</p>
+<h1>$$
+\boxed{
+\text{Compilable World}</h1>
+<p>\text{Structured State}
++
+\text{Legal Difference}
++
+\text{Authorized Commitment}
++
+\text{Observable Effects}
++
+\text{Residual Governance}
+}
+$$</p>
+<p>最終命題是：</p>
+<p>$$
+\boxed{
+\text{程式不是因為能執行而完成，}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{而是因為它所提出的世界改變}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{能被合法提交、真實觀測、}
+}
+$$</p>
+<p>$$
+\boxed{
+\text{誠實核對並對未閉合部分持續負責。}
+}
+$$</p>
+<hr>
+<h1>附錄 A：世界差分計畫</h1>
+<pre><code class="language-yaml">world_diff_plan:
+  world_change_id: &quot;deploy-release-889&quot;
+  intent_ir: &quot;publish-site-20260727&quot;
+  based_on_world_version: 42
+
+  predicted_diff:
+    authoritative_state:
+      - &quot;deployment.status: approved -&gt; deploying&quot;
+      - &quot;active_release: v2.7 -&gt; v2.8&quot;
+
+    external:
+      - &quot;upload artifact&quot;
+      - &quot;shift public traffic&quot;
+
+    institutional:
+      - &quot;production approval consumed&quot;
+
+    residual_risk:
+      - &quot;external cache may preserve old or new content&quot;
+
+  guards:
+    - &quot;release hash matches approval&quot;
+    - &quot;production permission valid&quot;
+    - &quot;current world version == 42&quot;
+
+  obligations:
+    - &quot;verify public user journey&quot;
+    - &quot;preserve rollback evidence&quot;
+</code></pre>
+<hr>
+<h1>附錄 B：世界提交結果</h1>
+<pre><code class="language-yaml">world_commit_result:
+  world_change_id: &quot;deploy-release-889&quot;
+
+  committed:
+    - &quot;artifact uploaded&quot;
+    - &quot;deployment state updated&quot;
+
+  completed:
+    - &quot;service health check passed&quot;
+
+  unknown:
+    - &quot;global CDN propagation&quot;
+
+  failed:
+    - &quot;mobile authentication journey&quot;
+
+  extra_effects:
+    - &quot;analytics endpoint received test traffic&quot;
+
+  reconciliation:
+    status: &quot;partially-matched&quot;
+    next_action:
+      - &quot;hold traffic at 10%&quot;
+      - &quot;investigate authentication&quot;
+      - &quot;review undeclared analytics effect&quot;
+</code></pre>
+<hr>
+<h1>附錄 C：物理效果確認</h1>
+<pre><code class="language-yaml">physical_effect:
+  action_id: &quot;start-motor-117&quot;
+  command:
+    sent_at: &quot;2026-07-27T09:00:00+08:00&quot;
+    accepted_by_controller: true
+
+  predicted:
+    rpm: 1200
+    duration: &quot;10m&quot;
+
+  observed:
+    rpm:
+      value: 1187
+      sensor: &quot;rpm-sensor-4&quot;
+      confidence: &quot;high&quot;
+    vibration:
+      value: &quot;above-normal&quot;
+      sensor: &quot;vibration-2&quot;
+
+  status: &quot;diverged&quot;
+  safety_action: &quot;controlled-stop&quot;
+  human_review_required: true
+</code></pre>
+<hr>
+<h1>附錄 D：世界差分核對</h1>
+<pre><code class="language-yaml">reconciliation:
+  predicted_diff_id: &quot;refund-order-932&quot;
+  actual_evidence:
+    - &quot;provider-refund-accepted&quot;
+    - &quot;local-order-state-updated&quot;
+
+  matched:
+    - &quot;payment -&gt; refund-pending&quot;
+
+  missing:
+    - &quot;final provider settlement&quot;
+
+  residual:
+    - &quot;currency conversion fee not recoverable&quot;
+
+  status: &quot;outcome-pending&quot;
+  owner:
+    workflow: &quot;order-module&quot;
+    financial: &quot;payment-module&quot;
+    user_resolution: &quot;support-process&quot;
+</code></pre>
+<hr>
+<h1>附錄 E：第 2 冊六篇位置</h1>
+<ol>
+<li>PU-2-01　程式語言不等於文字：結構、語意與執行的基本分離</li>
+<li>PU-2-02　符號作為算子：從靜態字元到可組合計算閉包</li>
+<li>PU-2-03　語法—語意—效果：程式語言的三層存在結構</li>
+<li>PU-2-04　意圖中介表示：從自然意圖到多重可執行投影</li>
+<li><strong>PU-2-05　可編譯世界：程式執行作為世界狀態差分</strong></li>
+<li>PU-2-06　後文本程式語言：意圖、結構、驗證與物理耦合的統一框架</li>
+</ol>
+<hr>
+<h1>參考文獻</h1>
+<h2>Neo.K／EveMissLab 相關理論</h2>
+<ol>
+<li>Neo.K with Aletheia，《程式語言不等於文字：結構、語意與執行的基本分離》，2026。</li>
+<li>Neo.K with Aletheia，《符號作為算子：從靜態字元到可組合計算閉包》，2026。</li>
+<li>Neo.K with Aletheia，《語法—語意—效果：程式語言的三層存在結構》，2026。</li>
+<li>Neo.K with Aletheia，《意圖中介表示：從自然意圖到多重可執行投影》，2026。</li>
+<li>Neo.K with Aletheia，《三宇宙耦合動力學：從想要、表示到世界改變》，2026。</li>
+<li>Neo.K with Aletheia，《表示落差：意圖、計算模型與物理現實之間的不可完備映射》，2026。</li>
+<li>Neo.K with Aletheia，《失敗也是程式：驗證、可觀測、恢復與長期維護》，2026。</li>
+</ol>
+<h2>一般理論背景</h2>
+<ol start="8">
+<li>Hoare, C. A. R., “An Axiomatic Basis for Computer Programming,” 1969.</li>
+<li>Lamport, L., <em>Specifying Systems</em>, 2002.</li>
+<li>Gray, J. and Reuter, A., <em>Transaction Processing</em>, 1992.</li>
+<li>Lynch, N., <em>Distributed Algorithms</em>, 1996.</li>
+<li>Kleppmann, M., <em>Designing Data-Intensive Applications</em>, 2017.</li>
+<li>Helland, P., “Life Beyond Distributed Transactions,” 2007.</li>
+<li>Harel, D., “Statecharts: A Visual Formalism for Complex Systems,” 1987.</li>
+<li>Lee, E. A., <em>Plato and the Nerd: The Creative Partnership of Humans and Technology</em>, 2017.</li>
+<li>Henzinger, T. A., “The Theory of Hybrid Automata,” 1996.</li>
+<li>Alur, R., <em>Principles of Cyber-Physical Systems</em>, 2015.</li>
+<li>Woods, D. D., “Four Concepts for Resilience and the Implications for the Future of Resilience Engineering,” 2015.</li>
+<li>Beyer, B. et al., <em>Site Reliability Engineering</em>, 2016.</li>
+<li>Research on digital twins, runtime verification, event sourcing, sagas, and cyber-physical systems.</li>
+</ol>
+<hr>
+<h1>版本紀錄</h1>
+<h2>v0.1 — 2026-07-27</h2>
+<ul>
+<li>完成十八篇地基論文第十七篇。</li>
+<li>將程式執行定義為世界狀態差分的提出、驗證、授權、提交、觀測與核對。</li>
+<li>建立可編譯世界八元結構。</li>
+<li>提出可編譯不等於完全可預測。</li>
+<li>建立世界編譯與世界提交函數。</li>
+<li>區分預測差分與實際差分。</li>
+<li>建立內部計算、權威數位、制度與物理四類世界差分。</li>
+<li>建立世界差分合法性判定、守衛與世界版本檢查。</li>
+<li>建立世界交易模型。</li>
+<li>區分提交、完成與接受。</li>
+<li>建立分階段提交、模擬、dry-run 與效果沙盒。</li>
+<li>建立外部、物理與制度效果的分層提交。</li>
+<li>將結果未知與部分成功正式納入世界模型。</li>
+<li>區分回滾、補償與重建。</li>
+<li>建立差分觀測、核對與世界差分日誌。</li>
+<li>加入檔案、資料遷移、付款、部署、AI Agent、研究發布與物理設備案例。</li>
+<li>提出二十四類失敗模式與十八項可證偽研究方向。</li>
+<li>完成與 PU-2-06《後文本程式語言》的銜接。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab</span><a href="https://thisoneisneok.com/html/papers/pu-2-05.html">https://thisoneisneok.com/html/papers/pu-2-05.html</a></footer>
+</body>
+</html>
