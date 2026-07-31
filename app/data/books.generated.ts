@@ -259,7 +259,7 @@ export const books = [
     ],
     "bilingual": false
   }
-] as const;
+];
 
 export const bookCount = 9;
 export const bookEditionCount = 13;

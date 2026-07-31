@@ -2,12 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { applications } from "./data/catalog";
+import { experiments, experimentCount } from "./data/apps.generated";
 import { books, bookCount, bookEditionCount } from "./data/books.generated";
 import { paperSeries, paperCount } from "./data/papers.generated";
 import { posts } from "./data/posts.generated";
-import { ProjectCard } from "./components/project-card";
-import { PendingPanel } from "./components/pending-panel";
 import { useLanguage } from "./components/language-context";
 
 export default function Home() {
@@ -58,13 +56,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* The first cell leads with MSSP while the application catalog is empty.
-          Swap it back to a live count once applications.length is non-zero. */}
       <section className="home-strip" aria-label={t({ zh: "網站範圍", en: "Site scope" })}>
-        <div><strong>MSSP</strong><span>{t({ zh: "主要專區", en: "primary field" })}</span></div>
         <div><strong>{paperCount}</strong><span>{t({ zh: "論文（4 系列）", en: "papers, 4 series" })}</span></div>
-        <div><strong>ZH/EN</strong><span>{t({ zh: "自動語言切換", en: "automatic language" })}</span></div>
-        <div><strong>HTML<br />PDF</strong><span>{t({ zh: "兩種發表格式", en: "two published formats" })}</span></div>
+        <div><strong>{experimentCount}</strong><span>{t({ zh: "可執行實驗", en: "runnable experiments" })}</span></div>
+        <div><strong>{bookCount}</strong><span>{t({ zh: "已出版書籍", en: "published books" })}</span></div>
+        <div><strong>MSSP</strong><span>{t({ zh: "主要專區", en: "primary field" })}</span></div>
       </section>
 
       <section className="section-block papers-feature">
@@ -90,33 +86,36 @@ export default function Home() {
       <section className="section-block">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">SELECTED APPLICATIONS</p>
+            <p className="eyebrow">SELECTED EXPERIMENTS / {experimentCount}</p>
             <h2>{t({ zh: "應用不是結論，而是研究留下的可操作痕跡。", en: "Applications are operable traces left by research." })}</h2>
           </div>
-          {applications.length ? (
-            <Link href="/apps" className="text-link">{t({ zh: "查看全部", en: "View all" })} ↗</Link>
-          ) : null}
+          <Link href="/apps" className="text-link">{t({ zh: "查看全部", en: "View all" })} ↗</Link>
         </div>
-        {applications.length ? (
-          <div className="project-grid featured-grid">
-            {applications.slice(0, 4).map((item, index) => (
-              <ProjectCard item={item} index={index} key={item.slug} />
-            ))}
-          </div>
-        ) : (
-          <PendingPanel
-            code="EMPTY / 00"
-            title={{
-              zh: "這一區目前是空的，而且是刻意的。",
-              en: "This section is empty, and that is deliberate.",
-            }}
-            note={{
-              zh: "舊的示範卡片已經全部移除。實驗性小應用要能真的被打開、被操作，才會進駐這裡——不放佔位卡片。",
-              en: "The old demonstration cards have been removed. An experimental application appears here only once it can actually be opened and operated — no placeholder cards.",
-            }}
-            action={{ href: "/mssp", label: { zh: "先看 MSSP 專區", en: "Start with the MSSP field lab" } }}
-          />
-        )}
+        <p className="books-note">{t({
+          zh: "全部在瀏覽器裡直接跑，不需要安裝，也不上傳任何東西。",
+          en: "Everything runs in the browser: nothing to install, nothing uploaded.",
+        })}</p>
+        <div className="experiment-grid">
+          {experiments.slice(0, 3).map((item) => (
+            <article className="experiment-card" key={item.slug}>
+              <header>
+                <span className="experiment-version">{item.version}</span>
+                {item.versionCount > 1 ? (
+                  <span className="experiment-iterations">
+                    {t({ zh: `${item.versionCount} 版迭代`, en: `${item.versionCount} iterations` })}
+                  </span>
+                ) : null}
+                <time dateTime={item.date}>{item.date}</time>
+              </header>
+              <h3><a href={item.href}>{language === "zh" ? item.title.zh : item.title.en}</a></h3>
+              <p>{language === "zh" ? item.summary.zh : item.summary.en}</p>
+              <div className="tag-row">{item.tags.map((one) => <span key={one}>{one}</span>)}</div>
+              <footer>
+                <a href={item.href} className="experiment-open">{t({ zh: "開啟", en: "Open" })} ↗</a>
+              </footer>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="mssp-feature">

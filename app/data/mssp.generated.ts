@@ -67,6 +67,6 @@ export const msspExamples = [
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/001-task-runner.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/001-task-runner.html"
   }
-] as const;
+];
 
 export const msspExampleCount = 1;

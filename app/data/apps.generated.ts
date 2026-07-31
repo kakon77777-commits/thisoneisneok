@@ -705,7 +705,7 @@ export const experiments = [
     "href": "/experiments/closure-cognitive-graph.html",
     "canonicalUrl": "https://thisoneisneok.com/experiments/closure-cognitive-graph.html"
   }
-] as const;
+];
 
 export const experimentCount = 25;
 export const experimentSourceFileCount = 39;

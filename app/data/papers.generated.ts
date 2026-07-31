@@ -1593,6 +1593,6 @@ export const paperSeries = [
       }
     ]
   }
-] as const;
+];
 
 export const paperCount = 77;

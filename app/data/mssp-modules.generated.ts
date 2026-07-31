@@ -76,4 +76,4 @@ export const msspModules = [
     "href": "/html/mssp/modules/reference.html",
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/modules/reference.html"
   }
-] as const;
+];
