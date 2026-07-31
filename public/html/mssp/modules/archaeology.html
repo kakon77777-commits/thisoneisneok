@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>開源專案考古 | MSSP | Neo.K</title>
+<meta name="description" content="分析既有專案的哪些結構可以保留、重寫或轉化為 MSSP。方法已定，目前完成 0 個。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/modules/archaeology.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.state{display:inline-block;border:1px solid var(--accent);color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.12em;padding:5px 10px;margin:0 0 30px;text-transform:uppercase}
+.content{font-size:17.5px;line-height:1.9;overflow-wrap:break-word}
+.content h1{font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:4px 0 32px}
+.content h2{font-size:25px;line-height:1.3;margin:56px 0 15px}
+.content h3{font-size:18px;margin:34px 0 11px}
+.content p{margin:0 0 23px}.content li{margin:.42em 0}
+.content strong{font-weight:650}
+.content blockquote{margin:34px 0;padding:6px 0 6px 26px;border-left:3px solid var(--accent);font-size:19px;line-height:1.7}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.62;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+.content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:26px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>03 · 2026-07-31</span></header>
+<main>
+  <span class="state">尚未開始</span>
+  <article class="content"><h1>開源專案考古</h1>
+<h2>目前狀態：0 個專案</h2>
+<p>這一頁描述的是方法，不是成果。<strong>還沒有任何一個開源專案被分析過。</strong></p>
+<p>先講清楚這件事，是因為這一區最容易變成的東西，就是一份看起來很豐富、實際上沒有做過任何拆解的清單。方法寫得再完整也不會讓數字從 0 變成 1。</p>
+<h2>為什麼需要考古，而不是只寫方法論</h2>
+<p>如果 MSSP 只停留在抽象架構，它很容易變成一套只有設計者自己看得懂的詞彙。</p>
+<p>第一條有用的公開路線因此不是再增加定義，而是持續尋找既有的開源專案，在真實的程式碼上辨識它們的狀態、事件、耦合與可替換邊界。<strong>別人寫的程式碼不會配合你的方法</strong>——這正是它的價值。</p>
+<h2>每一次考古要保留三種視圖</h2>
+<p>一份只有「重構後」的報告沒有說服力。每一次都應該同時留下：</p>
+<ol>
+<li><strong>原專案的結構地圖</strong> — 它現在是什麼樣子，以及為什麼會長成這樣。歷史條件通常比設計品味更能解釋一個結構。</li>
+<li><strong>MSSP 對照版本</strong> — 拆解之後的樣子，以及每一個邊界是依據哪個判準畫的。</li>
+<li><strong>失敗與反例</strong> — 拒絕被乾淨拆解的部分。</li>
+</ol>
+<p>第三項最重要。如果每一次考古都得出「拆完更好」，那這個系列就不是研究，是推銷。真正有價值的發現，多半是某個耦合有它存在的理由，而 MSSP 在那裡付出的代價高於收益。</p>
+<h2>判準</h2>
+<p>一個考古目標要能回答這些問題，才值得做：</p>
+<ul>
+<li>它的核心任務閉環是什麼？拿掉哪些部分之後它就不再是它？</li>
+<li>哪些能力宣稱獨立，實際上必須一起載入？</li>
+<li>有沒有兩個模組互相引用，而它們都自認是插件？</li>
+<li>知識與權限有沒有混在一起？</li>
+<li>它的觀測層能不能讓使用者知道剛才發生了什麼？</li>
+<li>如果不動核心，能不能新增一個能力？</li>
+</ul>
+<p>最後一項是最快的體檢。</p>
+<h2>選題原則</h2>
+<p><strong>不要選太大的。</strong> 重寫一個大型框架不會產生可讀的對照，只會產生一份沒人驗證得了的宣稱。</p>
+<p><strong>不要選已經是 MSSP 形狀的。</strong> 那不叫考古，叫確認偏誤。</p>
+<p><strong>優先選那些「明顯有邊界問題但還活得很好」的專案。</strong> 一個結構混亂卻被大量使用的專案，通常代表那個混亂在某個維度上是正確的權衡。找出那個維度，比證明它應該被重寫有用得多。</p>
+<h2>產出格式</h2>
+<p>每一次考古的輸出與<a href="/html/mssp/modules/reference.html">參考實作</a>共用同一份契約：可執行、可被機械檢查、README 必須寫出「這次沒有解決什麼」。差別只在於程式碼不是原創的，所以要額外標明來源、授權與檢視的版本。</p>
+<h2>下一步</h2>
+<p>第一個考古目標尚未選定。這是 Neo 的決定，不是這一頁能自己填上的空格。</p>
+<p>在那之前，這一區的狀態就是「尚未開始」，頁面上也會這樣顯示。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

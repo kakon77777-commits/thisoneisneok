@@ -309,7 +309,113 @@ if (problems.length) {
   process.exit(1);
 }
 
+// ---- the four field-manual modules ----
+//
+// Kept as Markdown next to the examples rather than as JSX, so a module can be
+// edited without touching the site, and so its state label is written where the
+// content is. The label is data: "尚未開始" appears on the page because module 03
+// says so, not because someone remembered to update a component.
+const moduleDir = path.join(root, "mssp", "modules");
+const modules = [];
+
+if (fs.existsSync(moduleDir)) {
+  const moduleHtmlDir = path.join(publicDir, "html", "mssp", "modules");
+  fs.mkdirSync(moduleHtmlDir, { recursive: true });
+
+  for (const filename of fs.readdirSync(moduleDir).filter((name) => name.endsWith(".md")).sort()) {
+    const source = fs.readFileSync(path.join(moduleDir, filename), "utf8");
+    if (!source.startsWith("---\n")) {
+      fail(filename, "module is missing frontmatter");
+      continue;
+    }
+    const end = source.indexOf("\n---\n", 4);
+    const meta = {};
+    for (const line of source.slice(4, end).split("\n")) {
+      const split = line.indexOf(":");
+      if (split === -1) continue;
+      meta[line.slice(0, split).trim()] = line.slice(split + 1).trim().replace(/^['"]|['"]$/g, "");
+    }
+    for (const key of ["id", "index", "title_zh", "title_en", "summary_zh", "summary_en", "state_zh", "state_en", "updated"]) {
+      if (!meta[key]) fail(filename, `module frontmatter is missing ${key}`);
+    }
+
+    const body = renderMarkdown(source.slice(end + 5));
+    if (countLeftoverRawMath(body)) fail(filename, "raw math delimiters survived rendering");
+
+    const canonicalUrl = `${siteUrl}/html/mssp/modules/${meta.id}.html`;
+    fs.writeFileSync(
+      path.join(moduleHtmlDir, `${meta.id}.html`),
+      `<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHtml(meta.title_zh)} | MSSP | Neo.K</title>
+<meta name="description" content="${escapeHtml(meta.summary_zh)}">
+<link rel="canonical" href="${canonicalUrl}">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.state{display:inline-block;border:1px solid var(--accent);color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.12em;padding:5px 10px;margin:0 0 30px;text-transform:uppercase}
+.content{font-size:17.5px;line-height:1.9;overflow-wrap:break-word}
+.content h1{font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:4px 0 32px}
+.content h2{font-size:25px;line-height:1.3;margin:56px 0 15px}
+.content h3{font-size:18px;margin:34px 0 11px}
+.content p{margin:0 0 23px}.content li{margin:.42em 0}
+.content strong{font-weight:650}
+.content blockquote{margin:34px 0;padding:6px 0 6px 26px;border-left:3px solid var(--accent);font-size:19px;line-height:1.7}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.62;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+.content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:26px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>${escapeHtml(meta.index)} · ${escapeHtml(meta.updated)}</span></header>
+<main>
+  <span class="state">${escapeHtml(meta.state_zh)}</span>
+  <article class="content">${body}</article>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="${siteUrl}/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>`,
+    );
+
+    modules.push({
+      id: meta.id,
+      index: meta.index,
+      title: { zh: meta.title_zh, en: meta.title_en },
+      summary: { zh: meta.summary_zh, en: meta.summary_en },
+      state: { zh: meta.state_zh, en: meta.state_en },
+      updated: meta.updated,
+      href: `/html/mssp/modules/${meta.id}.html`,
+      canonicalUrl,
+    });
+  }
+}
+
+if (problems.length) {
+  console.error("MSSP module problems:");
+  for (const problem of problems) console.error(`  - ${problem}`);
+  process.exit(1);
+}
+
 fs.mkdirSync(path.join(root, "app", "data"), { recursive: true });
+fs.writeFileSync(
+  path.join(root, "app", "data", "mssp-modules.generated.ts"),
+  `// Generated by scripts/build-mssp.mjs from mssp/modules/*.md. Do not edit by hand.\n` +
+    `export const msspModules = ${JSON.stringify(modules, null, 2)} as const;\n`,
+);
+
 fs.writeFileSync(
   path.join(root, "app", "data", "mssp.generated.ts"),
   `// Generated by scripts/build-mssp.mjs. Do not edit by hand.\n` +
@@ -344,7 +450,8 @@ if (fs.existsSync(sitemapPath)) {
   if (entries) fs.writeFileSync(sitemapPath, existing.replace("</urlset>", `${entries}\n</urlset>`));
 }
 
-console.log(`Built ${collected.length} MSSP example(s).`);
+console.log(`Built ${collected.length} MSSP example(s) and ${modules.length} field-manual module(s).`);
+for (const m of modules) console.log(`  ${m.index} ${m.id.padEnd(14)} ${m.state.zh}`);
 for (const example of collected) {
   console.log(`  ${example.id.padEnd(22)} ${example.language.padEnd(11)} ${example.lineCount} lines, ${example.files.length} files${example.kind === "counterexample" ? "  [COUNTEREXAMPLE]" : ""}`);
 }

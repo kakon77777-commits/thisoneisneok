@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>參考實作 | MSSP | Neo.K</title>
+<meta name="description" content="可執行的範例。每個只示範一個結構決策，並在建置時被機械檢查。目前 1 個。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/modules/reference.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.state{display:inline-block;border:1px solid var(--accent);color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.12em;padding:5px 10px;margin:0 0 30px;text-transform:uppercase}
+.content{font-size:17.5px;line-height:1.9;overflow-wrap:break-word}
+.content h1{font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:4px 0 32px}
+.content h2{font-size:25px;line-height:1.3;margin:56px 0 15px}
+.content h3{font-size:18px;margin:34px 0 11px}
+.content p{margin:0 0 23px}.content li{margin:.42em 0}
+.content strong{font-weight:650}
+.content blockquote{margin:34px 0;padding:6px 0 6px 26px;border-left:3px solid var(--accent);font-size:19px;line-height:1.7}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.62;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+.content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:26px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>04 · 2026-07-31</span></header>
+<main>
+  <span class="state">進行中</span>
+  <article class="content"><h1>參考實作</h1>
+<h2>目前狀態：1 個範例</h2>
+<ul>
+<li><a href="/html/mssp/001-task-runner.html">001 — 任務執行器：兩個 TMS 想互相引用時</a></li>
+</ul>
+<p>節奏是<strong>一天一個</strong>。累積速度會比一次寫一份大文件慢，但每一個都是可以打開、可以執行、可以被反駁的東西。</p>
+<h2>每個範例必須成立的四件事</h2>
+<p>這不是編輯建議，是 <code>scripts/build-mssp.mjs</code> 強制的契約。任何一項失敗，範例不會被發佈——而不是發佈後在頁面上標註警告。</p>
+<p><strong>一、它真的會跑。</strong> <code>meta.yaml</code> 裡的 <code>runnable</code> 指令會被執行，非零離開碼直接讓 build 失敗。</p>
+<p><strong>二、沒有任何 TMS 引用兄弟 TMS。</strong> 機械檢查，不靠人眼。一個 TMS 單元的定義是「帶有 index 檔的目錄，否則就是單一檔案」——所以放在同一個分類目錄下的兩個檔案是<strong>兩個</strong>單元，它們之間的 import 是違規。</p>
+<p><strong>三、沒有空的集合目錄。</strong> 一個空的 <code>TMS/</code> 什麼也沒教，卻暗示了不存在的結構。</p>
+<p><strong>四、README 必須寫出「這個範例沒有解決什麼」。</strong> 沒有這一節，build 失敗。</p>
+<h2>一個範例只示範一個決策</h2>
+<p>示範四件事的範例，一件也沒示範成。</p>
+<p>好的題目長這樣：</p>
+<ul>
+<li>把某個能力從 TMS 升到 SMS，以及升上去之後什麼壞了</li>
+<li>兩個 TMS 想互相引用，SMS 契約如何解決（001 號）</li>
+<li>一個 runtime 真的能檢查的 SCL 權限</li>
+<li>一個把「執行成功」變成人類可驗證的 DMS 視圖</li>
+<li>同一支程式重構前後，耦合量測的差別</li>
+</ul>
+<p>不好的題目：「MSSP 應用於 X」而沒有具體決策，或者重寫一個大型框架。</p>
+<h2>反例是合法的範例</h2>
+<p>契約支援 <code>kind: counterexample</code>。刻意示範錯誤結構的範例會被網站標上警語，讓沒有人會照抄。</p>
+<p>這一類其實比正面範例更需要：多數人不是不知道好結構長什麼樣，而是分不出自己手上的東西屬於哪一種。</p>
+<h2>誠實規範</h2>
+<p>每個範例的 README 有一節是強制的，內容也必須是真的。001 號的那一節寫著：</p>
+<blockquote>
+<p>306 行程式碼（含註解 496 行）分散在 13 個檔案，如果寫成兩個檔案會更好讀。五個集合放在這裡是為了讓各部分可見，不是因為這個規模需要它們。把一個過度結構化的玩具當成方法有效的證據，是不誠實的。</p>
+</blockquote>
+<p><strong>在小規模上使用完整 MSSP 是有代價的，而且這個代價是方法自己承認的。</strong> 一個範例可以選擇用小問題來讓結構可見，但必須說出來。</p>
+<h2>路線</h2>
+<p>從小型可運行範例，逐步推進到遊戲運行框架、Agent 與世界狀態系統。這個順序不是難度排序，是<strong>驗證強度</strong>排序：小範例能被完整檢查，大系統只能被抽樣。</p>
+<p>在能被完整檢查的規模上先把方法弄對，比在無法驗證的規模上宣稱它有效重要。</p>
+<h2>還沒有做的</h2>
+<ul>
+<li>Router 的實作。001 號沒有 Router，因為在一個型別對一個處理器的情況下，路由就是一次查表，另設一層會是空模組。</li>
+<li>版本與遷移。完整 MSSP-Scale 的七個部分裡有三個在 001 號中完全缺席。</li>
+<li>多語言。目前只有 JavaScript。契約本身不綁語言，但「TMS 不引用兄弟 TMS」的檢查目前只認得靜態 <code>import</code>。</li>
+</ul>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

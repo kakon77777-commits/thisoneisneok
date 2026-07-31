@@ -5,38 +5,8 @@ import { PageIntro } from "../components/page-intro";
 import { useLanguage } from "../components/language-context";
 import { PendingPanel } from "../components/pending-panel";
 import { msspExamples, msspExampleCount } from "../data/mssp.generated";
+import { msspModules } from "../data/mssp-modules.generated";
 import { canonical } from "../data/site";
-
-const modules = [
-  {
-    id: "start",
-    index: "01",
-    title: { zh: "從這裡開始", en: "Start here" },
-    desc: { zh: "用最少前置知識理解 MSSP 的問題意識、基本組件與適用邊界。", en: "Understand the motivation, base components, and boundaries of MSSP with minimal prerequisites." },
-    state: { zh: "撰寫中", en: "Writing" },
-  },
-  {
-    id: "patterns",
-    index: "02",
-    title: { zh: "架構與模式", en: "Architecture & patterns" },
-    desc: { zh: "整理狀態拆分、投影、替換、回放與組合等可重複使用的結構。", en: "Reusable structures for state separation, projection, replacement, replay, and composition." },
-    state: { zh: "演化中", en: "Evolving" },
-  },
-  {
-    id: "archaeology",
-    index: "03",
-    title: { zh: "開源專案考古", en: "Open-source archaeology" },
-    desc: { zh: "持續尋找現有專案，分析哪些結構可以保留、重寫或轉化為 MSSP。", en: "Ongoing analysis of what existing projects can preserve, rewrite, or transform into MSSP." },
-    state: { zh: "持續更新", en: "Continuous" },
-  },
-  {
-    id: "reference",
-    index: "04",
-    title: { zh: "參考實作", en: "Reference implementations" },
-    desc: { zh: "由小型可運行範例逐步推進到遊戲、Agent 與世界狀態系統。", en: "From small running examples toward games, agents, and world-state systems." },
-    state: { zh: "原型中", en: "Prototyping" },
-  },
-];
 
 export default function MSSPPage() {
   const { language, t } = useLanguage();
@@ -65,13 +35,16 @@ export default function MSSPPage() {
       </section>
 
       <section className="module-list">
-        {modules.map((module) => (
-          <article id={module.id} key={module.id}>
+        {msspModules.map((module) => (
+          <a id={module.id} key={module.id} href={module.href}>
             <span className="module-index">{module.index}</span>
-            <div><h2>{t(module.title)}</h2><p>{t(module.desc)}</p></div>
-            <span className="module-state">{t(module.state)}</span>
+            <div>
+              <h2>{language === "zh" ? module.title.zh : module.title.en}</h2>
+              <p>{language === "zh" ? module.summary.zh : module.summary.en}</p>
+            </div>
+            <span className="module-state">{language === "zh" ? module.state.zh : module.state.en}</span>
             <span className="module-arrow" aria-hidden="true">↘</span>
-          </article>
+          </a>
         ))}
       </section>
 
@@ -130,8 +103,11 @@ export default function MSSPPage() {
 
       <section className="source-banner">
         <div><span>AI / SOURCE</span><h2>{t({ zh: "人類讀網頁，AI 讀原始結構。", en: "Humans read pages; AI reads source structure." })}</h2></div>
-        <p>{t({ zh: "所有公開教學都會保留 Markdown、永久網址、版本資訊與可下載原始碼。", en: "Every public tutorial retains Markdown, an absolute URL, version metadata, and downloadable source." })}</p>
-        <a href={canonical("/ai/site-index.md")}>{t({ zh: "開啟 AI 索引", en: "Open AI index" })} ↗</a>
+        <p>{t({
+          zh: "每個範例的完整原始碼、行數與檢查結果都在頁面上，並收在同一份機器可讀索引裡。論文只以 HTML 與 PDF 發表，Markdown 不對外發佈。",
+          en: "Every example's full source, line count, and check results are on its page and in one machine-readable index. Papers publish as HTML and PDF only; their Markdown is not distributed.",
+        })}</p>
+        <a href={canonical("/ai/mssp-index.json")}>{t({ zh: "開啟 MSSP 索引", en: "Open the MSSP index" })} ↗</a>
       </section>
 
       <div className="page-end-link"><Link href="/blog">{t({ zh: "查看最新 MSSP 開發記錄", en: "Read the latest MSSP development logs" })} →</Link></div>
