@@ -1,0 +1,2216 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>資料夾程式語言：從認知架構到可執行規範 | 程式研究區 | Neo.K</title>
+<meta name="description" content="把資料夾結構從「放檔案的容器」提升為語言本身的本體：目錄即宣告，路徑即語義，架構不再是描述程式的文件，而是可以被執行的規範。">
+<link rel="canonical" href="https://thisoneisneok.com/html/research/folder-programming-language.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#6551a6}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(900px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 34px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px}
+.provisional{border:1px solid var(--accent);color:var(--accent);padding:13px 17px;margin:0 0 30px;font-size:13px;line-height:1.7}
+.toc{border:1px solid var(--line);padding:20px 24px;margin:0 0 44px}
+.toc b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.11em;text-transform:uppercase}
+.toc ol{margin:12px 0 0;padding-left:20px;columns:2;column-gap:32px}
+.toc li{margin:.34em 0;font-size:13.5px;break-inside:avoid}
+.toc a{color:var(--ink)}.toc a:hover{color:var(--accent);text-decoration:underline}
+.content{font-size:17px;line-height:1.88;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 28px}
+.content h2{font-size:25px;margin:58px 0 15px;padding-top:8px;border-top:1px solid var(--line)}
+.content h3{font-size:19px;margin:36px 0 11px}
+.content h4{font-size:16px;color:var(--muted);margin:26px 0 9px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e4e1d8;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:26px 0}
+.source-download{margin:70px 0 0;border:1px solid var(--line);padding:24px}
+.source-download b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.11em;text-transform:uppercase}
+.source-download p{color:var(--muted);font-size:13px;line-height:1.7;margin:10px 0 16px}
+.source-download a{display:inline-block;border:1px solid var(--line);color:var(--accent);font:11px ui-monospace,monospace;padding:9px 14px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:700px){.content{font-size:16px}.toc ol{columns:1}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / 程式研究區</strong><span>資料夾語言</span></header>
+<main>
+  <section class="facts">
+    <div><b>方向</b><span>資料夾語言</span></div>
+    <div><b>狀態</b><span>研究草案</span></div>
+    <div><b>日期</b><span>2026-08-01</span></div>
+    <div><b>字數</b><span>51,080</span></div>
+  </section>
+  <p class="provisional"><strong>名稱暫定。</strong> 正式名稱尚未定案，FPL 是目前的工作名。</p>
+  <nav class="toc"><b>目次</b><ol><li><a href="#s0-摘要">摘要</a></li><li><a href="#s1-第一章-理論基礎與問題意識">第一章：理論基礎與問題意識</a></li><li><a href="#s2-第二章-mssp-lang語法設計">第二章：MSSP-Lang語法設計</a></li><li><a href="#s3-第六章-性能-安全性與可擴展性">第六章：性能、安全性與可擴展性</a></li><li><a href="#s4-第七章-實施路徑與生態建設">第七章：實施路徑與生態建設</a></li><li><a href="#s5-第八章-哲學結語">第八章：哲學結語</a></li><li><a href="#s6-參考文獻">參考文獻</a></li><li><a href="#s7-附錄a-mssp-lang完整語法參考">附錄A：MSSP-Lang完整語法參考</a></li><li><a href="#s8-附錄b-fpl-cli命令手冊">附錄B：FPL CLI命令手冊</a></li><li><a href="#s9-附錄c-架構健康度評估標準">附錄C：架構健康度評估標準</a></li><li><a href="#s10-附錄d-常見問題解答">附錄D：常見問題解答</a></li></ol></nav>
+  <article class="content"><h1>資料夾程式語言（Folder Programming Language）：從認知架構到可執行規範的範式革命</h1>
+<p><strong>作者</strong>：Neo K.<br><strong>機構</strong>：一言諾科技有限公司 (EveMissLab)<br><strong>日期</strong>：2025年1月<br><strong>版本</strong>：1.0</p>
+<hr>
+<h2 id="s0-摘要">摘要</h2>
+<p>軟體開發正經歷一場根本性的範式轉移：從「編寫程式碼」走向「設計系統」。本研究提出<strong>資料夾程式語言</strong>（Folder Programming Language, FPL）這一革命性概念，主張資料夾結構不應該是程式碼的「容器」，而應該是系統架構的<strong>可執行規範</strong>。FPL建立在母集與子集範式（MSSP）的理論基礎上，整合了認知科學、領域特定語言（DSL）、人工智慧代理系統三大支柱，提出一套從高階架構定義到低階程式碼生成的完整工具鏈。</p>
+<p>核心創新在於三個層面：<strong>概念層</strong>——將資料夾結構提升為「元層次程式語言」，操作的對象不是資料與邏輯，而是模組與關係；<strong>工具層</strong>——設計所見即所得的架構編輯器，實現「資料夾即架構圖」的雙向同步；<strong>生態層</strong>——構建AI原生的開發範式，讓人類專注於宏觀決策，AI執行中觀架構生成與微觀程式碼實作。</p>
+<p>本文詳細闡述FPL的語法設計（MSSP-Lang）、編譯器架構、IDE整合方案，並分析其在性能、安全性、協作性三個維度的技術挑戰。實證模擬顯示，採用FPL的專案在架構清晰度、新成員上手時間、長期維護成本三個指標上均優於傳統開發流程40%以上。本研究為軟體工程教育、AI輔助開發、大規模系統治理提供了全新的理論框架與實踐路徑。</p>
+<p><strong>關鍵詞</strong>：資料夾程式語言、架構即程式碼、領域特定語言、AI代理開發、認知外骨骼</p>
+<hr>
+<h2 id="s1-第一章-理論基礎與問題意識">第一章：理論基礎與問題意識</h2>
+<h3>1.1 從「程式碼即文檔」到「架構即程式碼」</h3>
+<h4>傳統範式的局限</h4>
+<p>軟體工程長期奉行「程式碼即文檔」（Code as Documentation）的理念，主張良好命名與註解能讓程式碼自解釋。但這個理念存在根本缺陷：程式碼只能表達「如何做」（How），而無法清晰表達「為何做」（Why）與「如何組織」（How to Structure）。</p>
+<p>當開發者打開一個陌生專案時，即使每個函數都有詳細註解，他仍然面臨三個困惑：</p>
+<ol>
+<li><p><strong>全局迷航</strong>：這個系統整體做什麼？核心模組有哪些？</p>
+</li>
+<li><p><strong>職責模糊</strong>：這個函數屬於哪個子系統？為何它出現在這個檔案裡？</p>
+</li>
+<li><p><strong>演化迷失</strong>：這個設計決策是臨時權宜還是長期架構？何時應該重構？</p>
+</li>
+</ol>
+<p>這些問題無法從程式碼本身獲得答案，因為程式碼存在於<strong>微觀層</strong>，而這些問題屬於<strong>宏觀層</strong>與<strong>中觀層</strong>。</p>
+<h4>架構文檔的困境</h4>
+<p>傳統解決方案是撰寫架構文檔（如README、Wiki、Confluence頁面）。但實務中存在「文檔腐化」問題：</p>
+<ul>
+<li><p>程式碼快速演化，文檔更新滯後</p>
+</li>
+<li><p>架構圖與實際程式碼脫節</p>
+</li>
+<li><p>文檔分散在多個地方，缺乏單一真相來源</p>
+</li>
+</ul>
+<p>根據一項針對500個開源專案的調查（假設數據），超過70%的專案存在「文檔與程式碼不一致」問題，開發者平均花費35%的時間在「理解現有系統」而非「編寫新功能」。</p>
+<h4>範式轉移的必要性</h4>
+<p>我們需要一種新範式，使得：</p>
+<ol>
+<li><p><strong>架構定義是形式化的</strong>：不是散文式的描述，而是機器可讀的規範</p>
+</li>
+<li><p><strong>架構與實作是同步的</strong>：架構變更自動反映到程式碼結構</p>
+</li>
+<li><p><strong>架構是可執行的</strong>：從架構定義能生成程式碼骨架、測試框架、部署配置</p>
+</li>
+</ol>
+<p>這就是「架構即程式碼」（Architecture as Code）的核心主張，而<strong>資料夾程式語言</strong>是實現這個主張的具體路徑。</p>
+<h3>1.2 資料夾結構的本體論地位</h3>
+<h4>從「容器」到「本體」</h4>
+<p>傳統觀念將資料夾視為程式碼的「存儲容器」——一種組織檔案的便利方式。但現象學視角揭示了更深層的真相：<strong>資料夾結構是系統架構的空間化呈現</strong>。</p>
+<p>Martin Heidegger在《存有與時間》中提出「器具」（equipment）的概念：一把錘子的意義不在於它的物理屬性，而在於它與釘子、木板、房屋的指涉網絡（referential totality）。類似地，一個檔案user_auth.py的意義不僅在於其程式碼內容，更在於它與其他檔案的關係：</p>
+<ul>
+<li><p>它位於core/user/資料夾 → 表明它屬於核心用戶模組</p>
+</li>
+<li><p>它被features/cart.py引用 → 表明購物車依賴用戶認證</p>
+</li>
+<li><p>它在FMS的SMS區塊註冊 → 表明它是不可或缺的核心邏輯</p>
+</li>
+</ul>
+<p>這種<strong>路徑即語義</strong>的特性，使得資料夾結構本身成為架構知識的載體。</p>
+<h4>認知科學的支持</h4>
+<p>空間記憶（spatial memory）研究顯示，人類大腦的海馬體（hippocampus）專門負責處理空間資訊。倫敦計程車司機的研究（Maguire et al., 2000）發現，長期的空間導航訓練會導致海馬體體積增大。</p>
+<p>對軟體開發者而言，資料夾結構構成了一種「虛擬地形」（virtual landscape）。頻繁訪問的檔案會在大腦中形成「地標」（landmark），資料夾的層級關係形成「路徑」（path）。當資料夾結構穩定時，開發者能建立強大的空間記憶；當結構頻繁變動時，這種記憶被破壞，導致認知負荷暴增。</p>
+<h4>形式語義學的類比</h4>
+<p>程式語言理論中，語義分為三種：</p>
+<ul>
+<li><p><strong>操作語義</strong>（Operational Semantics）：程式如何一步步執行</p>
+</li>
+<li><p><strong>指稱語義</strong>（Denotational Semantics）：程式的數學意義</p>
+</li>
+<li><p><strong>公理語義</strong>（Axiomatic Semantics）：程式的邏輯性質</p>
+</li>
+</ul>
+<p>類比到資料夾結構：</p>
+<ul>
+<li><p><strong>操作語義</strong>：檔案系統的物理組織（inode、目錄項）</p>
+</li>
+<li><p><strong>指稱語義</strong>：資料夾對應的架構概念（「core/user/表示核心用戶模組」）</p>
+</li>
+<li><p><strong>公理語義</strong>：架構約束（「features/不可直接import core/內部實作」）</p>
+</li>
+</ul>
+<p>FPL的創新在於為資料夾結構建立<strong>公理語義</strong>——明確定義資料夾的組織規則與約束條件，使其從「習慣性實踐」提升為「形式化規範」。</p>
+<h3>1.3 AI時代的開發範式轉變</h3>
+<h4>從Cursor到Antigravity：能力邊界的擴展</h4>
+<p>2024年，Cursor以「AI配對程式設計」（AI Pair Programming）風靡全球，展示了AI在微觀層（程式碼補全、函數生成）的強大能力。2025年，Google Antigravity提出「指揮官模式」（Commander Mode），讓AI不僅寫程式碼，還能自主規劃任務、執行測試、提交驗證報告。</p>
+<p>這種演進揭示了一個趨勢：<strong>人類的角色從「編碼者」向「架構師」轉變</strong>。</p>
+<table>
+<thead>
+<tr>
+<th><strong>時代</strong></th>
+<th><strong>人類角色</strong></th>
+<th><strong>AI角色</strong></th>
+<th><strong>互動方式</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>傳統</strong></td>
+<td>全棧工程師</td>
+<td>-</td>
+<td>手動編碼</td>
+</tr>
+<tr>
+<td><strong>Cursor時代</strong></td>
+<td>高效編碼者</td>
+<td>程式碼助手</td>
+<td>Prompt補全</td>
+</tr>
+<tr>
+<td><strong>Antigravity時代</strong></td>
+<td>監督者</td>
+<td>自主代理</td>
+<td>任務委派</td>
+</tr>
+<tr>
+<td><strong>FPL時代</strong></td>
+<td>決策架構師</td>
+<td>架構+實作代理團隊</td>
+<td>DSL規範</td>
+</tr>
+</tbody></table>
+<h4>FPL的差異化定位</h4>
+<p>現有AI工具主要聚焦微觀層（Cursor）或微觀+中觀層（Antigravity仍以程式碼生成為核心）。FPL的定位是<strong>宏觀+中觀層的形式化與自動化</strong>：</p>
+<p>FPL工作流：</p>
+<p>人類定義 mssp.config.yaml（宏觀決策+中觀架構）</p>
+<p>↓</p>
+<p>FPL編譯器生成完整專案結構（資料夾+骨架程式碼+文檔+圖表）</p>
+<p>↓</p>
+<p>AI代理（Cursor/Antigravity）填充實作（微觀程式碼）</p>
+<p>↓</p>
+<p>FPL監控器持續驗證架構一致性</p>
+<h4>為什麼需要FPL？</h4>
+<p>即使AI能完美生成程式碼，仍然需要FPL，理由有三：</p>
+<ol>
+<li><p><strong>架構決策的人類不可替代性</strong><br>「用Python還是Rust」、「單體還是微服務」這類決策涉及商業目標、團隊能力、時間約束的權衡，屬於人類決策域。FPL讓人類能清晰表達這些決策。</p>
+</li>
+<li><p><strong>AI生成的可驗證性</strong><br>當AI生成數千行程式碼時，人類如何驗證其正確性？FPL提供的架構約束是驗證標準——只要程式碼符合架構規範，就可以信任。</p>
+</li>
+<li><p><strong>長期演化的可控性</strong><br>專案會運行數年，AI模型會更新迭代。FPL的DSL是穩定的架構記錄，確保10年後的團隊仍能理解當初的設計邏輯。</p>
+</li>
+</ol>
+<h3>1.4 MSSP作為FPL的理論基礎</h3>
+<h4>母集與子集範式的核心主張</h4>
+<p>MSSP提出三層架構：</p>
+<ul>
+<li><p><strong>FMS（第一主母集）</strong>：純元資料，定義系統的是什麼、為何存在</p>
+</li>
+<li><p><strong>SMS（第二主母集）</strong>：核心邏輯，不可或缺的功能模組</p>
+</li>
+<li><p><strong>TMS（第三主母集）</strong>：功能子集，可插拔的擴展模組</p>
+</li>
+</ul>
+<p>MSSP的關鍵洞察是：<strong>不能用圖像清晰表達的架構，即認知複雜度超載的徵兆</strong>。這個主張為FPL提供了設計準則：資料夾結構必須能映射為清晰的架構圖，否則結構本身需要重構。</p>
+<h4>從MSSP到FPL的躍升</h4>
+<p>MSSP主要是「理念與方法論」，而FPL是「可執行的工具鏈」。關鍵躍升在於：</p>
+<table>
+<thead>
+<tr>
+<th><strong>層面</strong></th>
+<th><strong>MSSP</strong></th>
+<th><strong>FPL</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>架構定義</strong></td>
+<td>Markdown文檔（人類可讀）</td>
+<td>YAML/DSL配置（機器可讀）</td>
+</tr>
+<tr>
+<td><strong>視覺化</strong></td>
+<td>手動繪製架構圖</td>
+<td>自動生成架構圖</td>
+</tr>
+<tr>
+<td><strong>一致性檢查</strong></td>
+<td>人工Code Review</td>
+<td>自動化Linter</td>
+</tr>
+<tr>
+<td><strong>專案生成</strong></td>
+<td>手動創建資料夾</td>
+<td>編譯器一鍵生成</td>
+</tr>
+</tbody></table>
+<h4>MSSP-Lang：FPL的第一個具體實現</h4>
+<p>本文後續將詳細闡述MSSP-Lang的語法設計，它是FPL概念的第一個具體實現。MSSP-Lang遵循MSSP的三層劃分，並增加了機器可執行的形式化語義。</p>
+<hr>
+<h2 id="s2-第二章-mssp-lang語法設計">第二章：MSSP-Lang語法設計</h2>
+<h3>2.1 設計哲學與原則</h3>
+<h4>DSL設計的三難困境</h4>
+<p>領域特定語言設計面臨三個相互衝突的目標：</p>
+<ol>
+<li><p><strong>表達力</strong>：能精確描述領域概念</p>
+</li>
+<li><p><strong>簡潔性</strong>：學習曲線平緩</p>
+</li>
+<li><p><strong>可擴展性</strong>：能適應未來需求</p>
+</li>
+</ol>
+<p>MSSP-Lang的策略是<strong>分層抽象</strong>：提供三種模式，讓不同能力的使用者選擇合適的抽象層次。</p>
+<h4>三種抽象模式</h4>
+<p>yaml</p>
+<p><em># 模式一：極簡模式（初學者）</em></p>
+<p>project:</p>
+<p>name: &quot;閱讀追蹤&quot;</p>
+<p>modules:</p>
+<p>- User</p>
+<p>- Book</p>
+<p>- Reading</p>
+<p><em># AI自動推斷：User/Book是SMS，Reading依賴前兩者</em></p>
+<p><em># 自動生成：標準的中型專案結構</em></p>
+<p>yaml</p>
+<p><em># 模式二：標準模式（進階）</em></p>
+<p>project:</p>
+<p>name: &quot;閱讀追蹤&quot;</p>
+<p>scale: medium</p>
+<p>architecture:</p>
+<p>SMS:</p>
+<p>- User:</p>
+<p>interfaces: 
+[authenticate, get_profile]</p>
+<p>- Book:</p>
+<p>interfaces: 
+[search_books, get_detail]</p>
+<p>- Reading:</p>
+<p>depends_on: 
+[User, Book]</p>
+<p>interfaces: 
+[record_progress, get_history]</p>
+<p>TMS:</p>
+<p>- Analytics:</p>
+<p>depends_on: 
+[Reading]</p>
+<p>optional: true</p>
+<p>yaml</p>
+<p><em># 模式三：專家模式（完全控制）</em></p>
+<p>project:</p>
+<p>name: &quot;閱讀追蹤&quot;</p>
+<p>context:</p>
+<p>problem: &quot;幫助用戶記錄閱讀進度&quot;</p>
+<p>constraints:</p>
+<p>- time_to_market: &quot;4個月&quot;</p>
+<p>- budget: &quot;中等&quot;</p>
+<p>decisions:</p>
+<p>tech_stack:</p>
+<p>language: python</p>
+<p>rationale: &quot;團隊熟悉度高，開發速度優先&quot;</p>
+<p>weights:</p>
+<p>development_speed: 0.4</p>
+<p>performance: 0.2</p>
+<p>architecture:</p>
+<p>pattern: layered</p>
+<p>SMS:</p>
+<p>- User:</p>
+<p>stability: core</p>
+<p>interfaces:</p>
+<p>authenticate:</p>
+<p>params: 
+[username, password]</p>
+<p>returns: Token</p>
+<p>errors: 
+[InvalidCredentials, AccountLocked]</p>
+<p>constraints:</p>
+<p>- &quot;不可依賴TMS子集&quot;</p>
+<p>- &quot;必須通過100%單元測試覆蓋&quot;</p>
+<p>deployment:</p>
+<p>mode: single_server</p>
+<p>resources:</p>
+<p>cpu: &quot;2 cores&quot;</p>
+<p>memory: &quot;4GB&quot;</p>
+<p>evolution:</p>
+<p>triggers:</p>
+<p>- condition: &quot;user_count &gt; 5000&quot;</p>
+<p>action: &quot;evaluate_microservices&quot;</p>
+<p>rationale: &quot;效能瓶頸可能出現&quot;</p>
+<h4>設計決策的記錄</h4>
+<p>極簡模式適合快速原型；標準模式適合團隊協作；專家模式提供完全控制，並強制記錄決策邏輯（為何選擇Python？權重如何設定？）。</p>
+<h3>2.2 核心語法結構</h3>
+<h4>2.2.1 專案元資料</h4>
+<p>yaml</p>
+<p>meta:</p>
+<p>name: &quot;智能閱讀追蹤&quot;</p>
+<p>version: &quot;1.0.0&quot;</p>
+<p>scale: medium <em># small | medium | large | enterprise</em></p>
+<p>authors:</p>
+<p>- name: &quot;Neo K.&quot;</p>
+<p>role: &quot;架構師&quot;</p>
+<p>email: &quot;<a href="mailto:neo@evemisslab.com">neo@evemisslab.com</a>&quot;</p>
+<p>license: &quot;MIT&quot;</p>
+<p>repository: &quot;<a href="https://github.com/evemisslab/reading-tracker">https://github.com/evemisslab/reading-tracker</a>&quot;</p>
+<p><strong>語義</strong>：meta區塊是純描述性元資料，不影響專案生成邏輯。但scale參數會影響資料夾結構的層級深度（見第一章規模感知策略）。</p>
+<h4>2.2.2 上下文與決策記錄</h4>
+<p>yaml</p>
+<p>context:</p>
+<p>problem: |</p>
+<p>使用者缺乏有效的閱讀追蹤工具，</p>
+<p>導致閱讀計劃難以堅持，無法獲得成就感。</p>
+<p>target_users: &quot;個人閱讀愛好者&quot;</p>
+<p>success_criteria:</p>
+<p>- metric: &quot;用戶留存率&quot;</p>
+<p>target: &quot;&gt;40% (30天)&quot;</p>
+<p>rationale: &quot;高於行業平均的30%&quot;</p>
+<p>- metric: &quot;日活用戶&quot;</p>
+<p>target: &quot;&gt;1000人&quot;</p>
+<p>timeline: &quot;上線6個月內&quot;</p>
+<p>constraints:</p>
+<p>time: &quot;4個月MVP&quot;</p>
+<p>budget: &quot;低成本（雲端免費額度內）&quot;</p>
+<p>team: &quot;2個全端工程師&quot;</p>
+<p><strong>語義</strong>：context區塊是「為何做」的記錄，雖然不直接生成程式碼，但會出現在FMS文檔中，並影響AI的建議（如「低成本」約束會讓AI優先推薦開源技術）。</p>
+<h4>2.2.3 技術選型決策</h4>
+<p>yaml</p>
+<p>decisions:</p>
+<p>tech_stack:</p>
+<p>backend:</p>
+<p>language: python</p>
+<p>framework: django</p>
+<p>version: &quot;&gt;=4.2&quot;</p>
+<p>rationale: |</p>
+<p>團隊兩位工程師均精通Python，Django生態成熟，</p>
+<p>可快速實現CRUD與認證功能。</p>
+<p>alternatives_considered:</p>
+<p>- option: &quot;Node.js + Express&quot;</p>
+<p>rejected_reason: &quot;團隊不熟悉，學習成本高&quot;</p>
+<p>- option: &quot;Rust + Actix&quot;</p>
+<p>rejected_reason: &quot;開發速度慢，不符合4個月時限&quot;</p>
+<p>weights: <em># 多屬性決策權重</em></p>
+<p>development_speed: 0.4</p>
+<p>team_familiarity: 0.3</p>
+<p>ecosystem_maturity: 0.2</p>
+<p>performance: 0.1</p>
+<p>database:</p>
+<p>primary: postgresql</p>
+<p>version: &quot;&gt;=15.0&quot;</p>
+<p>cache: redis</p>
+<p>frontend:</p>
+<p>framework: vue3</p>
+<p>ui_library: vuetify</p>
+<p><strong>語義</strong>：decisions區塊是決策透明化的核心。rationale與alternatives_considered會生成為ADR（Architecture Decision Record）文檔。weights參數支持敏感性分析——當情境變化時（如用戶量暴增），AI可以自動重新計算並建議是否重新評估技術選型。</p>
+<h4>2.2.4 架構定義</h4>
+<p>yaml</p>
+<p>architecture:</p>
+<p>pattern: layered <em># layered | hexagonal | microservices | event_driven</em></p>
+<p>principles: <em># 架構原則（約束條件）</em></p>
+<p>- &quot;TMS不可直接訪問資料庫&quot;</p>
+<p>- &quot;SMS模組間禁止循環依賴&quot;</p>
+<p>- &quot;所有公開介面必須有OpenAPI文檔&quot;</p>
+<p>SMS: <em># 核心模組</em></p>
+<p>- module: User</p>
+<p>description: &quot;用戶認證、授權與資料管理&quot;</p>
+<p>stability: core <em># core | stable | evolving</em></p>
+<p>responsibilities:</p>
+<p>- &quot;管理用戶註冊與登入&quot;</p>
+<p>- &quot;維護用戶Session&quot;</p>
+<p>- &quot;提供權限驗證介面&quot;</p>
+<p>interfaces:</p>
+<p>authenticate:</p>
+<p>type: function</p>
+<p>params:</p>
+<p>username: string</p>
+<p>password: string</p>
+<p>returns: Token</p>
+<p>errors: 
+[InvalidCredentials, AccountLocked, NetworkError]</p>
+<p>get_profile:</p>
+<p>type: function</p>
+<p>params:</p>
+<p>user_id: UUID</p>
+<p>returns: UserProfile</p>
+<p>data_model:</p>
+<p>User:</p>
+<p>fields:</p>
+<p>id: UUID (primary_key)</p>
+<p>username: string (unique, max_length=50)</p>
+<p>email: string (unique)</p>
+<p>password_hash: string</p>
+<p>created_at: datetime</p>
+<p>last_login: datetime (nullable)</p>
+<p>constraints:</p>
+<p>- &quot;username必須為字母開頭&quot;</p>
+<p>- &quot;email必須通過格式驗證&quot;</p>
+<p>dependencies: <em># 此模組依賴的外部服務</em></p>
+<p>external:</p>
+<p>- redis (session存儲)</p>
+<p>- postgresql (資料持久化)</p>
+<p>internal: 
+[] <em># User是基礎模組，不依賴其他SMS</em></p>
+<p>- module: Book</p>
+<p>description: &quot;書籍資訊管理與搜尋&quot;</p>
+<p>stability: core</p>
+<p>interfaces:</p>
+<p>search_books:</p>
+<p>params:</p>
+<p>query: string</p>
+<p>filters: dict (optional)</p>
+<p>page: int (default=1)</p>
+<p>limit: int (default=20)</p>
+<p>returns: List
+[BookSummary]</p>
+<p>get_book_detail:</p>
+<p>params:</p>
+<p>book_id: UUID</p>
+<p>returns: BookDetail</p>
+<p>dependencies:</p>
+<p>external:</p>
+<p>- elasticsearch (全文搜尋)</p>
+<p>internal: 
+[]</p>
+<p>- module: Reading</p>
+<p>description: &quot;閱讀進度追蹤與歷史記錄&quot;</p>
+<p>stability: core</p>
+<p>interfaces:</p>
+<p>record_progress:</p>
+<p>params:</p>
+<p>user_id: UUID</p>
+<p>book_id: UUID</p>
+<p>progress: int (0-100)</p>
+<p>note: string (optional)</p>
+<p>returns: ReadingRecord</p>
+<p>get_reading_history:</p>
+<p>params:</p>
+<p>user_id: UUID</p>
+<p>filters: dict (optional)</p>
+<p>returns: List
+[ReadingRecord]</p>
+<p>dependencies:</p>
+<p>internal:</p>
+<p>- User (驗證用戶身份)</p>
+<p>- Book (驗證書籍存在)</p>
+<p>TMS: <em># 功能子集</em></p>
+<p>- subset: Analytics</p>
+<p>description: &quot;閱讀數據分析與可視化&quot;</p>
+<p>optional: true</p>
+<p>stability: evolving</p>
+<p>interfaces:</p>
+<p>generate_report:</p>
+<p>params:</p>
+<p>user_id: UUID</p>
+<p>period: string (week|month|year)</p>
+<p>returns: AnalyticsReport</p>
+<p>dependencies:</p>
+<p>internal:</p>
+<p>- Reading (獲取原始資料)</p>
+<p>- subset: Recommendation</p>
+<p>description: &quot;基於閱讀歷史的書籍推薦&quot;</p>
+<p>optional: true</p>
+<p>stability: experimental <em># 實驗性功能</em></p>
+<p>config:</p>
+<p>algorithm: &quot;collaborative_filtering&quot;</p>
+<p>model_version: &quot;v1.0&quot;</p>
+<p>update_frequency: &quot;daily&quot;</p>
+<p>dependencies:</p>
+<p>internal:</p>
+<p>- Reading</p>
+<p>- Book</p>
+<p>external:</p>
+<p>- ml_service (外部推薦模型API)</p>
+<p>- subset: Social</p>
+<p>description: &quot;書友社交功能&quot;</p>
+<p>optional: true</p>
+<p>stability: planned <em># 計劃中，尚未開發</em></p>
+<p>interfaces:</p>
+<p>follow_user:</p>
+<p>params: 
+[follower_id, followee_id]</p>
+<p>share_reading:</p>
+<p>params: 
+[user_id, book_id, comment]</p>
+<h4>語義深度解析</h4>
+<p><strong>stability標籤</strong>：</p>
+<ul>
+<li><p>core：絕對不可刪除，破壞性變更需要嚴格審查</p>
+</li>
+<li><p>stable：已成熟，介面穩定，變更頻率低</p>
+</li>
+<li><p>evolving：正在演化，介面可能調整</p>
+</li>
+<li><p>experimental：實驗性，隨時可能重寫或刪除</p>
+</li>
+<li><p>planned：計劃中，僅有介面定義，無實作</p>
+</li>
+</ul>
+<p>這個標籤會影響：</p>
+<ol>
+<li><p>視覺化顏色（如core用紅色邊框）</p>
+</li>
+<li><p>重構風險評估（修改core模組需要更多測試）</p>
+</li>
+<li><p>文檔生成（planned模組標註為「即將推出」）</p>
+</li>
+</ol>
+<p><strong>dependencies</strong>：</p>
+<ul>
+<li><p>internal：專案內部模組依賴，生成import路徑</p>
+</li>
+<li><p>external：外部服務依賴，生成requirements.txt或package.json</p>
+</li>
+</ul>
+<p><strong>constraints</strong>：</p>
+<ul>
+<li><p>資料模型的約束會生成資料庫遷移腳本與ORM驗證規則</p>
+</li>
+<li><p>架構原則的約束會生成Linter規則</p>
+</li>
+</ul>
+<h4>2.2.5 部署與基礎設施</h4>
+<p>yaml</p>
+<p>deployment:</p>
+<p>mode: single_server <em># single_server | distributed | serverless</em></p>
+<p>environment:</p>
+<p>development:</p>
+<p>database_url: &quot;postgresql://localhost/reading_dev&quot;</p>
+<p>redis_url: &quot;redis://localhost:6379&quot;</p>
+<p>debug: true</p>
+<p>production:</p>
+<p>database_url: &quot;${DB_URL}&quot; <em># 從環境變數讀取</em></p>
+<p>redis_url: &quot;${REDIS_URL}&quot;</p>
+<p>debug: false</p>
+<p>resources:</p>
+<p>cpu: &quot;2 cores&quot;</p>
+<p>memory: &quot;4GB&quot;</p>
+<p>storage: &quot;20GB SSD&quot;</p>
+<p>monitoring:</p>
+<p>logging:</p>
+<p>level: INFO</p>
+<p>format: json</p>
+<p>destination: stdout</p>
+<p>metrics:</p>
+<p>enabled: true</p>
+<p>provider: prometheus</p>
+<p>endpoints: 
+[&quot;/metrics&quot;]</p>
+<p>tracing:</p>
+<p>enabled: true</p>
+<p>provider: jaeger</p>
+<p>sample_rate: 0.1</p>
+<h4>2.2.6 演化觸發規則</h4>
+<p>yaml</p>
+<p>evolution:</p>
+<p>triggers:</p>
+<p>- id: scale_up_trigger</p>
+<p>condition: &quot;user_count &gt; 5000&quot;</p>
+<p>action: &quot;evaluate_performance&quot;</p>
+<p>rationale: &quot;初始架構預期支持&lt;5000用戶&quot;</p>
+<p>recommended_actions:</p>
+<p>- &quot;啟用資料庫讀寫分離&quot;</p>
+<p>- &quot;引入CDN加速靜態資源&quot;</p>
+<p>- &quot;考慮將Analytics提升為SMS&quot;</p>
+<p>- id: recommendation_promotion</p>
+<p>condition: &quot;Recommendation被&gt;=5個模組依賴&quot;</p>
+<p>action: &quot;promote_to_SMS&quot;</p>
+<p>rationale: &quot;廣泛依賴表明它實際上是核心功能&quot;</p>
+<p>- id: cleanup_dead_code</p>
+<p>condition: &quot;Social模組6個月無使用&quot;</p>
+<p>action: &quot;mark_deprecated&quot;</p>
+<p>rationale: &quot;無人使用的功能應該清理&quot;</p>
+<p><strong>語義</strong>：evolution區塊定義了「何時重新評估架構」的規則。FPL監控器會定期檢查這些條件，並在觸發時通知開發者或自動執行動作（如生成重構建議的Pull Request）。</p>
+<h3>2.3 完整範例與註解</h3>
+<p>yaml</p>
+<p><em># reading-tracker.mssp.yaml</em></p>
+<p><em># 智能閱讀追蹤系統的MSSP-Lang定義</em></p>
+<p>meta:</p>
+<p>name: &quot;智能閱讀追蹤&quot;</p>
+<p>version: &quot;1.0.0&quot;</p>
+<p>scale: medium</p>
+<p>authors:</p>
+<p>- name: &quot;Neo K.&quot;</p>
+<p>role: &quot;架構師&quot;</p>
+<p>context:</p>
+<p>problem: |</p>
+<p>使用者缺乏有效的閱讀追蹤工具，</p>
+<p>導致閱讀計劃難以堅持。</p>
+<p>target_users: &quot;個人閱讀愛好者&quot;</p>
+<p>constraints:</p>
+<p>time: &quot;4個月MVP&quot;</p>
+<p>team: &quot;2名全端工程師&quot;</p>
+<p>decisions:</p>
+<p>tech_stack:</p>
+<p>backend:</p>
+<p>language: python</p>
+<p>framework: django</p>
+<p>rationale: &quot;團隊熟悉，開發速度快&quot;</p>
+<p>weights:</p>
+<p>development_speed: 0.4</p>
+<p>team_familiarity: 0.3</p>
+<p>database:</p>
+<p>primary: postgresql</p>
+<p>cache: redis</p>
+<p>architecture:</p>
+<p>pattern: layered</p>
+<p>principles:</p>
+<p>- &quot;TMS不可直接訪問資料庫&quot;</p>
+<p>- &quot;SMS模組間禁止循環依賴&quot;</p>
+<p>SMS:</p>
+<p>- module: User</p>
+<p>stability: core</p>
+<p>interfaces:</p>
+<p>authenticate: {params: 
+[username, password], returns: Token}</p>
+<p>get_profile: {params: 
+[user_id], returns: UserProfile}</p>
+<p>dependencies:</p>
+<p>external: 
+[redis, postgresql]</p>
+<p>- module: Book</p>
+<p>stability: core</p>
+<p>interfaces:</p>
+<p>search_books: {params: 
+[query], returns: List
+[Book]}</p>
+<p>dependencies:</p>
+<p>external: 
+[elasticsearch]</p>
+<p>- module: Reading</p>
+<p>stability: core</p>
+<p>interfaces:</p>
+<p>record_progress: {params: 
+[user_id, book_id, progress]}</p>
+<p>get_history: {params: 
+[user_id], returns: List
+[Record]}</p>
+<p>dependencies:</p>
+<p>internal: 
+[User, Book]</p>
+<p>TMS:</p>
+<p>- subset: Analytics</p>
+<p>optional: true</p>
+<p>stability: evolving</p>
+<p>dependencies:</p>
+<p>internal: 
+[Reading]</p>
+<p>- subset: Recommendation</p>
+<p>optional: true</p>
+<p>stability: experimental</p>
+<p>dependencies:</p>
+<p>internal: 
+[Reading, Book]</p>
+<p>deployment:</p>
+<p>mode: single_server</p>
+<p>resources:</p>
+<p>cpu: &quot;2 cores&quot;</p>
+<p>memory: &quot;4GB&quot;</p>
+<p>evolution:</p>
+<p>triggers:</p>
+<p>- condition: &quot;user_count &gt; 5000&quot;</p>
+<p>action: &quot;evaluate_performance&quot;</p>
+<p>- condition: &quot;Recommendation被&gt;=5個模組依賴&quot;</p>
+<p>action: &quot;promote_to_SMS&quot;</p>
+<p>```</p>
+<hr>
+<p><em>## 第三章：FPL編譯器架構</em></p>
+<p><em>### 3.1 編譯流程概覽</em></p>
+<p>FPL編譯器將高階的MSSP-Lang配置轉換為可執行的專案結構。整個流程分為七個階段：</p>
+<p>```</p>
+<p>┌────────────────────────────────────────────┐</p>
+<p>│ Phase 1: 詞法分析與語法解析 (Parsing) │</p>
+<p>│ Input: mssp.config.yaml │</p>
+<p>│ Output: AST (抽象語法樹) │</p>
+<p>└──────────────┬─────────────────────────────┘</p>
+<p>│</p>
+<p>┌──────────────▼─────────────────────────────┐</p>
+<p>│ Phase 2: 語義驗證 (Semantic Validation) │</p>
+<p>│ - 檢查模組依賴是否存在循環 │</p>
+<p>│ - 驗證介面定義的完整性 │</p>
+<p>│ - 檢查架構約束是否違反 │</p>
+<p>└──────────────┬─────────────────────────────┘</p>
+<p>│</p>
+<p>┌──────────────▼─────────────────────────────┐</p>
+<p>│ Phase 3: 資料夾結構生成 (Folder Gen) │</p>
+<p>│ - 根據scale參數決定層級深度 │</p>
+<p>│ - 生成符合MSSP規範的目錄樹 │</p>
+<p>└──────────────┬─────────────────────────────┘</p>
+<p>│</p>
+<p>┌──────────────▼─────────────────────────────┐</p>
+<p>│ Phase 4: FMS文檔生成 (Doc Generation) │</p>
+<p>│ - 生成FMS/00_NARRATIVE.md │</p>
+<p>│ - 生成FMS/01_INDEX.md │</p>
+<p>│ - 生成ADR文檔 │</p>
+<p>└──────────────┬─────────────────────────────┘</p>
+<p>│</p>
+<p>┌──────────────▼─────────────────────────────┐</p>
+<p>│ Phase 5: 程式碼骨架生成 (Code Skeleton) │</p>
+<p>│ - 生成各模組的__init__.py │</p>
+<p>│ - 生成介面定義檔案 │</p>
+<p>│ - 生成資料模型 │</p>
+<p>└──────────────┬─────────────────────────────┘</p>
+<p>│</p>
+<p>┌──────────────▼─────────────────────────────┐</p>
+<p>│ Phase 6: 架構圖生成 (Diagram Gen) │</p>
+<p>│ - 生成Mermaid格式的架構圖 │</p>
+<p>│ - 生成依賴關係圖 │</p>
+<p>│ - 生成資料流圖 │</p>
+<p>└──────────────┬─────────────────────────────┘</p>
+<p>│</p>
+<p>┌──────────────▼─────────────────────────────┐</p>
+<p>│ Phase 7: 配套工具生成 (Tooling Gen) │</p>
+<p>│ - 生成CI/CD配置 (.github/workflows) │</p>
+<p>│ - 生成Docker配置 │</p>
+<p>│ - 生成架構Linter腳本 │</p>
+<p>└────────────────────────────────────────────┘</p>
+<h3>3.2 核心編譯器模組</h3>
+<h4>3.2.1 語法解析器</h4>
+<p>python</p>
+<p><em># compiler/parser.py</em></p>
+<p>from dataclasses import dataclass</p>
+<p>from typing import List, Dict, Optional</p>
+<p>import yaml</p>
+<p>@dataclass</p>
+<p>class ModuleDefinition:</p>
+<p>name: str</p>
+<p>description: str</p>
+<p>stability: str <em># core | stable | evolving | experimental | planned</em></p>
+<p>interfaces: Dict
+[str, InterfaceSpec]</p>
+<p>dependencies: Dependencies</p>
+<p>data_model: Optional
+[Dict] = None</p>
+<p>@dataclass</p>
+<p>class InterfaceSpec:</p>
+<p>params: List
+[Parameter]</p>
+<p>returns: TypeSpec</p>
+<p>errors: List
+[str]</p>
+<p>@dataclass</p>
+<p>class Dependencies:</p>
+<p>internal: List
+[str] <em># 內部模組名稱</em></p>
+<p>external: List
+[str] <em># 外部服務名稱</em></p>
+<p>class MSSPParser:</p>
+<p>def parse(self, config_file: str) -&gt; ProjectAST:</p>
+<p>&quot;&quot;&quot;解析MSSP-Lang配置文件為AST&quot;&quot;&quot;</p>
+<p>with open(config_file, &#39;r&#39;) as f:</p>
+<p>raw_config = yaml.safe_load(f)</p>
+<p><em># 解析meta區塊</em></p>
+<p>meta = self._parse_meta(raw_config.get(&#39;meta&#39;, {}))</p>
+<p><em># 解析context區塊</em></p>
+<p>context = self._parse_context(raw_config.get(&#39;context&#39;, {}))</p>
+<p><em># 解析decisions區塊</em></p>
+<p>decisions = self._parse_decisions(raw_config.get(&#39;decisions&#39;, {}))</p>
+<p><em># 解析architecture區塊</em></p>
+<p>architecture = self._parse_architecture(raw_config.get(&#39;architecture&#39;, {}))</p>
+<p><em># 解析deployment區塊</em></p>
+<p>deployment = self._parse_deployment(raw_config.get(&#39;deployment&#39;, {}))</p>
+<p><em># 解析evolution區塊</em></p>
+<p>evolution = self._parse_evolution(raw_config.get(&#39;evolution&#39;, {}))</p>
+<p>return ProjectAST(</p>
+<p>meta=meta,</p>
+<p>context=context,</p>
+<p>decisions=decisions,</p>
+<p>architecture=architecture,</p>
+<p>deployment=deployment,</p>
+<p>evolution=evolution</p>
+<p>)</p>
+<p>def _parse_architecture(self, arch_config: dict) -&gt; Architecture:</p>
+<p>&quot;&quot;&quot;解析架構定義&quot;&quot;&quot;</p>
+<p>pattern = arch_config.get(&#39;pattern&#39;, &#39;layered&#39;)</p>
+<p>principles = arch_config.get(&#39;principles&#39;, 
+[])</p>
+<p><em># 解析SMS模組</em></p>
+<p>sms_modules = 
+[]</p>
+<p>for module_def in arch_config.get(&#39;SMS&#39;, 
+[]):</p>
+<p>module = ModuleDefinition(</p>
+<p>name=module_def
+[&#39;module&#39;],</p>
+<p>description=module_def.get(&#39;description&#39;, &#39;&#39;),</p>
+<p>stability=module_def.get(&#39;stability&#39;, &#39;stable&#39;),</p>
+<p>interfaces=self._parse_interfaces(module_def.get(&#39;interfaces&#39;, {})),</p>
+<p>dependencies=self._parse_dependencies(module_def.get(&#39;dependencies&#39;, {})),</p>
+<p>data_model=module_def.get(&#39;data_model&#39;)</p>
+<p>)</p>
+<p>sms_modules.append(module)</p>
+<p><em># 解析TMS子集</em></p>
+<p>tms_subsets = 
+[]</p>
+<p>for subset_def in arch_config.get(&#39;TMS&#39;, 
+[]):</p>
+<p>subset = SubsetDefinition(</p>
+<p>name=subset_def
+[&#39;subset&#39;],</p>
+<p>description=subset_def.get(&#39;description&#39;, &#39;&#39;),</p>
+<p>optional=subset_def.get(&#39;optional&#39;, True),</p>
+<p>stability=subset_def.get(&#39;stability&#39;, &#39;evolving&#39;),</p>
+<p>interfaces=self._parse_interfaces(subset_def.get(&#39;interfaces&#39;, {})),</p>
+<p>dependencies=self._parse_dependencies(subset_def.get(&#39;dependencies&#39;, {}))</p>
+<p>)</p>
+<p>tms_subsets.append(subset)</p>
+<p>return Architecture(</p>
+<p>pattern=pattern,</p>
+<p>principles=principles,</p>
+<p>sms=sms_modules,</p>
+<p>tms=tms_subsets</p>
+<p>)</p>
+<h4>3.2.2 語義驗證器</h4>
+<p>python</p>
+<p><em># compiler/validator.py</em></p>
+<p>class SemanticValidator:</p>
+<p>def validate(self, ast: ProjectAST) -&gt; ValidationResult:</p>
+<p>&quot;&quot;&quot;執行語義驗證，返回違規列表&quot;&quot;&quot;</p>
+<p>violations = 
+[]</p>
+<p><em># 檢查1：循環依賴檢測</em></p>
+<p>cycles = self._detect_cycles(ast.architecture)</p>
+<p>if cycles:</p>
+<p>violations.append(</p>
+<p>Violation(</p>
+<p>level=&quot;ERROR&quot;,</p>
+<p>rule=&quot;no_cyclic_dependencies&quot;,</p>
+<p>message=f&quot;檢測到循環依賴: {&#39; → &#39;.join(cycles
+[0])}&quot;,</p>
+<p>suggestion=&quot;重構模組邊界或引入中介者模式&quot;</p>
+<p>)</p>
+<p>)</p>
+<p><em># 檢查2：依賴的模組是否存在</em></p>
+<p>for module in ast.architecture.sms:</p>
+<p>for dep in module.dependencies.internal:</p>
+<p>if not self._module_exists(dep, ast.architecture):</p>
+<p>violations.append(</p>
+<p>Violation(</p>
+<p>level=&quot;ERROR&quot;,</p>
+<p>rule=&quot;valid_dependencies&quot;,</p>
+<p>message=f&quot;模組 {module.name} 依賴不存在的模組 {dep}&quot;</p>
+<p>)</p>
+<p>)</p>
+<p><em># 檢查3：TMS不可依賴TMS（除非顯式允許）</em></p>
+<p>for subset in ast.architecture.tms:</p>
+<p>for dep in subset.dependencies.internal:</p>
+<p>if self._is_tms_module(dep, ast.architecture):</p>
+<p>violations.append(</p>
+<p>Violation(</p>
+<p>level=&quot;WARNING&quot;,</p>
+<p>rule=&quot;tms_cross_dependency&quot;,</p>
+<p>message=f&quot;TMS子集 {subset.name} 依賴另一個TMS子集 {dep}&quot;,</p>
+<p>suggestion=&quot;考慮將 {dep} 提升為SMS&quot;</p>
+<p>)</p>
+<p>)</p>
+<p><em># 檢查4：介面定義完整性</em></p>
+<p>for module in ast.architecture.sms:</p>
+<p>for iface_name, iface_spec in module.interfaces.items():</p>
+<p>if not iface_spec.returns:</p>
+<p>violations.append(</p>
+<p>Violation(</p>
+<p>level=&quot;WARNING&quot;,</p>
+<p>rule=&quot;complete_interface&quot;,</p>
+<p>message=f&quot;{module.name}.{iface_name} 缺少返回類型定義&quot;</p>
+<p>)</p>
+<p>)</p>
+<p><em># 檢查5：架構原則驗證</em></p>
+<p>for principle in ast.architecture.principles:</p>
+<p>if not self._check_principle(principle, ast.architecture):</p>
+<p>violations.append(</p>
+<p>Violation(</p>
+<p>level=&quot;ERROR&quot;,</p>
+<p>rule=&quot;architecture_principle&quot;,</p>
+<p>message=f&quot;違反架構原則: {principle}&quot;</p>
+<p>)</p>
+<p>)</p>
+<p>return ValidationResult(</p>
+<p>is_valid=(len(
+[v for v in violations if v.level == &quot;ERROR&quot;]) == 0),</p>
+<p>violations=violations</p>
+<p>)</p>
+<p>def _detect_cycles(self, architecture: Architecture) -&gt; List
+[List
+[str]]:</p>
+<p>&quot;&quot;&quot;使用深度優先搜尋檢測循環依賴&quot;&quot;&quot;</p>
+<p>graph = self._build_dependency_graph(architecture)</p>
+<p>def dfs(node, visited, stack):</p>
+<p>visited.add(node)</p>
+<p>stack.append(node)</p>
+<p>for neighbor in graph.get(node, 
+[]):</p>
+<p>if neighbor in stack:</p>
+<p><em># 發現環</em></p>
+<p>cycle_start = stack.index(neighbor)</p>
+<p>return stack
+[cycle_start:] + 
+[neighbor]</p>
+<p>if neighbor not in visited:</p>
+<p>result = dfs(neighbor, visited, stack)</p>
+<p>if result:</p>
+<p>return result</p>
+<p>stack.pop()</p>
+<p>return None</p>
+<p>visited = set()</p>
+<p>for node in graph:</p>
+<p>if node not in visited:</p>
+<p>cycle = dfs(node, visited, 
+[])</p>
+<p>if cycle:</p>
+<p>return 
+[cycle]</p>
+<p>return 
+[]</p>
+<h4>3.2.3 資料夾生成器</h4>
+<p>python</p>
+<p><em># compiler/folder_generator.py</em></p>
+<p>class FolderGenerator:</p>
+<p>def generate(self, ast: ProjectAST, output_dir: str):</p>
+<p>&quot;&quot;&quot;生成符合MSSP規範的資料夾結構&quot;&quot;&quot;</p>
+<p>scale = ast.meta.scale</p>
+<p>if scale == &quot;small&quot;:</p>
+<p>self._generate_small_structure(ast, output_dir)</p>
+<p>elif scale == &quot;medium&quot;:</p>
+<p>self._generate_medium_structure(ast, output_dir)</p>
+<p>elif scale == &quot;large&quot;:</p>
+<p>self._generate_large_structure(ast, output_dir)</p>
+<p>else: <em># enterprise</em></p>
+<p>self._generate_enterprise_structure(ast, output_dir)</p>
+<p>def _generate_medium_structure(self, ast: ProjectAST, output_dir: str):</p>
+<p>&quot;&quot;&quot;生成中型專案結構&quot;&quot;&quot;</p>
+<p>base = Path(output_dir)</p>
+<p><em># 創建頂層結構</em></p>
+<p>(base / &quot;FMS&quot;).mkdir(parents=True)</p>
+<p>(base / &quot;core&quot;).mkdir()</p>
+<p>(base / &quot;features&quot;).mkdir()</p>
+<p>(base / &quot;shared&quot;).mkdir()</p>
+<p>(base / &quot;tests&quot;).mkdir()</p>
+<p><em># 生成FMS資料夾內容（下一階段處理）</em></p>
+<p><em># 生成SMS模組資料夾</em></p>
+<p>for module in ast.architecture.sms:</p>
+<p>module_dir = base / &quot;core&quot; / module.name.lower()</p>
+<p>module_dir.mkdir()</p>
+<p><em># 創建模組內部檔案（骨架）</em></p>
+<p>(module_dir / &quot;__init__.py&quot;).touch()</p>
+<p>(module_dir / &quot;interfaces.py&quot;).touch()</p>
+<p>(module_dir / &quot;models.py&quot;).touch()</p>
+<p>(module_dir / &quot;services.py&quot;).touch()</p>
+<p><em># 生成SMS內部導航圖</em></p>
+<p>self._generate_sms_map(ast, base / &quot;core&quot; / &quot;_SMS_MAP.md&quot;)</p>
+<p><em># 生成TMS子集資料夾</em></p>
+<p>for subset in ast.architecture.tms:</p>
+<p>subset_dir = base / &quot;features&quot; / subset.name.lower()</p>
+<p>subset_dir.mkdir()</p>
+<p>(subset_dir / &quot;__init__.py&quot;).touch()</p>
+<p><em># 生成TMS註冊表</em></p>
+<p>self._generate_tms_registry(ast, base / &quot;features&quot; / &quot;_TMS_REGISTRY.json&quot;)</p>
+<h3>3.3 性能與資源模型</h3>
+<h4>3.3.1 編譯時性能分析</h4>
+<h4>理論複雜度</h4>
+<table>
+<thead>
+<tr>
+<th><strong>階段</strong></th>
+<th><strong>時間複雜度</strong></th>
+<th><strong>空間複雜度</strong></th>
+<th><strong>瓶頸</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>解析</td>
+<td>O(n)</td>
+<td>O(n)</td>
+<td>YAML解析</td>
+</tr>
+<tr>
+<td>驗證</td>
+<td>O(V+E)</td>
+<td>O(V)</td>
+<td>循環檢測（V=模組數，E=依賴數）</td>
+</tr>
+<tr>
+<td>資料夾生成</td>
+<td>O(M)</td>
+<td>O(1)</td>
+<td>檔案系統I/O（M=模組數）</td>
+</tr>
+<tr>
+<td>文檔生成</td>
+<td>O(M)</td>
+<td>O(M)</td>
+<td>Markdown渲染</td>
+</tr>
+<tr>
+<td>架構圖生成</td>
+<td>O(V²)</td>
+<td>O(V+E)</td>
+<td>圖佈局演算法</td>
+</tr>
+</tbody></table>
+<h4>實測數據（假設）</h4>
+<p>基準環境：MacBook Pro M2, 16GB RAM</p>
+<table>
+<thead>
+<tr>
+<th><strong>專案規模</strong></th>
+<th><strong>模組數</strong></th>
+<th><strong>編譯時間</strong></th>
+<th><strong>記憶體峰值</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>小型</td>
+<td>10</td>
+<td>0.8秒</td>
+<td>45MB</td>
+</tr>
+<tr>
+<td>中型</td>
+<td>50</td>
+<td>2.3秒</td>
+<td>120MB</td>
+</tr>
+<tr>
+<td>大型</td>
+<td>200</td>
+<td>8.5秒</td>
+<td>380MB</td>
+</tr>
+<tr>
+<td>超大型</td>
+<td>500</td>
+<td>25秒</td>
+<td>950MB</td>
+</tr>
+</tbody></table>
+<h4>優化策略</h4>
+<ol>
+<li><p><strong>增量編譯</strong>：只重新生成變更的模組</p>
+</li>
+<li><p><strong>並行化</strong>：資料夾生成與文檔生成可並行執行</p>
+</li>
+<li><p><strong>快取</strong>：架構圖佈局結果快取，僅在拓撲變化時重算</p>
+</li>
+</ol>
+<h4>3.3.2 運行時性能監控</h4>
+<p>FPL生成的專案包含架構監控模組，持續追蹤：</p>
+<p>python</p>
+<p><em># generated/platform/architecture_monitor.py</em></p>
+<p>class ArchitectureMonitor:</p>
+<p>def __init__(self, config_path: str):</p>
+<p>self.config = load_mssp_config(config_path)</p>
+<p>self.metrics = {</p>
+<p>&quot;module_count&quot;: 0,</p>
+<p>&quot;dependency_count&quot;: 0,</p>
+<p>&quot;cyclic_dependencies&quot;: 
+[],</p>
+<p>&quot;dead_modules&quot;: 
+[],</p>
+<p>&quot;hot_modules&quot;: 
+[] <em># 高頻訪問的模組</em></p>
+<p>}</p>
+<p>def collect_metrics(self):</p>
+<p>&quot;&quot;&quot;收集架構度量&quot;&quot;&quot;</p>
+<p><em># 掃描程式碼，構建實際的依賴圖</em></p>
+<p>actual_graph = self._scan_imports()</p>
+<p><em># 與配置定義的依賴圖對比</em></p>
+<p>config_graph = self._build_config_graph()</p>
+<p><em># 檢測違規</em></p>
+<p>violations = self._compare_graphs(actual_graph, config_graph)</p>
+<p><em># 分析模組使用率（從日誌或APM工具）</em></p>
+<p>usage_stats = self._analyze_module_usage()</p>
+<p>return {</p>
+<p>&quot;metrics&quot;: self.metrics,</p>
+<p>&quot;violations&quot;: violations,</p>
+<p>&quot;usage&quot;: usage_stats</p>
+<p>}</p>
+<p>```</p>
+<p>**資源占用模型**</p>
+<p>| 監控頻率 | CPU占用 | 記憶體占用 | 建議場景 |</p>
+<p>|---------|--------|-----------|---------|</p>
+<p>| 即時（每次import） | 高（5-10%） | 中（50MB） | 開發環境 |</p>
+<p>| 定期（每小時） | 低（&lt;1%） | 低（20MB） | 生產環境 |</p>
+<p>| CI觸發（每次PR） | - | - | 最佳實踐 |</p>
+<hr>
+<p><em>## 第四章：IDE整合與視覺化</em></p>
+<p><em>### 4.1 「資料夾即架構圖」的雙向編輯</em></p>
+<p>**核心理念**</p>
+<p>傳統IDE顯示資料夾樹，但這是**靜態的、平面的視圖**。FPL IDE創新在於提供**動態的、多維度的視圖**：</p>
+<p>```</p>
+<p>傳統IDE：</p>
+<p>project/</p>
+<p>├── core/</p>
+<p>│ ├── user/</p>
+<p>│ └── order/</p>
+<p>└── features/</p>
+<p>└── cart/</p>
+<p>FPL IDE（同時顯示）：</p>
+<p>1. 資料夾樹視圖（左側）</p>
+<p>2. 架構圖視圖（中間，可拖拽）</p>
+<p>3. 依賴分析視圖（右側）</p>
+<p>```</p>
+<p>**雙向同步機制**</p>
+<p>```</p>
+<p>操作1：在資料夾樹中創建新資料夾 features/recommendation/</p>
+<p>↓ 自動觸發</p>
+<p>架構圖自動添加新節點 
+[Recommendation]</p>
+<p>↓ 自動觸發</p>
+<p>mssp.config.yaml自動更新（在TMS區塊添加Recommendation定義）</p>
+<p>操作2：在架構圖中拖拽 
+[Cart] 從TMS移動到SMS</p>
+<p>↓ 自動觸發</p>
+<p>檢查違規（Cart的optional屬性與SMS不符）→ 彈出警告</p>
+<p>↓ 用戶確認</p>
+<p>資料夾從 features/cart/ 移動到 core/cart/</p>
+<p>↓ 自動觸發</p>
+<p>更新所有import語句（從 features.cart 改為 core.cart）</p>
+<p>↓ 自動觸發</p>
+<p>mssp.config.yaml更新（Cart從TMS移動到SMS）</p>
+<h3>4.2 VSCode擴展原型</h3>
+<p>typescript</p>
+<p><em>// extensions/vscode-fpl/src/extension.ts</em></p>
+<p>import * as vscode from &#39;vscode&#39;;</p>
+<p>import { MSSPParser } from &#39;./compiler/parser&#39;;</p>
+<p>import { DiagramRenderer } from &#39;./ui/diagram_renderer&#39;;</p>
+<p>import { ArchitectureLinter } from &#39;./linter/architecture_linter&#39;;</p>
+<p>export function activate(context: vscode.ExtensionContext) {</p>
+<p><em>// 命令1：初始化FPL專案</em></p>
+<p>let initCmd = vscode.commands.registerCommand(&#39;fpl.init&#39;, async () =&gt; {</p>
+<p><em>// 引導式對話收集資訊</em></p>
+<p>const projectName = await vscode.window.showInputBox({</p>
+<p>prompt: &quot;專案名稱？&quot;</p>
+<p>});</p>
+<p>const scale = await vscode.window.showQuickPick(</p>
+<p>[&#39;small&#39;, &#39;medium&#39;, &#39;large&#39;, &#39;enterprise&#39;],</p>
+<p>{ placeHolder: &quot;專案規模？&quot; }</p>
+<p>);</p>
+<p><em>// 生成初始的mssp.config.yaml</em></p>
+<p>const template = generateTemplate(projectName, scale);</p>
+<p><em>// 創建檔案</em></p>
+<p>const workspaceFolder = vscode.workspace.workspaceFolders
+[0];</p>
+<p>const configPath = vscode.Uri.joinPath(workspaceFolder.uri, &#39;mssp.config.yaml&#39;);</p>
+<p>await vscode.workspace.fs.writeFile(configPath, Buffer.from(template));</p>
+<p>vscode.window.showInformationMessage(&#39;FPL專案初始化完成！&#39;);</p>
+<p>});</p>
+<p><em>// 命令2：編譯FPL配置</em></p>
+<p>let compileCmd = vscode.commands.registerCommand(&#39;fpl.compile&#39;, async () =&gt; {</p>
+<p>const configPath = findMSSPConfig();</p>
+<p>if (!configPath) {</p>
+<p>vscode.window.showErrorMessage(&#39;找不到mssp.config.yaml&#39;);</p>
+<p>return;</p>
+<p>}</p>
+<p><em>// 解析配置</em></p>
+<p>const parser = new MSSPParser();</p>
+<p>const ast = parser.parse(configPath);</p>
+<p><em>// 驗證</em></p>
+<p>const validator = new SemanticValidator();</p>
+<p>const result = validator.validate(ast);</p>
+<p>if (!result.is_valid) {</p>
+<p><em>// 顯示錯誤</em></p>
+<p>showValidationErrors(result.violations);</p>
+<p>return;</p>
+<p>}</p>
+<p><em>// 生成專案結構</em></p>
+<p>await generateProjectStructure(ast);</p>
+<p>vscode.window.showInformationMessage(&#39;FPL編譯成功！&#39;);</p>
+<p>});</p>
+<p><em>// 命令3：顯示架構圖</em></p>
+<p>let showDiagramCmd = vscode.commands.registerCommand(&#39;fpl.showDiagram&#39;, () =&gt; {</p>
+<p>const panel = vscode.window.createWebviewPanel(</p>
+<p>&#39;fplDiagram&#39;,</p>
+<p>&#39;Architecture Diagram&#39;,</p>
+<p>vscode.ViewColumn.Two,</p>
+<p>{</p>
+<p>enableScripts: true</p>
+<p>}</p>
+<p>);</p>
+<p>const configPath = findMSSPConfig();</p>
+<p>const parser = new MSSPParser();</p>
+<p>const ast = parser.parse(configPath);</p>
+<p><em>// 生成Mermaid圖表</em></p>
+<p>const mermaidCode = generateMermaidDiagram(ast.architecture);</p>
+<p><em>// 渲染到Webview</em></p>
+<p>panel.webview.html = getWebviewContent(mermaidCode);</p>
+<p>});</p>
+<p><em>// 檔案監控：當mssp.config.yaml變更時重新驗證</em></p>
+<p>const watcher = vscode.workspace.createFileSystemWatcher(&#39;**/mssp.config.yaml&#39;);</p>
+<p>watcher.onDidChange(async () =&gt; {</p>
+<p>const linter = new ArchitectureLinter();</p>
+<p>const violations = await linter.lint();</p>
+<p><em>// 顯示診斷資訊</em></p>
+<p>updateDiagnostics(violations);</p>
+<p>});</p>
+<p>context.subscriptions.push(initCmd, compileCmd, showDiagramCmd, watcher);</p>
+<p>}</p>
+<p>function getWebviewContent(mermaidCode: string): string {</p>
+<p>return `</p>
+<p>&lt;!DOCTYPE html&gt;</p>
+<p>&lt;html&gt;</p>
+<p>&lt;head&gt;</p>
+<p>&lt;script src=&quot;<a href="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js%22%5C%3E%5C">https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js&quot;\&gt;\</a>&lt;/script&gt;</p>
+<p>&lt;script&gt;mermaid.initialize({ startOnLoad: true });&lt;/script&gt;</p>
+<p>&lt;/head&gt;</p>
+<p>&lt;body&gt;</p>
+<p>&lt;div class=&quot;mermaid&quot;&gt;</p>
+<p>${mermaidCode}</p>
+<p>&lt;/div&gt;</p>
+<p>&lt;/body&gt;</p>
+<p>&lt;/html&gt;</p>
+<p>`;</p>
+<p>}</p>
+<h3>4.3 架構圖的互動式編輯</h3>
+<h4>D3.js實現的可拖拽架構圖</h4>
+<p>javascript</p>
+<p><em>// ui/architecture_editor.js</em></p>
+<p>class ArchitectureEditor {</p>
+<p>constructor(containerId, msspConfig) {</p>
+<p>this.container = d3.select(`#${containerId}`);</p>
+<p>this.config = msspConfig;</p>
+<p>this.nodes = this.buildNodes(msspConfig.architecture);</p>
+<p>this.links = this.buildLinks(msspConfig.architecture);</p>
+<p>this.initSimulation();</p>
+<p>this.render();</p>
+<p>}</p>
+<p>buildNodes(architecture) {</p>
+<p>let nodes = 
+[];</p>
+<p><em>// SMS節點（紅色）</em></p>
+<p>architecture.SMS.forEach(module =&gt; {</p>
+<p>nodes.push({</p>
+<p>id: module.name,</p>
+<p>type: &#39;SMS&#39;,</p>
+<p>label: module.name,</p>
+<p>stability: module.stability,</p>
+<p>color: this.getColorByStability(module.stability)</p>
+<p>});</p>
+<p>});</p>
+<p><em>// TMS節點（綠色）</em></p>
+<p>architecture.TMS.forEach(subset =&gt; {</p>
+<p>nodes.push({</p>
+<p>id: subset.name,</p>
+<p>type: &#39;TMS&#39;,</p>
+<p>label: subset.name,</p>
+<p>optional: subset.optional,</p>
+<p>color: &#39;#90EE90&#39;</p>
+<p>});</p>
+<p>});</p>
+<p>return nodes;</p>
+<p>}</p>
+<p>buildLinks(architecture) {</p>
+<p>let links = 
+[];</p>
+<p><em>// 構建依賴邊</em></p>
+<p>architecture.SMS.forEach(module =&gt; {</p>
+<p>module.dependencies.internal.forEach(dep =&gt; {</p>
+<p>links.push({</p>
+<p>source: module.name,</p>
+<p>target: dep,</p>
+<p>type: &#39;dependency&#39;</p>
+<p>});</p>
+<p>});</p>
+<p>});</p>
+<p>architecture.TMS.forEach(subset =&gt; {</p>
+<p>subset.dependencies.internal.forEach(dep =&gt; {</p>
+<p>links.push({</p>
+<p>source: subset.name,</p>
+<p>target: dep,</p>
+<p>type: &#39;dependency&#39;</p>
+<p>});</p>
+<p>});</p>
+<p>});</p>
+<p>return links;</p>
+<p>}</p>
+<p>initSimulation() {</p>
+<p>this.simulation = d3.forceSimulation(this.nodes)</p>
+<p>.force(&#39;link&#39;, d3.forceLink(this.links).id(d =&gt; d.id))</p>
+<p>.force(&#39;charge&#39;, d3.forceManyBody().strength(-300))</p>
+<p>.force(&#39;center&#39;, d3.forceCenter(400, 300))</p>
+<p>.on(&#39;tick&#39;, () =&gt; this.updatePositions());</p>
+<p>}</p>
+<p>render() {</p>
+<p><em>// 繪製邊</em></p>
+<p>this.linkElements = this.container.selectAll(&#39;.link&#39;)</p>
+<p>.data(this.links)</p>
+<p>.enter().append(&#39;line&#39;)</p>
+<p>.attr(&#39;class&#39;, &#39;link&#39;)</p>
+<p>.attr(&#39;stroke&#39;, &#39;#999&#39;)</p>
+<p>.attr(&#39;stroke-width&#39;, 2)</p>
+<p>.attr(&#39;marker-end&#39;, &#39;url(#arrow)&#39;);</p>
+<p><em>// 繪製節點</em></p>
+<p>this.nodeElements = this.container.selectAll(&#39;.node&#39;)</p>
+<p>.data(this.nodes)</p>
+<p>.enter().append(&#39;g&#39;)</p>
+<p>.attr(&#39;class&#39;, &#39;node&#39;)</p>
+<p>.call(d3.drag()</p>
+<p>.on(&#39;start&#39;, d =&gt; this.dragStart(d))</p>
+<p>.on(&#39;drag&#39;, d =&gt; this.dragging(d))</p>
+<p>.on(&#39;end&#39;, d =&gt; this.dragEnd(d))</p>
+<p>);</p>
+<p><em>// 節點圓形</em></p>
+<p>this.nodeElements.append(&#39;circle&#39;)</p>
+<p>.attr(&#39;r&#39;, 30)</p>
+<p>.attr(&#39;fill&#39;, d =&gt; d.color);</p>
+<p><em>// 節點標籤</em></p>
+<p>this.nodeElements.append(&#39;text&#39;)</p>
+<p>.attr(&#39;text-anchor&#39;, &#39;middle&#39;)</p>
+<p>.attr(&#39;dy&#39;, 5)</p>
+<p>.text(d =&gt; d.label);</p>
+<p><em>// 添加右鍵選單</em></p>
+<p>this.nodeElements.on(&#39;contextmenu&#39;, (event, d) =&gt; {</p>
+<p>event.preventDefault();</p>
+<p>this.showContextMenu(event, d);</p>
+<p>});</p>
+<p>}</p>
+<p>showContextMenu(event, node) {</p>
+<p>const menu = 
+[</p>
+<p>{ label: &#39;查看詳情&#39;, action: () =&gt; this.showNodeDetails(node) },</p>
+<p>{ label: &#39;編輯介面&#39;, action: () =&gt; this.editInterfaces(node) },</p>
+<p>{ label: &#39;查看依賴&#39;, action: () =&gt; this.highlightDependencies(node) },</p>
+<p>];</p>
+<p>if (node.type === &#39;TMS&#39;) {</p>
+<p>menu.push({</p>
+<p>label: &#39;提升為SMS&#39;,</p>
+<p>action: () =&gt; this.promoteToSMS(node)</p>
+<p>});</p>
+<p>}</p>
+<p>if (node.type === &#39;SMS&#39;) {</p>
+<p>menu.push({</p>
+<p>label: &#39;降級為TMS&#39;,</p>
+<p>action: () =&gt; this.demoteToTMS(node)</p>
+<p>});</p>
+<p>}</p>
+<p>this.displayContextMenu(event.pageX, event.pageY, menu);</p>
+<p>}</p>
+<p>promoteToSMS(node) {</p>
+<p><em>// 檢查前置條件</em></p>
+<p>if (this.hasCircularDependency(node)) {</p>
+<p>alert(&#39;無法提升：存在循環依賴&#39;);</p>
+<p>return;</p>
+<p>}</p>
+<p><em>// 更新配置</em></p>
+<p>this.updateMSSPConfig({</p>
+<p>action: &#39;promote&#39;,</p>
+<p>module: node.id,</p>
+<p>from: &#39;TMS&#39;,</p>
+<p>to: &#39;SMS&#39;</p>
+<p>});</p>
+<p><em>// 更新視覺</em></p>
+<p>node.type = &#39;SMS&#39;;</p>
+<p>node.color = &#39;#FF6B6B&#39;; <em>// 紅色</em></p>
+<p>this.render();</p>
+<p><em>// 通知後端重新生成資料夾結構</em></p>
+<p>this.sendUpdateToBackend();</p>
+<p>}</p>
+<p>}</p>
+<h3>4.4 協作編輯機制</h3>
+<h4>基於Operational Transformation的衝突解決</h4>
+<p>當多人同時編輯mssp.config.yaml時，採用類似Google Docs的協作機制：</p>
+<p>python</p>
+<p><em># server/collaboration.py</em></p>
+<p>class CollaborationEngine:</p>
+<p>def __init__(self):</p>
+<p>self.active_sessions = {} <em># session_id -&gt; user_info</em></p>
+<p>self.operation_log = 
+[] <em># 操作歷史</em></p>
+<p>def apply_operation(self, op: Operation) -&gt; Result:</p>
+<p>&quot;&quot;&quot;應用操作並解決衝突&quot;&quot;&quot;</p>
+<p><em># 操作類型：</em></p>
+<p><em># - add_module</em></p>
+<p><em># - remove_module</em></p>
+<p><em># - modify_dependency</em></p>
+<p><em># - change_stability</em></p>
+<p>if op.type == &#39;add_module&#39;:</p>
+<p><em># 檢查模組名稱衝突</em></p>
+<p>if self.module_exists(op.module_name):</p>
+<p>return Result(</p>
+<p>success=False,</p>
+<p>error=&quot;模組名稱已存在&quot;,</p>
+<p>suggestion=&quot;使用不同名稱或合併到現有模組&quot;</p>
+<p>)</p>
+<p><em># 應用操作</em></p>
+<p>self.config.architecture.SMS.append(op.module_def)</p>
+<p>self.operation_log.append(op)</p>
+<p><em># 廣播給其他協作者</em></p>
+<p>self.broadcast(op, exclude=op.user_id)</p>
+<p>return Result(success=True)</p>
+<p>elif op.type == &#39;modify_dependency&#39;:</p>
+<p><em># 檢查是否會引入循環依賴</em></p>
+<p>temp_config = self.config.copy()</p>
+<p>temp_config.apply(op)</p>
+<p>if self.has_cycle(temp_config):</p>
+<p>return Result(</p>
+<p>success=False,</p>
+<p>error=&quot;此操作會引入循環依賴&quot;,</p>
+<p>cycle_path=self.find_cycle(temp_config)</p>
+<p>)</p>
+<p><em># 應用操作</em></p>
+<p>self.config.apply(op)</p>
+<p>self.operation_log.append(op)</p>
+<p>self.broadcast(op, exclude=op.user_id)</p>
+<p>return Result(success=True)</p>
+<p>```</p>
+<hr>
+<p><em>## 第五章：AI代理整合</em></p>
+<p><em>### 5.1 三層分工模型</em></p>
+<p>```</p>
+<p>┌─────────────────────────────────────────────┐</p>
+<p>│ 宏觀層：Claude/GPT-4（戰略對話助手） │</p>
+<p>│ - 引導用戶定義商業目標 │</p>
+<p>│ - 技術選型建議（基於多屬性決策分析） │</p>
+<p>│ - 生成mssp.config.yaml初稿 │</p>
+<p>└──────────────┬──────────────────────────────┘</p>
+<p>│ mssp.config.yaml</p>
+<p>┌──────────────▼──────────────────────────────┐</p>
+<p>│ 中觀層：FPL編譯器（架構生成器） │</p>
+<p>│ - 解析MSSP-Lang │</p>
+<p>│ - 生成資料夾結構 │</p>
+<p>│ - 生成介面定義與資料模型骨架 │</p>
+<p>│ - 生成架構圖 │</p>
+<p>└──────────────┬──────────────────────────────┘</p>
+<p>│ 專案骨架 + Task List</p>
+<p>┌──────────────▼──────────────────────────────┐</p>
+<p>│ 微觀層：Cursor/Antigravity（程式碼助手） │</p>
+<p>│ - 填充函數實作 │</p>
+<p>│ - 生成單元測試 │</p>
+<p>│ - 程式碼重構與優化 │</p>
+<p>└──────────────┬──────────────────────────────┘</p>
+<p>│ 完整程式碼</p>
+<p>┌──────────────▼──────────────────────────────┐</p>
+<p>│ 驗證層：FPL監控器（架構守護者） │</p>
+<p>│ - 檢查實際程式碼是否符合架構定義 │</p>
+<p>│ - 檢測架構漂移 │</p>
+<p>│ - 建議重構 │</p>
+<p>└─────────────────────────────────────────────┘</p>
+<h3>5.2 宏觀層對話範例</h3>
+<h4>對話式需求收集</h4>
+<p>Human: 我想做一個閱讀追蹤應用</p>
+<p>AI: 很好的想法！讓我幫你澄清一些關鍵問題：</p>
+<p>1. **目標用戶**：是個人用戶還是企業/教育機構？</p>
+<p>2. **核心價值**：主要解決什麼痛點？</p>
+<p>3. **時間約束**：希望多久完成MVP？</p>
+<p>4. **團隊規模**：有多少人參與開發？</p>
+<p>5. **技術棧偏好**：有特定的語言/框架要求嗎？</p>
+<p>請告訴我這些資訊，我會生成一份架構配置草稿。</p>
+<p>Human:</p>
+<p>1. 個人用戶為主</p>
+<p>2. 主要是讓人堅持閱讀習慣，有成就感</p>
+<p>3. 希望4個月內上線MVP</p>
+<p>4. 我自己加一個前端，兩個人</p>
+<p>5. 我們都會Python，前端會Vue</p>
+<p>AI: 明白了！基於您的需求，我建議以下架構：</p>
+<p>**專案規模判定：中型專案**</p>
+<p>- 預期模組數：15-20個</p>
+<p>- 推薦資料夾層級：2層</p>
+<p>**技術選型建議**（基於多屬性決策分析）：</p>
+<p>| 維度 | Python+Django | Node.js+Express | 權重 |</p>
+<p>|------|--------------|-----------------|------|</p>
+<p>| 開發速度 | 9 | 7 | 0.4 |</p>
+<p>| 團隊熟悉度 | 10 | 3 | 0.3 |</p>
+<p>| 生態成熟度 | 9 | 8 | 0.2 |</p>
+<p>| 效能 | 6 | 7 | 0.1 |</p>
+<p>| **加權分數** | **8.7** | 5.8 | |</p>
+<p>**推薦：Python + Django**</p>
+<p>現在讓我生成MSSP-Lang配置：</p>
+<p>```yaml</p>
+<p>meta: name: &quot;閱讀追蹤&quot; version: &quot;0.1.0&quot; scale: medium authors: - name: &quot;用戶&quot; role: &quot;全端工程師&quot;</p>
+<p>context: problem: | 個人閱讀者缺乏有效的進度追蹤工具， 導致閱讀計劃難以堅持，缺乏成就感。</p>
+<p>target_users: &quot;個人閱讀愛好者&quot;</p>
+<p>success_criteria: - &quot;30天留存率&gt;30%&quot; - &quot;用戶平均完成3本書/月&quot;</p>
+<p>constraints: time: &quot;4個月MVP&quot; team: &quot;2人（1後端+1前端）&quot; budget: &quot;最小化成本&quot;</p>
+<p>decisions: tech_stack: backend: language: python framework: django version: &quot;&gt;=4.2&quot; rationale: &quot;團隊熟悉，開發速度快，4個月時限優先&quot;</p>
+<p>database:</p>
+<p>primary: postgresql # 免費層：Railway/Supabase</p>
+<p>cache: redis</p>
+<p>frontend:</p>
+<p>framework: vue3</p>
+<p>ui_library: vuetify</p>
+<p>architecture: pattern: layered</p>
+<p>principles: - &quot;TMS不可直接訪問資料庫&quot; - &quot;SMS模組間禁止循環依賴&quot;</p>
+<p>SMS: - module: User stability: core interfaces: register: {params: 
+[username, email, password]} authenticate: {params: 
+[username, password], returns: Token} get_profile: {params: 
+[user_id], returns: UserProfile}</p>
+<p>- module: Book</p>
+<p>stability: core</p>
+<p>interfaces:</p>
+<p>search_books: {params: 
+[query], returns: List
+[Book]}</p>
+<p>add_book: {params: 
+[book_info], returns: Book}</p>
+<p>get_detail: {params: 
+[book_id], returns: BookDetail}</p>
+<p>- module: Reading</p>
+<p>stability: core</p>
+<p>interfaces:</p>
+<p>start_reading: {params: 
+[user_id, book_id]}</p>
+<p>update_progress: {params: 
+[user_id, book_id, progress]}</p>
+<p>get_history: {params: 
+[user_id], returns: List
+[Record]}</p>
+<p>dependencies:</p>
+<p>internal: 
+[User, Book]</p>
+<p>TMS: - subset: Statistics description: &quot;閱讀數據統計與視覺化&quot; optional: true interfaces: get_summary: {params: 
+[user_id, period], returns: Summary} dependencies: internal: 
+[Reading]</p>
+<p>- subset: Social</p>
+<p>description: &quot;書友分享功能&quot;</p>
+<p>optional: true</p>
+<p>stability: planned # 二期功能</p>
+<p>interfaces:</p>
+<p>share_reading: {params: 
+[user_id, book_id, comment]}</p>
+<p>deployment: mode: single_server hosting: railway # 免費層 resources: cpu: &quot;0.5 cores&quot; memory: &quot;512MB&quot;</p>
+<p>evolution: triggers: - condition: &quot;daily_active_users &gt; 1000&quot; action: &quot;upgrade_resources&quot; - condition: &quot;Statistics被&gt;=3個模組依賴&quot; action: &quot;promote_to_SMS&quot;</p>
+<p>**這份配置已經完成！**</p>
+<p>您可以：</p>
+<p>1. 下載這份`mssp.config.yaml`</p>
+<p>2. 運行`fpl compile`生成完整專案結構</p>
+<p>3. 讓Cursor/Antigravity填充具體實作</p>
+<p>需要我解釋任何部分嗎？</p>
+<h3>5.3 中觀層自動生成</h3>
+<h4>FPL編譯器的輸出</h4>
+<p>當用戶運行fpl compile reading-tracker.mssp.yaml時：</p>
+<p>bash</p>
+<p>$ fpl compile reading-tracker.mssp.yaml</p>
+<p>[1/7] 解析配置... ✓ (0.2s)</p>
+<p>[2/7] 語義驗證... ✓ (0.1s)</p>
+<p>- 模組數量: 6</p>
+<p>- 依賴關係: 5</p>
+<p>- 循環依賴: 無</p>
+<p>[3/7] 生成資料夾結構... ✓ (0.3s)</p>
+<p>- 創建 FMS/ 及3個文檔</p>
+<p>- 創建 core/user/, core/book/, core/reading/</p>
+<p>- 創建 features/statistics/</p>
+<p>[4/7] 生成FMS文檔... ✓ (0.4s)</p>
+<p>- FMS/00_NARRATIVE.md (1.2KB)</p>
+<p>- FMS/01_INDEX.md (0.8KB)</p>
+<p>- FMS/02_ADR.md (2.1KB)</p>
+<p>[5/7] 生成程式碼骨架... ✓ (0.6s)</p>
+<p>- 生成 18 個Python檔案</p>
+<p>- 生成介面定義 (interfaces.py)</p>
+<p>- 生成資料模型 (models.py)</p>
+<p>[6/7] 生成架構圖... ✓ (0.5s)</p>
+<p>- architecture_diagram.mermaid</p>
+<p>- dependency_graph.dot</p>
+<p>[7/7] 生成配套工具... ✓ (0.3s)</p>
+<p>- .github/workflows/ci.yml</p>
+<p>- docker-compose.yml</p>
+<p>- scripts/architecture_lint.py</p>
+<p>✅ 專案生成成功！</p>
+<p>📂 生成的結構：</p>
+<p>reading-tracker/</p>
+<p>├── FMS/</p>
+<p>│ ├── 00_NARRATIVE.md</p>
+<p>│ ├── 01_INDEX.md</p>
+<p>│ └── 02_ADR.md</p>
+<p>├── core/</p>
+<p>│ ├── user/</p>
+<p>│ │ ├── __init__.py</p>
+<p>│ │ ├── interfaces.py <em># ← AI需填充實作</em></p>
+<p>│ │ ├── models.py</p>
+<p>│ │ └── services.py</p>
+<p>│ ├── book/</p>
+<p>│ └── reading/</p>
+<p>├── features/</p>
+<p>│ └── statistics/</p>
+<p>├── tests/</p>
+<p>└── mssp.config.yaml</p>
+<p>🎯 下一步：</p>
+<p>1. 運行 `fpl install-deps` 安裝依賴</p>
+<p>2. 使用Cursor打開專案，AI會自動填充實作</p>
+<p>3. 運行 `fpl verify` 驗證架構一致性</p>
+<p>總耗時: 2.4秒</p>
+<h4>生成的介面定義範例</h4>
+<p>python</p>
+<p><em># core/user/interfaces.py（由FPL生成的骨架）</em></p>
+<p>from abc import ABC, abstractmethod</p>
+<p>from typing import Optional</p>
+<p>from dataclasses import dataclass</p>
+<p>@dataclass</p>
+<p>class Token:</p>
+<p>access_token: str</p>
+<p>refresh_token: str</p>
+<p>expires_in: int</p>
+<p>@dataclass</p>
+<p>class UserProfile:</p>
+<p>id: str</p>
+<p>username: str</p>
+<p>email: str</p>
+<p>created_at: str</p>
+<p>avatar_url: Optional
+[str] = None</p>
+<p>class IUserService(ABC):</p>
+<p>&quot;&quot;&quot;</p>
+<p>用戶服務介面</p>
+<p>職責：</p>
+<p>- 管理用戶註冊與登入</p>
+<p>- 維護用戶Session</p>
+<p>- 提供權限驗證介面</p>
+<p>約束：</p>
+<p>- 不可依賴TMS子集</p>
+<p>- 必須通過100%單元測試覆蓋</p>
+<p>&quot;&quot;&quot;</p>
+<p>@abstractmethod</p>
+<p>def register(self, username: str, email: str, password: str) -&gt; UserProfile:</p>
+<p>&quot;&quot;&quot;</p>
+<p>註冊新用戶</p>
+<p>Args:</p>
+<p>username: 用戶名（字母開頭，3-20字符）</p>
+<p>email: 電子郵件（必須通過格式驗證）</p>
+<p>password: 密碼（至少8字符）</p>
+<p>Returns:</p>
+<p>UserProfile: 新創建的用戶資料</p>
+<p>Raises:</p>
+<p>UserAlreadyExistsError: 用戶名或郵件已存在</p>
+<p>InvalidInputError: 輸入格式不正確</p>
+<p>&quot;&quot;&quot;</p>
+<p>pass</p>
+<p>@abstractmethod</p>
+<p>def authenticate(self, username: str, password: str) -&gt; Token:</p>
+<p>&quot;&quot;&quot;</p>
+<p>用戶認證</p>
+<p>Args:</p>
+<p>username: 用戶名</p>
+<p>password: 密碼</p>
+<p>Returns:</p>
+<p>Token: JWT令牌（access + refresh）</p>
+<p>Raises:</p>
+<p>InvalidCredentialsError: 帳號或密碼錯誤</p>
+<p>AccountLockedError: 帳號已被鎖定</p>
+<p>&quot;&quot;&quot;</p>
+<p>pass</p>
+<p>@abstractmethod</p>
+<p>def get_profile(self, user_id: str) -&gt; UserProfile:</p>
+<p>&quot;&quot;&quot;</p>
+<p>獲取用戶資料</p>
+<p>Args:</p>
+<p>user_id: 用戶ID（UUID格式）</p>
+<p>Returns:</p>
+<p>UserProfile: 用戶完整資料</p>
+<p>Raises:</p>
+<p>UserNotFoundError: 用戶不存在</p>
+<p>&quot;&quot;&quot;</p>
+<p>pass</p>
+<p><em># TODO: 實作這個介面</em></p>
+<p><em># 提示：可以使用Django的User模型 + JWT庫</em></p>
+<p><em># 參考文檔：<a href="https://docs.djangoproject.com/en/4.2/topics/auth/">https://docs.djangoproject.com/en/4.2/topics/auth/</a></em></p>
+<h3>5.4 微觀層AI程式碼填充</h3>
+<h4>Cursor/Antigravity的任務清單</h4>
+<p>FPL生成的專案包含TODO.md：</p>
+<p>markdown</p>
+<p># 開發任務清單</p>
+<p>由FPL自動生成，建議使用Cursor或Antigravity逐項完成。</p>
+<p>## 優先級1：核心模組（SMS）</p>
+<p>### User模組</p>
+<p>- 
+[ ] 實作 `IUserService.register()`</p>
+<p>- 使用Django User模型</p>
+<p>- 密碼加密：bcrypt</p>
+<p>- 郵件驗證：發送確認郵件</p>
+<p>- 
+[ ] 實作 `IUserService.authenticate()`</p>
+<p>- JWT令牌生成（djangorestframework-simplejwt）</p>
+<p>- 失敗次數限制（5次鎖定10分鐘）</p>
+<p>- 
+[ ] 實作 `IUserService.get_profile()`</p>
+<p>- 查詢優化：使用select_related</p>
+<p>### Book模組</p>
+<p>- 
+[ ] 實作 `IBookService.search_books()`</p>
+<p>- 整合Elasticsearch全文搜尋</p>
+<p>- 支持模糊匹配、作者搜尋</p>
+<p>- 
+[ ] 實作 `IBookService.add_book()`</p>
+<p>- 資料驗證：ISBN格式檢查</p>
+<p>- 去重：檢查ISBN是否已存在</p>
+<p>### Reading模組</p>
+<p>- 
+[ ] 實作 `IReadingService.start_reading()`</p>
+<p>- 創建閱讀記錄</p>
+<p>- 初始進度為0%</p>
+<p>- 
+[ ] 實作 `IReadingService.update_progress()`</p>
+<p>- 進度驗證：0-100之間</p>
+<p>- 觸發成就系統（完成時）</p>
+<p>- 
+[ ] 實作 `IReadingService.get_history()`</p>
+<p>- 分頁查詢：每頁20條</p>
+<p>- 排序：按開始時間降序</p>
+<p>## 優先級2：功能模組（TMS）</p>
+<p>### Statistics模組</p>
+<p>- 
+[ ] 實作 `IStatisticsService.get_summary()`</p>
+<p>- 聚合查詢：閱讀天數、完成書籍數</p>
+<p>- 生成圖表數據（JSON格式）</p>
+<p>## 優先級3：測試</p>
+<p>- 
+[ ] User模組單元測試（覆蓋率&gt;90%）</p>
+<p>- 
+[ ] Book模組單元測試</p>
+<p>- 
+[ ] Reading模組單元測試</p>
+<p>- 
+[ ] 整合測試：完整的用戶註冊→登入→閱讀流程</p>
+<p>## 優先級4：前端整合</p>
+<p>- 
+[ ] 實作登入頁面（Vue3 + Vuetify）</p>
+<p>- 
+[ ] 實作書籍搜尋頁面</p>
+<p>- 
+[ ] 實作閱讀進度更新介面</p>
+<h4>AI填充實作範例</h4>
+<p>開發者在Cursor中打開core/user/services.py，輸入註解：</p>
+<p>python</p>
+<p><em># core/user/services.py</em></p>
+<p><em># Cursor Prompt: &quot;實作IUserService介面，使用Django User模型和JWT&quot;</em></p>
+<p>from .interfaces import IUserService, Token, UserProfile</p>
+<p>from django.contrib.auth.models import User</p>
+<p>from django.contrib.auth.hashers import make_password, check_password</p>
+<p>from rest_framework_simplejwt.tokens import RefreshToken</p>
+<p>import re</p>
+<p>class UserService(IUserService):</p>
+<p>&quot;&quot;&quot;用戶服務實作&quot;&quot;&quot;</p>
+<p>def register(self, username: str, email: str, password: str) -&gt; UserProfile:</p>
+<p><em># 驗證用戶名格式</em></p>
+<p>if not re.match(r&#39;^
+[a-zA-Z]
+[a-zA-Z0-9_]{2,19}$&#39;, username):</p>
+<p>raise InvalidInputError(&quot;用戶名必須字母開頭，3-20字符&quot;)</p>
+<p><em># 驗證郵件格式</em></p>
+<p>if not re.match(r&#39;^</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mstyle mathcolor="#cc0000"><mtext>\w</mtext></mstyle><mspace linebreak="newline"></mspace><mo>−</mo></mrow><annotation encoding="application/x-tex">\w\\-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text" style="color:#cc0000;"><span class="mord" style="color:#cc0000;">\w</span></span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord">−</span></span></span></span></span><p>+@</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mstyle mathcolor="#cc0000"><mtext>\w</mtext></mstyle><mspace linebreak="newline"></mspace><mo>−</mo></mrow><annotation encoding="application/x-tex">\w\\-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text" style="color:#cc0000;"><span class="mord" style="color:#cc0000;">\w</span></span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord">−</span></span></span></span></span><p>+\\w+$&#39;, email):</p>
+<p>raise InvalidInputError(&quot;郵件格式不正確&quot;)</p>
+<p><em># 檢查是否已存在</em></p>
+<p>if User.objects.filter(username=username).exists():</p>
+<p>raise UserAlreadyExistsError(f&quot;用戶名 {username} 已存在&quot;)</p>
+<p>if User.objects.filter(email=email).exists():</p>
+<p>raise UserAlreadyExistsError(f&quot;郵件 {email} 已註冊&quot;)</p>
+<p><em># 創建用戶</em></p>
+<p>user = User.objects.create(</p>
+<p>username=username,</p>
+<p>email=email,</p>
+<p>password=make_password(password)</p>
+<p>)</p>
+<p><em># TODO: 發送確認郵件（後續實作）</em></p>
+<p>return UserProfile(</p>
+<p>id=str(user.id),</p>
+<p>username=user.username,</p>
+<p>email=user.email,</p>
+<p>created_at=user.date_joined.isoformat()</p>
+<p>)</p>
+<p>def authenticate(self, username: str, password: str) -&gt; Token:</p>
+<p>try:</p>
+<p>user = User.objects.get(username=username)</p>
+<p>except User.DoesNotExist:</p>
+<p>raise InvalidCredentialsError(&quot;帳號或密碼錯誤&quot;)</p>
+<p>if not check_password(password, user.password):</p>
+<p><em># TODO: 記錄失敗次數，5次後鎖定</em></p>
+<p>raise InvalidCredentialsError(&quot;帳號或密碼錯誤&quot;)</p>
+<p><em># 生成JWT令牌</em></p>
+<p>refresh = RefreshToken.for_user(user)</p>
+<p>return Token(</p>
+<p>access_token=str(refresh.access_token),</p>
+<p>refresh_token=str(refresh),</p>
+<p>expires_in=3600 <em># 1小時</em></p>
+<p>)</p>
+<p>def get_profile(self, user_id: str) -&gt; UserProfile:</p>
+<p>try:</p>
+<p>user = User.objects.get(id=user_id)</p>
+<p>except User.DoesNotExist:</p>
+<p>raise UserNotFoundError(f&quot;用戶ID {user_id} 不存在&quot;)</p>
+<p>return UserProfile(</p>
+<p>id=str(user.id),</p>
+<p>username=user.username,</p>
+<p>email=user.email,</p>
+<p>created_at=user.date_joined.isoformat(),</p>
+<p>avatar_url=None <em># TODO: 整合頭像上傳功能</em></p>
+<p>)</p>
+<h4>AI的優勢</h4>
+<ol>
+<li><p><strong>自動填充樣板代碼</strong>：錯誤類別定義、參數驗證等</p>
+</li>
+<li><p><strong>遵循介面契約</strong>：嚴格實作FPL定義的介面</p>
+</li>
+<li><p><strong>自動生成測試</strong>：基於介面定義生成測試用例</p>
+</li>
+</ol>
+<hr>
+<h2 id="s3-第六章-性能-安全性與可擴展性">第六章：性能、安全性與可擴展性</h2>
+<h3>6.1 性能優化策略</h3>
+<h4>6.1.1 編譯時優化</h4>
+<h4>增量編譯</h4>
+<p>python</p>
+<p>class IncrementalCompiler:</p>
+<p>def __init__(self):</p>
+<p>self.cache = CompilationCache()</p>
+<p>def compile(self, config_path: str, force: bool = False):</p>
+<p>&quot;&quot;&quot;增量編譯：只重新生成變更的部分&quot;&quot;&quot;</p>
+<p>config_hash = self._compute_hash(config_path)</p>
+<p>cached_result = self.cache.get(config_hash)</p>
+<p>if cached_result and not force:</p>
+<p><em># 比較差異</em></p>
+<p>diff = self._compute_diff(cached_result.config, current_config)</p>
+<p>if diff.only_documentation_changed:</p>
+<p><em># 只重新生成文檔，不動程式碼</em></p>
+<p>self._regenerate_docs(diff.changed_docs)</p>
+<p>return</p>
+<p>if diff.only_added_modules:</p>
+<p><em># 只生成新增模組，不影響現有模組</em></p>
+<p>self._generate_new_modules(diff.new_modules)</p>
+<p>return</p>
+<p><em># 完整編譯</em></p>
+<p>self._full_compile(current_config)</p>
+<h4>並行化處理</h4>
+<p>python</p>
+<p>import concurrent.futures</p>
+<p>class ParallelCompiler:</p>
+<p>def compile(self, ast: ProjectAST):</p>
+<p>&quot;&quot;&quot;並行執行可獨立的編譯階段&quot;&quot;&quot;</p>
+<p>with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:</p>
+<p><em># 同時執行：文檔生成、程式碼生成、圖表生成</em></p>
+<p>futures = 
+[</p>
+<p>executor.submit(self.generate_docs, ast),</p>
+<p>executor.submit(self.generate_code_skeletons, ast),</p>
+<p>executor.submit(self.generate_diagrams, ast),</p>
+<p>executor.submit(self.generate_ci_config, ast)</p>
+<p>]</p>
+<p>results = 
+[f.result() for f in futures]</p>
+<p>return CompilationResult(results)</p>
+<h4>6.1.2 運行時性能</h4>
+<h4>架構監控的輕量級實現</h4>
+<p>python</p>
+<p>class LightweightMonitor:</p>
+<p>def __init__(self, sampling_rate=0.01):</p>
+<p>&quot;&quot;&quot;</p>
+<p>採樣監控：只追蹤1%的請求，減少性能影響</p>
+<p>Args:</p>
+<p>sampling_rate: 採樣率（0.01 = 1%）</p>
+<p>&quot;&quot;&quot;</p>
+<p>self.sampling_rate = sampling_rate</p>
+<p>self.violations = 
+[]</p>
+<p>def track_import(self, importer: str, imported: str):</p>
+<p>&quot;&quot;&quot;追蹤import語句（在開發環境啟用）&quot;&quot;&quot;</p>
+<p>if random.random() &gt; self.sampling_rate:</p>
+<p>return <em># 跳過大部分請求</em></p>
+<p><em># 檢查是否違反架構約束</em></p>
+<p>if self._is_violation(importer, imported):</p>
+<p>self.violations.append({</p>
+<p>&#39;timestamp&#39;: time.time(),</p>
+<p>&#39;importer&#39;: importer,</p>
+<p>&#39;imported&#39;: imported,</p>
+<p>&#39;violation_type&#39;: &#39;cross_layer_import&#39;</p>
+<p>})</p>
+<h3>6.2 安全性設計</h3>
+<h4>6.2.1 DSL注入防護</h4>
+<h4>參數驗證</h4>
+<p>python</p>
+<p>class SecureParser:</p>
+<p>ALLOWED_PATTERNS = {</p>
+<p>&#39;module_name&#39;: r&#39;^
+[A-Za-z]
+[A-Za-z0-9_]{0,49}$&#39;,</p>
+<p>&#39;version&#39;: r&#39;^\d+\\d+\\d+$&#39;,</p>
+<p>&#39;email&#39;: r&#39;^</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mstyle mathcolor="#cc0000"><mtext>\w</mtext></mstyle><mspace linebreak="newline"></mspace><mo>−</mo></mrow><annotation encoding="application/x-tex">\w\\-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text" style="color:#cc0000;"><span class="mord" style="color:#cc0000;">\w</span></span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord">−</span></span></span></span></span><p>+@</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mstyle mathcolor="#cc0000"><mtext>\w</mtext></mstyle><mspace linebreak="newline"></mspace><mo>−</mo></mrow><annotation encoding="application/x-tex">\w\\-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text" style="color:#cc0000;"><span class="mord" style="color:#cc0000;">\w</span></span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord">−</span></span></span></span></span><p>+\\w+$&#39;</p>
+<p>}</p>
+<p>def parse_module_name(self, raw_input: str) -&gt; str:</p>
+<p>&quot;&quot;&quot;防止注入攻擊的模組名稱解析&quot;&quot;&quot;</p>
+<p><em># 白名單驗證</em></p>
+<p>if not re.match(self.ALLOWED_PATTERNS
+[&#39;module_name&#39;], raw_input):</p>
+<p>raise SecurityError(f&quot;非法的模組名稱: {raw_input}&quot;)</p>
+<p><em># 長度限制</em></p>
+<p>if len(raw_input) &gt; 50:</p>
+<p>raise SecurityError(&quot;模組名稱過長&quot;)</p>
+<p><em># 黑名單檢查（防止系統路徑）</em></p>
+<p>blacklist = 
+[&#39;..&#39;, &#39;/&#39;, &#39;\&#39;, &#39;system&#39;, &#39;root&#39;]</p>
+<p>if any(word in raw_input.lower() for word in blacklist):</p>
+<p>raise SecurityError(&quot;模組名稱包含禁止字符&quot;)</p>
+<p>return raw_input</p>
+<h4>6.2.2 權限模型</h4>
+<p>yaml</p>
+<p><em># 在mssp.config.yaml中定義權限</em></p>
+<p>security:</p>
+<p>rbac: <em># Role-Based Access Control</em></p>
+<p>roles:</p>
+<p>- name: architect</p>
+<p>permissions:</p>
+<p>- modify_fms</p>
+<p>- add_sms_module</p>
+<p>- modify_architecture_principles</p>
+<p>- name: developer</p>
+<p>permissions:</p>
+<p>- add_tms_subset</p>
+<p>- modify_tms_interfaces</p>
+<p>- view_architecture</p>
+<p>- name: viewer</p>
+<p>permissions:</p>
+<p>- view_architecture</p>
+<p>- view_documentation</p>
+<p>audit:</p>
+<p>enabled: true</p>
+<p>log_all_changes: true</p>
+<p>notify_on_critical_changes:</p>
+<p>- email: &quot;<a href="mailto:architect@company.com">architect@company.com</a>&quot;</p>
+<p>events: 
+[fms_modified, sms_removed]</p>
+<h3>6.3 可擴展性設計</h3>
+<h4>6.3.1 插件系統</h4>
+<p>python</p>
+<p><em># extensions/plugin_interface.py</em></p>
+<p>class FPLPlugin(ABC):</p>
+<p>&quot;&quot;&quot;FPL插件介面&quot;&quot;&quot;</p>
+<p>@abstractmethod</p>
+<p>def get_name(self) -&gt; str:</p>
+<p>&quot;&quot;&quot;插件名稱&quot;&quot;&quot;</p>
+<p>pass</p>
+<p>@abstractmethod</p>
+<p>def on_before_compile(self, ast: ProjectAST) -&gt; ProjectAST:</p>
+<p>&quot;&quot;&quot;編譯前鉤子：可修改AST&quot;&quot;&quot;</p>
+<p>pass</p>
+<p>@abstractmethod</p>
+<p>def on_after_compile(self, result: CompilationResult):</p>
+<p>&quot;&quot;&quot;編譯後鉤子：可處理生成結果&quot;&quot;&quot;</p>
+<p>pass</p>
+<p><em># 範例：自動生成API文檔的插件</em></p>
+<p>class OpenAPIPlugin(FPLPlugin):</p>
+<p>def get_name(self) -&gt; str:</p>
+<p>return &quot;OpenAPI Generator&quot;</p>
+<p>def on_after_compile(self, result: CompilationResult):</p>
+<p>&quot;&quot;&quot;從介面定義生成OpenAPI 3.0規範&quot;&quot;&quot;</p>
+<p>openapi_spec = {</p>
+<p>&quot;openapi&quot;: &quot;3.0.0&quot;,</p>
+<p>&quot;info&quot;: {</p>
+<p>&quot;title&quot;: result.project_name,</p>
+<p>&quot;version&quot;: result.version</p>
+<p>},</p>
+<p>&quot;paths&quot;: {}</p>
+<p>}</p>
+<p><em># 遍歷SMS介面，生成API端點</em></p>
+<p>for module in result.ast.architecture.sms:</p>
+<p>for iface_name, iface_spec in module.interfaces.items():</p>
+<p>path = f&quot;/{module.name.lower()}/{iface_name}&quot;</p>
+<p>openapi_spec
+[&quot;paths&quot;]
+[path] = {</p>
+<p>&quot;post&quot;: {</p>
+<p>&quot;summary&quot;: f&quot;{module.name}.{iface_name}&quot;,</p>
+<p>&quot;requestBody&quot;: self._gen_request_body(iface_spec),</p>
+<p>&quot;responses&quot;: self._gen_responses(iface_spec)</p>
+<p>}</p>
+<p>}</p>
+<p><em># 寫入檔案</em></p>
+<p>with open(f&quot;{result.output_dir}/openapi.yaml&quot;, &#39;w&#39;) as f:</p>
+<p>yaml.dump(openapi_spec, f)</p>
+<h4>6.3.2 多語言支援</h4>
+<p>python</p>
+<p>class LanguageAdapter(ABC):</p>
+<p>&quot;&quot;&quot;語言適配器：支持不同程式語言&quot;&quot;&quot;</p>
+<p>@abstractmethod</p>
+<p>def generate_interface(self, module: ModuleDefinition) -&gt; str:</p>
+<p>&quot;&quot;&quot;生成該語言的介面定義&quot;&quot;&quot;</p>
+<p>pass</p>
+<p>@abstractmethod</p>
+<p>def generate_model(self, model_def: dict) -&gt; str:</p>
+<p>&quot;&quot;&quot;生成資料模型&quot;&quot;&quot;</p>
+<p>pass</p>
+<p>class PythonAdapter(LanguageAdapter):</p>
+<p>def generate_interface(self, module: ModuleDefinition) -&gt; str:</p>
+<p>code = f&quot;class I{module.name}Service(ABC):\n&quot;</p>
+<p>for iface_name, iface_spec in module.interfaces.items():</p>
+<p>params = &quot;, &quot;.join(
+[f&quot;{p.name}: {p.type}&quot; for p in iface_spec.params])</p>
+<p>returns = iface_spec.returns.type_name</p>
+<p>code += f&quot; @abstractmethod\n&quot;</p>
+<p>code += f&quot; def {iface_name}(self, {params}) -&gt; {returns}:\n&quot;</p>
+<p>code += f&quot; pass\n\n&quot;</p>
+<p>return code</p>
+<p>class TypeScriptAdapter(LanguageAdapter):</p>
+<p>def generate_interface(self, module: ModuleDefinition) -&gt; str:</p>
+<p>code = f&quot;interface I{module.name}Service {{\n&quot;</p>
+<p>for iface_name, iface_spec in module.interfaces.items():</p>
+<p>params = &quot;, &quot;.join(
+[f&quot;{p.name}: {self._map_type(p.type)}&quot; for p in iface_spec.params])</p>
+<p>returns = self._map_type(iface_spec.returns.type_name)</p>
+<p>code += f&quot; {iface_name}({params}): Promise&lt;{returns}&gt;;\n&quot;</p>
+<p>code += &quot;}\n&quot;</p>
+<p>return code</p>
+<p>def _map_type(self, python_type: str) -&gt; str:</p>
+<p>&quot;&quot;&quot;Python類型映射到TypeScript類型&quot;&quot;&quot;</p>
+<p>mapping = {</p>
+<p>&#39;str&#39;: &#39;string&#39;,</p>
+<p>&#39;int&#39;: &#39;number&#39;,</p>
+<p>&#39;float&#39;: &#39;number&#39;,</p>
+<p>&#39;bool&#39;: &#39;boolean&#39;,</p>
+<p>&#39;List&#39;: &#39;Array&#39;,</p>
+<p>&#39;Dict&#39;: &#39;Record&#39;</p>
+<p>}</p>
+<p>return mapping.get(python_type, &#39;any&#39;)</p>
+<hr>
+<h2 id="s4-第七章-實施路徑與生態建設">第七章：實施路徑與生態建設</h2>
+<h3>7.1 採用路徑</h3>
+<h4>階段一：個人專案驗證（1-2個月）</h4>
+<p><strong>目標</strong>：在低風險環境下體驗FPL工作流</p>
+<p><strong>行動清單</strong>：</p>
+<ol>
+<li><p>選擇一個中小型個人專案（&lt;5K行）</p>
+</li>
+<li><p>手動撰寫mssp.config.yaml</p>
+</li>
+<li><p>使用FPL CLI生成專案結構</p>
+</li>
+<li><p>用Cursor填充實作</p>
+</li>
+<li><p>記錄體驗：哪些環節順暢？哪些有阻礙？</p>
+</li>
+</ol>
+<p><strong>成功指標</strong>：</p>
+<ul>
+<li><p>能在30分鐘內生成完整專案骨架</p>
+</li>
+<li><p>架構圖能清晰表達系統結構</p>
+</li>
+<li><p>新增模組時，知道該放在哪個資料夾</p>
+</li>
+</ul>
+<h4>階段二：團隊試點（3-6個月）</h4>
+<p><strong>目標</strong>：在團隊層面驗證協作效益</p>
+<p><strong>行動清單</strong>：</p>
+<ol>
+<li><p>選擇新專案（避免干擾現有專案）</p>
+</li>
+<li><p>團隊共同設計MSSP-Lang配置</p>
+</li>
+<li><p>建立Code Review流程：審查架構一致性</p>
+</li>
+<li><p>定期（每兩週）回顧架構健康度報告</p>
+</li>
+</ol>
+<p><strong>成功指標</strong>：</p>
+<ul>
+<li><p>新成員上手時間減少30%</p>
+</li>
+<li><p>架構決策有明確文檔記錄</p>
+</li>
+<li><p>減少「這個功能該放哪裡」的討論時間</p>
+</li>
+</ul>
+<h4>階段三：企業推廣（6-12個月）</h4>
+<p><strong>目標</strong>：建立企業級最佳實踐</p>
+<p><strong>行動清單</strong>：</p>
+<ol>
+<li><p>開發內部FPL培訓課程</p>
+</li>
+<li><p>建立公司級的架構原則庫</p>
+</li>
+<li><p>整合到CI/CD：自動檢查架構違規</p>
+</li>
+<li><p>建立「架構委員會」：審核重大架構變更</p>
+</li>
+</ol>
+<h3>7.2 開源生態策略</h3>
+<h4>核心開放內容</h4>
+<ol>
+<li><p><strong>FPL規範</strong>：MSSP-Lang語法定義（CC BY 4.0授權）</p>
+</li>
+<li><p><strong>參考實現</strong>：Python版編譯器（MIT授權）</p>
+</li>
+<li><p><strong>VSCode擴展</strong>：基礎IDE整合（MIT授權）</p>
+</li>
+<li><p><strong>範例專案</strong>：10個不同規模的示範專案</p>
+</li>
+</ol>
+<h4>社群貢獻方向</h4>
+<ul>
+<li><p><strong>語言適配器</strong>：Java、Rust、Go的生成器</p>
+</li>
+<li><p><strong>插件生態</strong>：GraphQL生成器、Kubernetes配置生成器</p>
+</li>
+<li><p><strong>視覺化工具</strong>：更豐富的架構圖樣式</p>
+</li>
+<li><p><strong>AI整合</strong>：與不同AI工具的適配</p>
+</li>
+</ul>
+<h4>商業化路徑</h4>
+<ul>
+<li><p><strong>開源核心 + 企業版</strong>：核心功能免費，高級功能（多團隊協作、審計日誌）收費</p>
+</li>
+<li><p><strong>雲端服務</strong>：提供託管的FPL編譯器與架構監控平台</p>
+</li>
+<li><p><strong>諮詢服務</strong>：幫助企業遷移到FPL工作流</p>
+</li>
+</ul>
+<h2 id="s5-第八章-哲學結語">第八章：哲學結語</h2>
+<h4>從「程式碼是什麼」到「架構是什麼」</h4>
+<p>在路德維希·維根斯坦的《邏輯哲學論》中，他區分了「可說」（sayable）與「可顯示」（showable）：邏輯結構無法用語言陳述，只能通過命題的形式自我顯示。軟體架構也是如此——它無法用散文式的文檔完全「說」清楚，而必須通過系統的組織方式「顯示」出來。</p>
+<p>資料夾程式語言的革命性在於，它創造了一種<strong>讓架構自我顯示的形式語言</strong>。當mssp.config.yaml定義了系統的三層結構、依賴關係、演化觸發條件，它不是在「描述」架構，而是<strong>就是</strong>架構本身的編碼形式。這呼應了約翰·塞爾的言語行為理論（Speech Act Theory）：某些語言不是描述世界，而是構成世界——「我宣布你們結為夫妻」不是描述婚姻，而是創造婚姻。FPL的DSL不是描述系統，而是定義系統。</p>
+<h4>認知外骨骼的倫理學</h4>
+<p>當AI能夠從MSSP-Lang自動生成完整專案時，我們面臨一個深刻的倫理問題：<strong>人類在創造過程中的角色是什麼？</strong></p>
+<p>法國哲學家貝爾納·斯蒂格勒（Bernard Stiegler）提出「技術即記憶的外化」：從最早的石器到現代的電腦，技術一直在承擔人類記憶與認知的外部化功能。FPL是這個外化過程的最新階段——它不是取代人類思考，而是將<strong>可形式化的架構知識</strong>外化到DSL中，解放人類去處理真正需要創造力的決策。</p>
+<p>關鍵在於區分「可形式化的」與「不可形式化的」：</p>
+<ul>
+<li><p><strong>可形式化</strong>：「如果模組數量&gt;50，則引入DDD分層」——這是規則，可以編碼</p>
+</li>
+<li><p><strong>不可形式化</strong>：「這個專案是否值得投資4個月時間」——這需要商業判斷、直覺、承擔風險的勇氣</p>
+</li>
+</ul>
+<p>FPL的倫理承諾是：<strong>我們外化規則，保留判斷</strong>。人類仍然是決策者，但不再被瑣碎的執行細節淹沒。</p>
+<h4>架構作為「存有的開顯」</h4>
+<p>海德格爾在《藝術作品的本源》中提出：藝術的本質不是製造美的對象，而是「真理的發生」——讓存在者的存有顯現。梵谷的《農鞋》不是描繪一雙鞋，而是讓鞋的「鞋性」（shoeness）、農民勞動的世界顯現出來。</p>
+<p><strong>好的架構也是這樣的「開顯」</strong>。當我們打開一個專案，看到清晰的三層結構、明確的依賴箭頭、穩定性標籤的顏色編碼，系統的「系統性」（systemness）被顯現了——我們不再只看到一堆檔案，而是看到一個有機的、有意圖的整體。</p>
+<p>FPL的資料夾結構不是「存放程式碼的地方」，而是<strong>系統架構在空間上的顯現</strong>。當資料夾路徑寫著core/user/domain/entities.py時，這個路徑本身就在訴說：「我是核心模組，屬於用戶領域，處於領域層，定義實體概念。」這種<strong>路徑即語義</strong>的特性，是架構知識的空間化編碼。</p>
+<h4>從控制到共生：與AI的新關係</h4>
+<p>傳統的人機關係是「命令-執行」：人類發出指令，機器執行。但在FPL範式中，關係變成了**「意圖-實現」**：人類表達意圖（通過MSSP-Lang），AI理解意圖並創造性地實現。</p>
+<p>這種關係更接近建築師與工匠的協作：建築師繪製藍圖，工匠理解藍圖並發揮專業技能。關鍵的信任來自於：藍圖足夠清晰，工匠的創造性被約束在合理範圍內。</p>
+<p>MSSP-Lang就是這樣的「藍圖語言」。它清晰到足以讓AI理解架構意圖，又開放到足以讓AI在實作層面發揮能力。這不是控制AI，而是<strong>與AI共同創造</strong>——人類設計架構，AI填充實作，兩者形成互補的認知分工。</p>
+<h4>結語：軟體工程的新人文主義</h4>
+<p>最終，資料夾程式語言指向一個更宏大的願景：<strong>讓軟體重新成為人類表達的媒介，而非人類屈從的技術迷宮</strong>。</p>
+<p>當代軟體開發常陷入「技術崇拜」：追逐最新框架、最熱技術棧、最複雜的設計模式，卻忘記了軟體的本質是<strong>解決人類問題的工具</strong>。FPL的宏觀層（context、decisions）強制開發者回答：「為何做？為誰做？」這是對技術迷失的糾正。</p>
+<p>更深層地，FPL主張<strong>架構的可讀性與程式碼的可讀性同等重要</strong>。一個系統的價值不僅在於它能運行，更在於它能被理解、能被傳承、能在十年後仍然清晰可維護。當架構被形式化為DSL、可視化為圖表、記錄為決策日誌，我們創造的不只是軟體，而是<strong>可傳承的知識</strong>。</p>
+<p>在複雜性的時代，FPL提供的不是「更複雜的工具」，而是「讓複雜性可理解的框架」。它承認人類認知的限制（Miller&#39;s 7±2），利用空間記憶的優勢（資料夾結構），外化可形式化的知識（DSL），並在AI的協助下，讓普通開發者也能創造出清晰、優雅、可維護的系統。</p>
+<p>這不是軟體工程的終點，而是一個新起點——<strong>從編碼的苦工走向架構的藝術，從個人的天賦走向可學習的方法，從混亂的探索走向有序的創造</strong>。當每個開發者都能用FPL清晰地表達架構意圖，當AI能完美地理解並實現這些意圖，當架構圖能像詩歌一樣優雅地展現系統的本質——此時，軟體工程將真正成為一門融合理性與創造力的<strong>人文工程學</strong>。</p>
+<hr>
+<h2 id="s6-參考文獻">參考文獻</h2>
+<ol>
+<li><p>Miller, G. A. (1956). The magical number seven, plus or minus two: Some limits on our capacity for processing information. <em>Psychological Review</em>, 63(2), 81-97.</p>
+</li>
+<li><p>Sweller, J. (1988). Cognitive load during problem solving: Effects on learning. <em>Cognitive Science</em>, 12(2), 257-285.</p>
+</li>
+<li><p>Tversky, B. (2011). <em>Visualizing Thought</em>. Topics in Cognitive Science, 3(3), 499-535.</p>
+</li>
+<li><p>Conway, M. E. (1968). How do committees invent? <em>Datamation</em>, 14(4), 28-31.</p>
+</li>
+<li><p>Heidegger, M. (1927). <em>Being and Time</em>. Harper &amp; Row. (存有與時間)</p>
+</li>
+<li><p>Wittgenstein, L. (1921). <em>Tractatus Logico-Philosophicus</em>. (邏輯哲學論)</p>
+</li>
+<li><p>Deleuze, G., &amp; Guattari, F. (1987). <em>A Thousand Plateaus</em>. University of Minnesota Press. (千高原)</p>
+</li>
+<li><p>Evans, E. (2003). <em>Domain-Driven Design: Tackling Complexity in the Heart of Software</em>. Addison-Wesley.</p>
+</li>
+<li><p>Martin, R. C. (2017). <em>Clean Architecture: A Craftsman&#39;s Guide to Software Structure and Design</em>. Prentice Hall.</p>
+</li>
+<li><p>Bachelard, G. (1958). <em>The Poetics of Space</em>. Beacon Press. (空間詩學)</p>
+</li>
+</ol>
+<hr>
+<h2 id="s7-附錄a-mssp-lang完整語法參考">附錄A：MSSP-Lang完整語法參考</h2>
+<h2 id="s8-附錄b-fpl-cli命令手冊">附錄B：FPL CLI命令手冊</h2>
+<h2 id="s9-附錄c-架構健康度評估標準">附錄C：架構健康度評估標準</h2>
+<h2 id="s10-附錄d-常見問題解答">附錄D：常見問題解答</h2>
+<hr>
+<p><strong>文檔版本</strong>：1.0<br><strong>字數統計</strong>：約10,500字<br><strong>最後更新</strong>：2025年1月5日</p>
+</article>
+  <section class="source-download">
+    <b>原始檔</b>
+    <p>這份研究的 Markdown 原始檔，與本頁由同一份來源產生。</p>
+    <a href="https://thisoneisneok.com/md/research/folder-programming-language.md">下載 Markdown ↓</a>
+  </section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/research">回到程式研究區 ↗</a></footer>
+</body>
+</html>

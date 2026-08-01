@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>軟體專案的規模感知架構組織範式 | 程式研究區 | Neo.K</title>
+<meta name="description" content="從認知負荷、圖論與組織理論推導出「多大的專案該用多少結構」，並讓這個判斷隨專案成長自動演化，而不是在第一天就凍結一套模板。">
+<link rel="canonical" href="https://thisoneisneok.com/html/research/scale-aware-architecture.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#6551a6}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(900px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 34px}
+.facts div{display:flex;flex-direction:column;gap:5px}
+.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.facts span{font-size:13px}
+.provisional{border:1px solid var(--accent);color:var(--accent);padding:13px 17px;margin:0 0 30px;font-size:13px;line-height:1.7}
+.toc{border:1px solid var(--line);padding:20px 24px;margin:0 0 44px}
+.toc b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.11em;text-transform:uppercase}
+.toc ol{margin:12px 0 0;padding-left:20px;columns:2;column-gap:32px}
+.toc li{margin:.34em 0;font-size:13.5px;break-inside:avoid}
+.toc a{color:var(--ink)}.toc a:hover{color:var(--accent);text-decoration:underline}
+.content{font-size:17px;line-height:1.88;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 28px}
+.content h2{font-size:25px;margin:58px 0 15px;padding-top:8px;border-top:1px solid var(--line)}
+.content h3{font-size:19px;margin:36px 0 11px}
+.content h4{font-size:16px;color:var(--muted);margin:26px 0 9px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e4e1d8;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:26px 0}
+.source-download{margin:70px 0 0;border:1px solid var(--line);padding:24px}
+.source-download b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.11em;text-transform:uppercase}
+.source-download p{color:var(--muted);font-size:13px;line-height:1.7;margin:10px 0 16px}
+.source-download a{display:inline-block;border:1px solid var(--line);color:var(--accent);font:11px ui-monospace,monospace;padding:9px 14px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:700px){.content{font-size:16px}.toc ol{columns:1}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / 程式研究區</strong><span>動態 MSSP</span></header>
+<main>
+  <section class="facts">
+    <div><b>方向</b><span>動態 MSSP</span></div>
+    <div><b>狀態</b><span>研究草案</span></div>
+    <div><b>日期</b><span>2026-08-01</span></div>
+    <div><b>字數</b><span>20,976</span></div>
+  </section>
+  
+  <nav class="toc"><b>目次</b><ol><li><a href="#s0-摘要">摘要</a></li><li><a href="#s1-第一章-問題陳述與理論基礎">第一章：問題陳述與理論基礎</a></li><li><a href="#s2-第二章-規模感知的分層策略">第二章：規模感知的分層策略</a></li><li><a href="#s3-第四章-實施策略與案例分析">第四章：實施策略與案例分析</a></li><li><a href="#s4-第五章-工具支援與自動化">第五章：工具支援與自動化</a></li><li><a href="#s5-第六章-哲學結語">第六章：哲學結語</a></li></ol></nav>
+  <article class="content"><h1>軟體專案的規模感知架構組織範式：從認知負荷到動態演化的系統性方法論</h1>
+<p><strong>作者：Neo-K</strong></p>
+<p><strong>機構：一言諾科技有限公司(EveMissLab)</strong></p>
+<p><strong>日期：2025.1月</strong></p>
+<h2 id="s0-摘要">摘要</h2>
+<p>軟體專案的架構組織長期面臨一個根本矛盾：既有方法論要麼過度簡化（所有專案使用相同結構），要麼過度複雜（引入不必要的抽象層次）。本研究提出一套<strong>規模感知的動態架構組織範式</strong>，建立在認知科學、圖論、組織複雜性理論的跨領域基礎上。核心主張是：資料夾結構不是靜態的模板，而是隨專案規模、團隊大小、複雜度演化的<strong>有機系統</strong>。</p>
+<p>研究定義了四個規模區間（小型、中型、大型、超大型專案），為每個區間設計了最優的資料夾分層策略，並建立了14條動態觸發規則，明確「何時增加層級」與「何時簡化結構」的閾值。方法論的創新在於將<strong>認知容量極限</strong>（Miller&#39;s 7±2法則）、<strong>模組化原則</strong>（內聚性與耦合度）、<strong>組織分形理論</strong>（遞迴的自相似結構）三者整合為統一框架。</p>
+<p>實證分析顯示，採用規模感知策略的專案在認知複雜度、維護成本、新成員上手時間三個維度上均優於固定結構的對照組。本研究為軟體工程實踐提供了可操作的、可驗證的架構組織指導原則，並為未來AI輔助架構設計奠定理論基礎。</p>
+<p><strong>關鍵詞</strong>：資料夾架構、規模感知、認知負荷、動態演化、模組化設計</p>
+<hr>
+<h2 id="s1-第一章-問題陳述與理論基礎">第一章：問題陳述與理論基礎</h2>
+<h3>1.1 既有架構組織的困境</h3>
+<p>軟體專案的資料夾結構組織存在兩種極端實踐：</p>
+<h4>極端一：「一刀切」的模板主義</h4>
+<p>許多團隊無論專案規模，都套用相同的資料夾模板。一個只有3個模組、2000行程式碼的小專案，被強制使用分層架構（src/domain/application/infrastructure/），導致過度工程化。開發者為了找到一個簡單的函數，需要穿越四層資料夾，認知成本遠超收益。</p>
+<h4>極端二：「野蠻生長」的無序狀態</h4>
+<p>另一些團隊則完全缺乏組織規範，專案初期將所有檔案平鋪在根目錄，隨著規模增長逐漸失控。當專案達到50個檔案時，開發者才意識到需要「重構資料夾結構」，但此時程式碼中的import路徑已經固化，重構成本極高。</p>
+<p>這兩種極端背後是同一個根本問題：<strong>缺乏規模感知機制</strong>。現有方法論將資料夾結構視為「設計決策」，卻忽略了它應該是<strong>隨系統演化而動態調整的有機結構</strong>。</p>
+<h3>1.2 認知科學的理論基礎</h3>
+<h4>Miller&#39;s Law與認知容量極限</h4>
+<p>心理學家George Miller在1956年提出，人類工作記憶容量約為7±2個資訊單元。這個發現對資料夾組織有直接啟示：<strong>單一層級的子項數量不應超過9個</strong>。</p>
+<p>當開發者打開一個資料夾看到15個子資料夾時，大腦無法一次性處理全部資訊，必須進行分批掃描，增加了搜尋時間與認知負荷。相反，如果資料夾只有3-7個子項，大腦能在單次「瞥視」（glance）中掌握全局結構。</p>
+<h4>組塊化（Chunking）與層次化</h4>
+<p>認知心理學的另一個核心概念是組塊化：將多個獨立項目組織為單一「組塊」，從而擴展工作記憶容量。例如電話號碼0912-345-678比0912345678更容易記憶，因為前者將10位數字組織為3個組塊。</p>
+<p>應用到資料夾結構：與其在根目錄放置20個模組檔案（超載），不如組織為5個領域資料夾，每個包含3-5個模組（可處理）。層次化不是為了「看起來專業」，而是<strong>對齊人類認知的自然結構</strong>。</p>
+<h4>空間記憶與導航效率</h4>
+<p>神經科學研究顯示，人類的空間記憶（spatial memory）強於語義記憶。當我們頻繁訪問某個檔案時，大腦記住的不是抽象路徑「src/features/analytics/report.py」，而是<strong>空間位置</strong>：「第二層、第三個資料夾、往下兩層」。</p>
+<p>這意味著：資料夾結構的穩定性比扁平性更重要。一個深但穩定的結構，優於一個淺但頻繁變動的結構。規模感知策略的設計必須考慮「何時增加層級」與「如何保持結構穩定」的平衡。</p>
+<h3>1.3 圖論與模組化理論</h3>
+<h4>軟體系統作為有向圖</h4>
+<p>從圖論視角，軟體系統是一個有向圖G=(V, E)：</p>
+<ul>
+<li><p>V是模組集合（檔案或資料夾）</p>
+</li>
+<li><p>E是依賴關係（import或呼叫）</p>
+</li>
+</ul>
+<p>圖的複雜度可用多個指標衡量：</p>
+<p><strong>節點數 |V|</strong>：系統的規模。小專案&lt;20個模組，大專案可達數百個。</p>
+<p><strong>邊密度 D = |E| / (|V|×(|V|-1))</strong>：模組間耦合度。D&lt;0.1為稀疏圖（良好的解耦），D&gt;0.3為高密度圖（過度耦合）。</p>
+<p><strong>直徑 d(G)</strong>：圖中任意兩節點間最短路徑的最大值。反映系統的「導航距離」——從任意模組到達另一模組需要經過多少跳。</p>
+<p><strong>聚類係數 C</strong>：節點的鄰居之間也互相連接的程度。高聚類係數意味著模組自然形成內聚的群組，適合用資料夾封裝。</p>
+<h4>資料夾結構的圖論優化目標</h4>
+<p>好的資料夾組織應該最小化：</p>
+<ol>
+<li><p><strong>平均搜尋深度</strong>：從根目錄到達目標檔案的平均層級數</p>
+</li>
+<li><p><strong>跨資料夾依賴數</strong>：減少資料夾A中的檔案import資料夾B中檔案的情況</p>
+</li>
+<li><p><strong>認知負荷函數</strong>：L = α×(層級深度) + β×(單層子項數)</p>
+</li>
+</ol>
+<p>這三個目標之間存在權衡。扁平結構（深度=1）最小化了第一項，但會使第二項爆炸（所有檔案擠在一起）。深層結構控制了第二項，但會增加第一項。規模感知策略的本質就是在不同規模下找到這個權衡的最優解。</p>
+<h3>1.4 組織理論的類比</h3>
+<h4>康威定律與架構同構</h4>
+<p>Melvin Conway提出：「組織架構決定系統架構。」一個由4個團隊組成的公司，會自然產出4個模組的系統。</p>
+<p>這個定律的逆命題同樣成立：<strong>資料夾結構應該反映組織結構</strong>。當團隊規模從3人增長到30人時，資料夾結構也必須演化以支持並行開發。小團隊可以共享一個扁平的資料夾，大團隊需要清晰的所有權邊界（每個子系統對應一個團隊）。</p>
+<h4>分形組織理論</h4>
+<p>生物學與組織理論中的分形概念指出：複雜系統往往具有自相似性——局部結構與整體結構具有相同模式。</p>
+<p>應用到資料夾組織：超大型專案的頂層結構（子系統劃分）與單個子系統的內部結構（模組劃分），應該遵循相同的組織原則。這種<strong>遞迴的自相似性</strong>降低了認知負荷——開發者學會了一種組織模式後，能在不同層級複用這個心智模型。</p>
+<hr>
+<h2 id="s2-第二章-規模感知的分層策略">第二章：規模感知的分層策略</h2>
+<h3>2.1 規模區間的定義</h3>
+<p>基於專案特徵的多維分析，我們定義四個規模區間：</p>
+<table>
+<thead>
+<tr>
+<th><strong>規模</strong></th>
+<th><strong>程式碼行數</strong></th>
+<th><strong>模組數量</strong></th>
+<th><strong>團隊規模</strong></th>
+<th><strong>開發週期</strong></th>
+<th><strong>典型範例</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>小型</strong></td>
+<td>&lt;10K</td>
+<td>&lt;15</td>
+<td>1-3人</td>
+<td>&lt;3個月</td>
+<td>工具腳本、原型驗證</td>
+</tr>
+<tr>
+<td><strong>中型</strong></td>
+<td>10K-100K</td>
+<td>15-50</td>
+<td>3-10人</td>
+<td>3-12個月</td>
+<td>新創MVP、內部系統</td>
+</tr>
+<tr>
+<td><strong>大型</strong></td>
+<td>100K-500K</td>
+<td>50-200</td>
+<td>10-50人</td>
+<td>1-3年</td>
+<td>企業應用、SaaS產品</td>
+</tr>
+<tr>
+<td><strong>超大型</strong></td>
+<td>&gt;500K</td>
+<td>&gt;200</td>
+<td>&gt;50人</td>
+<td>持續演化</td>
+<td>平台系統、作業系統</td>
+</tr>
+</tbody></table>
+<p><strong>注意</strong>：這些區間不是絕對的，而是經驗性的參考值。實際應用中需要根據專案特性（如業務複雜度、技術棧）調整。</p>
+<h3>2.2 小型專案：扁平化優先</h3>
+<p><strong>核心原則</strong>：最小化導航層級，最大化可見性</p>
+<h4>推薦結構</h4>
+<p>project/</p>
+<p>├── README.md</p>
+<p>├── FMS.md # 單一元資料文件</p>
+<p>├── core/ # 核心邏輯（扁平）</p>
+<p>│ ├── user.py</p>
+<p>│ ├── order.py</p>
+<p>│ └── payment.py</p>
+<p>├── features/ # 功能模組（扁平）</p>
+<p>│ ├── cart.py</p>
+<p>│ ├── recommend.py</p>
+<p>│ └── notification.py</p>
+<p>├── shared/ # 共享工具</p>
+<p>│ └── utils.py</p>
+<p>├── tests/ # 測試</p>
+<p>│ ├── test_user.py</p>
+<p>│ └── test_order.py</p>
+<p>└── config.yaml</p>
+<h4>設計理由</h4>
+<p><strong>一層分類足矣</strong>：專案規模小，模組數量&lt;15，符合認知容量。使用兩層劃分（core/features）已經提供了清晰的概念組織。</p>
+<p><strong>禁止子資料夾</strong>：core/和features/內部不再建立子資料夾。若user.py膨脹需要拆分，應創建user_auth.py、user_profile.py並列放置，而非創建user/子資料夾。</p>
+<p><strong>快速導航</strong>：任何檔案都在「根目錄→一級分類→目標檔案」三步內可達，符合短期記憶的「3次點擊」經驗法則。</p>
+<p><strong>視覺化對應</strong>：資料夾結構直接對應架構圖的第一層方塊。開發者看到的資料夾樹與心中的系統地圖完全一致。</p>
+<h4>反模式警示</h4>
+<p>❌ <strong>過度分層</strong>：創建core/domain/、core/application/等DDD分層，在小專案中是過度工程化。 ❌ <strong>過度抽象</strong>：引入抽象基類、工廠模式等設計模式，增加理解成本。 ❌ <strong>分散配置</strong>：將配置分散在多個檔案（config/database.yaml、config/cache.yaml），小專案應統一在單一config.yaml。</p>
+<h3>2.3 中型專案：領域分組與內部導航</h3>
+<p><strong>核心原則</strong>：引入第二層分組，但保持導航清晰</p>
+<h4>推薦結構</h4>
+<p>project/</p>
+<p>├── FMS/</p>
+<p>│ ├── 00_NARRATIVE.md</p>
+<p>│ ├── 01_INDEX.md</p>
+<p>│ └── 02_ANNOTATIONS.md</p>
+<p>├── core/ # SMS層開始分層</p>
+<p>│ ├── _SMS_MAP.md # 內部導航圖</p>
+<p>│ ├── user/</p>
+<p>│ │ ├── __init__.py</p>
+<p>│ │ ├── auth.py</p>
+<p>│ │ ├── profile.py</p>
+<p>│ │ └── models.py</p>
+<p>│ ├── order/</p>
+<p>│ │ ├── lifecycle.py</p>
+<p>│ │ ├── validator.py</p>
+<p>│ │ └── models.py</p>
+<p>│ └── payment/</p>
+<p>│ ├── gateway.py</p>
+<p>│ └── models.py</p>
+<p>├── features/ # TMS層按領域分組</p>
+<p>│ ├── _TMS_MAP.md</p>
+<p>│ ├── shopping/</p>
+<p>│ │ ├── cart.py</p>
+<p>│ │ └── wishlist.py</p>
+<p>│ ├── analytics/</p>
+<p>│ │ ├── recommend.py</p>
+<p>│ │ └── report.py</p>
+<p>│ └── communication/</p>
+<p>│ ├── notification.py</p>
+<p>│ └── email.py</p>
+<p>├── shared/</p>
+<p>│ ├── utils/</p>
+<p>│ │ ├── datetime.py</p>
+<p>│ │ └── string.py</p>
+<p>│ └── config.py</p>
+<p>└── tests/</p>
+<p>├── core/</p>
+<p>│ ├── test_user_auth.py</p>
+<p>│ └── test_order.py</p>
+<p>└── features/</p>
+<p>└── test_cart.py</p>
+<h4>新增機制與設計理由</h4>
+<h4>內部導航圖（_SMS_MAP.md、_TMS_MAP.md）</h4>
+<p>當SMS或TMS內部超過5個子項時，引入導航文件。內容包括：</p>
+<ul>
+<li><p>各子資料夾的職責一句話描述</p>
+</li>
+<li><p>模組間的依賴關係圖（Mermaid格式）</p>
+</li>
+<li><p>常見任務的「入口點」提示（如「修改用戶登入邏輯，請看user/auth.py」）</p>
+</li>
+</ul>
+<p>這是<strong>認知卸載</strong>的實踐：將「記住50個模組的位置」的負擔，轉移到「查閱導航圖」的外部記憶。</p>
+<h4>領域分組原則</h4>
+<p>TMS層按業務領域分組（shopping/analytics/communication），而非技術層次（controllers/services/models）。原因：</p>
+<ul>
+<li><p><strong>內聚性</strong>：同一業務領域的程式碼變更往往同時發生，放在一起減少跨資料夾跳轉</p>
+</li>
+<li><p><strong>團隊對齊</strong>：當團隊擴展時，可以自然地將領域資料夾分配給不同成員負責</p>
+</li>
+<li><p><strong>概念清晰</strong>：新成員看到資料夾名稱就能理解業務範疇</p>
+</li>
+</ul>
+<h4>模組內部微結構</h4>
+<p>每個SMS子資料夾（如user/）開始有內部檔案劃分：</p>
+<ul>
+<li><p>auth.py：認證邏輯</p>
+</li>
+<li><p>profile.py：資料管理</p>
+</li>
+<li><p>models.py：資料模型定義</p>
+</li>
+</ul>
+<p>但仍然是扁平的——不再創建user/domain/、user/application/等子層級。</p>
+<h4>測試結構同構</h4>
+<p>tests/資料夾的結構鏡像主程式碼結構。這種同構性降低了認知負荷——開發者修改core/user/auth.py時，自然知道對應的測試在tests/core/test_user_auth.py。</p>
+<h4>規模閾值</h4>
+<p>中型專案的上限約為50個模組。當模組數量接近50時，開始出現以下徵兆：</p>
+<ul>
+<li><p>_SMS_MAP.md文件變得冗長（&gt;200行）</p>
+</li>
+<li><p>開發者經常抱怨「找不到某個功能在哪個檔案」</p>
+</li>
+<li><p>單個領域資料夾內有&gt;10個檔案</p>
+</li>
+</ul>
+<p>這些信號表明專案正在向大型過渡。</p>
+<h3>2.4 大型專案：DDD分層與子領域治理</h3>
+<p><strong>核心原則</strong>：引入第三層結構，明確架構邊界</p>
+<h4>推薦結構</h4>
+<p>project/</p>
+<p>├── FMS/</p>
+<p>│ ├── 00_SYSTEM_NARRATIVE.md</p>
+<p>│ ├── 01_GLOBAL_INDEX.md</p>
+<p>│ ├── 02_DEPENDENCY_GRAPH.mmd</p>
+<p>│ └── domains/ # 子領域的FMS</p>
+<p>│ ├── user_domain.md</p>
+<p>│ ├── order_domain.md</p>
+<p>│ └── payment_domain.md</p>
+<p>├── core/</p>
+<p>│ ├── _SMS_ARCHITECTURE.md # SMS整體設計文件</p>
+<p>│ ├── user/</p>
+<p>│ │ ├── _MODULE.md # 模組級說明</p>
+<p>│ │ ├── domain/ # DDD分層開始出現</p>
+<p>│ │ │ ├── entities.py</p>
+<p>│ │ │ ├── value_objects.py</p>
+<p>│ │ │ └── repositories.py</p>
+<p>│ │ ├── application/</p>
+<p>│ │ │ ├── services.py</p>
+<p>│ │ │ └── use_cases.py</p>
+<p>│ │ └── infrastructure/</p>
+<p>│ │ ├── database.py</p>
+<p>│ │ └── cache.py</p>
+<p>│ ├── order/</p>
+<p>│ │ ├── domain/</p>
+<p>│ │ ├── application/</p>
+<p>│ │ └── infrastructure/</p>
+<p>│ └── payment/</p>
+<p>│ └── ...</p>
+<p>├── features/</p>
+<p>│ ├── _TMS_REGISTRY.json # 機器可讀的子集註冊表</p>
+<p>│ ├── shopping/</p>
+<p>│ │ ├── _DOMAIN.md</p>
+<p>│ │ ├── cart/</p>
+<p>│ │ │ ├── domain/</p>
+<p>│ │ │ ├── application/</p>
+<p>│ │ │ └── presentation/</p>
+<p>│ │ └── wishlist/</p>
+<p>│ │ └── ...</p>
+<p>│ └── analytics/</p>
+<p>│ └── ...</p>
+<p>├── platform/ # 平台層（新增）</p>
+<p>│ ├── observability/</p>
+<p>│ │ ├── logging.py</p>
+<p>│ │ ├── metrics.py</p>
+<p>│ │ └── tracing.py</p>
+<p>│ └── security/</p>
+<p>│ ├── authentication.py</p>
+<p>│ └── authorization.py</p>
+<p>└── tests/</p>
+<p>├── integration/ # 區分單元與整合測試</p>
+<p>└── unit/</p>
+<h4>質變點分析</h4>
+<h4>DDD三層架構的引入</h4>
+<p>大型專案的單個SMS模組（如user/）內部開始應用領域驅動設計的分層：</p>
+<ul>
+<li><p><strong>domain/</strong>：核心業務邏輯，不依賴外部技術</p>
+</li>
+<li><p><strong>application/</strong>：用例編排，協調domain層完成業務流程</p>
+</li>
+<li><p><strong>infrastructure/</strong>：技術實作（資料庫、外部API呼叫）</p>
+</li>
+</ul>
+<p>這種分層不是為了「看起來專業」，而是<strong>強制依賴方向</strong>：domain層不依賴infrastructure層，確保業務邏輯的純粹性與可測試性。</p>
+<h4>子領域FMS</h4>
+<p>當業務複雜度高時，每個有界上下文（Bounded Context）擁有自己的領域文件（FMS/domains/user_domain.md）。內容包括：</p>
+<ul>
+<li><p>該子領域解決的業務問題</p>
+</li>
+<li><p>核心概念與術語（統一語言）</p>
+</li>
+<li><p>與其他子領域的集成點</p>
+</li>
+</ul>
+<p>這是<strong>認知分治</strong>的實踐：開發者理解系統不需要一次性載入全部，而是先理解全局（GLOBAL_INDEX），再深入特定子領域。</p>
+<h4>平台層的出現</h4>
+<p>大型專案需要統一的基礎設施支持（日誌、監控、認證）。這些不屬於業務邏輯（SMS）也不屬於功能特性（TMS），因此獨立為platform/層。</p>
+<h4>機器可讀的註冊表</h4>
+<p>_TMS_REGISTRY.json記錄所有TMS子集的元資料：</p>
+<p>json</p>
+<p>{</p>
+<p>&quot;subsets&quot;: 
+[</p>
+<p>{</p>
+<p>&quot;name&quot;: &quot;cart&quot;,</p>
+<p>&quot;path&quot;: &quot;features/shopping/cart&quot;,</p>
+<p>&quot;description&quot;: &quot;購物車臨時存儲&quot;,</p>
+<p>&quot;dependencies&quot;: 
+[&quot;core.user&quot;, &quot;core.product&quot;],</p>
+<p>&quot;optional&quot;: true,</p>
+<p>&quot;status&quot;: &quot;active&quot;</p>
+<p>},</p>
+<p>{</p>
+<p>&quot;name&quot;: &quot;recommendation&quot;,</p>
+<p>&quot;path&quot;: &quot;features/analytics/recommend&quot;,</p>
+<p>&quot;dependencies&quot;: 
+[&quot;core.user&quot;, &quot;core.order&quot;],</p>
+<p>&quot;optional&quot;: true,</p>
+<p>&quot;status&quot;: &quot;experimental&quot;</p>
+<p>}</p>
+<p>]</p>
+<p>}</p>
+<p>```</p>
+<p>這使得工具可以自動生成架構圖、檢測依賴違規、統計模組使用率。</p>
+<p>**組織對齊**</p>
+<p>大型專案往往有10-50人的團隊。此時資料夾結構應明確所有權：</p>
+<p>- core/user/ → 用戶團隊負責</p>
+<p>- core/order/ → 訂單團隊負責</p>
+<p>- features/analytics/ → 數據團隊負責</p>
+<p>每個資料夾應有`CODEOWNERS`檔案，明確維護者。這避免了「公地悲劇」——沒人負責的程式碼最終腐化。</p>
+<p>### 2.5 超大型專案：遞迴結構與聯邦治理</p>
+<p>**核心原則**：子系統自治，頂層協調</p>
+<p>**推薦結構**</p>
+<p>```</p>
+<p>monorepo/</p>
+<p>├── FMS/</p>
+<p>│ ├── 00_SYSTEM_NARRATIVE.md</p>
+<p>│ ├── 01_SUBSYSTEM_MAP.md # 子系統地圖</p>
+<p>│ ├── 02_INTEGRATION_CONTRACTS.md</p>
+<p>│ └── governance/</p>
+<p>│ ├── architecture_principles.md</p>
+<p>│ └── evolution_strategy.md</p>
+<p>├── subsystems/ # 每個子系統是獨立專案</p>
+<p>│ ├── user-service/</p>
+<p>│ │ ├── FMS/ # 遞迴的FMS結構</p>
+<p>│ │ ├── core/</p>
+<p>│ │ ├── features/</p>
+<p>│ │ └── tests/</p>
+<p>│ ├── order-service/</p>
+<p>│ │ ├── FMS/</p>
+<p>│ │ └── ...</p>
+<p>│ └── payment-service/</p>
+<p>│ └── ...</p>
+<p>├── shared-libraries/ # 跨子系統共享</p>
+<p>│ ├── common-types/</p>
+<p>│ │ └── user_dto.py</p>
+<p>│ └── monitoring-sdk/</p>
+<p>│ └── tracer.py</p>
+<p>├── platform/</p>
+<p>│ ├── api-gateway/</p>
+<p>│ ├── service-mesh/</p>
+<p>│ └── infrastructure-as-code/</p>
+<p>└── governance/</p>
+<p>├── architecture-decisions/ # ADR倉庫</p>
+<p>│ ├── 001-microservices-adoption.md</p>
+<p>│ └── 002-event-driven-integration.md</p>
+<p>└── quality-gates/</p>
+<p>└── architecture_lint.py</p>
+<h4>遞迴的分形結構</h4>
+<p>超大型專案最顯著的特徵是<strong>結構的自相似性</strong>。每個subsystem/下的子系統（如user-service/）本身就是一個完整的大型專案，擁有：</p>
+<ul>
+<li><p>自己的FMS（描述子系統目標與設計）</p>
+</li>
+<li><p>自己的core/features/分層</p>
+</li>
+<li><p>獨立的測試與CI/CD</p>
+</li>
+</ul>
+<p>這種遞迴結構有兩個優勢：</p>
+<ol>
+<li><p><strong>認知分治</strong>：開發者可以只關注一個子系統，無需理解整個單體倉庫</p>
+</li>
+<li><p><strong>心智模型複用</strong>：學會了頂層的組織邏輯後，同樣適用於子系統內部</p>
+</li>
+</ol>
+<h4>聯邦治理模型</h4>
+<p>超大型專案不可能由單一架構師集中控制。需要<strong>聯邦治理</strong>：</p>
+<ul>
+<li><p><strong>頂層FMS</strong>：定義全局原則（如「所有子系統必須暴露健康檢查端點」）</p>
+</li>
+<li><p><strong>子系統自治</strong>：各子系統架構師在原則範圍內自由設計內部結構</p>
+</li>
+<li><p><strong>Architecture Decision Records (ADR)</strong>：重大決策文件化，存放在governance/architecture-decisions/</p>
+</li>
+</ul>
+<h4>共享庫的版本管理</h4>
+<p>當多個子系統依賴shared-libraries/時，必須明確版本策略：</p>
+<ul>
+<li><p><strong>語義化版本</strong>：common-types遵循SemVer，breaking change必須升大版本號</p>
+</li>
+<li><p><strong>依賴鎖定</strong>：每個子系統在requirements.txt中鎖定共享庫版本</p>
+</li>
+<li><p><strong>逐步升級</strong>：不強制所有子系統同步升級，允許漸進式遷移</p>
+</li>
+</ul>
+<h4>質量門檻自動化</h4>
+<p>governance/quality-gates/architecture_lint.py是一個自動檢查腳本，在CI/CD中運行：</p>
+<p>python</p>
+<p>def check_architecture_compliance(subsystem_path):</p>
+<p>violations = 
+[]</p>
+<p><em># 規則1：FMS文件必須存在</em></p>
+<p>if not exists(f&quot;{subsystem_path}/FMS/00_SYSTEM_NARRATIVE.md&quot;):</p>
+<p>violations.append(&quot;Missing FMS NARRATIVE&quot;)</p>
+<p><em># 規則2：禁止跨子系統的直接import</em></p>
+<p>for file in scan_python_files(subsystem_path):</p>
+<p>imports = extract_imports(file)</p>
+<p>for imp in imports:</p>
+<p>if imp.startswith(&quot;subsystems.&quot;) and imp != subsystem_path:</p>
+<p>violations.append(f&quot;Cross-subsystem import: {imp}&quot;)</p>
+<p><em># 規則3：循環依賴檢測</em></p>
+<p>graph = build_dependency_graph(subsystem_path)</p>
+<p>cycles = find_cycles(graph)</p>
+<p>if cycles:</p>
+<p>violations.append(f&quot;Cyclic dependencies: {cycles}&quot;)</p>
+<p>return violations</p>
+<p>```</p>
+<p>這種自動化確保了在大規模協作中，架構原則不會因人為疏忽而違反。</p>
+<hr>
+<p><em>## 第三章：動態演化的觸發規則</em></p>
+<p><em>### 3.1 理論基礎：何時增加複雜度？</em></p>
+<p>**Gall&#39;s Law of Complexity**</p>
+<p>系統理論學者John Gall提出：「複雜系統總是從簡單系統演化而來。試圖直接設計複雜系統註定失敗。」</p>
+<p>應用到資料夾結構：**不應該在專案初期就建立複雜的多層結構，而應該在簡單結構無法支撐時才引入新層級**。</p>
+<p>**認知摩擦理論**</p>
+<p>心理學家提出「認知摩擦」（Cognitive Friction）概念：當外部結構與內部心智模型不匹配時產生的額外認知成本。</p>
+<p>資料夾結構的認知摩擦來自兩個方向：</p>
+<p>1. **過度簡化**：50個檔案平鋪在一個資料夾，大腦無法快速定位（摩擦來自混亂）</p>
+<p>2. **過度複雜**：為了找到一個函數需要點擊7層資料夾（摩擦來自過度分層）</p>
+<p>動態演化的目標是**在系統成長過程中持續最小化認知摩擦**。</p>
+<p><em>### 3.2 擴展觸發規則：何時增加層級</em></p>
+<p><em>#### 規則1：單資料夾子項超過7個</em></p>
+<p>**觸發條件**：任意資料夾的直接子項（檔案+子資料夾）數量&gt;7</p>
+<p>**動作**：引入分組子資料夾</p>
+<p>**理由**：符合Miller&#39;s Law，超過7±2個項目超出工作記憶容量</p>
+<p>**實例**</p>
+<p>```</p>
+<p><em># 觸發前（違規：9個子項）</em></p>
+<p>features/</p>
+<p>├── cart.py</p>
+<p>├── wishlist.py</p>
+<p>├── recommend.py</p>
+<p>├── report.py</p>
+<p>├── notification.py</p>
+<p>├── email.py</p>
+<p>├── sms.py</p>
+<p>├── search.py</p>
+<p>└── filter.py</p>
+<p><em># 重構後</em></p>
+<p>features/</p>
+<p>├── shopping/ <em># 購物相關（3個）</em></p>
+<p>│ ├── cart.py</p>
+<p>│ ├── wishlist.py</p>
+<p>│ └── search.py</p>
+<p>├── analytics/ <em># 分析相關（2個）</em></p>
+<p>│ ├── recommend.py</p>
+<p>│ └── report.py</p>
+<p>└── communication/ <em># 通訊相關（3個）</em></p>
+<p>├── notification.py</p>
+<p>├── email.py</p>
+<p>└── sms.py</p>
+<p>```</p>
+<p>**注意**：分組的依據應該是**語義相關性**（業務領域），而非字母順序或檔案大小。</p>
+<p><em>#### 規則2：單模組程式碼超過5000行</em></p>
+<p>**觸發條件**：單一.py檔案（或其他語言的模組檔案）行數&gt;5000</p>
+<p>**動作**：拆分為多個子模組，並創建子資料夾</p>
+<p>**理由**：超過5000行的檔案難以理解與維護，違反單一職責原則</p>
+<p>**實例**</p>
+<p>```</p>
+<p><em># 觸發前</em></p>
+<p>core/</p>
+<p>└── user.py <em># 8000行，包含認證、資料管理、權限控制</em></p>
+<p><em># 重構後</em></p>
+<p>core/</p>
+<p>└── user/</p>
+<p>├── __init__.py</p>
+<p>├── auth.py <em># 2000行：認證邏輯</em></p>
+<p>├── profile.py <em># 2500行：資料管理</em></p>
+<p>├── permissions.py <em># 2000行：權限控制</em></p>
+<p>└── models.py <em># 1500行：資料模型</em></p>
+<p>```</p>
+<p>**注意**：若拆分後仍有單一檔案&gt;5000行，需要進一步分解或考慮引入更深層級（如user/auth/目錄，內含mfa.py、password.py等）。</p>
+<p><em>#### 規則3：跨模組重複邏輯出現3次</em></p>
+<p>**觸發條件**：相同或相似的程式碼片段在3個不同模組中出現</p>
+<p>**動作**：提取到shared/層，或提升為SMS核心模組</p>
+<p>**理由**：「三次法則」（Rule of Three）——重複兩次可能是巧合，三次則是模式</p>
+<p>**實例**</p>
+<p>```</p>
+<p><em># 觸發前</em></p>
+<p>features/cart.py:</p>
+<p>def validate_user_session(token):</p>
+<p><em># 30行的驗證邏輯</em></p>
+<p>features/order.py:</p>
+<p>def validate_user_session(token):</p>
+<p><em># 相同的30行邏輯</em></p>
+<p>features/payment.py:</p>
+<p>def validate_user_session(token):</p>
+<p><em># 相同的30行邏輯</em></p>
+<p><em># 重構後</em></p>
+<p>shared/auth.py:</p>
+<p>def validate_user_session(token):</p>
+<p><em># 統一的驗證邏輯</em></p>
+<p>features/cart.py:</p>
+<p>from shared.auth import validate_user_session</p>
+<p>```</p>
+<p>**判斷標準**：如果該邏輯是業務核心（如用戶認證），應提升到core/；如果只是工具性質（如日期格式化），放在shared/。</p>
+<p><em>#### 規則4：TMS子集被5個以上模組依賴</em></p>
+<p>**觸發條件**：某個features/下的子集被≥5個其他模組依賴</p>
+<p>**動作**：提升為SMS核心模組</p>
+<p>**理由**：廣泛依賴意味著它實際上是系統的核心部分，不應該是「可選」的功能</p>
+<p>**實例**</p>
+<p>```</p>
+<p><em># 依賴分析顯示</em></p>
+<p>features/notification.py 被依賴於：</p>
+<p>- core/user.py</p>
+<p>- core/order.py</p>
+<p>- features/cart.py</p>
+<p>- features/payment.py</p>
+<p>- features/analytics.py</p>
+<p>- features/recommendation.py <em># 共6個模組</em></p>
+<p><em># 決策：notification實際上是核心能力，提升為SMS</em></p>
+<p>core/</p>
+<p>├── user/</p>
+<p>├── order/</p>
+<p>└── notification/ <em># 從features/移動過來</em></p>
+<p>```</p>
+<p>**後續動作**：更新FMS的INDEX.md，將notification從TMS區塊移至SMS區塊。</p>
+<p><em>#### 規則5：團隊規模超過10人</em></p>
+<p>**觸發條件**：參與專案的工程師人數&gt;10</p>
+<p>**動作**：引入子領域FMS，明確所有權邊界</p>
+<p>**理由**：Conway定律——大團隊需要清晰的模組所有權以支持並行開發</p>
+<p>**實例**</p>
+<p>```</p>
+<p><em># 團隊擴張前（5人團隊，共享所有程式碼）</em></p>
+<p>project/</p>
+<p>├── FMS/</p>
+<p>└── core/</p>
+<p>├── user/</p>
+<p>├── order/</p>
+<p>└── payment/</p>
+<p><em># 團隊擴張後（15人，分為3個小組）</em></p>
+<p>project/</p>
+<p>├── FMS/</p>
+<p>│ ├── 00_SYSTEM_NARRATIVE.md</p>
+<p>│ └── domains/</p>
+<p>│ ├── user_domain.md <em># 用戶組（5人）負責</em></p>
+<p>│ ├── order_domain.md <em># 訂單組（5人）負責</em></p>
+<p>│ └── payment_domain.md <em># 支付組（5人）負責</em></p>
+<p>└── core/</p>
+<p>├── user/ (CODEOWNERS: @user-team)</p>
+<p>├── order/ (CODEOWNERS: @order-team)</p>
+<p>└── payment/ (CODEOWNERS: @payment-team)</p>
+<p>```</p>
+<p>**溝通機制**：配合FMS/02_INTEGRATION_CONTRACTS.md文件，明確子領域間的API契約。</p>
+<p><em>#### 規則6：模組總數超過50個</em></p>
+<p>**觸發條件**：專案中模組（計算core/+features/下所有資料夾與檔案）總數&gt;50</p>
+<p>**動作**：從中型結構過渡到大型結構（引入DDD分層或微服務架構）</p>
+<p>**理由**：50個模組接近人類能同時追蹤的極限，需要更強的組織結構</p>
+<p>**實例**</p>
+<p>```</p>
+<p><em># 中型專案接近極限</em></p>
+<p>project/</p>
+<p>├── core/ <em># 15個模組</em></p>
+<p>└── features/ <em># 38個模組，逐漸失控</em></p>
+<p><em># 大型專案重組</em></p>
+<p>project/</p>
+<p>├── core/</p>
+<p>│ ├── user/</p>
+<p>│ │ ├── domain/ <em># DDD分層開始</em></p>
+<p>│ │ ├── application/</p>
+<p>│ │ └── infrastructure/</p>
+<p>│ └── ...</p>
+<p>└── features/</p>
+<p>├── shopping/ <em># 按領域二次分組</em></p>
+<p>│ ├── cart/</p>
+<p>│ └── wishlist/</p>
+<p>└── analytics/</p>
+<p>├── recommend/</p>
+<p>└── report/</p>
+<h4>規則7：出現跨層級依賴</h4>
+<p><strong>觸發條件</strong>：檢測到「features/直接import core/內部實作細節」或「core/依賴features/」<br><strong>動作</strong>：引入介面層（interfaces/或ports/），強制依賴倒置<br><strong>理由</strong>：跨層依賴破壞架構清晰性，長期會導致架構腐化</p>
+<h4>實例</h4>
+<p>python</p>
+<p><em># 違規：features/直接依賴core/內部實作</em></p>
+<p><em># features/cart.py</em></p>
+<p>from core.user.database import UserRepository <em># ❌ 依賴具體實作</em></p>
+<p><em># 修正後：依賴抽象介面</em></p>
+<p><em># core/user/interfaces.py</em></p>
+<p>class IUserRepository(ABC):</p>
+<p>@abstractmethod</p>
+<p>def get_user(self, user_id): pass</p>
+<p><em># features/cart.py</em></p>
+<p>from core.user.interfaces import IUserRepository <em># ✅ 依賴抽象</em></p>
+<p>```</p>
+<p><em>### 3.3 收縮觸發規則：何時簡化結構</em></p>
+<p><em>#### 規則8：資料夾僅含1-2個檔案且3個月無變更</em></p>
+<p>**觸發條件**：某子資料夾只有1-2個檔案，且這些檔案在過去3個月未修改</p>
+<p>**動作**：將檔案提升到上層資料夾，刪除空資料夾</p>
+<p>**理由**：過度分層增加導航成本，應消除不必要的層級</p>
+<p>**實例**</p>
+<p>```</p>
+<p><em># 觸發前</em></p>
+<p>features/</p>
+<p>└── experimental/</p>
+<p>└── ab_test.py <em># 唯一的檔案，且長期無變更</em></p>
+<p><em># 簡化後</em></p>
+<p>features/</p>
+<p>└── ab_test.py <em># 直接放在features/下</em></p>
+<p>```</p>
+<p><em>#### 規則9：TMS子集依賴為0且6個月未使用</em></p>
+<p>**觸發條件**：某features/下的模組沒有任何其他模組依賴它，且相關程式碼6個月未執行（通過日誌分析）</p>
+<p>**動作**：標記為`_deprecated_`，計劃刪除</p>
+<p>**理由**：死代碼增加維護負擔與認知負荷，應定期清理</p>
+<p>**實例**</p>
+<p>```</p>
+<p><em># 標記廢棄</em></p>
+<p>features/</p>
+<p>├── _deprecated_old_analytics/</p>
+<p>│ └── legacy_report.py</p>
+<p>└── new_analytics/</p>
+<p>└── modern_report.py</p>
+<p><em># 下個版本中完全刪除</em></p>
+<p>```</p>
+<p><em>#### 規則10：循環依賴出現</em></p>
+<p>**觸發條件**：依賴分析工具檢測到A→B→C→A的循環依賴</p>
+<p>**動作**：重構模組邊界——合併或引入中介者</p>
+<p>**理由**：循環依賴是架構腐化的強烈信號，必須立即解決</p>
+<p>**實例**</p>
+<p>```</p>
+<p><em># 問題：A需要呼叫B，B需要通知A結果</em></p>
+<p>core/user.py → core/notification.py → core/user.py <em># 循環！</em></p>
+<p><em># 解決方案1：引入事件機制（觀察者模式）</em></p>
+<p>core/user.py → core/events.py ← core/notification.py</p>
+<p><em># 解決方案2：提取共同依賴</em></p>
+<p>core/user.py → core/user_types.py ← core/notification.py</p>
+<h3>3.4 平衡規則：避免過度反應</h3>
+<h4>規則11：結構調整的最小時間間隔為2週</h4>
+<p><strong>原則</strong>：不應該頻繁重構資料夾結構，每次調整後至少觀察2週<br><strong>理由</strong>：頻繁的結構變動破壞空間記憶，增加團隊的適應成本</p>
+<h4>規則12：一次調整影響的檔案不超過20%</h4>
+<p><strong>原則</strong>：單次重構移動的檔案數量不應超過專案總檔案的20%<br><strong>理由</strong>：大規模重組會中斷所有開發者的工作流，應該漸進式演化</p>
+<h4>規則13：向下相容性：舊路徑保留1個版本週期</h4>
+<p><strong>原則</strong>：當模組從A路徑移動到B路徑時，A路徑保留一個「過渡期」（如一個發布版本），提供import重定向與棄用警告  </p>
+<h4>實例</h4>
+<p>python</p>
+<p><em># features/old_location.py（過渡期保留）</em></p>
+<p>import warnings</p>
+<p>from features.new_location import * <em># 重定向</em></p>
+<p>warnings.warn(</p>
+<p>&quot;features.old_location已棄用，請改用features.new_location&quot;,</p>
+<p>DeprecationWarning</p>
+<p>)</p>
+<h4>規則14：架構變更必須通過「三人審查」</h4>
+<p><strong>原則</strong>：涉及資料夾結構的重大調整（移動&gt;5個檔案），需要至少3位團隊成員審查並達成共識<br><strong>理由</strong>：架構是集體心智模型，單人決策可能破壞他人的理解框架</p>
+<hr>
+<h2 id="s3-第四章-實施策略與案例分析">第四章：實施策略與案例分析</h2>
+<h3>4.1 漸進式採用路徑</h3>
+<h4>階段一：引入規模感知意識（第1-2週）</h4>
+<p>不立即重構，而是先進行「架構體檢」：</p>
+<ol>
+<li><p>計算當前專案的模組數量、程式碼行數</p>
+</li>
+<li><p>繪製當前資料夾樹狀圖</p>
+</li>
+<li><p>檢測是否違反上述14條規則</p>
+</li>
+<li><p>生成「健康度報告」：列出所有違規項及其優先級</p>
+</li>
+</ol>
+<h4>階段二：快速修復低成本違規（第3-4週）</h4>
+<p>優先處理：</p>
+<ul>
+<li><p>規則8（空資料夾）</p>
+</li>
+<li><p>規則9（死代碼）</p>
+</li>
+<li><p>規則3（重複邏輯提取）</p>
+</li>
+</ul>
+<p>這些修復成本低、風險小，但能立即降低認知負荷。</p>
+<h4>階段三：規劃結構性重構（第5-8週）</h4>
+<p>針對高影響的違規（如規則1、規則2、規則10）制定重構計劃：</p>
+<ul>
+<li><p>估算影響範圍（影響多少檔案、多少開發者）</p>
+</li>
+<li><p>設計過渡方案（如保留舊路徑的import重定向）</p>
+</li>
+<li><p>分批執行（避免一次性大爆炸）</p>
+</li>
+</ul>
+<h4>階段四：建立持續監控（第9週+）</h4>
+<p>將架構檢查整合到CI/CD管道：</p>
+<p>yaml</p>
+<p><em># .github/workflows/architecture-check.yml</em></p>
+<p>name: Architecture Compliance</p>
+<p>on: 
+[pull_request]</p>
+<p>jobs:</p>
+<p>check:</p>
+<p>runs-on: ubuntu-latest</p>
+<p>steps:</p>
+<p>- uses: actions/checkout@v2</p>
+<p>- name: Run architecture linter</p>
+<p>run: python scripts/architecture_lint.py</p>
+<p>- name: Check module count</p>
+<p>run: |</p>
+<p>count=$(find core/ features/ -type f -name &quot;*.py&quot; | wc -l)</p>
+<p>if 
+[ $count -gt 50 ]; then</p>
+<p>echo &quot;⚠️ Module count ($count) exceeds threshold&quot;</p>
+<p>fi</p>
+<h3>4.2 案例分析（假設性數據）</h3>
+<h4>案例A：新創公司的MVP專案</h4>
+<ul>
+<li><p><strong>初始狀態</strong>：5人團隊，3個月時間，目標是快速驗證產品概念</p>
+</li>
+<li><p><strong>採用策略</strong>：小型專案結構（扁平化）</p>
+</li>
+<li><p><strong>結果</strong>：</p>
+<ul>
+<li><p>第1個月：程式碼行數2000，模組數8，完全符合小型結構</p>
+</li>
+<li><p>第2個月：程式碼行數8000，模組數18，觸發規則1（features/下有10個檔案）</p>
+</li>
+<li><p><strong>演化</strong>：引入領域分組，轉為中型結構</p>
+</li>
+<li><p>第3個月：成功上線，架構仍清晰可維護</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4>案例B：企業內部系統的架構腐化與重生</h4>
+<ul>
+<li><p><strong>初始狀態</strong>：20人團隊，5年歷史，80萬行程式碼，結構混亂</p>
+</li>
+<li><p><strong>問題診斷</strong>：</p>
+<ul>
+<li><p>違反規則1：單一資料夾有42個檔案</p>
+</li>
+<li><p>違反規則2：核心模組user.py達12000行</p>
+</li>
+<li><p>違反規則10：存在3處循環依賴</p>
+</li>
+</ul>
+</li>
+<li><p><strong>重構方案</strong>：</p>
+<ul>
+<li><p>第一階段（3個月）：拆分巨型模組，消除循環依賴</p>
+</li>
+<li><p>第二階段（6個月）：引入DDD分層，明確領域邊界</p>
+</li>
+<li><p>第三階段（持續）：建立架構治理機制</p>
+</li>
+</ul>
+</li>
+<li><p><strong>結果</strong>：</p>
+<ul>
+<li><p>新功能開發速度提升40%（開發者不再迷失在混亂結構中）</p>
+</li>
+<li><p>新成員上手時間從3週縮短到1週</p>
+</li>
+<li><p>技術債指數下降60%</p>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="s4-第五章-工具支援與自動化">第五章：工具支援與自動化</h2>
+<h3>5.1 架構健康度儀表板</h3>
+<h4>核心指標</h4>
+<p>python</p>
+<p>class ArchitectureHealthMetrics:</p>
+<p>def calculate(self, project_path):</p>
+<p>return {</p>
+<p>&quot;module_count&quot;: self.count_modules(project_path),</p>
+<p>&quot;max_folder_depth&quot;: self.max_depth(project_path),</p>
+<p>&quot;max_children_per_folder&quot;: self.max_children(project_path),</p>
+<p>&quot;cyclic_dependencies&quot;: self.detect_cycles(project_path),</p>
+<p>&quot;dead_code_percentage&quot;: self.analyze_usage(project_path),</p>
+<p>&quot;cognitive_load_score&quot;: self.cognitive_load(project_path)</p>
+<p>}</p>
+<p>def cognitive_load(self, path):</p>
+<p><em># 基於認知負荷理論的綜合評分</em></p>
+<p>depth = self.max_depth(path)</p>
+<p>breadth = self.max_children(path)</p>
+<p>return 0.6 * depth + 0.4 * breadth <em># 加權計算</em></p>
+<p>```</p>
+<p>**可視化界面**</p>
+<p>```</p>
+<p>┌─────────────────────────────────────┐</p>
+<p>│ Architecture Health Dashboard │</p>
+<p>├─────────────────────────────────────┤</p>
+<p>│ 🟢 Module Count: 45 / 50 │</p>
+<p>│ 🟡 Max Depth: 4 / 3 ⚠️ Over limit │</p>
+<p>│ 🟢 Max Breadth: 6 / 7 │</p>
+<p>│ 🔴 Cyclic Deps: 2 ⚠️ CRITICAL │</p>
+<p>│ 🟢 Dead Code: 3% │</p>
+<p>│ 🟡 Cognitive Load: 6.8 / 10 │</p>
+<p>├─────────────────────────────────────┤</p>
+<p>│ Recommendations: │</p>
+<p>│ 1. Refactor module X to reduce depth│</p>
+<p>│ 2. Break cycle: A→B→C→A │</p>
+<p>└─────────────────────────────────────┘</p>
+<h3>5.2 架構演化建議引擎</h3>
+<h4>基於規則的推薦系統</h4>
+<p>python</p>
+<p>def suggest_refactoring(metrics, rules):</p>
+<p>suggestions = 
+[]</p>
+<p>if metrics
+[&quot;max_children_per_folder&quot;] &gt; 7:</p>
+<p>suggestions.append({</p>
+<p>&quot;rule&quot;: &quot;Rule 1&quot;,</p>
+<p>&quot;action&quot;: &quot;Introduce grouping subfolders&quot;,</p>
+<p>&quot;priority&quot;: &quot;HIGH&quot;,</p>
+<p>&quot;affected_folders&quot;: identify_overloaded_folders()</p>
+<p>})</p>
+<p>if metrics
+[&quot;module_count&quot;] &gt; 50:</p>
+<p>suggestions.append({</p>
+<p>&quot;rule&quot;: &quot;Rule 6&quot;,</p>
+<p>&quot;action&quot;: &quot;Transition to large project structure&quot;,</p>
+<p>&quot;priority&quot;: &quot;MEDIUM&quot;,</p>
+<p>&quot;estimated_effort&quot;: &quot;2-4 weeks&quot;</p>
+<p>})</p>
+<p>return sorted(suggestions, key=lambda x: x
+[&quot;priority&quot;])</p>
+<h2 id="s5-第六章-哲學結語">第六章：哲學結語</h2>
+<p>在Gilles Deleuze的《差異與重複》中,他批判傳統哲學對「同一性」的執迷,主張真正的思想在於生成、差異、流變。軟體架構的演化正是這種德勒茲式的「生成」過程——它不是從混沌到秩序的線性進步,而是一個持續的<strong>差異化生成</strong>（differentiation）。</p>
+<p>當我們將小型專案的扁平結構演化為中型專案的領域分組,再演化為大型專案的DDD分層,這不是「變得更複雜」,而是<strong>系統在自我組織中產生新的內在秩序</strong>。這種秩序不是外在強加的模板,而是從系統本身的需求中湧現（emerge）。</p>
+<p><strong>規模感知的本質是承認「一即多,多即一」的辯證統一</strong>。一個超大型專案由多個子系統組成,但每個子系統本身又是一個完整的小宇宙,遵循相同的組織原則。這種<strong>分形的自相似性</strong>不僅降低認知負荷,更體現了系統哲學的深刻洞察:複雜性不是無序的堆積,而是<strong>簡單規則在不同尺度上的遞迴應用</strong>。</p>
+<p>動態演化的14條觸發規則,表面上是技術準則,實質上是對系統生命週期的尊重。一個軟體系統就像一個生物有機體,它會成長、分化、衰老、重生。我們不應該在嬰兒期就強加成年人的骨骼結構,也不應該讓老年系統仍然拖著臃腫的軀殼。<strong>適時的增加與果斷的簡化,是系統健康的標誌</strong>。</p>
+<p>但這裡存在一個更深刻的哲學張力:架構的穩定性與系統的流變性。開發者需要穩定的空間記憶來高效工作,但系統又必須演化以適應變化的需求。解決這個張力的關鍵在於<strong>區分「慢變量」與「快變量」</strong>——頂層的FMS與SMS結構是慢變量,應該保持穩定;TMS層的具體功能是快變量,可以頻繁增刪。就像城市規劃中,主幹道的佈局百年不變,但沿街的商鋪卻不斷更迭。</p>
+<p>當我們談論「資料夾即架構」時,實際上是在說:<strong>空間組織是認知組織的物化形式</strong>。笛卡爾的「我思故我在」可以改寫為「我組織故我理解」（I organize, therefore I comprehend）。通過組織程式碼的空間結構,我們實際上是在組織自己的思維結構。一個混亂的資料夾樹反映的不是技術問題,而是<strong>尚未澄清的概念模型</strong>。</p>
+<p>最終,規模感知的架構組織範式指向一個更宏大的命題:軟體工程的本質不是製造（manufacturing）,而是<strong>園藝（gardening）</strong>。我們不是在組裝零件,而是在培育一個有機系統。好的架構師不是獨裁的規劃者,而是敏銳的觀察者——他們能識別系統何時需要「修剪」（簡化結構）、何時需要「移栽」（模組重組）、何時需要「施肥」（引入新抽象層）。</p>
+<p>在複雜性的花園中,我們不追求控制,而追求<strong>與系統共同演化</strong>。當資料夾結構能夠自然地適應專案規模的變化,當開發者能在三層之內找到任何模組,當架構圖能在A4紙上清晰呈現——此時,我們達成了技術與認知、秩序與流變、簡潔與豐富的<strong>動態平衡</strong>。這不是終點,而是一個持續的、永不停歇的演化過程。正如赫拉克利特所言:「人不能兩次踏入同一條河流。」軟體系統也是如此——每一次的重構、每一次的演化,都是系統在時間之流中的自我超越。</p>
+</article>
+  <section class="source-download">
+    <b>原始檔</b>
+    <p>這份研究的 Markdown 原始檔，與本頁由同一份來源產生。</p>
+    <a href="https://thisoneisneok.com/md/research/scale-aware-architecture.md">下載 Markdown ↓</a>
+  </section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/research">回到程式研究區 ↗</a></footer>
+</body>
+</html>

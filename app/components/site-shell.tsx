@@ -11,6 +11,7 @@ const navigation = [
   { href: "/papers", zh: "論文", en: "Papers" },
   { href: "/apps", zh: "應用", en: "Apps" },
   { href: "/mssp", zh: "MSSP", en: "MSSP" },
+  { href: "/research", zh: "程式研究", en: "Research" },
   { href: "/lean4", zh: "Lean4", en: "Lean4" },
   { href: "/blog", zh: "部落格", en: "Blog" },
   { href: "/about", zh: "關於", en: "About" },
