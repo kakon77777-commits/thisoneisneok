@@ -6,6 +6,7 @@ import { useLanguage } from "../components/language-context";
 import { PendingPanel } from "../components/pending-panel";
 import { msspExamples, msspExampleCount } from "../data/mssp.generated";
 import { msspModules } from "../data/mssp-modules.generated";
+import { archaeology, archaeologyCount } from "../data/mssp-archaeology.generated";
 import { canonical } from "../data/site";
 
 export default function MSSPPage() {
@@ -84,6 +85,43 @@ export default function MSSPPage() {
             code="EXAMPLES / 00"
             title={{ zh: "還沒有範例。", en: "No examples yet." }}
             note={{ zh: "第一個範例進來之前，這裡保持空白。", en: "This stays empty until the first example arrives." }}
+          />
+        )}
+      </section>
+
+      <section className="section-block mssp-examples" id="archaeology">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">ARCHAEOLOGY / {archaeologyCount}</p>
+            <h2>{t({ zh: "每天讀一個開源專案的結構。", en: "One open-source project read structurally, each day." })}</h2>
+          </div>
+        </div>
+        <p className="mssp-examples-note">{t({
+          zh: "優先挑寬鬆授權的專案，因為考古要拿得出證據，證據就得能被複製。每一篇都標明檢視的確切版本，並附一份可執行的重切——重切的範圍只有一條縫，不是整個專案。",
+          en: "Permissively licensed projects first: an archaeology has to produce evidence, and evidence has to be reproducible. Each entry names the exact version it read and ships a runnable re-cut of one seam, not of the whole project.",
+        })}</p>
+        {archaeology.length ? (
+          <ol className="example-list">
+            {archaeology.map((entry) => (
+              <li key={entry.id}>
+                <span className="example-id">{entry.id.split("-")[0]}</span>
+                <div className="example-body">
+                  <h3><a href={entry.href}>{language === "zh" ? entry.title.zh : entry.title.en}</a></h3>
+                  <p>{language === "zh" ? entry.summary.zh : entry.summary.en}</p>
+                  <div className="tag-row">{entry.concepts.map((c) => <span key={c}>{c}</span>)}</div>
+                  <p className="example-meta">
+                    {[entry.project + "@" + entry.examinedVersion, entry.license, entry.date].join("  ·  ")}
+                  </p>
+                </div>
+                <a className="example-open" href={entry.href}>{t({ zh: "打開", en: "Open" })} ↗</a>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <PendingPanel
+            code="ARCHAEOLOGY / 00"
+            title={{ zh: "還沒有考古紀錄。", en: "No archaeology yet." }}
+            note={{ zh: "第一篇進來之前，這裡保持空白。", en: "This stays empty until the first entry arrives." }}
           />
         )}
       </section>

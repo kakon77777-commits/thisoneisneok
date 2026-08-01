@@ -75,5 +75,24 @@ export const msspModules = [
     "updated": "2026-07-31",
     "href": "/html/mssp/modules/reference.html",
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/modules/reference.html"
+  },
+  {
+    "id": "development",
+    "index": "05",
+    "title": {
+      "zh": "開發區",
+      "en": "Development notes"
+    },
+    "summary": {
+      "zh": "MSSP 目前的設計優點、已知缺點，以及下一版要改良的方向。方法本身的開發紀錄放這裡。",
+      "en": "What the design currently does well, what it does not, and what the next version should change. The method's own development record lives here."
+    },
+    "state": {
+      "zh": "v1.x 開發中",
+      "en": "v1.x in development"
+    },
+    "updated": "2026-08-01",
+    "href": "/html/mssp/modules/development.html",
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/modules/development.html"
   }
 ];

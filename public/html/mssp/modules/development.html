@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>開發區 | MSSP | Neo.K</title>
+<meta name="description" content="MSSP 目前的設計優點、已知缺點，以及下一版要改良的方向。方法本身的開發紀錄放這裡。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/modules/development.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.state{display:inline-block;border:1px solid var(--accent);color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.12em;padding:5px 10px;margin:0 0 30px;text-transform:uppercase}
+.content{font-size:17.5px;line-height:1.9;overflow-wrap:break-word}
+.content h1{font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:4px 0 32px}
+.content h2{font-size:25px;line-height:1.3;margin:56px 0 15px}
+.content h3{font-size:18px;margin:34px 0 11px}
+.content p{margin:0 0 23px}.content li{margin:.42em 0}
+.content strong{font-weight:650}
+.content blockquote{margin:34px 0;padding:6px 0 6px 26px;border-left:3px solid var(--accent);font-size:19px;line-height:1.7}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.62;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+.content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:26px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-01</span></header>
+<main>
+  <span class="state">v1.x 開發中</span>
+  <article class="content"><h1>MSSP 開發區</h1>
+<p>這一頁記錄方法本身的狀態。前四個模組講怎麼用 MSSP；這一頁講 MSSP 自己還缺什麼、以及下一版要往哪走。</p>
+<p>版本：<strong>MSSP 1.x</strong>。條目會隨著範例與考古累積增減，每一條都盡量指得出是哪個實作得到的。</p>
+<hr>
+<h2>設計優點</h2>
+<h3>1. 判斷準則可以在寫程式的當下使用</h3>
+<p>「移除它之後系統還是不是它」和「能不能在最小核心下單獨測試」是兩個可以在編輯器裡當場回答的問題。它們不需要先畫架構圖、不需要開會、不需要理解整套理論。</p>
+<p>這是 MSSP 跟多數架構方法最實際的差別：多數方法給你一組名詞，MSSP 給你兩個可以立刻執行的動作。</p>
+<h3>2. 結構主張可以被機器驗證</h3>
+<p>「沒有任何 TMS 引用兄弟 TMS」不是一句期許，它是一個 grep。這個網站的 build 會執行它，違規時指出確切檔案並拒絕發佈。</p>
+<p>大部分架構規範只存在於文件裡，於是它們在第三個月就開始漂移。<strong>能被機械檢查的規則才會活過交接。</strong></p>
+<h3>3. 知識與權限分離的效益比預期大</h3>
+<p>原本以為這只是安全性設計。<a href="/html/mssp/archaeology/001-commander.html">考古 001</a> 顯示它同時解決了三個看起來無關的問題：可測試性（不會被受測對象殺掉行程）、可嵌入性（能放進長時間執行的宿主）、可在地化（錯誤訊息不再寫死在效果發生的那一行）。</p>
+<p>一條界線同時解掉三個問題，通常代表這條界線本來就在那裡。</p>
+<h3>4. 孤島測試把「模組獨立」變成會失敗的斷言</h3>
+<p>宣稱一個模組獨立很容易。載入最小核心與恰好一個模組、stub 掉所有工具、然後跑它的代表任務——這個做不到就是做不到。</p>
+<p>它抓到的通常不是設計錯誤，而是<strong>幾層之下透過共用 import 抵達的依賴</strong>，那種東西讀程式碼看不出來。</p>
+<h3>5. 「度」讓方法可以被部分採用</h3>
+<p>FMS + SMS + TMS 就是一個完整的中型 MSSP 專案。不需要五個集合、不需要 Router、不需要一次到位。</p>
+<p>這一點降低了採用門檻，也降低了過度設計的風險——判準是「這個集合有沒有讓某件原本做不到的事變得可以做」。</p>
+<hr>
+<h2>已知缺點</h2>
+<h3>1. 依賴檢查只認得靜態 import</h3>
+<p>目前的檢查是文字比對 <code>import ... from</code>。動態 <code>import()</code>、執行期組出來的路徑、以及非 JS 語言的模組系統都會漏掉。</p>
+<p><strong>影響：</strong> 一個刻意繞過的人可以繞過。對誠實的錯誤有效，對決心不誠實的程式碼無效。</p>
+<p><strong>緩解：</strong> 現階段接受這個限制，並在每個範例裡明說。真正的解法是在有實模組邊界的語言上做同樣的事——見改良點 2。</p>
+<h3>2. SMS 沒有防止自己長大的機制</h3>
+<p>身份測試判斷單一能力該放哪，但沒有任何東西阻止 SMS 逐條累積。每一條加入時都通過了測試，加完三十條之後 SMS 就是新的單體。</p>
+<p><strong>影響：</strong> 這是 MSSP 最可能失敗的方式，而且失敗得很慢、很難察覺。</p>
+<p><strong>緩解：</strong> 目前只有「定期重問身份測試」這種紀律性做法，不夠。改良點 1 要處理它。</p>
+<h3>3. Router 只有定義，沒有實作模式</h3>
+<p>論文定義了 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mo stretchy="false">(</mo><mi>q</mi><mo separator="true">,</mo><mi>u</mi><mo separator="true">,</mo><mi>τ</mi><mo separator="true">,</mo><mi>p</mi><mo stretchy="false">)</mo><mo>→</mo><mo stretchy="false">(</mo><msub><mi>S</mi><mi>q</mi></msub><mo separator="true">,</mo><msub><mi>T</mi><mi>q</mi></msub><mo separator="true">,</mo><msub><mi>C</mi><mi>q</mi></msub><mo separator="true">,</mo><msub><mi>D</mi><mi>q</mi></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">R(q,u,\tau,p) \rightarrow (S_q, T_q, C_q, D_q)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">u</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">p</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0576em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span> ，但沒有說規則式路由在什麼規模上會不夠用、換成模型式路由的判準是什麼、以及路由本身要怎麼測。</p>
+<p><strong>影響：</strong> 大型 Skill System 最需要 Router，而這正是目前指引最薄的地方。</p>
+<p><strong>緩解：</strong> 排在範例路線的第一位。</p>
+<h3>4. 上下文效用密度目前不可量測</h3>
+<p><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ρ</mi><mi>q</mi></msub><mo>=</mo><msub><mi>I</mi><mtext>task relevant</mtext></msub><mi mathvariant="normal">/</mi><msub><mi>I</mi><mtext>loaded</mtext></msub></mrow><annotation encoding="application/x-tex">\rho_q = I_{\text{task relevant}} / I_{\text{loaded}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">ρ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">task relevant</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">/</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">loaded</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 是一個乾淨的定義，但「task relevant」在真實專案裡沒有可操作的量測方式。分母好算，分子不好算。</p>
+<p><strong>影響：</strong> 「按需載入更有效率」目前是一個合理推論，不是一個有數字支撐的結論。</p>
+<p><strong>緩解：</strong> 改良點 3 提出一個可能的代理指標。</p>
+<h3>5. 小規模上的成本是真的</h3>
+<p>在門檻以下使用完整 MSSP 會讓程式更難讀。這一點方法自己承認，但目前只用文字描述「度」，沒有量化的判斷工具。</p>
+<p><strong>影響：</strong> 新使用者最容易在這裡做錯決定——要嘛全套上，要嘛因為看到成本就整個放棄。</p>
+<p><strong>緩解：</strong> 改良點 4。</p>
+<h3>6. 五個集合的名字有學習成本</h3>
+<p>FMS／SMS／TMS 這組命名來自母集與子集的數學隱喻，但對第一次接觸的人來說，「第二主母集」不會自我解釋。</p>
+<p><strong>影響：</strong> 提高了第一小時的門檻。</p>
+<p><strong>現況：</strong> 不打算改名——重新命名會讓既有論文與這個網站的所有內容失去對應。改善方式是入口文件把角色講清楚，而不是換詞。</p>
+<hr>
+<h2>未來改良點</h2>
+<h3>改良點 1：SMS 預算</h3>
+<p>給 SMS 一個明確上限——模組數、或核心介面數。超過就強制重問每一條的身份測試，而不是等到有人察覺。</p>
+<p>具體形式可能是 <code>FMS/03_CAPABILITY_INDEX.yaml</code> 裡的一個 <code>sms_budget</code> 欄位，由 build 檢查。這會把「SMS 不該長大」從紀律變成約束。</p>
+<p><strong>驗證方式：</strong> 對一個既有專案套用預算，看它逼出哪些條目降級到 TMS，以及降級之後有沒有東西壞掉。</p>
+<h3>改良點 2：在有實模組邊界的語言上重做依賴檢查</h3>
+<p>Rust 的 crate、Go 的 package、Java 的 module system 都在語言層強制模組邊界。在那些語言上，「TMS 不引用兄弟 TMS」可以由編譯器保證，而不是 grep。</p>
+<p><strong>驗證方式：</strong> 用其中一種語言寫一個等價於 001 號的範例，比較檢查的強度與寫起來的代價。</p>
+<h3>改良點 3：用「載入但未被讀取」當作污染的代理指標</h3>
+<p><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ρ</mi><mi>q</mi></msub></mrow><annotation encoding="application/x-tex">\rho_q</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">ρ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> 的分子難算，但反過來可測：載入的規則裡，有多少在這次任務中從未被引用。</p>
+<p>對 Agent 系統，這可以用工具呼叫紀錄與載入清單做交集。這不是 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ρ</mi><mi>q</mi></msub></mrow><annotation encoding="application/x-tex">\rho_q</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">ρ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> ，是它的一個保守下界，但<strong>下界是可以量的，定義不是</strong>。</p>
+<p><strong>驗證方式：</strong> 在同一組任務上比較全量載入與按需載入的未讀取比例。</p>
+<h3>改良點 4：把「度」變成一個可以跑的問卷</h3>
+<p>目前的規模門檻是一張表格，要人自己判斷。它可以變成一個小工具：回答八到十個是非題，輸出建議的集合組合與理由。</p>
+<p>這聽起來很小，但它處理的是新使用者最容易做錯的決定，而且輸出的理由本身就是教學。</p>
+<p><strong>驗證方式：</strong> 對三個已知規模的專案跑一次，看建議是否符合實際上划算的組合。</p>
+<h3>改良點 5：讓考古累積成統計</h3>
+<p>每天一個開源專案，累積之後這一頁應該能回答：<strong>哪些邊界問題是普遍的，哪些只是個案。</strong></p>
+<p>目前 1 筆，還不足以說任何事。到二十筆左右應該開始有形狀。</p>
+<p><strong>驗證方式：</strong> 統計本身就是產出——如果二十筆之後看不出任何模式，那也是一個結論。</p>
+<hr>
+<h2>版本策略</h2>
+<p>MSSP 目前是 1.x。以上缺點被解決的方式是進入下一個小版本，不是重寫方法。</p>
+<p>論文（v0.1，2026-07-12）定義了架構；這個網站在做的是把它推到實作，並把實作打回來的東西記在這一頁。<strong>方法與實作互相修正是預期中的流程</strong>，不是計畫外的事故。</p>
+<p>改良點被實作之後會標上做出它的範例或考古編號，並從缺點清單移到優點清單。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

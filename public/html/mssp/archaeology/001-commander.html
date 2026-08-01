@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>commander 2.20.3：解析結果與宿主效果之間的那條縫 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="1,225 行、一個檔案、36 個原型方法，其中 8 處直接呼叫 process.exit()。解析錯誤是知識，終止行程是效果，2.x 把兩者焊在一起。上游後來在 v4 和 v7 分別畫出了同樣的兩條界線。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/001-commander.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>001-commander</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>commander</span></div>
+    <div><b>授權</b><span>MIT</span></div>
+    <div><b>檢視版本</b><span>2.20.3</span></div>
+    <div><b>日期</b><span>2026-08-01</span></div>
+    <div><b>來源</b><span><a href="https://github.com/tj/commander.js">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>001 — commander 2.20.3</h1>
+<p><strong>專案：</strong> <a href="https://github.com/tj/commander.js">commander.js</a> ｜ <strong>授權：</strong> MIT ｜ <strong>檢視版本：</strong> 2.20.3 ｜ <strong>日期：</strong> 2026-08-01</p>
+<h2>為什麼選它</h2>
+<p>commander 是 Node 生態裡最被廣泛依賴的 CLI 函式庫之一。2.20.3 是大量專案長期 pin 住的版本，而它的全部程式碼是<strong>一個檔案、1,225 行、36 個原型方法</strong>。</p>
+<p>它符合考古最想要的組合：結構上有明顯可討論的地方，同時在真實世界裡活得非常好。這種專案通常代表那個結構在某個維度上是對的，而找出那個維度比證明它該被重寫有價值。</p>
+<h2>原專案的結構地圖</h2>
+<p>一個 <code>Command</code> 原型承擔全部工作：</p>
+<table>
+<thead>
+<tr>
+<th>關注點</th>
+<th>觸及的方法數</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>解析（flags、參數、正規化）</td>
+<td>7</td>
+</tr>
+<tr>
+<td>說明文字產生與排版</td>
+<td>7</td>
+</tr>
+<tr>
+<td>事件發送</td>
+<td>7</td>
+</tr>
+<tr>
+<td><strong>直接寫入 console／stdout</strong></td>
+<td><strong>8</strong></td>
+</tr>
+<tr>
+<td><strong>直接呼叫 <code>process.exit()</code></strong></td>
+<td><strong>9</strong></td>
+</tr>
+<tr>
+<td>子行程 spawn</td>
+<td>1</td>
+</tr>
+</tbody></table>
+<p><code>executeSubCommand</code> 一個方法同時觸及五類關注點（解析、事件、console、process、child_process），90 行。</p>
+<p>這個結構是有理由的。commander 誕生時的定位是「寫一支 CLI 用的最短路徑」，而在那個定位下，<code>process.exit()</code> 就是正確答案——使用者要的就是參數錯了直接結束並印出訊息。方法鏈式 API（<code>.option().command().parse()</code>）也讓單一物件持有全部狀態成為最自然的寫法。</p>
+<h2>那條縫</h2>
+<p>看最小的一個方法：</p>
+<pre><code class="language-js">Command.prototype.unknownOption = function(flag) {
+  if (this._allowUnknownOption) return;
+  console.error(&quot;error: unknown option `%s&#39;&quot;, flag);
+  process.exit(1);
+};
+</code></pre>
+<p>三行，其中兩行是<strong>對宿主行程的效果</strong>，而且呼叫端無法拒絕。</p>
+<p>用 MSSP 的說法：這個方法同時持有兩件應該分開的東西。</p>
+<ul>
+<li><strong>知識</strong>：「這個 flag 不認得」——這是解析的結論。</li>
+<li><strong>權限</strong>：寫入 stderr、終止整個行程——這是宿主授予的能力。</li>
+</ul>
+<p><code>Know(a, k) = 1</code> 不蘊含 <code>Permit(a, o) = 1</code>。函式庫知道輸入有問題，但沒有任何東西授予它結束行程的權利。它只是把兩者寫在了同一個函式裡。</p>
+<p>全檔案共 8 個 <code>process.exit()</code> 呼叫點，2.x 沒有任何覆寫機制（<code>exitOverride</code>、<code>configureOutput</code>、<code>_outputConfiguration</code> 在 2.20.3 全部不存在）。</p>
+<p><strong>實際後果：</strong></p>
+<ul>
+<li>無法在同一個行程內對錯誤路徑做單元測試——測試會被自己的受測對象殺掉。</li>
+<li>無法把 commander 嵌進長時間執行的行程（REPL、伺服器、測試執行器），因為一個打錯的參數會終止整個宿主。</li>
+<li>錯誤訊息無法翻譯，因為字串就寫在效果發生的那一行。</li>
+</ul>
+<h2>這條縫是真的：上游自己畫了同樣兩條</h2>
+<p>這一節是這次考古最重要的結果，因為它把結論從「我覺得該這樣切」變成可查證的事實。</p>
+<p>翻 commander 的 CHANGELOG：</p>
+<table>
+<thead>
+<tr>
+<th>逃生口</th>
+<th>引入版本</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>exitOverride()</code></td>
+<td><strong>4.0.0</strong></td>
+<td>覆寫對 <code>process.exit</code> 的呼叫，讓程式可以繼續執行（#1040）</td>
+</tr>
+<tr>
+<td><code>configureOutput()</code></td>
+<td><strong>7.0.0</strong></td>
+<td>修改 stdout／stderr 的使用方式，自訂錯誤顯示（#1387）</td>
+</tr>
+</tbody></table>
+<p>上游在 2.x 之後兩個大版本畫出了<strong>退出邊界</strong>，五個大版本畫出了<strong>輸出邊界</strong>。這正好是下面 MSSP 重切出來的兩條線，而且是在完全獨立的情況下、由實際使用壓力推出來的。</p>
+<p>換句話說：這條縫不是事後諸葛。它真實到維護者最終自己畫了它。MSSP 在這裡的價值不是「發現了別人沒發現的東西」，而是<strong>提供一組判準，讓這條縫在第一次寫的時候就看得見</strong>。</p>
+<h2>MSSP 重切</h2>
+<p><code>src/</code> 是這條縫的可執行重切。範圍只有「選項與參數解析 + 錯誤回報」，子命令、說明產生、可執行子命令都不在裡面。</p>
+<p><strong>SMS — <code>parse.js</code></strong>
+解析回傳一個值：<code>{kind:&quot;ok&quot;, options, args}</code> 或 <code>{kind:&quot;error&quot;, code, detail}</code>。不寫入、不退出、不碰任何宿主全域。移除它系統就不再是解析器，所以它是核心。</p>
+<p><strong>SCL — <code>host-policy.js</code></strong>
+這一層在原專案中不存在。它把「這個解析器可以對宿主做什麼」變成一個值：</p>
+<ul>
+<li><code>cliPolicy</code> — 寫 stderr 然後退出（commander 2.x 寫死的行為）</li>
+<li><code>collectingPolicy</code> — 收集訊息，永不退出（測試與嵌入用）</li>
+<li><code>silentPolicy</code> — 什麼都不做，呼叫端自己渲染</li>
+</ul>
+<p><strong>TMS — <code>messages/en.js</code>、<code>messages/zh.js</code></strong>
+錯誤訊息的兩種渲染。兩者都只依賴 SMS 的 <code>ERROR</code> 常數，互不引用——這也是為什麼翻譯在重切後才成為可能。</p>
+<p><strong>DMS — <code>trace.js</code></strong>
+解析過程中發生了什麼，包括被政策擋下的動作。原專案沒有對應層，因為一次失敗的解析會結束行程，什麼都不會留下。</p>
+<h2>執行結果</h2>
+<pre><code class="language-bash">node src/main.js
+</code></pre>
+<p>同樣三個輸入，跑在三種宿主政策下：</p>
+<pre><code>--- policy: cli / messages: en ---
+  unknown option           error unknown_option
+    stderr: error: unknown option `--porrt&#39;
+    process.exit(1) &lt;- commander 2.20.3 stops here
+
+--- policy: collecting / messages: zh ---
+  unknown option           error unknown_option
+    collected: 無法辨識的選項 `--porrt&#39;
+
+--- policy: silent / messages: en ---
+  unknown option           error unknown_option
+    Policy &quot;silent&quot; declined to write.
+</code></pre>
+<p>第一種是原本的行為。<strong>後兩種在 commander 2.20.3 裡無法表達。</strong></p>
+<h2>孤島測試</h2>
+<pre><code class="language-bash">node src/island-test.js
+</code></pre>
+<p>八項全過。其中一項是刻意設計的：它把 <code>process.exit</code> 換成一個記錄用的假函式，然後跑兩次會失敗的解析，斷言它從來沒被呼叫。</p>
+<pre><code>  [OK]   parse touches no host global
+</code></pre>
+<p>如果解析器像原專案那樣退出，這個測試檔會在那一行結束，後面的檢查根本不會印出來——而那正是原專案難以單元測試的原因本身。</p>
+<h2>什麼不適合拆</h2>
+<p>這是考古最該保留的部分。</p>
+<p><strong>方法鏈式 API 不該拆。</strong> <code>.option(&#39;-p, --port &lt;n&gt;&#39;).command(&#39;build&#39;).parse(argv)</code> 這種寫法要求單一物件持有累積狀態。這是使用者體驗的核心，硬要拆成無狀態函式組合會讓 API 變差而不是變好。commander 把狀態集中在 <code>Command</code> 上是對的。</p>
+<p><strong>flag 字串的解析格式不該抽象化。</strong> <code>&#39;-p, --port &lt;n&gt;&#39;</code> 這種 DSL 看起來像是可以做成可插拔的格式層，但它其實是這個函式庫的身份。抽象掉之後你得到的是一個更通用、也更沒人想用的東西。</p>
+<p><strong>說明文字產生可以拆，但收益有限。</strong> 七個方法涉及排版（<code>padWidth</code>、<code>largestOptionLength</code>、<code>optionHelp</code>…），它們確實可以成為一個 TMS。但它們彼此高度內聚、對外只有一個入口，拆出去換到的主要是「可替換」，而實際上很少有人要替換它。<strong>這是一個「可以拆但不划算」的例子</strong>，正是「度」在真實專案裡的樣子。</p>
+<h2>這次沒有解決什麼</h2>
+<ul>
+<li><strong>只重切了一條縫。</strong> 子命令樹、<code>executeSubCommand</code> 的五重關注點、變長參數處理都沒碰。那些需要各自的判斷。</li>
+<li><strong>重切版不是 commander 的替代品。</strong> 它示範的是邊界，不是功能。</li>
+<li><strong>沒有量測。</strong> 「更好測試」在這裡是靠孤島測試示範的，不是靠一組對照數據證明的。要把它變成數字，需要對兩種版本各寫一組等價測試並比較所需的行程數——這是下一步。</li>
+<li><strong>2.20.3 是舊版本。</strong> 這正是重點：對照的是這條縫存在的時期，而它後來確實被上游修補了。用最新版做同樣的考古會得到「這裡沒有縫」，那不是發現，是確認。</li>
+</ul>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;system&quot;: {
+    &quot;id&quot;: &quot;001-commander&quot;,
+    &quot;purpose&quot;: &quot;Re-cut of one seam in commander 2.20.3: separate the parse decision from the effect on the host process.&quot;,
+    &quot;scope&quot;: &quot;Only option and argument parsing plus error reporting. Subcommands, help generation, variadic arguments and executable subcommands are out of scope.&quot;,
+    &quot;non_goals&quot;: [
+      &quot;a replacement for commander&quot;,
+      &quot;feature parity with any version&quot;,
+      &quot;a claim that the original is badly written&quot;
+    ]
+  },
+  &quot;capability_index&quot;: {
+    &quot;SMS&quot;: { &quot;parse&quot;: &quot;src/SMS/parse.js — returns {kind:'ok'|'error'}; performs no effect&quot; },
+    &quot;SCL&quot;: { &quot;host-policy&quot;: &quot;src/SCL/host-policy.js — whether this parser may write to the host and whether it may exit&quot; },
+    &quot;TMS&quot;: {
+      &quot;messages/en&quot;: &quot;English rendering of a parse error&quot;,
+      &quot;messages/zh&quot;: &quot;Traditional Chinese rendering of the same&quot;
+    },
+    &quot;DMS&quot;: { &quot;trace&quot;: &quot;src/DMS/trace.js — what the parse did, still inspectable after a rejection&quot; }
+  },
+  &quot;upstream_reference&quot;: {
+    &quot;project&quot;: &quot;commander&quot;,
+    &quot;version_examined&quot;: &quot;2.20.3&quot;,
+    &quot;license&quot;: &quot;MIT&quot;,
+    &quot;process_exit_call_sites&quot;: 8,
+    &quot;escape_hatches_added_upstream&quot;: {
+      &quot;exitOverride&quot;: &quot;4.0.0&quot;,
+      &quot;configureOutput&quot;: &quot;7.0.0&quot;
+    }
+  }
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/host-policy.js</summary><pre><code>// SCL — what this parser is permitted to do to its host, and who decides.
+//
+// In commander 2.20.3 this layer does not exist. The permission to write to
+// stderr and to terminate the process is taken unconditionally at eight call
+// sites, and the calling program has no way to withhold it. That is the
+// knowledge/permission fusion the method warns about: the library knows the
+// input is malformed, but nothing granted it the right to end the process.
+//
+// Making the policy a value has an effect that is easy to miss: the same parser
+// now works in a CLI, in a test, and inside a long-running process, without the
+// parser knowing which one it is in.
+
+export const EXIT_CODE = Object.freeze({ USAGE: 1, OK: 0 });
+
+/** A CLI: report to stderr, then end the process. What commander 2.x hardcodes. */
+export function cliPolicy({ write = (text) =&gt; process.stderr.write(text), exit = (code) =&gt; process.exit(code) } = {}) {
+  return Object.freeze({
+    name: &quot;cli&quot;,
+    mayWrite: true,
+    mayExit: true,
+    onError(message) {
+      write(`error: ${message}\n`);
+      exit(EXIT_CODE.USAGE);
+    },
+  });
+}
+
+/** A test or an embedded host: collect, never exit. */
+export function collectingPolicy() {
+  const written = [];
+  return Object.freeze({
+    name: &quot;collecting&quot;,
+    mayWrite: true,
+    mayExit: false,
+    written,
+    onError(message) {
+      written.push(message);
+    },
+  });
+}
+
+/** Silent: the caller intends to render the failure itself. */
+export function silentPolicy() {
+  return Object.freeze({
+    name: &quot;silent&quot;,
+    mayWrite: false,
+    mayExit: false,
+    onError() {},
+  });
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/parse.js</summary><pre><code>// SMS — the parse itself. Returns a result; performs no effect.
+//
+// This is the whole re-cut. commander 2.20.3 writes:
+//
+//     Command.prototype.unknownOption = function(flag) {
+//       if (this._allowUnknownOption) return;
+//       console.error(&quot;error: unknown option `%s'&quot;, flag);
+//       process.exit(1);
+//     };
+//
+// Three lines, of which two act on the host process. The caller cannot decline
+// either one. Here the same knowledge — &quot;this flag is unknown&quot; — becomes a value
+// the caller receives and decides about.
+
+/** @typedef {{kind: &quot;ok&quot;, options: object, args: string[]}} Ok */
+/** @typedef {{kind: &quot;error&quot;, code: string, detail: object}} Err */
+
+export const ERROR = Object.freeze({
+  UNKNOWN_OPTION: &quot;unknown_option&quot;,
+  MISSING_OPTION_ARGUMENT: &quot;missing_option_argument&quot;,
+  MISSING_ARGUMENT: &quot;missing_argument&quot;,
+});
+
+/**
+ * @param {{flags: string, takesValue: boolean, name: string}[]} spec
+ * @param {string[]} argv
+ * @param {{allowUnknown?: boolean, required?: string[]}} [config]
+ * @returns {Ok | Err}
+ */
+export function parse(spec, argv, config = {}) {
+  const byFlag = new Map();
+  for (const option of spec) {
+    for (const flag of option.flags.split(&quot;,&quot;).map((f) =&gt; f.trim())) byFlag.set(flag, option);
+  }
+
+  const options = {};
+  const args = [];
+
+  for (let i = 0; i &lt; argv.length; i += 1) {
+    const token = argv[i];
+
+    if (!token.startsWith(&quot;-&quot;)) {
+      args.push(token);
+      continue;
+    }
+
+    const option = byFlag.get(token);
+    if (!option) {
+      if (config.allowUnknown) {
+        args.push(token);
+        continue;
+      }
+      return { kind: &quot;error&quot;, code: ERROR.UNKNOWN_OPTION, detail: { flag: token } };
+    }
+
+    if (!option.takesValue) {
+      options[option.name] = true;
+      continue;
+    }
+
+    const value = argv[i + 1];
+    // An option that wants a value and is followed by another flag is missing
+    // its argument — the same case commander reports then exits on.
+    if (value === undefined || value.startsWith(&quot;-&quot;)) {
+      return { kind: &quot;error&quot;, code: ERROR.MISSING_OPTION_ARGUMENT, detail: { flags: option.flags, got: value ?? null } };
+    }
+    options[option.name] = value;
+    i += 1;
+  }
+
+  for (const name of config.required ?? []) {
+    if (!(name in options)) {
+      return { kind: &quot;error&quot;, code: ERROR.MISSING_ARGUMENT, detail: { name } };
+    }
+  }
+
+  return { kind: &quot;ok&quot;, options, args };
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/messages/en.js</summary><pre><code>// TMS — one renderer for parse errors. Swappable, and unaware of any sibling.
+//
+// commander 2.20.3 embeds these strings at the point of failure, inside the same
+// three lines that also write and exit. Pulling them into a TMS is what makes
+// them translatable at all.
+
+import { ERROR } from &quot;../../SMS/parse.js&quot;;
+
+export function englishMessages() {
+  return Object.freeze({
+    name: &quot;en&quot;,
+    render(result) {
+      switch (result.code) {
+        case ERROR.UNKNOWN_OPTION:
+          return `unknown option \`${result.detail.flag}'`;
+        case ERROR.MISSING_OPTION_ARGUMENT:
+          return result.detail.got
+            ? `option \`${result.detail.flags}' argument missing, got \`${result.detail.got}'`
+            : `option \`${result.detail.flags}' argument missing`;
+        case ERROR.MISSING_ARGUMENT:
+          return `missing required argument \`${result.detail.name}'`;
+        default:
+          return `parse failed: ${result.code}`;
+      }
+    },
+  });
+}
+</code></pre></details><details><summary>TMS/messages/zh.js</summary><pre><code>// TMS — a second renderer, structurally parallel and unaware of the first.
+//
+// It exists to make the boundary real rather than theoretical: if the English
+// renderer owned the phrasing, this file would have to import it, and the two
+// would stop being separately loadable.
+
+import { ERROR } from &quot;../../SMS/parse.js&quot;;
+
+export function chineseMessages() {
+  return Object.freeze({
+    name: &quot;zh&quot;,
+    render(result) {
+      switch (result.code) {
+        case ERROR.UNKNOWN_OPTION:
+          return `無法辨識的選項 \`${result.detail.flag}'`;
+        case ERROR.MISSING_OPTION_ARGUMENT:
+          return result.detail.got
+            ? `選項 \`${result.detail.flags}' 缺少參數，讀到的是 \`${result.detail.got}'`
+            : `選項 \`${result.detail.flags}' 缺少參數`;
+        case ERROR.MISSING_ARGUMENT:
+          return `缺少必要參數 \`${result.detail.name}'`;
+        default:
+          return `解析失敗：${result.code}`;
+      }
+    },
+  });
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/trace.js</summary><pre><code>// DMS — what the parse did, separate from what it returned.
+//
+// commander 2.x has no equivalent. A failed parse ends the process, so there is
+// nothing left to inspect: the exit code is the entire report.
+
+export function createTrace() {
+  const events = [];
+  return {
+    record(event, data = {}) { events.push({ event, ...data }); },
+    events: () =&gt; [...events],
+    humanView() {
+      if (!events.length) return &quot;Nothing recorded.&quot;;
+      return events.map((e) =&gt; {
+        if (e.event === &quot;parse.ok&quot;) return `Parsed ${e.optionCount} option(s) and ${e.argCount} argument(s).`;
+        if (e.event === &quot;parse.error&quot;) return `Rejected: ${e.message}`;
+        if (e.event === &quot;policy.declined&quot;) return `Policy &quot;${e.policy}&quot; declined to ${e.action}.`;
+        return e.event;
+      }).join(&quot;\n&quot;);
+    },
+  };
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.js</summary><pre><code>// Island test. Run: node src/island-test.js
+//
+// The claim being tested is the one the re-cut exists for: the parser decides
+// nothing about the host, and either message renderer works without the other.
+
+import assert from &quot;node:assert/strict&quot;;
+import { parse, ERROR } from &quot;./SMS/parse.js&quot;;
+import { silentPolicy, collectingPolicy } from &quot;./SCL/host-policy.js&quot;;
+import { chineseMessages } from &quot;./TMS/messages/zh.js&quot;;
+
+let failures = 0;
+function check(name, fn) {
+  try {
+    fn();
+    console.log(`  [OK]   ${name}`);
+  } catch (error) {
+    failures += 1;
+    console.log(`  [FAIL] ${name} — ${error.message}`);
+  }
+}
+
+const SPEC = [
+  { flags: &quot;-p, --port&quot;, name: &quot;port&quot;, takesValue: true },
+  { flags: &quot;-v, --verbose&quot;, name: &quot;verbose&quot;, takesValue: false },
+];
+
+console.log(&quot;island test: SMS/parse alone, no policy and no renderer loaded&quot;);
+
+check(&quot;a valid parse returns a value&quot;, () =&gt; {
+  const r = parse(SPEC, [&quot;--port&quot;, &quot;8080&quot;, &quot;build&quot;]);
+  assert.equal(r.kind, &quot;ok&quot;);
+  assert.deepEqual(r.options, { port: &quot;8080&quot; });
+  assert.deepEqual(r.args, [&quot;build&quot;]);
+});
+
+check(&quot;an unknown option is data, not an exit&quot;, () =&gt; {
+  const r = parse(SPEC, [&quot;--porrt&quot;]);
+  assert.equal(r.kind, &quot;error&quot;);
+  assert.equal(r.code, ERROR.UNKNOWN_OPTION);
+  assert.equal(r.detail.flag, &quot;--porrt&quot;);
+});
+
+check(&quot;a missing option value is data, not an exit&quot;, () =&gt; {
+  const r = parse(SPEC, [&quot;--port&quot;, &quot;--verbose&quot;]);
+  assert.equal(r.kind, &quot;error&quot;);
+  assert.equal(r.code, ERROR.MISSING_OPTION_ARGUMENT);
+});
+
+check(&quot;allowUnknown keeps the token instead of failing&quot;, () =&gt; {
+  const r = parse(SPEC, [&quot;--porrt&quot;], { allowUnknown: true });
+  assert.equal(r.kind, &quot;ok&quot;);
+  assert.deepEqual(r.args, [&quot;--porrt&quot;]);
+});
+
+check(&quot;parse touches no host global&quot;, () =&gt; {
+  // If parse called process.exit the way commander does, this test file would
+  // end here and the remaining checks would never print — which is exactly the
+  // failure mode that makes the original hard to unit test.
+  const original = process.exit;
+  let called = false;
+  process.exit = () =&gt; { called = true; };
+  parse(SPEC, [&quot;--porrt&quot;]);
+  parse(SPEC, [&quot;--port&quot;]);
+  process.exit = original;
+  assert.equal(called, false);
+});
+
+console.log(&quot;\nisland test: TMS/messages/zh alone, English renderer never imported&quot;);
+
+check(&quot;the Chinese renderer works with no sibling loaded&quot;, () =&gt; {
+  const r = parse(SPEC, [&quot;--porrt&quot;]);
+  const text = chineseMessages().render(r);
+  assert.match(text, /無法辨識的選項/);
+});
+
+check(&quot;a silent policy performs no effect at all&quot;, () =&gt; {
+  const policy = silentPolicy();
+  assert.equal(policy.mayWrite, false);
+  assert.equal(policy.mayExit, false);
+  policy.onError(&quot;anything&quot;);
+});
+
+check(&quot;a collecting policy captures instead of exiting&quot;, () =&gt; {
+  const policy = collectingPolicy();
+  policy.onError(&quot;unknown option `--porrt'&quot;);
+  assert.equal(policy.written.length, 1);
+  assert.equal(policy.mayExit, false);
+});
+
+console.log(failures ? `\n${failures} check(s) failed` : &quot;\nall island checks passed&quot;);
+process.exit(failures ? 1 : 0);
+</code></pre></details><details><summary>main.js</summary><pre><code>// The same three inputs, run under three different host policies.
+//
+// In commander 2.20.3 the first of these ends the process and the other two are
+// not expressible.
+
+import { parse } from &quot;./SMS/parse.js&quot;;
+import { cliPolicy, collectingPolicy, silentPolicy } from &quot;./SCL/host-policy.js&quot;;
+import { englishMessages } from &quot;./TMS/messages/en.js&quot;;
+import { chineseMessages } from &quot;./TMS/messages/zh.js&quot;;
+import { createTrace } from &quot;./DMS/trace.js&quot;;
+
+const SPEC = [
+  { flags: &quot;-p, --port&quot;, name: &quot;port&quot;, takesValue: true },
+  { flags: &quot;-v, --verbose&quot;, name: &quot;verbose&quot;, takesValue: false },
+];
+
+const CASES = [
+  { label: &quot;valid&quot;, argv: [&quot;--port&quot;, &quot;8080&quot;, &quot;--verbose&quot;, &quot;build&quot;] },
+  { label: &quot;unknown option&quot;, argv: [&quot;--porrt&quot;, &quot;8080&quot;] },
+  { label: &quot;option missing its value&quot;, argv: [&quot;--port&quot;, &quot;--verbose&quot;] },
+];
+
+function run(policy, messages) {
+  const trace = createTrace();
+  const results = [];
+
+  for (const testCase of CASES) {
+    const result = parse(SPEC, testCase.argv, { required: [] });
+
+    if (result.kind === &quot;ok&quot;) {
+      trace.record(&quot;parse.ok&quot;, { optionCount: Object.keys(result.options).length, argCount: result.args.length });
+      results.push(`${testCase.label.padEnd(24)} ok    ${JSON.stringify(result.options)} args=${JSON.stringify(result.args)}`);
+      continue;
+    }
+
+    const message = messages.render(result);
+    trace.record(&quot;parse.error&quot;, { message });
+    if (!policy.mayWrite) trace.record(&quot;policy.declined&quot;, { policy: policy.name, action: &quot;write&quot; });
+    policy.onError(message);
+    results.push(`${testCase.label.padEnd(24)} error ${result.code}`);
+  }
+
+  return { results, trace };
+}
+
+// A CLI policy that reports where the process would have died, rather than
+// dying — so this file can demonstrate all three without ending early.
+const wouldExit = [];
+const reportingCli = cliPolicy({
+  write: (text) =&gt; wouldExit.push(`stderr: ${text.trim()}`),
+  exit: (code) =&gt; wouldExit.push(`process.exit(${code}) &lt;- commander 2.20.3 stops here`),
+});
+
+for (const [policy, messages] of [
+  [reportingCli, englishMessages()],
+  [collectingPolicy(), chineseMessages()],
+  [silentPolicy(), englishMessages()],
+]) {
+  console.log(`\n--- policy: ${policy.name} / messages: ${messages.name} ---`);
+  const { results, trace } = run(policy, messages);
+  for (const line of results) console.log(`  ${line}`);
+  console.log(&quot;  DMS:&quot;);
+  for (const line of trace.humanView().split(&quot;\n&quot;)) console.log(`    ${line}`);
+  if (policy.name === &quot;cli&quot;) for (const line of wouldExit) console.log(`    ${line}`);
+  if (policy.written) for (const line of policy.written) console.log(`    collected: ${line}`);
+}
+
+console.log(&quot;\nSame parser, three hosts. The parse never decided whether to end the process.&quot;);
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>
