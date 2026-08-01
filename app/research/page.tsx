@@ -17,8 +17,8 @@ export default function ResearchPage() {
           en: "What MSSP is growing into next.",
         }}
         description={{
-          zh: "這一區不是 MSSP 現況的說明，是它下一批版本的材料。四個方向各有一份研究草案：AI 管理、資料夾語言、架構可視化，以及動態／規模感知的 MSSP。",
-          en: "This is not documentation of what MSSP is today; it is the material for its next versions. One research draft per direction: AI management, a folder language, architecture visualisation, and a dynamic, scale-aware MSSP.",
+          zh: "這一區不是 MSSP 現況的說明，是它下一批版本的材料。四個方向各有一份研究草案：AI 管理、EveMiss FPL 專案形式化語言、架構可視化，以及動態／規模感知的 MSSP。",
+          en: "This is not documentation of what MSSP is today; it is the material for its next versions. One research draft per direction: AI management, EveMiss FPL, architecture visualisation, and a dynamic, scale-aware MSSP.",
         }}
         aside={<div className="metric-card"><strong>{researchCount}</strong><span>{t({ zh: "研究草案", en: "research drafts" })}</span></div>}
       />
@@ -37,6 +37,9 @@ export default function ResearchPage() {
             </div>
             <div className="research-body">
               <h2><a href={paper.href}>{language === "zh" ? paper.title.zh : paper.title.en}</a></h2>
+              {paper.subtitle ? (
+                <p className="research-subtitle">{language === "zh" ? paper.subtitle.zh : paper.subtitle.en}</p>
+              ) : null}
               <p>{language === "zh" ? paper.summary.zh : paper.summary.en}</p>
               {paper.relatesTo ? (
                 <p className="research-relates">
@@ -47,6 +50,11 @@ export default function ResearchPage() {
               {paper.nameStatus === "provisional" ? (
                 <p className="research-provisional">
                   {t({ zh: "名稱暫定", en: "Name provisional" })} — {language === "zh" ? paper.nameNote?.zh : paper.nameNote?.en}
+                </p>
+              ) : null}
+              {paper.formerName ? (
+                <p className="research-former">
+                  {t({ zh: "更名", en: "Renamed" })} — {language === "zh" ? paper.formerName.zh : paper.formerName.en}
                 </p>
               ) : null}
               <p className="research-meta">

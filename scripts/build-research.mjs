@@ -105,6 +105,7 @@ footer a{color:var(--accent)}
     <div><b>字數</b><span>${entry.charCount.toLocaleString()}</span></div>
   </section>
   ${entry.nameStatus === "provisional" ? `<p class="provisional"><strong>名稱暫定。</strong> ${escapeHtml(entry.nameNote?.zh ?? "")}</p>` : ""}
+  ${entry.formerName ? `<p class="provisional"><strong>更名。</strong> ${escapeHtml(entry.formerName.zh)}</p>` : ""}
   ${toc.length ? `<nav class="toc"><b>目次</b><ol>${toc.map((t, i) => `<li><a href="#${slugifyHeading(t, i)}">${escapeHtml(t)}</a></li>`).join("")}</ol></nav>` : ""}
   <article class="content">${bodyHtml}</article>
   <section class="source-download">
@@ -164,8 +165,10 @@ for (const paper of manifest.papers) {
     summary: paper.summary,
     status: paper.status,
     date: paper.date,
+    subtitle: paper.subtitle ?? null,
     nameStatus: paper.name_status ?? "settled",
     nameNote: paper.name_note ?? null,
+    formerName: paper.former_name ?? null,
     relatesTo: paper.relates_to ?? null,
     charCount: markdown.length,
     sectionCount: toc.length,
@@ -208,8 +211,8 @@ fs.writeFileSync(
       count: collected.length,
       note: "程式研究區 — research feeding MSSP's next versions. Each entry publishes as a reading page and its Markdown source.",
       direction_note: manifest.direction_note,
-      papers: collected.map(({ slug, direction, title, summary, status, date, nameStatus, canonicalUrl, mdUrl }) => ({
-        slug, direction, title, summary, status, date, name_status: nameStatus, html: canonicalUrl, markdown: mdUrl,
+      papers: collected.map(({ slug, direction, title, subtitle, summary, status, date, nameStatus, formerName, canonicalUrl, mdUrl }) => ({
+        slug, direction, title, subtitle, summary, status, date, name_status: nameStatus, former_name: formerName, html: canonicalUrl, markdown: mdUrl,
       })),
     },
     null,

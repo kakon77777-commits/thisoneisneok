@@ -39,6 +39,18 @@ const worker = {
       return Response.redirect(target.toString(), 301);
     }
 
+    // Renamed content keeps its old URL working. EveMiss FPL published for about
+    // an hour under its working title before the name was settled, and the old
+    // path is already in the sitemap that was generated at that time.
+    const RENAMED: Record<string, string> = {
+      "/html/research/folder-programming-language.html": "/html/research/evemiss-fpl.html",
+      "/md/research/folder-programming-language.md": "/md/research/evemiss-fpl.md",
+    };
+    const renamed = RENAMED[url.pathname];
+    if (renamed) {
+      return Response.redirect(new URL(renamed, url.origin).toString(), 301);
+    }
+
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
       return handleImageOptimization(request, {

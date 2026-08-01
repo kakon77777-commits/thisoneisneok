@@ -2,35 +2,43 @@
 // Do not edit by hand — edit the manifest or the converted source.
 export const researchPapers = [
   {
-    "slug": "folder-programming-language",
+    "slug": "evemiss-fpl",
     "direction": {
-      "zh": "資料夾語言",
-      "en": "Folder language"
+      "zh": "FPL 專案形式化語言",
+      "en": "Formal Project Language"
     },
     "title": {
-      "zh": "資料夾程式語言：從認知架構到可執行規範",
-      "en": "Folder Programming Language: from cognitive architecture to executable specification"
+      "zh": "EveMiss FPL 專案形式化語言",
+      "en": "EveMiss FPL — Formal Project Language"
     },
     "summary": {
-      "zh": "把資料夾結構從「放檔案的容器」提升為語言本身的本體：目錄即宣告，路徑即語義，架構不再是描述程式的文件，而是可以被執行的規範。",
-      "en": "Raises folder structure from a container that holds files into an entity of the language itself: a directory is a declaration and a path carries meaning, so architecture stops being a document about the program and becomes a specification that runs."
+      "zh": "把專案架構本身變成一種可執行的語言：MSSP-Lang 定義模組與關係，編譯器把它展開成專案骨架，AI 負責中觀架構生成與微觀實作，人類保留宏觀決策。操作的對象不是資料與邏輯，是模組與關係。",
+      "en": "Turns project architecture itself into an executable language: MSSP-Lang declares modules and relations, a compiler expands that into the project skeleton, and an AI fills in structure and code while the human keeps the macro decisions. What you manipulate is not data and logic but modules and relations."
     },
     "status": {
       "zh": "研究草案",
       "en": "Research draft"
     },
     "date": "2026-08-01",
-    "nameStatus": "provisional",
-    "nameNote": {
-      "zh": "正式名稱尚未定案，FPL 是目前的工作名。",
-      "en": "The formal name is not settled; FPL is the working title."
+    "subtitle": {
+      "zh": "面向 AI 原生軟體開發的可執行架構語言",
+      "en": "An Executable Architecture Language for AI-Native Software Development"
     },
-    "relatesTo": null,
-    "charCount": 51080,
+    "nameStatus": "settled",
+    "nameNote": null,
+    "formerName": {
+      "zh": "撰寫時的工作名稱為「資料夾程式語言（Folder Programming Language）」。縮寫 FPL 沿用，展開由 Folder 改為 Formal。",
+      "en": "Written under the working title Folder Programming Language. The initialism is kept; the expansion changed from Folder to Formal."
+    },
+    "relatesTo": {
+      "zh": "直接建在 MSSP 之上：MSSP-Lang 的語法單位就是 FMS／SCL／SMS／TMS／DMS，而母集與子集的判準是它的型別規則。",
+      "en": "Built directly on MSSP: MSSP-Lang's syntactic units are the five sets, and the mother-set/subset criteria are its typing rules."
+    },
+    "charCount": 51388,
     "sectionCount": 11,
-    "href": "/html/research/folder-programming-language.html",
-    "canonicalUrl": "https://thisoneisneok.com/html/research/folder-programming-language.html",
-    "mdUrl": "https://thisoneisneok.com/md/research/folder-programming-language.md"
+    "href": "/html/research/evemiss-fpl.html",
+    "canonicalUrl": "https://thisoneisneok.com/html/research/evemiss-fpl.html",
+    "mdUrl": "https://thisoneisneok.com/md/research/evemiss-fpl.md"
   },
   {
     "slug": "github-architecture-scope",
@@ -51,8 +59,10 @@ export const researchPapers = [
       "en": "Research draft"
     },
     "date": "2026-08-01",
+    "subtitle": null,
     "nameStatus": "settled",
     "nameNote": null,
+    "formerName": null,
     "relatesTo": null,
     "charCount": 17564,
     "sectionCount": 3,
@@ -79,8 +89,10 @@ export const researchPapers = [
       "en": "Research draft"
     },
     "date": "2026-08-01",
+    "subtitle": null,
     "nameStatus": "settled",
     "nameNote": null,
+    "formerName": null,
     "relatesTo": {
       "zh": "直接對應 MSSP 手冊裡的「度」，並把它從一張表格推進成可推導的模型。",
       "en": "Directly extends the field manual's notion of the right amount, pushing it from a table into a derivable model."
@@ -110,11 +122,13 @@ export const researchPapers = [
       "en": "Research draft"
     },
     "date": "2026-08-01",
+    "subtitle": null,
     "nameStatus": "settled",
     "nameNote": null,
+    "formerName": null,
     "relatesTo": {
-      "zh": "唯一一篇直接建立在 MSSP 架構之上的研究——模組邊界是它的推斷單位。",
-      "en": "The only one of the four built directly on MSSP: its module boundaries are the unit the inference works over."
+      "zh": "推斷的單位就是 MSSP 的模組邊界——沒有那條邊界，靜態上界只能退回整個程式的保守估計。",
+      "en": "The unit it infers over is an MSSP module boundary. Without that boundary a static upper bound falls back to a conservative estimate over the whole program."
     },
     "charCount": 109239,
     "sectionCount": 19,
@@ -126,6 +140,6 @@ export const researchPapers = [
 
 export const researchCount = 4;
 export const researchDirectionNote = {
-  "zh": "這四篇對應 MSSP 接下來的四個方向：AI 管理、資料夾語言、架構可視化（人與 AI 都看得懂），以及動態／規模感知的 MSSP。它們不是 MSSP 現況的說明，是它下一批版本的材料。",
-  "en": "These four map onto the four directions MSSP is heading: AI management, a folder language, architecture visualisation legible to people and to AI alike, and a dynamic, scale-aware MSSP. They describe where the method is going, not where it currently is."
+  "zh": "這四篇對應 MSSP 接下來的四個方向：AI 管理、EveMiss FPL 專案形式化語言、架構可視化（人與 AI 都看得懂），以及動態／規模感知的 MSSP。它們不是 MSSP 現況的說明，是它下一批版本的材料。",
+  "en": "These four map onto the four directions MSSP is heading: AI management, EveMiss FPL, architecture visualisation legible to people and to AI alike, and a dynamic, scale-aware MSSP. They describe where the method is going, not where it currently is."
 };

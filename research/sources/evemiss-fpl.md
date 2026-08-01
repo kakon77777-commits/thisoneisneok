@@ -1,4 +1,10 @@
-# 資料夾程式語言（Folder Programming Language）：從認知架構到可執行規範的範式革命
+# EveMiss FPL 專案形式化語言
+
+**Formal Project Language — An Executable Architecture Language for AI-Native Software Development**
+
+*面向 AI 原生軟體開發的可執行架構語言*
+
+> 名稱說明：本文撰寫時的工作名稱為「資料夾程式語言（Folder Programming Language）：從認知架構到可執行規範的範式革命」。正式定名為 **EveMiss FPL — Formal Project Language（FPL 專案形式化語言）** 後，標題已更新；內文未改動。縮寫 FPL 沿用，展開由 Folder 改為 Formal，與本文實際提出的 MSSP-Lang 語法、編譯器與工具鏈範圍一致。
 
 **作者**：Neo K.  
 **機構**：一言諾科技有限公司 (EveMissLab)  
