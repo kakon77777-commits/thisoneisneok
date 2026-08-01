@@ -119,8 +119,14 @@ footer a{color:var(--accent)}
 </html>`;
 }
 
+// Generated output directories are cleared before writing.
+// Without this a renamed or deleted entry keeps its old file published forever:
+// the stale asset is served ahead of any redirect the Worker would issue, so the
+// rename silently does not take effect.
 const htmlDir = path.join(publicDir, "html", "research");
 const mdDir = path.join(publicDir, "md", "research");
+fs.rmSync(htmlDir, { recursive: true, force: true });
+fs.rmSync(mdDir, { recursive: true, force: true });
 fs.mkdirSync(htmlDir, { recursive: true });
 fs.mkdirSync(mdDir, { recursive: true });
 

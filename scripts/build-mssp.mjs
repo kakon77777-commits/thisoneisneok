@@ -226,7 +226,17 @@ function escapeHtml(value) {
   return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
 
+// Generated output directories are cleared before writing.
+// Without this a renamed or deleted entry keeps its old file published forever:
+// the stale asset is served ahead of any redirect the Worker would issue, so the
+// rename silently does not take effect.
 const htmlDir = path.join(publicDir, "html", "mssp");
+// Only the example pages live directly here; modules/ and archaeology/ are
+// owned by their own steps, so they are preserved.
+for (const name of fs.existsSync(htmlDir) ? fs.readdirSync(htmlDir) : []) {
+  const full = path.join(htmlDir, name);
+  if (fs.statSync(full).isFile()) fs.rmSync(full, { force: true });
+}
 fs.mkdirSync(htmlDir, { recursive: true });
 
 for (const example of collected) {
@@ -320,6 +330,7 @@ const modules = [];
 
 if (fs.existsSync(moduleDir)) {
   const moduleHtmlDir = path.join(publicDir, "html", "mssp", "modules");
+  fs.rmSync(moduleHtmlDir, { recursive: true, force: true });
   fs.mkdirSync(moduleHtmlDir, { recursive: true });
 
   for (const filename of fs.readdirSync(moduleDir).filter((name) => name.endsWith(".md")).sort()) {

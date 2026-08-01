@@ -339,9 +339,15 @@ for (const series of SERIES) {
 }
 
 // ---- write standalone HTML ----
+// Generated output directories are cleared before writing.
+// Without this a renamed or deleted entry keeps its old file published forever:
+// the stale asset is served ahead of any redirect the Worker would issue, so the
+// rename silently does not take effect.
 const htmlDir = path.join(publicDir, "html", "papers");
-fs.mkdirSync(htmlDir, { recursive: true });
 const mdDir = path.join(publicDir, "md", "papers");
+fs.rmSync(htmlDir, { recursive: true, force: true });
+fs.rmSync(mdDir, { recursive: true, force: true });
+fs.mkdirSync(htmlDir, { recursive: true });
 fs.mkdirSync(mdDir, { recursive: true });
 let mathRendered = 0;
 let mathErrors = 0;
