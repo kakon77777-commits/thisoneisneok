@@ -36,6 +36,27 @@ const PROSE = [
 const papersPublishMarkdown = fs.existsSync(path.join(root, "public", "md", "papers")) &&
   fs.readdirSync(path.join(root, "public", "md", "papers")).some((name) => name.endsWith(".md"));
 
+const indexPath = path.join(root, "public", "ai", "papers-index.json");
+const seriesCount = fs.existsSync(indexPath)
+  ? JSON.parse(fs.readFileSync(indexPath, "utf8")).series.length
+  : 0;
+
+// Any spelled-out series count that is not the real one. The site went from four
+// series to five and three headlines still said 四個系列 — a literal number in
+// prose is a copy of a fact, and copies go stale. The fix was to derive the
+// number from paperSeries.length; this check is what stops a fresh literal from
+// being written next time.
+const CJK_NUMERALS = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+const EN_NUMERALS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const wrongSeriesCounts = [];
+for (let n = 1; n <= 10; n += 1) {
+  if (n === seriesCount) continue;
+  wrongSeriesCounts.push(
+    new RegExp(`(?:${n}|${CJK_NUMERALS[n]})\\s*(?:個)?\\s*系列`),
+    new RegExp(`\\b(?:${n}|${EN_NUMERALS[n]})\\s+series\\b`, "i"),
+  );
+}
+
 const CLAIMS = [
   {
     when: papersPublishMarkdown,
@@ -47,6 +68,11 @@ const CLAIMS = [
       /Markdown (?:sources? )?(?:is|are) not distributed/i,
       /publish(?:es)? as HTML and PDF only/i,
     ],
+  },
+  {
+    when: seriesCount > 0,
+    fact: `the papers index publishes ${seriesCount} series`,
+    forbidden: wrongSeriesCounts,
   },
 ];
 

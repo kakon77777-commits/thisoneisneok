@@ -6,10 +6,10 @@
 // publishes every example's full source on the grounds that a claim you cannot
 // read the source of is not much of a claim. Same standard now applies to both.
 //
-// Metadata lives in two different shapes across the four series:
+// Metadata lives in two different shapes across the five series:
 //   - Program_Universe_Foundations: YAML frontmatter
-//   - PLDST / 時空域支配智能 / 計算機概念產品系列: a "**標籤：** value" block
-//     under the H1
+//   - PLDST / 時空域支配智能 / 計算機概念產品系列 / 表觀完好系統系列:
+//     a "**標籤：** value" block under the H1
 // Both are read here so no series has to be rewritten by hand.
 import fs from "node:fs";
 import path from "node:path";
@@ -51,6 +51,15 @@ const SERIES = [
     },
   },
   {
+    dir: "表觀完好系統系列",
+    code: "OIS",
+    title: { zh: "表觀完好系統", en: "Observably Sound Systems" },
+    blurb: {
+      zh: "從屎山、補償性完好到動態架構治理的十二篇。核心論點是功能正常不能推出結構正常：真正撐住系統的東西，往往分散在補償機制、操作慣例、相容層與人的知識裡，而不在架構圖上。最後兩篇把 MSSP 從靜態分類推成有宣告、觀察、有效三層角色的動態狀態系統。",
+      en: "Twelve papers from the big ball of mud, through compensated integrity, to dynamic architecture governance. The core claim: working software does not imply sound structure — what actually holds a system up is often spread across compensations, operational routine, compatibility layers and human knowledge, none of which appear on the diagram. The last two turn MSSP from a static classification into a state system with declared, observed and effective roles.",
+    },
+  },
+  {
     dir: "時空域支配智能",
     code: "STDI",
     title: { zh: "時空域支配智能", en: "Spatiotemporal Domain Intelligence" },
@@ -69,9 +78,13 @@ const LABELS = {
   version: ["版本", "公開修訂版"],
   date: ["日期", "公開修訂版", "原始版本"],
   seriesLine: ["系列", "系列定位"],
-  status: ["文件狀態", "文件性質", "文件類型", "公開狀態"],
+  status: ["文件狀態", "文件性質", "文件類型", "公開狀態", "定位"],
   evidence: ["證據狀態", "證據成熟度"],
   author: ["作者"],
+  // Stated by 24 of the 89 papers and until now dropped on the floor. A paper
+  // that names who worked on it with the author should keep saying so once
+  // published; the label is the author's own, not an annotation added here.
+  collaborator: ["協作整理"],
   license: ["論文授權"],
 };
 
@@ -148,6 +161,12 @@ function readOrder(text) {
   return match ? Number(match[1]) : null;
 }
 
+/** 表觀完好系統系列 numbers itself in a separate label: "**篇次：** 07 / 12". */
+function readPartNumber(labels) {
+  const match = (labels["篇次"] || "").match(/^\s*(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -162,6 +181,7 @@ function standaloneHtml(paper, seriesTitle, html) {
     ["版本", paper.version],
     ["日期", paper.date],
     ["作者", paper.author],
+    ["協作整理", paper.collaborator],
     ["狀態", paper.status],
     ["證據", paper.evidence],
   ].filter(([, value]) => value);
@@ -282,7 +302,7 @@ for (const series of SERIES) {
     const title = meta.title || (titleLine ? stripBold(titleLine.slice(2)) : filename.replace(/\.md$/, ""));
 
     const seriesLine = meta.series || pick(labels, LABELS.seriesLine) || "";
-    const order = readOrder(seriesLine) ?? readOrder(source) ?? null;
+    const order = readPartNumber(labels) ?? readOrder(seriesLine) ?? readOrder(source) ?? null;
 
     // Prefer an ASCII document code the author already assigned; otherwise the
     // series code plus position, so every paper gets a stable, URL-safe id.
@@ -323,6 +343,7 @@ for (const series of SERIES) {
         ? normalizeDate(entry.meta.date)
         : pickDate(entry.labels, LABELS.date),
       author: entry.meta.author || pick(entry.labels, LABELS.author) || "Neo.K",
+      collaborator: pick(entry.labels, LABELS.collaborator) || "",
       status: entry.meta.status || pick(entry.labels, LABELS.status) || "",
       evidence: pick(entry.labels, LABELS.evidence) || "",
       license: pick(entry.labels, LABELS.license) || "",

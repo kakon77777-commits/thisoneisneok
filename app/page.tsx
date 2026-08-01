@@ -57,7 +57,7 @@ export default function Home() {
       </section>
 
       <section className="home-strip" aria-label={t({ zh: "網站範圍", en: "Site scope" })}>
-        <div><strong>{paperCount}</strong><span>{t({ zh: "論文（4 系列）", en: "papers, 4 series" })}</span></div>
+        <div><strong>{paperCount}</strong><span>{t({ zh: `論文（${paperSeries.length} 系列）`, en: `papers, ${paperSeries.length} series` })}</span></div>
         <div><strong>{experimentCount}</strong><span>{t({ zh: "可執行實驗", en: "runnable experiments" })}</span></div>
         <div><strong>{bookCount}</strong><span>{t({ zh: "已出版書籍", en: "published books" })}</span></div>
         <div><strong>MSSP</strong><span>{t({ zh: "主要專區", en: "primary field" })}</span></div>
@@ -67,7 +67,7 @@ export default function Home() {
         <div className="section-heading">
           <div>
             <p className="eyebrow">PAPERS / {paperCount}</p>
-            <h2>{t({ zh: "四個系列，全部在計算機領域。", en: "Four series, all in computing." })}</h2>
+            <h2>{t({ zh: `${paperSeries.length} 個系列，全部在計算機領域。`, en: `${paperSeries.length} series, all in computing.` })}</h2>
           </div>
           <Link href="/papers" className="text-link">{t({ zh: "進入論文區", en: "Enter papers" })} ↗</Link>
         </div>

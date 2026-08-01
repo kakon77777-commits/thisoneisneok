@@ -34,8 +34,8 @@ export default function PapersPage() {
       <PageIntro
         eyebrow={{ zh: "論文", en: "Papers" }}
         title={{
-          zh: "四個系列，全部在計算機領域。",
-          en: "Four series, all in computing.",
+          zh: `${paperSeries.length} 個系列，全部在計算機領域。`,
+          en: `${paperSeries.length} series, all in computing.`,
         }}
         description={{
           zh: "每篇論文以三種形式發表：閱讀網頁、PDF，以及頁面底部可下載的 Markdown 原始檔。三者出自同一份來源。版本、日期與證據狀態直接印在每篇論文上。",
