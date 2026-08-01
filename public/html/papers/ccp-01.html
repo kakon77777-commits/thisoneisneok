@@ -23,6 +23,10 @@ main{padding:56px 0 96px}
 .content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
 .content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
 .content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+/* Demoting the body by one level pushes the deepest sections here, so they need
+   to be styled rather than left to the browser's defaults. */
+.content h4{font-family:Inter,"Noto Sans TC",sans-serif;font-size:16.5px;margin:30px 0 10px;color:var(--accent)}
+.content h5,.content h6{font-family:Inter,"Noto Sans TC",sans-serif;font-size:14px;letter-spacing:.02em;margin:26px 0 9px;color:var(--muted)}
 .content p{margin:0 0 24px}
 .content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
 .content li{margin:.45em 0}
@@ -53,12 +57,12 @@ footer a{color:var(--accent)}
   <section class="facts"><div><b>編號</b><span>CCP-01</span></div><div><b>版本</b><span>v2.0</span></div><div><b>日期</b><span>2026-07-29</span></div><div><b>作者</b><span>Neo.K（許筌崴）</span></div><div><b>狀態</b><span>公開概念技術論文／可驗證架構提案</span></div><div><b>證據</b><span>架構提案；尚未完成硬體原型與第三方實驗驗證</span></div></section>
   <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ccp-01.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
   <article class="content"><h1>分布式自適應近負載供電架構</h1>
-<h2>從中央供電、局部能量緩衝到預測式功率協同</h2>
+<h3>從中央供電、局部能量緩衝到預測式功率協同</h3>
 <p><strong>Distributed Adaptive Point-of-Load Power Delivery Architecture</strong><br><strong>From Centralized Conversion and Local Energy Buffering to Predictive Power Coordination</strong></p>
 <hr>
 <p><strong>作者</strong>：Neo.K（許筌崴）<br><strong>機構</strong>：一言諾科技有限公司（EveMissLab），台灣<br><strong>原始版本日期</strong>：2026 年 3 月 25 日<br><strong>公開修訂版</strong>：v2.0，2026 年 7 月 29 日<br><strong>文件性質</strong>：公開概念技術論文／可驗證架構提案<br><strong>建議縮寫</strong>：DPCPS（Distributed Predictive and Coordinated Power System，分布式預測協同供電系統）<br><strong>證據狀態</strong>：架構提案；尚未完成硬體原型與第三方實驗驗證</p>
 <hr>
-<h2>修訂聲明</h2>
+<h3>修訂聲明</h3>
 <p>本文由 2026 年 3 月的《分布式脈衝電源架構：從中央供電到量子相位協同的計算範式革命》重構而來。原稿的重要直覺是：高效能計算負載具有強烈的時間變動性，供電系統不應只按照平均功率設計，而應在空間上更接近負載、在時間上更理解負載、在控制上更主動協同。</p>
 <p>該直覺具有工程價值，但原稿混合了數個不同物理層級，並把尚未驗證的估算寫成實測或必然結果。v2.0 進行以下根本修正：</p>
 <ol>
@@ -70,15 +74,15 @@ footer a{color:var(--accent)}
 </ol>
 <p>因此，本文不是對原始想法的否定，而是把其中可成立的工程內核從錯誤機制中分離出來。</p>
 <hr>
-<h2>摘要</h2>
+<h3>摘要</h3>
 <p>現代 CPU、GPU、AI 加速器與高頻寬記憶體的供電問題，已不只是提供足夠平均瓦數，而是要在極低電壓、極高電流與快速負載變化下維持電壓完整性。當負載電流於短時間內急遽變化時，電壓調節器無法單獨即時補足全部電流；供電網路必須依賴晶片內、封裝內、主板級去耦電容，以及不同層級調節器共同承擔。若功率傳輸路徑的等效電阻、電感或諧振過高，即使整體 PSU 額定功率充足，負載端仍可能發生電壓下陷、過衝、時脈降頻、錯誤或系統失穩。</p>
 <p>本文提出分布式預測協同供電系統 DPCPS。其核心不是以量子干涉增強電場，也不是讓供電開關逐週期追蹤處理器時鐘，而是建立一個分層、近負載、可重組的功率傳輸網路：中央電源供應器或機櫃匯流排負責高效率傳輸總能量；板級與封裝級近負載調節器負責電壓轉換；局部電容與儲能元件承擔最快速瞬態；多相轉換器透過交錯相位降低輸入與輸出紋波；預測控制器利用工作負載計數器、排程器提示、功率狀態與感測器資料，提前配置調節相數、電壓目標與能量裕度。</p>
 <p>本文提出五層架構：高壓或中壓總線、區域轉換、近負載轉換、局部能量緩衝、晶片功率管理；建立以目標阻抗、電壓下陷、轉換損耗、熱限制與穩定裕度為核心的數學模型；並設計從 SPICE／電磁共模擬、電子負載原型、FPGA 工作負載到封裝級整合的分階段驗證流程。DPCPS 的主要可檢驗假說是：在相同安全裕度下，空間分布式調節、負載感知相位啟停與預測式功率管理，可降低局部電壓偏差、減少過度設計的電壓護欄、提高中低負載轉換效率，並在部分工作負載中降低因供電或熱限制引起的降頻。</p>
 <p>本文不宣稱 DPCPS 已經提高任何處理器的 IPC，也不宣稱它能在相同邏輯活動下憑空消除晶片發熱。其工程價值必須由可重現的電源完整性、效率、溫度、可靠性與應用性能實驗共同判定。</p>
 <p><strong>關鍵詞</strong>：功率傳輸網路、近負載調節器、分布式電源、多相轉換器、負載瞬變、目標阻抗、預測控制、垂直供電、AI 加速器、電源完整性</p>
 <hr>
-<h1>第一章　問題重述：高效能計算真正缺少的是瞬態供電能力</h1>
-<h2>1.1 從額定瓦數到負載端電壓完整性</h2>
+<h2>第一章　問題重述：高效能計算真正缺少的是瞬態供電能力</h2>
+<h3>1.1 從額定瓦數到負載端電壓完整性</h3>
 <p>傳統桌上型電腦的供電路徑可簡化為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>交流電網</mtext><mo>→</mo><mtext>PSU</mtext><mo>→</mo><mn>12</mn><mtext> V 或其他中間匯流排</mtext><mo>→</mo><mtext>板級 VRM</mtext><mo>→</mo><mtext>封裝與晶片 PDN</mtext><mo>→</mo><mtext>電晶體</mtext></mrow><annotation encoding="application/x-tex">\text{交流電網}
 \rightarrow \text{PSU}
@@ -96,7 +100,7 @@ footer a{color:var(--accent)}
 <p>若等效串聯電阻為 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0.2</mn><mtext> m</mtext><mi mathvariant="normal">Ω</mi></mrow><annotation encoding="application/x-tex">0.2\text{ m}\Omega</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">0.2</span><span class="mord text"><span class="mord"> m</span></span><span class="mord">Ω</span></span></span></span> ，在 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>500</mn><mtext> A</mtext></mrow><annotation encoding="application/x-tex">500\text{ A}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">500</span><span class="mord text"><span class="mord"> A</span></span></span></span></span> 下即形成：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">Δ</mi><msub><mi>V</mi><mi>R</mi></msub><mo>=</mo><mn>0.1</mn><mtext> V</mtext><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\Delta V_R=0.1\text{ V}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0077em;">R</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">0.1</span><span class="mord text"><span class="mord"> V</span></span><span class="mord">.</span></span></span></span></span>
 <p>對 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0.8</mn><mtext> V</mtext></mrow><annotation encoding="application/x-tex">0.8\text{ V}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">0.8</span><span class="mord text"><span class="mord"> V</span></span></span></span></span> 核心電壓而言，這已是 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>12.5</mn><mi mathvariant="normal">%</mi></mrow><annotation encoding="application/x-tex">12.5\%</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8056em;vertical-align:-0.0556em;"></span><span class="mord">12.5%</span></span></span></span> 的偏差。因此，問題不是「PSU 有沒有足夠瓦數」，而是能量能否以可接受的阻抗、噪聲與熱代價到達實際開關中的電晶體。</p>
-<h2>1.2 CPU 不會等待遠處的電抵達</h2>
+<h3>1.2 CPU 不會等待遠處的電抵達</h3>
 <p>原稿把 PSU 到 CPU 的傳播時間換算成多個處理器週期，進而推論 CPU 會等待供電訊號。這種描述不適用於穩態供電系統。</p>
 <p>在正常運作時，電源傳輸網路已經儲存能量並建立電磁場；CPU 的快速負載變化首先由最接近負載的去耦電容與局部 PDN 響應，而不是每次都從 PSU 重新「發送一批電子」。遠端調節器隨後補充局部儲能元件所釋放的能量。</p>
 <p>因此，真正需要分析的是頻率相依的供電阻抗：</p>
@@ -107,7 +111,7 @@ footer a{color:var(--accent)}
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>Z</mi><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">t</mi></mrow></msub><mo>=</mo><mfrac><mrow><mn>20</mn><mo>×</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>3</mn></mrow></msup></mrow><mn>100</mn></mfrac><mo>=</mo><mn>0.2</mn><mtext> m</mtext><mi mathvariant="normal">Ω</mi><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">Z_{\mathrm{target}} = \frac{20\times 10^{-3}}{100}
 =0.2\text{ m}\Omega.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">Z</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">target</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.1771em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.4911em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">100</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">20</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span><span class="mord"><span class="mord">0</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">3</span></span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">0.2</span><span class="mord text"><span class="mord"> m</span></span><span class="mord">Ω.</span></span></span></span></span>
 <p>DPCPS 的第一個工程目標，就是讓不同空間與頻率層級的供電阻抗共同維持在此安全包絡內。</p>
-<h2>1.3 負載瞬變的三個主要項</h2>
+<h3>1.3 負載瞬變的三個主要項</h3>
 <p>對快速電流變化，可用下式理解負載端電壓偏差的主要來源：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>V</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>≈</mo><mi mathvariant="normal">Δ</mi><mi>I</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><msub><mi>R</mi><mrow><mi mathvariant="normal">e</mi><mi mathvariant="normal">q</mi></mrow></msub><mo>+</mo><msub><mi>L</mi><mrow><mi mathvariant="normal">e</mi><mi mathvariant="normal">q</mi></mrow></msub><mfrac><mrow><mi>d</mi><mi>I</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>+</mo><mfrac><mn>1</mn><msub><mi>C</mi><mrow><mi mathvariant="normal">e</mi><mi mathvariant="normal">q</mi></mrow></msub></mfrac><msubsup><mo>∫</mo><mn>0</mn><mi>t</mi></msubsup><mi mathvariant="normal">Δ</mi><mi>I</mi><mo stretchy="false">(</mo><mi>τ</mi><mo stretchy="false">)</mo><mi>d</mi><mi>τ</mi><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\Delta V(t)
 \approx
@@ -123,7 +127,7 @@ L_{\mathrm{eq}}\frac{dI(t)}{dt}
 <li><strong>電容放電</strong>：當調節器尚未補足新負載時，去耦電容提供暫時電流，其電壓隨釋放電荷而下降。</li>
 </ol>
 <p>縮短功率回路、增加垂直供電路徑、降低封裝電感、合理配置不同容量與等效串聯參數的電容，通常比討論遠端電源的純傳播延遲更有工程意義。</p>
-<h2>1.4 不同時間尺度需要不同元件</h2>
+<h3>1.4 不同時間尺度需要不同元件</h3>
 <p>高效能計算的供電不能由單一控制器涵蓋全部時間尺度。可建立下列概念分層：</p>
 <table>
 <thead>
@@ -161,8 +165,8 @@ L_{\mathrm{eq}}\frac{dI(t)}{dt}
 </tbody></table>
 <p>因此，DPCPS 不追求一個能在 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5</mn><mtext> GHz</mtext></mrow><annotation encoding="application/x-tex">5\text{ GHz}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">5</span><span class="mord text"><span class="mord"> GHz</span></span></span></span></span> 下切換數百安培的神奇電源。它追求的是讓各層元件在正確時間尺度承擔正確功能。</p>
 <hr>
-<h1>第二章　DPCPS 的核心定義</h1>
-<h2>2.1 從「脈衝電源」改為「瞬態感知供電」</h2>
+<h2>第二章　DPCPS 的核心定義</h2>
+<h3>2.1 從「脈衝電源」改為「瞬態感知供電」</h3>
 <p>本文保留「脈衝」一詞所指向的動態直覺，但改變其工程含義。</p>
 <p>處理器電源域通常需要維持連續且受控的電壓。若把供電直接週期性關閉，再依計算時刻重新開啟，可能導致資料錯誤、時序失效、電磁干擾與轉換損耗。因此，DPCPS 所處理的脈衝不是把核心電壓變成大幅方波，而是下列事件：</p>
 <ul>
@@ -174,17 +178,17 @@ L_{\mathrm{eq}}\frac{dI(t)}{dt}
 <li>工作負載由通訊、記憶體受限切換到計算受限時的功率譜改變。</li>
 </ul>
 <p>因此更精確的名稱是：<strong>瞬態感知、負載預測、空間分布式的近負載供電系統</strong>。</p>
-<h2>2.2 「相位協同」的合法工程含義</h2>
+<h3>2.2 「相位協同」的合法工程含義</h3>
 <p>相位在本文中只保留三種經典電力電子含義：</p>
-<h3>2.2.1 多相交錯</h3>
+<h4>2.2.1 多相交錯</h4>
 <p>若一個降壓轉換器具有 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">N</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">N</span></span></span></span> 個相位，每相開關訊號錯開：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>ϕ</mi><mi>k</mi></msub><mo>=</mo><mfrac><mrow><mn>2</mn><mi>π</mi><mi>k</mi></mrow><mi>N</mi></mfrac><mo separator="true">,</mo><mspace width="2em"/><mi>k</mi><mo>=</mo><mn>0</mn><mo separator="true">,</mo><mn>1</mn><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><mi>N</mi><mo>−</mo><mn>1</mn><mo separator="true">,</mo></mrow><annotation encoding="application/x-tex">\phi_k = \frac{2\pi k}{N},\qquad k=0,1,\ldots,N-1,</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">ϕ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.0574em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3714em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">2</span><span class="mord mathnormal" style="margin-right:0.0359em;">π</span><span class="mord mathnormal" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:2em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0315em;">k</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">1</span><span class="mpunct">,</span></span></span></span></span>
 <p>則各相電感電流的紋波可部分抵消，並將等效紋波頻率提升至接近 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><msub><mi>f</mi><mi>s</mi></msub></mrow><annotation encoding="application/x-tex">Nf_s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 。這可降低單一元件承受的電流、輸出電容需求與熱點集中程度。</p>
-<h3>2.2.2 相位啟停</h3>
+<h4>2.2.2 相位啟停</h4>
 <p>在低負載下，維持全部相位切換會造成不必要的閘極驅動與開關損耗。控制器可以關閉部分相位；當負載上升時再依需求啟動更多相位。這稱為 phase shedding 或 phase adding。</p>
-<h3>2.2.3 空間相位配置</h3>
+<h4>2.2.3 空間相位配置</h4>
 <p>當多個調節器分布於封裝或中介層不同位置時，控制器可選擇最接近局部負載的調節器優先供電，以降低橫向電流、導通損耗與局部壓降。此處的「相位」是轉換器通道與時序配置，不是電子波函數相干干涉。</p>
-<h2>2.3 系統邊界</h2>
+<h3>2.3 系統邊界</h3>
 <p>DPCPS 不主張：</p>
 <ul>
 <li>供電節點能創造違反能量守恆的場強增益；</li>
@@ -196,8 +200,8 @@ L_{\mathrm{eq}}\frac{dI(t)}{dt}
 </ul>
 <p>DPCPS 主張的是較窄但可驗證的命題：更合理的空間配置、阻抗設計、相位管理、負載預測與跨層控制，可能減少供電護欄、轉換損耗與限制性電壓事件。</p>
 <hr>
-<h1>第三章　五層分布式供電架構</h1>
-<h2>3.1 L0：系統或機櫃級能源匯流排</h2>
+<h2>第三章　五層分布式供電架構</h2>
+<h3>3.1 L0：系統或機櫃級能源匯流排</h3>
 <p>L0 負責高效率、長距離或大功率的能量傳輸。依場景可採用：</p>
 <ul>
 <li>消費型系統中的 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>12</mn><mtext> V</mtext></mrow><annotation encoding="application/x-tex">12\text{ V}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">12</span><span class="mord text"><span class="mord"> V</span></span></span></span></span> 匯流排；</li>
@@ -210,7 +214,7 @@ L_{\mathrm{eq}}\frac{dI(t)}{dt}
 <p>進而降低導通損耗：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>P</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">d</mi></mrow></msub><mo>=</mo><msubsup><mi>I</mi><mrow><mi mathvariant="normal">b</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">s</mi></mrow><mn>2</mn></msubsup><mi>R</mi><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">P_{\mathrm{cond}}=I_{\mathrm{bus}}^2R.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">cond</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.1111em;vertical-align:-0.247em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-2.453em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">bus</span></span></span></span></span><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.247em;"><span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord">.</span></span></span></span></span>
 <p>L0 不需要知道單一核心的瞬時活動；它應維持總能量、備援與安全邊界。</p>
-<h2>3.2 L1：區域級電壓轉換</h2>
+<h3>3.2 L1：區域級電壓轉換</h3>
 <p>L1 將高壓匯流排轉換成適合板級或封裝級再轉換的中間電壓。其設計重點包括：</p>
 <ul>
 <li>高轉換效率；</li>
@@ -221,7 +225,7 @@ L_{\mathrm{eq}}\frac{dI(t)}{dt}
 <li>與能源儲存元件整合。</li>
 </ul>
 <p>在高功率加速卡中，L1 可位於板卡邊緣；在機櫃級設計中，也可由共享電源架或母線轉換模組承擔。</p>
-<h2>3.3 L2：近負載多相調節器</h2>
+<h3>3.3 L2：近負載多相調節器</h3>
 <p>L2 是 DPCPS 的主要空間分布層。它可部署於：</p>
 <ul>
 <li>CPU 或 GPU 插槽周邊；</li>
@@ -240,7 +244,7 @@ L_{\mathrm{eq}}\frac{dI(t)}{dt}
 <p>控制器依負載、效率與溫度選擇啟用子集：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi mathvariant="script">A</mi><mi>i</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>⊆</mo><msub><mi mathvariant="script">R</mi><mi>i</mi></msub><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\mathcal{A}_i(t)\subseteq\mathcal{R}_i.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathcal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">⊆</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathcal">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
 <p>這使供電系統從固定相數轉向可重組相數，並允許局部故障降級。</p>
-<h2>3.4 L3：局部能量緩衝</h2>
+<h3>3.4 L3：局部能量緩衝</h3>
 <p>L3 由不同尺度的去耦電容、封裝電容、矽電容、可能的超級電容或其他儲能元件構成。其核心任務是填補調節器控制迴路來不及響應的時間窗口。</p>
 <p>電容可提供的暫態電流與允許壓降近似滿足：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">q</mi></mrow></msub><mo>≥</mo><mfrac><mrow><mi mathvariant="normal">Δ</mi><mi>I</mi><mtext> </mtext><mi mathvariant="normal">Δ</mi><mi>t</mi></mrow><mrow><mi mathvariant="normal">Δ</mi><msub><mi>V</mi><mrow><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">w</mi></mrow></msub></mrow></mfrac><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">C_{\mathrm{req}}
@@ -252,7 +256,7 @@ L_{\mathrm{eq}}\frac{dI(t)}{dt}
 \frac{50\times 10^{-6}}{20\times 10^{-3}}
 =2.5\text{ mF}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">req</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≥</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.2604em;vertical-align:-0.7693em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.4911em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">20</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span><span class="mord"><span class="mord">0</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7401em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">3</span></span></span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">50</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span><span class="mord"><span class="mord">0</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">6</span></span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">2.5</span><span class="mord text"><span class="mord"> mF</span></span><span class="mord">.</span></span></span></span></span>
 <p>實際設計還必須考慮有效電容衰減、ESR、ESL、溫度、偏壓與封裝位置，因此不能只依名目容量選型。</p>
-<h2>3.5 L4：晶片內功率管理</h2>
+<h3>3.5 L4：晶片內功率管理</h3>
 <p>L4 包含：</p>
 <ul>
 <li>動態電壓頻率調整；</li>
@@ -266,8 +270,8 @@ L_{\mathrm{eq}}\frac{dI(t)}{dt}
 </ul>
 <p>DPCPS 的關鍵不是取代 L4，而是讓 L2、L3 與 L4 交換更有意義的訊號。例如，晶片可提前通告某個張量運算陣列即將喚醒，板級控制器則預先增加有效相數或提高局部能量裕度。</p>
 <hr>
-<h1>第四章　數學與控制模型</h1>
-<h2>4.1 多節點功率流</h2>
+<h2>第四章　數學與控制模型</h2>
+<h3>4.1 多節點功率流</h3>
 <p>設系統包含 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi></mrow><annotation encoding="application/x-tex">M</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span></span></span></span> 個調節節點與 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">N</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">N</span></span></span></span> 個負載區域。令：</p>
 <ul>
 <li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>p</mi><mi>i</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">p_i(t)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">p</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span></span></span></span> ：第 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>i</mi></mrow><annotation encoding="application/x-tex">i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6595em;"></span><span class="mord mathnormal">i</span></span></span></span> 個負載功率；</li>
@@ -289,7 +293,7 @@ I_{ji}^2(t)r_{ji}.</annotation></semantics></math></span><span class="katex-html
 \sum_{j=1}^{M}
 \left(\frac{x_j(t)}{\eta_j(x_j(t))}-x_j(t)\right).</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight" style="margin-right:0.0139em;">conv</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:3.2421em;vertical-align:-1.4138em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8283em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.109em;">M</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.4138em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">(</span></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">η</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">))</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9721em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">)</span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">.</span></span></span></span></span>
 <p>DPCPS 的空間調度目標之一，是在滿足電壓與電流限制下，讓靠近負載且處於高效率區間的節點承擔較多功率。</p>
-<h2>4.2 多目標最佳化</h2>
+<h3>4.2 多目標最佳化</h3>
 <p>可定義控制代價：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>J</mi><mo>=</mo><msubsup><mo>∫</mo><mn>0</mn><mi>T</mi></msubsup><mrow><mo fence="true">[</mo><mi>α</mi><msub><mi>P</mi><mrow><mi mathvariant="normal">l</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">s</mi></mrow></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>+</mo><mi>β</mi><mi mathvariant="normal">∥</mi><mi>V</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>−</mo><msub><mi>V</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">f</mi></mrow></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><msubsup><mi mathvariant="normal">∥</mi><mn>2</mn><mn>2</mn></msubsup><mo>+</mo><mi>γ</mi><mi mathvariant="normal">∥</mi><mi mathvariant="normal">∇</mi><mi>T</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><msubsup><mi mathvariant="normal">∥</mi><mn>2</mn><mn>2</mn></msubsup><mo>+</mo><mi>δ</mi><msub><mi>C</mi><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">w</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">h</mi></mrow></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>+</mo><mi>ϵ</mi><msub><mi>C</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">k</mi></mrow></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo fence="true">]</mo></mrow><mi>d</mi><mi>t</mi><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">J
 =
@@ -314,7 +318,7 @@ I_{ji}^2(t)r_{ji}.</annotation></semantics></math></span><span class="katex-html
 <li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">k</mi></mrow></msub></mrow><annotation encoding="application/x-tex">C_{\mathrm{risk}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">risk</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> ：穩定裕度、元件壽命與故障風險懲罰。</li>
 </ul>
 <p>控制問題不是單純最小化平均瓦數，而是在效率、瞬態、熱、可靠性與性能之間尋找安全可行解。</p>
-<h2>4.3 預測負載</h2>
+<h3>4.3 預測負載</h3>
 <p>令控制器可觀測狀態為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>s</mi><mi>t</mi></msub><mo>=</mo><mrow><mo fence="true">[</mo><msub><mi>I</mi><mi>t</mi></msub><mo separator="true">,</mo><msub><mi>V</mi><mi>t</mi></msub><mo separator="true">,</mo><msub><mi>T</mi><mi>t</mi></msub><mo separator="true">,</mo><msub><mi>f</mi><mi>t</mi></msub><mo separator="true">,</mo><msub><mi>u</mi><mi>t</mi></msub><mo separator="true">,</mo><msub><mi>q</mi><mi>t</mi></msub><mo separator="true">,</mo><msub><mi>h</mi><mi>t</mi></msub><mo fence="true">]</mo></mrow><mo separator="true">,</mo></mrow><annotation encoding="application/x-tex">s_t=
 \left[
@@ -327,7 +331,7 @@ I_t,V_t,T_t,f_t,u_t,q_t,h_t
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><munder><mrow><mi>min</mi><mo>⁡</mo></mrow><msub><mi>a</mi><mrow><mi>t</mi><mo>:</mo><mi>t</mi><mo>+</mo><mi>H</mi><mo>−</mo><mn>1</mn></mrow></msub></munder><mi>J</mi></mrow><annotation encoding="application/x-tex">\min_{a_{t:t+H-1}} J</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5253em;vertical-align:-0.842em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.6679em;"><span style="top:-2.4em;margin-left:0em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathnormal mtight">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3567em;margin-left:0em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">t</span><span class="mrel mtight">:</span><span class="mord mathnormal mtight">t</span><span class="mbin mtight">+</span><span class="mord mathnormal mtight" style="margin-right:0.0813em;">H</span><span class="mbin mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2028em;"><span></span></span></span></span></span></span></span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span><span class="mop">min</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.842em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0962em;">J</span></span></span></span></span>
 <p>並僅執行第一個安全動作，之後重新量測與滾動最佳化。</p>
 <p>預測可以降低控制延遲的影響，但不應被當成無條件可信。當模型不確定性超過門檻時，系統應回退到保守的規則控制器。</p>
-<h2>4.4 效率曲線與相位啟停</h2>
+<h3>4.4 效率曲線與相位啟停</h3>
 <p>對多相轉換器，啟用相數 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">n</span></span></span></span> 不宜固定。可將每相損耗簡化為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>P</mi><mi>ϕ</mi></msub><mo>=</mo><msub><mi>P</mi><mrow><mi mathvariant="normal">g</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">e</mi></mrow></msub><mo>+</mo><msub><mi>P</mi><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">w</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">h</mi></mrow></msub><mo>+</mo><msubsup><mi>I</mi><mi>ϕ</mi><mn>2</mn></msubsup><msub><mi>R</mi><mi>ϕ</mi></msub><mo>+</mo><msub><mi>P</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">g</mi></mrow></msub><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">P_{\phi}
 =
@@ -344,10 +348,10 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 \arg\min_n P_{\mathrm{loss}}(n;P,T,V).</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7387em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">∗</span></span></span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.45em;vertical-align:-0.7em;"></span><span class="mop">ar<span style="margin-right:0.0139em;">g</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.6679em;"><span style="top:-2.4em;margin-left:0em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span><span class="mop">min</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">loss</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">n</span><span class="mpunct">;</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mclose">)</span><span class="mord">.</span></span></span></span></span>
 <p>這是原始「分布式脈衝節點」最接近現有工程且最值得發展的形式之一。</p>
 <hr>
-<h1>第五章　預測式功率協調器</h1>
-<h2>5.1 控制器分層</h2>
+<h2>第五章　預測式功率協調器</h2>
+<h3>5.1 控制器分層</h3>
 <p>DPCPS 控制器分為三層：</p>
-<h3>快速保護層</h3>
+<h4>快速保護層</h4>
 <p>由類比或高速數位電路實現，處理：</p>
 <ul>
 <li>過流；</li>
@@ -358,7 +362,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>熱失控。</li>
 </ul>
 <p>此層不依賴 AI，並擁有最高控制權。</p>
-<h3>確定性調節層</h3>
+<h4>確定性調節層</h4>
 <p>由數位控制器、PID、狀態空間控制或模型預測控制實現，處理：</p>
 <ul>
 <li>參考電壓追蹤；</li>
@@ -368,7 +372,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>穩定裕度；</li>
 <li>負載階躍響應。</li>
 </ul>
-<h3>預測與系統協同層</h3>
+<h4>預測與系統協同層</h4>
 <p>利用工作負載與系統遙測執行較慢速決策：</p>
 <ul>
 <li>預測即將到來的功率階段；</li>
@@ -377,7 +381,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>選擇效率優先、性能優先或可靠性優先策略；</li>
 <li>在資料中心層級平滑多節點同步功率突波。</li>
 </ul>
-<h2>5.2 為何不直接使用線上 DQN 控制電壓</h2>
+<h3>5.2 為何不直接使用線上 DQN 控制電壓</h3>
 <p>原稿建議以深度 Q 網路在線調整相位。對安全關鍵的電壓調節器而言，未受約束的探索可能造成危險動作，因此不宜讓一般強化學習直接控制功率開關。</p>
 <p>較安全的方案是：</p>
 <ol>
@@ -391,7 +395,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>a</mi><mi>t</mi></msub><mo>=</mo><mo stretchy="false">[</mo><msub><mi>n</mi><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">e</mi></mrow></msub><mo separator="true">,</mo><msub><mi>V</mi><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">t</mi></mrow></msub><mo separator="true">,</mo><msub><mi>P</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">p</mi></mrow></msub><mo separator="true">,</mo><msub><mi>m</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">e</mi></mrow></msub><mo stretchy="false">]</mo><mo separator="true">,</mo></mrow><annotation encoding="application/x-tex">a_t=
 [n_{\mathrm{phase}},V_{\mathrm{target}},P_{\mathrm{cap}},m_{\mathrm{mode}}],</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">t</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mopen">[</span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">phase</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">target</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">cap</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">m</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">mode</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">]</span><span class="mpunct">,</span></span></span></span></span>
 <p>而不是直接輸出每一個功率電晶體的閘極波形。</p>
-<h2>5.3 工作負載提示介面</h2>
+<h3>5.3 工作負載提示介面</h3>
 <p>若要使預測真正優於純回授控制，硬體與軟體可交換有限度提示：</p>
 <ul>
 <li>未來數十微秒內預計啟用的執行單元比例；</li>
@@ -402,7 +406,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>可延遲或可降速工作的優先級。</li>
 </ul>
 <p>提示不必暴露完整指令流，也不需要預測每一個時鐘週期。它只需在調節器可響應的時間尺度上提供比純電流感測更早的訊號。</p>
-<h2>5.4 安全狀態機</h2>
+<h3>5.4 安全狀態機</h3>
 <p>DPCPS 至少應定義：</p>
 <ul>
 <li><strong>S0 保守模式</strong>：所有必要相位啟用，固定安全電壓；</li>
@@ -413,8 +417,8 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 </ul>
 <p>任何 AI 模組失效時，系統必須能獨立回到 S0 或 S3。</p>
 <hr>
-<h1>第六章　可能的硬體實作路徑</h1>
-<h2>6.1 路徑 A：板級分布式近負載模組</h2>
+<h2>第六章　可能的硬體實作路徑</h2>
+<h3>6.1 路徑 A：板級分布式近負載模組</h3>
 <p>第一階段不必改造處理器封裝，可在 FPGA、加速卡或自製測試板上部署多個板級 PoL 模組。</p>
 <p>建議原型：</p>
 <ul>
@@ -436,7 +440,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>故障隔離；</li>
 <li>溫度分布。</li>
 </ul>
-<h2>6.2 路徑 B：垂直或背面供電</h2>
+<h3>6.2 路徑 B：垂直或背面供電</h3>
 <p>當功率密度進一步上升，板級橫向輸電可能成為瓶頸。可研究：</p>
 <ul>
 <li>封裝背面的電壓調節器；</li>
@@ -447,7 +451,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>高壓直達封裝後再局部降壓。</li>
 </ul>
 <p>垂直供電的主要價值是縮短高電流低電壓路徑，而不是縮短「電從 PSU 出發的等待時間」。它同時帶來新的熱、製造、機械應力、磁性元件與維修挑戰。</p>
-<h2>6.3 路徑 C：晶片內整合調節器</h2>
+<h3>6.3 路徑 C：晶片內整合調節器</h3>
 <p>完全整合或部分整合的電壓調節器可提供細粒度電源域與較快響應，但也面臨：</p>
 <ul>
 <li>轉換效率與晶片面積權衡；</li>
@@ -458,7 +462,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>不同負載區間效率變化。</li>
 </ul>
 <p>因此，DPCPS 不假設「越靠近一定越好」。每一級轉換位置都必須共同最佳化功率密度、損耗、散熱與成本。</p>
-<h2>6.4 路徑 D：機櫃級功率協同</h2>
+<h3>6.4 路徑 D：機櫃級功率協同</h3>
 <p>多張 GPU 同步執行 collective communication、checkpoint 或訓練階段切換時，可能形成機櫃級快速負載變化。DPCPS 可向上擴展為：</p>
 <ul>
 <li>機櫃級電池／超級電容緩衝；</li>
@@ -470,8 +474,8 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 </ul>
 <p>這一層的「分布式脈衝」是工作負載與能源緩衝的協調，而不是晶片時鐘相位控制。</p>
 <hr>
-<h1>第七章　驗證計畫與證據帳本</h1>
-<h2>7.1 驗證原則</h2>
+<h2>第七章　驗證計畫與證據帳本</h2>
+<h3>7.1 驗證原則</h3>
 <p>DPCPS 必須以「供電指標 → 晶片狀態 → 應用性能」的因果鏈驗證，不能只量測某一點溫度後推論整體算力改善。</p>
 <p>所有結果應標記為：</p>
 <ul>
@@ -481,8 +485,8 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li><strong>T</strong>：設計目標；</li>
 <li><strong>H</strong>：待驗證假說。</li>
 </ul>
-<h2>7.2 V0：模型與仿真</h2>
-<h3>電氣模型</h3>
+<h3>7.2 V0：模型與仿真</h3>
+<h4>電氣模型</h4>
 <ul>
 <li>開關轉換器 SPICE；</li>
 <li>封裝與主板 S 參數；</li>
@@ -492,19 +496,19 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>穩定性與 Middlebrook 類分析；</li>
 <li>蒙地卡羅元件容差。</li>
 </ul>
-<h3>熱模型</h3>
+<h4>熱模型</h4>
 <ul>
 <li>調節器與處理器共熱；</li>
 <li>板上熱點與風道；</li>
 <li>垂直堆疊中的熱阻；</li>
 <li>不同相位啟用策略的溫度分布。</li>
 </ul>
-<h3>驗收</h3>
+<h4>驗收</h4>
 <ul>
 <li>模型必須由阻抗分析儀、示波器與熱像量測校準；</li>
 <li>不接受只使用理想電容、理想開關與固定效率的結論。</li>
 </ul>
-<h2>7.3 V1：電子負載原型</h2>
+<h3>7.3 V1：電子負載原型</h3>
 <p>使用可重現的電流階躍：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>I</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><msub><mi>I</mi><mn>0</mn></msub><mo>+</mo><mi mathvariant="normal">Δ</mi><mi>I</mi><mtext> </mtext><mi>u</mi><mo stretchy="false">(</mo><mi>t</mi><mo>−</mo><msub><mi>t</mi><mn>0</mn></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">I(t)=I_0+\Delta I\,u(t-t_0)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">0</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">u</span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">0</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span></span>
 <p>測量：</p>
@@ -525,7 +529,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>分布式 VRM 加預測／相位啟停控制。</li>
 </ol>
 <p>如此才能區分「多放幾顆元件」與「控制架構」本身的貢獻。</p>
-<h2>7.4 V2：FPGA 工作負載</h2>
+<h3>7.4 V2：FPGA 工作負載</h3>
 <p>FPGA 可建立可控制的負載模式：</p>
 <ul>
 <li>同步切換大量邏輯；</li>
@@ -542,7 +546,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 \frac{J_{\mathrm{feedback}}-J_{\mathrm{predictive}}}
 {J_{\mathrm{feedback}}}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">prediction</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.1963em;vertical-align:-0.836em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0962em;">J</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0962em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">feedback</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0962em;">J</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0962em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">feedback</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0962em;">J</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0962em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">predictive</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.836em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mord">.</span></span></span></span></span>
 <p>若 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>G</mi><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">n</mi></mrow></msub><mo>≤</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">G_{\mathrm{prediction}}\le 0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">prediction</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span></span></span></span> ，代表預測控制沒有帶來淨收益。</p>
-<h2>7.5 V3：真實加速器的非侵入式觀測</h2>
+<h3>7.5 V3：真實加速器的非侵入式觀測</h3>
 <p>在無法修改 GPU 核心供電的情況下，可先研究：</p>
 <ul>
 <li>板卡輸入功率；</li>
@@ -553,7 +557,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>不同功率上限與 undervolting 策略。</li>
 </ul>
 <p>此階段的目標是建立負載預測模型與功率譜，不應宣稱已驗證封裝級 DPCPS。</p>
-<h2>7.6 V4：封裝級研究載具</h2>
+<h3>7.6 V4：封裝級研究載具</h3>
 <p>最終需要與晶片、封裝或功率電子研究單位合作，製作：</p>
 <ul>
 <li>多區域 dummy die；</li>
@@ -564,7 +568,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <li>故障注入。</li>
 </ul>
 <p>只有到這一階段，才能真正判斷 DPCPS 在高電流密度封裝中的價值。</p>
-<h2>7.7 建議的量化門檻</h2>
+<h3>7.7 建議的量化門檻</h3>
 <p>下列不是成果，而是可供原型設定的初始目標：</p>
 <table>
 <thead>
@@ -611,8 +615,8 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 </tr>
 </tbody></table>
 <hr>
-<h1>第八章　熱、性能與經濟效益的正確因果鏈</h1>
-<h2>8.1 供電改善不等於邏輯功耗消失</h2>
+<h2>第八章　熱、性能與經濟效益的正確因果鏈</h2>
+<h3>8.1 供電改善不等於邏輯功耗消失</h3>
 <p>CMOS 動態功耗常以：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>P</mi><mrow><mi mathvariant="normal">d</mi><mi mathvariant="normal">y</mi><mi mathvariant="normal">n</mi></mrow></msub><mo>=</mo><mi>α</mi><mi>C</mi><msup><mi>V</mi><mn>2</mn></msup><mi>f</mi></mrow><annotation encoding="application/x-tex">P_{\mathrm{dyn}}=\alpha C V^2 f</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">dyn</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0585em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span></span></span></span></span>
 <p>近似，其中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi></mrow><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span></span></span></span> 是切換活動率。若運算量、電壓與頻率完全相同，僅改變外部供電拓撲不會讓此項憑空消失。</p>
@@ -635,7 +639,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 \rightarrow
 \text{較低熱負載或較高有效性能}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">更低</span><span class="mord"> PDN </span><span class="mord cjk_fallback">阻抗／更佳控制</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">較小電壓護欄或轉換損耗</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">較低總輸入功率或較少降頻</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">較低熱負載或較高有效性能</span></span><span class="mord">.</span></span></span></span></span>
 <p>每一個箭頭都需要實驗證據。</p>
-<h2>8.2 溫度效益的來源</h2>
+<h3>8.2 溫度效益的來源</h3>
 <p>若供電轉換損耗由 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>P</mi><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">R</mi><mo separator="true">,</mo><mn>0</mn></mrow></msub></mrow><annotation encoding="application/x-tex">P_{\mathrm{VR,0}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">VR</span><span class="mpunct mtight">,</span><span class="mord mathrm mtight">0</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> 降至 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>P</mi><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">R</mi><mo separator="true">,</mo><mn>1</mn></mrow></msub></mrow><annotation encoding="application/x-tex">P_{\mathrm{VR,1}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">VR</span><span class="mpunct mtight">,</span><span class="mord mathrm mtight">1</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> ，熱負載差為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">Δ</mi><msub><mi>P</mi><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow></msub><mo>=</mo><msub><mi>P</mi><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">R</mi><mo separator="true">,</mo><mn>0</mn></mrow></msub><mo>−</mo><msub><mi>P</mi><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">R</mi><mo separator="true">,</mo><mn>1</mn></mrow></msub><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\Delta P_{\mathrm{thermal}}
 =P_{\mathrm{VR,0}}-P_{\mathrm{VR,1}}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">thermal</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">VR</span><span class="mpunct mtight">,</span><span class="mord mathrm mtight">0</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">VR</span><span class="mpunct mtight">,</span><span class="mord mathrm mtight">1</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
@@ -653,7 +657,7 @@ P_{\mathrm{mag}}.</annotation></semantics></math></span><span class="katex-html"
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>E</mi><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">k</mi></mrow></msub><mo>=</mo><msubsup><mo>∫</mo><mn>0</mn><msub><mi>T</mi><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">k</mi></mrow></msub></msubsup><msub><mi>P</mi><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">y</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">m</mi></mrow></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mi>d</mi><mi>t</mi><mo separator="true">,</mo></mrow><annotation encoding="application/x-tex">E_{\mathrm{task}}
 =\int_0^{T_{\mathrm{task}}}P_{\mathrm{system}}(t)dt,</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0576em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">task</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.5032em;vertical-align:-0.9119em;"></span><span class="mop"><span class="mop op-symbol large-op" style="margin-right:0.4445em;position:relative;top:-0.0011em;">∫</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.5912em;"><span style="top:-1.7881em;margin-left:-0.4445em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">0</span></span></span><span style="top:-3.8129em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3488em;margin-left:-0.1389em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">task</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1512em;"><span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9119em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">system</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mord mathnormal">d</span><span class="mord mathnormal">t</span><span class="mpunct">,</span></span></span></span></span>
 <p>而不是只比較瞬時峰值瓦數。</p>
-<h2>8.3 資料中心效益不能只由晶片溫度外推</h2>
+<h3>8.3 資料中心效益不能只由晶片溫度外推</h3>
 <p>PUE 定義為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mrow><mi mathvariant="normal">P</mi><mi mathvariant="normal">U</mi><mi mathvariant="normal">E</mi></mrow><mo>=</mo><mfrac><msub><mi>P</mi><mrow><mi mathvariant="normal">f</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">y</mi></mrow></msub><msub><mi>P</mi><mrow><mi mathvariant="normal">I</mi><mi mathvariant="normal">T</mi></mrow></msub></mfrac><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\mathrm{PUE}
 =\frac{P_{\mathrm{facility}}}{P_{\mathrm{IT}}}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord"><span class="mord mathrm">PUE</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.1963em;vertical-align:-0.836em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">IT</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight" style="margin-right:0.0139em;">facility</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.836em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mord">.</span></span></span></span></span>
@@ -675,7 +679,7 @@ C_{\mathrm{hardware}}
 <li>更換高效率 PSU／VRM；</li>
 <li>DPCPS 全方案。</li>
 </ul>
-<h2>8.4 性能收益的合法來源</h2>
+<h3>8.4 性能收益的合法來源</h3>
 <p>電源系統本身不改變指令依賴，因此不能直接提高 IPC。性能改善只能經由下列機制：</p>
 <ul>
 <li>減少電壓 droop 導致的 clock stretching；</li>
@@ -696,8 +700,8 @@ C_{\mathrm{hardware}}
 \Delta \mathrm{Perf}_{\mathrm{scheduling}},</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord mathrm" style="margin-right:0.0778em;">Perf</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord"><span class="mord mathrm" style="margin-right:0.0778em;">Perf</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">droop</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8444em;vertical-align:-0.15em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord"><span class="mord mathrm" style="margin-right:0.0778em;">Perf</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">thermal</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord"><span class="mord mathrm" style="margin-right:0.0778em;">Perf</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">budget</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord"><span class="mord mathrm" style="margin-right:0.0778em;">Perf</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight" style="margin-right:0.0139em;">scheduling</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span></span></span></span></span>
 <p>並透過對照實驗分解，而不是將所有改善歸因於「相位匹配」。</p>
 <hr>
-<h1>第九章　與既有技術的關係</h1>
-<h2>9.1 DPCPS 不是從零開始</h2>
+<h2>第九章　與既有技術的關係</h2>
+<h3>9.1 DPCPS 不是從零開始</h3>
 <p>DPCPS 與下列既有方向高度相關：</p>
 <ul>
 <li>多相 VRM；</li>
@@ -713,7 +717,7 @@ C_{\mathrm{hardware}}
 <li>data-center energy storage 與 power capping。</li>
 </ul>
 <p>其潛在新意不在於宣稱「第一次把電源靠近晶片」，而在於嘗試把這些技術統一為跨時間尺度、跨空間位置、跨硬體軟體層的協同框架。</p>
-<h2>9.2 與整合式電壓調節器的差異</h2>
+<h3>9.2 與整合式電壓調節器的差異</h3>
 <p>整合式調節器強調將轉換功能放入封裝或晶片，以縮短供電路徑與提高電源域細粒度。DPCPS 則把整合式調節器視為可選節點之一，並進一步研究：</p>
 <ul>
 <li>多個節點如何分工；</li>
@@ -722,19 +726,19 @@ C_{\mathrm{hardware}}
 <li>故障時如何重組；</li>
 <li>板、封裝與晶片之間如何交換功率狀態。</li>
 </ul>
-<h2>9.3 與垂直供電的差異</h2>
+<h3>9.3 與垂直供電的差異</h3>
 <p>垂直供電主要改變能量進入封裝或晶片的幾何路徑。DPCPS 在此基礎上再加入負載感知控制與區域化功率分配。兩者可組合，但 DPCPS 並不以垂直供電為必要條件。</p>
-<h2>9.4 與量子控制的區隔</h2>
+<h3>9.4 與量子控制的區隔</h3>
 <p>超導、離子阱或其他量子位元確實需要精密的微波、射頻或雷射相位控制，但該相位描述的是量子態操控訊號；處理器電源多相轉換器的相位描述的是功率開關時序。兩者可共享部分控制、時鐘或校準方法論，但不能因名稱相同就視為可直接移植的同一技術。</p>
 <p>因此，量子計算不再列為 DPCPS 的直接性能論證。未來若研究低雜訊偏壓、低溫電源或量子控制電子學，應另立獨立子計畫。</p>
 <hr>
-<h1>第十章　可檢驗研究假說</h1>
+<h2>第十章　可檢驗研究假說</h2>
 <p>本文將核心主張收斂為下列假說。</p>
-<h2>H1：空間局部性假說</h2>
+<h3>H1：空間局部性假說</h3>
 <p>在相同元件面積與成本約束下，將部分調節與儲能元件更接近局部負載，可降低關鍵頻段的 PDN 阻抗與負載階躍電壓偏差。</p>
-<h2>H2：負載感知相數假說</h2>
+<h3>H2：負載感知相數假說</h3>
 <p>相較於固定相數，多相轉換器依負載與溫度動態啟停相位，可提高中低負載效率，且不顯著惡化輸出紋波與瞬態響應。</p>
-<h2>H3：預測提示假說</h2>
+<h3>H3：預測提示假說</h3>
 <p>若工作負載提示的預測提前量大於控制與致動延遲，且預測誤差低於門檻，預測式控制可比純回授控制降低電壓偏差或安全護欄。</p>
 <p>可表為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>τ</mi><mrow><mi mathvariant="normal">l</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">k</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">d</mi></mrow></msub><mo>&gt;</mo><msub><mi>τ</mi><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">e</mi></mrow></msub><mo>+</mo><msub><mi>τ</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">p</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">e</mi></mrow></msub><mo>+</mo><msub><mi>τ</mi><mrow><mi mathvariant="normal">a</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">e</mi></mrow></msub><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\tau_{\mathrm{lookahead}}
@@ -744,29 +748,29 @@ C_{\mathrm{hardware}}
 \tau_{\mathrm{compute}}
 +
 \tau_{\mathrm{actuate}}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6891em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1132em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">lookahead</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1132em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">sense</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.1132em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">compute</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.1132em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">actuate</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
-<h2>H4：可重組供電假說</h2>
+<h3>H4：可重組供電假說</h3>
 <p>當局部調節節點具備故障隔離與電流重分配能力時，系統可在單節點失效後維持降級服務，而不需立即關機。</p>
-<h2>H5：跨層能源假說</h2>
+<h3>H5：跨層能源假說</h3>
 <p>將應用排程、晶片功率狀態與物理供電控制共同最佳化，可降低單位任務總能量；但收益取決於工作負載可預測性與軟硬體介面成本。</p>
-<h2>H6：熱協同假說</h2>
+<h3>H6：熱協同假說</h3>
 <p>分散調節器可能降低單點 VRM 熱點，但也可能增加封裝周邊總熱密度。只有電熱共同最佳化，才能判斷分散化是否優於集中化。</p>
 <p>這些假說允許結果為否。若實驗證明分散化的額外開關、磁性元件與控制成本高於局部性收益，DPCPS 應縮小適用範圍，而不是改寫評量標準。</p>
 <hr>
-<h1>第十一章　風險與限制</h1>
-<h2>11.1 穩定性風險</h2>
+<h2>第十一章　風險與限制</h2>
+<h3>11.1 穩定性風險</h3>
 <p>多個調節器並聯可能形成控制迴路互相作用、電流搶奪、低頻振盪或負阻抗效應。任何並聯架構都必須完成小訊號與大訊號穩定性分析。</p>
-<h2>11.2 EMI 風險</h2>
+<h3>11.2 EMI 風險</h3>
 <p>增加轉換器數量與開關節點可能提高傳導與輻射干擾。相位交錯可降低部分紋波，但也可能在其他頻段形成尖峰。必須以頻譜與實際法規量測判定。</p>
-<h2>11.3 熱與面積成本</h2>
+<h3>11.3 熱與面積成本</h3>
 <p>調節器靠近晶片可降低電氣路徑，卻會把功率轉換損耗放進最難散熱的區域。對 3D 封裝而言，這可能比板級損耗更嚴重。</p>
-<h2>11.4 預測失誤</h2>
+<h3>11.4 預測失誤</h3>
 <p>若預測模型低估負載，可能增加 droop；若長期高估，則喪失效率。控制器必須對預測誤差有明確安全裕度。</p>
-<h2>11.5 軟硬體介面成本</h2>
+<h3>11.5 軟硬體介面成本</h3>
 <p>工作負載提示需要處理器、韌體、作業系統、驅動程式與電源控制器合作。若介面過度複雜，部署成本可能高於收益。</p>
-<h2>11.6 安全與攻擊面</h2>
+<h3>11.6 安全與攻擊面</h3>
 <p>若軟體可影響供電策略，惡意工作負載可能誘發功率震盪、熱點或壽命消耗。提示介面必須驗證、限速、隔離並可被硬體保護層覆寫。</p>
 <hr>
-<h1>第十二章　結論</h1>
+<h2>第十二章　結論</h2>
 <p>DPCPS 的有效核心可以用下式概括：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mtext>高效率總線</mtext><mo>+</mo><mtext>近負載轉換</mtext><mo>+</mo><mtext>分層儲能</mtext><mo>+</mo><mtext>多相協同</mtext><mo>+</mo><mtext>安全預測控制</mtext></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
 \text{高效率總線}
@@ -783,7 +787,7 @@ C_{\mathrm{hardware}}
 <p>原始命題「電源應更接近負載，並理解計算何時需要能量」仍然成立；但其正確實作不是讓遠方的電更快抵達，而是讓正確層級的能量已經位於正確位置，並在負載變化前後以可控、可量測、可回退的方式協同。</p>
 <p>本文的下一步不是宣告革命完成，而是製作一個可重現的多節點 PoL 原型，公開電路、模型、負載波形、量測方法、失敗結果與證據帳本。只有當它在等成本、等安全限制的基線下持續改善供電完整性或單位任務能量，DPCPS 才能從概念架構成為工程技術。</p>
 <hr>
-<h1>附錄 A　原始主張的處置表</h1>
+<h2>附錄 A　原始主張的處置表</h2>
 <table>
 <thead>
 <tr>
@@ -841,10 +845,10 @@ C_{\mathrm{hardware}}
 </tr>
 </tbody></table>
 <hr>
-<h1>附錄 B　建議的最小可行原型</h1>
-<h2>B.1 研究問題</h2>
+<h2>附錄 B　建議的最小可行原型</h2>
+<h3>B.1 研究問題</h3>
 <p>在相同總 MOSFET 面積、磁性元件體積與輸出電容成本下，兩個空間分布式 PoL 模組是否比單一集中式模組具有更好的負載階躍響應或部分負載效率？</p>
-<h2>B.2 基本配置</h2>
+<h3>B.2 基本配置</h3>
 <ul>
 <li>輸入： <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>12</mn><mtext> V</mtext></mrow><annotation encoding="application/x-tex">12\text{ V}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">12</span><span class="mord text"><span class="mord"> V</span></span></span></span></span> ；</li>
 <li>輸出： <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1.0</mn><mtext> V</mtext></mrow><annotation encoding="application/x-tex">1.0\text{ V}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">1.0</span><span class="mord text"><span class="mord"> V</span></span></span></span></span> ；</li>
@@ -855,7 +859,7 @@ C_{\mathrm{hardware}}
 <li>感測：差動電壓探棒、電流探棒、熱像、近場 EMI 探棒；</li>
 <li>控制：固定相位、負載感知 phase shedding、預測提示三種模式。</li>
 </ul>
-<h2>B.3 必須公開的資料</h2>
+<h3>B.3 必須公開的資料</h3>
 <ul>
 <li>原理圖與 PCB 主要參數；</li>
 <li>元件型號與模型；</li>
@@ -868,7 +872,7 @@ C_{\mathrm{hardware}}
 <li>與基線的等成本說明。</li>
 </ul>
 <hr>
-<h1>參考資料與查核來源</h1>
+<h2>參考資料與查核來源</h2>
 <p>以下資料用於校正本修訂版的工程邊界；它們不構成 DPCPS 已被驗證的證據。</p>
 <ol>
 <li>Intel, <strong>Fully Integrated Voltage Regulator (FIVR)</strong>, processor datasheet documentation.  </li>

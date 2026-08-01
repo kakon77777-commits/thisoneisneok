@@ -1,0 +1,1890 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>迭代授權 | MSSP | Neo.K</title>
+<meta name="description" content="MSSP 可以被改到什麼程度，由誰決定，以及哪六條不能動。SSD 工程規格全文收在這裡。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/modules/authority.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.state{display:inline-block;border:1px solid var(--accent);color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.12em;padding:5px 10px;margin:0 0 30px;text-transform:uppercase}
+.content{font-size:17.5px;line-height:1.9;overflow-wrap:break-word}
+.content h1{font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:4px 0 32px}
+.content h2{font-size:25px;line-height:1.3;margin:56px 0 15px}
+.content h3{font-size:18px;margin:34px 0 11px}
+.content p{margin:0 0 23px}.content li{margin:.42em 0}
+.content strong{font-weight:650}
+.content blockquote{margin:34px 0;padding:6px 0 6px 26px;border-left:3px solid var(--accent);font-size:19px;line-height:1.7}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.62;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+.content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:26px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>06 · 2026-08-01</span></header>
+<main>
+  <span class="state">已生效</span>
+  <article class="content"><h1>迭代授權：MSSP 可以被改到什麼程度</h1>
+<p>前面五個模組都在說 MSSP 該怎麼用。這一個說的是相反的事：<strong>它可以被改成什麼樣子，而仍然算數。</strong></p>
+<p>一個方法如果沒有寫下自己的修改條件，它的每一次修訂都只能靠作者當下的判斷背書；別人無法檢查那次修訂是進步還是走樣，接手的人也無法在不問作者的情況下往前走。〈SSD / Dynamic MSSP 工程規格與 MVP v0.1〉補上了這一塊，所以它放在這裡，而不是放在論文區。</p>
+<p>三件事值得先講清楚，因為它們改變了<a href="/html/mssp/modules/development.html">開發區</a>的工作方式：</p>
+<p><strong>一、FMS／SMS／TMS／DMS 是可替換層。</strong> 規格 §0 把分類名稱、表示法、工具鏈，連同「MSSP」這個名字本身，都列進可替換清單。留下來的是治理語義——責任、關鍵性、權限、效應、生命週期、可觀測性、治理。§38 甚至明講：未來的 MSSP Profile 即使不再使用 FMS、SMS、TMS 這些名稱，也不構成破壞。</p>
+<p><strong>二、相容性是語義相容，不是命名相容。</strong> 一個系統只要能回答 §2 那九個問題，就算 MSSP-compatible。所以「有沒有五個資料夾」不是判準，「能不能說清楚誰負責什麼、誰有權改什麼、宣告與實際差在哪裡」才是。</p>
+<p><strong>三、有一條可以跑的驗收條件。</strong> §57-F：移除 Dynamic MSSP Profile 之後，治理核心仍然要能運作。這條不是宣言，是會失敗的檢查——而目前 <a href="/research/evemiss-fpl.html">EveMiss FPL</a> 過不了它：五個集合的名字在原始碼裡出現 87 次，其中 45 次在型別檢查器裡，也就是說那八條規則檢查的不是架構治理，是五個特定字串。這件事已經記在<a href="/html/mssp/modules/log.html">開發日誌</a>。</p>
+<p>不能動的只有六條，列在 §72：架構必須可表示；責任與權限必須可區分；宣告與現實必須可比較；非顯然的主張必須有證據；架構變更必須經過治理；模型本身必須可演化。</p>
+<p>規格全文照錄於下。</p>
+<hr>
+<h2>SSD / Dynamic MSSP 工程規格與 MVP v0.1</h2>
+<p>**文件類型：**工程規格＋MVP 實作基線<br>**定位：**Software Structural Dynamics（SSD）工程化第一版<br>**核心原則：**MSSP 的基底概念可保留；除核心治理語義外，其分類、模組、表示法、工具鏈與名稱皆可替換<br>**版本：**v0.1<br>**日期：**2026-08-01  </p>
+<hr>
+<h2>0. 核心決策</h2>
+<p>本文件首先固定一個最重要的工程決策：</p>
+<blockquote>
+<p><strong>Dynamic MSSP 不等於「把既有 MSSP 的所有模組分類加上 runtime telemetry」。</strong></p>
+</blockquote>
+<p>Dynamic MSSP 的真正目的仍然是 MSSP 最初的目的：</p>
+<blockquote>
+<p><strong>更好地描述、理解、驗證、治理與演化計算機／軟體架構。</strong></p>
+</blockquote>
+<p>因此，以下內容屬於<strong>可替換層</strong>：</p>
+<ul>
+<li>FMS / SMS / TMS / DMS 的具體分類名稱；</li>
+<li>SCL、Router、Runtime 的既有劃分方式；</li>
+<li>YAML / JSON / TOML / DSL；</li>
+<li>FPL 是否作為唯一描述語言；</li>
+<li>graph database 是否存在；</li>
+<li>rule engine 使用什麼產品；</li>
+<li>runtime telemetry 使用什麼產品；</li>
+<li>AI 使用什麼模型；</li>
+<li>是否採單體、microservice、local-first 或 cloud；</li>
+<li>是否保留「MSSP」名稱。</li>
+</ul>
+<p>而真正需要保留的是更底層的<strong>架構治理語義</strong>。</p>
+<p>因此本工程線採：</p>
+<pre><code class="language-text">Software Structural Dynamics
+        ↓
+SSD Governance Kernel
+        ↓
+Governance Profiles
+        ├─ Dynamic MSSP Profile
+        ├─ Plain Architecture Profile
+        ├─ Microservice Profile
+        ├─ Agentic System Profile
+        └─ Future Profiles
+        ↓
+Adapters / Tooling / Runtime
+</code></pre>
+<p>也就是：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>S</mi><mi>S</mi><mi>D</mi><mtext> </mtext><mi>C</mi><mi>o</mi><mi>r</mi><mi>e</mi><mo mathvariant="normal">≠</mo><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mtext> </mtext><mi>T</mi><mi>a</mi><mi>x</mi><mi>o</mi><mi>n</mi><mi>o</mi><mi>m</mi><mi>y</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+SSD\ Core
+\neq
+MSSP\ Taxonomy
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal">a</span><span class="mord mathnormal">x</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">o</span><span class="mord mathnormal">m</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<p>而：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>D</mi><mi>y</mi><mi>n</mi><mi>a</mi><mi>m</mi><mi>i</mi><mi>c</mi><mtext> </mtext><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mo>=</mo><mi>S</mi><mi>S</mi><mi>D</mi><mtext> </mtext><mi>G</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>n</mi><mi>a</mi><mi>n</mi><mi>c</mi><mi>e</mi><mtext> </mtext><mi>K</mi><mi>e</mi><mi>r</mi><mi>n</mi><mi>e</mi><mi>l</mi><mo>+</mo><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mtext> </mtext><mi>G</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>n</mi><mi>a</mi><mi>n</mi><mi>c</mi><mi>e</mi><mtext> </mtext><mi>P</mi><mi>r</mi><mi>o</mi><mi>f</mi><mi>i</mi><mi>l</mi><mi>e</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Dynamic\ MSSP
+=
+SSD\ Governance\ Kernel
++
+MSSP\ Governance\ Profile
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">nami</span><span class="mord mathnormal">c</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mspace"> </span><span class="mord mathnormal">G</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">nan</span><span class="mord mathnormal">ce</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">n</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace"> </span><span class="mord mathnormal">G</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">nan</span><span class="mord mathnormal">ce</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<p>FPL 則定位為：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>F</mi><mi>P</mi><mi>L</mi><mo>=</mo><mi>R</mi><mi>e</mi><mi>f</mi><mi>e</mi><mi>r</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mtext> </mtext><mi>S</mi><mi>p</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>f</mi><mi>i</mi><mi>c</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi mathvariant="normal">/</mi><mi>P</mi><mi>r</mi><mi>o</mi><mi>j</mi><mi>e</mi><mi>c</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi mathvariant="normal">/</mi><mi>A</mi><mi>d</mi><mi>a</mi><mi>p</mi><mi>t</mi><mi>e</mi><mi>r</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+FPL
+=
+Reference\ Specification / Projection / Adapter
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.68em;vertical-align:-0.59em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.09em;"><span style="top:-3.68em;"><span class="pstrut" style="height:3.68em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal">L</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">p</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">i</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord">/</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0572em;">j</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord">/</span><span class="mord mathnormal">A</span><span class="mord mathnormal">d</span><span class="mord mathnormal">a</span><span class="mord mathnormal">pt</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span></span></span></span></span><span style="top:-3.09em;"><span class="pstrut" style="height:3.68em;"></span><span class="stretchy fbox" style="height:1.68em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.59em;"><span></span></span></span></span></span></span></span></span></span>
+<p>而不是 SSD Runtime 的硬依賴。</p>
+<hr>
+<h2>1. 專案暫名與分層</h2>
+<p>本文件暫時使用三個名稱。</p>
+<h3>1.1 SSD</h3>
+<p><strong>Software Structural Dynamics</strong></p>
+<p>理論層。</p>
+<p>回答：</p>
+<blockquote>
+<p>軟體結構如何隨時間形成、演化、補償、凝固、轉移與被治理？</p>
+</blockquote>
+<hr>
+<h3>1.2 SGR</h3>
+<p><strong>SSD Governance Runtime</strong></p>
+<p>工程 runtime 暫名。</p>
+<p>它是一個與具體架構方法論解耦的治理核心。</p>
+<p>SGR 不要求使用者必須採 MSSP。</p>
+<hr>
+<h3>1.3 Dynamic MSSP</h3>
+<p>SGR 的第一個官方 Governance Profile。</p>
+<p>它提供 MSSP 世界中的：</p>
+<ul>
+<li>role；</li>
+<li>authority；</li>
+<li>effect；</li>
+<li>responsibility；</li>
+<li>evidence；</li>
+<li>compensation；</li>
+<li>lifecycle；</li>
+<li>governance semantics。</li>
+</ul>
+<p>但它不強制保留舊版全部 taxonomy。</p>
+<hr>
+<h2>2. 最重要的相容性原則</h2>
+<p>本文不定義：</p>
+<blockquote>
+<p>「符合 Dynamic MSSP = 必須有 FMS / SMS / TMS / DMS。」</p>
+</blockquote>
+<p>而定義：</p>
+<h2>MSSP Semantic Compatibility</h2>
+<p>一個系統只要能表達下列核心問題，就可以視為 MSSP-compatible：</p>
+<ol>
+<li><strong>系統中有哪些架構實體？</strong></li>
+<li><strong>它們承擔什麼責任？</strong></li>
+<li><strong>它們能讀、寫、改變什麼？</strong></li>
+<li><strong>它們與哪些其他實體形成有效依賴？</strong></li>
+<li><strong>哪些內容是宣告的，哪些是觀察到的？</strong></li>
+<li><strong>哪些判斷有證據，哪些仍不確定？</strong></li>
+<li><strong>誰有權接受、拒絕或修改架構決策？</strong></li>
+<li><strong>系統如何知道自己的架構正在發生變化？</strong></li>
+<li><strong>系統如何安全地保留、替換或淘汰既有結構？</strong></li>
+</ol>
+<p>因此：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mtext> </mtext><mi>C</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo>=</mo><mi>S</mi><mi>e</mi><mi>m</mi><mi>a</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>c</mi><mtext> </mtext><mi>C</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+MSSP\ Compatibility
+=
+Semantic\ Compatibility
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">m</span><span class="mord mathnormal">p</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ibi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">e</span><span class="mord mathnormal">man</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">c</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">m</span><span class="mord mathnormal">p</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ibi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<p>而不是：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mtext> </mtext><mi>C</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo>=</mo><mi>N</mi><mi>a</mi><mi>m</mi><mi>i</mi><mi>n</mi><mi>g</mi><mtext> </mtext><mi>C</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi></mrow><annotation encoding="application/x-tex">MSSP\ Compatibility
+=
+Naming\ Compatibility</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">m</span><span class="mord mathnormal">p</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ibi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="mord mathnormal">amin</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">m</span><span class="mord mathnormal">p</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ibi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span></span></span></span></span>
+<hr>
+<h2>3. SSD Governance Kernel：不可輕易破壞的核心</h2>
+<p>SGR v0.1 固定七個核心 primitive。</p>
+<pre><code class="language-text">Entity
+Relation
+Role
+Authority
+Evidence
+State
+GovernanceEvent
+</code></pre>
+<p>額外支援：</p>
+<pre><code class="language-text">Compensation
+Burden
+Context
+Snapshot
+</code></pre>
+<p>這些 primitive 比 FMS / SMS / TMS 更底層。</p>
+<hr>
+<h2>4. Entity</h2>
+<p>任何需要被架構治理的東西都可以成為：</p>
+<pre><code class="language-text">Entity
+</code></pre>
+<p>例如：</p>
+<ul>
+<li>repository；</li>
+<li>package；</li>
+<li>module；</li>
+<li>service；</li>
+<li>database；</li>
+<li>table；</li>
+<li>queue；</li>
+<li>API；</li>
+<li>workflow；</li>
+<li>cron job；</li>
+<li>spreadsheet；</li>
+<li>deployment；</li>
+<li>human role；</li>
+<li>external SaaS；</li>
+<li>AI agent；</li>
+<li>policy；</li>
+<li>model；</li>
+<li>infrastructure resource。</li>
+</ul>
+<p>最小表示：</p>
+<pre><code class="language-yaml">entity:
+  id: payment-service
+  kind: service
+  name: Payment Service
+</code></pre>
+<p>SSD 不預設：</p>
+<pre><code class="language-text">software module
+</code></pre>
+<p>是唯一合法 entity。</p>
+<hr>
+<h2>5. Relation</h2>
+<p>Entity 之間可以有 typed relation。</p>
+<p>MVP 至少支援：</p>
+<pre><code class="language-text">compile
+runtime
+data_read
+data_write
+event_publish
+event_consume
+interface
+permission
+deployment
+test
+human_operation
+external
+ai_context
+recovery
+compensation
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-yaml">relation:
+  from: checkout-service
+  to: payment-service
+  type: runtime
+</code></pre>
+<p>因此：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>D</mi><mtext>effective</mtext></msub><mo>⊇</mo><msub><mi>D</mi><mtext>static</mtext></msub></mrow><annotation encoding="application/x-tex">D_{\text{effective}}
+\supseteq
+D_{\text{static}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">effective</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">⊇</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">static</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
+<p>是系統的預設假設。</p>
+<hr>
+<h2>6. Role</h2>
+<p>Role 不再是單一固定 enum。</p>
+<p>核心格式：</p>
+<pre><code class="language-yaml">role_assertion:
+  entity: payment-reconcile
+
+  layer: declared | observed | effective
+
+  role: critical_support
+
+  context: production
+  valid_from: ...
+  valid_to: ...
+
+  evidence_refs:
+    - ev-103
+    - ev-210
+</code></pre>
+<p>Role schema 可由 Profile 定義。</p>
+<p>例如 MSSP Profile 可以使用：</p>
+<pre><code class="language-text">FMS
+SMS
+TMS
+DMS
+SCL
+Router
+Runtime
+</code></pre>
+<p>但另一個 Profile 可以使用：</p>
+<pre><code class="language-text">core
+supporting
+optional
+experimental
+deprecated
+external
+operator
+</code></pre>
+<p>甚至可以完全改成多維 role：</p>
+<pre><code class="language-yaml">role:
+  criticality: high
+  replaceability: low
+  state_authority: high
+  lifecycle: stable
+</code></pre>
+<p>因此：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>R</mi><mi>o</mi><mi>l</mi><mi>e</mi><mtext> </mtext><mi>M</mi><mi>o</mi><mi>d</mi><mi>e</mi><mi>l</mi><mo>=</mo><mi>P</mi><mi>l</mi><mi>u</mi><mi>g</mi><mi>g</mi><mi>a</mi><mi>b</mi><mi>l</mi><mi>e</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Role\ Model
+=
+Pluggable
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal">o</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0359em;">ug</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">ab</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<hr>
+<h2>7. Declared / Observed / Effective</h2>
+<p>這是 SSD v0.1 的核心不變語義之一。</p>
+<p>對任意 entity：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>R</mi><mi>d</mi></msub><mo>=</mo><mi>D</mi><mi>e</mi><mi>c</mi><mi>l</mi><mi>a</mi><mi>r</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">R_d
+=
+Declared</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">ec</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span></span></span>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>R</mi><mi>o</mi></msub><mo>=</mo><mi>O</mi><mi>b</mi><mi>s</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">R_o
+=
+Observed</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">o</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.0278em;">ser</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span></span></span>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>R</mi><mi>e</mi></msub><mo>=</mo><mi>E</mi><mi>f</mi><mi>f</mi><mi>e</mi><mi>c</mi><mi>t</mi><mi>i</mi><mi>v</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">R_e
+=
+Effective</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span></span></span></span></span>
+<p>但這三層不只作用於 Role。</p>
+<p>同樣可以作用於：</p>
+<ul>
+<li>dependency；</li>
+<li>authority；</li>
+<li>ownership；</li>
+<li>deployment；</li>
+<li>state；</li>
+<li>compensation。</li>
+</ul>
+<p>例如：</p>
+<pre><code class="language-yaml">authority:
+  declared:
+    writes:
+      - recommendation_cache
+
+  observed:
+    writes:
+      - recommendation_cache
+      - user_profile
+
+  effective:
+    writes:
+      - recommendation_cache
+      - user_profile
+</code></pre>
+<p>因此：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mi>e</mi><mi>c</mi><mi>l</mi><mi>a</mi><mi>r</mi><mi>e</mi><mi>d</mi><mo mathvariant="normal">≠</mo><mi>O</mi><mi>b</mi><mi>s</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">Declared\neq Observed</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">ec</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.0278em;">ser</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span></span></span>
+<p>可以直接形成 Governance Event。</p>
+<hr>
+<h2>8. Authority</h2>
+<p>Authority 與 Role 分開。</p>
+<p>因為：</p>
+<blockquote>
+<p>一個模組是 SMS，不代表它自動有所有資料寫入權。</p>
+</blockquote>
+<p>MVP 至少支援：</p>
+<pre><code class="language-text">read
+write
+mutate
+execute
+approve
+deploy
+delete
+override
+delegate
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-yaml">authority:
+  subject: payment-service
+
+  allow:
+    - action: write
+      target: payment_state
+
+  deny:
+    - action: write
+      target: user_identity
+</code></pre>
+<p>Policy enforcement 可以由 SGR 自己實作簡化版，</p>
+<p>或接 OPA / Rego。</p>
+<p>Open Policy Agent 的設計本身就是將：</p>
+<pre><code class="language-text">policy decision
+</code></pre>
+<p>與：</p>
+<pre><code class="language-text">policy enforcement
+</code></pre>
+<p>解耦，因此非常適合作為可選 adapter，而不是 SSD 的硬依賴。</p>
+<hr>
+<h2>9. Evidence</h2>
+<p>所有非純 deterministic 的架構判斷都必須能回溯到 evidence。</p>
+<p>最小 Evidence：</p>
+<pre><code class="language-yaml">evidence:
+  id: ev-103
+
+  type: runtime_trace
+  source: opentelemetry
+  observed_at: 2026-08-01T12:00:00+08:00
+
+  subject: recommendation-service
+
+  claim_support:
+    - &quot;high activation rate&quot;
+
+  payload:
+    activation_rate: 0.992
+
+  freshness:
+    window: 30d
+</code></pre>
+<p>Evidence source 可以包括：</p>
+<pre><code class="language-text">source_code
+dependency_graph
+git
+runtime_trace
+metric
+log
+event
+schema
+incident
+ticket
+ADR
+runbook
+human_assertion
+external_contract
+AI_analysis
+</code></pre>
+<hr>
+<h2>10. Evidence Provenance</h2>
+<p>Evidence 至少需要：</p>
+<pre><code class="language-text">source
+timestamp
+subject
+collector
+hash / revision
+freshness
+confidence class
+</code></pre>
+<p>MVP 不要求完整 cryptographic ledger，</p>
+<p>但要避免：</p>
+<blockquote>
+<p>AI 說它看過某件事，卻不知道它根據什麼。</p>
+</blockquote>
+<hr>
+<h2>11. Evidence Packet</h2>
+<p>所有需要 reasoning 的結論使用：</p>
+<pre><code class="language-yaml">evidence_packet:
+  claim:
+    &quot;payment-reconcile behaves as critical core&quot;
+
+  evidence:
+    - ev-103
+    - ev-210
+    - ev-551
+
+  counterevidence:
+    - ev-621
+
+  confidence:
+    level: medium_high
+
+  inference:
+    engine: llm
+    model: optional
+
+  authority:
+    required:
+      - architecture_owner
+</code></pre>
+<p>因此：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>C</mi><mi>l</mi><mi>a</mi><mi>i</mi><mi>m</mi><mo>+</mo><mi>E</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo>+</mo><mi>C</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>e</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo>+</mo><mi>C</mi><mi>o</mi><mi>n</mi><mi>f</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo>+</mo><mi>A</mi><mi>u</mi><mi>t</mi><mi>h</mi><mi>o</mi><mi>r</mi><mi>i</mi><mi>t</mi><mi>y</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Claim
++
+Evidence
++
+Counterevidence
++
+Confidence
++
+Authority
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">aim</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">u</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal">u</span><span class="mord mathnormal">t</span><span class="mord mathnormal">h</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<p>是核心治理格式。</p>
+<hr>
+<h2>12. Confidence 不等於真實機率</h2>
+<p>MVP 的：</p>
+<pre><code class="language-text">confidence = high
+</code></pre>
+<p>只表示：</p>
+<ul>
+<li>evidence coverage；</li>
+<li>source consistency；</li>
+<li>freshness；</li>
+<li>inference stability。</li>
+</ul>
+<p>不宣稱：</p>
+<pre><code class="language-text">0.84 = 84% probability of truth
+</code></pre>
+<p>除非未來完成真正 calibration。</p>
+<hr>
+<h2>13. State</h2>
+<p>SGR 的核心物件不是 document，而是：</p>
+<h2>Architecture State</h2>
+<pre><code class="language-yaml">architecture_state:
+  timestamp: ...
+  context: production
+
+  entities: ...
+  relations: ...
+  role_assertions: ...
+  authorities: ...
+  compensations: ...
+  burdens: ...
+  evidence: ...
+  governance_events: ...
+</code></pre>
+<p>概念上：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi mathvariant="script">S</mi><mo stretchy="false">(</mo><mi>t</mi><mo separator="true">,</mo><mi>c</mi><mo stretchy="false">)</mo><mo>=</mo><mo stretchy="false">(</mo><msub><mi>A</mi><mi>d</mi></msub><mo separator="true">,</mo><msub><mi>A</mi><mi>e</mi></msub><mo separator="true">,</mo><mi mathvariant="bold">R</mi><mo separator="true">,</mo><mi mathvariant="bold">B</mi><mo separator="true">,</mo><mi>N</mi><mo separator="true">,</mo><mi mathvariant="bold">C</mi><mo separator="true">,</mo><msub><mi>L</mi><mi>c</mi></msub><mo separator="true">,</mo><msub><mi mathvariant="bold">F</mi><mi>C</mi></msub><mo separator="true">,</mo><msub><mi>ρ</mi><mi>g</mi></msub><mo separator="true">,</mo><mi mathvariant="bold">E</mi><mo separator="true">,</mo><mi mathvariant="bold">Q</mi><mo stretchy="false">)</mo></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+\mathcal S(t,c)
+=
+(
+A_d,
+A_e,
+\mathbf R,
+\mathbf B,
+N,
+\mathbf C,
+L_c,
+\mathbf F_C,
+\rho_g,
+\mathbf E,
+\mathbf Q
+)
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.7161em;vertical-align:-0.6261em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.09em;"><span style="top:-3.7161em;"><span class="pstrut" style="height:3.7161em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathcal" style="margin-right:0.075em;">S</span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">c</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathbf">R</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathbf">B</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathbf">C</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">L</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">c</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathbf">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0715em;">C</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">ρ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathbf">E</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathbf">Q</span><span class="mclose">)</span></span></span></span></span><span style="top:-3.09em;"><span class="pstrut" style="height:3.7161em;"></span><span class="stretchy fbox" style="height:1.7161em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.6261em;"><span></span></span></span></span></span></span></span></span></span>
+<hr>
+<h2>14. Snapshot 與 Event</h2>
+<p>SGR 同時採：</p>
+<pre><code class="language-text">Snapshot
++
+Event Log
+</code></pre>
+<p>Snapshot 方便查目前狀態。</p>
+<p>Event Log 方便知道：</p>
+<blockquote>
+<p>為什麼變成現在這樣？</p>
+</blockquote>
+<p>最小事件：</p>
+<pre><code class="language-yaml">event:
+  id: evt-8172
+  type: dependency_added
+
+  at: 2026-08-01T12:00:00+08:00
+
+  subject: checkout-service
+
+  object: fraud-service
+
+  evidence:
+    - ev-881
+</code></pre>
+<hr>
+<h2>15. Architecture Event 類型</h2>
+<p>MVP 第一批事件：</p>
+<pre><code class="language-text">ENTITY_ADDED
+ENTITY_REMOVED
+DEPENDENCY_ADDED
+DEPENDENCY_REMOVED
+AUTHORITY_CHANGED
+SCHEMA_CHANGED
+ROLE_DECLARED
+ROLE_DIVERGENCE
+RUNTIME_USAGE_SHIFT
+COMPENSATION_DISCOVERED
+COMPENSATION_REPEATED
+INCIDENT_OCCURRED
+DEPRECATION_DETECTED
+GOVERNANCE_DECISION
+</code></pre>
+<p>事件驅動：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>E</mi><mi>v</mi><mi>e</mi><mi>n</mi><msub><mi>t</mi><mi>t</mi></msub><mo>→</mo><mi mathvariant="normal">Δ</mi><mi mathvariant="script">S</mi></mrow><annotation encoding="application/x-tex">Event_t
+\rightarrow
+\Delta\mathcal S</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">t</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathcal" style="margin-right:0.075em;">S</span></span></span></span></span>
+<p>而不是每次重新分析整個 universe。</p>
+<hr>
+<h2>16. Compensation</h2>
+<p>補償在 SGR 中是一級物件。</p>
+<pre><code class="language-yaml">compensation:
+  id: comp-001
+
+  subject: settlement
+
+  type:
+    operational
+
+  mechanism:
+    manual_reconciliation
+
+  target_gap:
+    &quot;automatic settlement mismatch&quot;
+
+  dependents:
+    - finance-ops
+
+  observability: medium
+
+  substitutability: low
+
+  owner:
+    team: finance-platform
+
+  status:
+    active
+</code></pre>
+<p>Profile 可以增加：</p>
+<pre><code class="language-text">technical
+human
+operational
+compatibility
+external
+governance
+</code></pre>
+<p>等分類。</p>
+<hr>
+<h2>17. Compensation Load</h2>
+<p>MVP 不先做 universal scalar。</p>
+<p>先保留 evidence dimensions：</p>
+<pre><code class="language-yaml">compensation_load:
+  dependence: high
+  criticality: high
+  maintenance_cost: medium
+  removal_risk: high
+  observability: low
+  substitutability: low
+  human_concentration: high
+</code></pre>
+<p>後續才可用：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>L</mi><mi>c</mi></msub><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub><msub><mi mathvariant="normal">ℓ</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">L_c
+=
+\sum_i w_i\ell_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">L</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">c</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.3277em;vertical-align:-1.2777em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.05em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.2777em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord">ℓ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
+<p>生成 domain-specific score。</p>
+<p>第一版重點是：</p>
+<blockquote>
+<p>能解釋為什麼這個補償很重。</p>
+</blockquote>
+<p>而不是假裝算出：</p>
+<pre><code class="language-text">Compensation Load = 78.3
+</code></pre>
+<hr>
+<h2>18. Burden</h2>
+<p>MVP 支援：</p>
+<pre><code class="language-text">technical_debt
+architecture_erosion
+historical_residue
+</code></pre>
+<p>Necessary Complexity 獨立：</p>
+<pre><code class="language-text">necessary_complexity
+</code></pre>
+<p>避免把必要複雜度語義污染成 debt。</p>
+<p>例如：</p>
+<pre><code class="language-yaml">burden:
+  subject: legacy-auth-adapter
+
+  technical_debt:
+    level: medium
+
+  architecture_erosion:
+    level: low
+
+  historical_residue:
+    level: high
+
+  necessary_complexity:
+    level: low
+
+  evidence:
+    - ...
+</code></pre>
+<hr>
+<h2>19. Governance Event</h2>
+<p>所有需要人類、policy 或更高 authority 處理的事情轉成：</p>
+<pre><code class="language-text">GovernanceEvent
+</code></pre>
+<p>MVP 類型：</p>
+<pre><code class="language-text">REVIEW_REQUIRED
+ROLE_REVIEW_REQUIRED
+AUTHORITY_REVIEW_REQUIRED
+COMPENSATION_REVIEW_REQUIRED
+DEPRECATION_CANDIDATE
+MIGRATION_REQUIRED
+ARCHITECTURE_DRIFT_ALERT
+EVIDENCE_INSUFFICIENT
+CONFLICTING_EVIDENCE
+</code></pre>
+<p>而不是：</p>
+<pre><code class="language-text">AI AUTO FIX
+</code></pre>
+<hr>
+<h2>20. 核心治理原則</h2>
+<p>SGR v0.1 固定四條：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>D</mi><mi>e</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>m</mi><mi>i</mi><mi>n</mi><mi>i</mi><mi>s</mi><mi>t</mi><mi>i</mi><mi>c</mi><mtext> </mtext><mi>F</mi><mi>i</mi><mi>r</mi><mi>s</mi><mi>t</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Deterministic\ First
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.3633em;vertical-align:-0.34em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0233em;"><span style="top:-3.3633em;"><span class="pstrut" style="height:3.3633em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">e</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">mini</span><span class="mord mathnormal">s</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">c</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">s</span><span class="mord mathnormal">t</span></span></span></span></span><span style="top:-3.0233em;"><span class="pstrut" style="height:3.3633em;"></span><span class="stretchy fbox" style="height:1.3633em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.34em;"><span></span></span></span></span></span></span></span></span></span>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>E</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mtext> </mtext><mi>B</mi><mi>e</mi><mi>f</mi><mi>o</mi><mi>r</mi><mi>e</mi><mtext> </mtext><mi>I</mi><mi>n</mi><mi>f</mi><mi>e</mi><mi>r</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Evidence\ Before\ Inference
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">e</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>A</mi><mi>u</mi><mi>t</mi><mi>h</mi><mi>o</mi><mi>r</mi><mi>i</mi><mi>t</mi><mi>y</mi><mtext> </mtext><mi>B</mi><mi>e</mi><mi>f</mi><mi>o</mi><mi>r</mi><mi>e</mi><mtext> </mtext><mi>C</mi><mi>o</mi><mi>m</mi><mi>m</mi><mi>i</mi><mi>t</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Authority\ Before\ Commit
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal">A</span><span class="mord mathnormal">u</span><span class="mord mathnormal">t</span><span class="mord mathnormal">h</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">e</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">mmi</span><span class="mord mathnormal">t</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>R</mi><mi>e</mi><mi>p</mi><mi>l</mi><mi>a</mi><mi>c</mi><mi>e</mi><mi>m</mi><mi>e</mi><mi>n</mi><mi>t</mi><mtext> </mtext><mi>B</mi><mi>e</mi><mi>f</mi><mi>o</mi><mi>r</mi><mi>e</mi><mtext> </mtext><mi>R</mi><mi>e</mi><mi>m</mi><mi>o</mi><mi>v</mi><mi>a</mi><mi>l</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Replacement\ Before\ Removal
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0197em;">pl</span><span class="mord mathnormal">a</span><span class="mord mathnormal">ce</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">e</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal">m</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<p>第五條建議：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>R</mi><mi>e</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>s</mi><mi>i</mi><mi>b</mi><mi>l</mi><mi>e</mi><mtext> </mtext><mi>B</mi><mi>y</mi><mtext> </mtext><mi>D</mi><mi>e</mi><mi>f</mi><mi>a</mi><mi>u</mi><mi>l</mi><mi>t</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Reversible\ By\ Default
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">s</span><span class="mord mathnormal">ib</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">a</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">t</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<hr>
+<h2>21. Deterministic First</h2>
+<p>可以由：</p>
+<ul>
+<li>parser；</li>
+<li>AST；</li>
+<li>type checker；</li>
+<li>dependency graph；</li>
+<li>schema；</li>
+<li>policy；</li>
+<li>graph algorithm；</li>
+</ul>
+<p>確定的事情，</p>
+<p>不交給 LLM。</p>
+<p>例如：</p>
+<pre><code class="language-text">A imports B
+</code></pre>
+<p>不用 AI。</p>
+<pre><code class="language-text">A writes forbidden table
+</code></pre>
+<p>如果有明確 telemetry / schema，</p>
+<p>也不用 AI。</p>
+<hr>
+<h2>22. AI Sparse Reasoning</h2>
+<p>只有下列問題進 AI：</p>
+<ul>
+<li>這個 workaround 實際承擔什麼責任？</li>
+<li>這個模組是不是已經變成 effective core？</li>
+<li>這個歷史結構還有沒有存在理由？</li>
+<li>conflicting evidence 怎麼解釋？</li>
+<li>ADR 與實作偏離是 violation 還是 evolution？</li>
+<li>某個人工作流程是否已經成為 effective architecture？</li>
+</ul>
+<p>因此：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>A</mi><mi>I</mi><mtext> </mtext><mi>C</mi><mi>o</mi><mi>s</mi><mi>t</mi><mo>∝</mo><mi mathvariant="normal">∣</mi><mi>U</mi><mi>n</mi><mi>c</mi><mi>e</mi><mi>r</mi><mi>t</mi><mi>a</mi><mi>i</mi><mi>n</mi><mi>C</mi><mi>a</mi><mi>s</mi><mi>e</mi><mi>s</mi><mi mathvariant="normal">∣</mi></mrow><annotation encoding="application/x-tex">AI\ Cost
+\propto
+|UncertainCases|</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">os</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∝</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">∣</span><span class="mord mathnormal" style="margin-right:0.109em;">U</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0278em;">cer</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ain</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">a</span><span class="mord mathnormal">ses</span><span class="mord">∣</span></span></span></span></span>
+<p>而不是：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>A</mi><mi>I</mi><mtext> </mtext><mi>C</mi><mi>o</mi><mi>s</mi><mi>t</mi><mo>∝</mo><mi mathvariant="normal">∣</mi><mi>R</mi><mi>e</mi><mi>p</mi><mi>o</mi><mi>s</mi><mi>i</mi><mi>t</mi><mi>o</mi><mi>r</mi><mi>y</mi><mi mathvariant="normal">∣</mi></mrow><annotation encoding="application/x-tex">AI\ Cost
+\propto
+|Repository|</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">os</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∝</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">∣</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal">p</span><span class="mord mathnormal">os</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord">∣</span></span></span></span></span>
+<hr>
+<h2>23. AI 只能輸出 Hypothesis</h2>
+<p>AI output：</p>
+<pre><code class="language-yaml">hypothesis:
+  type: role_shift
+
+  subject: recommendation-service
+
+  candidate:
+    role: critical_core
+
+  evidence:
+    - ev-1
+    - ev-2
+
+  confidence:
+    level: medium_high
+</code></pre>
+<p>AI 不能直接改：</p>
+<pre><code class="language-yaml">declared_role:
+</code></pre>
+<p>除非 governance policy 明確允許。</p>
+<hr>
+<h2>24. SGR 五層 runtime</h2>
+<p>MVP 架構：</p>
+<pre><code class="language-text">┌──────────────────────────────┐
+│  5. Governance / Decision    │
+├──────────────────────────────┤
+│  4. Reasoning                │
+├──────────────────────────────┤
+│  3. Evidence / Observation   │
+├──────────────────────────────┤
+│  2. Architecture State / IR  │
+├──────────────────────────────┤
+│  1. Adapters / Collectors    │
+└──────────────────────────────┘
+</code></pre>
+<hr>
+<h2>25. Layer 1 — Adapters / Collectors</h2>
+<p>第一版：</p>
+<pre><code class="language-text">Repo Scanner
+Git Adapter
+Static Dependency Adapter
+Config Adapter
+OpenTelemetry Adapter
+Manual Evidence Adapter
+FPL Adapter
+</code></pre>
+<p>FPL Adapter 是 optional。</p>
+<p>OpenTelemetry 的 Semantic Conventions 已提供跨 traces、metrics、logs、events、resources 的共通語義命名，因此非常適合拿來作 runtime evidence adapter，而不用自己發明 telemetry 協定。</p>
+<hr>
+<h2>26. Layer 2 — Architecture State / Neutral IR</h2>
+<p>核心要求：</p>
+<blockquote>
+<p>IR 不能是 MSSP taxonomy 的直接 serialization。</p>
+</blockquote>
+<p>也就是不能寫成：</p>
+<pre><code class="language-text">IR = FMS + SMS + TMS + DMS
+</code></pre>
+<p>應寫成更中性：</p>
+<pre><code class="language-text">Entity
+Relation
+RoleAssertion
+Authority
+State
+Evidence
+Compensation
+Burden
+GovernanceEvent
+</code></pre>
+<p>MSSP Profile 再做 projection：</p>
+<pre><code class="language-text">Neutral IR
+    ↓
+MSSP Role Mapping
+    ↓
+SMS / TMS / ...
+</code></pre>
+<hr>
+<h2>27. Layer 3 — Evidence / Observation</h2>
+<p>負責：</p>
+<ul>
+<li>static evidence；</li>
+<li>runtime evidence；</li>
+<li>historical evidence；</li>
+<li>operational evidence；</li>
+<li>human evidence。</li>
+</ul>
+<p>第一版至少要做：</p>
+<pre><code class="language-text">evidence ingestion
+deduplication
+timestamp
+source attribution
+freshness
+subject mapping
+</code></pre>
+<hr>
+<h2>28. Layer 4 — Reasoning</h2>
+<p>由三種 engine 組成：</p>
+<pre><code class="language-text">Rule Engine
+Trend / Statistical Engine
+AI Reasoner
+</code></pre>
+<p>執行順序：</p>
+<pre><code class="language-text">deterministic
+→ quantitative
+→ semantic AI
+</code></pre>
+<p>不是反過來。</p>
+<hr>
+<h2>29. Layer 5 — Governance</h2>
+<p>Governance 層不負責「理解」。</p>
+<p>它負責：</p>
+<ul>
+<li>acceptance；</li>
+<li>rejection；</li>
+<li>exception；</li>
+<li>migration；</li>
+<li>assignment；</li>
+<li>approval；</li>
+<li>audit；</li>
+<li>rollback。</li>
+</ul>
+<p>可以接：</p>
+<ul>
+<li>local policy；</li>
+<li>GitHub PR；</li>
+<li>CI；</li>
+<li>OPA；</li>
+<li>human UI；</li>
+<li>agent governance。</li>
+</ul>
+<hr>
+<h2>30. 參考技術，但不綁技術</h2>
+<p>v0.1 可使用：</p>
+<pre><code class="language-text">Backend: Python / TypeScript / Rust 任一
+Storage: SQLite 起步
+Graph: NetworkX / SQLite relations
+Telemetry: OpenTelemetry
+Policy: internal rules → optional OPA
+AI: provider-neutral
+CLI: Typer / Click / equivalent
+API: FastAPI / equivalent
+</code></pre>
+<p>但所有選擇都不是 SSD semantic requirement。</p>
+<hr>
+<h2>31. MVP 最小能力</h2>
+<p>MVP 只做六件事。</p>
+<h3>M1 — Architecture Ingest</h3>
+<p>輸入：</p>
+<ul>
+<li>repository；</li>
+<li>optional FPL / YAML / JSON spec；</li>
+<li>git history。</li>
+</ul>
+<p>輸出 Neutral IR。</p>
+<hr>
+<h3>M2 — Static Architecture Scan</h3>
+<p>至少支援：</p>
+<ul>
+<li>module/package；</li>
+<li>imports；</li>
+<li>call/dependency approximation；</li>
+<li>config references；</li>
+<li>file ownership hints。</li>
+</ul>
+<hr>
+<h3>M3 — Declared vs Observed Diff</h3>
+<p>輸出：</p>
+<pre><code class="language-text">declared dependency missing
+undeclared dependency discovered
+declared entity unused
+observed entity undeclared
+authority mismatch
+</code></pre>
+<hr>
+<h3>M4 — Evidence Packet</h3>
+<p>任一 warning 都能：</p>
+<pre><code class="language-text">explain
+</code></pre>
+<p>並列出：</p>
+<ul>
+<li>claim；</li>
+<li>evidence；</li>
+<li>counterevidence；</li>
+<li>confidence；</li>
+<li>source。</li>
+</ul>
+<hr>
+<h3>M5 — Governance Event</h3>
+<p>將高價值問題轉成：</p>
+<pre><code class="language-text">ROLE_REVIEW_REQUIRED
+ARCHITECTURE_DRIFT_ALERT
+COMPENSATION_REVIEW_REQUIRED
+</code></pre>
+<p>而不是只有 console warning。</p>
+<hr>
+<h3>M6 — AI Sparse Reasoning</h3>
+<p>只針對：</p>
+<pre><code class="language-text">ambiguous / contextual
+</code></pre>
+<p>case 呼叫模型。</p>
+<p>例如：</p>
+<blockquote>
+<p>根據 ADR、git history 與 runtime evidence，判斷此 undeclared dependency 更可能是 architecture drift 還是 legitimate evolution。</p>
+</blockquote>
+<hr>
+<h2>32. MVP 暫時不做</h2>
+<p>v0.1 明確不做：</p>
+<ul>
+<li>universal architecture health score；</li>
+<li>fully autonomous refactoring；</li>
+<li>production auto-mutation；</li>
+<li>full organization modeling；</li>
+<li>full causal inference；</li>
+<li>graph database cluster；</li>
+<li>complex agent swarm；</li>
+<li>multi-tenant SaaS；</li>
+<li>full IDE；</li>
+<li>full visual architecture studio；</li>
+<li>proprietary telemetry protocol；</li>
+<li>自製 policy language。</li>
+</ul>
+<hr>
+<h2>33. MVP CLI</h2>
+<p>暫定：</p>
+<pre><code class="language-bash">sgr init
+sgr scan
+sgr ingest
+sgr observe
+sgr diff
+sgr explain &lt;event-id&gt;
+sgr review
+sgr snapshot
+sgr history
+</code></pre>
+<p>若使用 MSSP Profile：</p>
+<pre><code class="language-bash">sgr profile use mssp
+</code></pre>
+<p>若使用 FPL：</p>
+<pre><code class="language-bash">sgr ingest --adapter fpl ./architecture.fpl
+</code></pre>
+<p>所以沒有：</p>
+<pre><code class="language-text">必須先有 FPL 才能跑
+</code></pre>
+<hr>
+<h2>34. MVP API</h2>
+<p>最低限度：</p>
+<pre><code class="language-http">POST /ingest
+POST /scan
+POST /evidence
+GET  /state
+GET  /entities/{id}
+GET  /relations
+GET  /events
+GET  /events/{id}/explain
+POST /events/{id}/decision
+GET  /snapshots
+</code></pre>
+<hr>
+<h2>35. Repository Layout</h2>
+<p>建議：</p>
+<pre><code class="language-text">ssd-governance-runtime/
+│
+├─ core/
+│  ├─ entity/
+│  ├─ relation/
+│  ├─ state/
+│  ├─ evidence/
+│  ├─ governance/
+│  └─ events/
+│
+├─ adapters/
+│  ├─ repo/
+│  ├─ git/
+│  ├─ opentelemetry/
+│  ├─ fpl/
+│  └─ manual/
+│
+├─ profiles/
+│  ├─ mssp/
+│  └─ default/
+│
+├─ engines/
+│  ├─ deterministic/
+│  ├─ trend/
+│  └─ ai/
+│
+├─ policy/
+│
+├─ storage/
+│
+├─ api/
+├─ cli/
+├─ tests/
+└─ examples/
+</code></pre>
+<hr>
+<h2>36. Neutral IR v0.1</h2>
+<p>最小 JSON：</p>
+<pre><code class="language-json">{
+  &quot;entities&quot;: [],
+  &quot;relations&quot;: [],
+  &quot;role_assertions&quot;: [],
+  &quot;authorities&quot;: [],
+  &quot;compensations&quot;: [],
+  &quot;burdens&quot;: [],
+  &quot;evidence&quot;: [],
+  &quot;events&quot;: []
+}
+</code></pre>
+<p>這個 IR 必須：</p>
+<pre><code class="language-text">Profile-independent
+Language-independent
+Repository-independent
+AI-provider-independent
+</code></pre>
+<hr>
+<h2>37. Dynamic MSSP Profile</h2>
+<p>MSSP Profile 只負責：</p>
+<pre><code class="language-text">Role Vocabulary
+Default Rules
+Role Transition Hints
+Evidence Expectations
+Governance Policies
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-yaml">profile:
+  name: dynamic-mssp
+
+  roles:
+    - FMS
+    - SMS
+    - TMS
+    - DMS
+    - SCL
+    - Router
+    - Runtime
+
+  rules:
+    - id: sms-cannot-be-optional-at-runtime
+      ...
+
+    - id: tms-high-criticality-review
+      ...
+</code></pre>
+<p>未來完全可以把 role vocabulary 改掉。</p>
+<hr>
+<h2>38. MSSP Profile v2 可以沒有 FMS / SMS / TMS</h2>
+<p>這一點刻意寫進規格：</p>
+<blockquote>
+<p><strong>未來新版 MSSP Profile 即使不再使用 FMS、SMS、TMS 名稱，也不構成對 SSD 或 MSSP 核心思想的破壞。</strong></p>
+</blockquote>
+<p>只要仍然保留：</p>
+<ul>
+<li>responsibility；</li>
+<li>criticality；</li>
+<li>authority；</li>
+<li>effect；</li>
+<li>lifecycle；</li>
+<li>observability；</li>
+<li>governance；</li>
+</ul>
+<p>就可以。</p>
+<p>甚至更好的新版可能直接使用多維 role：</p>
+<pre><code class="language-yaml">role:
+  criticality: 0.91
+  replaceability: 0.18
+  authority: write
+  lifecycle: stable
+  runtime_usage: 0.97
+</code></pre>
+<p>而不是：</p>
+<pre><code class="language-text">SMS / TMS
+</code></pre>
+<hr>
+<h2>39. FPL 的新定位</h2>
+<p>FPL 不再被視為：</p>
+<blockquote>
+<p>Dynamic MSSP 的唯一語言。</p>
+</blockquote>
+<p>而是：</p>
+<h2>Architecture Projection Language</h2>
+<p>可以負責：</p>
+<pre><code class="language-text">Authoring
+Validation
+Generation
+Migration
+Projection
+</code></pre>
+<p>關係：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>P</mi><mi>r</mi><mi>o</mi><mi>b</mi><mi>l</mi><mi>e</mi><mi>m</mi><mtext> </mtext><mi>W</mi><mi>o</mi><mi>r</mi><mi>l</mi><mi>d</mi><mo>→</mo><mi>N</mi><mi>e</mi><mi>u</mi><mi>t</mi><mi>r</mi><mi>a</mi><mi>l</mi><mtext> </mtext><mi>A</mi><mi>r</mi><mi>c</mi><mi>h</mi><mi>i</mi><mi>t</mi><mi>e</mi><mi>c</mi><mi>t</mi><mi>u</mi><mi>r</mi><mi>e</mi><mtext> </mtext><mi>I</mi><mi>R</mi><mo>↔</mo><mi>F</mi><mi>P</mi><mi>L</mi></mrow><annotation encoding="application/x-tex">Problem\ World
+\rightarrow
+Neutral\ Architecture\ IR
+\leftrightarrow
+FPL</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mord mathnormal">m</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="mord mathnormal">e</span><span class="mord mathnormal">u</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mspace"> </span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">c</span><span class="mord mathnormal">hi</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">t</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↔</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal">L</span></span></span></span></span>
+<p>FPL 是一個很好的人類＋AI authoring surface，</p>
+<p>但 runtime state 不應只能存在 FPL 文字裡。</p>
+<hr>
+<h2>40. Policy-as-Code Adapter</h2>
+<p>SGR 可以自己實作最小規則：</p>
+<pre><code class="language-yaml">rule:
+  when:
+    relation.type: data_write
+    target.classification: restricted
+
+  require:
+    authority.write: true
+</code></pre>
+<p>後續再可選編譯／映射到 OPA。</p>
+<p>OPA 本身提供 general-purpose policy engine，並將 policy decision 與 enforcement 解耦；因此很適合作為 mature policy backend，而非 SSD 核心本體。</p>
+<hr>
+<h2>41. Runtime Evidence Adapter</h2>
+<p>OpenTelemetry v0.1 Adapter 讀：</p>
+<pre><code class="language-text">spans
+metrics
+logs
+events
+resources
+</code></pre>
+<p>利用 semantic conventions 做：</p>
+<pre><code class="language-text">service identity
+operation identity
+database interaction
+RPC
+messaging
+errors
+</code></pre>
+<p>的統一映射。</p>
+<p>不要求使用者為 SSD 重新埋一套 telemetry。</p>
+<hr>
+<h2>42. Architecture Conformance</h2>
+<p>MVP 同時支援：</p>
+<pre><code class="language-text">hard violation
+</code></pre>
+<p>與：</p>
+<pre><code class="language-text">distance / drift
+</code></pre>
+<p>概念：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>δ</mi><mi>A</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><mi>D</mi><mo stretchy="false">(</mo><msub><mi>A</mi><mi>d</mi></msub><mo separator="true">,</mo><msub><mi>A</mi><mi>o</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\delta_A(t)
+=
+D(A_d,A_o(t))</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0379em;">δ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0379em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">A</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">o</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">))</span></span></span></span></span>
+<p>但 v0.1 不追求 universal mathematical distance。</p>
+<p>可以先以：</p>
+<pre><code class="language-text">number of weighted divergences
++
+severity
++
+persistence
+</code></pre>
+<p>表示。</p>
+<p>Continuous Conformance 的研究已證明 architecture conformance 可以被處理成 multi-level、incremental、non-blocking 的 distance，而不必全部轉成 CI hard failure。</p>
+<hr>
+<h2>43. Observed 不等於 Effective</h2>
+<p>即使 runtime 發現：</p>
+<pre><code class="language-text">A → B
+</code></pre>
+<p>也不表示：</p>
+<pre><code class="language-text">B = core
+</code></pre>
+<p>Observed 只是 facts。</p>
+<p>Effective 是 inference。</p>
+<p>所以：</p>
+<pre><code class="language-text">Observation
+→ Evidence
+→ Interpretation
+</code></pre>
+<p>不可省略。</p>
+<hr>
+<h2>44. Effective 不等於 Declared</h2>
+<p>Effective model 也不能直接覆蓋 declared model。</p>
+<p>例如：</p>
+<pre><code class="language-text">observed:
+  payment-service writes user-profile
+</code></pre>
+<p>可能表示：</p>
+<ul>
+<li>legitimate evolution；</li>
+<li>temporary migration；</li>
+<li>architecture violation；</li>
+<li>incident workaround。</li>
+</ul>
+<p>所以：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>A</mi><mi>o</mi></msub><mo mathvariant="normal">≠</mo><msub><mi>A</mi><mi>e</mi></msub><mo mathvariant="normal">≠</mo><msub><mi>A</mi><mi>d</mi></msub></mrow><annotation encoding="application/x-tex">A_o\neq A_e\neq A_d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">o</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
+<p>在 SGR 中都被保留。</p>
+<hr>
+<h2>45. Unknown 是合法狀態</h2>
+<p>MVP 必須支援：</p>
+<pre><code class="language-text">unknown
+pending
+disputed
+exception
+insufficient_evidence
+</code></pre>
+<p>不能強迫 AI：</p>
+<blockquote>
+<p>一定選 SMS 或 TMS。</p>
+</blockquote>
+<p>這和 Program Ontology 中：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><mo mathvariant="normal">∉</mo><mi>M</mi><mo>⇏</mo><mi mathvariant="normal">¬</mi><mi>x</mi></mrow><annotation encoding="application/x-tex">x\notin M
+\nRightarrow
+\neg x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mord"><span class="mrel">∈</span></span><span class="mord vbox"><span class="thinbox"><span class="llap"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="inner"><span class="mord"><span class="mord">/</span><span class="mspace" style="margin-right:0.0556em;"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel amsrm">⇏</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord">¬</span><span class="mord mathnormal">x</span></span></span></span></span>
+<p>一致。</p>
+<hr>
+<h2>46. Time Window</h2>
+<p>所有 observed evidence 支援：</p>
+<pre><code class="language-text">24h
+7d
+30d
+90d
+180d
+custom
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-yaml">observation:
+  metric: runtime_required_rate
+  value: 0.99
+  window: 30d
+</code></pre>
+<p>避免一次尖峰造成角色 flapping。</p>
+<hr>
+<h2>47. Context</h2>
+<p>同一 Entity 可以：</p>
+<pre><code class="language-text">normal = optional
+disaster_recovery = critical
+migration = transitional
+</code></pre>
+<p>因此：</p>
+<pre><code class="language-yaml">context:
+  mode: disaster_recovery
+</code></pre>
+<p>是一級維度。</p>
+<hr>
+<h2>48. Role Hysteresis</h2>
+<p>只有：</p>
+<pre><code class="language-text">evidence persistence
++
+confidence threshold
++
+criticality
+</code></pre>
+<p>達標，</p>
+<p>才產生：</p>
+<pre><code class="language-text">ROLE_REVIEW_REQUIRED
+</code></pre>
+<p>而不是即時自動 reclassify。</p>
+<hr>
+<h2>49. Governance Decision</h2>
+<p>最小 decision：</p>
+<pre><code class="language-yaml">decision:
+  event: evt-001
+
+  outcome:
+    accept
+    reject
+    defer
+    exception
+    migrate
+
+  authority:
+    actor: architecture-owner
+
+  reason:
+    &quot;Temporary migration path until 2026-10&quot;
+
+  review_at:
+    2026-10-01
+</code></pre>
+<hr>
+<h2>50. Append-Only Decision History</h2>
+<p>MVP 建議：</p>
+<pre><code class="language-text">State 可更新
+Decision History append-only
+</code></pre>
+<p>避免：</p>
+<blockquote>
+<p>今天改了 architecture，明天完全不知道以前為什麼這樣。</p>
+</blockquote>
+<hr>
+<h2>51. AI Provider Abstraction</h2>
+<p>AI interface：</p>
+<pre><code class="language-python">reason(case, evidence_packet, policy_context) -&gt; hypothesis
+</code></pre>
+<p>輸入禁止直接是：</p>
+<pre><code class="language-text">entire repo dump
+</code></pre>
+<p>而應先經 deterministic selection。</p>
+<hr>
+<h2>52. AI Context Pack</h2>
+<p>AI 最小 context：</p>
+<pre><code class="language-text">Question
+Relevant Entities
+Relevant Relations
+Relevant Evidence
+Relevant ADR
+Relevant History
+Counterevidence
+Allowed Actions
+</code></pre>
+<p>這就是 GCMS／context retrieval 類方法未來可以接入的位置，</p>
+<p>但 SGR v0.1 不綁具體記憶系統。</p>
+<hr>
+<h2>53. AI Output Schema</h2>
+<pre><code class="language-json">{
+  &quot;hypothesis&quot;: &quot;...&quot;,
+  &quot;classification&quot;: &quot;...&quot;,
+  &quot;supporting_evidence&quot;: [],
+  &quot;counterevidence&quot;: [],
+  &quot;uncertainties&quot;: [],
+  &quot;suggested_actions&quot;: [],
+  &quot;confidence&quot;: &quot;medium&quot;
+}
+</code></pre>
+<p>禁止 AI 回：</p>
+<pre><code class="language-text">I fixed it.
+</code></pre>
+<p>除非另外進 execution pipeline。</p>
+<hr>
+<h2>54. MVP Demo Scenario</h2>
+<p>建議第一個 demo repository 建立：</p>
+<pre><code class="language-text">order-service
+payment-service
+recommendation-service
+reconcile-job
+postgres
+</code></pre>
+<p>Declared：</p>
+<pre><code class="language-text">recommendation = optional
+reconcile-job = temporary
+</code></pre>
+<p>Runtime 模擬：</p>
+<pre><code class="language-text">recommendation used by 99%
+reconcile-job required every night
+</code></pre>
+<p>SGR 應偵測：</p>
+<pre><code class="language-text">ROLE_DIVERGENCE
+COMPENSATION_SOLIDIFICATION_CANDIDATE
+</code></pre>
+<p>並產 Evidence Packet。</p>
+<hr>
+<h2>55. 第二個 Demo Scenario</h2>
+<p>Declared：</p>
+<pre><code class="language-text">payment-service
+cannot write user-profile
+</code></pre>
+<p>Source 沒有直接 dependency。</p>
+<p>Runtime trace / DB audit 發現：</p>
+<pre><code class="language-text">payment-service → user_profile UPDATE
+</code></pre>
+<p>SGR 輸出：</p>
+<pre><code class="language-text">AUTHORITY_REVIEW_REQUIRED
+</code></pre>
+<p>這可以直接展示：</p>
+<blockquote>
+<p>Static dependency graph 看不到的 effective dependency。</p>
+</blockquote>
+<hr>
+<h2>56. 第三個 Demo Scenario</h2>
+<p>舊 adapter：</p>
+<pre><code class="language-text">legacy-auth-adapter
+</code></pre>
+<p>Git 顯示：</p>
+<pre><code class="language-text">2019 introduced for v1 clients
+</code></pre>
+<p>目前：</p>
+<pre><code class="language-text">0 external callers
+2 internal recovery scripts
+</code></pre>
+<p>SGR 不應直接輸出：</p>
+<pre><code class="language-text">DELETE
+</code></pre>
+<p>而應：</p>
+<pre><code class="language-text">DEPRECATION_CANDIDATE
+replacement_before_removal = required
+</code></pre>
+<hr>
+<h2>57. MVP Acceptance Criteria</h2>
+<p>MVP 完成定義：</p>
+<h3>A. Neutral IR</h3>
+<p>可以成功表示至少：</p>
+<ul>
+<li>service；</li>
+<li>database；</li>
+<li>manual workflow；</li>
+<li>AI agent。</li>
+</ul>
+<hr>
+<h3>B. Declared / Observed Diff</h3>
+<p>能偵測至少：</p>
+<ul>
+<li>undeclared dependency；</li>
+<li>unused declared entity；</li>
+<li>authority mismatch。</li>
+</ul>
+<hr>
+<h3>C. Evidence Traceability</h3>
+<p>任一 warning 都能回答：</p>
+<blockquote>
+<p>根據什麼？</p>
+</blockquote>
+<hr>
+<h3>D. AI Sparse</h3>
+<p>至少一種 ambiguous case 能：</p>
+<pre><code class="language-text">rule engine abstain
+→ AI reason
+→ evidence-backed hypothesis
+</code></pre>
+<hr>
+<h3>E. Governance</h3>
+<p>能：</p>
+<pre><code class="language-text">accept / reject / defer / exception
+</code></pre>
+<p>且保留 decision history。</p>
+<hr>
+<h3>F. Profile Swap</h3>
+<p>移除 Dynamic MSSP Profile 後，</p>
+<p>SGR 核心仍然能運作。</p>
+<p>這一條非常重要。</p>
+<p>它直接驗證：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>S</mi><mi>S</mi><mi>D</mi><mtext> </mtext><mi>R</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>m</mi><mi>e</mi><mo mathvariant="normal">≠</mo><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mtext> </mtext><mi>H</mi><mi>a</mi><mi>r</mi><mi>d</mi><mi>c</mi><mi>o</mi><mi>d</mi><mi>e</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+SSD\ Runtime
+\neq
+MSSP\ Hardcode
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">u</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">im</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">d</span><span class="mord mathnormal">co</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<hr>
+<h2>58. 測試策略</h2>
+<p>MVP 至少：</p>
+<pre><code class="language-text">Unit Tests
+IR Schema Tests
+Adapter Tests
+Golden Repository Tests
+Policy Tests
+AI Contract Tests
+Regression Snapshots
+</code></pre>
+<p>AI test 不測：</p>
+<blockquote>
+<p>每次文字完全相同。</p>
+</blockquote>
+<p>而測：</p>
+<ul>
+<li>schema valid；</li>
+<li>evidence refs valid；</li>
+<li>forbidden action absent；</li>
+<li>uncertainty retained。</li>
+</ul>
+<hr>
+<h2>59. False Positive Budget</h2>
+<p>Architecture governance tool 最大風險之一是：</p>
+<pre><code class="language-text">warning fatigue
+</code></pre>
+<p>所以 v0.1 建立：</p>
+<h2>False Positive Budget</h2>
+<p>High severity event 必須：</p>
+<pre><code class="language-text">high evidence
+or
+deterministic proof
+</code></pre>
+<p>低信心推論：</p>
+<pre><code class="language-text">OBSERVATION
+</code></pre>
+<p>不要：</p>
+<pre><code class="language-text">ERROR
+</code></pre>
+<hr>
+<h2>60. Severity</h2>
+<p>建議：</p>
+<pre><code class="language-text">ERROR
+WARNING
+ADVISORY
+OBSERVATION
+</code></pre>
+<p>其中：</p>
+<h3>ERROR</h3>
+<p>明確 deterministic policy violation。</p>
+<h3>WARNING</h3>
+<p>高信心、高影響 drift。</p>
+<h3>ADVISORY</h3>
+<p>需要 review 的 hypothesis。</p>
+<h3>OBSERVATION</h3>
+<p>趨勢或低信心訊號。</p>
+<hr>
+<h2>61. Performance</h2>
+<p>MVP 不追求 real-time architecture reconstruction。</p>
+<p>目標：</p>
+<pre><code class="language-text">PR / commit triggered
++
+periodic runtime aggregation
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-text">on PR
+on merge
+hourly runtime digest
+daily architecture snapshot
+</code></pre>
+<p>避免過度消耗。</p>
+<hr>
+<h2>62. Storage</h2>
+<p>MVP：</p>
+<pre><code class="language-text">SQLite
+</code></pre>
+<p>足夠。</p>
+<p>表：</p>
+<pre><code class="language-text">entities
+relations
+role_assertions
+authorities
+evidence
+compensations
+burdens
+events
+decisions
+snapshots
+</code></pre>
+<p>等需要 graph query 再升級。</p>
+<hr>
+<h2>63. Privacy</h2>
+<p>Runtime evidence 預設不儲存：</p>
+<ul>
+<li>request body；</li>
+<li>personal content；</li>
+<li>secrets；</li>
+<li>full prompt；</li>
+<li>full source unless needed。</li>
+</ul>
+<p>SGR 儲存：</p>
+<pre><code class="language-text">metadata
+reference
+hash
+aggregate
+</code></pre>
+<p>優先。</p>
+<hr>
+<h2>64. Security</h2>
+<p>AI Reasoner 預設 read-only。</p>
+<p>它不可直接：</p>
+<pre><code class="language-text">merge
+deploy
+delete
+change policy
+</code></pre>
+<p>除非額外 profile + authority 開放。</p>
+<hr>
+<h2>65. Phase 0 — Spec Kernel</h2>
+<p>完成：</p>
+<pre><code class="language-text">Neutral IR
+Event Schema
+Evidence Schema
+Governance Schema
+Profile Interface
+</code></pre>
+<hr>
+<h2>66. Phase 1 — Static MVP</h2>
+<p>完成：</p>
+<pre><code class="language-text">Repo Scanner
+Git Adapter
+Dependency Graph
+Declared Diff
+CLI
+SQLite
+</code></pre>
+<p>此時已可作為：</p>
+<h2>Architecture Drift Analyzer</h2>
+<hr>
+<h2>67. Phase 2 — Dynamic Evidence</h2>
+<p>加入：</p>
+<pre><code class="language-text">OpenTelemetry Adapter
+Runtime Usage
+Data Flow
+Observation Window
+Trend
+</code></pre>
+<p>此時才真正成為：</p>
+<h2>Dynamic Architecture Observer</h2>
+<hr>
+<h2>68. Phase 3 — AI Sparse Reasoning</h2>
+<p>加入：</p>
+<pre><code class="language-text">context pack
+evidence packet
+AI hypothesis
+confidence
+counterevidence
+</code></pre>
+<p>此時成為：</p>
+<h2>AI-Assisted Architecture Governance</h2>
+<hr>
+<h2>69. Phase 4 — Governance Runtime</h2>
+<p>加入：</p>
+<pre><code class="language-text">authority
+decision
+exception
+migration
+review deadline
+policy adapter
+</code></pre>
+<p>此時 SGR v1.0 才算真正成立。</p>
+<hr>
+<h2>70. Phase 5 — Optional Dynamic MSSP Full Profile</h2>
+<p>再決定：</p>
+<ul>
+<li>SMS/TMS 是否繼續；</li>
+<li>FMS 是否需要；</li>
+<li>Router 是否獨立；</li>
+<li>SCL 是否改造成 Authority Model；</li>
+<li>DMS 是否直接併入 Evidence Layer。</li>
+</ul>
+<p>也就是：</p>
+<blockquote>
+<p><strong>先讓 SSD Kernel 工作，再重新判斷 MSSP 哪些舊分類值得留下。</strong></p>
+</blockquote>
+<hr>
+<h2>71. 對舊 MSSP 的可能重構</h2>
+<p>本文件不直接宣布以下改動，</p>
+<p>但工程上可測試：</p>
+<pre><code class="language-text">FMS
+→ Architecture Narrative / Intent Layer
+
+SMS/TMS
+→ Role / Criticality / Replaceability dimensions
+
+DMS
+→ Evidence &amp; Observability Layer
+
+SCL
+→ Authority / Governance Layer
+
+Router
+→ Policy / Selection Engine
+
+Runtime
+→ Execution Adapter
+</code></pre>
+<p>如果這種表示更好，</p>
+<p>就可以使用。</p>
+<p>MSSP 不應保護自己的舊名詞，</p>
+<p>而應保護：</p>
+<blockquote>
+<p><strong>架構可理解、可驗證、可治理的目的。</strong></p>
+</blockquote>
+<hr>
+<h2>72. Dynamic MSSP 最小不變量</h2>
+<p>因此最後只固定六條：</p>
+<h3>I1 — Architecture must be representable</h3>
+<p>架構不能只存在人腦。</p>
+<hr>
+<h3>I2 — Responsibility and authority must be distinguishable</h3>
+<p>誰負責與誰有權改，不能混為一談。</p>
+<hr>
+<h3>I3 — Declared and effective reality must be comparable</h3>
+<p>規格必須能與現實比較。</p>
+<hr>
+<h3>I4 — Non-trivial claims require evidence</h3>
+<p>架構判斷必須可追溯。</p>
+<hr>
+<h3>I5 — Architectural change requires governance</h3>
+<p>推論不等於決策。</p>
+<hr>
+<h3>I6 — Architecture must be evolvable</h3>
+<p>模型本身必須允許：</p>
+<pre><code class="language-text">unknown
+context
+history
+migration
+replacement
+</code></pre>
+<hr>
+<h2>73. 如果未來連「MSSP」都不適合了呢？</h2>
+<p>允許。</p>
+<p>如果研究最後得到：</p>
+<pre><code class="language-text">MSSP v1
+→ Dynamic MSSP
+→ SSD Governance Runtime
+→ New Architecture Governance Model
+</code></pre>
+<p>也沒有問題。</p>
+<p>因為 MSSP 最初不是宗教或終極本體。</p>
+<p>它只是：</p>
+<blockquote>
+<p><strong>為了更好管理計算機架構而建立的方法。</strong></p>
+</blockquote>
+<p>如果未來存在：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mi>M</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mrow><annotation encoding="application/x-tex">M&#x27;</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8019em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<p>使：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>G</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>n</mi><mi>a</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo stretchy="false">(</mo><msup><mi>M</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo stretchy="false">)</mo><mo>&gt;</mo><mi>G</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>n</mi><mi>a</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo stretchy="false">(</mo><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">Governability(M&#x27;)
+&gt;
+Governability(MSSP)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0519em;vertical-align:-0.25em;"></span><span class="mord mathnormal">G</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">nabi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">G</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">nabi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mclose">)</span></span></span></span></span>
+<p>那麼：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mo>→</mo><msup><mi>M</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mrow><annotation encoding="application/x-tex">MSSP
+\rightarrow
+M&#x27;</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8019em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span></span></span></span></span>
+<p>就是合理演化。</p>
+<p>甚至可以說：</p>
+<blockquote>
+<p>一個真正符合 Dynamic MSSP 精神的系統，理論上必須允許「Dynamic MSSP 自己被更好的方法替代」。</p>
+</blockquote>
+<hr>
+<h2>74. 這也是 SSD 與 MSSP 最重要的關係</h2>
+<p>SSD 比 MSSP 更底層。</p>
+<p>SSD 描述：</p>
+<blockquote>
+<p>軟體結構本身就是演化中的狀態。</p>
+</blockquote>
+<p>因此 MSSP 也只是：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>A</mi><mtext>method</mtext></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">A_{\text{method}}(t)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">method</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span></span></span></span></span>
+<p>的一部分。</p>
+<p>既然：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>A</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">A(t)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">A</span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span></span></span></span></span>
+<p>可以演化，</p>
+<p>那麼：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">MSSP(t)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span></span></span></span></span>
+<p>當然也可以演化。</p>
+<p>所以：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>D</mi><mi>y</mi><mi>n</mi><mi>a</mi><mi>m</mi><mi>i</mi><mi>c</mi><mtext> </mtext><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mtext> must be dynamically replaceable</mtext></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Dynamic\ MSSP
+\text{ must be dynamically replaceable}
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">nami</span><span class="mord mathnormal">c</span><span class="mspace"> </span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord text"><span class="mord"> must be dynamically replaceable</span></span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<p>這並不是自我否定。</p>
+<p>反而是它真正完成「動態」的地方。</p>
+<hr>
+<h2>75. MVP 最終一句話</h2>
+<p>第一個 MVP 不做：</p>
+<blockquote>
+<p>AI 自動治理所有軟體。</p>
+</blockquote>
+<p>只做：</p>
+<blockquote>
+<p><strong>把「架構規格」和「實際觀察到的系統」放到同一個 Neutral IR 中，找出高價值差異，附上證據，在必要時才讓 AI 解釋，最後交由治理機制決定要不要改。</strong></p>
+</blockquote>
+<p>即：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>D</mi><mi>e</mi><mi>c</mi><mi>l</mi><mi>a</mi><mi>r</mi><mi>e</mi><mi>d</mi><mo>+</mo><mi>O</mi><mi>b</mi><mi>s</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>e</mi><mi>d</mi><mo>→</mo><mi>E</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo>→</mo><mi>D</mi><mi>i</mi><mi>f</mi><mi>f</mi><mi>e</mi><mi>r</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo>→</mo><mi>R</mi><mi>e</mi><mi>a</mi><mi>s</mi><mi>o</mi><mi>n</mi><mi>i</mi><mi>n</mi><mi>g</mi><mo>→</mo><mi>G</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>n</mi><mi>a</mi><mi>n</mi><mi>c</mi><mi>e</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Declared
++
+Observed
+\rightarrow
+Evidence
+\rightarrow
+Difference
+\rightarrow
+Reasoning
+\rightarrow
+Governance
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">ec</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.0278em;">ser</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal">a</span><span class="mord mathnormal">so</span><span class="mord mathnormal">nin</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal">G</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">nan</span><span class="mord mathnormal">ce</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<p>只要這條跑通，</p>
+<p>SSD / Dynamic MSSP 工程線就真正從論文進入可執行系統。</p>
+<hr>
+<h2>76. v0.1 最終架構</h2>
+<pre><code class="language-text">                     ┌─────────────────────┐
+                     │ Governance Profiles │
+                     │ MSSP / Other / AI   │
+                     └──────────┬──────────┘
+                                │
+┌──────────────┐       ┌────────▼────────┐
+│ Repo / Git   │──────▶│                 │
+├──────────────┤       │ Neutral SSD IR  │
+│ FPL Optional │──────▶│                 │
+├──────────────┤       └────────┬────────┘
+│ OpenTelemetry│──────▶         │
+├──────────────┤                ▼
+│ Manual/ADR   │──────▶ ┌────────────────┐
+└──────────────┘        │ Evidence Engine │
+                        └───────┬────────┘
+                                ▼
+                ┌──────────────────────────┐
+                │ Deterministic Validator  │
+                │ Trend Analyzer           │
+                │ AI Sparse Reasoner       │
+                └────────────┬─────────────┘
+                             ▼
+                    ┌──────────────────┐
+                    │ Governance Event │
+                    └─────────┬────────┘
+                              ▼
+                    ┌──────────────────┐
+                    │ Human / Policy   │
+                    │ Decision         │
+                    └─────────┬────────┘
+                              ▼
+                       Architecture
+                          State Δ
+</code></pre>
+<hr>
+<h2>77. 結論</h2>
+<p>SSD / Dynamic MSSP 工程線的目的不是：</p>
+<blockquote>
+<p>建立另一個巨大的架構框架。</p>
+</blockquote>
+<p>而是建立一個最小、可替換、可觀測的治理 substrate。</p>
+<p>它不要求：</p>
+<ul>
+<li>一定使用 MSSP 舊 taxonomy；</li>
+<li>一定使用 FPL；</li>
+<li>一定使用某個 AI；</li>
+<li>一定使用某個資料庫；</li>
+<li>一定使用某個 policy engine。</li>
+</ul>
+<p>它只要求：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>A</mi><mi>r</mi><mi>c</mi><mi>h</mi><mi>i</mi><mi>t</mi><mi>e</mi><mi>c</mi><mi>t</mi><mi>u</mi><mi>r</mi><mi>e</mi><mtext> can be</mtext><mrow><mo fence="true">{</mo><mtable rowspacing="0.36em" columnalign="left left" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>r</mi><mi>e</mi><mi>p</mi><mi>r</mi><mi>e</mi><mi>s</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>d</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>o</mi><mi>b</mi><mi>s</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>e</mi><mi>d</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>c</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>a</mi><mi>r</mi><mi>e</mi><mi>d</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>e</mi><mi>x</mi><mi>p</mi><mi>l</mi><mi>a</mi><mi>i</mi><mi>n</mi><mi>e</mi><mi>d</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>g</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>n</mi><mi>e</mi><mi>d</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>e</mi><mi>v</mi><mi>o</mi><mi>l</mi><mi>v</mi><mi>e</mi><mi>d</mi></mrow></mstyle></mtd></mtr></mtable></mrow></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Architecture
+\text{ can be}
+\begin{cases}
+represented\\
+observed\\
+compared\\
+explained\\
+governed\\
+evolved
+\end{cases}
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:9.32em;vertical-align:-4.41em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:4.91em;"><span style="top:-11.32em;"><span class="pstrut" style="height:11.32em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">c</span><span class="mord mathnormal">hi</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">t</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mord text"><span class="mord"> can be</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner"><span class="mopen"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:4.45em;"><span style="top:-1.366em;"><span class="pstrut" style="height:4.416em;"></span><span class="delimsizinginner delim-size4"><span>⎩</span></span></span><span style="top:-1.358em;"><span class="pstrut" style="height:4.416em;"></span><span style="height:2.416em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width="0.8889em" height="2.416em" style="width:0.8889em" viewBox="0 0 888.89 2416" preserveAspectRatio="xMinYMin"><path d="M384 0 H504 V2416 H384z M384 0 H504 V2416 H384z"/></svg></span></span><span style="top:-4.416em;"><span class="pstrut" style="height:4.416em;"></span><span class="delimsizinginner delim-size4"><span>⎨</span></span></span><span style="top:-5.558em;"><span class="pstrut" style="height:4.416em;"></span><span style="height:2.416em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width="0.8889em" height="2.416em" style="width:0.8889em" viewBox="0 0 888.89 2416" preserveAspectRatio="xMinYMin"><path d="M384 0 H504 V2416 H384z M384 0 H504 V2416 H384z"/></svg></span></span><span style="top:-7.966em;"><span class="pstrut" style="height:4.416em;"></span><span class="delimsizinginner delim-size4"><span>⎧</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:3.95em;"><span></span></span></span></span></span></span><span class="mord"><span class="mtable"><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:4.57em;"><span style="top:-6.57em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ese</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span><span style="top:-5.13em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal">o</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.0278em;">ser</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span><span style="top:-3.69em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal">co</span><span class="mord mathnormal">m</span><span class="mord mathnormal">p</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span><span style="top:-2.25em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal">e</span><span class="mord mathnormal">x</span><span class="mord mathnormal" style="margin-right:0.0197em;">pl</span><span class="mord mathnormal">ain</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span><span style="top:-0.81em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">n</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span><span style="top:0.63em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:4.07em;"><span></span></span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span><span style="top:-6.91em;"><span class="pstrut" style="height:11.32em;"></span><span class="stretchy fbox" style="height:9.32em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:4.41em;"><span></span></span></span></span></span></span></span></span></span>
+<p>因此最終：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>M</mi><mi>S</mi><mi>S</mi><mi>P</mi><mtext> is a means, not the invariant</mtext></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+MSSP
+\text{ is a means, not the invariant}
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord text"><span class="mord"> is a means, not the invariant</span></span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<p>真正的不變量是：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>B</mi><mi>e</mi><mi>t</mi><mi>t</mi><mi>e</mi><mi>r</mi><mtext> </mtext><mi>A</mi><mi>r</mi><mi>c</mi><mi>h</mi><mi>i</mi><mi>t</mi><mi>e</mi><mi>c</mi><mi>t</mi><mi>u</mi><mi>r</mi><mi>e</mi><mtext> </mtext><mi>G</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>n</mi><mi>a</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
+Better\ Architecture\ Governability
+}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal">e</span><span class="mord mathnormal">tt</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mspace"> </span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">c</span><span class="mord mathnormal">hi</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">t</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mspace"> </span><span class="mord mathnormal">G</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">nabi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
+<p>而 SSD Governance Runtime 的任務就是：</p>
+<blockquote>
+<p><strong>讓任何架構方法論，都能有機會從靜態文件變成可觀察、可追蹤、可證據化、可演化的計算機架構治理系統。</strong></p>
+</blockquote>
+<hr>
+<h2>參考與工程對照</h2>
+<ol>
+<li>Bucaioni, A., Di Salle, A., Iovino, L., Mariani, L., &amp; Pelliccione, P. (2024). <em>Continuous Conformance of Software Architectures</em>. IEEE ICSA 2024. DOI: 10.1109/ICSA59870.2024.00019.</li>
+<li>Blair, G., Bencomo, N., &amp; France, R. B. (2009). <em><a href="mailto:Models@run.time">Models@run.time</a></em>. Computer, 42(10), 22–27. DOI: 10.1109/MC.2009.326.</li>
+<li>ArchUnit. <em>ArchUnit User Guide</em>. <a href="https://www.archunit.org/userguide/html/000_Index.html">https://www.archunit.org/userguide/html/000_Index.html</a></li>
+<li>OpenTelemetry. <em>Semantic Conventions</em>. <a href="https://opentelemetry.io/docs/specs/semconv/">https://opentelemetry.io/docs/specs/semconv/</a></li>
+<li>Open Policy Agent. <em>OPA Documentation</em>. <a href="https://www.openpolicyagent.org/docs">https://www.openpolicyagent.org/docs</a></li>
+<li>Neo.K / EveMissLab. 《表觀完好系統：從軟體屎山、補償性完整到動態架構治理》12 篇系列，Software Structural Dynamics v1.0.</li>
+<li>Neo.K / EveMissLab. MSSP / FPL / Program Ontology 既有工程與理論文件。</li>
+</ol>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

@@ -210,6 +210,10 @@ main{padding:56px 0 96px}
 .content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
 .content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
 .content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+/* Demoting the body by one level pushes the deepest sections here, so they need
+   to be styled rather than left to the browser's defaults. */
+.content h4{font-family:Inter,"Noto Sans TC",sans-serif;font-size:16.5px;margin:30px 0 10px;color:var(--accent)}
+.content h5,.content h6{font-family:Inter,"Noto Sans TC",sans-serif;font-size:14px;letter-spacing:.02em;margin:26px 0 9px;color:var(--muted)}
 .content p{margin:0 0 24px}
 .content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
 .content li{margin:.45em 0}
@@ -251,6 +255,31 @@ footer a{color:var(--accent)}
 <footer><span>Neo.K × EveMissLab</span><a href="${paper.canonicalUrl}">${paper.canonicalUrl}</a></footer>
 </body>
 </html>`;
+}
+
+/** Push every heading down one level, leaving fenced code blocks alone.
+ *
+ * The page emits `<h1>{title}</h1>` itself and renders the body underneath, so
+ * a paper that numbers its sections `# 1.` `# 2.` produces a second, third and
+ * seventy-eighth H1 — every one of them styled as the page title, while the
+ * `## 摘要` above them renders at half the size. The hierarchy comes out
+ * inverted. 81 of the 89 papers are written this way, so the body is demoted
+ * rather than the corpus rewritten.
+ */
+function demoteHeadings(markdown) {
+  let inFence = false;
+  return markdown
+    .split("\n")
+    .map((line) => {
+      if (/^\s*(```|~~~)/.test(line)) {
+        inFence = !inFence;
+        return line;
+      }
+      if (inFence) return line;
+      // h6 is the floor; a heading already there stays where it is.
+      return line.replace(/^(#{1,5})(\s)/, "#$1$2");
+    })
+    .join("\n");
 }
 
 /** First substantive paragraph after the header block, used as the card summary. */
@@ -391,7 +420,11 @@ for (const { series, paper } of collected) {
     }
     break;
   }
-  const html = `<h1>${escapeHtml(paper.title)}</h1>\n${renderMarkdown(rest.slice(cut).join("\n"))}`;
+  // Only demote where the body actually competes with the title. A paper whose
+  // sections already start at `##` is left alone rather than pushed to `###`.
+  const bodyMarkdown = rest.slice(cut).join("\n");
+  const hasBodyH1 = bodyMarkdown.split("\n").some((line) => /^# \S/.test(line));
+  const html = `<h1>${escapeHtml(paper.title)}</h1>\n${renderMarkdown(hasBodyH1 ? demoteHeadings(bodyMarkdown) : bodyMarkdown)}`;
   mathRendered += countRenderedMath(html);
   const errors = countMathErrors(html);
   if (errors) {

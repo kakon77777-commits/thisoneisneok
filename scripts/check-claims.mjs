@@ -51,8 +51,13 @@ const EN_NUMERALS = ["zero", "one", "two", "three", "four", "five", "six", "seve
 const wrongSeriesCounts = [];
 for (let n = 1; n <= 10; n += 1) {
   if (n === seriesCount) continue;
+  // A CJK numeral must bring its measure word. Without that, 「這一系列」 —
+  // "this series", where 一 is not counting anything — reads as a claim that
+  // there is one series, and the check fires on prose that is perfectly correct.
+  // A check that cries wolf on good writing gets deleted, so it does not get to.
   wrongSeriesCounts.push(
-    new RegExp(`(?:${n}|${CJK_NUMERALS[n]})\\s*(?:個)?\\s*系列`),
+    new RegExp(`${CJK_NUMERALS[n]}\\s*個\\s*系列`),
+    new RegExp(`(?<![0-9])${n}\\s*個?\\s*系列`),
     new RegExp(`\\b(?:${n}|${EN_NUMERALS[n]})\\s+series\\b`, "i"),
   );
 }

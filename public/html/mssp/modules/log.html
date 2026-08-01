@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>開發日誌 | MSSP | Neo.K</title>
+<meta name="description" content="每天一則。範例、考古與 MVP 打回來的東西寫在這裡，最新的在最上面。進到 1.x 的改良點會從這裡挑。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/modules/log.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.state{display:inline-block;border:1px solid var(--accent);color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.12em;padding:5px 10px;margin:0 0 30px;text-transform:uppercase}
+.content{font-size:17.5px;line-height:1.9;overflow-wrap:break-word}
+.content h1{font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:4px 0 32px}
+.content h2{font-size:25px;line-height:1.3;margin:56px 0 15px}
+.content h3{font-size:18px;margin:34px 0 11px}
+.content p{margin:0 0 23px}.content li{margin:.42em 0}
+.content strong{font-weight:650}
+.content blockquote{margin:34px 0;padding:6px 0 6px 26px;border-left:3px solid var(--accent);font-size:19px;line-height:1.7}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.62;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+.content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:26px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-01</span></header>
+<main>
+  <span class="state">每日進行</span>
+  <article class="content"><h1>開發日誌</h1>
+<p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
+<p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
+<p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-01</h2>
+<h3>一、十二篇論文到了，它們替已經在做的事命名</h3>
+<p>《表觀完好系統》系列十二篇進到<a href="/papers">論文區</a>（語料庫來到 89 篇）。這一系列不是新方向，而是把這個網站已經在做的幾件事講清楚了：</p>
+<ul>
+<li><strong>P3 宣告架構 ≠ 有效架構</strong>，正是<a href="/research/github-architecture-scope.html">架構透視器</a>那次修正轉的那個彎。</li>
+<li><strong>P4 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Q</mi><mi>s</mi></msub><mo mathvariant="normal">≠</mo><msub><mi>F</mi><mi>v</mi></msub></mrow><annotation encoding="application/x-tex">Q_s \neq F_v</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">v</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></strong>（結構品質不推出生存適應度），正是<a href="/html/mssp/modules/archaeology.html">考古</a>那節「什麼不適合拆」在講的事。</li>
+<li><strong>P7 複雜度轉移</strong>說明了為什麼考古的判斷不能只看「拆完比較乾淨」。</li>
+</ul>
+<p>論文之外還有一份〈SSD / Dynamic MSSP 工程規格〉，已收為<a href="/html/mssp/modules/authority.html">迭代授權</a>。它做的事是本來缺的：<strong>寫下 MSSP 自己可以被改到什麼程度</strong>。</p>
+<h3>二、早上那個修正方向對，形狀錯</h3>
+<p>架構透視器原本把「穩定度分類」印在 MSSP 的標籤下——一個宣告了 <code>src/TMS/</code> 的專案，只要那些模組中心性高，就會被報成 SMS。這是真缺陷，早上修掉了，修法是：<strong>有宣告時宣告優先，推論當 fallback</strong>。</p>
+<p>讀完第 11 篇才看出這個形狀有問題。規格 §43 講得很直白：</p>
+<blockquote>
+<p>Observed 不等於 Effective。Observed 是事實，Effective 是推論。Observation → Evidence → Interpretation 不可省略。</p>
+</blockquote>
+<p>「宣告優先、推論當 fallback」是把兩層壓成一層，然後在有宣告時把量測整個丟掉。也就是說，一個宣告 <code>TMS/</code>、實際上已經被當成承重結構在用的專案，工具會照著宣告回答——正是第 11 篇開頭那句：</p>
+<blockquote>
+<p>如果 MSSP 仍回答「它在 YAML 裡寫 TMS，所以它就是 TMS」，那 MSSP 只是另一份過時文件。</p>
+</blockquote>
+<p><strong>已改。</strong> 兩層並存：每個模組除了宣告角色，另外印出量到的 <code>observed:</code>（被依賴數、依賴數、中心性、不穩定度、churn）；兩者不一致時產生治理事件，而嚴重度必須配得上證據：</p>
+<table>
+<thead>
+<tr>
+<th>嚴重度</th>
+<th>什麼情況</th>
+<th>證據性質</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ERROR</code></td>
+<td><code>dependency.sms_to_tms</code>、<code>dependency.tms_to_tms</code></td>
+<td>直接讀依賴圖。<strong>不帶 confidence 欄位</strong>——沒有東西可以不確定</td>
+</tr>
+<tr>
+<td><code>ADVISORY</code></td>
+<td>宣告 TMS，但被依賴的廣度不亞於本專案最被依賴的宣告 SMS</td>
+<td>計數是真證據，但計數不是 runtime</td>
+</tr>
+<tr>
+<td><code>OBSERVATION</code></td>
+<td>宣告 SMS，卻沒有任何東西依賴它</td>
+<td>單獨看有歧義——入口點本來就沒有內部被依賴者</td>
+</tr>
+</tbody></table>
+<p><strong>不重新分類任何東西。</strong> 宣告角色維持原樣，直到有權者去動它。單一快照也證明不了偏離「持續」了多久，所以不管數字多懸殊，角色假說一律不高於 ADVISORY。報告另外寫明哪些證據類別拿不到（<code>runtime_trace</code>、<code>incident</code>、<code>human_assertion</code>），以及權限模型<strong>根本沒有建模</strong>——是「沒查」，不是「查過沒問題」。</p>
+<p>順帶補上了兄弟規則看不到的那一格：依賴圖只保留 <code>target != source</code> 的邊，而集合底下再一層的目錄（<code>TMS/reporters/</code> 裡的 text 與 json）會塌成單一 component，所以那裡的兄弟 import 在圖上完全不存在。原始 import 還留在檔案紀錄上，把它折回路徑片段跟同 component 的其他檔案比對就找得回來。</p>
+<p><strong>兩個方向都驗過。</strong> 蓋一個刻意違反每條規則的專案，三種嚴重度全部觸發；換成 FPL 編譯出來的專案（它的編譯器根本不讓這些違規寫出來），只剩一則 OBSERVATION，落在入口點上——剛好命中規則裡寫著的那條反證。</p>
+<h3>三、FPL 的位置比原本以為的小，也更清楚</h3>
+<p>原本記下的 1.x 候選是「MSSP 的規則可以是型別規則」。第 11 篇 §8＋§21 講得更精確：那是<strong>三層判斷器的第一層（Deterministic Validator）</strong>，原則是「能 deterministic 判定的，AI 介入 = 0」。</p>
+<p>所以問題不是「規則可不可以是型別規則」，而是<strong>哪些可以</strong>：import 圖、環、重複、名稱解析——FPL 那八條全部在這一層。而論文真正在乎的問題（這個 TMS 是不是已經活成 SMS？）在第二、三層，<strong>FPL 結構上答不了</strong>，因為它只看得到宣告。</p>
+<p>同時暴露一件事：規格 §57-F 那條驗收（拿掉 MSSP Profile，核心仍要能跑）<strong>FPL 現在過不了</strong>——五個集合的名字在 <code>src/</code> 裡出現 87 次，其中 45 次在型別檢查器裡。那八條規則檢查的不是架構治理，是五個特定字串。§39 允許 FPL 帶 MSSP 味道（它是 authoring surface），但 §26 要求 IR 不能是 taxonomy 的序列化。<strong>待辦：把 role vocabulary 變成資料，而不是 kernel 裡的字面量。</strong></p>
+<h3>四、一個沒有任何守衛看得見的缺陷</h3>
+<p>論文頁的章節標題用 <code># 1.</code>、<code># 2.</code> 編號，而頁面本身已經另外輸出過一個 <code>&lt;h1&gt;</code> 標題。結果是一頁上有 78 個 H1，全部 54px；而 <code>摘要</code> 是 H2、26px——<strong>階層是反的</strong>。PDF 那邊更糟：算繪器對 <code># </code> 開頭的行直接 <code>continue</code>，於是那些章節標題<strong>一個都沒印出來</strong>。</p>
+<p>規模：<strong>89 篇裡有 81 篇</strong>，兩種格式都中，共 2,433 個標題。從論文上線那天就是這樣。</p>
+<p>九道部署守衛全部沒看見，因為它們量的是公式數、殘留分隔符、可達性、位元組數——<strong>沒有一道量的是「這頁讀起來對不對」</strong>。發現它只是因為去看了一頁。</p>
+<p>這件事跟<a href="/html/mssp/modules/development.html">開發區缺點 4</a>是同一族：可量的東西會被量，不可量的東西會被當成沒問題。修法是本文標題整層降一級（頁面標題保持唯一的 H1），PDF 則把第一個 <code># </code> 當標題略過、之後的都當章節印出來。</p>
+<p>驗證用了兩個互相獨立的量測：HTML 那邊「多餘 H1 數」歸零；PDF 那邊 <strong>81 個檔案變大、8 個不變</strong>——而那 8 個正是 HTML 調查裡本來就沒有多餘 H1 的同 8 篇。兩邊指向同一組論文。</p>
+<h3>五、突變測試抓到一個測試自己的洞</h3>
+<p>新的治理事件寫完後，把新程式碼刻意弄壞四次，看測試會不會叫：</p>
+<ul>
+<li><code>sibling_unit_imports</code> 永遠回空 → <strong>抓到</strong></li>
+<li><code>governance_events</code> 什麼都不發 → <strong>抓到</strong></li>
+<li>ERROR 事件也帶 confidence → <strong>抓到</strong></li>
+<li><strong><code>observed:</code> 整塊不輸出 → 25 個測試全過</strong></li>
+</ul>
+<p>第四個是這次新增的那一層。所有測試都在斷言「事件」，而事件不需要被展示它的輸入就能存在。補了一條測試之後四個都會被抓到。</p>
+<p>**這條進 1.x 候選：**方法目前只說「主張要能被機器檢查」，沒說「檢查本身要被證明會失敗」。<a href="/html/mssp/modules/development.html">開發區優點 2</a>講的是前者。後者是這個網站三次踩到同一件事之後學到的，該寫進方法。</p>
+<hr>
+<h3>今天推進了什麼</h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>狀態</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>論文語料庫</td>
+<td>77 → <strong>89 篇</strong>，5 個系列</td>
+</tr>
+<tr>
+<td>架構透視器</td>
+<td>宣告／觀察兩層並存 ＋ 治理事件，26 個測試</td>
+</tr>
+<tr>
+<td>論文標題階層</td>
+<td>81 篇 × 2 種格式修復</td>
+</tr>
+<tr>
+<td>MSSP 迭代授權</td>
+<td>收錄生效</td>
+</tr>
+<tr>
+<td>FPL profile 化</td>
+<td><strong>未開始</strong>——§57-F 目前過不了</td>
+</tr>
+</tbody></table>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

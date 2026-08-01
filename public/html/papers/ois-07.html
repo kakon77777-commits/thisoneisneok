@@ -23,6 +23,10 @@ main{padding:56px 0 96px}
 .content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
 .content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
 .content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+/* Demoting the body by one level pushes the deepest sections here, so they need
+   to be styled rather than left to the browser's defaults. */
+.content h4{font-family:Inter,"Noto Sans TC",sans-serif;font-size:16.5px;margin:30px 0 10px;color:var(--accent)}
+.content h5,.content h6{font-family:Inter,"Noto Sans TC",sans-serif;font-size:14px;letter-spacing:.02em;margin:26px 0 9px;color:var(--muted)}
 .content p{margin:0 0 24px}
 .content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
 .content li{margin:.45em 0}
@@ -53,7 +57,7 @@ footer a{color:var(--accent)}
   <section class="facts"><div><b>編號</b><span>OIS-07</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-08-01</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>協作整理</b><span>Aletheia / GPT</span></div></section>
   <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ois-07.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
   <article class="content"><h1>修好真的比較簡單嗎？複雜度轉移與重構悖論</h1>
-<h2>摘要</h2>
+<h3>摘要</h3>
 <p>軟體工程經常把重構、技術債償還、服務拆分與架構清理描述成「降低複雜度」的活動。然而，複雜度並不是一個只能存在於程式碼中的單一標量。當一個大型函式被拆成多個服務、當重複邏輯被集中成共同抽象、當人工流程被自動化、當 legacy adapter 被 framework 取代時，某些局部複雜度確實可能下降，但新的複雜度也可能出現在網路通訊、部署、故障模式、配置、資料一致性、共享基礎設施、組織協調、觀測、驗證與認知負荷中。</p>
 <p>2025 年 ICSA 的 architecture technical debt 生命周期研究提供了一個重要實證例子：研究觀察到 ATD repayment 後 FAN-IN 平均增加 57.5%、FAN-OUT 增加 26.7%，顯示償債可以改善某些短期品質，同時使依賴更集中並增加另一種架構複雜度。Microservices 的既有工程經驗也長期指出，較強的模組邊界與獨立部署能力，是以 distribution、eventual consistency 與 operational complexity 等成本交換而來。</p>
 <p>本文因此提出「<strong>複雜度轉移（Complexity Transfer）</strong>」與「<strong>重構悖論（Refactoring Paradox）</strong>」：一次成功重構可能顯著改善目標區域，卻不必然降低系統的總複雜度；它更可能改變複雜度的<strong>位置、型態、集中程度、可見性、承擔者與可自動化程度</strong>。</p>
@@ -79,7 +83,7 @@ E
 <p>本文最後將此命題接回 Dynamic MSSP/FPL：架構治理不能只比較重構前後的 code smell 或 dependency count，而應追蹤「複雜度流」——複雜度從哪裡消失、又在哪裡重新出現，以及新的承擔主體是否真的更適合處理它。</p>
 <p>**關鍵詞：**複雜度轉移、重構悖論、architecture technical debt、microservices、operational complexity、leaky abstraction、AI coding、Dynamic MSSP、FPL、軟體結構動力學</p>
 <hr>
-<h1>1. 「修乾淨了」究竟代表什麼？</h1>
+<h2>1. 「修乾淨了」究竟代表什麼？</h2>
 <p>軟體重構之後，我們常會說：</p>
 <blockquote>
 <p>這裡乾淨多了。</p>
@@ -107,7 +111,7 @@ C_{\text{local}}(t)</annotation></semantics></math></span><span class="katex-htm
 <p>答案不是必然。</p>
 <p>因為「局部簡單」可以透過把責任推到其他地方取得。</p>
 <hr>
-<h1>2. 2025 ICSA：償還技術債後，依賴反而更集中</h1>
+<h2>2. 2025 ICSA：償還技術債後，依賴反而更集中</h2>
 <p>2025 年 ICSA 的研究 <em>Tracing the Lifecycle of Architecture Technical Debt in Software Systems: A Dependency Approach</em> 對 architecture technical debt 的生命周期與依賴變化進行分析。</p>
 <p>其中最值得本文注意的結果是：</p>
 <ul>
@@ -132,10 +136,10 @@ C_{\text{local}}(t)</annotation></semantics></math></span><span class="katex-htm
 <p><strong>修復不是把複雜度消掉，而可能是把分散複雜度重新集中。</strong></p>
 </blockquote>
 <hr>
-<h1>3. 重構悖論</h1>
+<h2>3. 重構悖論</h2>
 <p>本文因此定義：</p>
-<h1>重構悖論</h1>
-<h2>Refactoring Paradox</h2>
+<h2>重構悖論</h2>
+<h3>Refactoring Paradox</h3>
 <blockquote>
 <p><strong>一次重構可以成功改善其直接目標，同時使系統在其他維度產生新的複雜度或負擔。</strong></p>
 </blockquote>
@@ -156,7 +160,7 @@ C_{\text{local}}(t)</annotation></semantics></math></span><span class="katex-htm
 <p><strong>只測量下降的那一維，然後宣稱複雜度消失了。</strong></p>
 </blockquote>
 <hr>
-<h1>4. 複雜度不是一個數，而是一個向量</h1>
+<h2>4. 複雜度不是一個數，而是一個向量</h2>
 <p>本文將系統複雜度表示為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="bold">C</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><mo stretchy="false">[</mo><msub><mi>C</mi><mi>c</mi></msub><mo separator="true">,</mo><msub><mi>C</mi><mi>d</mi></msub><mo separator="true">,</mo><msub><mi>C</mi><mi>n</mi></msub><mo separator="true">,</mo><msub><mi>C</mi><mi>o</mi></msub><mo separator="true">,</mo><msub><mi>C</mi><mi>s</mi></msub><mo separator="true">,</mo><msub><mi>C</mi><mi>f</mi></msub><mo separator="true">,</mo><msub><mi>C</mi><mi>h</mi></msub><mo separator="true">,</mo><msub><mi>C</mi><mi>g</mi></msub><mo separator="true">,</mo><msub><mi>C</mi><mi>v</mi></msub><mo separator="true">,</mo><msub><mi>C</mi><mi>a</mi></msub><msub><mo stretchy="false">]</mo><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">\mathbf{C}(t)
 =
@@ -193,7 +197,7 @@ C_{\text{system}}
 C_{\text{code-only}}
 }</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.6605em;vertical-align:-0.6261em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.6605em;"><span class="pstrut" style="height:3.6605em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">system</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">code-only</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.6605em;"></span><span class="stretchy fbox" style="height:1.6605em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.6261em;"><span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h1>5. 第一種轉移：Code → Dependency</h1>
+<h2>5. 第一種轉移：Code → Dependency</h2>
 <p>假設原本有：</p>
 <pre><code class="language-text">A
 A&#39;
@@ -215,7 +219,7 @@ A&#39;&#39;&#39;┘
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mi>d</mi></msub></mrow><annotation encoding="application/x-tex">C_d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>可能上升。</p>
 <p>這是一個非常典型的：</p>
-<h1>Duplication-to-Centralization Transfer</h1>
+<h2>Duplication-to-Centralization Transfer</h2>
 <p>也就是：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>Duplication Complexity</mtext><mo>→</mo><mtext>Central Dependency Complexity</mtext></mrow><annotation encoding="application/x-tex">\text{Duplication Complexity}
 \rightarrow
@@ -233,7 +237,7 @@ A&#39;&#39;&#39;┘
 <p>集中不是免費的簡化。</p>
 </blockquote>
 <hr>
-<h1>6. 第二種轉移：Monolith → Distribution</h1>
+<h2>6. 第二種轉移：Monolith → Distribution</h2>
 <p>Microservices 是複雜度轉移最清楚的案例之一。</p>
 <p>Martin Fowler 對 microservice trade-offs 的整理指出，其優點包括：</p>
 <ul>
@@ -272,7 +276,7 @@ A&#39;&#39;&#39;┘
 \rightarrow
 \text{Inter-service Complexity}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">In-process Complexity</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Inter-service Complexity</span></span></span></span></span></span>
 <hr>
-<h1>7. 「Big Ball of Microservice Mud」</h1>
+<h2>7. 「Big Ball of Microservice Mud」</h2>
 <p>這個問題甚至可能變得更糟。</p>
 <p>如果 service boundary 選錯：</p>
 <pre><code class="language-text">Service A
@@ -301,7 +305,7 @@ C_{\text{original}}</annotation></semantics></math></span><span class="katex-htm
 \text{Decoupling}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Decomposition</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel amsrm">⇏</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Decoupling</span></span></span></span></span></span>
 <p>拆開部署單位，不代表真正解耦。</p>
 <hr>
-<h1>8. 第三種轉移：Implementation → Framework</h1>
+<h2>8. 第三種轉移：Implementation → Framework</h2>
 <p>Framework 的核心價值就是隱藏重複機制。</p>
 <p>例如：</p>
 <pre><code class="language-text">routing
@@ -337,7 +341,7 @@ ORM
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>Complexity Existence</mtext><mo>↓</mo></mrow><annotation encoding="application/x-tex">\text{Complexity Existence}
 \downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Complexity Existence</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
 <hr>
-<h1>9. 抽象的真正價值：重新分配認知，而不是消滅世界</h1>
+<h2>9. 抽象的真正價值：重新分配認知，而不是消滅世界</h2>
 <p>這並不降低 abstraction 的價值。</p>
 <p>恰恰相反。</p>
 <p>好的 abstraction 很重要，因為它讓大部分使用者在大部分時間不需要處理底層細節。</p>
@@ -357,7 +361,7 @@ ORM
 </blockquote>
 <p>這是非常重要的複雜度治理思想。</p>
 <hr>
-<h1>10. 第四種轉移：Runtime → Configuration</h1>
+<h2>10. 第四種轉移：Runtime → Configuration</h2>
 <p>許多平台工程會試圖把：</p>
 <pre><code class="language-text">hardcoded behavior
 </code></pre>
@@ -400,7 +404,7 @@ workflow:
 \text{Configuration System Complexity}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Code Simplification</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Configuration System Complexity</span></span></span></span></span></span>
 <p>完全可能。</p>
 <hr>
-<h1>11. 第五種轉移：Code → Data</h1>
+<h2>11. 第五種轉移：Code → Data</h2>
 <p>某些複雜邏輯會被改成：</p>
 <pre><code class="language-text">lookup table
 rules database
@@ -427,12 +431,12 @@ schema
 <li>migration；</li>
 </ul>
 <p>就可能形成：</p>
-<h1>Data-Encoded Architecture</h1>
+<h2>Data-Encoded Architecture</h2>
 <p>也就是架構邏輯從 code 移到 data。</p>
 <p>它仍然是複雜度。</p>
 <p>只是靜態程式掃描看不到。</p>
 <hr>
-<h1>12. 第六種轉移：Developer → Operations</h1>
+<h2>12. 第六種轉移：Developer → Operations</h2>
 <p>microservices、serverless、Kubernetes、managed platform 常降低開發者某些負擔。</p>
 <p>例如：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>deployment logic in app</mtext></msub><mo>↓</mo></mrow><annotation encoding="application/x-tex">C_{\text{deployment logic in app}}\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">deployment logic in app</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
@@ -466,7 +470,7 @@ C_{\text{operations}}</annotation></semantics></math></span><span class="katex-h
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>C</mi><mo stretchy="false">(</mo><msub><mi>D</mi><mn>1</mn></msub><mo stretchy="false">)</mo><mo>→</mo><mi>C</mi><mo stretchy="false">(</mo><msub><mi>D</mi><mn>2</mn></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">C(D_1)\rightarrow C(D_2)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span></span>
 <p>即使總量沒有下降，也可能提高整體治理能力。</p>
 <hr>
-<h1>13. 第七種轉移：Local → Platform</h1>
+<h2>13. 第七種轉移：Local → Platform</h2>
 <p>平台化是另一個經典例子。</p>
 <p>每支產品團隊自己處理：</p>
 <ul>
@@ -484,7 +488,7 @@ C_{\text{operations}}</annotation></semantics></math></span><span class="katex-h
 <p>但平台團隊承擔：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>platform</mtext></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">C_{\text{platform}}\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">platform</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <p>這是一種：</p>
-<h1>Complexity Concentration</h1>
+<h2>Complexity Concentration</h2>
 <p>如果做好，這是好事。</p>
 <p>因為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>N</mi><mtext>teams handling complexity</mtext></msub><mo>↓</mo></mrow><annotation encoding="application/x-tex">N_{\text{teams handling complexity}}\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">teams handling complexity</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
@@ -495,10 +499,10 @@ C_{\text{operations}}</annotation></semantics></math></span><span class="katex-h
 <p>以及：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>Organizational Dependency</mtext><mo>↑</mo></mrow><annotation encoding="application/x-tex">\text{Organizational Dependency}\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Organizational Dependency</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <hr>
-<h1>14. 第八種轉移：Implementation → Verification</h1>
+<h2>14. 第八種轉移：Implementation → Verification</h2>
 <p>AI coding 讓這個問題在 2025–2026 年變得更加明顯。</p>
 <p>2026 年一項對專業軟體工程師的 longitudinal study 發現，使用 AI coding assistants 後，多數開發活動所需時間下降，其中 82% 受訪者表示寫程式碼花費的時間更少；但研究同時觀察到工作重心由 creation 轉向 verification，並提出：</p>
-<h1>Supervisory Engineering Work</h1>
+<h2>Supervisory Engineering Work</h2>
 <p>用來描述：</p>
 <ul>
 <li>directing AI；</li>
@@ -521,7 +525,7 @@ C_{\text{operations}}</annotation></semantics></math></span><span class="katex-h
 <p><strong>把工程複雜度從 syntax production 移到 specification、review、verification、architecture 與 governance。</strong></p>
 </blockquote>
 <hr>
-<h1>15. AI 生成量越大，複雜度轉移速度越快</h1>
+<h2>15. AI 生成量越大，複雜度轉移速度越快</h2>
 <p>如果 AI 讓：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mtext>code generation</mtext></msub></mrow><annotation encoding="application/x-tex">V_{\text{code generation}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">code generation</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>提高十倍，</p>
@@ -545,10 +549,10 @@ integrating
 governing
 </code></pre>
 <p>因此：</p>
-<h1>Bottleneck Transfer</h1>
+<h2>Bottleneck Transfer</h2>
 <p>也是 Complexity Transfer 的一種。</p>
 <hr>
-<h1>16. 第九種轉移：Human Memory → Machine Metadata</h1>
+<h2>16. 第九種轉移：Human Memory → Machine Metadata</h2>
 <p>Dynamic MSSP/FPL 本身也會造成複雜度轉移。</p>
 <p>原本很多架構知識存在：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>human tacit knowledge</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{human tacit knowledge}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">human tacit knowledge</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
@@ -581,7 +585,7 @@ C_{\text{governance}}
 <p>而是：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>min</mi><mo>⁡</mo><mtext>Ungovernable Complexity</mtext></mrow><annotation encoding="application/x-tex">\min \text{Ungovernable Complexity}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mop">min</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">Ungovernable Complexity</span></span></span></span></span></span>
 <hr>
-<h1>17. 不應叫「複雜度守恆定律」</h1>
+<h2>17. 不應叫「複雜度守恆定律」</h2>
 <p>這裡必須保持理論嚴謹。</p>
 <p>直覺上很容易說：</p>
 <blockquote>
@@ -597,42 +601,42 @@ O(n\log n)</annotation></semantics></math></span><span class="katex-html" aria-h
 <p>刪除不再需要的 feature，也可能真正：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>total</mtext></msub><mo>↓</mo></mrow><annotation encoding="application/x-tex">C_{\text{total}}\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">total</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
 <p>所以本文不提出：</p>
-<h1>Complexity Conservation Law</h1>
+<h2>Complexity Conservation Law</h2>
 <p>而提出較弱、可防止誤判的原則：</p>
-<h1>Complexity Non-Disappearance Assumption</h1>
+<h2>Complexity Non-Disappearance Assumption</h2>
 <p>即：</p>
 <blockquote>
 <p><strong>在重構或抽象後，不應預設被局部消除的複雜度已從整個系統消失；必須檢查它是否被刪除、壓縮、隱藏、集中或轉移。</strong></p>
 </blockquote>
 <hr>
-<h1>18. 五種複雜度結果</h1>
+<h2>18. 五種複雜度結果</h2>
 <p>對一次重構 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi></mrow><annotation encoding="application/x-tex">R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span></span></span></span> ，可以有：</p>
-<h2>18.1 Elimination</h2>
+<h3>18.1 Elimination</h3>
 <p>真正刪除不必要複雜度：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>total</mtext></msub><mo>↓</mo></mrow><annotation encoding="application/x-tex">C_{\text{total}}\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">total</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
 <hr>
-<h2>18.2 Compression</h2>
+<h3>18.2 Compression</h3>
 <p>用更強抽象壓縮多個重複結構。</p>
 <p>總複雜度可能下降，但新抽象承擔更高密度語義。</p>
 <hr>
-<h2>18.3 Concealment</h2>
+<h3>18.3 Concealment</h3>
 <p>底層複雜度仍在，只是大部分使用者看不到。</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>visible</mtext></msub><mo>↓</mo></mrow><annotation encoding="application/x-tex">C_{\text{visible}}\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">visible</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
 <hr>
-<h2>18.4 Concentration</h2>
+<h3>18.4 Concentration</h3>
 <p>複雜度從多處集中到少數平台、服務或專家。</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">Dispersion</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi>C</mi><mo stretchy="false">)</mo><mo>↓</mo></mrow><annotation encoding="application/x-tex">\operatorname{Dispersion}(C)\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mop"><span class="mord mathrm">Dispersion</span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
 <p>但：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mrow><mi mathvariant="normal">Criticality</mi><mo>⁡</mo></mrow><mtext>center</mtext></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">\operatorname{Criticality}_{\text{center}}\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9386em;vertical-align:-0.2441em;"></span><span class="mop"><span class="mop"><span class="mord mathrm" style="margin-right:0.0139em;">Criticality</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1864em;"><span style="top:-2.4559em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">center</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2441em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <hr>
-<h2>18.5 Transfer</h2>
+<h3>18.5 Transfer</h3>
 <p>複雜度從一個維度或主體搬到另一個：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mi>i</mi></msub><mo>↓</mo><mo separator="true">,</mo><mspace width="1em"/><msub><mi>C</mi><mi>j</mi></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">C_i\downarrow,\quad C_j\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <p>這五者必須區分。</p>
 <hr>
-<h1>19. 複雜度流</h1>
+<h2>19. 複雜度流</h2>
 <p>為了描述這種變化，本文提出：</p>
-<h1>Complexity Flow</h1>
+<h2>Complexity Flow</h2>
 <p>令：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>F</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow><annotation encoding="application/x-tex">F_{ij}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">ij</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>表示複雜度從維度 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>i</mi></mrow><annotation encoding="application/x-tex">i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6595em;"></span><span class="mord mathnormal">i</span></span></span></span> 轉向維度 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>j</mi></mrow><annotation encoding="application/x-tex">j</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.854em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0572em;">j</span></span></span></span> 的流量。</p>
@@ -648,26 +652,26 @@ O(n\log n)</annotation></semantics></math></span><span class="katex-html" aria-h
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi mathvariant="bold">F</mi><mi>C</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo separator="true">,</mo><mi>t</mi><mo>+</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\mathbf{F}_C(t,t+1)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathbf">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0715em;">C</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1</span><span class="mclose">)</span></span></span></span></span>
 <p>即複雜度流矩陣。</p>
 <hr>
-<h1>20. 好的複雜度轉移</h1>
+<h2>20. 好的複雜度轉移</h2>
 <p>複雜度轉移不應被污名化。</p>
 <p>好的轉移通常具有以下特徵：</p>
-<h3>20.1 從不可見 → 可見</h3>
+<h4>20.1 從不可見 → 可見</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>implicit</mtext></msub><mo>→</mo><msub><mi>C</mi><mtext>explicit</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{implicit}}
 \rightarrow
 C_{\text{explicit}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">implicit</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">explicit</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
-<h3>20.2 從人工記憶 → 可驗證規格</h3>
+<h4>20.2 從人工記憶 → 可驗證規格</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>tacit</mtext></msub><mo>→</mo><msub><mi>C</mi><mtext>machine-checkable</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{tacit}}
 \rightarrow
 C_{\text{machine-checkable}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">tacit</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">machine-checkable</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
-<h3>20.3 從到處重複 → 集中平台</h3>
+<h4>20.3 從到處重複 → 集中平台</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>duplicated</mtext></msub><mo>→</mo><msub><mi>C</mi><mtext>centralized</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{duplicated}}
 \rightarrow
 C_{\text{centralized}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">duplicated</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">centralized</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
-<h3>20.4 從難自動化 → 易自動化</h3>
+<h4>20.4 從難自動化 → 易自動化</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>manual</mtext></msub><mo>→</mo><msub><mi>C</mi><mtext>automatable</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{manual}}
 \rightarrow
 C_{\text{automatable}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">manual</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">automatable</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
-<h3>20.5 從錯誤 owner → 正確 owner</h3>
+<h4>20.5 從錯誤 owner → 正確 owner</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>misowned</mtext></msub><mo>→</mo><msub><mi>C</mi><mtext>properly owned</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{misowned}}
 \rightarrow
 C_{\text{properly owned}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">misowned</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">properly owned</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
@@ -680,25 +684,25 @@ C_{\text{properly owned}}</annotation></semantics></math></span><span class="kat
 <p><strong>複雜度出現在最適合承擔它的位置。</strong></p>
 </blockquote>
 <hr>
-<h1>21. 壞的複雜度轉移</h1>
+<h2>21. 壞的複雜度轉移</h2>
 <p>反過來，壞轉移可能是：</p>
-<h3>21.1 從顯式 → 隱式</h3>
+<h4>21.1 從顯式 → 隱式</h4>
 <pre><code class="language-text">clear business rules
 → magical framework behavior
 </code></pre>
-<h3>21.2 從局部 → 全局</h3>
+<h4>21.2 從局部 → 全局</h4>
 <pre><code class="language-text">local helper
 → shared singleton
 </code></pre>
-<h3>21.3 從技術 → 人工</h3>
+<h4>21.3 從技術 → 人工</h4>
 <pre><code class="language-text">automated validation removed
 → operator must remember
 </code></pre>
-<h3>21.4 從 code → configuration without validation</h3>
+<h4>21.4 從 code → configuration without validation</h4>
 <pre><code class="language-text">if/else
 → huge YAML
 </code></pre>
-<h3>21.5 從開發 → 使用者</h3>
+<h4>21.5 從開發 → 使用者</h4>
 <pre><code class="language-text">system cannot resolve ambiguity
 → user manually cleans everything
 </code></pre>
@@ -706,7 +710,7 @@ C_{\text{properly owned}}</annotation></semantics></math></span><span class="kat
 <p>但：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>effective system</mtext></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">C_{\text{effective system}}\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">effective system</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <hr>
-<h1>22. 重構評估需要「前後複雜度向量」</h1>
+<h2>22. 重構評估需要「前後複雜度向量」</h2>
 <p>因此一次重要重構前，可以記錄：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi mathvariant="bold">C</mi><mtext>before</mtext></msub></mrow><annotation encoding="application/x-tex">\mathbf{C}_{\text{before}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8361em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathbf">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">before</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>重構後：</p>
@@ -732,7 +736,7 @@ C_{\text{properly owned}}</annotation></semantics></math></span><span class="kat
 <p><strong>多維變化帳本。</strong></p>
 </blockquote>
 <hr>
-<h1>23. 再加入「可治理性」</h1>
+<h2>23. 再加入「可治理性」</h2>
 <p>複雜度本身還不是唯一重要變量。</p>
 <p>定義：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>G</mi><mo stretchy="false">(</mo><mi>C</mi><mo stretchy="false">)</mo><mo>=</mo><mtext>Governability of Complexity</mtext></mrow><annotation encoding="application/x-tex">G(C)
@@ -764,7 +768,7 @@ C_{\text{properly owned}}</annotation></semantics></math></span><span class="kat
 <p>總語義不一定少很多。</p>
 <p>但治理能力提高巨大。</p>
 <hr>
-<h1>24. 重構效益的新模型</h1>
+<h2>24. 重構效益的新模型</h2>
 <p>因此，重構價值不應只寫成：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mi>R</mi></msub><mo>=</mo><mo>−</mo><mi mathvariant="normal">Δ</mi><mi>C</mi></mrow><annotation encoding="application/x-tex">V_R
 =
@@ -799,7 +803,7 @@ C_{\text{properly owned}}</annotation></semantics></math></span><span class="kat
 <p><strong>好的架構改善未必把系統變得「簡單」，但應把它變得更可理解、更可驗證、更可逆、更能被正確主體治理。</strong></p>
 </blockquote>
 <hr>
-<h1>25. Dynamic MSSP：從 Architecture Diff 升級成 Complexity Flow</h1>
+<h2>25. Dynamic MSSP：從 Architecture Diff 升級成 Complexity Flow</h2>
 <p>因此未來 FPL/MSSP 的重構分析不應只有：</p>
 <pre><code class="language-text">before graph
 vs
@@ -847,7 +851,7 @@ after graph
 <p>cycle 消失後，複雜度跑去哪裡？</p>
 </blockquote>
 <hr>
-<h1>26. AI Agent 可以做複雜度流偵測</h1>
+<h2>26. AI Agent 可以做複雜度流偵測</h2>
 <p>AI 特別適合分析：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi mathvariant="bold">C</mi><mtext>before</mtext></msub><mo>→</mo><msub><mi mathvariant="bold">C</mi><mtext>after</mtext></msub></mrow><annotation encoding="application/x-tex">\mathbf{C}_{\text{before}}
 \rightarrow
@@ -882,7 +886,7 @@ introduced two new operational failure modes.
 \text{Truth}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">AI Hypothesis</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord text"><span class="mord">Truth</span></span></span></span></span></span>
 <p>但比單一 lint metric 更接近架構現實。</p>
 <hr>
-<h1>27. AI 本身也是複雜度轉移器</h1>
+<h2>27. AI 本身也是複雜度轉移器</h2>
 <p>更有趣的是：</p>
 <p>Dynamic MSSP 本身會把：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>human architecture review</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{human architecture review}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">human architecture review</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
@@ -907,9 +911,9 @@ G(C_{\text{old}})</annotation></semantics></math></span><span class="katex-html"
 <p><strong>把人類難以持續處理的複雜度，轉成機器可以持續觀測、搜尋、比對與預警的形式。</strong></p>
 </blockquote>
 <hr>
-<h1>28. 命題 7：複雜度轉移命題</h1>
+<h2>28. 命題 7：複雜度轉移命題</h2>
 <p>本文提出系列第七命題。</p>
-<h2>複雜度轉移命題</h2>
+<h3>複雜度轉移命題</h3>
 <p>對軟體系統 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi></mrow><annotation encoding="application/x-tex">S</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span></span></span></span> 施加架構變換或重構 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi></mrow><annotation encoding="application/x-tex">R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span></span></span></span> ：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>S</mi><mi>t</mi></msub><mo><mover><mo><mo>→</mo></mo><mi>R</mi></mover></mo><msub><mi>S</mi><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow><annotation encoding="application/x-tex">S_t
 \overset{R}{\rightarrow}
@@ -948,7 +952,7 @@ C_j(S_t)</annotation></semantics></math></span><span class="katex-html" aria-hid
 <li>可治理性變化。</li>
 </ul>
 <hr>
-<h1>29. 重構悖論的強版本</h1>
+<h2>29. 重構悖論的強版本</h2>
 <p>由此可以得到：</p>
 <blockquote>
 <p><strong>最成功的重構，有時不是讓系統擁有更少複雜度，而是讓複雜度終於出現在正確的地方。</strong></p>
@@ -988,7 +992,7 @@ C_j(S_t)</annotation></semantics></math></span><span class="katex-html" aria-hid
 \text{Less System Complexity}
 }</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord text"><span class="mord">Less Code</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">⇒</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord text"><span class="mord">Less System Complexity</span></span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h1>30. 結論：複雜度最重要的不是多少，而是在哪裡、誰承擔、能不能治理</h1>
+<h2>30. 結論：複雜度最重要的不是多少，而是在哪裡、誰承擔、能不能治理</h2>
 <p>本文從一個常見工程直覺開始：</p>
 <blockquote>
 <p>「我們把它重構了，所以它更簡單。」</p>
@@ -1061,10 +1065,10 @@ C_j(S_t)</annotation></semantics></math></span><span class="katex-html" aria-hid
 <p><strong>成功軟體為什麼幾乎必然越活越複雜？</strong></p>
 </blockquote>
 <p>下一篇：</p>
-<h1>〈成功軟體為什麼越活越複雜？軟體演化的結構動力學〉</h1>
+<h2>〈成功軟體為什麼越活越複雜？軟體演化的結構動力學〉</h2>
 <p>將正式把時間、變化率、需求壓力、治理速度與結構負擔放進同一個動態模型。</p>
 <hr>
-<h1>參考文獻</h1>
+<h2>參考文獻</h2>
 <ol>
 <li>Sutoyo, E., Avgeriou, P., &amp; Capiluppi, A. (2025). <em>Tracing the Lifecycle of Architecture Technical Debt in Software Systems: A Dependency Approach</em>. Proceedings of the 2025 IEEE 22nd International Conference on Software Architecture (ICSA 2025), 199–209. DOI: 10.1109/ICSA65012.2025.00028.</li>
 <li>Fowler, M. (2015). <em>Microservice Trade-Offs</em>. MartinFowler.com. <a href="https://martinfowler.com/articles/microservice-trade-offs.html">https://martinfowler.com/articles/microservice-trade-offs.html</a></li>

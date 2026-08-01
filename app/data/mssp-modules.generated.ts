@@ -94,5 +94,43 @@ export const msspModules = [
     "updated": "2026-08-01",
     "href": "/html/mssp/modules/development.html",
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/modules/development.html"
+  },
+  {
+    "id": "authority",
+    "index": "06",
+    "title": {
+      "zh": "迭代授權",
+      "en": "Iteration authority"
+    },
+    "summary": {
+      "zh": "MSSP 可以被改到什麼程度，由誰決定，以及哪六條不能動。SSD 工程規格全文收在這裡。",
+      "en": "How far MSSP may be changed, who decides, and the six invariants that stay. The SSD engineering spec in full."
+    },
+    "state": {
+      "zh": "已生效",
+      "en": "In force"
+    },
+    "updated": "2026-08-01",
+    "href": "/html/mssp/modules/authority.html",
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/modules/authority.html"
+  },
+  {
+    "id": "log",
+    "index": "07",
+    "title": {
+      "zh": "開發日誌",
+      "en": "Development log"
+    },
+    "summary": {
+      "zh": "每天一則。範例、考古與 MVP 打回來的東西寫在這裡，最新的在最上面。進到 1.x 的改良點會從這裡挑。",
+      "en": "One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here."
+    },
+    "state": {
+      "zh": "每日進行",
+      "en": "Daily"
+    },
+    "updated": "2026-08-01",
+    "href": "/html/mssp/modules/log.html",
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/modules/log.html"
   }
 ];

@@ -23,6 +23,10 @@ main{padding:56px 0 96px}
 .content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
 .content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
 .content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+/* Demoting the body by one level pushes the deepest sections here, so they need
+   to be styled rather than left to the browser's defaults. */
+.content h4{font-family:Inter,"Noto Sans TC",sans-serif;font-size:16.5px;margin:30px 0 10px;color:var(--accent)}
+.content h5,.content h6{font-family:Inter,"Noto Sans TC",sans-serif;font-size:14px;letter-spacing:.02em;margin:26px 0 9px;color:var(--muted)}
 .content p{margin:0 0 24px}
 .content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
 .content li{margin:.45em 0}
@@ -53,7 +57,7 @@ footer a{color:var(--accent)}
   <section class="facts"><div><b>編號</b><span>PLDST-006</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／完成第二輪查核</span></div></section>
   <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-006.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
   <article class="content"><h1>極簡核心與功能擴張：語言應保持多小，又能成長到多大？</h1>
-<h2>摘要</h2>
+<h3>摘要</h3>
 <p>「保持語言簡單」幾乎是所有程式語言設計者都願意公開支持的價值，但不同設計者所稱的簡單，可能指向完全不同的系統結構。</p>
 <p>Scheme 以極少量、可自由組合的規則支撐多種程式設計範式；Oberon 透過刪除 Modula-2 中被認為非基本或交互成本過高的功能，同時加入少量高覆蓋能力，追求概念經濟；Lua 將表、函數、閉包與元表等少數機制組成可嵌入、可擴展的語言；Go 刻意限制語言特徵，將閱讀、建置、工具與大型組織協作視為核心設計成本，但在泛型等功能上仍接受經長期驗證後的擴張；Clojure 以 Lisp 資料表示、不可變資料、抽象與宿主互操作組成「簡單而非只是容易」的系統，同時維持高度保守的核心功能准入；C++ 則以一般機制、硬體映射、零額外成本與長期相容性支持廣泛領域，形成一種「少數深層原則支撐大型表面」的設計，而不是小型語言。[R1][R2][R3][R4][R5][R6]</p>
 <p>因此，語言極簡不能只用關鍵字數量、語法產生式數量、標準頁數、編譯器程式碼行數或初學範例長度來判斷。</p>
@@ -99,23 +103,23 @@ G
 </blockquote>
 <p><strong>關鍵詞：</strong> 程式語言設計、極簡主義、核心語言、功能擴張、正交性、可擴展語言、Scheme、Oberon、Lua、Go、Clojure、C++</p>
 <hr>
-<h1>第一部分　「小語言」不是單一概念</h1>
-<h2>一、語法小</h2>
+<h2>第一部分　「小語言」不是單一概念</h2>
+<h3>一、語法小</h3>
 <p>語法小通常表示關鍵字少、產生式少、表面形式統一、特殊標點少與語法糖有限。它能降低 Parser 與基本記憶負擔，卻可能把複雜度轉入巨集展開、名稱解析、隱式語義、動態查找或程式庫慣例。</p>
 <p>因此：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>S</mi><mi>i</mi><mi>z</mi><msub><mi>e</mi><mrow><mi>s</mi><mi>y</mi><mi>n</mi><mi>t</mi><mi>a</mi><mi>x</mi></mrow></msub><mo>↓</mo><mo>⇏</mo><mi>C</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi>x</mi><mi>i</mi><mi>t</mi><msub><mi>y</mi><mrow><mi>m</mi><mi>e</mi><mi>a</mi><mi>n</mi><mi>i</mi><mi>n</mi><mi>g</mi></mrow></msub><mo>↓</mo></mrow><annotation encoding="application/x-tex">Size_{syntax}\downarrow
 \not\Rightarrow
 Complexity_{meaning}\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">sy</span><span class="mord mathnormal mtight">n</span><span class="mord mathnormal mtight">t</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">⇒</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">m</span><span class="mord mathnormal" style="margin-right:0.0197em;">pl</span><span class="mord mathnormal">e</span><span class="mord mathnormal">x</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">m</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight">anin</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
-<h2>二、語義小</h2>
+<h3>二、語義小</h3>
 <p>語義小表示語言依靠少量基本概念解釋大量行為，例如 Lambda、Lexical scope、Message passing、Table、Pattern、Trait、Module 或 Value／Identity 分離。</p>
 <p>語義小通常比語法小更重要，因為使用者能以少量規則推導大量結果。但單一基本元件若過度強大，也可能難以分析、最佳化與工具化。</p>
-<h2>三、規格小</h2>
+<h3>三、規格小</h3>
 <p>規格小表示完整語言定義能以較小文件精確表達。它可能來自機制少、規則正交、不定義大量平台行為、把能力留給程式庫，或只有單一主要實作。</p>
 <p>規格小不等於使用者世界小。未寫入核心規格的行為，可能被分散到 FFI、ABI、套件、Build system、社群慣例與實作特有功能。</p>
-<h2>四、實作小</h2>
+<h3>四、實作小</h3>
 <p>實作小表示編譯器或直譯器體積小、Runtime 小、移植容易、可信計算基較小，且少數人可以完整理解。</p>
 <p>Lua 與 Oberon 都將小型、可理解實作視為重要設計結果，但理由不同：Lua 重視嵌入、可攜與小型 Runtime；Oberon 則將小型語言、編譯器與作業系統視為同一完整系統工程的一部分。[R2][R3]</p>
-<h2>五、交互作用小</h2>
+<h3>五、交互作用小</h3>
 <p>令功能集合為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>F</mi><mo>=</mo><mo stretchy="false">{</mo><msub><mi>f</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi>f</mi><mn>2</mn></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi>f</mi><mi>n</mi></msub><mo stretchy="false">}</mo></mrow><annotation encoding="application/x-tex">F=\{f_1,f_2,\ldots,f_n\}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">}</span></span></span></span></span>
 <p>語言具有功能交互圖：</p>
@@ -129,7 +133,7 @@ Complexity_{meaning}\downarrow</annotation></semantics></math></span><span class
 +
 \mu C_{\geq 3}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">F</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.3277em;vertical-align:-1.2777em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.05em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.2777em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">c</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:2.566em;vertical-align:-1.516em;"></span><span class="mord mathnormal">λ</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.05em;"><span style="top:-1.809em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight">i</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span><span class="mclose mtight">)</span><span class="mrel mtight">∈</span><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0576em;">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3567em;margin-left:-0.0576em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">F</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1433em;"><span></span></span></span></span></span></span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.516em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">c</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0572em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.9285em;vertical-align:-0.2452em;"></span><span class="mord mathnormal">μ</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mrel mtight">≥</span><span class="mord mtight">3</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2452em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mrow><mo>≥</mo><mn>3</mn></mrow></msub></mrow><annotation encoding="application/x-tex">C_{\geq 3}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9285em;vertical-align:-0.2452em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mrel mtight">≥</span><span class="mord mtight">3</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2452em;"><span></span></span></span></span></span></span></span></span></span> 表示三個以上功能形成的高階交互。此公式不是嚴格定律，而是提醒：新增功能的成本還包括它與既有機制的規格、測試、診斷及演化關係。</p>
-<h2>六、有效語言小</h2>
+<h3>六、有效語言小</h3>
 <p>使用者真正使用的語言不是只有核心規格：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>L</mi><mrow><mi mathvariant="normal">e</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">v</mi><mi mathvariant="normal">e</mi></mrow></msub><mo>=</mo><mi>K</mi><mo>+</mo><mi>L</mi><mi>i</mi><mi>b</mi><mi>r</mi><mi>a</mi><mi>r</mi><mi>i</mi><mi>e</mi><mi>s</mi><mo>+</mo><mi>M</mi><mi>a</mi><mi>c</mi><mi>r</mi><mi>o</mi><mi>s</mi><mo>+</mo><mi>T</mi><mi>o</mi><mi>o</mi><mi>l</mi><mi>s</mi><mo>+</mo><mi>I</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>o</mi><mi>p</mi><mo>+</mo><mi>F</mi><mi>r</mi><mi>a</mi><mi>m</mi><mi>e</mi><mi>w</mi><mi>o</mi><mi>r</mi><mi>k</mi><mi>s</mi><mo>+</mo><mi>C</mi><mi>o</mi><mi>n</mi><mi>v</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">L_{\mathrm{effective}}
 =
@@ -148,8 +152,8 @@ Frameworks
 Conventions</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">L</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">effective</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">L</span><span class="mord mathnormal">ib</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">i</span><span class="mord mathnormal">es</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">cr</span><span class="mord mathnormal">os</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal">oo</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">o</span><span class="mord mathnormal">p</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">am</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal" style="margin-right:0.0315em;">k</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">s</span></span></span></span></span>
 <p>小核心可能形成大型巨集方言、Framework 專屬語言、宿主 API 驅動語言、大量編譯器插件與組織內部規則。因此，有效語言是否小，必須在真實開發活動中評估。</p>
 <hr>
-<h1>第二部分　核心與邊界</h1>
-<h2>七、什麼應屬於核心</h2>
+<h2>第二部分　核心與邊界</h2>
+<h3>七、什麼應屬於核心</h3>
 <p>一項能力較適合進入核心，通常因為它：</p>
 <ol>
 <li>影響程式基本意義；</li>
@@ -161,16 +165,16 @@ Conventions</annotation></semantics></math></span><span class="katex-html" aria-
 <li>能取代大量不一致機制；</li>
 <li>需要全語言工具理解。</li>
 </ol>
-<h2>八、什麼應留在程式庫</h2>
+<h3>八、什麼應留在程式庫</h3>
 <p>較適合程式庫的能力通常可由普通語言機制表達、只服務特定領域、仍在快速演化、不需要特殊語法、可由不同方案競爭，並可獨立版本化。</p>
 <p>但程式庫方案若無法提供效能、診斷、語法整合、安全保證或跨套件一致性，就可能產生升格核心的壓力。</p>
-<h2>九、什麼應交給工具</h2>
+<h3>九、什麼應交給工具</h3>
 <p>工具適合承擔格式、Lint、遷移、重構、程式碼生成、非核心靜態分析與組織政策。工具能避免核心膨脹，但若某項工具成為所有使用者不可缺少的語義前提，它實際上已成為有效語言的一部分。</p>
-<h2>十、什麼應交給宿主互操作</h2>
+<h3>十、什麼應交給宿主互操作</h3>
 <p>嵌入式或宿主語言可以利用外部平台提供 I/O、GUI、作業系統、程式庫、網路與原生效能。Lua 與 Clojure 都以互操作降低重新建立完整世界的需要，但代價是宿主洩漏、平台綁定、錯誤模型不一致、資料轉換與多套慣例。</p>
 <hr>
-<h1>第三部分　六種核心—擴張風格</h1>
-<h2>十一、刪減式極簡</h2>
+<h2>第三部分　六種核心—擴張風格</h2>
+<h3>十一、刪減式極簡</h3>
 <p>代表思路是：</p>
 <blockquote>
 <p>先問哪些既有功能應被刪除，再問必須新增什麼。</p>
@@ -178,7 +182,7 @@ Conventions</annotation></semantics></math></span><span class="katex-html" aria-
 <p>Wirth 在 Oberon 回顧中明確說明，其策略是先決定從 Modula-2 省略哪些功能，再決定哪些新增能力真正必要；目標是提高能力的同時降低複雜度。[R2]</p>
 <p>典型特徵：核心封閉、功能准入嚴格、重視完整實作、偏好少量基本機制，並願意犧牲相容性修正舊設計。</p>
 <p>優勢是概念一致、教學清楚、編譯器與系統可理解、特徵交互少。風險是特定領域便利不足、使用者轉向非標準擴展、生態吸引力有限，以及設計者可能低估不同使用情境。</p>
-<h2>十二、生成式極簡</h2>
+<h3>十二、生成式極簡</h3>
 <p>代表思路是：</p>
 <blockquote>
 <p>以極少規則構成可生成多種表達形式的語言。</p>
@@ -187,28 +191,28 @@ Conventions</annotation></semantics></math></span><span class="katex-html" aria-
 <p>典型機制包括 Lambda、First-class procedures、Lexical scope、資料表示、Hygienic macros 與 Proper tail calls。</p>
 <p>優勢是小型語義核心、高組合性與 DSL 能力；風險是巨集建立局部方言、多實作與標準分層帶來互操作負擔，以及使用者需要理解高階抽象。</p>
 <p>Scheme 標準程序將 R7RS 分為 Small Language 與 Large Language 工作方向，也表明小核心與完整現代程式庫需求之間需要制度化分工。[R7]</p>
-<h2>十三、嵌入擴展式極簡</h2>
+<h3>十三、嵌入擴展式極簡</h3>
 <p>代表思路是：</p>
 <blockquote>
 <p>語言本身保持小型，以宿主 API 與可擴展語義適應不同領域。</p>
 </blockquote>
 <p>Lua 從一開始即以簡單、小型、可攜、快速與易嵌入為目標；其表結構可以表示模組、物件、紀錄、陣列、集合等多種構造，元表則提供可擴展語義。[R3]</p>
 <p>優勢是易嵌入、易移植，以少量機制適應多領域。風險是宿主與腳本責任邊界複雜、大型程式可能缺少強制結構、不同嵌入環境形成不同有效語言，以及動態擴展提高工具分析難度。</p>
-<h2>十四、正交組合式極簡</h2>
+<h3>十四、正交組合式極簡</h3>
 <p>代表思路是：</p>
 <blockquote>
 <p>每一項功能保持相對簡單，並允許它們自由組合。</p>
 </blockquote>
 <p>Go 官方對泛型設計的說明，將降低複雜度的方法表述為讓單項功能簡單、獨立、正交，並透過自由組合增加收益。[R4]</p>
 <p>優勢是預測性高、工具較易統一、團隊使用的語言子集較一致。風險是缺少常見抽象時產生重複、使用者建立程式碼生成或反射替代，以及過度保守把成本推入程式庫。</p>
-<h2>十五、組織工程式極簡</h2>
+<h3>十五、組織工程式極簡</h3>
 <p>代表思路是：</p>
 <blockquote>
 <p>語言小不是終極美學，而是降低大型組織協作、閱讀、建置與維護成本的手段。</p>
 </blockquote>
 <p>Go 的原始設計問題包括慢建置、不受控依賴、不同程式設計者使用不同語言子集、程式難讀、更新與工具困難。[R4]</p>
 <p>因此，Go 的極簡不只保護編譯器或初學者，也保護 Code review、團隊溝通、建置系統、長期維護與工具鏈。Go 官方對實驗與簡化的回顧也承認，可以增加發行物內部程式碼與複雜度，換取編寫 Go 程式的整體簡化。[R8]</p>
-<h2>十六、一般機制式擴張</h2>
+<h3>十六、一般機制式擴張</h3>
 <p>代表思路是：</p>
 <blockquote>
 <p>與其保持小表面，不如提供能覆蓋未知需求的一般機制，但要求它們符合若干深層原則。</p>
@@ -216,8 +220,8 @@ Conventions</annotation></semantics></math></span><span class="katex-html" aria-
 <p>C++ 的設計追求直接硬體映射、零額外成本抽象、一般性、型別豐富、多範式與長期相容。Stroustrup 直接承認 C++ 是大型且複雜的語言，同時主張良好 C++ 主要依靠少數基本技術；舊語言為相容而保留的附帶功能，會干擾理解。[R6]</p>
 <p>這是一種深層原則相對集中、表面與歷史功能廣泛的風格。它能服務多種領域並保留硬體效率，代價則是大型表面、特徵交互、不同團隊子集與相容性累積。</p>
 <hr>
-<h1>第四部分　Clojure：簡單、容易與保守准入</h1>
-<h2>十七、簡單不等於熟悉</h2>
+<h2>第四部分　Clojure：簡單、容易與保守准入</h2>
+<h3>十七、簡單不等於熟悉</h3>
 <p>Clojure 官方將自身描述為由一組有用功能構成的簡單、連貫且有力的工具，並以不可變資料、函數、值與 Identity／State 分離等原則降低交纏。[R5]</p>
 <p>這裡的簡單更接近概念不交纏、資料與行為分離、使用少量抽象、依靠宿主 JVM，而非第一次使用時的熟悉感。</p>
 <p>因此：</p>
@@ -226,25 +230,25 @@ Conventions</annotation></semantics></math></span><span class="katex-html" aria-
 Familiar
 \neq
 EasyToStart</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">im</span><span class="mord mathnormal" style="margin-right:0.0197em;">pl</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord mathnormal">ami</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">ia</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">sy</span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">t</span></span></span></span></span>
-<h2>十八、保守核心與宿主擴張</h2>
+<h3>十八、保守核心與宿主擴張</h3>
 <p>Clojure 治理回顧明確形容 Rich Hickey 對加入語言功能極為保守，核心團隊會以此篩選提案。[R5]</p>
 <p>Clojure 的擴張更多依靠函數與資料、Macro、Protocol、JVM interop、Library 與 Spec。這降低核心變更頻率，卻可能把複雜度放入 Macro 生態、Java 互操作、依賴工具、動態資料契約與程式庫慣例。</p>
 <hr>
-<h1>第五部分　功能為何會增長</h1>
-<h2>十九、新領域</h2>
+<h2>第五部分　功能為何會增長</h2>
+<h3>十九、新領域</h3>
 <p>語言進入新領域後，原核心可能缺乏並行、非同步、GPU、分散式、模組、套件、安全與外部互操作。完全拒絕擴張，可能使使用者建立非標準替代。</p>
-<h2>二十、重複解法</h2>
+<h3>二十、重複解法</h3>
 <p>當所有使用者重複建立同一模式時，可能意味核心缺少表達能力、程式庫抽象不足、工具無法理解或安全保證需要語言特權。</p>
 <p>例如泛型增加語言複雜度，卻也可能取代重複函式、動態轉型、程式碼生成、手寫容器與多套不一致 API。Go 在接受泛型時，官方文件明確承認它會增加語言複雜度，同時試圖用簡單、正交且可組合的設計控制成本。[R4]</p>
-<h2>二十一、工具與診斷</h2>
+<h3>二十一、工具與診斷</h3>
 <p>某項能力若只存在於程式庫，編譯器可能無法給出精確錯誤、最佳化、驗證安全、支援重構或建立跨模組分析。將它提升為語言功能可能增加核心，卻改善整體工具體驗。</p>
-<h2>二十二、安全與互操作</h2>
+<h3>二十二、安全與互操作</h3>
 <p>當不同程式庫各自定義資源生命週期、非同步、錯誤、序列化與外部函式時，系統可能缺乏一致邊界。核心功能有時是為了讓整個生態共享同一安全或互操作模型。</p>
-<h2>二十三、歷史相容性</h2>
+<h3>二十三、歷史相容性</h3>
 <p>語言功能也可能不是因為仍受偏好，而只是不能移除。因此，功能數量增長要區分 active expansion、compatibility retention、temporary experiment、deprecated fossil、library migration 與 implementation extension。</p>
 <hr>
-<h1>第六部分　功能准入模型</h1>
-<h2>二十四、功能效用</h2>
+<h2>第六部分　功能准入模型</h2>
+<h3>二十四、功能效用</h3>
 <p>對候選功能 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi></mrow><annotation encoding="application/x-tex">f</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span></span></span></span> ，定義：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>U</mi><mo stretchy="false">(</mo><mi>f</mi><mo stretchy="false">)</mo><mo>=</mo><mi>C</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>g</mi><mi>e</mi><mo>+</mo><mi>S</mi><mi>a</mi><mi>f</mi><mi>e</mi><mi>t</mi><mi>y</mi><mo>+</mo><mi>C</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>o</mi><mi>s</mi><mi>a</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo>+</mo><mi>T</mi><mi>o</mi><mi>o</mi><mi>l</mi><mi>a</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo>+</mo><mi>I</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>o</mi><mi>p</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo>+</mo><mi>E</mi><mi>l</mi><mi>i</mi><mi>m</mi><mi>i</mi><mi>n</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">U(f)
 =
@@ -260,7 +264,7 @@ Interoperability
 +
 Elimination</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">U</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">e</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">m</span><span class="mord mathnormal">p</span><span class="mord mathnormal">os</span><span class="mord mathnormal">abi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal">oo</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">abi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">o</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">abi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">imina</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span></span></span></span></span>
 <p>其中 <code>Elimination</code> 表示它能否刪除重複、逃生口與不一致替代方案。</p>
-<h2>二十五、功能成本</h2>
+<h3>二十五、功能成本</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>K</mi><mo stretchy="false">(</mo><mi>f</mi><mo stretchy="false">)</mo><mo>=</mo><mi>L</mi><mi>e</mi><mi>a</mi><mi>r</mi><mi>n</mi><mo>+</mo><mi>S</mi><mi>p</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>f</mi><mi>y</mi><mo>+</mo><mi>I</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi>m</mi><mi>e</mi><mi>n</mi><mi>t</mi><mo>+</mo><mi>I</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>c</mi><mi>t</mi><mo>+</mo><mi>D</mi><mi>i</mi><mi>a</mi><mi>g</mi><mi>n</mi><mi>o</mi><mi>s</mi><mi>e</mi><mo>+</mo><mi>M</mi><mi>i</mi><mi>g</mi><mi>r</mi><mi>a</mi><mi>t</mi><mi>e</mi><mo>+</mo><mi>G</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>n</mi><mo>+</mo><mi>M</mi><mi>a</mi><mi>i</mi><mi>n</mi><mi>t</mi><mi>a</mi><mi>i</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">K(f)
 =
 Learn
@@ -279,12 +283,12 @@ Govern
 +
 Maintain</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">L</span><span class="mord mathnormal">e</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">p</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">m</span><span class="mord mathnormal" style="margin-right:0.0197em;">pl</span><span class="mord mathnormal">e</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">a</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">ia</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ose</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">G</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal">ain</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ain</span></span></span></span></span>
 <p>不能只計算實作這項功能需要多少程式碼。</p>
-<h2>二十六、准入條件</h2>
+<h3>二十六、准入條件</h3>
 <p>候選功能應至少滿足：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>U</mi><mo stretchy="false">(</mo><mi>f</mi><mo stretchy="false">)</mo><mo>−</mo><mi>K</mi><mo stretchy="false">(</mo><mi>f</mi><mo stretchy="false">)</mo><mo>&gt;</mo><mi>T</mi><mi>h</mi><mi>r</mi><mi>e</mi><mi>s</mi><mi>h</mi><mi>o</mi><mi>l</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">U(f)-K(f)&gt;Threshold</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">U</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal">h</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">es</span><span class="mord mathnormal">h</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">d</span></span></span></span></span>
 <p>且現有核心組合不能以更低總成本提供同等能力。</p>
 <p>此外還要回答：能否由程式庫或工具完成、是否需要 Runtime 特權、是否破壞相容性、是否形成高階交互、是否可被教學與診斷、是否有真實實作與使用證據，以及若失敗能否撤回。</p>
-<h2>二十七、候選功能成熟階段</h2>
+<h3>二十七、候選功能成熟階段</h3>
 <pre><code class="language-text">Problem
 → Library experiment
 → Tool support
@@ -295,32 +299,32 @@ Maintain</annotation></semantics></math></span><span class="katex-html" aria-hid
 </code></pre>
 <p>並非每項功能都必須走完整路徑，但成熟階段能減少過早永久化。</p>
 <hr>
-<h1>第七部分　極簡的五種失敗</h1>
-<h2>二十八、貧困式極簡</h2>
+<h2>第七部分　極簡的五種失敗</h2>
+<h3>二十八、貧困式極簡</h3>
 <p>為了功能數量小而拒絕必要能力，導致重複程式、樣板、不安全逃生口、程式碼生成與不可攜擴展。這是小而不足，不是概念經濟。</p>
-<h2>二十九、隱藏式極簡</h2>
+<h3>二十九、隱藏式極簡</h3>
 <p>語言表面很小，但大量行為依靠隱式轉換、Runtime 魔法、反射、搜尋順序、宿主狀態與工具生成。使用者看到的語法少，但預測程式需要更多隱藏規則。</p>
-<h2>三十、巨集碎片化</h2>
+<h3>三十、巨集碎片化</h3>
 <p>強大巨集能讓核心小，也可能產生局部語法、非標準控制流、工具失效、團隊知識孤島與跨專案閱讀困難。生成式極簡需要衛生、Expansion 可見性、工具 API、慣例與語義邊界。</p>
-<h2>三十一、程式庫無政府狀態</h2>
+<h3>三十一、程式庫無政府狀態</h3>
 <p>若所有問題都丟給程式庫，可能形成多套錯誤模型、非同步模型、資料表示、依賴衝突、安全品質與版本分裂。</p>
-<h2>三十二、宿主洩漏</h2>
+<h3>三十二、宿主洩漏</h3>
 <p>嵌入式極簡若過度依賴宿主，使用者仍需同時理解宿主記憶體、型別、執行緒、錯誤、FFI 與部署平台。此時語言本身小，但使用系統不小。</p>
 <hr>
-<h1>第八部分　功能擴張的五種失敗</h1>
-<h2>三十三、便利功能堆疊</h2>
+<h2>第八部分　功能擴張的五種失敗</h2>
+<h3>三十三、便利功能堆疊</h3>
 <p>每個功能單獨合理，合在一起卻重複、衝突、形成多種做法並增加教學與工具負擔。</p>
-<h2>三十四、特例取代一般機制</h2>
+<h3>三十四、特例取代一般機制</h3>
 <p>大量領域專用特徵可能讓語言快速回應需求，但降低正交性、可組合性、規格清晰與長期演化能力。</p>
-<h2>三十五、相容性累積</h2>
+<h3>三十五、相容性累積</h3>
 <p>功能一旦進入穩定語言，就可能永久增加 Parser、編譯器、Runtime、文件、測試、教學、安全分析與新功能交互負擔。</p>
-<h2>三十六、委員會聯合體</h2>
+<h3>三十六、委員會聯合體</h3>
 <p>不同群體各自取得所需功能，最後形成所有人都有一點、沒有人理解全部、缺少整體刪減，以及功能間缺乏共同哲學。</p>
-<h2>三十七、表達力超過工具能力</h2>
+<h3>三十七、表達力超過工具能力</h3>
 <p>語言可表達的內容若大幅超過型別分析、IDE、Refactoring、Debugger 與 Build system 的理解能力，使用者會為理論表達力支付日常工程成本。</p>
 <hr>
-<h1>第九部分　如何比較核心大小</h1>
-<h2>三十八、核心表面向量</h2>
+<h2>第九部分　如何比較核心大小</h2>
+<h3>三十八、核心表面向量</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>K</mi><mi>s</mi></msub><mo>=</mo><mo stretchy="false">(</mo><mi>K</mi><mi>e</mi><mi>y</mi><mi>w</mi><mi>o</mi><mi>r</mi><mi>d</mi><mi>s</mi><mo separator="true">,</mo><mi>F</mi><mi>o</mi><mi>r</mi><mi>m</mi><mi>s</mi><mo separator="true">,</mo><mi>O</mi><mi>p</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>t</mi><mi>o</mi><mi>r</mi><mi>s</mi><mo separator="true">,</mo><mi>D</mi><mi>e</mi><mi>c</mi><mi>l</mi><mi>a</mi><mi>r</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>s</mi><mo separator="true">,</mo><mi>C</mi><mi>o</mi><mi>n</mi><mi>t</mi><mi>r</mi><mi>o</mi><mi>l</mi><mi>F</mi><mi>o</mi><mi>r</mi><mi>m</mi><mi>s</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">K_s
 =
 (
@@ -331,7 +335,7 @@ Declarations,
 ControlForms
 )</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="mord mathnormal" style="margin-right:0.0359em;">ey</span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">d</span><span class="mord mathnormal">s</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">m</span><span class="mord mathnormal">s</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">s</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">ec</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">s</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">m</span><span class="mord mathnormal">s</span><span class="mclose">)</span></span></span></span></span>
 <p>它只適合表面比較。</p>
-<h2>三十九、核心語義向量</h2>
+<h3>三十九、核心語義向量</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>K</mi><mi>m</mi></msub><mo>=</mo><mo stretchy="false">(</mo><mi>B</mi><mi>i</mi><mi>n</mi><mi>d</mi><mi>i</mi><mi>n</mi><mi>g</mi><mo separator="true">,</mo><mi>E</mi><mi>v</mi><mi>a</mi><mi>l</mi><mi>u</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo separator="true">,</mo><mi>T</mi><mi>y</mi><mi>p</mi><mi>e</mi><mi>s</mi><mo separator="true">,</mo><mi>S</mi><mi>t</mi><mi>a</mi><mi>t</mi><mi>e</mi><mo separator="true">,</mo><mi>C</mi><mi>o</mi><mi>n</mi><mi>t</mi><mi>r</mi><mi>o</mi><mi>l</mi><mo separator="true">,</mo><mi>E</mi><mi>f</mi><mi>f</mi><mi>e</mi><mi>c</mi><mi>t</mi><mi>s</mi><mo separator="true">,</mo><mi>M</mi><mi>o</mi><mi>d</mi><mi>u</mi><mi>l</mi><mi>e</mi><mi>s</mi><mo separator="true">,</mo><mi>C</mi><mi>o</mi><mi>n</mi><mi>c</mi><mi>u</mi><mi>r</mi><mi>r</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>y</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">K_m
 =
 (
@@ -345,12 +349,12 @@ Modules,
 Concurrency
 )</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">m</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal">in</span><span class="mord mathnormal">d</span><span class="mord mathnormal">in</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">u</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">p</span><span class="mord mathnormal">es</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">t</span><span class="mord mathnormal">s</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal">o</span><span class="mord mathnormal">d</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">es</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">c</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0359em;">cy</span><span class="mclose">)</span></span></span></span></span>
 <p>評估每一類有多少獨立規則。</p>
-<h2>四十、交互密度</h2>
+<h3>四十、交互密度</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>D</mi><mi>F</mi></msub><mo>=</mo><mfrac><mrow><mn>2</mn><mi mathvariant="normal">∣</mi><msub><mi>E</mi><mi>F</mi></msub><mi mathvariant="normal">∣</mi></mrow><mrow><mi mathvariant="normal">∣</mi><mi>F</mi><mi mathvariant="normal">∣</mi><mo stretchy="false">(</mo><mi mathvariant="normal">∣</mi><mi>F</mi><mi mathvariant="normal">∣</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></mfrac></mrow><annotation encoding="application/x-tex">D_F
 =
 \frac{2|E_F|}{|F|(|F|-1)}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">F</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.363em;vertical-align:-0.936em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">∣</span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord">∣</span><span class="mopen">(</span><span class="mord">∣</span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord">∣</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">1</span><span class="mclose">)</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">2∣</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0576em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">F</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">∣</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.936em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
 <p>此式只適合相對比較，實際交互邊需明確定義。更重要的是標記高風險交互，例如 Generic × overload、Macro × name resolution、Exception × destructor、Async × cancellation、Reflection × type safety、Inheritance × overload 及 Module × initialization。</p>
-<h2>四十一、有效語言半徑</h2>
+<h3>四十一、有效語言半徑</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>R</mi><mrow><mi mathvariant="normal">e</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">f</mi></mrow></msub><mo stretchy="false">(</mo><mi>t</mi><mi>a</mi><mi>s</mi><mi>k</mi><mo stretchy="false">)</mo><mo>=</mo><mi>C</mi><mi>o</mi><mi>r</mi><mi>e</mi><mo>∪</mo><mi>L</mi><mi>i</mi><mi>b</mi><mi>r</mi><mi>a</mi><mi>r</mi><mi>i</mi><mi>e</mi><mi>s</mi><mo>∪</mo><mi>T</mi><mi>o</mi><mi>o</mi><mi>l</mi><mi>s</mi><mo>∪</mo><mi>C</mi><mi>o</mi><mi>n</mi><mi>v</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>s</mi><mo>∪</mo><mi>I</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>o</mi><mi>p</mi></mrow><annotation encoding="application/x-tex">R_{\mathrm{eff}}(task)
 =
 Core
@@ -363,49 +367,49 @@ Conventions
 \cup
 Interop</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight" style="margin-right:0.0778em;">eff</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal">s</span><span class="mord mathnormal" style="margin-right:0.0315em;">k</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∪</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">L</span><span class="mord mathnormal">ib</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">i</span><span class="mord mathnormal">es</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∪</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal">oo</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∪</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∪</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">o</span><span class="mord mathnormal">p</span></span></span></span></span>
 <p>不同任務具有不同有效語言半徑。Lua 嵌入遊戲與用 Lua 建立大型獨立系統，所需半徑不同；C++ 裸機與大型企業 Framework 也不同。</p>
-<h2>四十二、可完整理解性</h2>
+<h3>四十二、可完整理解性</h3>
 <p>應分開詢問：使用者是否理解基本語義、實作者是否理解完整編譯器、維護者是否理解特徵交互、組織是否能限制使用子集，以及工具是否能建立完整模型。</p>
 <hr>
-<h1>第十部分　六個案例的對照</h1>
-<h2>四十三、Scheme</h2>
+<h2>第十部分　六個案例的對照</h2>
+<h3>四十三、Scheme</h3>
 <pre><code class="language-text">核心策略：極少規則自由組合
 主要擴展：程序、巨集、程式庫
 保護對象：語義經濟與可生成性
 主要風險：方言、巨集與標準分層
 </code></pre>
-<h2>四十四、Oberon</h2>
+<h3>四十四、Oberon</h3>
 <pre><code class="language-text">核心策略：先刪除，再加入必要高覆蓋機制
 主要擴展：模組、型別延伸、完整系統
 保護對象：概念、教學、實作完整性
 主要風險：領域便利與生態規模
 </code></pre>
-<h2>四十五、Lua</h2>
+<h3>四十五、Lua</h3>
 <pre><code class="language-text">核心策略：小型嵌入語言與可擴展語義
 主要擴展：Table、Metatable、C API、程式庫
 保護對象：可攜、嵌入、實作體積
 主要風險：宿主洩漏與大型程式結構
 </code></pre>
-<h2>四十六、Go</h2>
+<h3>四十六、Go</h3>
 <pre><code class="language-text">核心策略：少量正交功能服務組織工程
 主要擴展：標準程式庫、工具、受控語言提案
 保護對象：閱讀、建置、團隊一致性
 主要風險：缺少抽象時的重複與外部替代
 </code></pre>
-<h2>四十七、Clojure</h2>
+<h3>四十七、Clojure</h3>
 <pre><code class="language-text">核心策略：資料、函數、不可變性與宿主互操作
 主要擴展：Macro、Protocol、JVM、生態
 保護對象：概念不交纏與動態開發
 主要風險：學習門檻、巨集與宿主雙重世界
 </code></pre>
-<h2>四十八、C++</h2>
+<h3>四十八、C++</h3>
 <pre><code class="language-text">核心策略：一般機制、零額外成本、相容性
 主要擴展：語言與程式庫共同演化
 保護對象：廣泛領域、硬體效率、既有生態
 主要風險：大型表面與高階交互
 </code></pre>
 <hr>
-<h1>第十一部分　PLDST 風格判定</h1>
-<h2>四十九、極簡的真正分類</h2>
+<h2>第十一部分　PLDST 風格判定</h2>
+<h3>四十九、極簡的真正分類</h3>
 <p>PLDST 不使用單一極簡分數，而輸出：</p>
 <pre><code class="language-text">語法極簡
 語義極簡
@@ -416,19 +420,19 @@ Interop</annotation></semantics></math></span><span class="katex-html" aria-hidd
 治理極簡
 </code></pre>
 <p>一位設計者可能高語義極簡、低表面極簡；或高組織極簡、低生態極簡。</p>
-<h2>五十、功能擴張偏好</h2>
+<h3>五十、功能擴張偏好</h3>
 <p>記錄設計者偏好內建、一般機制、程式庫、巨集、工具、宿主、標準委員會，或實驗後穩定。</p>
-<h2>五十一、刪除能力</h2>
+<h3>五十一、刪除能力</h3>
 <p>設計風格不只看加入什麼，也看是否願意刪除、何時刪除、是否建立遷移、是否因相容性停止刪除，以及是否只在新語言重啟時刪除。</p>
-<h2>五十二、核心邊界哲學</h2>
+<h3>五十二、核心邊界哲學</h3>
 <p>PLDST 個案需回答：</p>
 <blockquote>
 <p>哪些能力設計者認為只有語言核心能合法、一致地提供？</p>
 </blockquote>
 <p>此問題比功能多寡更能揭示風格。</p>
 <hr>
-<h1>第十二部分　PLDST SKILL 規格</h1>
-<h2>五十三、輸入</h2>
+<h2>第十二部分　PLDST SKILL 規格</h2>
+<h3>五十三、輸入</h3>
 <pre><code class="language-text">designer
 language
 version_or_period
@@ -438,7 +442,7 @@ library_ecosystem
 tooling
 governance_documents
 </code></pre>
-<h2>五十四、分析管線</h2>
+<h3>五十四、分析管線</h3>
 <pre><code class="language-text">重新網路搜尋
 → 核心構造抽取
 → 擴展通道抽取
@@ -451,7 +455,7 @@ governance_documents
 → 第二輪校對
 → 風格報告
 </code></pre>
-<h2>五十五、功能分析 JSON</h2>
+<h3>五十五、功能分析 JSON</h3>
 <pre><code class="language-json">{
   &quot;feature&quot;: &quot;generics&quot;,
   &quot;candidate_locations&quot;: [
@@ -474,36 +478,36 @@ governance_documents
   &quot;style_interpretation&quot;: &quot;controlled expansion after evidence&quot;
 }
 </code></pre>
-<h2>五十六、SKILL 禁止事項</h2>
+<h3>五十六、SKILL 禁止事項</h3>
 <p>不得以關鍵字數直接判定簡單、以標準頁數判定複雜、忽略程式庫與宿主、將小 Runtime 等同小語義、將新增功能一律寫成退化、將拒絕功能一律寫成美德、將程式庫替代視為零成本、忽略相容性化石或不分析功能交互。</p>
 <hr>
-<h1>第十三部分　設計原則</h1>
-<h2>五十七、保持核心稀缺，而不是任意貧乏</h2>
+<h2>第十三部分　設計原則</h2>
+<h3>五十七、保持核心稀缺，而不是任意貧乏</h3>
 <p>核心功能應具有高覆蓋、高一致性與高工具價值。</p>
-<h2>五十八、先找生成機制，再加專用功能</h2>
+<h3>五十八、先找生成機制，再加專用功能</h3>
 <p>若少量一般機制能自然、可診斷地表達需求，優先使用一般機制。但「可以勉強表達」不等於「適合交給使用者反覆表達」。</p>
-<h2>五十九、程式庫方案必須接受有效語言審計</h2>
+<h3>五十九、程式庫方案必須接受有效語言審計</h3>
 <p>不能因功能不在語法中，就宣稱語言保持簡單。</p>
-<h2>六十、擴展機制必須有邊界</h2>
+<h3>六十、擴展機制必須有邊界</h3>
 <p>強大擴展應提供名稱衛生、權限限制、展開可見性、工具支援、相容規則與版本管理。</p>
-<h2>六十一、新增功能必須說明它刪除了什麼</h2>
+<h3>六十一、新增功能必須說明它刪除了什麼</h3>
 <p>優質提案不只列出能做什麼，也列出可取代的樣板、不安全慣例、重複程式庫、反射、程式碼生成與特例。</p>
-<h2>六十二、每項穩定功能都是長期負債契約</h2>
+<h3>六十二、每項穩定功能都是長期負債契約</h3>
 <p>功能准入必須計算未來的相容、教學、多實作、工具、安全與新功能交互。</p>
-<h2>六十三、允許語言分層成長</h2>
+<h3>六十三、允許語言分層成長</h3>
 <p>可以建立 small core、standard libraries、optional profiles、experimental extensions、domain packages 與 tooling conventions，但層級與保證必須清楚。</p>
 <hr>
-<h1>第十四部分　限制</h1>
-<h2>六十四、核心邊界具有社會性</h2>
+<h2>第十四部分　限制</h2>
+<h3>六十四、核心邊界具有社會性</h3>
 <p>什麼被稱為核心，常取決於發行方式、標準文件、套件管理、預設安裝、公司支持與教育，不是純技術邊界。</p>
-<h2>六十五、功能數量難以客觀比較</h2>
+<h3>六十五、功能數量難以客觀比較</h3>
 <p>一個功能可以拆成多個，或多個功能可被描述成一個一般機制，因此功能計數高度依賴分類方式。</p>
-<h2>六十六、正交性不是完全可測</h2>
+<h3>六十六、正交性不是完全可測</h3>
 <p>設計者常稱功能正交，但實際仍可能在型別、解析、Runtime 與工具中產生交互，需要用具體決策與測試評估。</p>
-<h2>六十七、小型語言不一定適合大型生態</h2>
+<h3>六十七、小型語言不一定適合大型生態</h3>
 <p>語言可以是教學工具、嵌入式腳本、研究核心、完整平台或國際標準。不同使命需要不同核心邊界。</p>
 <hr>
-<h1>第十五部分　結論</h1>
+<h2>第十五部分　結論</h2>
 <p>「語言應該保持多小」沒有一個脫離用途的答案。</p>
 <p>Scheme 展示生成式小核心；Oberon 展示刪減與完整系統一致性；Lua 展示嵌入與宿主擴展；Go 展示正交性與組織工程；Clojure 展示概念簡單、宿主互操作與保守准入；C++ 展示少數深層原則如何支撐大型、相容且多領域的語言。</p>
 <p>本文提出：</p>
@@ -565,7 +569,7 @@ NetComplexityIncrease
 \text{成長不能摧毀核心的可理解性}
 }</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.3633em;vertical-align:-0.34em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0233em;"><span style="top:-3.3633em;"><span class="pstrut" style="height:3.3633em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord text"><span class="mord cjk_fallback">核心必須稀缺</span></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∧</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord text"><span class="mord cjk_fallback">語言必須能成長</span></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∧</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord text"><span class="mord cjk_fallback">成長不能摧毀核心的可理解性</span></span></span></span></span></span><span style="top:-3.0233em;"><span class="pstrut" style="height:3.3633em;"></span><span class="stretchy fbox" style="height:1.3633em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.34em;"><span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h1>附錄 A　核心—擴張分析卡</h1>
+<h2>附錄 A　核心—擴張分析卡</h2>
 <pre><code class="language-text">語言：
 時期：
 核心語法：
@@ -587,7 +591,7 @@ Runtime 核心：
 信心：
 </code></pre>
 <hr>
-<h1>附錄 B　功能准入卡</h1>
+<h2>附錄 B　功能准入卡</h2>
 <pre><code class="language-text">候選功能：
 原始問題：
 現有替代：
@@ -608,7 +612,7 @@ Runtime 核心：
 建議位置：
 </code></pre>
 <hr>
-<h1>附錄 C　來源與參考文獻</h1>
+<h2>附錄 C　來源與參考文獻</h2>
 <p><strong>[R1]</strong> Scheme Language Steering Committee and editors, <em>Revised^7 Report on the Algorithmic Language Scheme</em>; Scheme Standards official website.<br>— 少量表達規則、自由組合、Small Language 與標準程序。</p>
 <p><strong>[R2]</strong> Niklaus Wirth, “Modula-2 and Oberon,” revised 2006; “A Plea for Lean Software”; <em>Project Oberon</em>.<br>— 設計簡潔、概念經濟、先刪後增、提高能力並降低複雜度。</p>
 <p><strong>[R3]</strong> Roberto Ierusalimschy, Luiz Henrique de Figueiredo, and Waldemar Celes, “The Evolution of Lua,” HOPL III, 2007; Lua official history and documentation.<br>— 小型、可攜、快速、易嵌入、Table 與可擴展語義。</p>
@@ -619,7 +623,7 @@ Runtime 核心：
 <p><strong>[R8]</strong> Go Team, “Experiment, Simplify, Ship,” 2019.<br>— 增加發行物內部複雜度以降低整體程式設計經驗負擔，以及重新定義與移除功能的簡化方式。</p>
 <p><strong>[R9]</strong> Guy L. Steele Jr., “Growing a Language,” OOPSLA 1998; <em>Higher-Order and Symbolic Computation</em> 12(3), 1999.<br>— 現代語言應規劃成長，而非假設中央設計者一次預知全部需求。</p>
 <hr>
-<h1>附錄 D　PLDST 標記</h1>
+<h2>附錄 D　PLDST 標記</h2>
 <pre><code class="language-text">[M-S] Syntactic minimalism
 [M-M] Semantic minimalism
 [M-I] Implementation minimalism
@@ -635,8 +639,8 @@ Runtime 核心：
 [G-C] Core feature growth
 </code></pre>
 <hr>
-<h1>附錄 E　第二輪事實與概念校對紀錄</h1>
-<h2>E.1 Scheme 的「小核心」</h2>
+<h2>附錄 E　第二輪事實與概念校對紀錄</h2>
+<h3>E.1 Scheme 的「小核心」</h3>
 <p>已重新核對 R7RS 正文與 Scheme Standards 程序頁：</p>
 <ul>
 <li>R7RS 確實主張不應以功能疊加設計語言，而應移除使額外功能看似必要的弱點與限制；</li>
@@ -644,7 +648,7 @@ Runtime 核心：
 <li>R7RS 標準工作確實設有 Working Group 1 — Small Language 與 Working Group 2 — Large Language。</li>
 </ul>
 <p>本文因此保留「生成式極簡」與 Small／Large 制度分層的描述，但不把所有 Scheme 實作視為同一規模，也不宣稱 Small 與 Large 已形成單一完整、同時發布的規格結果。</p>
-<h2>E.2 Oberon 的先刪後增</h2>
+<h3>E.2 Oberon 的先刪後增</h3>
 <p>已重新核對 Wirth〈Modula-2 and Oberon〉：</p>
 <ul>
 <li>Wirth 明確把設計簡潔稱為最重要的指導原則；</li>
@@ -652,7 +656,7 @@ Runtime 核心：
 <li>其目標明確包含提高 Modula-2 的能力並同時降低複雜度。</li>
 </ul>
 <p>本文所稱「刪減式極簡」是對多項直接設計決策的分析標籤，不是 Wirth 本人使用的正式流派名稱。</p>
-<h2>E.3 Lua 的小型與擴展</h2>
+<h3>E.3 Lua 的小型與擴展</h3>
 <p>已重新核對 Lua HOPL 論文與官方歷史：</p>
 <ul>
 <li>Lua 自創始起即以 simple、small、portable、fast、easily embedded 為設計目標；</li>
@@ -660,7 +664,7 @@ Runtime 核心：
 <li>Lua 早期三人設計小組以一致同意作為加入新功能的重要門檻，官方歷史也直接表達「之後加入功能通常比移除容易」。</li>
 </ul>
 <p>本文沒有把 Lua 的小型性誤寫成其所有嵌入環境或大型應用都同樣簡單。</p>
-<h2>E.4 Go 的泛型與受控擴張</h2>
+<h3>E.4 Go 的泛型與受控擴張</h3>
 <p>已重新核對 Go 官方〈Why Generics?〉、〈An Introduction to Generics〉與〈Experiment, Simplify, Ship〉：</p>
 <ul>
 <li>Go 官方在泛型設計階段明確承認泛型會增加語言複雜度；</li>
@@ -669,14 +673,14 @@ Runtime 核心：
 <li>Go 官方也明確說明，增加語言或發行物內部複雜度，可能在整體上簡化程式設計經驗。</li>
 </ul>
 <p>因此本文沒有把 Go 描述為永遠拒絕新功能，而是描述其對功能永久化具有高門檻。</p>
-<h2>E.5 Clojure 的保守准入</h2>
+<h3>E.5 Clojure 的保守准入</h3>
 <p>已重新核對 Clojure 官方 Rationale 與 2012 年治理回顧：</p>
 <ul>
 <li>官方 Rationale 確實以少量主要資料結構、不可變資料、宿主互操作等方式說明其設計；</li>
 <li>2012 年治理回顧明確說明 Rich Hickey 對加入語言功能極為保守，並以 named arguments／destructuring 案例說明等待一般解法的理由。</li>
 </ul>
 <p>該治理文章是特定歷史時期的官方回顧；本文只用來分析核心功能准入風格，不把其中所有組織描述直接當成 2026 年完整治理現況。</p>
-<h2>E.6 C++ 的大型表面與基本原則</h2>
+<h3>E.6 C++ 的大型表面與基本原則</h3>
 <p>已重新核對 Stroustrup〈Foundations of C++〉：</p>
 <ul>
 <li>文章明確稱 C++ 為大型且複雜的語言；</li>
@@ -685,7 +689,7 @@ Runtime 核心：
 <li>直接硬體映射與零額外成本抽象確實是其公開設計理想。</li>
 </ul>
 <p>本文因此沒有將 C++ 歸為極簡語言，而是歸為「一般機制式擴張」：深層原則集中，但表面、歷史與交互成本很大。</p>
-<h2>E.7 數學模型的地位</h2>
+<h3>E.7 數學模型的地位</h3>
 <p>本文的功能交互圖、交互密度、效用與成本公式均為分析工具，不是已經得到經驗定律驗證的精確量表。後續 PLDST SKILL 若輸出數值，必須附上：</p>
 <ul>
 <li>功能集合如何定義；</li>

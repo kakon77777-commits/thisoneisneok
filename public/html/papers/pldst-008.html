@@ -23,6 +23,10 @@ main{padding:56px 0 96px}
 .content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
 .content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
 .content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+/* Demoting the body by one level pushes the deepest sections here, so they need
+   to be styled rather than left to the browser's defaults. */
+.content h4{font-family:Inter,"Noto Sans TC",sans-serif;font-size:16.5px;margin:30px 0 10px;color:var(--accent)}
+.content h5,.content h6{font-family:Inter,"Noto Sans TC",sans-serif;font-size:14px;letter-spacing:.02em;margin:26px 0 9px;color:var(--muted)}
 .content p{margin:0 0 24px}
 .content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
 .content li{margin:.45em 0}
@@ -53,7 +57,7 @@ footer a{color:var(--accent)}
   <section class="facts"><div><b>編號</b><span>PLDST-008</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第二部核心風格原型正式論文</span></div></section>
   <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-008.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
   <article class="content"><h1>機器效率與人類可讀性：成本模型應寫在語言表面，還是藏在編譯器之後？</h1>
-<h2>摘要</h2>
+<h3>摘要</h3>
 <p>程式語言設計經常把「接近機器」與「容易閱讀」描繪成一條單軸：</p>
 <pre><code class="language-text">機器透明、效能可控 ←────────→ 高階抽象、人類可讀
 </code></pre>
@@ -120,8 +124,8 @@ footer a{color:var(--accent)}
 </blockquote>
 <p><strong>關鍵詞：</strong> 程式語言設計、成本模型、零額外成本、可讀性、垃圾回收、JIT、惰性求值、型別穩定、效能可觀察性、PLDST</p>
 <hr>
-<h1>第一部分　效率不是一個數字</h1>
-<h2>一、執行時間 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">K_t</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">t</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h2>
+<h2>第一部分　效率不是一個數字</h2>
+<h3>一、執行時間 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">K_t</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">t</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h3>
 <p>包括：</p>
 <ul>
 <li>指令數；</li>
@@ -141,7 +145,7 @@ footer a{color:var(--accent)}
 <li>不同資料分布。</li>
 </ul>
 <hr>
-<h2>二、記憶體 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>m</mi></msub></mrow><annotation encoding="application/x-tex">K_m</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">m</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h2>
+<h3>二、記憶體 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>m</mi></msub></mrow><annotation encoding="application/x-tex">K_m</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">m</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h3>
 <p>包括：</p>
 <ul>
 <li>常駐集合；</li>
@@ -155,7 +159,7 @@ footer a{color:var(--accent)}
 </ul>
 <p>時間相近的兩個實作，可能具有完全不同的記憶體與 Cache 行為。</p>
 <hr>
-<h2>三、配置與回收 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>a</mi></msub></mrow><annotation encoding="application/x-tex">K_a</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h2>
+<h3>三、配置與回收 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>a</mi></msub></mrow><annotation encoding="application/x-tex">K_a</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h3>
 <p>配置成本包括：</p>
 <ul>
 <li>物件建立；</li>
@@ -176,7 +180,7 @@ footer a{color:var(--accent)}
 </ul>
 <p>因此「抽象語法」本身不能決定配置成本。</p>
 <hr>
-<h2>四、資料區域性 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>l</mi></msub></mrow><annotation encoding="application/x-tex">K_l</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0197em;">l</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h2>
+<h3>四、資料區域性 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>l</mi></msub></mrow><annotation encoding="application/x-tex">K_l</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0197em;">l</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h3>
 <p>資料布局影響：</p>
 <ul>
 <li>Cache；</li>
@@ -188,7 +192,7 @@ footer a{color:var(--accent)}
 </ul>
 <p>物件導向表面可能掩蓋分散配置；資料導向 API 也可能以較高表面複雜度換取連續布局。</p>
 <hr>
-<h2>五、間接層 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">K_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h2>
+<h3>五、間接層 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">K_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h3>
 <p>包括：</p>
 <ul>
 <li>Virtual call；</li>
@@ -207,7 +211,7 @@ footer a{color:var(--accent)}
 語義上已是靜態
 </code></pre>
 <hr>
-<h2>六、安全檢查 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>b</mi></msub></mrow><annotation encoding="application/x-tex">K_b</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">b</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h2>
+<h3>六、安全檢查 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>b</mi></msub></mrow><annotation encoding="application/x-tex">K_b</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">b</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h3>
 <p>包括：</p>
 <ul>
 <li>Bounds check；</li>
@@ -227,7 +231,7 @@ footer a{color:var(--accent)}
 </ul>
 <p>安全檢查具有成本，但事故、漏洞與人工證明同樣有成本。</p>
 <hr>
-<h2>七、排程與同步 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>s</mi></msub></mrow><annotation encoding="application/x-tex">K_s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h2>
+<h3>七、排程與同步 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>s</mi></msub></mrow><annotation encoding="application/x-tex">K_s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h3>
 <p>包括：</p>
 <ul>
 <li>Thread；</li>
@@ -249,7 +253,7 @@ footer a{color:var(--accent)}
 <li>不可能形成佇列。</li>
 </ul>
 <hr>
-<h2>八、編譯、暖機與專門化 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>w</mi></msub></mrow><annotation encoding="application/x-tex">K_w</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h2>
+<h3>八、編譯、暖機與專門化 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>w</mi></msub></mrow><annotation encoding="application/x-tex">K_w</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h3>
 <p>包括：</p>
 <ul>
 <li>Ahead-of-time compile；</li>
@@ -263,7 +267,7 @@ footer a{color:var(--accent)}
 </ul>
 <p>若只比較穩態 throughput，會忽略 CLI、Serverless、短任務與互動式環境。</p>
 <hr>
-<h2>九、尾延遲與變異 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>v</mi></msub></mrow><annotation encoding="application/x-tex">K_v</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">v</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h2>
+<h3>九、尾延遲與變異 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>K</mi><mi>v</mi></msub></mrow><annotation encoding="application/x-tex">K_v</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">v</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></h3>
 <p>Runtime 可能有：</p>
 <ul>
 <li>GC pause；</li>
@@ -276,7 +280,7 @@ footer a{color:var(--accent)}
 </ul>
 <p>平均值相近，尾延遲可能完全不同。</p>
 <hr>
-<h2>十、成本向量</h2>
+<h3>十、成本向量</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="bold">K</mi><mo>=</mo><mo stretchy="false">(</mo><msub><mi>K</mi><mi>t</mi></msub><mo separator="true">,</mo><msub><mi>K</mi><mi>m</mi></msub><mo separator="true">,</mo><msub><mi>K</mi><mi>a</mi></msub><mo separator="true">,</mo><msub><mi>K</mi><mi>l</mi></msub><mo separator="true">,</mo><msub><mi>K</mi><mi>i</mi></msub><mo separator="true">,</mo><msub><mi>K</mi><mi>b</mi></msub><mo separator="true">,</mo><msub><mi>K</mi><mi>s</mi></msub><mo separator="true">,</mo><msub><mi>K</mi><mi>w</mi></msub><mo separator="true">,</mo><msub><mi>K</mi><mi>v</mi></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\mathbf{K}
 =
 (
@@ -292,12 +296,12 @@ K_v
 )</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">K</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">t</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">m</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">a</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0197em;">l</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">b</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0269em;">w</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">v</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span></span>
 <p>PLDST 不用單一「效率分數」取代此向量。</p>
 <hr>
-<h1>第二部分　可讀性也不是一個數字</h1>
-<h2>十一、意圖可讀性</h2>
+<h2>第二部分　可讀性也不是一個數字</h2>
+<h3>十一、意圖可讀性</h3>
 <p>讀者能否快速知道程式想做什麼？</p>
 <p>高階集合操作、Iterator、Query、Pattern matching 可能比顯式 Index 與 Pointer arithmetic 更清楚。</p>
 <hr>
-<h2>十二、成本可讀性</h2>
+<h3>十二、成本可讀性</h3>
 <p>讀者能否知道：</p>
 <ul>
 <li>是否配置；</li>
@@ -311,11 +315,11 @@ K_v
 </ul>
 <p>意圖可讀性與成本可讀性可能互相衝突。</p>
 <hr>
-<h2>十三、局部可讀性</h2>
+<h3>十三、局部可讀性</h3>
 <p>單行程式是否容易理解。</p>
 <p>鏈式 API、Operator overloading、Implicit conversion 可能提高局部流暢度，卻降低實際成本可見性。</p>
 <hr>
-<h2>十四、系統可讀性</h2>
+<h3>十四、系統可讀性</h3>
 <p>大型系統能否推理：</p>
 <ul>
 <li>資源所有權；</li>
@@ -328,7 +332,7 @@ K_v
 </ul>
 <p>局部簡潔可能增加全域不透明。</p>
 <hr>
-<h2>十五、診斷可讀性</h2>
+<h3>十五、診斷可讀性</h3>
 <p>當性能不符預期時，使用者能否知道：</p>
 <ul>
 <li>哪個抽象未被消除；</li>
@@ -341,8 +345,8 @@ K_v
 </ul>
 <p>這決定「隱藏成本」是否可治理。</p>
 <hr>
-<h1>第三部分　成本可以寫在哪裡</h1>
-<h2>十六、語法表面</h2>
+<h2>第三部分　成本可以寫在哪裡</h2>
+<h3>十六、語法表面</h3>
 <p>可用語法明示：</p>
 <ul>
 <li><code>new</code>／allocation；</li>
@@ -371,7 +375,7 @@ K_v
 <li>語法只顯示類別，不顯示量級。</li>
 </ul>
 <hr>
-<h2>十七、型別與效果</h2>
+<h3>十七、型別與效果</h3>
 <p>成本資訊可以進入：</p>
 <ul>
 <li>Ownership；</li>
@@ -388,7 +392,7 @@ K_v
 <p>型別能保證某些資源關係，但不一定保證實際時間。</p>
 <p>例如 Rust 的所有權能讓複製與移動具有較明確語義，但編譯器仍可能消除實際 Memory move。</p>
 <hr>
-<h2>十八、API 與命名</h2>
+<h3>十八、API 與命名</h3>
 <p>命名可暗示成本：</p>
 <pre><code class="language-text">clone
 copy
@@ -413,7 +417,7 @@ eager
 </ul>
 <p>仍不充分。</p>
 <hr>
-<h2>十九、編譯器診斷</h2>
+<h3>十九、編譯器診斷</h3>
 <p>Compiler 可提供：</p>
 <ul>
 <li>Escape analysis；</li>
@@ -428,7 +432,7 @@ eager
 </ul>
 <p>這讓語言表面保持清楚，同時提供機器層證據。</p>
 <hr>
-<h2>二十、Profiler 與 Runtime 指標</h2>
+<h3>二十、Profiler 與 Runtime 指標</h3>
 <p>Profiler 可觀察：</p>
 <ul>
 <li>CPU；</li>
@@ -450,7 +454,7 @@ eager
 <li>無法單獨證明最壞情況。</li>
 </ul>
 <hr>
-<h2>二十一、規格與性能契約</h2>
+<h3>二十一、規格與性能契約</h3>
 <p>語言或 Library 可承諾：</p>
 <ul>
 <li>複雜度上界；</li>
@@ -471,8 +475,8 @@ eager
 經驗性結果
 </code></pre>
 <hr>
-<h1>第四部分　六種效率—可讀風格</h1>
-<h2>二十二、機器透明型</h2>
+<h2>第四部分　六種效率—可讀風格</h2>
+<h3>二十二、機器透明型</h3>
 <p>代表：</p>
 <ul>
 <li>C；</li>
@@ -501,7 +505,7 @@ eager
 </ul>
 <p>C 標準的抽象機器方法本身就表示：規格要求可觀察結果如同某種抽象執行，而不要求實作真的逐步使用該機制。[R1]</p>
 <hr>
-<h2>二十三、零額外成本抽象型</h2>
+<h3>二十三、零額外成本抽象型</h3>
 <p>代表：</p>
 <ul>
 <li>C++；</li>
@@ -528,7 +532,7 @@ eager
 </ul>
 <p>Stroustrup 將零額外成本概括為「不用的不付費，使用的難以手寫得更好」；Rust 官方則以 Iterator 與 typestate 等案例說明高階構造可編譯成接近直接實作的程式碼。[R2][R3]</p>
 <hr>
-<h2>二十四、可讀組織工程型</h2>
+<h3>二十四、可讀組織工程型</h3>
 <p>代表：</p>
 <ul>
 <li>Go。</li>
@@ -557,7 +561,7 @@ eager
 </ul>
 <p>Go 的官方設計回顧同時強調來源文字清楚表達意圖，以及懂得資料表示與配置的程式設計者仍可降低 Collector 壓力。[R4]</p>
 <hr>
-<h2>二十五、自適應 Runtime 型</h2>
+<h3>二十五、自適應 Runtime 型</h3>
 <p>代表：</p>
 <ul>
 <li>Java／HotSpot；</li>
@@ -587,7 +591,7 @@ eager
 </ul>
 <p>Oracle 的 HotSpot 文件指出，VM 只編譯性能關鍵區域；Escape Analysis 可分析物件使用範圍，並支援消除部分配置或鎖定成本。[R5]</p>
 <hr>
-<h2>二十六、語義抽象—嚴格度逃生型</h2>
+<h3>二十六、語義抽象—嚴格度逃生型</h3>
 <p>代表：</p>
 <ul>
 <li>Haskell／GHC。</li>
@@ -617,7 +621,7 @@ eager
 </ul>
 <p>Haskell 2010 明確將函式應用定義為 non-strict；GHC 文件則指出，數值內圈中消除 thunk 可能帶來巨大收益，且 Full laziness 增加共享時也可能提高記憶體駐留。[R6][R7]</p>
 <hr>
-<h2>二十七、推導專門化型</h2>
+<h3>二十七、推導專門化型</h3>
 <p>代表：</p>
 <ul>
 <li>Julia。</li>
@@ -646,8 +650,8 @@ eager
 </ul>
 <p>Julia 官方建議通常不必宣告回傳型別，而應撰寫讓編譯器能推導回傳型別的 type-stable function；效能指引也把非預期配置視為 type instability 或暫時陣列問題的警訊。[R8]</p>
 <hr>
-<h1>第五部分　代表性成本案例</h1>
-<h2>二十八、C／C++：表面接近硬體仍有抽象機器</h2>
+<h2>第五部分　代表性成本案例</h2>
+<h3>二十八、C／C++：表面接近硬體仍有抽象機器</h3>
 <p>C 語言常被說成「可攜式組合語言」，但標準規格描述的是抽象機器與可觀察行為，不是固定指令序列。</p>
 <p>這意味：</p>
 <ul>
@@ -658,7 +662,7 @@ eager
 </ul>
 <p>成本透明是相對的，不是逐指令同一。</p>
 <hr>
-<h2>二十九、C++：高階抽象依賴可消除性</h2>
+<h3>二十九、C++：高階抽象依賴可消除性</h3>
 <p>RAII、Generic algorithm、Range 與容器可以使程式：</p>
 <ul>
 <li>更清楚；</li>
@@ -677,7 +681,7 @@ eager
 </ul>
 <p>零額外成本不是「每個抽象在每個編譯器都永遠消失」，而是語言與 Library 的設計方向及比較原則。</p>
 <hr>
-<h2>三十、Rust：Ownership 同時是安全與成本語言</h2>
+<h3>三十、Rust：Ownership 同時是安全與成本語言</h3>
 <p>Rust 區分：</p>
 <ul>
 <li>Move；</li>
@@ -697,7 +701,7 @@ eager
 </ul>
 <p>因此 Rust 提高的是成本類別可辨識性，不是精確 Cycle 可見性。</p>
 <hr>
-<h2>三十一、Go：簡單 Goroutine 不等於無成本並行</h2>
+<h3>三十一、Go：簡單 Goroutine 不等於無成本並行</h3>
 <p><code>go f()</code> 很短，但系統仍需要：</p>
 <ul>
 <li>Stack；</li>
@@ -711,7 +715,7 @@ eager
 <p>Effective Go 說明 Goroutine 使 Thread 建立與管理的複雜性被隱藏，但其 HTTP 範例也提醒：每個請求建立 Goroutine 時，若並行限制設計不當，仍會建立大量等待工作的 Goroutine。[R9]</p>
 <p>因此，並行表面可讀性必須配合生命週期與負載工具。</p>
 <hr>
-<h2>三十二、Java：來源中的 <code>new</code> 不等於必然 Heap 配置</h2>
+<h3>三十二、Java：來源中的 <code>new</code> 不等於必然 Heap 配置</h3>
 <p>HotSpot Escape Analysis 可以判斷物件是否逃離方法或 Thread，並支援：</p>
 <ul>
 <li>Scalar replacement；</li>
@@ -726,7 +730,7 @@ HotSpot implementation：可能消除物理配置
 Profiler／JIT log：特定執行證據
 </code></pre>
 <hr>
-<h2>三十三、Haskell：優雅組合可能隱藏求值圖</h2>
+<h3>三十三、Haskell：優雅組合可能隱藏求值圖</h3>
 <p>一個 Pipeline 可以具有高度意圖可讀性，但性能取決於：</p>
 <ul>
 <li>是否融合；</li>
@@ -738,7 +742,7 @@ Profiler／JIT log：特定執行證據
 </ul>
 <p>所以 Haskell 的性能閱讀單位不只是來源控制流，也包括需求圖與 Heap profile。</p>
 <hr>
-<h2>三十四、Julia：同一表面因型別穩定性而分岔</h2>
+<h3>三十四、Julia：同一表面因型別穩定性而分岔</h3>
 <p>Julia 中兩個看似相似的函式，若一個回傳型別穩定、另一個依資料分支回傳不同型別，Compiler 可能產生完全不同的程式碼。</p>
 <p>這使性能成本部分位於：</p>
 <ul>
@@ -750,8 +754,8 @@ Profiler／JIT log：特定執行證據
 </ul>
 <p>Julia 的設計不是把機器成本完全藏起來，而是讓使用者透過 <code>@code_warntype</code>、Allocation measurement 與 Profile 觀察推導結果。</p>
 <hr>
-<h1>第六部分　成本可見性階梯</h1>
-<h2>三十五、L0：完全隱藏</h2>
+<h2>第六部分　成本可見性階梯</h2>
+<h3>三十五、L0：完全隱藏</h3>
 <p>使用者看不到：</p>
 <ul>
 <li>成本類別；</li>
@@ -762,7 +766,7 @@ Profiler／JIT log：特定執行證據
 </ul>
 <p>這是最低治理能力。</p>
 <hr>
-<h2>三十六、L1：文件化</h2>
+<h3>三十六、L1：文件化</h3>
 <p>成本只存在於：</p>
 <ul>
 <li>API 文件；</li>
@@ -771,7 +775,7 @@ Profiler／JIT log：特定執行證據
 </ul>
 <p>適合非核心與可變最佳化，但容易被忽略。</p>
 <hr>
-<h2>三十七、L2：命名與 API 可見</h2>
+<h3>三十七、L2：命名與 API 可見</h3>
 <p>例如：</p>
 <pre><code class="language-text">clone
 collect
@@ -782,7 +786,7 @@ unchecked
 </code></pre>
 <p>能讓 Code review 發現高成本操作。</p>
 <hr>
-<h2>三十八、L3：型別與語法可見</h2>
+<h3>三十八、L3：型別與語法可見</h3>
 <p>例如：</p>
 <ul>
 <li>Owned／Borrowed；</li>
@@ -794,7 +798,7 @@ unchecked
 </ul>
 <p>適合跨邊界與安全敏感成本。</p>
 <hr>
-<h2>三十九、L4：Compiler 可解釋</h2>
+<h3>三十九、L4：Compiler 可解釋</h3>
 <p>Compiler 可顯示：</p>
 <ul>
 <li>配置；</li>
@@ -806,7 +810,7 @@ unchecked
 </ul>
 <p>適合依實作與最佳化條件改變的成本。</p>
 <hr>
-<h2>四十、L5：Runtime 可觀察</h2>
+<h3>四十、L5：Runtime 可觀察</h3>
 <p>Profiler、Trace 與 Metrics 顯示實際負載下成本。</p>
 <p>適合：</p>
 <ul>
@@ -818,7 +822,7 @@ unchecked
 <li>Contention。</li>
 </ul>
 <hr>
-<h2>四十一、L6：規格化保證</h2>
+<h3>四十一、L6：規格化保證</h3>
 <p>例如：</p>
 <ul>
 <li>不配置；</li>
@@ -831,8 +835,8 @@ unchecked
 </ul>
 <p>此層最強，也最限制實作與演化。</p>
 <hr>
-<h1>第七部分　性能責任配置</h1>
-<h2>四十二、語言設計者</h2>
+<h2>第七部分　性能責任配置</h2>
+<h3>四十二、語言設計者</h3>
 <p>負責：</p>
 <ul>
 <li>哪些成本可被表達；</li>
@@ -842,7 +846,7 @@ unchecked
 <li>是否允許量級意外改變。</li>
 </ul>
 <hr>
-<h2>四十三、編譯器與 Runtime</h2>
+<h3>四十三、編譯器與 Runtime</h3>
 <p>負責：</p>
 <ul>
 <li>遵守語義；</li>
@@ -853,7 +857,7 @@ unchecked
 <li>保持結果可驗證。</li>
 </ul>
 <hr>
-<h2>四十四、Library author</h2>
+<h3>四十四、Library author</h3>
 <p>負責：</p>
 <ul>
 <li>複雜度文件；</li>
@@ -866,7 +870,7 @@ unchecked
 <li>Allocation behavior。</li>
 </ul>
 <hr>
-<h2>四十五、程式設計者</h2>
+<h3>四十五、程式設計者</h3>
 <p>負責：</p>
 <ul>
 <li>選擇合適演算法；</li>
@@ -877,7 +881,7 @@ unchecked
 <li>在需要時使用明確低階控制。</li>
 </ul>
 <hr>
-<h2>四十六、組織</h2>
+<h3>四十六、組織</h3>
 <p>負責：</p>
 <ul>
 <li>性能預算；</li>
@@ -889,14 +893,14 @@ unchecked
 <li>Hardware matrix。</li>
 </ul>
 <hr>
-<h2>四十七、平衡條件</h2>
+<h3>四十七、平衡條件</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mi>e</mi><mi>s</mi><msub><mi>p</mi><mrow><mi>p</mi><mi>e</mi><mi>r</mi><mi>f</mi></mrow></msub><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo><mo>≤</mo><mi>C</mi><mi>o</mi><mi>n</mi><mi>t</mi><mi>r</mi><mi>o</mi><mi>l</mi><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo><mo>+</mo><mi>O</mi><mi>b</mi><mi>s</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>a</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo><mo>+</mo><mi>E</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">Resp_{perf}(a)
 \leq
 Control(a)+Observability(a)+Evidence(a)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">es</span><span class="mord"><span class="mord mathnormal">p</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">er</span><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">a</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mopen">(</span><span class="mord mathnormal">a</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.0278em;">ser</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">abi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mopen">(</span><span class="mord mathnormal">a</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mopen">(</span><span class="mord mathnormal">a</span><span class="mclose">)</span></span></span></span></span>
 <p>如果要求使用者保證低延遲，卻不提供 GC、Scheduler 與配置可觀察性，責任配置失衡。</p>
 <hr>
-<h1>第八部分　常見失敗模式</h1>
-<h2>四十八、來源碼決定論</h2>
+<h2>第八部分　常見失敗模式</h2>
+<h3>四十八、來源碼決定論</h3>
 <p>錯誤觀念：</p>
 <blockquote>
 <p>看起來低階，所以一定快。</p>
@@ -912,7 +916,7 @@ Control(a)+Observability(a)+Evidence(a)</annotation></semantics></math></span><s
 <li>Data layout。</li>
 </ul>
 <hr>
-<h2>四十九、最佳化器信仰</h2>
+<h3>四十九、最佳化器信仰</h3>
 <p>錯誤觀念：</p>
 <blockquote>
 <p>編譯器一定會消除。</p>
@@ -923,7 +927,7 @@ Control(a)+Observability(a)+Evidence(a)</annotation></semantics></math></span><s
 → 不把它寫成語言保證
 </code></pre>
 <hr>
-<h2>五十、抽象恐懼</h2>
+<h3>五十、抽象恐懼</h3>
 <p>錯誤觀念：</p>
 <blockquote>
 <p>高階 Iterator、Generic 或 Object 一定慢。</p>
@@ -938,7 +942,7 @@ Control(a)+Observability(a)+Evidence(a)</annotation></semantics></math></span><s
 </ul>
 <p>需要證據，而不是語法印象。</p>
 <hr>
-<h2>五十一、性能懸崖</h2>
+<h3>五十一、性能懸崖</h3>
 <p>小改動造成量級改變：</p>
 <ul>
 <li>Type instability；</li>
@@ -952,7 +956,7 @@ Control(a)+Observability(a)+Evidence(a)</annotation></semantics></math></span><s
 </ul>
 <p>語言應提供可解釋工具。</p>
 <hr>
-<h2>五十二、Debug／Release 分裂</h2>
+<h3>五十二、Debug／Release 分裂</h3>
 <p>若 Debug build 與 Release build 的性能模型差異過大：</p>
 <ul>
 <li>使用者可能誤診；</li>
@@ -962,7 +966,7 @@ Control(a)+Observability(a)+Evidence(a)</annotation></semantics></math></span><s
 </ul>
 <p>文件與工具必須明示 Build profile。</p>
 <hr>
-<h2>五十三、平均值遮蔽尾延遲</h2>
+<h3>五十三、平均值遮蔽尾延遲</h3>
 <p>GC 與 JIT 系統尤其不能只看平均 throughput。</p>
 <p>至少分開：</p>
 <ul>
@@ -974,7 +978,7 @@ Control(a)+Observability(a)+Evidence(a)</annotation></semantics></math></span><s
 <li>Compile time。</li>
 </ul>
 <hr>
-<h2>五十四、微基準過度推論</h2>
+<h3>五十四、微基準過度推論</h3>
 <p>微基準可能：</p>
 <ul>
 <li>被 Dead-code eliminate；</li>
@@ -986,11 +990,11 @@ Control(a)+Observability(a)+Evidence(a)</annotation></semantics></math></span><s
 <li>對 JIT 暖機敏感。</li>
 </ul>
 <hr>
-<h1>第九部分　設計原則</h1>
-<h2>五十五、意圖優先，但成本類別不可消失</h2>
+<h2>第九部分　設計原則</h2>
+<h3>五十五、意圖優先，但成本類別不可消失</h3>
 <p>一般程式應以清楚意圖書寫；配置、阻塞、遠端、複製、生成大量工作等高影響成本應可辨識。</p>
 <hr>
-<h2>五十六、穩定成本寫入 API，易變成本交給工具</h2>
+<h3>五十六、穩定成本寫入 API，易變成本交給工具</h3>
 <p>若成本是語義與長期契約的一部分，應在：</p>
 <ul>
 <li>型別；</li>
@@ -1006,7 +1010,7 @@ Control(a)+Observability(a)+Evidence(a)</annotation></semantics></math></span><s
 </ul>
 <p>呈現。</p>
 <hr>
-<h2>五十七、量級改變必須顯眼</h2>
+<h3>五十七、量級改變必須顯眼</h3>
 <p>從：</p>
 <ul>
 <li>O(1) 到 O(n)；</li>
@@ -1018,13 +1022,13 @@ Control(a)+Observability(a)+Evidence(a)</annotation></semantics></math></span><s
 </ul>
 <p>應有明確邊界。</p>
 <hr>
-<h2>五十八、最佳化是證據，不是語義</h2>
+<h3>五十八、最佳化是證據，不是語義</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>O</mi><mi>p</mi><mi>t</mi><mi>i</mi><mi>m</mi><mi>i</mi><mi>z</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>O</mi><mi>b</mi><mi>s</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>e</mi><mi>d</mi><mo mathvariant="normal">≠</mo><mi>L</mi><mi>a</mi><mi>n</mi><mi>g</mi><mi>u</mi><mi>a</mi><mi>g</mi><mi>e</mi><mi>G</mi><mi>u</mi><mi>a</mi><mi>r</mi><mi>a</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">OptimizationObserved
 \neq
 LanguageGuaranteed</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">pt</span><span class="mord mathnormal">imi</span><span class="mord mathnormal" style="margin-right:0.044em;">z</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.0278em;">ser</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">L</span><span class="mord mathnormal">an</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">u</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">e</span><span class="mord mathnormal">G</span><span class="mord mathnormal">u</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">an</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ee</span><span class="mord mathnormal">d</span></span></span></span></span>
 <p>除非規格明確承諾。</p>
 <hr>
-<h2>五十九、抽象應可降解</h2>
+<h3>五十九、抽象應可降解</h3>
 <p>高階抽象至少應提供：</p>
 <ul>
 <li>展開；</li>
@@ -1035,7 +1039,7 @@ LanguageGuaranteed</annotation></semantics></math></span><span class="katex-html
 <li>Cost documentation。</li>
 </ul>
 <hr>
-<h2>六十、安全與效率不可只看 Runtime</h2>
+<h3>六十、安全與效率不可只看 Runtime</h3>
 <p>靜態檢查增加編譯成本，卻可能降低：</p>
 <ul>
 <li>Runtime check；</li>
@@ -1046,11 +1050,11 @@ LanguageGuaranteed</annotation></semantics></math></span><span class="katex-html
 </ul>
 <p>應做全生命週期比較。</p>
 <hr>
-<h2>六十一、可讀性必須包含性能除錯</h2>
+<h3>六十一、可讀性必須包含性能除錯</h3>
 <p>只有正常路徑好讀、性能異常時完全無法解釋，不是完整可讀設計。</p>
 <hr>
-<h1>第十部分　PLDST 風格判定</h1>
-<h2>六十二、成本暴露指紋</h2>
+<h2>第十部分　PLDST 風格判定</h2>
+<h3>六十二、成本暴露指紋</h3>
 <pre><code class="language-text">Allocation visibility
 Copy／move visibility
 Dispatch visibility
@@ -1062,7 +1066,7 @@ Warm-up visibility
 Tail-latency visibility
 </code></pre>
 <hr>
-<h2>六十三、最佳化依賴指紋</h2>
+<h3>六十三、最佳化依賴指紋</h3>
 <pre><code class="language-text">Inlining dependence
 Specialization dependence
 Escape-analysis dependence
@@ -1072,7 +1076,7 @@ Strictness-analysis dependence
 JIT-profile dependence
 </code></pre>
 <hr>
-<h2>六十四、證據指紋</h2>
+<h3>六十四、證據指紋</h3>
 <pre><code class="language-text">Complexity documentation
 Compiler reports
 Assembly／IR inspection
@@ -1084,7 +1088,7 @@ Benchmark guidance
 Production metrics
 </code></pre>
 <hr>
-<h2>六十五、設計師比較問題</h2>
+<h3>六十五、設計師比較問題</h3>
 <ol>
 <li>他把哪些機器成本放在語法上？</li>
 <li>哪些放在型別或 API？</li>
@@ -1098,8 +1102,8 @@ Production metrics
 <li>他優先保護平均開發效率、峰值性能還是最壞情況？</li>
 </ol>
 <hr>
-<h1>第十一部分　PLDST SKILL 規格</h1>
-<h2>六十六、輸入</h2>
+<h2>第十一部分　PLDST SKILL 規格</h2>
+<h3>六十六、輸入</h3>
 <pre><code class="language-text">designer
 language
 version
@@ -1112,7 +1116,7 @@ hardware
 official_performance_docs
 </code></pre>
 <hr>
-<h2>六十七、分析管線</h2>
+<h3>六十七、分析管線</h3>
 <pre><code class="language-text">重新網路搜尋
 → 語義成本抽取
 → 成本向量
@@ -1126,7 +1130,7 @@ official_performance_docs
 → 風格報告
 </code></pre>
 <hr>
-<h2>六十八、JSON 雛形</h2>
+<h3>六十八、JSON 雛形</h3>
 <pre><code class="language-json">{
   &quot;mechanism&quot;: &quot;iterator pipeline&quot;,
   &quot;cost_vector&quot;: {
@@ -1150,7 +1154,7 @@ official_performance_docs
 }
 </code></pre>
 <hr>
-<h2>六十九、SKILL 禁止事項</h2>
+<h3>六十九、SKILL 禁止事項</h3>
 <p>不得：</p>
 <ul>
 <li>以來源碼高低階直接判定速度；</li>
@@ -1166,8 +1170,8 @@ official_performance_docs
 <li>混淆規格、實作與特定版本。</li>
 </ul>
 <hr>
-<h1>第十二部分　限制</h1>
-<h2>七十、效能依賴工作負載</h2>
+<h2>第十二部分　限制</h2>
+<h3>七十、效能依賴工作負載</h3>
 <p>同一抽象在：</p>
 <ul>
 <li>短任務；</li>
@@ -1179,18 +1183,18 @@ official_performance_docs
 </ul>
 <p>可能有完全不同結果。</p>
 <hr>
-<h2>七十一、硬體改變設計優勢</h2>
+<h3>七十一、硬體改變設計優勢</h3>
 <p>Cache、SIMD、NUMA、GPU、記憶體與核心數量會改變最佳配置。</p>
 <p>設計師風格分析需要標示年代。</p>
 <hr>
-<h2>七十二、最佳化器會演化</h2>
+<h3>七十二、最佳化器會演化</h3>
 <p>今日未被消除的成本，未來可能消除；反之，曾經有效的技巧可能在新版失效。</p>
 <p>每篇個案必須重新核對版本。</p>
 <hr>
-<h2>七十三、可讀性具有社群性</h2>
+<h3>七十三、可讀性具有社群性</h3>
 <p>熟悉 Iterator、Ownership、Monad 或 Multiple dispatch 的使用者，會有不同可讀判斷。</p>
 <hr>
-<h2>七十四、保證與經驗不能混同</h2>
+<h3>七十四、保證與經驗不能混同</h3>
 <p>PLDST 必須明確標記：</p>
 <pre><code class="language-text">[G] language guarantee
 [L] library guarantee
@@ -1200,7 +1204,7 @@ official_performance_docs
 [A] analytical inference
 </code></pre>
 <hr>
-<h1>第十三部分　結論</h1>
+<h2>第十三部分　結論</h2>
 <p>機器效率與人類可讀性不是固定的零和關係。</p>
 <p>高階抽象可以：</p>
 <ul>
@@ -1269,7 +1273,7 @@ K_v
 \text{讓最佳化以證據而非信仰存在}
 }</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.3633em;vertical-align:-0.34em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0233em;"><span style="top:-3.3633em;"><span class="pstrut" style="height:3.3633em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord text"><span class="mord cjk_fallback">讓來源碼表達意圖</span></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∧</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord text"><span class="mord cjk_fallback">讓高影響成本保持可辨識</span></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∧</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord text"><span class="mord cjk_fallback">讓最佳化以證據而非信仰存在</span></span></span></span></span></span><span style="top:-3.0233em;"><span class="pstrut" style="height:3.3633em;"></span><span class="stretchy fbox" style="height:1.3633em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.34em;"><span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h1>附錄 A　成本可見性分析卡</h1>
+<h2>附錄 A　成本可見性分析卡</h2>
 <pre><code class="language-text">語言：
 版本：
 編譯器／Runtime：
@@ -1297,7 +1301,7 @@ Runtime 指標：
 信心：
 </code></pre>
 <hr>
-<h1>附錄 B　來源與參考文獻</h1>
+<h2>附錄 B　來源與參考文獻</h2>
 <p><strong>[R1]</strong> ISO/IEC JTC1/SC22/WG14, <em>Rationale for International Standard—Programming Languages—C</em> and ISO C working drafts.<br>— C 抽象機器、as-if 式可觀察語義、硬體映射與實作自由。</p>
 <p><strong>[R2]</strong> Bjarne Stroustrup, “Abstraction and the C++ Machine Model,” 2004／2005; “Foundations of C++,” 2012.<br>— C++ 機器模型、抽象與零額外成本原則。</p>
 <p><strong>[R3]</strong> Rust Project, <em>The Rust Programming Language</em>, “Performance in Loops vs. Iterators”; <em>The Embedded Rust Book</em>, “Zero Cost Abstractions.”<br>— Iterator、Closure、Typestate 與 Zero Sized Type 的最佳化案例。</p>
@@ -1308,7 +1312,7 @@ Runtime 指標：
 <p><strong>[R8]</strong> Julia Documentation, “Performance Tips,” “Functions,” and “Profiling.”<br>— Type stability、回傳型別推導、配置、Function barrier 與性能工具。</p>
 <p><strong>[R9]</strong> Go Project, <em>Effective Go</em>, Goroutine and concurrency examples.<br>— Goroutine 隱藏 Thread 管理複雜度，以及未限制建立所形成的資源問題。</p>
 <hr>
-<h1>附錄 C　PLDST 效能標記</h1>
+<h2>附錄 C　PLDST 效能標記</h2>
 <pre><code class="language-text">[G] Language guarantee
 [L] Library guarantee
 [I] Implementation behavior
@@ -1324,8 +1328,8 @@ Runtime 指標：
 [V-G] Guaranteed cost
 </code></pre>
 <hr>
-<h1>附錄 D　第二輪事實與概念校對紀錄</h1>
-<h2>D.1 C 與抽象機器</h2>
+<h2>附錄 D　第二輪事實與概念校對紀錄</h2>
+<h3>D.1 C 與抽象機器</h3>
 <p>已重新核對 C 標準 Rationale 與 WG14 Working Draft：</p>
 <ul>
 <li>C 規格以 Abstract machine 描述程式行為；</li>
@@ -1334,7 +1338,7 @@ Runtime 指標：
 <li>本文因此只將 C 稱為「較高機器成本可見性」，沒有把它寫成來源碼與硬體指令的一一對應。</li>
 </ul>
 <hr>
-<h2>D.2 C++ 零額外成本</h2>
+<h3>D.2 C++ 零額外成本</h3>
 <p>已重新核對 Stroustrup 的〈Abstraction and the C++ Machine Model〉與〈Foundations of C++〉：</p>
 <ul>
 <li>Zero-overhead principle 的典型表述是「不用的不付費；使用的難以手寫得更好」；</li>
@@ -1343,7 +1347,7 @@ Runtime 指標：
 <li>本文已明確將其定位為設計原則與比較基線，而非每個程式、每個 Compiler 的個別證明。</li>
 </ul>
 <hr>
-<h2>D.3 Rust Zero-Cost Abstraction</h2>
+<h3>D.3 Rust Zero-Cost Abstraction</h3>
 <p>已重新核對 Rust Book 與 Embedded Rust Book：</p>
 <ul>
 <li>Rust 官方將 Iterator 稱為 zero-cost abstraction，並用特定 Benchmark 與編譯結果說明其可接近手寫迴圈；</li>
@@ -1352,7 +1356,7 @@ Runtime 指標：
 <li>本文沒有把它推廣成所有 Iterator chain、Trait、Closure 或安全抽象都必然在所有 Build profile 中完全消失。</li>
 </ul>
 <hr>
-<h2>D.4 Go 的可讀性與 GC 成本</h2>
+<h3>D.4 Go 的可讀性與 GC 成本</h3>
 <p>已重新核對〈Go at Google〉、Go FAQ 與 Effective Go：</p>
 <ul>
 <li>Go 的設計同時追求可讀、簡潔、可靠與高效率；</li>
@@ -1361,7 +1365,7 @@ Runtime 指標：
 <li>Effective Go 的並行 HTTP 範例確實警告：為每個請求直接建立 Goroutine 時，即使同時執行數受限，也可能累積大量等待中的 Goroutine。</li>
 </ul>
 <hr>
-<h2>D.5 Java／HotSpot Escape Analysis</h2>
+<h3>D.5 Java／HotSpot Escape Analysis</h3>
 <p>已重新核對 Oracle HotSpot Performance Enhancements：</p>
 <ul>
 <li>Escape Analysis 判斷新物件的使用範圍；</li>
@@ -1370,7 +1374,7 @@ Runtime 指標：
 <li>本文因此將語言語義、HotSpot 實作最佳化與特定執行證據分開。</li>
 </ul>
 <hr>
-<h2>D.6 Haskell 與 GHC</h2>
+<h3>D.6 Haskell 與 GHC</h3>
 <p>已重新核對 Haskell 2010 Report 與 GHC 9.14 User’s Guide：</p>
 <ul>
 <li>Haskell 函式應用預設為 Non-strict；</li>
@@ -1381,7 +1385,7 @@ Runtime 指標：
 </ul>
 <p>本文因此沒有將 Laziness 單向描述為慢、快、省記憶體或浪費記憶體。</p>
 <hr>
-<h2>D.7 Julia Type Stability</h2>
+<h3>D.7 Julia Type Stability</h3>
 <p>已重新核對 Julia 1.x 官方 Performance Tips、Functions、Types 與 Profiling 文件：</p>
 <ul>
 <li>Julia 通常不建議僅為性能而宣告函式回傳型別，而建議撰寫 Compiler 可推導回傳型別的 Type-stable function；</li>
@@ -1390,7 +1394,7 @@ Runtime 指標：
 <li>這些是編譯器與程式撰寫的性能模型，不是所有動態 Julia 程式都自動獲得相同性能的語言保證。</li>
 </ul>
 <hr>
-<h2>D.8 性能數字與版本</h2>
+<h3>D.8 性能數字與版本</h3>
 <p>本文沒有固定寫入可能隨版本、硬體與 Benchmark 改變的絕對性能排行。</p>
 <p>所有案例只用於說明：</p>
 <pre><code class="language-text">語義保證

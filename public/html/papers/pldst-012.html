@@ -23,6 +23,10 @@ main{padding:56px 0 96px}
 .content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
 .content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
 .content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+/* Demoting the body by one level pushes the deepest sections here, so they need
+   to be styled rather than left to the browser's defaults. */
+.content h4{font-family:Inter,"Noto Sans TC",sans-serif;font-size:16.5px;margin:30px 0 10px;color:var(--accent)}
+.content h5,.content h6{font-family:Inter,"Noto Sans TC",sans-serif;font-size:14px;letter-spacing:.02em;margin:26px 0 9px;color:var(--muted)}
 .content p{margin:0 0 24px}
 .content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
 .content li{margin:.45em 0}
@@ -53,7 +57,7 @@ footer a{color:var(--accent)}
   <section class="facts"><div><b>編號</b><span>PLDST-012</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第三部設計師個案正式研究</span></div></section>
   <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-012.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
   <article class="content"><h1>John McCarthy：極小核心、符號計算與語言可延展性</h1>
-<h2>摘要</h2>
+<h3>摘要</h3>
 <p>John McCarthy 的程式語言設計風格通常被濃縮成幾個標籤：LISP、List、Recursion、<code>eval</code>、程式即資料。然而，這些特徵若脫離其原始問題，就容易被誤解成純粹的語法極簡或無限制元程式設計。</p>
 <p>LISP 最初並不是為了展示一種漂亮的括號語法，而是為人工智慧研究建立一個能操作符號表達式、邏輯句子、可變大小結構與遞迴定義的計算系統。McCarthy 在 1960 年論文中明確說明，該系統源自 Advice Taker 所需要的形式化宣告與命令表達，並經多次簡化，最後建立在與特定 IBM 704 獨立的 S-expression 與 Recursive function 表示上。[R1]</p>
 <p>LISP 的設計核心包含：</p>
@@ -99,8 +103,8 @@ footer a{color:var(--accent)}
 </ul>
 <p><strong>關鍵詞：</strong> John McCarthy、LISP、符號計算、S-expression、eval、遞迴、垃圾回收、程式即資料、語言延展、PLDST</p>
 <hr>
-<h1>第一部分　研究邊界與歸因</h1>
-<h2>一、本文研究對象</h2>
+<h2>第一部分　研究邊界與歸因</h2>
+<h3>一、本文研究對象</h3>
 <p>本文主要研究：</p>
 <ul>
 <li>1956–1958 年的 LISP 問題形成；</li>
@@ -113,7 +117,7 @@ footer a{color:var(--accent)}
 </ul>
 <p>本文不把 Scheme、Common Lisp、Interlisp、Maclisp、Emacs Lisp、Clojure 等後代語言的全部設計歸於 McCarthy。</p>
 <hr>
-<h2>二、創始設計與實作必須分開</h2>
+<h3>二、創始設計與實作必須分開</h3>
 <p>LISP 1.5 Programmer’s Manual 的原始歸因指出：</p>
 <ul>
 <li>整體設計：John McCarthy；</li>
@@ -133,7 +137,7 @@ eval 成為實際 Interpreter：Russell 關鍵
 Lisp 語族後期演化：多共同體
 </code></pre>
 <hr>
-<h2>三、McCarthy 自己也承認歷史歸因不完整</h2>
+<h3>三、McCarthy 自己也承認歷史歸因不完整</h3>
 <p>他在〈History of Lisp〉開頭直接指出：</p>
 <ul>
 <li>該稿對許多實作者和思想貢獻者提及不足；</li>
@@ -142,8 +146,8 @@ Lisp 語族後期演化：多共同體
 </ul>
 <p>這使 McCarthy 個案非常適合 PLDST 的多主體歸因模型。</p>
 <hr>
-<h1>第二部分　相位一：問題先於語言</h1>
-<h2>四、Advice Taker 與符號推理</h2>
+<h2>第二部分　相位一：問題先於語言</h2>
+<h3>四、Advice Taker 與符號推理</h3>
 <p>LISP 的起點是建立能操作：</p>
 <ul>
 <li>宣告句；</li>
@@ -163,7 +167,7 @@ Lisp 語族後期演化：多共同體
 </ul>
 <p>的表達。</p>
 <hr>
-<h2>五、為什麼是 List</h2>
+<h3>五、為什麼是 List</h3>
 <p>McCarthy 在口述歷史中說明，List 能讓程式的結構與資料結構相互對應。</p>
 <p>例如一個和式可以表示為：</p>
 <pre><code class="language-text">PLUS
@@ -179,7 +183,7 @@ Lisp 語族後期演化：多共同體
 <li>重組新表達式。</li>
 </ul>
 <hr>
-<h2>六、Recursion 不是裝飾功能</h2>
+<h3>六、Recursion 不是裝飾功能</h3>
 <p>形式微分的定義天然具有遞迴結構：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mo stretchy="false">(</mo><mi>a</mi><mo>+</mo><mi>b</mi><mo stretchy="false">)</mo><mo>=</mo><mi>D</mi><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo><mo>+</mo><mi>D</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">D(a+b)
 =
@@ -187,7 +191,7 @@ D(a)+D(b)</annotation></semantics></math></span><span class="katex-html" aria-hi
 <p>如果表達式是一個和，微分程式就對各子表達式再次呼叫自己。</p>
 <p>McCarthy 回顧，他在 1958 年發現 FORTRAN 不允許這種遞迴，因此判斷需要新語言。[R3]</p>
 <hr>
-<h2>七、問題—資料—控制三者對齊</h2>
+<h3>七、問題—資料—控制三者對齊</h3>
 <p>McCarthy 的重要設計方式是讓：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>S</mi><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>t</mi><mi>u</mi><mi>r</mi><msub><mi>e</mi><mtext>problem</mtext></msub><mo>≈</mo><mi>S</mi><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>t</mi><mi>u</mi><mi>r</mi><msub><mi>e</mi><mtext>data</mtext></msub><mo>≈</mo><mi>S</mi><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>t</mi><mi>u</mi><mi>r</mi><msub><mi>e</mi><mtext>program</mtext></msub></mrow><annotation encoding="application/x-tex">Structure_{\text{problem}}
 \approx
@@ -196,8 +200,8 @@ Structure_{\text{data}}
 Structure_{\text{program}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">u</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">problem</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">u</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">data</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">u</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">program</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>這是 Lisp 可讀性與元編程能力的共同來源。</p>
 <hr>
-<h1>第三部分　相位二：遞迴形式核心</h1>
-<h2>八、S-expression</h2>
+<h2>第三部分　相位二：遞迴形式核心</h2>
+<h3>八、S-expression</h3>
 <p>S-expression 提供：</p>
 <ul>
 <li>Atom；</li>
@@ -209,7 +213,7 @@ Structure_{\text{program}}</annotation></semantics></math></span><span class="ka
 </ul>
 <p>其核心能力不是括號本身，而是規則化樹狀表示。</p>
 <hr>
-<h2>九、S-function 與 M-expression</h2>
+<h3>九、S-function 與 M-expression</h3>
 <p>McCarthy 原本區分：</p>
 <ul>
 <li><strong>S-expression</strong>：資料與內部表示；</li>
@@ -223,7 +227,7 @@ Structure_{\text{program}}</annotation></semantics></math></span><span class="ka
 SurfaceLanguage</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mord mathnormal">ia</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ese</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">a</span><span class="mord mathnormal">ce</span><span class="mord mathnormal">L</span><span class="mord mathnormal">an</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">u</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">e</span></span></span></span></span>
 <p>這是一個典型的事故性穩定。</p>
 <hr>
-<h2>十、少量基本函數</h2>
+<h3>十、少量基本函數</h3>
 <p>早期核心包括：</p>
 <ul>
 <li><code>atom</code>；</li>
@@ -248,7 +252,7 @@ SurfaceLanguage</annotation></semantics></math></span><span class="katex-html" a
 <li>Symbolic reasoning。</li>
 </ul>
 <hr>
-<h2>十一、Conditional expression</h2>
+<h3>十一、Conditional expression</h3>
 <p>條件不是只作為控制陳述，而被放入表達式和函數定義。</p>
 <p>因此：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>B</mi><mi>r</mi><mi>a</mi><mi>n</mi><mi>c</mi><mi>h</mi><mo>∈</mo><mi>E</mi><mi>x</mi><mi>p</mi><mi>r</mi><mi>e</mi><mi>s</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">Branch
@@ -256,7 +260,7 @@ SurfaceLanguage</annotation></semantics></math></span><span class="katex-html" a
 Expression</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7335em;vertical-align:-0.0391em;"></span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">an</span><span class="mord mathnormal">c</span><span class="mord mathnormal">h</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal">x</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ess</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span></span></span></span></span>
 <p>而不需把計算分裂成表達式世界與陳述世界。</p>
 <hr>
-<h2>十二、Lambda 與 Recursive definition</h2>
+<h3>十二、Lambda 與 Recursive definition</h3>
 <p>Lambda expression 提供匿名函數與參數綁定；<code>label</code> 等機制使函數能以名稱遞迴引用自己。</p>
 <p>這讓語言核心同時具有：</p>
 <ul>
@@ -266,8 +270,8 @@ Expression</annotation></semantics></math></span><span class="katex-html" aria-h
 <li>形式計算。</li>
 </ul>
 <hr>
-<h1>第四部分　<code>eval</code>：形式定義變成可執行系統</h1>
-<h2>十三、原始意圖</h2>
+<h2>第四部分　<code>eval</code>：形式定義變成可執行系統</h2>
+<h3>十三、原始意圖</h3>
 <p>McCarthy 說明，他寫出 Universal function <code>eval</code>，主要是數學練習：</p>
 <ul>
 <li>展示該形式具有通用性；</li>
@@ -275,7 +279,7 @@ Expression</annotation></semantics></math></span><span class="katex-html" aria-h
 <li>向數學家說明遞迴函數形式的價值。[R3]</li>
 </ul>
 <hr>
-<h2>十四、Russell 的實作洞見</h2>
+<h3>十四、Russell 的實作洞見</h3>
 <p>Steve Russell 看出：</p>
 <pre><code class="language-text">若把 eval 寫成機器程式
 它就是 LISP Interpreter
@@ -293,7 +297,7 @@ ExecutableInterpreter</annotation></semantics></math></span><span class="katex-h
  151.7 139 205zm0 0v40h399900v-40z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.011em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal">x</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">u</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ab</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span></span></span></span></span>
 <p>這不是單純把 McCarthy 的完整計畫照表實作，而是實作者對形式定義作出的關鍵再解讀。</p>
 <hr>
-<h2>十五、形式語義與實作合一</h2>
+<h3>十五、形式語義與實作合一</h3>
 <p><code>eval</code> 同時是：</p>
 <ul>
 <li>語言定義；</li>
@@ -305,7 +309,7 @@ ExecutableInterpreter</annotation></semantics></math></span><span class="katex-h
 </ul>
 <p>McCarthy 後來把「<code>eval</code> 同時作為形式定義與 Interpreter」列為 LISP 長期存續的重要特徵。[R6]</p>
 <hr>
-<h2>十六、這不是完整的自我實作神話</h2>
+<h3>十六、這不是完整的自我實作神話</h3>
 <p>早期 Interpreter 仍依賴：</p>
 <ul>
 <li>IBM 704 機器碼；</li>
@@ -323,8 +327,8 @@ ExecutableInterpreter</annotation></semantics></math></span><span class="katex-h
 整個系統不需要外部基礎
 </code></pre>
 <hr>
-<h1>第五部分　程式與資料共享表示</h1>
-<h2>十七、統一表示的能力</h2>
+<h2>第五部分　程式與資料共享表示</h2>
+<h3>十七、統一表示的能力</h3>
 <p>當程式也以 List／S-expression 表示，程式可以：</p>
 <ul>
 <li>讀取其他程式；</li>
@@ -335,7 +339,7 @@ ExecutableInterpreter</annotation></semantics></math></span><span class="katex-h
 <li>在互動環境中修改定義。</li>
 </ul>
 <hr>
-<h2>十八、元編程與語言延展</h2>
+<h3>十八、元編程與語言延展</h3>
 <p>統一表示使使用者可以建立：</p>
 <ul>
 <li>Macro；</li>
@@ -349,7 +353,7 @@ ExecutableInterpreter</annotation></semantics></math></span><span class="katex-h
 </ul>
 <p>McCarthy 1980 年總結認為，程式作為 LISP 資料，降低了 System programmer 與 Application programmer 的分隔，許多使用者的「改進」最後成為語言改進。[R6]</p>
 <hr>
-<h2>十九、不是所有語法樹都等同 Lisp</h2>
+<h3>十九、不是所有語法樹都等同 Lisp</h3>
 <p>現代語言也有 AST，但 Lisp 的特殊之處在於：</p>
 <ul>
 <li>來源與資料表示非常接近；</li>
@@ -359,7 +363,7 @@ ExecutableInterpreter</annotation></semantics></math></span><span class="katex-h
 <li>互動環境使修改立即可見。</li>
 </ul>
 <hr>
-<h2>二十、表達自由的代價</h2>
+<h3>二十、表達自由的代價</h3>
 <p>同一能力可能造成：</p>
 <ul>
 <li>Macro 方言；</li>
@@ -375,8 +379,8 @@ ExecutableInterpreter</annotation></semantics></math></span><span class="katex-h
 \Rightarrow
 GovernanceNeed\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal">x</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">s</span><span class="mord mathnormal">ibi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑⇒</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">G</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">nan</span><span class="mord mathnormal">ce</span><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="mord mathnormal">ee</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <hr>
-<h1>第六部分　Garbage collection 與責任配置</h1>
-<h2>二十一、Erasure problem</h2>
+<h2>第六部分　Garbage collection 與責任配置</h2>
+<h3>二十一、Erasure problem</h3>
 <p>List structure 會動態建立大量節點。</p>
 <p>若要求每個 AI 程式設計者手工追蹤：</p>
 <ul>
@@ -386,14 +390,14 @@ GovernanceNeed\uparrow</annotation></semantics></math></span><span class="katex-
 </ul>
 <p>符號計算的抽象就會被記憶體管理摧毀。</p>
 <hr>
-<h2>二十二、自動回收</h2>
+<h3>二十二、自動回收</h3>
 <p>McCarthy 將 Garbage collection 列為 LISP 的長期核心特徵；早期實際 Garbage collector 則由 Daniel J. Edwards 等團隊成員完成。[R4][R6]</p>
 <p>複雜度配置為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>manual lifetime</mtext></msub><mo>↓</mo><mspace width="2em"/><msub><mi>C</mi><mtext>runtime</mtext></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">C_{\text{manual lifetime}}\downarrow
 \qquad
 C_{\text{runtime}}\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">manual lifetime</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span><span class="mspace" style="margin-right:2em;"></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">runtime</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <hr>
-<h2>二十三、與符號計算模型一致</h2>
+<h3>二十三、與符號計算模型一致</h3>
 <p>GC 不是與語言無關的附加便利，而是使：</p>
 <ul>
 <li>動態 List；</li>
@@ -404,8 +408,8 @@ C_{\text{runtime}}\uparrow</annotation></semantics></math></span><span class="ka
 </ul>
 <p>可以實際運作的 Runtime 責任。</p>
 <hr>
-<h1>第七部分　互動式語言</h1>
-<h2>二十四、最少前置宣告</h2>
+<h2>第七部分　互動式語言</h2>
+<h3>二十四、最少前置宣告</h3>
 <p>McCarthy 把「最少 Declaration，讓 LISP statement 可在 Online environment 中直接執行」列為 LISP 存續特徵。[R6]</p>
 <p>這使語言適合：</p>
 <ul>
@@ -417,7 +421,7 @@ C_{\text{runtime}}\uparrow</annotation></semantics></math></span><span class="ka
 <li>長時間運行環境。</li>
 </ul>
 <hr>
-<h2>二十五、互動性與動態性</h2>
+<h3>二十五、互動性與動態性</h3>
 <p>互動環境需要：</p>
 <ul>
 <li>Late binding；</li>
@@ -435,8 +439,8 @@ C_{\text{runtime}}\uparrow</annotation></semantics></math></span><span class="ka
 </ul>
 <p>的治理問題。</p>
 <hr>
-<h1>第八部分　相位三：可延展系統</h1>
-<h2>二十六、極小核心不是封閉核心</h2>
+<h2>第八部分　相位三：可延展系統</h2>
+<h3>二十六、極小核心不是封閉核心</h3>
 <p>McCarthy 的核心是生成性的：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>S</mi><mi>m</mi><mi>a</mi><mi>l</mi><mi>l</mi><mi>K</mi><mi>e</mi><mi>r</mi><mi>n</mi><mi>e</mi><mi>l</mi><mo>+</mo><mi>P</mi><mi>r</mi><mi>o</mi><mi>g</mi><mi>r</mi><mi>a</mi><mi>m</mi><mi>D</mi><mi>a</mi><mi>t</mi><mi>a</mi><mi>U</mi><mi>n</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo>+</mo><mi>E</mi><mi>v</mi><mi>a</mi><mi>l</mi><mo>+</mo><mi>G</mi><mi>C</mi><mo>+</mo><mi>I</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>c</mi><mi>t</mi><mi>i</mi><mi>v</mi><mi>e</mi><mi>E</mi><mi>n</mi><mi>v</mi><mi>i</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>m</mi><mi>e</mi><mi>n</mi><mi>t</mi><mo>→</mo><mi>O</mi><mi>p</mi><mi>e</mi><mi>n</mi><mi>E</mi><mi>n</mi><mi>d</mi><mi>e</mi><mi>d</mi><mi>S</mi><mi>y</mi><mi>s</mi><mi>t</mi><mi>e</mi><mi>m</mi></mrow><annotation encoding="application/x-tex">SmallKernel
 +
@@ -450,7 +454,7 @@ InteractiveEnvironment
 \rightarrow
 OpenEndedSystem</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">ma</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">n</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">am</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.109em;">U</span><span class="mord mathnormal">ni</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">GC</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">a</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal">nm</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">p</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal">n</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">s</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord mathnormal">m</span></span></span></span></span>
 <hr>
-<h2>二十七、擴展能力放在哪裡</h2>
+<h3>二十七、擴展能力放在哪裡</h3>
 <p>LISP 把大量能力放在：</p>
 <ul>
 <li>Library；</li>
@@ -463,7 +467,7 @@ OpenEndedSystem</annotation></semantics></math></span><span class="katex-html" a
 </ul>
 <p>因此語言核心可以小，整個 Lisp 系統卻可以極大。</p>
 <hr>
-<h2>二十八、可擴展性與標準化張力</h2>
+<h3>二十八、可擴展性與標準化張力</h3>
 <p>當不同機構各自改進 Lisp，便產生：</p>
 <ul>
 <li>不同資料表示；</li>
@@ -476,8 +480,8 @@ OpenEndedSystem</annotation></semantics></math></span><span class="katex-html" a
 </ul>
 <p>這既是 Lisp 生命力，也形成方言分裂。</p>
 <hr>
-<h1>第九部分　相位四：從 LISP 到 Lisp 語族</h1>
-<h2>二十九、1962 後的多分支</h2>
+<h2>第九部分　相位四：從 LISP 到 Lisp 語族</h2>
+<h3>二十九、1962 後的多分支</h3>
 <p>McCarthy 自己將 LISP 歷史分為：</p>
 <ul>
 <li>1956–1958：主要思想形成；</li>
@@ -489,7 +493,7 @@ OpenEndedSystem</annotation></semantics></math></span><span class="katex-html" a
 \neq
 Style_{\text{all Lisp descendants}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">McCarthy</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">all Lisp descendants</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h2>三十、後創始者制度</h2>
+<h3>三十、後創始者制度</h3>
 <p>不同 Lisp 路線後來由：</p>
 <ul>
 <li>MIT；</li>
@@ -505,7 +509,7 @@ Style_{\text{all Lisp descendants}}</annotation></semantics></math></span><span 
 <p>共同發展。</p>
 <p>McCarthy 很早便不再是所有 Lisp 的直接治理者。</p>
 <hr>
-<h2>三十一、Lisp 存續的判斷</h2>
+<h3>三十一、Lisp 存續的判斷</h3>
 <p>McCarthy 1980 年把多項特徵視為某種程式語言空間中的近似局部最優：</p>
 <ul>
 <li>Symbolic expression；</li>
@@ -521,40 +525,40 @@ Style_{\text{all Lisp descendants}}</annotation></semantics></math></span><span 
 </ul>
 <p>這是後期回顧，不應被當成 1958 年已完整預見的固定設計藍圖。</p>
 <hr>
-<h1>第十部分　風格時間相位</h1>
-<h2>三十二、問題形成期</h2>
+<h2>第十部分　風格時間相位</h2>
+<h3>三十二、問題形成期</h3>
 <pre><code class="language-text">目標：讓機器操作形式知識與邏輯句子
 核心需要：可變結構、符號、遞迴
 </code></pre>
 <hr>
-<h2>三十三、形式核心期</h2>
+<h3>三十三、形式核心期</h3>
 <pre><code class="language-text">目標：以少量遞迴函數描述符號計算
 核心：S-expression、Lambda、Conditional、Recursion
 </code></pre>
 <hr>
-<h2>三十四、可執行語義期</h2>
+<h3>三十四、可執行語義期</h3>
 <pre><code class="language-text">目標：讓語言定義直接成為 Interpreter
 轉折：Russell 實作 eval
 </code></pre>
 <hr>
-<h2>三十五、系統延展期</h2>
+<h3>三十五、系統延展期</h3>
 <pre><code class="language-text">目標：讓使用者以程式操作程式、增量改進系統
 機制：Program as data、eval、GC、Online environment
 </code></pre>
 <hr>
-<h2>三十六、多分支語族期</h2>
+<h3>三十六、多分支語族期</h3>
 <pre><code class="language-text">結果：可延展性產生大量 Dialect 與制度
 權力：由創始者轉向多個共同體
 </code></pre>
 <hr>
-<h1>第十一部分　PLDST 風格指紋</h1>
-<h2>三十七、問題 framing</h2>
+<h2>第十一部分　PLDST 風格指紋</h2>
+<h3>三十七、問題 framing</h3>
 <p>McCarthy 從問題結構出發：</p>
 <blockquote>
 <p>若計算對象是形式句子與符號結構，語言本身就應能自然表示、分解、重組和遞迴處理這些對象。</p>
 </blockquote>
 <hr>
-<h2>三十八、價值優先序</h2>
+<h3>三十八、價值優先序</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mtext>McCarthy</mtext></msub><mo>≈</mo><mo stretchy="false">(</mo><mi>F</mi><mi>o</mi><mi>r</mi><mi>m</mi><mi>a</mi><mi>l</mi><mi>G</mi><mi>e</mi><mi>n</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo separator="true">,</mo><mi>S</mi><mi>y</mi><mi>m</mi><mi>b</mi><mi>o</mi><mi>l</mi><mi>i</mi><mi>c</mi><mi>R</mi><mi>e</mi><mi>p</mi><mi>r</mi><mi>e</mi><mi>s</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo separator="true">,</mo><mi>R</mi><mi>e</mi><mi>c</mi><mi>u</mi><mi>r</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo separator="true">,</mo><mi>U</mi><mi>n</mi><mi>i</mi><mi>f</mi><mi>o</mi><mi>r</mi><mi>m</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo separator="true">,</mo><mi>E</mi><mi>x</mi><mi>t</mi><mi>e</mi><mi>n</mi><mi>s</mi><mi>i</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo separator="true">,</mo><mi>I</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>c</mi><mi>t</mi><mi>i</mi><mi>v</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo separator="true">,</mo><mi>M</mi><mi>a</mi><mi>t</mi><mi>h</mi><mi>e</mi><mi>m</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>S</mi><mi>e</mi><mi>m</mi><mi>a</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>c</mi><mi>s</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">V_{\text{McCarthy}}
 \approx
 (
@@ -567,13 +571,13 @@ Interactivity,
 MathematicalSemantics
 )</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">McCarthy</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">ma</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">G</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">mb</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">c</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ese</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">U</span><span class="mord mathnormal">ni</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">mi</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal">x</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">s</span><span class="mord mathnormal">ibi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">a</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">h</span><span class="mord mathnormal">e</span><span class="mord mathnormal">ma</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">e</span><span class="mord mathnormal">man</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">cs</span><span class="mclose">)</span></span></span></span></span>
 <hr>
-<h2>三十九、核心—擴張配置</h2>
+<h3>三十九、核心—擴張配置</h3>
 <pre><code class="language-text">核心：少量表達與列表操作
 擴張：函數、程式生成、Macro、Interpreter、Dialect
 </code></pre>
 <p>這是 <strong>生成式極簡</strong>，不是功能貧乏。</p>
 <hr>
-<h2>四十、複雜度配置</h2>
+<h3>四十、複雜度配置</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>syntax core</mtext></msub><mo>↓</mo></mrow><annotation encoding="application/x-tex">C_{\text{syntax core}}\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">syntax core</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>runtime</mtext></msub><mo>+</mo><msub><mi>C</mi><mtext>dynamic reasoning</mtext></msub><mo>+</mo><msub><mi>C</mi><mtext>extension governance</mtext></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">C_{\text{runtime}}
 +
@@ -582,7 +586,7 @@ C_{\text{dynamic reasoning}}
 C_{\text{extension governance}}
 \uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">runtime</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">dynamic reasoning</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">extension governance</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <hr>
-<h2>四十一、責任配置</h2>
+<h3>四十一、責任配置</h3>
 <p>語言與 Runtime 承擔：</p>
 <ul>
 <li>Memory recovery；</li>
@@ -599,7 +603,7 @@ C_{\text{extension governance}}
 <li>Dialect interoperability。</li>
 </ul>
 <hr>
-<h2>四十二、顯式—推導偏好</h2>
+<h3>四十二、顯式—推導偏好</h3>
 <p>McCarthy 不是以靜態型別推導為主，而是：</p>
 <ul>
 <li>讓結構本身明示；</li>
@@ -608,7 +612,7 @@ C_{\text{extension governance}}
 <li>以最少 Declaration 支援即時使用。</li>
 </ul>
 <hr>
-<h2>四十三、安全—自由配置</h2>
+<h3>四十三、安全—自由配置</h3>
 <p>LISP 的自由來自：</p>
 <ul>
 <li>動態資料；</li>
@@ -625,11 +629,11 @@ C_{\text{extension governance}}
 </ul>
 <p>這不是以現代 Memory-unsafe 意義為中心，而是語義、效果與元編程權力的治理問題。</p>
 <hr>
-<h1>第十二部分　反例與限制</h1>
-<h2>四十四、LISP 不只是 McCarthy 的作品</h2>
+<h2>第十二部分　反例與限制</h2>
+<h3>四十四、LISP 不只是 McCarthy 的作品</h3>
 <p>若沒有 Russell、Edwards、Hart、Levin、Fox、Abrahams、Maling 等人的工作，形式核心不會自動變成可使用系統。</p>
 <hr>
-<h2>四十五、S-expression 的表面成功具有偶然性</h2>
+<h3>四十五、S-expression 的表面成功具有偶然性</h3>
 <p>McCarthy 原本預期使用 M-expression 作外部語法；S-expression 長期成為 Lisp 表面，部分來自：</p>
 <ul>
 <li>Interpreter 已能直接使用；</li>
@@ -640,7 +644,7 @@ C_{\text{extension governance}}
 </ul>
 <p>因此括號語法不能完全被解釋成創始者預先規劃的最終美學。</p>
 <hr>
-<h2>四十六、<code>eval</code> 不是所有延展性的必要條件</h2>
+<h3>四十六、<code>eval</code> 不是所有延展性的必要條件</h3>
 <p>Macro、Compiler API、Module、Template 與 AST transformation 也可提供延展性。</p>
 <p><code>eval</code> 的優勢與風險取決於：</p>
 <ul>
@@ -652,7 +656,7 @@ C_{\text{extension governance}}
 <li>Deployment。</li>
 </ul>
 <hr>
-<h2>四十七、小核心可能形成巨大有效語言</h2>
+<h3>四十七、小核心可能形成巨大有效語言</h3>
 <p>Lisp 的每個專案都可能：</p>
 <ul>
 <li>建立 Macro；</li>
@@ -665,10 +669,10 @@ C_{\text{extension governance}}
 \not\Rightarrow
 SmallEffectiveLanguage</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">ma</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">n</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">⇒</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">ma</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">L</span><span class="mord mathnormal">an</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">u</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">e</span></span></span></span></span>
 <hr>
-<h2>四十八、動態符號模型不適合所有問題</h2>
+<h3>四十八、動態符號模型不適合所有問題</h3>
 <p>數值密集、硬即時、靜態安全、嵌入式記憶體限制等領域，可能需要不同配置。</p>
 <hr>
-<h2>四十九、歷史回顧有記憶偏差</h2>
+<h3>四十九、歷史回顧有記憶偏差</h3>
 <p>McCarthy 自己承認其 1978 歷史回憶並非所有細節最可靠版本，因此本文以：</p>
 <ul>
 <li>1960 原始論文；</li>
@@ -679,7 +683,7 @@ SmallEffectiveLanguage</annotation></semantics></math></span><span class="katex-
 </ul>
 <p>交叉使用。</p>
 <hr>
-<h1>第十三部分　設計決策語料</h1>
+<h2>第十三部分　設計決策語料</h2>
 <table>
 <thead>
 <tr>
@@ -734,8 +738,8 @@ SmallEffectiveLanguage</annotation></semantics></math></span><span class="katex-
 </tr>
 </tbody></table>
 <hr>
-<h1>第十四部分　人物原型判定</h1>
-<h2>五十、主要原型</h2>
+<h2>第十四部分　人物原型判定</h2>
+<h3>五十、主要原型</h3>
 <p>McCarthy 同時屬於：</p>
 <ul>
 <li><strong>符號問題對齊設計者</strong>；</li>
@@ -745,7 +749,7 @@ SmallEffectiveLanguage</annotation></semantics></math></span><span class="katex-
 <li><strong>形式計算理論建築師</strong>。</li>
 </ul>
 <hr>
-<h2>五十一、不適合的簡單標籤</h2>
+<h3>五十一、不適合的簡單標籤</h3>
 <p>不應只稱：</p>
 <pre><code class="language-text">括號語言發明者
 動態語言設計者
@@ -758,8 +762,8 @@ AI 語言之父
 <p>把符號資料、程式表示與語言定義壓縮到同一個遞迴結構中，從而讓語言能操作並延展自身的設計者。</p>
 </blockquote>
 <hr>
-<h1>第十五部分　統一評價</h1>
-<h2>五十二、最重要的設計連續性</h2>
+<h2>第十五部分　統一評價</h2>
+<h3>五十二、最重要的設計連續性</h3>
 <p>從 Advice Taker 到 LISP：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>K</mi><mi>n</mi><mi>o</mi><mi>w</mi><mi>l</mi><mi>e</mi><mi>d</mi><mi>g</mi><mi>e</mi><mi>S</mi><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>t</mi><mi>u</mi><mi>r</mi><mi>e</mi><mo>→</mo><mi>S</mi><mi>y</mi><mi>m</mi><mi>b</mi><mi>o</mi><mi>l</mi><mi>i</mi><mi>c</mi><mi>D</mi><mi>a</mi><mi>t</mi><mi>a</mi><mo>→</mo><mi>R</mi><mi>e</mi><mi>c</mi><mi>u</mi><mi>r</mi><mi>s</mi><mi>i</mi><mi>v</mi><mi>e</mi><mi>P</mi><mi>r</mi><mi>o</mi><mi>g</mi><mi>r</mi><mi>a</mi><mi>m</mi><mo>→</mo><mi>E</mi><mi>x</mi><mi>e</mi><mi>c</mi><mi>u</mi><mi>t</mi><mi>a</mi><mi>b</mi><mi>l</mi><mi>e</mi><mi>R</mi><mi>e</mi><mi>p</mi><mi>r</mi><mi>e</mi><mi>s</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">KnowledgeStructure
 \rightarrow
@@ -769,7 +773,7 @@ RecursiveProgram
 \rightarrow
 ExecutableRepresentation</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">K</span><span class="mord mathnormal">n</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">u</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">mb</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0278em;">cD</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">am</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal">x</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">u</span><span class="mord mathnormal">t</span><span class="mord mathnormal">ab</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ese</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span></span></span></span></span>
 <hr>
-<h2>五十三、最重要的制度不連續性</h2>
+<h3>五十三、最重要的制度不連續性</h3>
 <p>LISP 的核心由 McCarthy 強烈塑造，但 Lisp 語族的長期演化迅速進入：</p>
 <ul>
 <li>團隊實作；</li>
@@ -779,7 +783,7 @@ ExecutableRepresentation</annotation></semantics></math></span><span class="kate
 <li>生態治理。</li>
 </ul>
 <hr>
-<h2>五十四、最重要的事故性穩定</h2>
+<h3>五十四、最重要的事故性穩定</h3>
 <p>S-expression 從：</p>
 <pre><code class="language-text">統一內部表示
 </code></pre>
@@ -788,7 +792,7 @@ ExecutableRepresentation</annotation></semantics></math></span><span class="kate
 </code></pre>
 <p>這不是單純錯誤，而是實作、形式規則與使用者採用共同選出的結果。</p>
 <hr>
-<h1>第十六部分　結論</h1>
+<h2>第十六部分　結論</h2>
 <p>John McCarthy 的程式語言設計不是從「想做一門極簡語言」開始，而是從一個需要：</p>
 <ul>
 <li>表示知識；</li>
@@ -840,7 +844,7 @@ ExecutableRepresentation</annotation></semantics></math></span><span class="kate
 \text{承認生長必須帶來新的治理與安全邊界}
 }</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.3633em;vertical-align:-0.34em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0233em;"><span style="top:-3.3633em;"><span class="pstrut" style="height:3.3633em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord text"><span class="mord cjk_fallback">以最少核心統一資料、程式與語義</span></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∧</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord text"><span class="mord cjk_fallback">讓系統可由使用者繼續生長</span></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∧</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord text"><span class="mord cjk_fallback">承認生長必須帶來新的治理與安全邊界</span></span></span></span></span></span><span style="top:-3.0233em;"><span class="pstrut" style="height:3.3633em;"></span><span class="stretchy fbox" style="height:1.3633em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.34em;"><span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h1>附錄 A　PLDST 個案卡</h1>
+<h2>附錄 A　PLDST 個案卡</h2>
 <pre><code class="language-text">人物：John McCarthy
 主要語言／系統：LISP、Advice Taker 相關形式
 核心時期：1956–1962
@@ -854,7 +858,7 @@ ExecutableRepresentation</annotation></semantics></math></span><span class="kate
 歸因信心：高
 </code></pre>
 <hr>
-<h1>附錄 B　來源與參考文獻</h1>
+<h2>附錄 B　來源與參考文獻</h2>
 <p><strong>[R1]</strong> John McCarthy, “Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I,” <em>Communications of the ACM</em> 3(4), 1960, pp. 184–195.<br>— LISP 原始形式、S-expression、S-function、Lambda、Conditional、<code>apply</code>／<code>eval</code> 與 IBM 704 實作。</p>
 <p><strong>[R2]</strong> John McCarthy, “History of Lisp,” HOPL I draft, 1978／1979.<br>— LISP 前史、思想形成、實作、分支、M-expression 與歸因不確定性。</p>
 <p><strong>[R3]</strong> Nils J. Nilsson, “Oral History of John McCarthy,” Computer History Museum, 2007.<br>— FORTRAN 遞迴限制、List 選擇、<code>eval</code> 原意及 Steve Russell 的 Interpreter 洞見。</p>
@@ -864,7 +868,7 @@ ExecutableRepresentation</annotation></semantics></math></span><span class="kate
 <p><strong>[R7]</strong> Computer History Museum Software Preservation Group, “LISP History Collection.”<br>— 原始程式、手冊、方言、實作、人物與多分支歷史。</p>
 <p><strong>[R8]</strong> John McCarthy, “A Basis for a Mathematical Theory of Computation,” 1961–1963.<br>— 遞迴函數、語言形式與程式變換的數學理論背景。</p>
 <hr>
-<h1>附錄 C　PLDST 標記</h1>
+<h2>附錄 C　PLDST 標記</h2>
 <pre><code class="language-text">[T-P] Symbolic problem formation
 [T-R] Recursive formal core
 [T-E] Executable semantics
@@ -879,8 +883,8 @@ ExecutableRepresentation</annotation></semantics></math></span><span class="kate
 [S-I] Interactive extensibility
 </code></pre>
 <hr>
-<h1>附錄 D　第二輪史實與歸因校對紀錄</h1>
-<h2>D.1 LISP 的形成時期</h2>
+<h2>附錄 D　第二輪史實與歸因校對紀錄</h2>
+<h3>D.1 LISP 的形成時期</h3>
 <p>第二輪重新核對 McCarthy 的〈History of Lisp〉：</p>
 <ul>
 <li>1956 年夏至 1958 年夏是多數關鍵思想的形成期；</li>
@@ -890,7 +894,7 @@ ExecutableRepresentation</annotation></semantics></math></span><span class="kate
 </ul>
 <p>本文因此把「問題形成」「形式核心」「可執行系統」「多分支語族」分開，而沒有把後期 Lisp 特徵全部回寫到第一天。</p>
 <hr>
-<h2>D.2 <code>eval</code> 與 Interpreter 歸因</h2>
+<h3>D.2 <code>eval</code> 與 Interpreter 歸因</h3>
 <p>第二輪重新核對 1960 原始論文、McCarthy 口述歷史與 LISP 1.5 Manual：</p>
 <ul>
 <li>McCarthy 寫出 Universal S-function <code>apply</code>／<code>eval</code> 的形式；</li>
@@ -901,7 +905,7 @@ ExecutableRepresentation</annotation></semantics></math></span><span class="kate
 </ul>
 <p>因此本文不使用「McCarthy 單人寫出第一個 Lisp Interpreter」的說法。</p>
 <hr>
-<h2>D.3 LISP 1.5 團隊歸因</h2>
+<h3>D.3 LISP 1.5 團隊歸因</h3>
 <p>第二輪直接核對 Programmer’s Manual Preface：</p>
 <pre><code class="language-text">整體設計：John McCarthy
 Manual：Michael I. Levin
@@ -914,7 +918,7 @@ LISP I Manual：Phyllis A. Fox
 </code></pre>
 <p>本文保留 Manual 的當時正式歸因，也承認後來文件研究可能對更細部貢獻作出修正。</p>
 <hr>
-<h2>D.4 Garbage collection</h2>
+<h3>D.4 Garbage collection</h3>
 <p>第二輪核對 McCarthy 1980 年回顧與 LISP 1.5 保存資料：</p>
 <ul>
 <li>McCarthy 把 Garbage collection 列為 LISP 長期可行特徵之一；</li>
@@ -927,7 +931,7 @@ LISP I Manual：Phyllis A. Fox
 </ul>
 <p>本文沒有把 GC 的所有發明與後續演算法全部歸於 McCarthy。</p>
 <hr>
-<h2>D.5 M-expression 與 S-expression</h2>
+<h3>D.5 M-expression 與 S-expression</h3>
 <p>第二輪重新核對 1960 論文與〈The Implementation of LISP〉：</p>
 <ul>
 <li>McCarthy 明確使用 M-expression 表示 Meta-level function notation；</li>
@@ -939,7 +943,7 @@ LISP I Manual：Phyllis A. Fox
 </ul>
 <p>本文已用「事故性穩定」描述結果，而不是聲稱 McCarthy 完全反對 S-expression 語法。</p>
 <hr>
-<h2>D.6 「程式即資料」的邊界</h2>
+<h3>D.6 「程式即資料」的邊界</h3>
 <p>第二輪核對 McCarthy 1980 年的存續特徵清單：</p>
 <ul>
 <li>LISP program 可表示為 LISP data；</li>
@@ -949,7 +953,7 @@ LISP I Manual：Phyllis A. Fox
 </ul>
 <p>本文沒有把後來成熟 Macro system、Common Lisp Reader macro、Scheme hygiene 等全部歸於 McCarthy 的原始設計。</p>
 <hr>
-<h2>D.7 McCarthy 的歷史自我修正</h2>
+<h3>D.7 McCarthy 的歷史自我修正</h3>
 <p>McCarthy 的 Stanford 歷史頁明確說：</p>
 <ul>
 <li>1978 年的 LISP History 依其記憶撰寫；</li>
@@ -965,7 +969,7 @@ LISP I Manual：Phyllis A. Fox
 </code></pre>
 <p>作為史實校準順序，而不是以創始者回憶壓過全部文件。</p>
 <hr>
-<h2>D.8 「極小核心」的分析邊界</h2>
+<h3>D.8 「極小核心」的分析邊界</h3>
 <p>「生成式極簡架構師」是 PLDST 推論，而不是 McCarthy 本人正式使用的流派名稱。</p>
 <p>它依據：</p>
 <ul>

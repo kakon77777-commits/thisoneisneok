@@ -23,6 +23,10 @@ main{padding:56px 0 96px}
 .content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
 .content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
 .content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+/* Demoting the body by one level pushes the deepest sections here, so they need
+   to be styled rather than left to the browser's defaults. */
+.content h4{font-family:Inter,"Noto Sans TC",sans-serif;font-size:16.5px;margin:30px 0 10px;color:var(--accent)}
+.content h5,.content h6{font-family:Inter,"Noto Sans TC",sans-serif;font-size:14px;letter-spacing:.02em;margin:26px 0 9px;color:var(--muted)}
 .content p{margin:0 0 24px}
 .content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
 .content li{margin:.45em 0}
@@ -53,12 +57,12 @@ footer a{color:var(--accent)}
   <section class="facts"><div><b>編號</b><span>CCP-05</span></div><div><b>版本</b><span>v2.0</span></div><div><b>日期</b><span>2026-07-29</span></div><div><b>作者</b><span>Neo.K（許筌崴）</span></div><div><b>狀態</b><span>公開概念技術論文／可驗證架構提案</span></div><div><b>證據</b><span>E0 架構提案；尚未完成整合原型、第三方 CFD／結構／訊號完整性驗證或量產資格化</span></div></section>
   <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ccp-05.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
   <article class="content"><h1>空間解耦模組運算架構</h1>
-<h2>樓梯式、環形與螺旋式佈局的熱—電—互連協同設計</h2>
+<h3>樓梯式、環形與螺旋式佈局的熱—電—互連協同設計</h3>
 <p><strong>Spatially Decoupled Modular Compute Architecture</strong><br><strong>Thermal–Power–Interconnect Co-Design for Staircase, Annular, and Helical Layouts</strong></p>
 <hr>
 <p><strong>作者</strong>：Neo.K（許筌崴）<br><strong>機構</strong>：一言諾科技有限公司（EveMissLab），台灣<br><strong>原始版本</strong>：2025 年 12 月<br><strong>公開修訂版</strong>：v2.0，2026 年 7 月 29 日<br><strong>文件性質</strong>：公開概念技術論文／可驗證架構提案<br><strong>建議縮寫</strong>：SDMCA（Spatially Decoupled Modular Compute Architecture，空間解耦模組運算架構）<br><strong>系列定位</strong>：立體運算主幹；銜接 SynCore、DPCPS、DryCore 與後續拓撲計算系統<br><strong>證據狀態</strong>：E0 架構提案；尚未完成整合原型、第三方 CFD／結構／訊號完整性驗證或量產資格化<br><strong>論文授權</strong>：CC BY-SA 4.0；CAD、PCB、韌體、測試資料與製造文件於實際釋出時另行指定授權</p>
 <hr>
-<h2>修訂聲明</h2>
+<h3>修訂聲明</h3>
 <p>本文由《立體運算的工程實作路徑：樓梯形與螺旋渦輪架構》重構而來。原稿的重要洞察是：當運算系統從平面走向三維時，不應只追求把更多熱源垂直壓縮在一起，而應重新設計每個模組的散熱出口、供電路徑、資料通道、維修空間與故障邊界。原稿提出的樓梯式錯位與螺旋式排列，提供了一種把「立體」理解為系統空間編排，而非只理解為裸晶垂直堆疊的起點。</p>
 <p>然而，原稿混合了裸晶、封裝、主板、機箱與資料中心五個尺度，並將多項未執行的 CFD、成本、TRL、性能倍率及量產時程寫成既成結果。部分物理機制亦需要修正：垂直堆疊不必然使每一層熱量依序流經上層；錯位模組也不能用斜向 TSV 跨越數毫米至數公分；靜止的螺旋外殼不會自動產生離心散熱；物理距離縮短也不必然等比例降低系統延遲；密度、性能、功率與成本增益不能直接相乘。</p>
 <p>v2.0 因此進行以下重構：</p>
@@ -76,7 +80,7 @@ footer a{color:var(--accent)}
 </ol>
 <p>因此，新版不再宣稱已經找到取代平面處理器的唯一形狀，而是提出一套可比較、可模擬、可製造、可維修與可被否證的空間模組化方法。</p>
 <hr>
-<h2>摘要</h2>
+<h3>摘要</h3>
 <p>先進運算系統正同時面臨四種耦合壓力：運算與記憶體頻寬需求增加、封裝內互連密度提高、功率傳輸路徑縮短，以及局部熱通量與系統維護複雜度上升。2.5D、3DIC、hybrid bonding 與 chiplet 技術已證明，異質元件可以透過先進封裝在更小距離內整合；但整合密度提高並不自動解決熱、翹曲、供電、測試與良率問題。相反地，系統技術協同最佳化必須同時決定裸晶分割、互連介面、功率傳輸、熱路徑、封裝、冷卻與軟體映射。</p>
 <p>本文提出空間解耦模組運算架構 SDMCA。其核心命題是：在封裝外與機箱內的尺度，運算模組不必全部共用同一平面、同一風道、同一冷板、同一電源區與同一故障域；系統可以透過受控的空間位移與拓撲連接，把高功率模組的熱出口、服務面與電力入口分開，同時保留足夠的資料局部性。本文將候選佈局分為三族：<strong>樓梯式佈局</strong>以錯位模組建立獨立服務面與橫向或液冷熱路徑；<strong>環形佈局</strong>將模組分布於中央匯流排或流體歧管周圍；<strong>螺旋式佈局</strong>在高度方向引入角位移，以換取更長的服務面、分區流道或可擴展的模組節距。三者都不是固定最佳解，必須依功率密度、互連半徑、冷卻方式、維修頻率與機械限制選擇。</p>
 <p>本文建立四尺度架構：封裝級處理 hybrid bonding、TSV、RDL 與短距離 die-to-die 介面；模組級處理 chiplet 封裝、記憶體、近負載供電與冷板；機箱級處理背板、線纜、光電互連、風道、液路、服務面與故障隔離；機櫃級處理電力、冷卻液、網路與管理。熱行為以耦合熱阻矩陣描述，資料互連以帶寬、距離、能耗、序列化與拓撲擁塞共同評估，並以多目標最佳化在有效算力密度、尾端延遲、冷卻功率、聲學、可靠度、維修時間及成本之間求解。</p>
@@ -84,11 +88,11 @@ footer a{color:var(--accent)}
 <p>本文目前屬 E0 架構提案。若在公平基線下，樓梯或環形佈局不能降低熱耦合、不能改善服務性，或其互連與機械成本抵銷全部收益，則相應形狀應被否證、縮減為特定產品選項，或回退到平面模組化方案。</p>
 <p><strong>關鍵詞</strong>：立體運算、chiplet、3DIC、模組化運算、熱—電協同、熱感知佈局、UCIe、hybrid bonding、冷板、環形背板、樓梯式佈局、螺旋式佈局、可維修性、故障隔離</p>
 <hr>
-<h1>第一章　問題重述：立體不是把所有東西往上疊</h1>
-<h2>1.1 「三維整合」至少包含四個尺度</h2>
+<h2>第一章　問題重述：立體不是把所有東西往上疊</h2>
+<h3>1.1 「三維整合」至少包含四個尺度</h3>
 <p>「三維運算」常被混用來描述完全不同的工程問題。若不先區分尺度，就容易把封裝內可行的技術錯誤放大到機箱，或把機箱幾何誤當成裸晶互連。</p>
 <p>本文定義四個尺度：</p>
-<h3>封裝級</h3>
+<h4>封裝級</h4>
 <p>典型距離從微米到毫米，對象包括：</p>
 <ul>
 <li>logic-on-logic；</li>
@@ -101,7 +105,7 @@ footer a{color:var(--accent)}
 <li>UCIe-3D 類 die-to-die 介面。</li>
 </ul>
 <p>此尺度追求極高互連密度與低能耗，但也受熱通量、翹曲、對準、良率、測試與材料相容性限制。</p>
-<h3>模組級</h3>
+<h4>模組級</h4>
 <p>典型距離從毫米到數公分，對象包括：</p>
 <ul>
 <li>一個多晶粒封裝；</li>
@@ -112,7 +116,7 @@ footer a{color:var(--accent)}
 <li>高速連接器。</li>
 </ul>
 <p>此尺度是 SDMCA 的最小實體單位。模組應盡可能成為可測試、可更換、可降級與可追蹤的故障域。</p>
-<h3>機箱級</h3>
+<h4>機箱級</h4>
 <p>典型距離從數公分到一公尺，對象包括：</p>
 <ul>
 <li>多個運算模組；</li>
@@ -124,7 +128,7 @@ footer a{color:var(--accent)}
 <li>機箱管理。</li>
 </ul>
 <p>樓梯、環形與螺旋主要屬於這一尺度。</p>
-<h3>機櫃級</h3>
+<h4>機櫃級</h4>
 <p>典型距離從一公尺到數十公尺，對象包括：</p>
 <ul>
 <li>機櫃匯流排；</li>
@@ -150,7 +154,7 @@ footer a{color:var(--accent)}
 \oplus
 \mathcal{R}_{\mathrm{rack}}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathcal" style="margin-right:0.075em;">S</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.075em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">3</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">D</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathcal" style="margin-right:0.0822em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0822em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">package</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊕</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathcal">M</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">module</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊕</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathcal" style="margin-right:0.0583em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0583em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">chassis</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊕</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathcal">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">rack</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
 <p>不同尺度之間可以協同，但不能用同一組製程、距離與熱模型描述。</p>
-<h2>1.2 產業基線：先進封裝已是系統工程</h2>
+<h3>1.2 產業基線：先進封裝已是系統工程</h3>
 <p>TSMC 的 CoWoS 與 SoIC、Intel 的 Foveros 與 EMIB，以及 UCIe 對 chiplet 互連與 3D 封裝的標準化，說明產業已從「單一裸晶微縮」走向異質系統整合。這些平台的價值包括更高的封裝內頻寬密度、不同製程節點的組合，以及計算、I/O、記憶體與專用加速器的分割。</p>
 <p>但這些平台也揭示一個重要事實：先進封裝不是只把晶片黏在一起。設計必須同時考慮：</p>
 <ul>
@@ -165,7 +169,7 @@ footer a{color:var(--accent)}
 <li>EDA 與系統管理。</li>
 </ul>
 <p>因此，SDMCA 不以「產業仍停留在平面」作為前提。它的研究空間在於：當封裝與模組已完成後，機箱是否還能透過空間解耦改善熱、供電、維修與部署。</p>
-<h2>1.3 高密度的真正成本</h2>
+<h3>1.3 高密度的真正成本</h3>
 <p>提高密度可能縮短部分互連，但也會增加：</p>
 <ul>
 <li>局部熱通量；</li>
@@ -187,7 +191,7 @@ V_{\mathrm{deployed}}
 },</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight" style="margin-right:0.0778em;">eff</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.3324em;vertical-align:-0.9721em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">deployed</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">useful</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9721em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mpunct">,</span></span></span></span></span>
 <p>其中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>W</mi><mrow><mi mathvariant="normal">u</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">l</mi></mrow></msub></mrow><annotation encoding="application/x-tex">W_{\mathrm{useful}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">useful</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 是在功率、熱、可靠度與軟體利用率約束下真正完成的有效工作量，而不是峰值理論算力。</p>
 <p>若系統因熱節流、故障、維護或通訊擁塞只使用一半設備，則名義密度再高也不代表有效密度更高。</p>
-<h2>1.4 空間解耦的五個對象</h2>
+<h3>1.4 空間解耦的五個對象</h3>
 <p>SDMCA 所謂的「解耦」不是完全隔離，而是讓不同物理功能不必共用同一條最壞路徑。</p>
 <p>五個主要對象為：</p>
 <ol>
@@ -199,8 +203,8 @@ V_{\mathrm{deployed}}
 </ol>
 <p>這五者之間存在衝突。例如，增加機械間距有利於散熱與維修，卻可能增加互連長度；增加冷板共用面積可降低熱阻，卻可能擴大漏液故障域。因此需要多目標協同，而不是單一形狀崇拜。</p>
 <hr>
-<h1>第二章　核心形式模型：熱、電、資料與服務的共同拓撲</h1>
-<h2>2.1 模組圖</h2>
+<h2>第二章　核心形式模型：熱、電、資料與服務的共同拓撲</h2>
+<h3>2.1 模組圖</h3>
 <p>令系統包含模組集合：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>V</mi><mo>=</mo><mo stretchy="false">{</mo><msub><mi>v</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi>v</mi><mn>2</mn></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi>v</mi><mi>N</mi></msub><mo stretchy="false">}</mo><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">V=\{v_1,v_2,\ldots,v_N\}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.109em;">N</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">}</span><span class="mord">.</span></span></span></span></span>
 <p>每個模組 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>v</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">v_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 具有狀態：</p>
@@ -221,7 +225,7 @@ V_{\mathrm{deployed}}
 =
 (V,E_{\mathrm{data}},E_{\mathrm{power}},E_{\mathrm{thermal}},E_{\mathrm{service}}).</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal">G</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0576em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">data</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0576em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">power</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0576em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">thermal</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.0576em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">service</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mord">.</span></span></span></span></span>
 <p>同一對模組可以在資料上高度耦合，但在熱上盡量弱耦合；也可以共用管理匯流排，但不共用主功率支路。</p>
-<h2>2.2 熱耦合矩陣</h2>
+<h3>2.2 熱耦合矩陣</h3>
 <p>原稿把每一層視為完全獨立熱阻，這在實際系統中通常不成立。即使每個模組都有自己的散熱器，仍會透過：</p>
 <ul>
 <li>共用進氣；</li>
@@ -261,7 +265,7 @@ w_{ij}R_{ij}.</annotation></semantics></math></span><span class="katex-html" ari
 +
 \mathbf{u}_{\mathrm{cool}},</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.073em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathbf">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">θ</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.923em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mathbf">T</span></span><span style="top:-3.2551em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.1389em;"><span class="mord">˙</span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8361em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathbf">G</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">θ</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord mathbf">T</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7694em;vertical-align:-0.0833em;"></span><span class="mord mathbf">P</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6389em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathbf">u</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">cool</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span></span></span></span></span>
 <p>其中 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant="bold">u</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">l</mi></mrow></msub></mrow><annotation encoding="application/x-tex">\mathbf{u}_{\mathrm{cool}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5944em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathbf">u</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">cool</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 表示風扇、泵、閥與冷卻液溫度等控制輸入。</p>
-<h2>2.3 資料延遲與能耗</h2>
+<h3>2.3 資料延遲與能耗</h3>
 <p>資料路徑延遲不能只由幾何長度決定。對一條連線 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>e</mi></mrow><annotation encoding="application/x-tex">e</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">e</span></span></span></span> ：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>L</mi><mi>e</mi></msub><mo>=</mo><msub><mi>L</mi><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">p</mi></mrow></msub><mo>+</mo><msub><mi>L</mi><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">s</mi></mrow></msub><mo>+</mo><msub><mi>L</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi></mrow></msub><mo>+</mo><msub><mi>L</mi><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">w</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">h</mi></mrow></msub><mo>+</mo><msub><mi>L</mi><mrow><mi mathvariant="normal">q</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">e</mi></mrow></msub><mo>+</mo><msub><mi>L</mi><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">l</mi></mrow></msub><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">L_e
 =
@@ -288,7 +292,7 @@ L_{\mathrm{protocol}}.</annotation></semantics></math></span><span class="katex-
 +
 \varepsilon_{\mathrm{switch}}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">ε</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">ε</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight" style="margin-right:0.025em;">PHY</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">ε</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">channel</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">d</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">ε</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">retimer</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">ε</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">switch</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
 <p>因此，樓梯或環形佈局只有在資料拓撲、通道損耗與交換層級同時改善時，才可能降低通訊成本。</p>
-<h2>2.4 供電網路</h2>
+<h3>2.4 供電網路</h3>
 <p>模組 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>i</mi></mrow><annotation encoding="application/x-tex">i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6595em;"></span><span class="mord mathnormal">i</span></span></span></span> 的負載端電壓偏差可抽象為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">Δ</mi><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="false">(</mo><mi>ω</mi><mo stretchy="false">)</mo><mo>=</mo><msub><mi>Z</mi><mrow><mrow><mi mathvariant="normal">P</mi><mi mathvariant="normal">D</mi><mi mathvariant="normal">N</mi></mrow><mo separator="true">,</mo><mi>i</mi></mrow></msub><mo stretchy="false">(</mo><mi>ω</mi><mo stretchy="false">)</mo><msub><mi>I</mi><mi>i</mi></msub><mo stretchy="false">(</mo><mi>ω</mi><mo stretchy="false">)</mo><mo>+</mo><munder><mo>∑</mo><mrow><mi>j</mi><mo mathvariant="normal">≠</mo><mi>i</mi></mrow></munder><msub><mi>Z</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="false">(</mo><mi>ω</mi><mo stretchy="false">)</mo><msub><mi>I</mi><mi>j</mi></msub><mo stretchy="false">(</mo><mi>ω</mi><mo stretchy="false">)</mo><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\Delta V_i(\omega)
 =
@@ -307,7 +311,7 @@ Z_{ij}(\omega)I_j(\omega).</annotation></semantics></math></span><span class="ka
 <li>故障時的快速限流與關斷。</li>
 </ul>
 <p>空間模組化的價值之一，是讓每個模組的功率支路更容易被量測、限制與替換；但額外的連接器與匯流排也可能增加損耗，必須納入效率與可靠度比較。</p>
-<h2>2.5 服務與維修成本</h2>
+<h3>2.5 服務與維修成本</h3>
 <p>對可部署系統，平均修復時間與故障隔離能力可能比峰值密度更重要。定義服務成本：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">v</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">e</mi></mrow></msub><mo>=</mo><mi>α</mi><msub><mi>t</mi><mrow><mi mathvariant="normal">d</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">g</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">e</mi></mrow></msub><mo>+</mo><mi>β</mi><msub><mi>t</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">v</mi><mi mathvariant="normal">e</mi></mrow></msub><mo>+</mo><mi>γ</mi><msub><mi>t</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi></mrow></msub><mo>+</mo><mi>δ</mi><msub><mi>C</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow></msub><mo separator="true">,</mo></mrow><annotation encoding="application/x-tex">C_{\mathrm{service}}
 =
@@ -324,8 +328,8 @@ Z_{ij}(\omega)I_j(\omega).</annotation></semantics></math></span><span class="ka
 +
 C_{\mathrm{collateral}}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7651em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">remove</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">collateral</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
 <hr>
-<h1>第三章　樓梯式佈局：錯位、獨立服務面與方向性熱路徑</h1>
-<h2>3.1 定義</h2>
+<h2>第三章　樓梯式佈局：錯位、獨立服務面與方向性熱路徑</h2>
+<h3>3.1 定義</h3>
 <p>樓梯式佈局不是把裸晶切成樓梯，而是讓模組沿一個或兩個方向產生受控位移：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi mathvariant="bold">x</mi><mi>i</mi></msub><mo>=</mo><mo stretchy="false">(</mo><mi>i</mi><mi mathvariant="normal">Δ</mi><mi>x</mi><mo separator="true">,</mo><mn>0</mn><mo separator="true">,</mo><mi>i</mi><mi mathvariant="normal">Δ</mi><mi>z</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\mathbf{x}_i
 =
@@ -345,9 +349,9 @@ C_{\mathrm{collateral}}.</annotation></semantics></math></span><span class="kate
 <li>可接受互連長度。</li>
 </ul>
 <p>它可以表現為斜坡、抽屜、金字塔或雙面階梯，但這些只是產品外形，不改變其核心原則。</p>
-<h2>3.2 熱路徑</h2>
+<h3>3.2 熱路徑</h3>
 <p>樓梯式佈局可採三種熱路徑。</p>
-<h3>獨立橫向風道</h3>
+<h4>獨立橫向風道</h4>
 <p>每個模組具有獨立或半獨立進氣與排氣。設計重點不是「熱完全互不干擾」，而是避免下游模組直接吸入上游高溫排氣。</p>
 <p>需要量測：</p>
 <ul>
@@ -358,7 +362,7 @@ C_{\mathrm{collateral}}.</annotation></semantics></math></span><span class="kate
 <li>模組間熱耦合；</li>
 <li>濾網髒堵後性能。</li>
 </ul>
-<h3>共用冷卻液、獨立冷板支路</h3>
+<h4>共用冷卻液、獨立冷板支路</h4>
 <p>每個模組使用 DryCore 或標準冷板，支路連接共用歧管。可採並聯、串並聯或主動閥控。</p>
 <p>並聯流量近似滿足：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">Δ</mi><msub><mi>p</mi><mn>1</mn></msub><mo stretchy="false">(</mo><msub><mi>Q</mi><mn>1</mn></msub><mo stretchy="false">)</mo><mo>=</mo><mi mathvariant="normal">Δ</mi><msub><mi>p</mi><mn>2</mn></msub><mo stretchy="false">(</mo><msub><mi>Q</mi><mn>2</mn></msub><mo stretchy="false">)</mo><mo>=</mo><mo>⋯</mo><mo>=</mo><mi mathvariant="normal">Δ</mi><msub><mi>p</mi><mi>N</mi></msub><mo stretchy="false">(</mo><msub><mi>Q</mi><mi>N</mi></msub><mo stretchy="false">)</mo><mo separator="true">,</mo></mrow><annotation encoding="application/x-tex">\Delta p_1(Q_1)
@@ -373,9 +377,9 @@ C_{\mathrm{collateral}}.</annotation></semantics></math></span><span class="kate
 =
 \sum_i Q_i.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">tot</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.3277em;vertical-align:-1.2777em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.05em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.2777em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
 <p>需要避免低阻支路奪流、氣泡滯留、接頭負載與維修時全系統排液。</p>
-<h3>獨立密封熱擷取、外部冷端</h3>
+<h4>獨立密封熱擷取、外部冷端</h4>
 <p>每個模組透過熱管、均熱板或兩相熱虹吸把熱傳到可維修冷端。這最符合 DryCore 的服務邊界，但需要評估姿態、啟動、熱通量與長期密封。</p>
-<h2>3.3 互連</h2>
+<h3>3.3 互連</h3>
 <p>樓梯式模組不使用斜向 TSV 跨越機箱距離。互連應依尺度選擇：</p>
 <ul>
 <li>封裝內：hybrid bonding、TSV、RDL、UCIe-3D；</li>
@@ -385,7 +389,7 @@ C_{\mathrm{collateral}}.</annotation></semantics></math></span><span class="kate
 <li>管理與遙測：低速冗餘管理網路。</li>
 </ul>
 <p>若相鄰階具有高流量，應優先把交換、記憶體或資料生產者放在拓撲中心，而不是假設資料永遠只從底層單向流到頂層。</p>
-<h2>3.4 適合的工作負載</h2>
+<h3>3.4 適合的工作負載</h3>
 <p>樓梯形幾何不等於流水線計算，但可以支援具有方向性的資料流，例如：</p>
 <ul>
 <li>感測輸入、前處理、推理與控制；</li>
@@ -409,7 +413,7 @@ b_{uv}L_{\pi(u),\pi(v)}
 \lambda C_{\mathrm{congestion}}
 +
 \mu C_{\mathrm{thermal}}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0962em;">J</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0962em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">map</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.566em;vertical-align:-1.516em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.05em;"><span style="top:-1.809em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">(</span><span class="mord mathnormal mtight">u</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">v</span><span class="mclose mtight">)</span><span class="mrel mtight">∈</span><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0576em;">E</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3567em;margin-left:-0.0576em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1389em;">W</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1433em;"><span></span></span></span></span></span></span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.516em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">b</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">uv</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">L</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.5198em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">π</span><span class="mopen mtight">(</span><span class="mord mathnormal mtight">u</span><span class="mclose mtight">)</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">π</span><span class="mopen mtight">(</span><span class="mord mathnormal mtight" style="margin-right:0.0359em;">v</span><span class="mclose mtight">)</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3552em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord mathnormal">λ</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">congestion</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">μ</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">thermal</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
-<h2>3.5 優勢與限制</h2>
+<h3>3.5 優勢與限制</h3>
 <p>可能優勢：</p>
 <ul>
 <li>模組頂面或側面較容易接觸冷板；</li>
@@ -429,8 +433,8 @@ b_{uv}L_{\pi(u),\pi(v)}
 </ul>
 <p>因此樓梯式不是「密度最大化」方案，而是服務性、熱出口與模組邊界的平衡方案。</p>
 <hr>
-<h1>第四章　環形與螺旋式佈局：中央脊椎、周向模組與分區流道</h1>
-<h2>4.1 先區分環形與螺旋</h2>
+<h2>第四章　環形與螺旋式佈局：中央脊椎、周向模組與分區流道</h2>
+<h3>4.1 先區分環形與螺旋</h3>
 <p>環形佈局的模組位於近似相同高度，沿中央軸排列：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi mathvariant="bold">x</mi><mi>i</mi></msub><mo>=</mo><mo stretchy="false">(</mo><mi>R</mi><mi>cos</mi><mo>⁡</mo><msub><mi>θ</mi><mi>i</mi></msub><mo separator="true">,</mo><mi>R</mi><mi>sin</mi><mo>⁡</mo><msub><mi>θ</mi><mi>i</mi></msub><mo separator="true">,</mo><msub><mi>z</mi><mn>0</mn></msub><mo stretchy="false">)</mo><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\mathbf{x}_i
 =
@@ -454,7 +458,7 @@ b_{uv}L_{\pi(u),\pi(v)}
 <li>機械裝配希望沿單一路徑進行。</li>
 </ul>
 <p>不應在沒有必要時使用真正螺旋。螺旋會增加製造、線纜、結構與校準複雜度；若環形或多面柱已能滿足需求，應優先採用較簡單方案。</p>
-<h2>4.2 中央脊椎</h2>
+<h3>4.2 中央脊椎</h3>
 <p>中央區域可以容納：</p>
 <ul>
 <li>電力匯流排；</li>
@@ -474,7 +478,7 @@ b_{uv}L_{\pi(u),\pi(v)}
 <li>模組熱插拔定序；</li>
 <li>壓力與流量平衡。</li>
 </ul>
-<h2>4.3 旋流不是免費散熱</h2>
+<h3>4.3 旋流不是免費散熱</h3>
 <p>若空氣只是流經靜止的螺旋外殼，系統不會憑空獲得持續的離心壓升。旋流必須由風扇、鼓風機、葉片或切向入口建立，壓力提升來自外部功。</p>
 <p>風扇功率近似為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>P</mi><mrow><mi mathvariant="normal">f</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi></mrow></msub><mo>=</mo><mfrac><mrow><mi mathvariant="normal">Δ</mi><mi>p</mi><mi>Q</mi></mrow><msub><mi>η</mi><mrow><mi mathvariant="normal">f</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">n</mi></mrow></msub></mfrac><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">P_{\mathrm{fan}}
@@ -495,7 +499,7 @@ b_{uv}L_{\pi(u),\pi(v)}
 <li>降低風扇效率。</li>
 </ul>
 <p>因此，「渦輪」只能作為經 CFD 與實驗驗證的流道選項，不是螺旋形狀的必然效果。</p>
-<h2>4.4 液冷比空氣旋流更適合高功率環形模組</h2>
+<h3>4.4 液冷比空氣旋流更適合高功率環形模組</h3>
 <p>對高功率模組，環形架構更合理的路徑通常是：</p>
 <ul>
 <li>中央供液；</li>
@@ -524,7 +528,7 @@ T_{\mathrm{in},i}
 <li>姿態與啟動；</li>
 <li>支路間耦合。</li>
 </ul>
-<h2>4.5 周期拓撲的真實價值</h2>
+<h3>4.5 周期拓撲的真實價值</h3>
 <p>環形連接可形成週期邊界：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>v</mi><mi>i</mi></msub><mo>↔</mo><msub><mi>v</mi><mrow><mo stretchy="false">(</mo><mi>i</mi><mo>+</mo><mn>1</mn><mo stretchy="false">)</mo><mtext> </mtext><mo lspace="0.22em" rspace="0.22em"><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">d</mi></mrow></mo><mtext> </mtext><mi>N</mi></mrow></msub><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">v_i
 \leftrightarrow
@@ -545,7 +549,7 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 <li>光交換。</li>
 </ul>
 <p>因此，螺旋的通訊價值不在「垂直蟲洞」，而在於它提供規則模組節距與可設計的周向、徑向及軸向連接。</p>
-<h2>4.6 優勢與限制</h2>
+<h3>4.6 優勢與限制</h3>
 <p>可能優勢：</p>
 <ul>
 <li>模組到中央供電、冷卻或交換的距離較均勻；</li>
@@ -564,8 +568,8 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 <li>震動、運輸與地震荷載需專門驗證。</li>
 </ul>
 <hr>
-<h1>第五章　互連分層：不要讓所有尺度都變成 TSV</h1>
-<h2>5.1 封裝內互連</h2>
+<h2>第五章　互連分層：不要讓所有尺度都變成 TSV</h2>
+<h3>5.1 封裝內互連</h3>
 <p>先進封裝可使用：</p>
 <ul>
 <li>hybrid bonding；</li>
@@ -577,7 +581,7 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 <li>UCIe-3D 或專用 die-to-die PHY。</li>
 </ul>
 <p>此處可追求高互連密度與低每位元能耗，但每增加一層都需要重新分析熱、功率、時序、良率與測試。</p>
-<h2>5.2 模組間電互連</h2>
+<h3>5.2 模組間電互連</h3>
 <p>在數公分尺度，候選包括：</p>
 <ul>
 <li>高速差分背板；</li>
@@ -589,7 +593,7 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 <li>專用低延遲 fabric。</li>
 </ul>
 <p>設計必須以眼圖、插入損耗、回波損耗、串擾、抖動與 BER 驗證，不能只以幾何最短路徑判定。</p>
-<h2>5.3 光互連</h2>
+<h3>5.3 光互連</h3>
 <p>光互連可能降低長距離電通道損耗並提供高帶寬，但它不等於「光不導熱，所以完全沒有熱橋」。光模組仍包含：</p>
 <ul>
 <li>雷射；</li>
@@ -608,7 +612,7 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 <li>電通道損耗或連接器數量過高；</li>
 </ul>
 <p>但未必適合最低延遲的相鄰模組。</p>
-<h2>5.4 柔性 PCB 與彈簧接點</h2>
+<h3>5.4 柔性 PCB 與彈簧接點</h3>
 <p>柔性 PCB 可以吸收機械位移並支援曲面佈局，但高速性能取決於：</p>
 <ul>
 <li>材料損耗；</li>
@@ -620,7 +624,7 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 <li>彎折壽命。</li>
 </ul>
 <p>Pogo pin 適合測試、低速管理或特定可更換模組，不應在未驗證 SI／PI 的情況下作為高頻寬主互連。</p>
-<h2>5.5 管理與測試網路</h2>
+<h3>5.5 管理與測試網路</h3>
 <p>每個模組應具有獨立於主資料面的管理通道，用於：</p>
 <ul>
 <li>身分與韌體版本；</li>
@@ -633,8 +637,8 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 </ul>
 <p>UCIe 2.0 將管理、測試、遙測與除錯納入多 chiplet 系統考量，顯示可管理性不是封裝完成後才補上的功能。SDMCA 將相同原則延伸到模組與機箱。</p>
 <hr>
-<h1>第六章　與 DPCPS、DryCore、DEO 與 SynCore 的系統整合</h1>
-<h2>6.1 DPCPS：空間供電</h2>
+<h2>第六章　與 DPCPS、DryCore、DEO 與 SynCore 的系統整合</h2>
+<h3>6.1 DPCPS：空間供電</h3>
 <p>SDMCA 提供可辨識的模組與支路，DPCPS 則決定：</p>
 <ul>
 <li>哪些區域調節器啟動；</li>
@@ -653,7 +657,7 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 \rightarrow
 \text{封裝 PDN}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">機櫃匯流排</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">區域轉換</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">模組近負載供電</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">封裝</span><span class="mord"> PDN</span></span><span class="mord">.</span></span></span></span></span>
 <p>樓梯式可沿階梯分區供電；環形可沿扇區供電。任何形狀都必須避免單一中央節點失效導致全系統掉電。</p>
-<h2>6.2 DryCore：空間散熱</h2>
+<h3>6.2 DryCore：空間散熱</h3>
 <p>DryCore 提供：</p>
 <ul>
 <li>模組熱脊；</li>
@@ -664,7 +668,7 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 </ul>
 <p>在樓梯式佈局中，DryCore 冷端可沿側面排列；在環形佈局中，冷板支路可連接中央或雙環歧管。</p>
 <p>SDMCA 不要求所有模組使用同一冷卻方式。低功率 I/O 可風冷，高功率加速器可液冷，儲存模組可採獨立溫控。</p>
-<h2>6.3 DEO：運作包絡</h2>
+<h3>6.3 DEO：運作包絡</h3>
 <p>DEO 可把空間與熱狀態納入包絡決策。例如：</p>
 <ul>
 <li>某扇區入口溫度升高；</li>
@@ -673,7 +677,7 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 <li>某電源支路接近電流上限；</li>
 </ul>
 <p>系統可降低相應模組包絡、遷移工作負載或使用其他模組的爆發餘裕。</p>
-<h2>6.4 SynCore：邏輯與物理拓撲</h2>
+<h3>6.4 SynCore：邏輯與物理拓撲</h3>
 <p>SynCore 的神核、流動或混合模式不應假設所有執行單元位於同一物理距離。若跨模組協同，必須把：</p>
 <ul>
 <li>同步延遲；</li>
@@ -690,7 +694,7 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 <li>模組間進行較粗粒度工作共享；</li>
 <li>機箱間進行任務、記憶體或資料流分配。</li>
 </ul>
-<h2>6.5 統一控制迴路</h2>
+<h3>6.5 統一控制迴路</h3>
 <p>整體控制可表示為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>遙測</mtext><mo>→</mo><mtext>狀態估計</mtext><mo>→</mo><mtext>拓撲與熱預測</mtext><mo>→</mo><mtext>DEO 包絡</mtext><mo>→</mo><mrow><mo fence="true">{</mo><mtable rowspacing="0.36em" columnalign="left left" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mtext>SynCore 模式</mtext></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mtext>DPCPS 功率配置</mtext></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mtext>DryCore 冷卻配置</mtext></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mtext>工作負載映射</mtext></mstyle></mtd></mtr></mtable></mrow><mo>→</mo><mtext>安全監督</mtext><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\text{遙測}
 \rightarrow
@@ -710,8 +714,8 @@ v_{(i+1)\bmod N}.</annotation></semantics></math></span><span class="katex-html"
 \text{安全監督}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">遙測</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">狀態估計</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">拓撲與熱預測</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord">DEO </span><span class="mord cjk_fallback">包絡</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:5.76em;vertical-align:-2.63em;"></span><span class="minner"><span class="mopen"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.95em;"><span style="top:-1.6em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎩</span></span></span><span style="top:-1.592em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.916em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width="0.8889em" height="0.916em" style="width:0.8889em" viewBox="0 0 888.89 916" preserveAspectRatio="xMinYMin"><path d="M384 0 H504 V916 H384z M384 0 H504 V916 H384z"/></svg></span></span><span style="top:-3.15em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎨</span></span></span><span style="top:-4.292em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.916em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width="0.8889em" height="0.916em" style="width:0.8889em" viewBox="0 0 888.89 916" preserveAspectRatio="xMinYMin"><path d="M384 0 H504 V916 H384z M384 0 H504 V916 H384z"/></svg></span></span><span style="top:-5.2em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎧</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:2.45em;"><span></span></span></span></span></span></span><span class="mord"><span class="mtable"><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:3.13em;"><span style="top:-5.13em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord text"><span class="mord">SynCore </span><span class="mord cjk_fallback">模式</span></span></span></span><span style="top:-3.69em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord text"><span class="mord">DPCPS </span><span class="mord cjk_fallback">功率配置</span></span></span></span><span style="top:-2.25em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord text"><span class="mord">DryCore </span><span class="mord cjk_fallback">冷卻配置</span></span></span></span><span style="top:-0.81em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord text"><span class="mord cjk_fallback">工作負載映射</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:2.63em;"><span></span></span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">安全監督</span></span><span class="mord">.</span></span></span></span></span>
 <p>控制器不應直接覆蓋硬體保護。過溫、過流、漏液、風扇失效與泵失效必須具有獨立安全路徑。</p>
 <hr>
-<h1>第七章　多目標設計：形狀只是最佳化變數之一</h1>
-<h2>7.1 目標函數</h2>
+<h2>第七章　多目標設計：形狀只是最佳化變數之一</h2>
+<h3>7.1 目標函數</h3>
 <p>令設計變數為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="bold-italic">θ</mi><mo>=</mo><mo stretchy="false">(</mo><mtext>模組位置、角度、間距、互連、冷卻、供電、材料、控制</mtext><mo stretchy="false">)</mo><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\boldsymbol{\theta}
 =
@@ -743,7 +747,7 @@ w_CJ_C.</annotation></semantics></math></span><span class="katex-html" aria-hidd
 <li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>J</mi><mi>C</mi></msub></mrow><annotation encoding="application/x-tex">J_C</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0962em;">J</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0962em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0715em;">C</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> ：製造與生命週期成本。</li>
 </ul>
 <p>不同產品權重不同。桌面工作站可能重視噪音與升級；邊緣設備重視重量與震動；資料中心重視有效密度、服務時間與設施效率。</p>
-<h2>7.2 約束</h2>
+<h3>7.2 約束</h3>
 <p>典型約束包括：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>T</mi><mi>i</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>≤</mo><msub><mi>T</mi><mrow><mi>i</mi><mo separator="true">,</mo><mi>max</mi><mo>⁡</mo></mrow></msub><mo separator="true">,</mo></mrow><annotation encoding="application/x-tex">T_i(t)\le T_{i,\max},</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">i</span><span class="mpunct mtight">,</span><span class="mop mtight"><span class="mtight">m</span><span class="mtight">a</span><span class="mtight">x</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span></span></span></span></span>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">Δ</mi><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>∈</mo><mo stretchy="false">[</mo><mo>−</mo><msub><mi>V</mi><mrow><mi>i</mi><mo separator="true">,</mo><mrow><mi mathvariant="normal">d</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">p</mi></mrow></mrow></msub><mo separator="true">,</mo><msub><mi>V</mi><mrow><mi>i</mi><mo separator="true">,</mo><mrow><mi mathvariant="normal">o</mi><mi mathvariant="normal">v</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">t</mi></mrow></mrow></msub><mo stretchy="false">]</mo><mo separator="true">,</mo></mrow><annotation encoding="application/x-tex">\Delta V_i(t)\in[-V_{i,\mathrm{droop}},V_{i,\mathrm{overshoot}}],</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mopen">[</span><span class="mord">−</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">i</span><span class="mpunct mtight">,</span><span class="mord mtight"><span class="mord mathrm mtight">droop</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">i</span><span class="mpunct mtight">,</span><span class="mord mtight"><span class="mord mathrm mtight">overshoot</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">]</span><span class="mpunct">,</span></span></span></span></span>
@@ -752,7 +756,7 @@ w_CJ_C.</annotation></semantics></math></span><span class="katex-html" aria-hidd
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>p</mi><mo>≤</mo><mi mathvariant="normal">Δ</mi><msub><mi>p</mi><mi>max</mi><mo>⁡</mo></msub><mo separator="true">,</mo></mrow><annotation encoding="application/x-tex">\Delta p\le \Delta p_{\max},</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">Δ</span><span class="mord mathnormal">p</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord">Δ</span><span class="mord"><span class="mord mathnormal">p</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mop mtight"><span class="mtight">m</span><span class="mtight">a</span><span class="mtight">x</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span></span></span></span></span>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>L</mi><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">d</mi></mrow></msub><mo>≤</mo><msub><mi>L</mi><mi>max</mi><mo>⁡</mo></msub><mo separator="true">,</mo></mrow><annotation encoding="application/x-tex">L_{\mathrm{sound}}\le L_{\max},</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">L</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">sound</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">L</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mop mtight"><span class="mtight">m</span><span class="mtight">a</span><span class="mtight">x</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span></span></span></span></span>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>t</mi><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">v</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">e</mi></mrow></msub><mo>≤</mo><msub><mi>t</mi><mi>max</mi><mo>⁡</mo></msub><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">t_{\mathrm{service}}\le t_{\max}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.786em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">service</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7651em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mop mtight"><span class="mtight">m</span><span class="mtight">a</span><span class="mtight">x</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
-<h2>7.3 不把增益相乘</h2>
+<h3>7.3 不把增益相乘</h3>
 <p>原稿使用：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>G</mi><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow></msub><mo>=</mo><msub><mi>G</mi><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">m</mi></mrow></msub><msub><mi>G</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">n</mi></mrow></msub><msub><mi>G</mi><mrow><mi mathvariant="normal">d</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">n</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">e</mi></mrow></msub></mrow><annotation encoding="application/x-tex">G_{\mathrm{total}}
 =
@@ -781,7 +785,7 @@ E_{\mathrm{power}}
 <li>相同體積下的持續性能；</li>
 <li>相同可用度下的生命週期成本。</li>
 </ul>
-<h2>7.4 帕累托前沿</h2>
+<h3>7.4 帕累托前沿</h3>
 <p>不存在對所有用途都最好的形狀。應尋找帕累托前沿：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="script">P</mi><mo>=</mo><mrow><mo fence="true">{</mo><mi mathvariant="bold-italic">θ</mi><mo>:</mo><mi mathvariant="normal">∄</mi><msup><mi mathvariant="bold-italic">θ</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mtext> 在所有目標不劣且至少一項更優</mtext><mo fence="true">}</mo></mrow><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\mathcal{P}
 =
@@ -799,8 +803,8 @@ E_{\mathrm{power}}
 </ul>
 <p>這種結果不是失敗，而是有效工程結論。</p>
 <hr>
-<h1>第八章　機械、製造、測試與可靠度</h1>
-<h2>8.1 模組化不等於容易製造</h2>
+<h2>第八章　機械、製造、測試與可靠度</h2>
+<h3>8.1 模組化不等於容易製造</h3>
 <p>每增加一個可更換模組，系統也增加：</p>
 <ul>
 <li>連接器；</li>
@@ -813,7 +817,7 @@ E_{\mathrm{power}}
 <li>人為裝配錯誤。</li>
 </ul>
 <p>因此模組化必須以標準接口和自動測試抵銷其複雜度。</p>
-<h2>8.2 已知良品與分階段測試</h2>
+<h3>8.2 已知良品與分階段測試</h3>
 <p>建議測試階層：</p>
 <ol>
 <li>裸晶／封裝 known-good-die；</li>
@@ -826,7 +830,7 @@ E_{\mathrm{power}}
 <li>現場可維修性演練。</li>
 </ol>
 <p>測試可及性必須在幾何設計初期保留，而不是完成螺旋外殼後才尋找探針位置。</p>
-<h2>8.3 機械載荷</h2>
+<h3>8.3 機械載荷</h3>
 <p>需要考慮：</p>
 <ul>
 <li>自重；</li>
@@ -848,7 +852,7 @@ E_{\mathrm{power}}
 +
 \mathbf{F}_{\mathrm{dynamic}}.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6861em;"></span><span class="mord mathbf">Ku</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8361em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathbf">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">static</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8361em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathbf">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">thermal</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.9722em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathbf">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathrm mtight">dynamic</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord">.</span></span></span></span></span>
 <p>高速連接器、光耦合器與冷板接觸壓力都可能受到位移影響。</p>
-<h2>8.4 故障模式</h2>
+<h3>8.4 故障模式</h3>
 <p>最低 FMEA 應包含：</p>
 <ul>
 <li>模組過溫；</li>
@@ -873,7 +877,7 @@ E_{\mathrm{power}}
 <li>修復程序；</li>
 <li>重新資格化條件。</li>
 </ul>
-<h2>8.5 散熱與互連共設計</h2>
+<h3>8.5 散熱與互連共設計</h3>
 <p>銅互連、背板與機械支撐同時也是熱橋；低導熱結構又可能降低接地、剛性或屏蔽。不能簡單宣稱「資料可通過而熱完全不通過」。</p>
 <p>合理策略包括：</p>
 <ul>
@@ -885,8 +889,8 @@ E_{\mathrm{power}}
 <li>以實測熱矩陣取代理想絕熱假設。</li>
 </ul>
 <hr>
-<h1>第九章　軟體與拓撲感知執行</h1>
-<h2>9.1 硬體拓撲必須可見</h2>
+<h2>第九章　軟體與拓撲感知執行</h2>
+<h3>9.1 硬體拓撲必須可見</h3>
 <p>作業系統與執行環境至少需要知道：</p>
 <ul>
 <li>模組距離與頻寬；</li>
@@ -908,7 +912,7 @@ E_{\mathrm{power}}
 <li>維修；</li>
 </ul>
 <p>而動態改變。</p>
-<h2>9.2 熱感知與資料感知排程</h2>
+<h3>9.2 熱感知與資料感知排程</h3>
 <p>排程成本可寫成：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mrow><mi mathvariant="normal">s</mi><mi mathvariant="normal">c</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">d</mi></mrow></msub><mo>=</mo><msub><mi>w</mi><mn>1</mn></msub><msub><mi>C</mi><mrow><mi mathvariant="normal">d</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">a</mi></mrow></msub><mo>+</mo><msub><mi>w</mi><mn>2</mn></msub><msub><mi>C</mi><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">h</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">l</mi></mrow></msub><mo>+</mo><msub><mi>w</mi><mn>3</mn></msub><msub><mi>C</mi><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">w</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">r</mi></mrow></msub><mo>+</mo><msub><mi>w</mi><mn>4</mn></msub><msub><mi>C</mi><mrow><mi mathvariant="normal">f</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">u</mi><mi mathvariant="normal">l</mi><mi mathvariant="normal">t</mi></mrow></msub><mo>+</mo><msub><mi>w</mi><mn>5</mn></msub><msub><mi>C</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">g</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">n</mi></mrow></msub><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">C_{\mathrm{sched}}
 =
@@ -928,7 +932,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>秒至分鐘：工作遷移與冷卻控制；</li>
 <li>小時至天：維修、老化與容量規劃。</li>
 </ul>
-<h2>9.3 流水線映射</h2>
+<h3>9.3 流水線映射</h3>
 <p>若工作負載本身接近 DAG，可使用樓梯式方向映射。但需要驗證：</p>
 <ul>
 <li>階段是否平衡；</li>
@@ -939,7 +943,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>動態工作負載變化。</li>
 </ul>
 <p>對高度全互連或 collective-heavy 的 AI 訓練，單一鏈式樓梯通常不是合適拓撲；可能需要中央交換、Clos、torus 或光網路。</p>
-<h2>9.4 軟體可攜性</h2>
+<h3>9.4 軟體可攜性</h3>
 <p>第一代原型不應要求全新 ISA。可使用：</p>
 <ul>
 <li>Linux 拓撲與 NUMA；</li>
@@ -951,8 +955,8 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 </ul>
 <p>專用執行環境只在證明現有軟體無法表達必要控制後再建立。</p>
 <hr>
-<h1>第十章　MVP：公平比較幾何，而不是展示造型</h1>
-<h2>10.1 研究問題</h2>
+<h2>第十章　MVP：公平比較幾何，而不是展示造型</h2>
+<h3>10.1 研究問題</h3>
 <p>第一個 MVP 只回答三個問題：</p>
 <ol>
 <li>在相同運算模組、總功率與冷卻硬體下，樓梯或環形佈局能否降低熱耦合與節流？</li>
@@ -968,8 +972,8 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>12 倍性能；</li>
 <li>原子級封裝。</li>
 </ul>
-<h2>10.2 三組公平基線</h2>
-<h3>B0：平面基線</h3>
+<h3>10.2 三組公平基線</h3>
+<h4>B0：平面基線</h4>
 <ul>
 <li>四個相同加熱器或 COTS 加速模組；</li>
 <li>同一平面；</li>
@@ -977,7 +981,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>相同總體積上限；</li>
 <li>相同電源與網路。</li>
 </ul>
-<h3>B1：四模組樓梯</h3>
+<h4>B1：四模組樓梯</h4>
 <ul>
 <li>相同模組；</li>
 <li>可調 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>x</mi></mrow><annotation encoding="application/x-tex">\Delta x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal">x</span></span></span></span> 與 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>z</mi></mrow><annotation encoding="application/x-tex">\Delta z</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.044em;">z</span></span></span></span> ；</li>
@@ -985,7 +989,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>橫向風道或獨立冷板支路；</li>
 <li>相同總冷卻設備。</li>
 </ul>
-<h3>B2：六模組環形</h3>
+<h4>B2：六模組環形</h4>
 <ul>
 <li>模組沿中央脊椎排列；</li>
 <li>分區供電；</li>
@@ -994,7 +998,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>不使用未驗證的自然渦輪效應。</li>
 </ul>
 <p>若需要研究真正螺旋，作為 B3 第二階段，且只改變高度與角位移，不同時更換風扇、冷板與模組。</p>
-<h2>10.3 量測</h2>
+<h3>10.3 量測</h3>
 <p>熱：</p>
 <ul>
 <li>晶片或加熱器溫度；</li>
@@ -1037,7 +1041,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>是否需要排液；</li>
 <li>重新校準時間。</li>
 </ul>
-<h2>10.4 實驗控制</h2>
+<h3>10.4 實驗控制</h3>
 <p>所有幾何比較必須保持：</p>
 <ul>
 <li>相同模組；</li>
@@ -1050,7 +1054,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>相同量測方法。</li>
 </ul>
 <p>若樓梯方案使用液冷而平面基線使用風冷，結果只能證明冷卻方式不同，不能證明幾何優越。</p>
-<h2>10.5 成功門檻</h2>
+<h3>10.5 成功門檻</h3>
 <p>第一輪不預設固定百分比，但應事先註冊判定規則。例如：</p>
 <ul>
 <li>至少一個形狀在相同冷卻功率下顯著降低最熱模組溫度；</li>
@@ -1061,9 +1065,9 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 </ul>
 <p>若只改善外觀或名義體積而無系統收益，應判定假說未成立。</p>
 <hr>
-<h1>第十一章　驗證路線與證據分級</h1>
-<h2>11.1 證據分級</h2>
-<h3>E0：概念</h3>
+<h2>第十一章　驗證路線與證據分級</h2>
+<h3>11.1 證據分級</h3>
+<h4>E0：概念</h4>
 <ul>
 <li>幾何；</li>
 <li>方程；</li>
@@ -1072,7 +1076,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>可否證命題。</li>
 </ul>
 <p>本文目前位於 E0。</p>
-<h3>E1：單物理模擬</h3>
+<h4>E1：單物理模擬</h4>
 <ul>
 <li>CFD；</li>
 <li>熱網路；</li>
@@ -1080,7 +1084,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>結構；</li>
 <li>單一條件。</li>
 </ul>
-<h3>E2：多物理共模擬</h3>
+<h4>E2：多物理共模擬</h4>
 <ul>
 <li>熱—流；</li>
 <li>熱—機械；</li>
@@ -1088,7 +1092,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>供電—熱；</li>
 <li>工作負載—熱。</li>
 </ul>
-<h3>E3：實驗台</h3>
+<h4>E3：實驗台</h4>
 <ul>
 <li>加熱器；</li>
 <li>COTS 模組；</li>
@@ -1096,7 +1100,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>校準感測器；</li>
 <li>公開原始資料。</li>
 </ul>
-<h3>E4：整合原型</h3>
+<h4>E4：整合原型</h4>
 <ul>
 <li>真實運算負載；</li>
 <li>DPCPS；</li>
@@ -1104,7 +1108,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>故障注入；</li>
 <li>長時間運作。</li>
 </ul>
-<h3>E5：外部重現與產品資格</h3>
+<h4>E5：外部重現與產品資格</h4>
 <ul>
 <li>第三方測試；</li>
 <li>多批次；</li>
@@ -1114,7 +1118,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>量產成本。</li>
 </ul>
 <p>任何 TRL、量產與性能倍率都應建立在 E3 以上證據，不應由概念文件自行宣告。</p>
-<h2>11.2 模擬最低要求</h2>
+<h3>11.2 模擬最低要求</h3>
 <p>CFD 報告至少提供：</p>
 <ul>
 <li>幾何檔或可重建尺寸；</li>
@@ -1139,21 +1143,21 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>抖動預算；</li>
 <li>溫度與製造變異。</li>
 </ul>
-<h2>11.3 可否證命題</h2>
-<h3>H1：樓梯熱解耦</h3>
+<h3>11.3 可否證命題</h3>
+<h4>H1：樓梯熱解耦</h4>
 <p>在相同模組、總體積與冷卻功率下，樓梯佈局可降低指定高功率模組間的熱耦合係數。</p>
-<h3>H2：服務性</h3>
+<h4>H2：服務性</h4>
 <p>在預定故障情境下，樓梯或扇區化環形佈局可降低模組更換與恢復時間。</p>
-<h3>H3：環形供應均勻性</h3>
+<h4>H3：環形供應均勻性</h4>
 <p>在相同歧管與總流量下，經最佳化的環形分配可使各模組入口壓力與溫度變異低於基線。</p>
-<h3>H4：拓撲映射</h3>
+<h4>H4：拓撲映射</h4>
 <p>對具有方向性 DAG 的工作負載，拓撲感知映射可降低資料搬移能耗或尾端延遲；對 collective-heavy 工作負載，此優勢可能消失。</p>
-<h3>H5：系統淨收益</h3>
+<h4>H5：系統淨收益</h4>
 <p>幾何收益在納入互連、冷卻、框架、服務與控制成本後仍為正。</p>
 <p>若 H5 不成立，SDMCA 應保留為服務性或特定場景設計，而不是性能架構。</p>
 <hr>
-<h1>第十二章　產品路線：從測試框架到開放模組規格</h1>
-<h2>12.1 第一階段：幾何測試框架</h2>
+<h2>第十二章　產品路線：從測試框架到開放模組規格</h2>
+<h3>12.1 第一階段：幾何測試框架</h3>
 <p>建立可快速切換平面、樓梯與環形的開放式框架，使用加熱器與標準化模組介面。產品價值是：</p>
 <ul>
 <li>CFD 校準；</li>
@@ -1162,7 +1166,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>風道與污染測試；</li>
 <li>互連與維修比較。</li>
 </ul>
-<h2>12.2 第二階段：模組運算底座</h2>
+<h3>12.2 第二階段：模組運算底座</h3>
 <p>使用 COTS CPU／GPU／FPGA 模組，提供：</p>
 <ul>
 <li>統一機械接口；</li>
@@ -1173,7 +1177,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>故障隔離；</li>
 <li>拓撲感知軟體。</li>
 </ul>
-<h2>12.3 第三階段：開放模組規格</h2>
+<h3>12.3 第三階段：開放模組規格</h3>
 <p>規格應至少定義：</p>
 <ul>
 <li>外形與服務面；</li>
@@ -1187,7 +1191,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>數位模型格式。</li>
 </ul>
 <p>UCIe 處理封裝內 chiplet 互連；SDMCA 規格若成立，應聚焦封裝外模組與機箱，不重複定義 die-to-die PHY。</p>
-<h2>12.4 第四階段：專用封裝協同</h2>
+<h3>12.4 第四階段：專用封裝協同</h3>
 <p>只有在機箱級原型證明幾何與控制確實有淨收益後，才值得進一步設計：</p>
 <ul>
 <li>專用 SynCore 模組；</li>
@@ -1198,10 +1202,10 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>封裝—模組—機箱聯合最佳化。</li>
 </ul>
 <hr>
-<h1>第十三章　討論：保留形狀，但拒絕形狀決定論</h1>
-<h2>13.1 樓梯不是過渡羞恥</h2>
+<h2>第十三章　討論：保留形狀，但拒絕形狀決定論</h2>
+<h3>13.1 樓梯不是過渡羞恥</h3>
 <p>樓梯形的價值不在於它「不夠未來」，而在於它可以把模組暴露於可維修面、減少堆疊拆裝依賴，並為熱路徑提供方向性。若它在公平實驗中優於更複雜螺旋，就應被視為最終產品，而不是過渡品。</p>
-<h2>13.2 螺旋不是宇宙保證</h2>
+<h3>13.2 螺旋不是宇宙保證</h3>
 <p>自然界中的螺旋可由生長、角動量、最佳填充、材料應力與演化歷史形成。這些例子不能直接證明螺旋是處理器的最優形狀。</p>
 <p>工程上應問：</p>
 <ul>
@@ -1211,7 +1215,7 @@ w_5C_{\mathrm{migration}}.</annotation></semantics></math></span><span class="ka
 <li>它的製造與維修是否可接受？</li>
 </ul>
 <p>只有回答這些問題後，螺旋才從隱喻變成架構。</p>
-<h2>13.3 幾何的真正地位</h2>
+<h3>13.3 幾何的真正地位</h3>
 <p>本文保留「形狀即約束」的觀點，但不採取「形狀即命運」的強斷言。更準確的表述是：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>性能</mtext><mo>=</mo><mi>F</mi><mo stretchy="false">(</mo><mtext>幾何</mtext><mo separator="true">,</mo><mtext>互連</mtext><mo separator="true">,</mo><mtext>材料</mtext><mo separator="true">,</mo><mtext>功率</mtext><mo separator="true">,</mo><mtext>冷卻</mtext><mo separator="true">,</mo><mtext>控制</mtext><mo separator="true">,</mo><mtext>軟體</mtext><mo separator="true">,</mo><mtext>製造</mtext><mo stretchy="false">)</mo><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">\text{性能}
 =
@@ -1226,7 +1230,7 @@ F(
 \text{製造}
 ).</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">性能</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mopen">(</span><span class="mord text"><span class="mord cjk_fallback">幾何</span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord cjk_fallback">互連</span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord cjk_fallback">材料</span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord cjk_fallback">功率</span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord cjk_fallback">冷卻</span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord cjk_fallback">控制</span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord cjk_fallback">軟體</span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord cjk_fallback">製造</span></span><span class="mclose">)</span><span class="mord">.</span></span></span></span></span>
 <p>幾何是函數中的重要變數，但不是單獨決定結果的充分條件。</p>
-<h2>13.4 立體運算的工程意義</h2>
+<h3>13.4 立體運算的工程意義</h3>
 <p>立體運算的真正革命，可能不是把所有電晶體堆成最高的塔，而是讓系統設計者可以在不同尺度自由選擇：</p>
 <ul>
 <li>哪些功能應緊密堆疊；</li>
@@ -1238,7 +1242,7 @@ F(
 </ul>
 <p>這是一種從「最大密度」轉向「受約束的有效整合」的設計觀。</p>
 <hr>
-<h1>結論</h1>
+<h2>結論</h2>
 <p>本文提出 SDMCA 空間解耦模組運算架構，將原始樓梯形與螺旋渦輪構想重構為跨封裝、模組、機箱與機櫃的熱—電—互連協同方法。</p>
 <p>新版得到以下結論：</p>
 <ol>
@@ -1257,7 +1261,7 @@ F(
 </ol>
 <p>本文目前不提供量產承諾與性能倍率。下一步是建立可重構測試框架、公開 CAD 與量測程序，取得第一組可重現的熱耦合、互連與服務性資料。</p>
 <hr>
-<h1>參考資料</h1>
+<h2>參考資料</h2>
 <ol>
 <li><p>Taiwan Semiconductor Manufacturing Company, <strong>CoWoS®</strong>, TSMC 3DFabric 官方技術頁面。<br><a href="https://3dfabric.tsmc.com/english/dedicatedFoundry/technology/cowos.htm">https://3dfabric.tsmc.com/english/dedicatedFoundry/technology/cowos.htm</a></p>
 </li>
@@ -1279,7 +1283,7 @@ F(
 </li>
 </ol>
 <hr>
-<h1>附錄 A　術語對照</h1>
+<h2>附錄 A　術語對照</h2>
 <table>
 <thead>
 <tr>
@@ -1332,7 +1336,7 @@ F(
 <td>移除；改採 E0–E5 證據分級</td>
 </tr>
 </tbody></table>
-<h1>附錄 B　最小公開資料包</h1>
+<h2>附錄 B　最小公開資料包</h2>
 <p>每次原型發布至少包含：</p>
 <ol>
 <li>CAD 與模組位置；</li>
@@ -1348,7 +1352,7 @@ F(
 <li>維修操作影片或逐步紀錄；</li>
 <li>版本與內容指紋。</li>
 </ol>
-<h1>附錄 C　內容指紋</h1>
+<h2>附錄 C　內容指紋</h2>
 <p>本文件版本：SDMCA v2.0<br>公開修訂日期：2026-07-29<br>證據層級：E0<br>下一個工程節點：可重構平面／樓梯／環形熱—互連測試框架</p>
 </article>
   <section class="source-download">

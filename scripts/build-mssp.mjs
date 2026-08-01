@@ -319,7 +319,7 @@ if (problems.length) {
   process.exit(1);
 }
 
-// ---- the four field-manual modules ----
+// ---- the field-manual modules ----
 //
 // Kept as Markdown next to the examples rather than as JSX, so a module can be
 // edited without touching the site, and so its state label is written where the

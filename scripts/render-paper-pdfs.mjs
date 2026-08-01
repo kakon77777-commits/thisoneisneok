@@ -113,6 +113,7 @@ function render(target, paper, body) {
 
   let inFence = false;
   let seenFirstHeading = false;
+  let titleSkipped = false;
 
   // A $$…$$ display block spans several lines, so it is buffered whole and then
   // transliterated in one pass — converting line by line would break formulas
@@ -165,8 +166,22 @@ function render(target, paper, body) {
       continue;
     }
     if (line.startsWith("# ")) {
-      // The title is already set above; skip the source H1.
       flushBullets();
+      if (!titleSkipped) {
+        // The paper's own title, already set above.
+        titleSkipped = true;
+        seenFirstHeading = true;
+        continue;
+      }
+      // Every later H1 is a section. 81 of the 89 papers number their sections
+      // `# 1.` `# 2.`, and skipping all of them dropped 2,433 headings across
+      // the corpus — those PDFs ran as unbroken prose with no structure at all.
+      ensure(72);
+      doc.moveDown(0.85);
+      doc.fillColor(colors.green).font("NotoBold").fontSize(7.8).text("SECTION", { width: contentWidth, characterSpacing: 1 });
+      doc.moveDown(0.5);
+      doc.fillColor(colors.ink).font("NotoBold").fontSize(17).lineGap(3.8).text(stripInline(line.slice(2)), { width: contentWidth });
+      doc.moveDown(0.45);
       seenFirstHeading = true;
       continue;
     }

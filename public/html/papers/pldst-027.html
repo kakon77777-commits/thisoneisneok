@@ -23,6 +23,10 @@ main{padding:56px 0 96px}
 .content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
 .content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
 .content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+/* Demoting the body by one level pushes the deepest sections here, so they need
+   to be styled rather than left to the browser's defaults. */
+.content h4{font-family:Inter,"Noto Sans TC",sans-serif;font-size:16.5px;margin:30px 0 10px;color:var(--accent)}
+.content h5,.content h6{font-family:Inter,"Noto Sans TC",sans-serif;font-size:14px;letter-spacing:.02em;margin:26px 0 9px;color:var(--muted)}
 .content p{margin:0 0 24px}
 .content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
 .content li{margin:.45em 0}
@@ -53,7 +57,7 @@ footer a{color:var(--accent)}
   <section class="facts"><div><b>編號</b><span>PLDST-027</span></div><div><b>版本</b><span>v1.0</span></div><div><b>日期</b><span>2026-07-30</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>狀態</b><span>公開版／第五部方法落地第一篇</span></div></section>
   <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/pldst-027.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
   <article class="content"><h1>PLDST 評估矩陣與設計決策語料庫規格</h1>
-<h2>摘要</h2>
+<h3>摘要</h3>
 <p>PLDST 前二十六篇已完成理論地基、方法論、設計師個案及跨設計師比較。若這些成果仍只存在於長篇文章中，PLDST 雖然可以形成有價值的思想史與設計史研究，卻仍難以支持：</p>
 <ul>
 <li>大規模跨人物比較；</li>
@@ -119,8 +123,8 @@ Revision</annotation></semantics></math></span><span class="katex-html" aria-hid
 <p>因此，PLDST 不建立固定人格測驗，而建立一套<strong>可追溯的歷史決策分析系統</strong>。</p>
 <p><strong>關鍵詞：</strong> PLDST、評估矩陣、設計決策語料庫、語料工程、資料溯源、JSON Schema、W3C PROV、ADR、決策抽取、程式語言史、AI 輔助研究</p>
 <hr>
-<h1>第一部分　規格目標與非目標</h1>
-<h2>一、規格目標</h2>
+<h2>第一部分　規格目標與非目標</h2>
+<h3>一、規格目標</h3>
 <p>PLDST-MATRIX-CORPUS 的目標是使下列工作可重複執行：</p>
 <ol>
 <li>對單一設計決策建立有來源的結構化紀錄；</li>
@@ -133,7 +137,7 @@ Revision</annotation></semantics></math></span><span class="katex-html" aria-hid
 <li>讓資料可以版本化、驗證、遷移及重新計算。</li>
 </ol>
 <hr>
-<h2>二、非目標</h2>
+<h3>二、非目標</h3>
 <p>本規格不以以下事項為目標：</p>
 <ul>
 <li>對設計者進行心理診斷；</li>
@@ -146,7 +150,7 @@ Revision</annotation></semantics></math></span><span class="katex-html" aria-hid
 <li>建立不可更改的終極分類。</li>
 </ul>
 <hr>
-<h2>三、最小分析單位</h2>
+<h3>三、最小分析單位</h3>
 <p>PLDST 的最小分析單位為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>u</mi><mo>=</mo><mo stretchy="false">(</mo><mi>A</mi><mi>c</mi><mi>t</mi><mi>o</mi><mi>r</mi><mo separator="true">,</mo><mi>T</mi><mi>i</mi><mi>m</mi><mi>e</mi><mo separator="true">,</mo><mi>P</mi><mi>r</mi><mi>o</mi><mi>b</mi><mi>l</mi><mi>e</mi><mi>m</mi><mo separator="true">,</mo><mi>C</mi><mi>o</mi><mi>n</mi><mi>s</mi><mi>t</mi><mi>r</mi><mi>a</mi><mi>i</mi><mi>n</mi><mi>t</mi><mo separator="true">,</mo><mi>O</mi><mi>p</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>s</mi><mo separator="true">,</mo><mi>D</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo separator="true">,</mo><mi>R</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>a</mi><mi>l</mi><mi>e</mi><mo separator="true">,</mo><mi>I</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi>m</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo separator="true">,</mo><mi>O</mi><mi>u</mi><mi>t</mi><mi>c</mi><mi>o</mi><mi>m</mi><mi>e</mi><mo separator="true">,</mo><mi>E</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">u
 =
@@ -164,7 +168,7 @@ Evidence
 )</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">u</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal">A</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal">im</span><span class="mord mathnormal">e</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mord mathnormal">m</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">s</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ain</span><span class="mord mathnormal">t</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">pt</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">s</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">na</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">m</span><span class="mord mathnormal" style="margin-right:0.0197em;">pl</span><span class="mord mathnormal">e</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">u</span><span class="mord mathnormal">t</span><span class="mord mathnormal">co</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mclose">)</span></span></span></span></span>
 <p>本文稱之為 <strong>Design Decision Record，DDR</strong>。</p>
 <hr>
-<h2>四、分析對象層級</h2>
+<h3>四、分析對象層級</h3>
 <p>PLDST 必須區分：</p>
 <pre><code class="language-text">Person
 Design group
@@ -181,7 +185,7 @@ Assessment
 </code></pre>
 <p>「Guido」、「Python」、「CPython」、「Python Steering Council」與「PEP 703」不得視為同一實體。</p>
 <hr>
-<h2>五、風格是聚合結果</h2>
+<h3>五、風格是聚合結果</h3>
 <p>定義設計者 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi></mrow><annotation encoding="application/x-tex">d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">d</span></span></span></span> 在時間區間 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi></mrow><annotation encoding="application/x-tex">\tau</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span></span></span></span> 的風格：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>S</mi><mi>t</mi><mi>y</mi><mi>l</mi><mi>e</mi><mo stretchy="false">(</mo><mi>d</mi><mo separator="true">,</mo><mi>τ</mi><mo stretchy="false">)</mo><mo>=</mo><mi>A</mi><mi>g</mi><mi>g</mi><mi>r</mi><mi>e</mi><mi>g</mi><mi>a</mi><mi>t</mi><mi>e</mi><mrow><mo fence="true">(</mo><mi>D</mi><mi>D</mi><msub><mi>R</mi><mn>1</mn></msub><mo separator="true">,</mo><mi>D</mi><mi>D</mi><msub><mi>R</mi><mn>2</mn></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><mi>D</mi><mi>D</mi><msub><mi>R</mi><mi>n</mi></msub><mo fence="true">)</mo></mrow></mrow><annotation encoding="application/x-tex">Style(d,\tau)
 =
@@ -197,12 +201,12 @@ DDR_n
 \neq
 SingleQuote(d)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mopen">(</span><span class="mord mathnormal">d</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">in</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mord mathnormal">Q</span><span class="mord mathnormal">u</span><span class="mord mathnormal">o</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mopen">(</span><span class="mord mathnormal">d</span><span class="mclose">)</span></span></span></span></span>
 <hr>
-<h1>第二部分　規格原則</h1>
-<h2>六、證據先於分數</h2>
+<h2>第二部分　規格原則</h2>
+<h3>六、證據先於分數</h3>
 <p>所有非空矩陣評分 MUST 指向至少一筆 DDR。</p>
 <p>每筆 DDR MUST 指向至少一項來源或被標記為 <code>unverified_candidate</code>。</p>
 <hr>
-<h2>七、決策先於人物標籤</h2>
+<h3>七、決策先於人物標籤</h3>
 <p>允許從決策推導風格：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>E</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo>→</mo><mi>S</mi><mi>t</mi><mi>y</mi><mi>l</mi><mi>e</mi><mi>I</mi><mi>n</mi><mi>f</mi><mi>e</mi><mi>r</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">DecisionEvidence
 \rightarrow
@@ -212,7 +216,7 @@ StyleInference</annotation></semantics></math></span><span class="katex-html" ar
 \rightarrow
 SelectiveEvidence</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal">ss</span><span class="mord mathnormal">u</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span></span></span></span></span>
 <hr>
-<h2>八、時間先於總結</h2>
+<h3>八、時間先於總結</h3>
 <p>所有評估 MUST 指定：</p>
 <ul>
 <li>起始時間；</li>
@@ -222,7 +226,7 @@ SelectiveEvidence</annotation></semantics></math></span><span class="katex-html"
 <li>判定是否跨時期聚合。</li>
 </ul>
 <hr>
-<h2>九、來源與推論分離</h2>
+<h3>九、來源與推論分離</h3>
 <p>每個欄位須區分：</p>
 <ul>
 <li><code>observed</code>：來源直接支持；</li>
@@ -232,7 +236,7 @@ SelectiveEvidence</annotation></semantics></math></span><span class="katex-html"
 <li><code>contested</code>：存在重要反證或分歧。</li>
 </ul>
 <hr>
-<h2>十、保留反證</h2>
+<h3>十、保留反證</h3>
 <p>語料庫 MUST 允許一筆紀錄同時保存：</p>
 <ul>
 <li>支持證據；</li>
@@ -243,7 +247,7 @@ SelectiveEvidence</annotation></semantics></math></span><span class="katex-html"
 <li>社群偏離。</li>
 </ul>
 <hr>
-<h2>十一、可恢復性</h2>
+<h3>十一、可恢復性</h3>
 <p>任何聚合分數 SHOULD 能回溯到：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>P</mi><mi>r</mi><mi>o</mi><mi>f</mi><mi>i</mi><mi>l</mi><mi>e</mi><mo>→</mo><mi>A</mi><mi>s</mi><mi>s</mi><mi>e</mi><mi>s</mi><mi>s</mi><mi>m</mi><mi>e</mi><mi>n</mi><mi>t</mi><mo>→</mo><mi>D</mi><mi>D</mi><mi>R</mi><mo>→</mo><mi>E</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mi>F</mi><mi>r</mi><mi>a</mi><mi>g</mi><mi>m</mi><mi>e</mi><mi>n</mi><mi>t</mi><mo>→</mo><mi>S</mi><mi>o</mi><mi>u</mi><mi>r</mi><mi>c</mi><mi>e</mi><mi>A</mi><mi>r</mi><mi>t</mi><mi>i</mi><mi>f</mi><mi>a</mi><mi>c</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">Profile
 \rightarrow
@@ -255,7 +259,7 @@ EvidenceFragment
 \rightarrow
 SourceArtifact</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal">ssess</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mord mathnormal" style="margin-right:0.1389em;">F</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">o</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ce</span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">a</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span></span></span></span></span>
 <hr>
-<h2>十二、可機讀不等於捨棄敘事</h2>
+<h3>十二、可機讀不等於捨棄敘事</h3>
 <p>結構化資料負責：</p>
 <ul>
 <li>對齊；</li>
@@ -274,8 +278,8 @@ SourceArtifact</annotation></semantics></math></span><span class="katex-html" ar
 </ul>
 <p>兩者互補。</p>
 <hr>
-<h1>第三部分　外部規格借鑑</h1>
-<h2>十三、JSON Schema</h2>
+<h2>第三部分　外部規格借鑑</h2>
+<h3>十三、JSON Schema</h3>
 <p>本規格採用 JSON Schema Draft 2020-12 作為結構驗證基線。</p>
 <p>選擇理由：</p>
 <ul>
@@ -287,7 +291,7 @@ SourceArtifact</annotation></semantics></math></span><span class="katex-html" ar
 </ul>
 <p>JSON Schema 驗證結構，不驗證歷史真實性。</p>
 <hr>
-<h2>十四、W3C PROV</h2>
+<h3>十四、W3C PROV</h3>
 <p>PLDST 採用 W3C PROV 的三個起點概念作為可選溯源對映：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>E</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo separator="true">,</mo><mtext> </mtext><mi>A</mi><mi>c</mi><mi>t</mi><mi>i</mi><mi>v</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo separator="true">,</mo><mtext> </mtext><mi>A</mi><mi>g</mi><mi>e</mi><mi>n</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">Entity,\ Activity,\ Agent</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span></span></span></span></span>
 <p>在 PLDST 中：</p>
@@ -298,7 +302,7 @@ SourceArtifact</annotation></semantics></math></span><span class="katex-html" ar
 </ul>
 <p>核心 JSON 不要求完整 RDF／OWL 實作，但 MUST 保留足以建立對映的 ID 與關係。</p>
 <hr>
-<h2>十五、ADR</h2>
+<h3>十五、ADR</h3>
 <p>Architecture Decision Record 的核心結構為：</p>
 <pre><code class="language-text">Status
 Context
@@ -320,22 +324,22 @@ Consequences
 <li>信心與覆核。</li>
 </ul>
 <hr>
-<h2>十六、FAIR 原則</h2>
+<h3>十六、FAIR 原則</h3>
 <p>PLDST 對 FAIR 作下列轉譯：</p>
-<h3>Findable</h3>
+<h4>Findable</h4>
 <ul>
 <li>穩定 ID；</li>
 <li>索引；</li>
 <li>可搜尋 Metadata；</li>
 <li>交叉引用。</li>
 </ul>
-<h3>Accessible</h3>
+<h4>Accessible</h4>
 <ul>
 <li>公開資料使用開放格式；</li>
 <li>來源失效時仍保留 Metadata、摘要及校驗值；</li>
 <li>權限受限資料保留存取狀態。</li>
 </ul>
-<h3>Interoperable</h3>
+<h4>Interoperable</h4>
 <ul>
 <li>JSON Schema；</li>
 <li>受控詞彙；</li>
@@ -343,7 +347,7 @@ Consequences
 <li>URI／URN；</li>
 <li>可選 JSON-LD／PROV 對映。</li>
 </ul>
-<h3>Reusable</h3>
+<h4>Reusable</h4>
 <ul>
 <li>來源；</li>
 <li>授權；</li>
@@ -354,7 +358,7 @@ Consequences
 <li>預期用途。</li>
 </ul>
 <hr>
-<h2>十七、資料卡與語料說明</h2>
+<h3>十七、資料卡與語料說明</h3>
 <p>每個 PLDST 語料集發布 SHOULD 附帶 Corpus Card，說明：</p>
 <ul>
 <li>動機；</li>
@@ -373,8 +377,8 @@ Consequences
 <li>不當用途。</li>
 </ul>
 <hr>
-<h1>第四部分　PLDST 核心實體模型</h1>
-<h2>十八、實體關係</h2>
+<h2>第四部分　PLDST 核心實體模型</h2>
+<h3>十八、實體關係</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mi>e</mi><mi>s</mi><mi>i</mi><mi>g</mi><mi>n</mi><mi>e</mi><mi>r</mi><mover><mo stretchy="true" minsize="3.0em">→</mo><mpadded width="+0.6em" lspace="0.3em"><mrow><mi>p</mi><mi>a</mi><mi>r</mi><mi>t</mi><mi>i</mi><mi>c</mi><mi>i</mi><mi>p</mi><mi>a</mi><mi>t</mi><mi>e</mi><mi>d</mi><mi>I</mi><mi>n</mi></mrow></mpadded></mover><mi>D</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi></mrow><annotation encoding="application/x-tex">Designer
 \xrightarrow{participatedIn}
 Decision</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.3025em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">es</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel x-arrow"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.1081em;"><span style="top:-3.322em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight x-arrow-pad"><span class="mord mtight"><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">t</span><span class="mord mathnormal mtight">i</span><span class="mord mathnormal mtight">c</span><span class="mord mathnormal mtight">i</span><span class="mord mathnormal mtight">p</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight">t</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight" style="margin-right:0.0785em;">I</span><span class="mord mathnormal mtight">n</span></span></span></span><span class="svg-align" style="top:-2.689em;"><span class="pstrut" style="height:2.7em;"></span><span class="hide-tail" style="height:0.522em;min-width:1.469em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="0.522em" viewBox="0 0 400000 522" preserveAspectRatio="xMaxYMin slice"><path d="M0 241v40h399891c-47.3 35.3-84 78-110 128
@@ -430,7 +434,7 @@ StyleProfile</annotation></semantics></math></span><span class="katex-html" aria
 -12.5-2.3-1.7-7.5-2.5-15.5-2.5-14 0-21 3.7-21 11 0 2 2 10.3 6 25 20.7 83.3 67
  151.7 139 205zm0 0v40h399900v-40z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.011em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span></span></span></span></span>
 <hr>
-<h2>十九、Designer</h2>
+<h3>十九、Designer</h3>
 <p>必要欄位：</p>
 <pre><code class="language-text">designer_id
 canonical_name
@@ -443,7 +447,7 @@ source_ids
 </code></pre>
 <p>不得由國籍、職稱或私人傳記直接推導設計風格。</p>
 <hr>
-<h2>二十、Language</h2>
+<h3>二十、Language</h3>
 <p>必要欄位：</p>
 <pre><code class="language-text">language_id
 canonical_name
@@ -455,7 +459,7 @@ governance_periods
 version_series
 </code></pre>
 <hr>
-<h2>二十一、Governance Body</h2>
+<h3>二十一、Governance Body</h3>
 <p>例如：</p>
 <ul>
 <li>Python BDFL；</li>
@@ -476,7 +480,7 @@ implementation_relation
 source_ids
 </code></pre>
 <hr>
-<h2>二十二、Source Artifact</h2>
+<h3>二十二、Source Artifact</h3>
 <p>來源可能是：</p>
 <ul>
 <li>論文；</li>
@@ -495,7 +499,7 @@ source_ids
 <li>原始碼。</li>
 </ul>
 <hr>
-<h2>二十三、Evidence Fragment</h2>
+<h3>二十三、Evidence Fragment</h3>
 <p>來源文件過大時，必須保存可定位片段：</p>
 <pre><code class="language-text">fragment_id
 source_id
@@ -510,7 +514,7 @@ challenges
 </code></pre>
 <p><code>text_excerpt</code> SHOULD 遵守著作權及合理引用限制。</p>
 <hr>
-<h2>二十四、Design Decision Record</h2>
+<h3>二十四、Design Decision Record</h3>
 <p>DDR 是核心。</p>
 <p>其結構為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mi>D</mi><mi>R</mi><mo>=</mo><mi>I</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo>+</mo><mi>S</mi><mi>c</mi><mi>o</mi><mi>p</mi><mi>e</mi><mo>+</mo><mi>P</mi><mi>r</mi><mi>o</mi><mi>b</mi><mi>l</mi><mi>e</mi><mi>m</mi><mo>+</mo><mi>C</mi><mi>o</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>x</mi><mi>t</mi><mo>+</mo><mi>O</mi><mi>p</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>s</mi><mo>+</mo><mi>D</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo>+</mo><mi>R</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>a</mi><mi>l</mi><mi>e</mi><mo>+</mo><mi>I</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi>m</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo>+</mo><mi>C</mi><mi>o</mi><mi>n</mi><mi>s</mi><mi>e</mi><mi>q</mi><mi>u</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mi>s</mi><mo>+</mo><mi>E</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo>+</mo><mi>C</mi><mi>o</mi><mi>d</mi><mi>i</mi><mi>n</mi><mi>g</mi><mo>+</mo><mi>P</mi><mi>r</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>n</mi><mi>a</mi><mi>n</mi><mi>c</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">DDR
@@ -539,7 +543,7 @@ Coding
 +
 Provenance</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">co</span><span class="mord mathnormal">p</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mord mathnormal">m</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord mathnormal">x</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">pt</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">na</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">m</span><span class="mord mathnormal" style="margin-right:0.0197em;">pl</span><span class="mord mathnormal">e</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">se</span><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="mord mathnormal">u</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ces</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">d</span><span class="mord mathnormal">in</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">nan</span><span class="mord mathnormal">ce</span></span></span></span></span>
 <hr>
-<h2>二十五、Axis Assessment</h2>
+<h3>二十五、Axis Assessment</h3>
 <p>一筆 Assessment 表示：</p>
 <blockquote>
 <p>某筆 DDR 對某一分析軸提供何種方向及強度的證據。</p>
@@ -555,7 +559,7 @@ coding_note
 status
 </code></pre>
 <hr>
-<h2>二十六、Style Profile</h2>
+<h3>二十六、Style Profile</h3>
 <p>Style Profile 是聚合結果，不是原始資料。</p>
 <pre><code class="language-text">profile_id
 subject_id
@@ -569,8 +573,8 @@ aggregation_method
 profile_version
 </code></pre>
 <hr>
-<h1>第五部分　識別碼規格</h1>
-<h2>二十七、ID 原則</h2>
+<h2>第五部分　識別碼規格</h2>
+<h3>二十七、ID 原則</h3>
 <p>ID MUST：</p>
 <ul>
 <li>穩定；</li>
@@ -582,7 +586,7 @@ profile_version
 <li>可由機器比較。</li>
 </ul>
 <hr>
-<h2>二十八、建議格式</h2>
+<h3>二十八、建議格式</h3>
 <pre><code class="language-text">pldst:designer:&lt;slug&gt;
 pldst:language:&lt;slug&gt;
 pldst:governance:&lt;slug&gt;
@@ -593,7 +597,7 @@ pldst:assessment:&lt;decision-suffix&gt;:&lt;axis-id&gt;:&lt;revision&gt;
 pldst:profile:&lt;subject-slug&gt;:&lt;time-slice&gt;:&lt;version&gt;
 </code></pre>
 <hr>
-<h2>二十九、來源 ID</h2>
+<h3>二十九、來源 ID</h3>
 <p>來源 ID SHOULD 由內容雜湊衍生：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>s</mi><mi>o</mi><mi>u</mi><mi>r</mi><mi>c</mi><mi>e</mi><mi mathvariant="normal">_</mi><mi>i</mi><mi>d</mi><mo>=</mo><mtext mathvariant="monospace">pldst:source:</mtext><mo>+</mo><mi>S</mi><mi>H</mi><mi>A</mi><mn>256</mn><mo stretchy="false">(</mo><mi>c</mi><mi>o</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>n</mi><mi>t</mi><mo stretchy="false">)</mo><mo stretchy="false">[</mo><mn>0</mn><mo>:</mo><mn>20</mn><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">source\_id
 =
@@ -604,7 +608,7 @@ SHA256(content)[0:20]</annotation></semantics></math></span><span class="katex-h
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>S</mi><mi>H</mi><mi>A</mi><mn>256</mn><mo stretchy="false">(</mo><mi>c</mi><mi>a</mi><mi>n</mi><mi>o</mi><mi>n</mi><mi>i</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi mathvariant="normal">_</mi><mi>u</mi><mi>r</mi><mi>l</mi><mo>+</mo><mi>t</mi><mi>i</mi><mi>t</mi><mi>l</mi><mi>e</mi><mo>+</mo><mi>d</mi><mi>a</mi><mi>t</mi><mi>e</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">SHA256(canonical\_url+title+date)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.06em;vertical-align:-0.31em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="mord mathnormal">A</span><span class="mord">256</span><span class="mopen">(</span><span class="mord mathnormal">c</span><span class="mord mathnormal">an</span><span class="mord mathnormal">o</span><span class="mord mathnormal">ni</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord" style="margin-right:0.0278em;">_</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0197em;">tl</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">d</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mclose">)</span></span></span></span></span>
 <p>建立替代 ID，並標記 <code>hash_basis</code>。</p>
 <hr>
-<h2>三十、同一文件多版本</h2>
+<h3>三十、同一文件多版本</h3>
 <p>同一 URL 的不同內容 MUST 建立不同 <code>source_id</code>，並以：</p>
 <pre><code class="language-text">is_revision_of
 supersedes
@@ -612,9 +616,9 @@ retrieved_at
 </code></pre>
 <p>連接。</p>
 <hr>
-<h1>第六部分　來源分級</h1>
-<h2>三十一、來源類型</h2>
-<h3>S1：直接設計材料</h3>
+<h2>第六部分　來源分級</h2>
+<h3>三十一、來源類型</h3>
+<h4>S1：直接設計材料</h4>
 <ul>
 <li>設計者論文；</li>
 <li>官方語言報告；</li>
@@ -624,14 +628,14 @@ retrieved_at
 <li>原始碼與 Commit；</li>
 <li>正式演講逐字稿。</li>
 </ul>
-<h3>S2：第一方歷史材料</h3>
+<h4>S2：第一方歷史材料</h4>
 <ul>
 <li>設計者訪談；</li>
 <li>口述歷史；</li>
 <li>回憶錄；</li>
 <li>專案官方歷史。</li>
 </ul>
-<h3>S3：共同體正式紀錄</h3>
+<h4>S3：共同體正式紀錄</h4>
 <ul>
 <li>Mailing list；</li>
 <li>Issue；</li>
@@ -640,14 +644,14 @@ retrieved_at
 <li>Release note；</li>
 <li>Working group paper。</li>
 </ul>
-<h3>S4：學術與專業二手研究</h3>
+<h4>S4：學術與專業二手研究</h4>
 <ul>
 <li>同行評審語言史；</li>
 <li>HOPL 論文；</li>
 <li>技術書；</li>
 <li>檔案研究。</li>
 </ul>
-<h3>S5：一般二手材料</h3>
+<h4>S5：一般二手材料</h4>
 <ul>
 <li>新聞；</li>
 <li>部落格；
@@ -655,7 +659,7 @@ retrieved_at
 -論壇整理。</li>
 </ul>
 <hr>
-<h2>三十二、來源品質不是單一階級</h2>
+<h3>三十二、來源品質不是單一階級</h3>
 <p>來源品質向量：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>Q</mi><mi>s</mi></msub><mo>=</mo><mo stretchy="false">(</mo><mi>D</mi><mi>i</mi><mi>r</mi><mi>e</mi><mi>c</mi><mi>t</mi><mi>n</mi><mi>e</mi><mi>s</mi><mi>s</mi><mo separator="true">,</mo><mi>A</mi><mi>u</mi><mi>t</mi><mi>h</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>c</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo separator="true">,</mo><mi>S</mi><mi>p</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>f</mi><mi>i</mi><mi>c</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo separator="true">,</mo><mi>T</mi><mi>e</mi><mi>m</mi><mi>p</mi><mi>o</mi><mi>r</mi><mi>a</mi><mi>l</mi><mi>P</mi><mi>r</mi><mi>o</mi><mi>x</mi><mi>i</mi><mi>m</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo separator="true">,</mo><mi>C</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi>t</mi><mi>e</mi><mi>n</mi><mi>e</mi><mi>s</mi><mi>s</mi><mo separator="true">,</mo><mi>I</mi><mi>n</mi><mi>d</mi><mi>e</mi><mi>p</mi><mi>e</mi><mi>n</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">Q_s
 =
@@ -676,7 +680,7 @@ Independence
 </ul>
 <p>二手研究可能更適合檢查長期結果。</p>
 <hr>
-<h2>三十三、來源權重</h2>
+<h3>三十三、來源權重</h3>
 <p>建議初始值：</p>
 <table>
 <thead>
@@ -718,7 +722,7 @@ q_{\text{authenticity}}
 q_{\text{temporal}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">base</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">specificity</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">authenticity</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">temporal</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>不得把此權重當成自動真實機率。</p>
 <hr>
-<h2>三十四、來源多樣性</h2>
+<h3>三十四、來源多樣性</h3>
 <p>重要判定 SHOULD 至少包含兩種來源類型。</p>
 <p>例如：</p>
 <pre><code class="language-text">設計者論文
@@ -728,8 +732,8 @@ q_{\text{temporal}}</annotation></semantics></math></span><span class="katex-htm
 後續歷史結果
 </code></pre>
 <hr>
-<h1>第七部分　Design Decision Record 規格</h1>
-<h2>三十五、必要欄位</h2>
+<h2>第七部分　Design Decision Record 規格</h2>
+<h3>三十五、必要欄位</h3>
 <p>每筆 Verified DDR MUST 包含：</p>
 <pre><code class="language-text">record_id
 record_version
@@ -745,7 +749,7 @@ coding
 provenance
 </code></pre>
 <hr>
-<h2>三十六、Status</h2>
+<h3>三十六、Status</h3>
 <p>允許：</p>
 <pre><code class="language-text">candidate
 extracted
@@ -758,7 +762,7 @@ rejected_as_record
 </code></pre>
 <p>狀態不可由 AI 自動提升到 <code>verified</code>，除非專案明確啟用機器覆核制度且保存責任主體。</p>
 <hr>
-<h2>三十七、Subject</h2>
+<h3>三十七、Subject</h3>
 <pre><code class="language-json">{
   &quot;designer_ids&quot;: [],
   &quot;governance_ids&quot;: [],
@@ -769,7 +773,7 @@ rejected_as_record
 </code></pre>
 <p>至少一項非空。</p>
 <hr>
-<h2>三十八、Time Scope</h2>
+<h3>三十八、Time Scope</h3>
 <pre><code class="language-text">event_date
 start_date
 end_date
@@ -785,7 +789,7 @@ era
 unknown
 </code></pre>
 <hr>
-<h2>三十九、Problem</h2>
+<h3>三十九、Problem</h3>
 <p>問題欄位描述決策試圖處理什麼，不描述答案。</p>
 <p>例如：</p>
 <pre><code class="language-text">方法呼叫中的接收者是否應由語言隱式綁定？
@@ -794,7 +798,7 @@ unknown
 <pre><code class="language-text">Python 必須使用明示 self。
 </code></pre>
 <hr>
-<h2>四十、Context</h2>
+<h3>四十、Context</h3>
 <p>Context SHOULD 記錄：</p>
 <ul>
 <li>技術限制；</li>
@@ -808,7 +812,7 @@ unknown
 <li>商業與教育環境。</li>
 </ul>
 <hr>
-<h2>四十一、Options</h2>
+<h3>四十一、Options</h3>
 <p>每個可辨識選項：</p>
 <pre><code class="language-text">option_id
 description
@@ -820,7 +824,7 @@ source_refs
 </code></pre>
 <p>應保存被拒方案，不只保存勝出方案。</p>
 <hr>
-<h2>四十二、Decision</h2>
+<h3>四十二、Decision</h3>
 <p>Decision SHOULD 描述：</p>
 <ul>
 <li>選擇；</li>
@@ -832,7 +836,7 @@ source_refs
 <li>誰裁決。</li>
 </ul>
 <hr>
-<h2>四十三、Rationale</h2>
+<h3>四十三、Rationale</h3>
 <p>Rationale 分為：</p>
 <pre><code class="language-text">stated_rationale
 inferred_rationale
@@ -840,7 +844,7 @@ reconstructed_rationale
 </code></pre>
 <p>不得把研究者推論冒充設計者原話。</p>
 <hr>
-<h2>四十四、Constraints</h2>
+<h3>四十四、Constraints</h3>
 <p>控制詞彙：</p>
 <pre><code class="language-text">hardware
 performance
@@ -860,7 +864,7 @@ theoretical
 other
 </code></pre>
 <hr>
-<h2>四十五、Burden Allocation</h2>
+<h3>四十五、Burden Allocation</h3>
 <p>每筆決策 SHOULD 記錄複雜度移往何處：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>B</mi><mo>=</mo><mo stretchy="false">(</mo><mi>A</mi><mi>u</mi><mi>t</mi><mi>h</mi><mi>o</mi><mi>r</mi><mo separator="true">,</mo><mi>R</mi><mi>e</mi><mi>a</mi><mi>d</mi><mi>e</mi><mi>r</mi><mo separator="true">,</mo><mi>C</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>i</mi><mi>l</mi><mi>e</mi><mi>r</mi><mo separator="true">,</mo><mi>R</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>i</mi><mi>m</mi><mi>e</mi><mo separator="true">,</mo><mi>T</mi><mi>o</mi><mi>o</mi><mi>l</mi><mo separator="true">,</mo><mi>L</mi><mi>i</mi><mi>b</mi><mi>r</mi><mi>a</mi><mi>r</mi><mi>y</mi><mo separator="true">,</mo><mi>G</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>n</mi><mi>a</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo separator="true">,</mo><mi>M</mi><mi>i</mi><mi>g</mi><mi>r</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo separator="true">,</mo><mi>E</mi><mi>c</mi><mi>o</mi><mi>s</mi><mi>y</mi><mi>s</mi><mi>t</mi><mi>e</mi><mi>m</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">B
 =
@@ -883,7 +887,7 @@ unknown
 </code></pre>
 <p>加上說明。</p>
 <hr>
-<h2>四十六、Implementation</h2>
+<h3>四十六、Implementation</h3>
 <p>區分：</p>
 <pre><code class="language-text">proposed
 prototype
@@ -904,7 +908,7 @@ not_implemented
 <li>其他實作差異。</li>
 </ul>
 <hr>
-<h2>四十七、Outcome</h2>
+<h3>四十七、Outcome</h3>
 <p>Outcome 可包含：</p>
 <ul>
 <li>採用；</li>
@@ -919,7 +923,7 @@ not_implemented
 </ul>
 <p>不得由語言成功直接倒推出單項決策成功。</p>
 <hr>
-<h2>四十八、Counterevidence</h2>
+<h3>四十八、Counterevidence</h3>
 <p>每筆高度概括的 DDR SHOULD 搜尋：</p>
 <ul>
 <li>設計者相反言論；</li>
@@ -931,14 +935,14 @@ not_implemented
 <li>失敗案例。</li>
 </ul>
 <hr>
-<h1>第八部分　PLDST 十八軸評估矩陣</h1>
-<h2>四十九、尺度原則</h2>
+<h2>第八部分　PLDST 十八軸評估矩陣</h2>
+<h3>四十九、尺度原則</h3>
 <p>每一軸使用：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>v</mi><mi>k</mi></msub><mo>∈</mo><mo stretchy="false">{</mo><mn>0</mn><mo separator="true">,</mo><mn>1</mn><mo separator="true">,</mo><mn>2</mn><mo separator="true">,</mo><mn>3</mn><mo separator="true">,</mo><mn>4</mn><mo separator="true">,</mo><mn>5</mn><mo stretchy="false">}</mo></mrow><annotation encoding="application/x-tex">v_k\in\{0,1,2,3,4,5\}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6891em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">2</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">3</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">4</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">5</span><span class="mclose">}</span></span></span></span></span>
 <p>其中 0 與 5 表示兩個方向端點，不表示壞與好。</p>
 <p>缺乏資料時 MUST 使用 <code>null</code>，不可用 3 假裝中立。</p>
 <hr>
-<h2>五十、A01 Machine Proximity</h2>
+<h3>五十、A01 Machine Proximity</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>高度語義隔離</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>高度暴露機器模型</mtext></mrow><annotation encoding="application/x-tex">0=\text{高度語義隔離}
 \qquad
 5=\text{高度暴露機器模型}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">高度語義隔離</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">高度暴露機器模型</span></span></span></span></span></span>
@@ -951,83 +955,83 @@ not_implemented
 <li>指令與硬體控制。</li>
 </ul>
 <hr>
-<h2>五十一、A02 Abstraction Restraint</h2>
+<h3>五十一、A02 Abstraction Restraint</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>鼓勵廣泛抽象與元機制</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>限制抽象、偏好少量構造</mtext></mrow><annotation encoding="application/x-tex">0=\text{鼓勵廣泛抽象與元機制}
 \qquad
 5=\text{限制抽象、偏好少量構造}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">鼓勵廣泛抽象與元機制</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">限制抽象、偏好少量構造</span></span></span></span></span></span>
 <hr>
-<h2>五十二、A03 Surface Convergence</h2>
+<h3>五十二、A03 Surface Convergence</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>多種慣用表示</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>強收斂於共同表面</mtext></mrow><annotation encoding="application/x-tex">0=\text{多種慣用表示}
 \qquad
 5=\text{強收斂於共同表面}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">多種慣用表示</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">強收斂於共同表面</span></span></span></span></span></span>
 <hr>
-<h2>五十三、A04 Explicitness</h2>
+<h3>五十三、A04 Explicitness</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>高度 Contextual／Implicit</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>高度明示</mtext></mrow><annotation encoding="application/x-tex">0=\text{高度 Contextual／Implicit}
 \qquad
 5=\text{高度明示}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord cjk_fallback">高度</span><span class="mord"> Contextual</span><span class="mord cjk_fallback">／</span><span class="mord">Implicit</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">高度明示</span></span></span></span></span></span>
 <hr>
-<h2>五十四、A05 Reader Priority</h2>
+<h3>五十四、A05 Reader Priority</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>優先作者速度與自由</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>優先陌生讀者與團隊維護</mtext></mrow><annotation encoding="application/x-tex">0=\text{優先作者速度與自由}
 \qquad
 5=\text{優先陌生讀者與團隊維護}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">優先作者速度與自由</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">優先陌生讀者與團隊維護</span></span></span></span></span></span>
 <hr>
-<h2>五十五、A06 Compatibility Priority</h2>
+<h3>五十五、A06 Compatibility Priority</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>可重設、可破壞</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>高度保存既有程式與生態</mtext></mrow><annotation encoding="application/x-tex">0=\text{可重設、可破壞}
 \qquad
 5=\text{高度保存既有程式與生態}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">可重設、可破壞</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">高度保存既有程式與生態</span></span></span></span></span></span>
 <hr>
-<h2>五十六、A07 Core Extensibility</h2>
+<h3>五十六、A07 Core Extensibility</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>核心封閉、擴張主要靠外部函式庫</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>語言可由內部生成新形式</mtext></mrow><annotation encoding="application/x-tex">0=\text{核心封閉、擴張主要靠外部函式庫}
 \qquad
 5=\text{語言可由內部生成新形式}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">核心封閉、擴張主要靠外部函式庫</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">語言可由內部生成新形式</span></span></span></span></span></span>
 <hr>
-<h2>五十七、A08 State Separation</h2>
+<h3>五十七、A08 State Separation</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>值、位置、身分與狀態高度混合</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>值、身分、狀態、時間明確分離</mtext></mrow><annotation encoding="application/x-tex">0=\text{值、位置、身分與狀態高度混合}
 \qquad
 5=\text{值、身分、狀態、時間明確分離}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">值、位置、身分與狀態高度混合</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">值、身分、狀態、時間明確分離</span></span></span></span></span></span>
 <hr>
-<h2>五十八、A09 Algebraic Reasoning</h2>
+<h3>五十八、A09 Algebraic Reasoning</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>操作步驟與實作推理為主</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>等式、組合與代數推理為主</mtext></mrow><annotation encoding="application/x-tex">0=\text{操作步驟與實作推理為主}
 \qquad
 5=\text{等式、組合與代數推理為主}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">操作步驟與實作推理為主</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">等式、組合與代數推理為主</span></span></span></span></span></span>
 <hr>
-<h2>五十九、A10 Implementation Coupling</h2>
+<h3>五十九、A10 Implementation Coupling</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>抽象規格優先、多實作獨立</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>參考實作或宿主平台高度定義語言</mtext></mrow><annotation encoding="application/x-tex">0=\text{抽象規格優先、多實作獨立}
 \qquad
 5=\text{參考實作或宿主平台高度定義語言}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">抽象規格優先、多實作獨立</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">參考實作或宿主平台高度定義語言</span></span></span></span></span></span>
 <hr>
-<h2>六十、A11 Ecosystem Delegation</h2>
+<h3>六十、A11 Ecosystem Delegation</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>能力主要置於語言核心</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>能力主要委派給 Library／Package／社群</mtext></mrow><annotation encoding="application/x-tex">0=\text{能力主要置於語言核心}
 \qquad
 5=\text{能力主要委派給 Library／Package／社群}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">能力主要置於語言核心</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord cjk_fallback">能力主要委派給</span><span class="mord"> Library</span><span class="mord cjk_fallback">／</span><span class="mord">Package</span><span class="mord cjk_fallback">／社群</span></span></span></span></span></span>
 <hr>
-<h2>六十一、A12 Governance Concentration</h2>
+<h3>六十一、A12 Governance Concentration</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>決策高度分散／委員會化</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>最終權力高度集中於個人</mtext></mrow><annotation encoding="application/x-tex">0=\text{決策高度分散／委員會化}
 \qquad
 5=\text{最終權力高度集中於個人}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">決策高度分散／委員會化</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">最終權力高度集中於個人</span></span></span></span></span></span>
 <hr>
-<h2>六十二、A13 Proposal Openness</h2>
+<h3>六十二、A13 Proposal Openness</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>提案入口封閉</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>公開、文件化且可由外部參與</mtext></mrow><annotation encoding="application/x-tex">0=\text{提案入口封閉}
 \qquad
 5=\text{公開、文件化且可由外部參與}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">提案入口封閉</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">公開、文件化且可由外部參與</span></span></span></span></span></span>
 <hr>
-<h2>六十三、A14 Change Conservatism</h2>
+<h3>六十三、A14 Change Conservatism</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>快速實驗與語言變動</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>高准入門檻與長期穩定</mtext></mrow><annotation encoding="application/x-tex">0=\text{快速實驗與語言變動}
 \qquad
 5=\text{高准入門檻與長期穩定}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">快速實驗與語言變動</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">高准入門檻與長期穩定</span></span></span></span></span></span>
 <hr>
-<h2>六十四、A15 Error Visibility</h2>
+<h3>六十四、A15 Error Visibility</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>容許隱式修復、猜測或 Fail-soft</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>偏好顯性錯誤與拒絕歧義</mtext></mrow><annotation encoding="application/x-tex">0=\text{容許隱式修復、猜測或 Fail-soft}
 \qquad
 5=\text{偏好顯性錯誤與拒絕歧義}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord text"><span class="mord cjk_fallback">容許隱式修復、猜測或</span><span class="mord"> Fail-soft</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">偏好顯性錯誤與拒絕歧義</span></span></span></span></span></span>
 <hr>
-<h2>六十五、A16 Tool Dependence</h2>
+<h3>六十五、A16 Tool Dependence</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>0</mn><mo>=</mo><mtext>局部表面可直接恢復主要語義</mtext><mspace width="2em"/><mn>5</mn><mo>=</mo><mtext>高度依賴 IDE、型別工具或全域分析</mtext></mrow><annotation encoding="application/x-tex">0=\text{局部表面可直接恢復主要語義}
 \qquad
 5=\text{高度依賴 IDE、型別工具或全域分析}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">局部表面可直接恢復主要語義</span></span><span class="mspace" style="margin-right:2em;"></span><span class="mord">5</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord cjk_fallback">高度依賴</span><span class="mord"> IDE</span><span class="mord cjk_fallback">、型別工具或全域分析</span></span></span></span></span></span>
 <p>此軸不表示工具依賴必然不好。</p>
 <hr>
-<h2>六十六、A17 Human-Centered Orientation</h2>
+<h3>六十六、A17 Human-Centered Orientation</h3>
 <p>此軸不使用單線分數，而使用多標籤：</p>
 <pre><code class="language-text">novice
 author
@@ -1041,7 +1045,7 @@ community
 </code></pre>
 <p>每標籤可給 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0</mn></mrow><annotation encoding="application/x-tex">0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span></span></span></span> 到 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5</mn></mrow><annotation encoding="application/x-tex">5</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">5</span></span></span></span> 的優先程度。</p>
 <hr>
-<h2>六十七、A18 Simplicity Model</h2>
+<h3>六十七、A18 Simplicity Model</h3>
 <p>類別可多選：</p>
 <pre><code class="language-text">syntactic
 minimal_core
@@ -1056,8 +1060,8 @@ ecosystem
 </code></pre>
 <p>此軸不得壓成單一數值。</p>
 <hr>
-<h1>第九部分　編碼規則</h1>
-<h2>六十八、決策層編碼</h2>
+<h2>第九部分　編碼規則</h2>
+<h3>六十八、決策層編碼</h3>
 <p>每筆 DDR 可對多個軸提供證據。</p>
 <p>例如「明示 <code>self</code>」可影響：</p>
 <ul>
@@ -1067,7 +1071,7 @@ ecosystem
 <li>A16 Tool Dependence。</li>
 </ul>
 <hr>
-<h2>六十九、不可由語言整體反推單筆決策</h2>
+<h3>六十九、不可由語言整體反推單筆決策</h3>
 <p>錯誤方式：</p>
 <pre><code class="language-text">Python 可讀，所以所有 Python 決策都給 Reader Priority 5。
 </code></pre>
@@ -1077,7 +1081,7 @@ ecosystem
 是否有反例？
 </code></pre>
 <hr>
-<h2>七十、方向與強度</h2>
+<h3>七十、方向與強度</h3>
 <p>Assessment 包含：</p>
 <pre><code class="language-text">value
 confidence
@@ -1091,7 +1095,7 @@ strong
 structural
 </code></pre>
 <hr>
-<h2>七十一、信心值</h2>
+<h3>七十一、信心值</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>c</mi><mo>∈</mo><mo stretchy="false">[</mo><mn>0</mn><mo separator="true">,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">c\in[0,1]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5782em;vertical-align:-0.0391em;"></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">1</span><span class="mclose">]</span></span></span></span></span>
 <p>信心不是來源權威的單一函數。</p>
 <p>建議：</p>
@@ -1115,7 +1119,7 @@ s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
 c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
 M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3339em;"><span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h2>七十二、歸因信心</h2>
+<h3>七十二、歸因信心</h3>
 <p>歸因分級：</p>
 <pre><code class="language-text">direct_personal
 shared_design_group
@@ -1126,13 +1130,13 @@ uncertain
 </code></pre>
 <p>若功能由多人形成，不得只因創始者知名而標為 <code>direct_personal</code>。</p>
 <hr>
-<h2>七十三、時間一致性</h2>
+<h3>七十三、時間一致性</h3>
 <p>來源時間 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>t</mi><mi>s</mi></msub></mrow><annotation encoding="application/x-tex">t_s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7651em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 、決策時間 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>t</mi><mi>d</mi></msub></mrow><annotation encoding="application/x-tex">t_d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7651em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 、結果時間 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>t</mi><mi>o</mi></msub></mrow><annotation encoding="application/x-tex">t_o</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7651em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">o</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 必須分開。</p>
 <p>事後回憶：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>t</mi><mi>s</mi></msub><mo>≫</mo><msub><mi>t</mi><mi>d</mi></msub></mrow><annotation encoding="application/x-tex">t_s\gg t_d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7651em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≫</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7651em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>可能具有高直接性但較低時間接近度。</p>
 <hr>
-<h2>七十四、版本一致性</h2>
+<h3>七十四、版本一致性</h3>
 <p>同一語言不同版本的評分不得直接混合。</p>
 <p>例如：</p>
 <pre><code class="language-text">Python 1.x
@@ -1142,8 +1146,8 @@ Python 3.x Steering Council
 </code></pre>
 <p>SHOULD 形成不同 Profile。</p>
 <hr>
-<h1>第十部分　聚合與比較</h1>
-<h2>七十五、加權聚合</h2>
+<h2>第十部分　聚合與比較</h2>
+<h3>七十五、加權聚合</h3>
 <p>某 Profile 在軸 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi></mrow><annotation encoding="application/x-tex">k</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0315em;">k</span></span></span></span> 的分數：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mi>k</mi></msub><mo>=</mo><mfrac><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub><msub><mi>c</mi><mi>i</mi></msub><msub><mi>s</mi><mi>i</mi></msub><msub><mi>v</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub></mrow><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub><msub><mi>c</mi><mi>i</mi></msub><msub><mi>s</mi><mi>i</mi></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">V_k
 =
@@ -1162,7 +1166,7 @@ w_i c_i s_i
 <li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>v</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub></mrow><annotation encoding="application/x-tex">v_{ik}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">ik</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> ：該 DDR 的軸值。</li>
 </ul>
 <hr>
-<h2>七十六、缺值處理</h2>
+<h3>七十六、缺值處理</h3>
 <p>若軸 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi></mrow><annotation encoding="application/x-tex">k</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0315em;">k</span></span></span></span> 無足夠資料：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mi>k</mi></msub><mo>=</mo><mi>n</mi><mi>u</mi><mi>l</mi><mi>l</mi></mrow><annotation encoding="application/x-tex">V_k=null</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">n</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span></span></span></span></span>
 <p>並報告 Coverage：</p>
@@ -1171,7 +1175,7 @@ w_i c_i s_i
 \frac{\text{有效 DDR 權重}}
 {\text{該時間切片總 DDR 權重}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.0463em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord text"><span class="mord cjk_fallback">該時間切片總</span><span class="mord"> DDR </span><span class="mord cjk_fallback">權重</span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord text"><span class="mord cjk_fallback">有效</span><span class="mord"> DDR </span><span class="mord cjk_fallback">權重</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
 <hr>
-<h2>七十七、避免大量小決策淹沒結構決策</h2>
+<h3>七十七、避免大量小決策淹沒結構決策</h3>
 <p>需給 Decision impact：</p>
 <pre><code class="language-text">local
 subsystem
@@ -1209,7 +1213,7 @@ historical_turning_point
 </tr>
 </tbody></table>
 <hr>
-<h2>七十八、Profile 距離</h2>
+<h3>七十八、Profile 距離</h3>
 <p>兩個 Profile 的加權距離：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>D</mi><mi>w</mi></msub><mo stretchy="false">(</mo><mi>x</mi><mo separator="true">,</mo><mi>y</mi><mo stretchy="false">)</mo><mo>=</mo><mfrac><mrow><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><msub><mi>K</mi><mrow><mi>x</mi><mi>y</mi></mrow></msub></mrow></munder><msub><mi>w</mi><mi>k</mi></msub><msub><mi>δ</mi><mi>k</mi></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>k</mi></msub><mo separator="true">,</mo><msub><mi>y</mi><mi>k</mi></msub><mo stretchy="false">)</mo></mrow><mrow><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><msub><mi>K</mi><mrow><mi>x</mi><mi>y</mi></mrow></msub></mrow></munder><msub><mi>w</mi><mi>k</mi></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">D_w(x,y)
 =
@@ -1227,7 +1231,7 @@ w_k
 \frac{|x_k-y_k|}{5}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0379em;">δ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0379em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.113em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.427em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">5</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">∣</span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">∣</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
 <p>類別軸使用 Jaccard 或自訂距離。</p>
 <hr>
-<h2>七十九、相似不等於影響</h2>
+<h3>七十九、相似不等於影響</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>S</mi><mi>i</mi><mi>m</mi><mi>i</mi><mi>l</mi><mi>a</mi><mi>r</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo stretchy="false">(</mo><mi>x</mi><mo separator="true">,</mo><mi>y</mi><mo stretchy="false">)</mo><mo>⇏</mo><mi>I</mi><mi>n</mi><mi>f</mi><mi>l</mi><mi>u</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo stretchy="false">(</mo><mi>x</mi><mo separator="true">,</mo><mi>y</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">Similarity(x,y)
 \not\Rightarrow
 Influence(x,y)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">imi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">⇒</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">u</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mclose">)</span></span></span></span></span>
@@ -1240,11 +1244,11 @@ Influence(x,y)</annotation></semantics></math></span><span class="katex-html" ar
 <li>文件或實作證據。</li>
 </ul>
 <hr>
-<h2>八十、聚類只能作探索</h2>
+<h3>八十、聚類只能作探索</h3>
 <p>Cluster、PCA、Embedding 可協助找模式，但不得自動命名學派。</p>
 <hr>
-<h1>第十一部分　人類與 AI 混合編碼</h1>
-<h2>八十一、角色</h2>
+<h2>第十一部分　人類與 AI 混合編碼</h2>
+<h3>八十一、角色</h3>
 <p>建議角色：</p>
 <pre><code class="language-text">Searcher
 Source Curator
@@ -1257,7 +1261,7 @@ Schema Maintainer
 </code></pre>
 <p>一人可兼任，但必須保留角色紀錄。</p>
 <hr>
-<h2>八十二、AI 可執行</h2>
+<h3>八十二、AI 可執行</h3>
 <p>AI MAY：</p>
 <ul>
 <li>搜尋候選來源；</li>
@@ -1272,7 +1276,7 @@ Schema Maintainer
 <li>匯出資料。</li>
 </ul>
 <hr>
-<h2>八十三、AI 不可直接完成</h2>
+<h3>八十三、AI 不可直接完成</h3>
 <p>AI MUST NOT 在無覆核情況下：</p>
 <ul>
 <li>宣告歷史爭議已解決；</li>
@@ -1284,7 +1288,7 @@ Schema Maintainer
 <li>將 Candidate 提升為 Verified。</li>
 </ul>
 <hr>
-<h2>八十四、模型識別</h2>
+<h3>八十四、模型識別</h3>
 <p>AI 活動 MUST 記錄：</p>
 <pre><code class="language-text">provider
 model
@@ -1298,7 +1302,7 @@ output_record_ids
 </code></pre>
 <p>若平台無法提供精確模型版本，可標為 <code>unknown_platform_version</code>。</p>
 <hr>
-<h2>八十五、可再現性邊界</h2>
+<h3>八十五、可再現性邊界</h3>
 <p>即使保存 Prompt，生成式模型也可能因：</p>
 <ul>
 <li>權重更新；</li>
@@ -1313,11 +1317,11 @@ output_record_ids
 &gt;
 BitwiseReproducibility</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal">u</span><span class="mord mathnormal">d</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal">abi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0269em;">tw</span><span class="mord mathnormal">i</span><span class="mord mathnormal">se</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal">d</span><span class="mord mathnormal">u</span><span class="mord mathnormal">c</span><span class="mord mathnormal">ibi</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span></span></span></span></span>
 <hr>
-<h1>第十二部分　一致性與品質評估</h1>
-<h2>八十六、雙重編碼</h2>
+<h2>第十二部分　一致性與品質評估</h2>
+<h3>八十六、雙重編碼</h3>
 <p>重要樣本 SHOULD 由至少兩名獨立編碼者處理。</p>
 <hr>
-<h2>八十七、Cohen’s Kappa</h2>
+<h3>八十七、Cohen’s Kappa</h3>
 <p>兩名編碼者處理 Nominal label 時，可使用：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>κ</mi><mo>=</mo><mfrac><mrow><msub><mi>p</mi><mi>o</mi></msub><mo>−</mo><msub><mi>p</mi><mi>e</mi></msub></mrow><mrow><mn>1</mn><mo>−</mo><msub><mi>p</mi><mi>e</mi></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">\kappa
 =
@@ -1328,7 +1332,7 @@ BitwiseReproducibility</annotation></semantics></math></span><span class="katex-
 <li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>p</mi><mi>e</mi></msub></mrow><annotation encoding="application/x-tex">p_e</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">p</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> ：依邊際分布估計的偶然一致率。</li>
 </ul>
 <hr>
-<h2>八十八、Krippendorff’s Alpha</h2>
+<h3>八十八、Krippendorff’s Alpha</h3>
 <p>多名編碼者、有缺值或不同尺度時，可使用：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>α</mi><mo>=</mo><mn>1</mn><mo>−</mo><mfrac><msub><mi>D</mi><mi>o</mi></msub><msub><mi>D</mi><mi>e</mi></msub></mfrac></mrow><annotation encoding="application/x-tex">\alpha
 =
@@ -1344,7 +1348,7 @@ BitwiseReproducibility</annotation></semantics></math></span><span class="katex-
 </ul>
 <p>不得只報單一 Alpha。</p>
 <hr>
-<h2>八十九、一致性不是正確性</h2>
+<h3>八十九、一致性不是正確性</h3>
 <p>多名編碼者可以一致地犯錯。</p>
 <p>因此：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mi>e</mi><mi>l</mi><mi>i</mi><mi>a</mi><mi>b</mi><mi>i</mi><mi>l</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo mathvariant="normal">≠</mo><mi>V</mi><mi>a</mi><mi>l</mi><mi>i</mi><mi>d</mi><mi>i</mi><mi>t</mi><mi>y</mi></mrow><annotation encoding="application/x-tex">Reliability
@@ -1358,7 +1362,7 @@ Validity</annotation></semantics></math></span><span class="katex-html" aria-hid
 <li>實作驗證。</li>
 </ul>
 <hr>
-<h2>九十、品質向量</h2>
+<h3>九十、品質向量</h3>
 <p>每筆 DDR 的品質：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>Q</mi><mi>r</mi></msub><mo>=</mo><mo stretchy="false">(</mo><mi>C</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi>t</mi><mi>e</mi><mi>n</mi><mi>e</mi><mi>s</mi><mi>s</mi><mo separator="true">,</mo><mi>S</mi><mi>o</mi><mi>u</mi><mi>r</mi><mi>c</mi><mi>e</mi><mi>C</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>g</mi><mi>e</mi><mo separator="true">,</mo><mi>S</mi><mi>o</mi><mi>u</mi><mi>r</mi><mi>c</mi><mi>e</mi><mi>D</mi><mi>i</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>s</mi><mi>i</mi><mi>t</mi><mi>y</mi><mo separator="true">,</mo><mi>A</mi><mi>t</mi><mi>t</mi><mi>r</mi><mi>i</mi><mi>b</mi><mi>u</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>C</mi><mi>o</mi><mi>n</mi><mi>f</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo separator="true">,</mo><mi>T</mi><mi>e</mi><mi>m</mi><mi>p</mi><mi>o</mi><mi>r</mi><mi>a</mi><mi>l</mi><mi>P</mi><mi>r</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo separator="true">,</mo><mi>C</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>e</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo separator="true">,</mo><mi>R</mi><mi>e</mi><mi>v</mi><mi>i</mi><mi>e</mi><mi>w</mi><mi>D</mi><mi>e</mi><mi>p</mi><mi>t</mi><mi>h</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">Q_r
 =
@@ -1372,7 +1376,7 @@ Counterevidence,
 ReviewDepth
 )</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">m</span><span class="mord mathnormal" style="margin-right:0.0197em;">pl</span><span class="mord mathnormal">e</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ess</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">o</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ce</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">e</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">o</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal" style="margin-right:0.0278em;">ceD</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal">tt</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ib</span><span class="mord mathnormal">u</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal">e</span><span class="mord mathnormal">m</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">u</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0269em;">w</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">e</span><span class="mord mathnormal">pt</span><span class="mord mathnormal">h</span><span class="mclose">)</span></span></span></span></span>
 <hr>
-<h2>九十一、最小發布門檻</h2>
+<h3>九十一、最小發布門檻</h3>
 <p><code>verified</code> 建議要求：</p>
 <ul>
 <li>至少一項 S1、S2 或 S3 來源；</li>
@@ -1385,8 +1389,8 @@ ReviewDepth
 <li>無未處理的 Critical conflict。</li>
 </ul>
 <hr>
-<h1>第十三部分　Provenance 規格</h1>
-<h2>九十二、Entity</h2>
+<h2>第十三部分　Provenance 規格</h2>
+<h3>九十二、Entity</h3>
 <p>PLDST Entity 包含：</p>
 <pre><code class="language-text">source artifact
 evidence fragment
@@ -1398,7 +1402,7 @@ vocabulary
 export
 </code></pre>
 <hr>
-<h2>九十三、Activity</h2>
+<h3>九十三、Activity</h3>
 <pre><code class="language-text">search
 retrieve
 snapshot
@@ -1413,7 +1417,7 @@ migrate
 export
 </code></pre>
 <hr>
-<h2>九十四、Agent</h2>
+<h3>九十四、Agent</h3>
 <pre><code class="language-text">human
 AI model
 organization
@@ -1421,7 +1425,7 @@ project team
 software tool
 </code></pre>
 <hr>
-<h2>九十五、核心關係</h2>
+<h3>九十五、核心關係</h3>
 <p>可對映：</p>
 <pre><code class="language-text">wasGeneratedBy
 used
@@ -1433,7 +1437,7 @@ wasRevisionOf
 invalidatedAtTime
 </code></pre>
 <hr>
-<h2>九十六、最小溯源欄位</h2>
+<h3>九十六、最小溯源欄位</h3>
 <p>即使不輸出 PROV-O，紀錄 MUST 有：</p>
 <pre><code class="language-text">created_at
 created_by
@@ -1445,8 +1449,8 @@ record_hash
 schema_version
 </code></pre>
 <hr>
-<h1>第十四部分　資料庫邏輯模型</h1>
-<h2>九十七、主要集合</h2>
+<h2>第十四部分　資料庫邏輯模型</h2>
+<h3>九十七、主要集合</h3>
 <pre><code class="language-text">designers
 languages
 governance_bodies
@@ -1462,7 +1466,7 @@ provenance_activities
 corpus_releases
 </code></pre>
 <hr>
-<h2>九十八、關聯式表建議</h2>
+<h3>九十八、關聯式表建議</h3>
 <pre><code class="language-text">entity
 entity_alias
 source
@@ -1482,7 +1486,7 @@ profile_record
 relation
 </code></pre>
 <hr>
-<h2>九十九、JSON 與關聯式分工</h2>
+<h3>九十九、JSON 與關聯式分工</h3>
 <p>JSON 適合：</p>
 <ul>
 <li>交換；</li>
@@ -1501,7 +1505,7 @@ relation
 <li>品質檢查。</li>
 </ul>
 <hr>
-<h2>一百、建議儲存策略</h2>
+<h3>一百、建議儲存策略</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>S</mi><mi>o</mi><mi>u</mi><mi>r</mi><mi>c</mi><mi>e</mi><mi>O</mi><mi>f</mi><mi>T</mi><mi>r</mi><mi>u</mi><mi>t</mi><mi>h</mi><mo>=</mo><mi>V</mi><mi>e</mi><mi>r</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>e</mi><mi>d</mi><mi>J</mi><mi>S</mi><mi>O</mi><mi>N</mi></mrow><annotation encoding="application/x-tex">SourceOfTruth
 =
 VersionedJSON</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">o</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ce</span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">u</span><span class="mord mathnormal">t</span><span class="mord mathnormal">h</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0962em;">dJ</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal" style="margin-right:0.109em;">N</span></span></span></span></span>
@@ -1510,8 +1514,8 @@ VersionedJSON</annotation></semantics></math></span><span class="katex-html" ari
 DerivedDatabase</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">Q</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">aba</span><span class="mord mathnormal">se</span></span></span></span></span>
 <p>資料庫可由版本化 JSON 重建，避免隱藏不可恢復狀態。</p>
 <hr>
-<h1>第十五部分　檔案布局</h1>
-<h2>一百零一、Repository</h2>
+<h2>第十五部分　檔案布局</h2>
+<h3>一百零一、Repository</h3>
 <pre><code class="language-text">pldst-corpus/
 ├── README.md
 ├── corpus-card.md
@@ -1533,19 +1537,19 @@ DerivedDatabase</annotation></semantics></math></span><span class="katex-html" a
 └── tests/
 </code></pre>
 <hr>
-<h2>一百零二、DDR 路徑</h2>
+<h3>一百零二、DDR 路徑</h3>
 <pre><code class="language-text">records/&lt;actor&gt;/&lt;year&gt;/&lt;record-id&gt;.json
 </code></pre>
 <p>路徑可改，ID 不可隨路徑改。</p>
 <hr>
-<h2>一百零三、JSONL 匯出</h2>
+<h3>一百零三、JSONL 匯出</h3>
 <p>大型語料匯出 MAY 使用：</p>
 <pre><code class="language-text">pldst-decision-records.jsonl
 </code></pre>
 <p>每行一筆完整 DDR。</p>
 <hr>
-<h1>第十六部分　Schema 與 Vocabulary 版本</h1>
-<h2>一百零四、語意版本</h2>
+<h2>第十六部分　Schema 與 Vocabulary 版本</h2>
+<h3>一百零四、語意版本</h3>
 <p>資料規格使用：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>M</mi><mi>A</mi><mi>J</mi><mi>O</mi><mi>R</mi><mi mathvariant="normal">.</mi><mi>M</mi><mi>I</mi><mi>N</mi><mi>O</mi><mi>R</mi><mi mathvariant="normal">.</mi><mi>P</mi><mi>A</mi><mi>T</mi><mi>C</mi><mi>H</mi></mrow><annotation encoding="application/x-tex">MAJOR.MINOR.PATCH</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0962em;">J</span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord">.</span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord">.</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span></span></span></span></span>
 <ul>
@@ -1554,11 +1558,11 @@ DerivedDatabase</annotation></semantics></math></span><span class="katex-html" a
 <li>PATCH：說明、Bugfix、驗證修正。</li>
 </ul>
 <hr>
-<h2>一百零五、紀錄版本</h2>
+<h3>一百零五、紀錄版本</h3>
 <p>每筆 DDR 使用獨立 <code>record_version</code>。</p>
 <p>Schema version 與 Record version 不同。</p>
 <hr>
-<h2>一百零六、Vocabulary version</h2>
+<h3>一百零六、Vocabulary version</h3>
 <p>Axis、Status、Source type 等受控詞彙 MUST 有版本。</p>
 <p>若改變軸定義，即使軸 ID 不變，也需：</p>
 <ul>
@@ -1568,7 +1572,7 @@ DerivedDatabase</annotation></semantics></math></span><span class="katex-html" a
 <li>舊版本保存。</li>
 </ul>
 <hr>
-<h2>一百零七、禁止靜默重寫</h2>
+<h3>一百零七、禁止靜默重寫</h3>
 <p>已發布紀錄不可直接覆寫而不改版本。</p>
 <p>修正方式：</p>
 <pre><code class="language-text">new revision
@@ -1578,8 +1582,8 @@ was_revision_of
 change_note
 </code></pre>
 <hr>
-<h1>第十七部分　狀態機與工作流</h1>
-<h2>一百零八、來源流程</h2>
+<h2>第十七部分　狀態機與工作流</h2>
+<h3>一百零八、來源流程</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mi>i</mi><mi>s</mi><mi>c</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>e</mi><mi>d</mi><mo>→</mo><mi>R</mi><mi>e</mi><mi>t</mi><mi>r</mi><mi>i</mi><mi>e</mi><mi>v</mi><mi>e</mi><mi>d</mi><mo>→</mo><mi>S</mi><mi>n</mi><mi>a</mi><mi>p</mi><mi>s</mi><mi>h</mi><mi>o</mi><mi>t</mi><mi>t</mi><mi>e</mi><mi>d</mi><mo>→</mo><mi>C</mi><mi>a</mi><mi>t</mi><mi>a</mi><mi>l</mi><mi>o</mi><mi>g</mi><mi>u</mi><mi>e</mi><mi>d</mi><mo>→</mo><mi>S</mi><mi>e</mi><mi>g</mi><mi>m</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">Discovered
 \rightarrow
 Retrieved
@@ -1590,7 +1594,7 @@ Catalogued
 \rightarrow
 Segmented</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">i</span><span class="mord mathnormal">sco</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">i</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">na</span><span class="mord mathnormal">p</span><span class="mord mathnormal">s</span><span class="mord mathnormal">h</span><span class="mord mathnormal">o</span><span class="mord mathnormal">tt</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">u</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span></span></span>
 <hr>
-<h2>一百零九、DDR 流程</h2>
+<h3>一百零九、DDR 流程</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>C</mi><mi>a</mi><mi>n</mi><mi>d</mi><mi>i</mi><mi>d</mi><mi>a</mi><mi>t</mi><mi>e</mi><mo>→</mo><mi>E</mi><mi>x</mi><mi>t</mi><mi>r</mi><mi>a</mi><mi>c</mi><mi>t</mi><mi>e</mi><mi>d</mi><mo>→</mo><mi>R</mi><mi>e</mi><mi>v</mi><mi>i</mi><mi>e</mi><mi>w</mi><mi>e</mi><mi>d</mi><mo>→</mo><mi>V</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>f</mi><mi>i</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">Candidate
 \rightarrow
 Extracted
@@ -1606,7 +1610,7 @@ Contested</annotation></semantics></math></span><span class="katex-html" aria-hi
 \rightarrow
 Superseded</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">u</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">se</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span></span></span>
 <hr>
-<h2>一百一十、Assessment 流程</h2>
+<h3>一百一十、Assessment 流程</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mi>r</mi><mi>a</mi><mi>f</mi><mi>t</mi><mo>→</mo><mi>I</mi><mi>n</mi><mi>d</mi><mi>e</mi><mi>p</mi><mi>e</mi><mi>n</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>C</mi><mi>o</mi><mi>d</mi><mi>i</mi><mi>n</mi><mi>g</mi><mo>→</mo><mi>A</mi><mi>g</mi><mi>r</mi><mi>e</mi><mi>e</mi><mi>m</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>C</mi><mi>h</mi><mi>e</mi><mi>c</mi><mi>k</mi><mo>→</mo><mi>A</mi><mi>d</mi><mi>j</mi><mi>u</mi><mi>d</mi><mi>i</mi><mi>c</mi><mi>a</mi><mi>t</mi><mi>e</mi><mi>d</mi><mo>→</mo><mi>P</mi><mi>u</mi><mi>b</mi><mi>l</mi><mi>i</mi><mi>s</mi><mi>h</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">Draft
 \rightarrow
 IndependentCoding
@@ -1617,7 +1621,7 @@ Adjudicated
 \rightarrow
 Published</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">p</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0715em;">tC</span><span class="mord mathnormal">o</span><span class="mord mathnormal">d</span><span class="mord mathnormal">in</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ee</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0715em;">tC</span><span class="mord mathnormal">h</span><span class="mord mathnormal">ec</span><span class="mord mathnormal" style="margin-right:0.0315em;">k</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal">d</span><span class="mord mathnormal" style="margin-right:0.0572em;">j</span><span class="mord mathnormal">u</span><span class="mord mathnormal">d</span><span class="mord mathnormal">i</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal">u</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">h</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span></span></span></span></span>
 <hr>
-<h2>一百一十一、Profile 流程</h2>
+<h3>一百一十一、Profile 流程</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>R</mi><mi>e</mi><mi>c</mi><mi>o</mi><mi>r</mi><mi>d</mi><mi>S</mi><mi>e</mi><mi>t</mi><mo>→</mo><mi>C</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>g</mi><mi>e</mi><mi>C</mi><mi>h</mi><mi>e</mi><mi>c</mi><mi>k</mi><mo>→</mo><mi>A</mi><mi>g</mi><mi>g</mi><mi>r</mi><mi>e</mi><mi>g</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo>→</mo><mi>S</mi><mi>e</mi><mi>n</mi><mi>s</mi><mi>i</mi><mi>t</mi><mi>i</mi><mi>v</mi><mi>i</mi><mi>t</mi><mi>y</mi><mi>A</mi><mi>n</mi><mi>a</mi><mi>l</mi><mi>y</mi><mi>s</mi><mi>i</mi><mi>s</mi><mo>→</mo><mi>R</mi><mi>e</mi><mi>l</mi><mi>e</mi><mi>a</mi><mi>s</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">RecordSet
 \rightarrow
 CoverageCheck
@@ -1628,8 +1632,8 @@ SensitivityAnalysis
 \rightarrow
 Release</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal" style="margin-right:0.0278em;">ecor</span><span class="mord mathnormal">d</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">e</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal" style="margin-right:0.0278em;">er</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">h</span><span class="mord mathnormal">ec</span><span class="mord mathnormal" style="margin-right:0.0315em;">k</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">A</span><span class="mord mathnormal">na</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mord mathnormal">a</span><span class="mord mathnormal">se</span></span></span></span></span>
 <hr>
-<h1>第十八部分　查詢規格</h1>
-<h2>一百一十二、基本查詢</h2>
+<h2>第十八部分　查詢規格</h2>
+<h3>一百一十二、基本查詢</h3>
 <p>系統 MUST 支援：</p>
 <pre><code class="language-text">依設計者
 依語言
@@ -1643,7 +1647,7 @@ Release</annotation></semantics></math></span><span class="katex-html" aria-hidd
 依反證存在
 </code></pre>
 <hr>
-<h2>一百一十三、比較查詢</h2>
+<h3>一百一十三、比較查詢</h3>
 <p>例如：</p>
 <pre><code class="language-text">找出 Surface Convergence 高、Core Extensibility 低的語言。
 比較 Guido 在 BDFL 與 Steering Council 時期的治理集中度。
@@ -1651,7 +1655,7 @@ Release</annotation></semantics></math></span><span class="katex-html" aria-hidd
 找出只有單一來源支撐的高影響決策。
 </code></pre>
 <hr>
-<h2>一百一十四、證據追蹤查詢</h2>
+<h3>一百一十四、證據追蹤查詢</h3>
 <pre><code class="language-text">此分數由哪些 DDR 組成？
 此 DDR 使用哪些來源？
 來源失效了嗎？
@@ -1659,8 +1663,8 @@ Release</annotation></semantics></math></span><span class="katex-html" aria-hidd
 哪位編碼者有不同判定？
 </code></pre>
 <hr>
-<h1>第十九部分　安全、著作權與倫理</h1>
-<h2>一百一十五、最小摘錄</h2>
+<h2>第十九部分　安全、著作權與倫理</h2>
+<h3>一百一十五、最小摘錄</h3>
 <p>語料庫 SHOULD 優先保存：</p>
 <ul>
 <li>Locator；</li>
@@ -1671,7 +1675,7 @@ Release</annotation></semantics></math></span><span class="katex-html" aria-hidd
 </ul>
 <p>不得為便利而大量複製受保護全文。</p>
 <hr>
-<h2>一百一十六、非公開資料</h2>
+<h3>一百一十六、非公開資料</h3>
 <p>內部 Email、未公開訪談或私人文件必須標記：</p>
 <pre><code class="language-text">access_level
 license
@@ -1680,7 +1684,7 @@ redaction
 retention
 </code></pre>
 <hr>
-<h2>一百一十七、人物公平性</h2>
+<h3>一百一十七、人物公平性</h3>
 <p>對仍在世設計者尤其應：</p>
 <ul>
 <li>避免心理推測；</li>
@@ -1691,7 +1695,7 @@ retention
 <li>不將社群錯誤全歸創始者。</li>
 </ul>
 <hr>
-<h2>一百一十八、敏感治理資料</h2>
+<h3>一百一十八、敏感治理資料</h3>
 <p>若資料涉及：</p>
 <ul>
 <li>私人衝突；</li>
@@ -1702,8 +1706,8 @@ retention
 </ul>
 <p>不得進入公開 Corpus。</p>
 <hr>
-<h1>第二十部分　失敗模式</h1>
-<h2>一百一十九、人物卡片化</h2>
+<h2>第二十部分　失敗模式</h2>
+<h3>一百一十九、人物卡片化</h3>
 <p>症狀：</p>
 <pre><code class="language-text">Wirth＝簡單
 Wall＝自由
@@ -1711,13 +1715,13 @@ Hickey＝不可變
 </code></pre>
 <p>解法：要求每個標籤至少由多筆 DDR 支撐。</p>
 <hr>
-<h2>一百二十、名言資料庫化</h2>
+<h3>一百二十、名言資料庫化</h3>
 <p>名言可以是證據，但不能代替決策。</p>
 <hr>
-<h2>一百二十一、來源階級迷信</h2>
+<h3>一百二十一、來源階級迷信</h3>
 <p>第一手來源不是自動真理；二手來源也不是自動低價值。</p>
 <hr>
-<h2>一百二十二、矩陣虛假精確</h2>
+<h3>一百二十二、矩陣虛假精確</h3>
 <p><code>4.2</code> 不表示研究真的具有小數點級精度。</p>
 <p>公開 Profile SHOULD 同時顯示：</p>
 <ul>
@@ -1727,10 +1731,10 @@ Hickey＝不可變
 <li>Record count。</li>
 </ul>
 <hr>
-<h2>一百二十三、時間坍縮</h2>
+<h3>一百二十三、時間坍縮</h3>
 <p>把設計者四十年決策壓成一個永恆 Profile，會失去自我修正及治理轉換。</p>
 <hr>
-<h2>一百二十四、AI 自我證明</h2>
+<h3>一百二十四、AI 自我證明</h3>
 <p>AI 搜尋、抽取、編碼、覆核全由同一模型完成，容易形成相關錯誤。</p>
 <p>高影響紀錄 SHOULD 使用：</p>
 <ul>
@@ -1740,17 +1744,17 @@ Hickey＝不可變
 <li>對抗式反證搜尋。</li>
 </ul>
 <hr>
-<h2>一百二十五、Schema 完整幻覺</h2>
+<h3>一百二十五、Schema 完整幻覺</h3>
 <p>通過 JSON Schema 只表示資料結構合法：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>S</mi><mi>c</mi><mi>h</mi><mi>e</mi><mi>m</mi><mi>a</mi><mi>V</mi><mi>a</mi><mi>l</mi><mi>i</mi><mi>d</mi><mo>⇏</mo><mi>H</mi><mi>i</mi><mi>s</mi><mi>t</mi><mi>o</mi><mi>r</mi><mi>i</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>l</mi><mi>y</mi><mi>T</mi><mi>r</mi><mi>u</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">SchemaValid
 \not\Rightarrow
 HistoricallyTrue</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">c</span><span class="mord mathnormal">h</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.2222em;">maV</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">⇒</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0813em;">H</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">i</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">u</span><span class="mord mathnormal">e</span></span></span></span></span>
 <hr>
-<h1>第二十一部分　MVP 規格</h1>
-<h2>一百二十六、第一批範圍</h2>
+<h2>第二十一部分　MVP 規格</h2>
+<h3>一百二十六、第一批範圍</h3>
 <p>PLDST Corpus MVP 以第一批 30 篇涉及的設計者與語言為範圍。</p>
 <hr>
-<h2>一百二十七、最小資料量</h2>
+<h3>一百二十七、最小資料量</h3>
 <p>建議：</p>
 <ul>
 <li>每位設計者至少 8 筆 Verified DDR；</li>
@@ -1760,7 +1764,7 @@ HistoricallyTrue</annotation></semantics></math></span><span class="katex-html" 
 <li>每個 Profile 至少 1 個時間切片。</li>
 </ul>
 <hr>
-<h2>一百二十八、MVP 輸出</h2>
+<h3>一百二十八、MVP 輸出</h3>
 <pre><code class="language-text">1. DDR JSON Schema
 2. Axis Vocabulary
 3. 30 篇文章索引
@@ -1773,7 +1777,7 @@ HistoricallyTrue</annotation></semantics></math></span><span class="katex-html" 
 10. HTML／JSON 查詢原型
 </code></pre>
 <hr>
-<h2>一百二十九、MVP 驗收</h2>
+<h3>一百二十九、MVP 驗收</h3>
 <p>MUST：</p>
 <ul>
 <li>所有 JSON 通過 Schema；</li>
@@ -1785,8 +1789,8 @@ HistoricallyTrue</annotation></semantics></math></span><span class="katex-html" 
 <li>至少完成三組跨設計師比較重建。</li>
 </ul>
 <hr>
-<h1>第二十二部分　機器可讀範例</h1>
-<h2>一百三十、DDR 簡化範例</h2>
+<h2>第二十二部分　機器可讀範例</h2>
+<h3>一百三十、DDR 簡化範例</h3>
 <pre><code class="language-json">{
   &quot;record_id&quot;: &quot;pldst:decision:guido-van-rossum:1991:explicit-self&quot;,
   &quot;record_version&quot;: &quot;1.0.0&quot;,
@@ -1816,8 +1820,8 @@ HistoricallyTrue</annotation></semantics></math></span><span class="katex-html" 
 </code></pre>
 <p>完整範例與 Schema 隨本文件 ZIP 提供。</p>
 <hr>
-<h1>第二十三部分　PLDST 評估矩陣輸出格式</h1>
-<h2>一百三十一、Profile 表格</h2>
+<h2>第二十三部分　PLDST 評估矩陣輸出格式</h2>
+<h3>一百三十一、Profile 表格</h3>
 <table>
 <thead>
 <tr>
@@ -1855,7 +1859,7 @@ HistoricallyTrue</annotation></semantics></math></span><span class="katex-html" 
 </tr>
 </tbody></table>
 <hr>
-<h2>一百三十二、不可省略的附註</h2>
+<h3>一百三十二、不可省略的附註</h3>
 <p>Profile MUST 顯示：</p>
 <ul>
 <li>時間；</li>
@@ -1868,8 +1872,8 @@ HistoricallyTrue</annotation></semantics></math></span><span class="katex-html" 
 <li>主要反證。</li>
 </ul>
 <hr>
-<h1>第二十四部分　與 PLDST SKILL 的介面</h1>
-<h2>一百三十三、搜尋輸入</h2>
+<h2>第二十四部分　與 PLDST SKILL 的介面</h2>
+<h3>一百三十三、搜尋輸入</h3>
 <p>SKILL 將接收：</p>
 <pre><code class="language-text">designer
 language
@@ -1879,10 +1883,10 @@ source priority
 recency requirement
 </code></pre>
 <hr>
-<h2>一百三十四、抽取輸出</h2>
+<h3>一百三十四、抽取輸出</h3>
 <p>SKILL 應輸出 Candidate DDR，不直接輸出 Verified DDR。</p>
 <hr>
-<h2>一百三十五、風格判定輸出</h2>
+<h3>一百三十五、風格判定輸出</h3>
 <p>任何風格回答應至少包含：</p>
 <pre><code class="language-text">判定
 主要 DDR
@@ -1893,7 +1897,7 @@ recency requirement
 與其他設計者差異
 </code></pre>
 <hr>
-<h2>一百三十六、模擬輸入</h2>
+<h3>一百三十六、模擬輸入</h3>
 <p>未來 AI 模擬設計師風格時，應使用：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>S</mi><mi>i</mi><mi>m</mi><mi>u</mi><mi>l</mi><mi>a</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>C</mi><mi>o</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>x</mi><mi>t</mi><mo>=</mo><mi>S</mi><mi>t</mi><mi>y</mi><mi>l</mi><mi>e</mi><mi>P</mi><mi>r</mi><mi>o</mi><mi>f</mi><mi>i</mi><mi>l</mi><mi>e</mi><mo>+</mo><mi>D</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>C</mi><mi>o</mi><mi>r</mi><mi>p</mi><mi>u</mi><mi>s</mi><mo>+</mo><mi>C</mi><mi>u</mi><mi>r</mi><mi>r</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>C</mi><mi>o</mi><mi>n</mi><mi>s</mi><mi>t</mi><mi>r</mi><mi>a</mi><mi>i</mi><mi>n</mi><mi>t</mi><mi>s</mi><mo>+</mo><mi>D</mi><mi>i</mi><mi>s</mi><mi>t</mi><mi>o</mi><mi>r</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>W</mi><mi>a</mi><mi>r</mi><mi>n</mi><mi>i</mi><mi>n</mi><mi>g</mi><mi>s</mi></mrow><annotation encoding="application/x-tex">SimulationContext
 =
@@ -1906,8 +1910,8 @@ CurrentConstraints
 DistortionWarnings</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">im</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mord mathnormal">x</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.0197em;">l</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">p</span><span class="mord mathnormal">u</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.0715em;">tC</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">s</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ain</span><span class="mord mathnormal">t</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.1389em;">nW</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">nin</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal">s</span></span></span></span></span>
 <p>而不是只輸入人物傳記摘要。</p>
 <hr>
-<h1>第二十五部分　正式規範要求</h1>
-<h2>一百三十七、MUST</h2>
+<h2>第二十五部分　正式規範要求</h2>
+<h3>一百三十七、MUST</h3>
 <p>實作 MUST：</p>
 <ul>
 <li>使用穩定 ID；</li>
@@ -1922,7 +1926,7 @@ DistortionWarnings</annotation></semantics></math></span><span class="katex-html
 <li>讓 Profile 回溯 DDR。</li>
 </ul>
 <hr>
-<h2>一百三十八、SHOULD</h2>
+<h3>一百三十八、SHOULD</h3>
 <p>實作 SHOULD：</p>
 <ul>
 <li>保存來源快照 Hash；</li>
@@ -1935,7 +1939,7 @@ DistortionWarnings</annotation></semantics></math></span><span class="katex-html
 <li>支援敏感度分析。</li>
 </ul>
 <hr>
-<h2>一百三十九、MAY</h2>
+<h3>一百三十九、MAY</h3>
 <p>實作 MAY：</p>
 <ul>
 <li>使用 RDF／JSON-LD；</li>
@@ -1947,8 +1951,8 @@ DistortionWarnings</annotation></semantics></math></span><span class="katex-html
 <li>使用 AI 自動建立 Candidate。</li>
 </ul>
 <hr>
-<h1>第二十六部分　結論</h1>
-<h2>一百四十、從文章到方法</h2>
+<h2>第二十六部分　結論</h2>
+<h3>一百四十、從文章到方法</h3>
 <p>前二十六篇回答：</p>
 <ul>
 <li>什麼是設計風格；</li>
@@ -1960,19 +1964,19 @@ DistortionWarnings</annotation></semantics></math></span><span class="katex-html
 <p>這些判定如何被保存成可驗證、可搜尋、可比較及可重新計算的研究資料？</p>
 </blockquote>
 <hr>
-<h2>一百四十一、評估矩陣的正確地位</h2>
+<h3>一百四十一、評估矩陣的正確地位</h3>
 <p>矩陣不是結論本身，而是索引。</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>M</mi><mi>a</mi><mi>t</mi><mi>r</mi><mi>i</mi><mi>x</mi><mo>=</mo><mi>I</mi><mi>n</mi><mi>d</mi><mi>e</mi><mi>x</mi><mi>O</mi><mi>f</mi><mi>E</mi><mi>v</mi><mi>i</mi><mi>d</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">Matrix
 =
 IndexOfEvidence</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">i</span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="mord mathnormal">n</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">x</span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal" style="margin-right:0.0576em;">E</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">ce</span></span></span></span></span>
 <hr>
-<h2>一百四十二、語料庫的正確地位</h2>
+<h3>一百四十二、語料庫的正確地位</h3>
 <p>語料庫不是名言倉庫，而是決策與代價的歷史紀錄。</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>C</mi><mi>o</mi><mi>r</mi><mi>p</mi><mi>u</mi><mi>s</mi><mo>=</mo><mi>D</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>M</mi><mi>e</mi><mi>m</mi><mi>o</mi><mi>r</mi><mi>y</mi></mrow><annotation encoding="application/x-tex">Corpus
 =
 DecisionMemory</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal">p</span><span class="mord mathnormal">u</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mord mathnormal">e</span><span class="mord mathnormal">m</span><span class="mord mathnormal" style="margin-right:0.0278em;">or</span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span></span></span></span></span>
 <hr>
-<h2>一百四十三、PLDST 方法核心</h2>
+<h3>一百四十三、PLDST 方法核心</h3>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mi>P</mi><mi>L</mi><mi>D</mi><mi>S</mi><mi>T</mi><mo>=</mo><mi>S</mi><mi>o</mi><mi>u</mi><mi>r</mi><mi>c</mi><mi>e</mi><mo>+</mo><mi>D</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi><mo>+</mo><mi>B</mi><mi>u</mi><mi>r</mi><mi>d</mi><mi>e</mi><mi>n</mi><mo>+</mo><mi>O</mi><mi>u</mi><mi>t</mi><mi>c</mi><mi>o</mi><mi>m</mi><mi>e</mi><mo>+</mo><mi>C</mi><mi>o</mi><mi>d</mi><mi>i</mi><mi>n</mi><mi>g</mi><mo>+</mo><mi>P</mi><mi>r</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>n</mi><mi>a</mi><mi>n</mi><mi>c</mi><mi>e</mi></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
 PLDST
 =
@@ -1989,12 +1993,12 @@ Coding
 Provenance
 }</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal">L</span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">o</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ce</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="mord mathnormal">ec</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0278em;">O</span><span class="mord mathnormal">u</span><span class="mord mathnormal">t</span><span class="mord mathnormal">co</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">d</span><span class="mord mathnormal">in</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">v</span><span class="mord mathnormal">e</span><span class="mord mathnormal">nan</span><span class="mord mathnormal">ce</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h2>一百四十四、最終命題</h2>
+<h3>一百四十四、最終命題</h3>
 <blockquote>
 <p>設計風格只有在它能被具體決策支持、被反證挑戰、被時間切片修正、被他人重新編碼並回到原始來源時，才從人物印象轉為研究方法。</p>
 </blockquote>
 <hr>
-<h1>附錄 A　十八軸速查表</h1>
+<h2>附錄 A　十八軸速查表</h2>
 <table>
 <thead>
 <tr>
@@ -2133,7 +2137,7 @@ Provenance
 </tr>
 </tbody></table>
 <hr>
-<h1>附錄 B　Corpus Release Manifest</h1>
+<h2>附錄 B　Corpus Release Manifest</h2>
 <pre><code class="language-json">{
   &quot;corpus_id&quot;: &quot;pldst:corpus:first-batch&quot;,
   &quot;corpus_version&quot;: &quot;0.1.0&quot;,
@@ -2148,7 +2152,7 @@ Provenance
 }
 </code></pre>
 <hr>
-<h1>附錄 C　研究查核基礎</h1>
+<h2>附錄 C　研究查核基礎</h2>
 <p>本輪重新查核並採納下列外部方法：</p>
 <ol>
 <li>W3C PROV-O：以 Entity、Activity、Agent 及衍生／歸因關係表達跨系統溯源。</li>
@@ -2161,16 +2165,16 @@ Provenance
 <li>RFC 2119／8174：以 MUST、SHOULD、MAY 區分規範強度。</li>
 </ol>
 <hr>
-<h1>附錄 D　參考資料</h1>
+<h2>附錄 D　參考資料</h2>
 <p><strong>[R1]</strong> W3C, <em>PROV-O: The PROV Ontology</em>, W3C Recommendation, 2013.<br><strong>[R2]</strong> JSON Schema, <em>Draft 2020-12 Specification</em>, published 2022-06-16.<br><strong>[R3]</strong> Architecture Decision Record project, <em>Architecture Decision Record</em>.<br><strong>[R4]</strong> Stephen Bradner, <em>RFC 2119: Key words for use in RFCs to Indicate Requirement Levels</em>, IETF, 1997.<br><strong>[R5]</strong> Brian Leiba, <em>RFC 8174: Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words</em>, IETF, 2017.<br><strong>[R6]</strong> Mark D. Wilkinson et al., <em>The FAIR Guiding Principles for Scientific Data Management and Stewardship</em>, Scientific Data, 2016.<br><strong>[R7]</strong> Timnit Gebru et al., <em>Datasheets for Datasets</em>, 2018／2021.<br><strong>[R8]</strong> Mahima Pushkarna, Andrew Zaldivar, Oddur Kjartansson, <em>Data Cards: Purposeful and Transparent Dataset Documentation for Responsible AI</em>, 2022.<br><strong>[R9]</strong> NIST, <em>Research Data Framework (RDaF) Version 2.0</em>, NIST SP 1500-18r2.<br><strong>[R10]</strong> Jacob Cohen, <em>A Coefficient of Agreement for Nominal Scales</em>, 1960.<br><strong>[R11]</strong> Klaus Krippendorff, <em>Computing Krippendorff’s Alpha-Reliability</em>.<br><strong>[R12]</strong> PLDST-001–026，程式語言設計師風格譜系第一至第四部。</p>
 <p><strong>資料查核日期：</strong> 2026-07-30。</p>
 <hr>
-<h1>附錄 E　第二輪校對紀錄</h1>
-<h2>E.1 PROV-O 是對映而非強制儲存格式</h2>
+<h2>附錄 E　第二輪校對紀錄</h2>
+<h3>E.1 PROV-O 是對映而非強制儲存格式</h3>
 <p>本規格只要求保存足以對映 Entity、Activity、Agent 的欄位。</p>
 <p>不要求 MVP 立即部署 RDF Store 或 OWL Reasoner。</p>
 <hr>
-<h2>E.2 JSON Schema 不驗證史實</h2>
+<h3>E.2 JSON Schema 不驗證史實</h3>
 <p>Schema 僅驗證：</p>
 <ul>
 <li>欄位；</li>
@@ -2181,7 +2185,7 @@ Provenance
 </ul>
 <p>來源是否真實、推論是否合理，仍需研究覆核。</p>
 <hr>
-<h2>E.3 FAIR 不是「全部公開」</h2>
+<h3>E.3 FAIR 不是「全部公開」</h3>
 <p>Accessible 不表示所有資料無條件公開。</p>
 <p>受限資料可以：</p>
 <ul>
@@ -2191,11 +2195,11 @@ Provenance
 <li>不公開正文。</li>
 </ul>
 <hr>
-<h2>E.4 Kappa／Alpha 不設單一神聖門檻</h2>
+<h3>E.4 Kappa／Alpha 不設單一神聖門檻</h3>
 <p>不同軸、樣本量、風險及尺度需要不同標準。</p>
 <p>本規格要求報告指標與上下文，不規定一個適用所有 PLDST 任務的唯一門檻。</p>
 <hr>
-<h2>E.5 十八軸不是完整本體論</h2>
+<h3>E.5 十八軸不是完整本體論</h3>
 <p>十八軸是第一批可操作核心。</p>
 <p>未來 MAY：</p>
 <ul>
@@ -2206,7 +2210,7 @@ Provenance
 </ul>
 <p>任何變動必須版本化並重算 Profile。</p>
 <hr>
-<h2>E.6 評分方向不是價值方向</h2>
+<h3>E.6 評分方向不是價值方向</h3>
 <p>例如：</p>
 <ul>
 <li>Governance Concentration 5 不表示優秀；</li>
@@ -2216,7 +2220,7 @@ Provenance
 </ul>
 <p>軸只描述配置。</p>
 <hr>
-<h1>附錄 F　與下一篇的銜接</h1>
+<h2>附錄 F　與下一篇的銜接</h2>
 <p>PLDST-027 已定義：</p>
 <pre><code class="language-text">資料模型
 評估矩陣

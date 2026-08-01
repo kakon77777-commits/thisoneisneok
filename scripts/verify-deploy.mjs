@@ -103,6 +103,29 @@ async function onePass() {
     return [bad.length === 0, bad.length ? bad.join("; ") : `${samples.length * 2} URLs answer 200 directly (HTML + PDF, first and last of each series)`];
   });
 
+  // A page has one top-level heading: its title. 81 of the 89 papers number
+  // their sections `# 1.` `# 2.`, and the pipeline emitted the title as an H1
+  // and then rendered those beneath it — 2,433 section headings across the
+  // corpus set at the title's 54px, while the `## 摘要` above them sat at 26.
+  // The hierarchy came out inverted and shipped that way from the first deploy.
+  //
+  // Every gate here was green throughout, because they counted formulas,
+  // delimiters, redirects and bytes. None of them looked at whether the page
+  // reads as a document. This one does, in the one respect that can be stated
+  // as a number.
+  await check("one top-level heading per paper", async () => {
+    const live = await (await get(`${baseUrl}/ai/papers-index.json`)).json();
+    const samples = live.series.flatMap((series) => [series.papers[0], series.papers.at(-1)]).filter(Boolean);
+    const bad = [];
+    for (const paper of samples) {
+      const html = await (await get(paper.html)).text();
+      const body = html.slice(html.indexOf('<article class="content">'));
+      const count = (body.match(/<h1[ >]/g) || []).length;
+      if (count !== 1) bad.push(`${paper.id}: ${count} H1`);
+    }
+    return [bad.length === 0, bad.length ? bad.join("; ") : `${samples.length} sampled papers each carry exactly one H1`];
+  });
+
   // Notation must reach the reader as typeset symbols, not as source. Both
   // halves matter: KaTeX output present, AND no surviving `$$` — the build
   // metric "17,161 formulas rendered" was green while two papers still showed a

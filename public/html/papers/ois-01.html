@@ -23,6 +23,10 @@ main{padding:56px 0 96px}
 .content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
 .content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
 .content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+/* Demoting the body by one level pushes the deepest sections here, so they need
+   to be styled rather than left to the browser's defaults. */
+.content h4{font-family:Inter,"Noto Sans TC",sans-serif;font-size:16.5px;margin:30px 0 10px;color:var(--accent)}
+.content h5,.content h6{font-family:Inter,"Noto Sans TC",sans-serif;font-size:14px;letter-spacing:.02em;margin:26px 0 9px;color:var(--muted)}
 .content p{margin:0 0 24px}
 .content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
 .content li{margin:.45em 0}
@@ -53,13 +57,13 @@ footer a{color:var(--accent)}
   <section class="facts"><div><b>編號</b><span>OIS-01</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-08-01</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>協作整理</b><span>Aletheia / GPT</span></div></section>
   <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ois-01.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
   <article class="content"><h1>功能正常，不代表結構正常：軟體表觀完好命題</h1>
-<h2>摘要</h2>
+<h3>摘要</h3>
 <p>軟體工程長期存在一個容易被忽略的判斷錯位：當一個產品能正常啟動、主要功能可用、測試大致通過、使用者能持續操作，而且商業上甚至相當成功時，人們往往直覺地把這種「功能正常」延伸為「系統整體良好」。然而，功能層面的成功並不能充分推出架構、責任邊界、資料權限、演化能力與系統知識的完整。</p>
 <p>本文提出「<strong>軟體表觀完好命題（Software Observable Integrity Proposition）</strong>」，將軟體的外部可觀察完整性與內部結構完整性明確區分。本文主張，一個系統完全可能同時具有很高的功能完整性與很低的結構完整性；軟體的可修補性、可包裝性、可重試性、可人工介入性與高度抽象性，使這種狀態不但可能，而且在長期演化系統中相當常見。</p>
 <p>本文以 Big Ball of Mud、technical debt、software architecture erosion、Lehman 軟體演化研究與 Hyrum&#39;s Law 等既有軟體工程研究作為背景，並以 MSSP/FPL 從架構方法論走向可執行規格後暴露的實作問題作為一個研究動機。本文不主張「能運作的軟體都是壞的」，也不把所有結構問題統稱為技術債；相反地，本文建立多維完整性模型，區分功能完整性、結構完整性、演化完整性、知識完整性與外部可觀察完整性，為後續「補償性完好」「有效架構」「補償凝固」與「軟體結構動力學」提供理論地基。</p>
 <p>**關鍵詞：**軟體架構、表觀完整性、結構完整性、技術債、架構侵蝕、Big Ball of Mud、MSSP、FPL、軟體演化</p>
 <hr>
-<h1>1. 問題：一個能正常工作的系統，究竟證明了什麼？</h1>
+<h2>1. 問題：一個能正常工作的系統，究竟證明了什麼？</h2>
 <p>對一般使用者而言，軟體系統的品質通常透過操作結果被理解。</p>
 <p>應用程式能啟動、按鈕有反應、資料能保存、訂單能成立、付款能完成、網站不容易當機，這些都屬於真實而重要的品質訊號。工程團隊也會進一步檢查測試、效能、安全性與錯誤率。</p>
 <p>問題在於：這些訊號主要回答的是：</p>
@@ -97,7 +101,7 @@ footer a{color:var(--accent)}
 </ol>
 <p>這就是「表觀完好」問題的起點。</p>
 <hr>
-<h1>2. 軟體為什麼特別容易形成表觀完好？</h1>
+<h2>2. 軟體為什麼特別容易形成表觀完好？</h2>
 <p>物理產品的某些結構缺陷會迅速轉化成明顯失敗。橋樑若失去關鍵承載結構，可能直接崩塌；機械零件尺寸錯誤，也常會以摩擦、破裂或無法裝配的形式顯現。</p>
 <p>軟體不同。</p>
 <p>軟體具有高度的邏輯可塑性。當原本模型不完整時，開發者往往可以再加入一個條件、一層轉換、一個重試、一個快取、一個例外表、一個手動維運流程，使原本不能成立的路徑重新得到可接受結果。</p>
@@ -119,7 +123,7 @@ footer a{color:var(--accent)}
 </blockquote>
 <p>這使得「目前沒有失敗」和「內部沒有重大問題」之間產生巨大的認知距離。</p>
 <hr>
-<h1>3. Big Ball of Mud：混亂不等於不能生存</h1>
+<h2>3. Big Ball of Mud：混亂不等於不能生存</h2>
 <p>Foote 與 Yoder 在 Big Ball of Mud 中描述了一類缺乏清楚高階架構、由權宜修改與反覆修補塑形的系統。他們真正重要的洞察不是單純嘲笑這類架構，而是指出：這種系統十分普遍，而且具有不可否認的實用性。</p>
 <p>換句話說，軟體工程很早就遇到了以下現象：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>Architectural Disorder</mtext><mo>⇏</mo><mtext>Immediate Operational Failure</mtext></mrow><annotation encoding="application/x-tex">\text{Architectural Disorder}
@@ -139,7 +143,7 @@ footer a{color:var(--accent)}
 <p><strong>外部成功與內部完整之間可能存在多大的差距，以及這個差距如何被維持。</strong></p>
 </blockquote>
 <hr>
-<h1>4. Technical Debt：現在可用，不代表未來便宜</h1>
+<h2>4. Technical Debt：現在可用，不代表未來便宜</h2>
 <p>SEI 對 technical debt 的經典工程化定義指出，一種設計或建造方式可以在短期帶來便利，但使未來完成相同工作需要付出更高成本。</p>
 <p>這再次說明：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>Short-Term Effectiveness</mtext><mo mathvariant="normal">≠</mo><mtext>Long-Term Structural Economy</mtext></mrow><annotation encoding="application/x-tex">\text{Short-Term Effectiveness}
@@ -167,7 +171,7 @@ footer a{color:var(--accent)}
 </ul>
 <p>因此 technical debt 只是更大「結構負擔」集合中的一部分。</p>
 <hr>
-<h1>5. Architecture Erosion：原本設計過，也仍然可能變差</h1>
+<h2>5. Architecture Erosion：原本設計過，也仍然可能變差</h2>
 <p>這一點對本文尤其重要。</p>
 <p>表觀完好命題並不只針對「一開始就沒有設計」的軟體。</p>
 <p>Architecture erosion 的研究指出，軟體在演化過程中可能逐漸偏離原始架構；這種侵蝕不只表現為靜態結構違反，也會影響品質、維護與後續演化，而且成因同時包括技術因素與非技術因素。</p>
@@ -203,7 +207,7 @@ footer a{color:var(--accent)}
 </blockquote>
 <p>那麼對完全沒有明確架構治理的系統而言，隱藏問題很可能更多，而不是更少。</p>
 <hr>
-<h1>6. Hyrum&#39;s Law：沒有寫進契約的行為，也可能變成契約</h1>
+<h2>6. Hyrum&#39;s Law：沒有寫進契約的行為，也可能變成契約</h2>
 <p>結構與表觀之間另一個重要裂縫來自 API 使用。</p>
 <p>Hyrum&#39;s Law 的核心觀察是：當 API 使用者數量足夠大時，系統所有可觀察行為都可能被某個使用者依賴。</p>
 <p>這表示：</p>
@@ -236,7 +240,7 @@ C_{\text{effective}}</annotation></semantics></math></span><span class="katex-ht
 <p>等因素約束。</p>
 <p>這將在後續「有效架構」與「補償凝固」中進一步展開。</p>
 <hr>
-<h1>7. 軟體完整性不是一維標量</h1>
+<h2>7. 軟體完整性不是一維標量</h2>
 <p>為避免「好軟體／壞軟體」這種過度簡化判斷，本文提出一個最小多維完整性模型。</p>
 <p>令一個軟體系統在時間 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi></mrow><annotation encoding="application/x-tex">t</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6151em;"></span><span class="mord mathnormal">t</span></span></span></span> 的完整性狀態為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="bold">I</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><mrow><mo fence="true">[</mo><msub><mi>I</mi><mi>f</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo separator="true">,</mo><msub><mi>I</mi><mi>s</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo separator="true">,</mo><msub><mi>I</mi><mi>e</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo separator="true">,</mo><msub><mi>I</mi><mi>k</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo separator="true">,</mo><msub><mi>I</mi><mi>o</mi></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo fence="true">]</mo></mrow></mrow><annotation encoding="application/x-tex">\mathbf{I}(t)
@@ -249,27 +253,27 @@ I_k(t),
 I_o(t)
 \right]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathbf">I</span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;">[</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">o</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mclose delimcenter" style="top:0em;">]</span></span></span></span></span></span>
 <p>其中：</p>
-<h3>7.1 功能完整性</h3>
+<h4>7.1 功能完整性</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mi>f</mi></msub><mo>=</mo><mtext>Functional Integrity</mtext></mrow><annotation encoding="application/x-tex">I_f
 =
 \text{Functional Integrity}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Functional Integrity</span></span></span></span></span></span>
 <p>表示系統是否能完成承諾功能與關鍵使用流程。</p>
-<h3>7.2 結構完整性</h3>
+<h4>7.2 結構完整性</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mi>s</mi></msub><mo>=</mo><mtext>Structural Integrity</mtext></mrow><annotation encoding="application/x-tex">I_s
 =
 \text{Structural Integrity}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Structural Integrity</span></span></span></span></span></span>
 <p>表示模組邊界、依賴、權限、資料所有權、狀態與失敗語義是否清楚並保持一致。</p>
-<h3>7.3 演化完整性</h3>
+<h4>7.3 演化完整性</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mi>e</mi></msub><mo>=</mo><mtext>Evolutionary Integrity</mtext></mrow><annotation encoding="application/x-tex">I_e
 =
 \text{Evolutionary Integrity}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Evolutionary Integrity</span></span></span></span></span></span>
 <p>表示系統是否能在需求、規模、外部環境與技術棧改變時，以可控制成本進行修改。</p>
-<h3>7.4 知識完整性</h3>
+<h4>7.4 知識完整性</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mi>k</mi></msub><mo>=</mo><mtext>Knowledge Integrity</mtext></mrow><annotation encoding="application/x-tex">I_k
 =
 \text{Knowledge Integrity}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Knowledge Integrity</span></span></span></span></span></span>
 <p>表示系統真正需要的知識是否已被外部化、文件化、形式化或可被重新推導，而不是只存在少數工程師的記憶中。</p>
-<h3>7.5 表觀完整性</h3>
+<h4>7.5 表觀完整性</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mi>o</mi></msub><mo>=</mo><mtext>Observable Integrity</mtext></mrow><annotation encoding="application/x-tex">I_o
 =
 \text{Observable Integrity}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">o</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Observable Integrity</span></span></span></span></span></span>
@@ -282,9 +286,9 @@ I_o(t)
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mi>e</mi></msub><mo separator="true">,</mo><mtext> </mtext><msub><mi>I</mi><mi>k</mi></msub><mo>≪</mo><msub><mi>I</mi><mi>o</mi></msub></mrow><annotation encoding="application/x-tex">I_e,\ I_k \ll I_o</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≪</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">o</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>這就是本文所稱的「表觀完好」。</p>
 <hr>
-<h1>8. 表觀完好命題</h1>
+<h2>8. 表觀完好命題</h2>
 <p>本文提出以下命題。</p>
-<h2>命題 1：軟體表觀完好命題</h2>
+<h3>命題 1：軟體表觀完好命題</h3>
 <p>對一個軟體系統 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi></mrow><annotation encoding="application/x-tex">S</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span></span></span></span> 而言，高可觀察完整性不足以推出高結構完整性：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mi>o</mi></msub><mo stretchy="false">(</mo><mi>S</mi><mo stretchy="false">)</mo><mo>⇏</mo><msub><mi>I</mi><mi>s</mi></msub><mo stretchy="false">(</mo><mi>S</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">I_o(S) \nRightarrow I_s(S)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">o</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel amsrm">⇏</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mclose">)</span></span></span></span></span>
 <p>同樣地，高功能完整性也不足以推出高演化完整性與知識完整性：</p>
@@ -294,12 +298,12 @@ I_e(S)</annotation></semantics></math></span><span class="katex-html" aria-hidde
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mi>f</mi></msub><mo stretchy="false">(</mo><mi>S</mi><mo stretchy="false">)</mo><mo>⇏</mo><msub><mi>I</mi><mi>k</mi></msub><mo stretchy="false">(</mo><mi>S</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">I_f(S)
 \nRightarrow
 I_k(S)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel amsrm">⇏</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mclose">)</span></span></span></span></span>
-<h3>直觀解釋</h3>
+<h4>直觀解釋</h4>
 <p>「今天能完成任務」描述的是現在某些路徑的結果。</p>
 <p>「系統結構良好」描述的是更廣泛的內部關係與未來可變性。</p>
 <p>兩者相關，但不是邏輯等價。</p>
 <hr>
-<h1>9. 為什麼這不是一句普通的「能跑不代表好程式」？</h1>
+<h2>9. 為什麼這不是一句普通的「能跑不代表好程式」？</h2>
 <p>這個命題如果只停在「能跑不代表程式碼漂亮」，價值有限。</p>
 <p>本文真正想建立的是下一步：</p>
 <blockquote>
@@ -334,13 +338,13 @@ I_o-I_s</annotation></semantics></math></span><span class="katex-html" aria-hidd
 <li>開發者默契。</li>
 </ul>
 <p>下一篇將把這整組機制正式稱為：</p>
-<h1><strong>補償性完好（Compensated Integrity）</strong></h1>
+<h2><strong>補償性完好（Compensated Integrity）</strong></h2>
 <p>也就是：</p>
 <blockquote>
 <p>一個系統的可觀察完整性，不一定完全來自其內部原生結構；它也可能部分來自技術、人類、操作與相容機制的共同補償。</p>
 </blockquote>
 <hr>
-<h1>10. 軟體成功甚至可能加劇這個問題</h1>
+<h2>10. 軟體成功甚至可能加劇這個問題</h2>
 <p>Lehman 對軟體演化的長期研究提醒我們：與真實世界互動的 E-type 系統需要持續演化，而複雜度若不被主動控制，會隨演化增加。</p>
 <p>因此一個成功產品可能經歷：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>Success</mtext><mo>→</mo><mtext>More Users</mtext><mo>→</mo><mtext>More Requirements</mtext><mo>→</mo><mtext>More Changes</mtext><mo>→</mo><mtext>More Historical Constraints</mtext></mrow><annotation encoding="application/x-tex">\text{Success}
@@ -366,7 +370,7 @@ I_o-I_s</annotation></semantics></math></span><span class="katex-html" aria-hidd
 <p>這可以解釋為什麼某些非常成功、非常重要的軟體，內部結構反而比小型展示專案更不漂亮。</p>
 <p>不是因為成功必然導致爛架構，而是因為成功系統承受的歷史、相容、組織與規模壓力更大。</p>
 <hr>
-<h1>11. MSSP 對這個命題的特殊意義</h1>
+<h2>11. MSSP 對這個命題的特殊意義</h2>
 <p>MSSP 的價值恰好在於它不是完全沒有設計的架構。</p>
 <p>它一開始就嘗試回答：</p>
 <ul>
@@ -397,22 +401,22 @@ I_o-I_s</annotation></semantics></math></span><span class="katex-html" aria-hidd
 <p><strong>架構設計不是一次性保證，而是一個持續被現實反駁、校正與重新理解的過程。</strong></p>
 </blockquote>
 <hr>
-<h1>12. 邊界與限制</h1>
+<h2>12. 邊界與限制</h2>
 <p>本文命題需要避免四種過度延伸。</p>
-<h2>12.1 表觀完好不等於欺騙</h2>
+<h3>12.1 表觀完好不等於欺騙</h3>
 <p>一個系統外部功能正常但內部結構不佳，不代表開發者故意掩飾問題。</p>
 <p>很多差距來自合理歷史演化。</p>
-<h2>12.2 結構不完美不等於失敗</h2>
+<h3>12.2 結構不完美不等於失敗</h3>
 <p>對短生命週期原型、小型腳本、探索性系統而言，過度架構反而可能提高成本。</p>
 <p>Big Ball of Mud 相關討論早已指出，過早架構同樣可能成為限制。</p>
-<h2>12.3 不能用單一指標宣告「架構健康」</h2>
+<h3>12.3 不能用單一指標宣告「架構健康」</h3>
 <p>本文的 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>I</mi><mi>f</mi></msub><mo separator="true">,</mo><msub><mi>I</mi><mi>s</mi></msub><mo separator="true">,</mo><msub><mi>I</mi><mi>e</mi></msub><mo separator="true">,</mo><msub><mi>I</mi><mi>k</mi></msub><mo separator="true">,</mo><msub><mi>I</mi><mi>o</mi></msub></mrow><annotation encoding="application/x-tex">I_f,I_s,I_e,I_k,I_o</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.1076em;">f</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0315em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0785em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">o</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 首先是理論分解，不是已驗證的標準化量表。</p>
 <p>不同系統的測量方式必須依情境設計。</p>
-<h2>12.4 不能把所有結構問題都叫 technical debt</h2>
+<h3>12.4 不能把所有結構問題都叫 technical debt</h3>
 <p>有些問題是債，有些是侵蝕，有些是歷史殘留，有些是隱性契約，有些只是問題域本身的必要複雜度。</p>
 <p>後續篇章會逐步拆開。</p>
 <hr>
-<h1>13. 結論</h1>
+<h2>13. 結論</h2>
 <p>本文從一個非常簡單的工程直覺開始：</p>
 <blockquote>
 <p><strong>程式能跑，不代表程式結構良好。</strong></p>
@@ -435,7 +439,7 @@ I_o \nRightarrow I_s
 <p>這將導向本系列第二篇：</p>
 <p><strong>〈補償性完好：為什麼不完整的軟體仍然可以正常運作〉。</strong></p>
 <hr>
-<h1>參考文獻</h1>
+<h2>參考文獻</h2>
 <ol>
 <li>Foote, B., &amp; Yoder, J. (1997/1999). <em>Big Ball of Mud</em>. Pattern Languages of Program Design 4 / PLoP &#39;97. <a href="https://www.laputan.org/mud/">https://www.laputan.org/mud/</a></li>
 <li>Software Engineering Institute, Carnegie Mellon University. (2016). <em>Managing Technical Debt in Complex Software Systems</em>. <a href="https://www.sei.cmu.edu/library/managing-technical-debt-in-complex-software-systems/">https://www.sei.cmu.edu/library/managing-technical-debt-in-complex-software-systems/</a></li>

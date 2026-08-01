@@ -23,6 +23,10 @@ main{padding:56px 0 96px}
 .content h1{font-family:Inter,"Noto Sans TC",sans-serif;font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 30px}
 .content h2{font-family:Inter,"Noto Sans TC",sans-serif;font-size:26px;line-height:1.28;margin:58px 0 16px}
 .content h3{font-family:Inter,"Noto Sans TC",sans-serif;font-size:19px;margin:38px 0 12px}
+/* Demoting the body by one level pushes the deepest sections here, so they need
+   to be styled rather than left to the browser's defaults. */
+.content h4{font-family:Inter,"Noto Sans TC",sans-serif;font-size:16.5px;margin:30px 0 10px;color:var(--accent)}
+.content h5,.content h6{font-family:Inter,"Noto Sans TC",sans-serif;font-size:14px;letter-spacing:.02em;margin:26px 0 9px;color:var(--muted)}
 .content p{margin:0 0 24px}
 .content blockquote{margin:36px 0;padding:4px 0 4px 26px;border-left:3px solid var(--accent);font-size:20px;line-height:1.7}
 .content li{margin:.45em 0}
@@ -53,7 +57,7 @@ footer a{color:var(--accent)}
   <section class="facts"><div><b>編號</b><span>OIS-10</span></div><div><b>版本</b><span>v0.1</span></div><div><b>日期</b><span>2026-08-01</span></div><div><b>作者</b><span>Neo.K</span></div><div><b>協作整理</b><span>Aletheia / GPT</span></div></section>
   <p class="tools"><a href="https://thisoneisneok.com/pdf/papers/ois-10.pdf">下載 PDF ↓</a><a href="https://thisoneisneok.com/papers">回到論文索引 ↗</a></p>
   <article class="content"><h1>AI 寫得越快，屎山會長得越快嗎？AI 原生開發的新技術債</h1>
-<h2>摘要</h2>
+<h3>摘要</h3>
 <p>生成式 AI 與 coding agents 正快速降低程式碼產生、局部修改、文件草擬、測試生成與重構建議的成本。這使一個直覺問題變得迫切：如果程式碼可以比過去快數倍產生，而架構理解、驗證、整合、治理與知識同步的速度沒有同比提高，軟體是否會更快進入 technical debt、architecture erosion、compensation accumulation 與 Big Ball of Mud？</p>
 <p>目前的實證結果並不支持「AI 必然提高或降低軟體工程生產力」這種單向結論。Microsoft 2025 年彙整三個企業 field experiments、共 4,867 名開發者，觀察到 AI coding assistant 使用者完成任務數約提高 26%；METR 對熟悉大型開源專案的資深開發者所做的早期 2025 RCT，則觀察到使用 AI 的任務完成時間增加 19%。METR 在 2026 年嘗試以更新模型延續研究，但因愈來愈多開發者不願在無 AI 條件下參與，使樣本選擇偏差加劇，因此認為新實驗已無法可靠估計當下整體 productivity effect。這些差異顯示：AI 對「速度」的影響高度依賴任務、熟悉度、工具世代與工作流程。</p>
 <p>相比之下，一個更穩定的趨勢正在出現：軟體工程工作的瓶頸由 creation 向 verification、integration 與 supervision 移動。2026 年縱向研究將這類工作稱為 supervisory engineering work；DORA 2025/2026 研究也將 AI 描述為一種 amplifier——它可以提高 throughput，但若 delivery foundations 不成熟，也可能放大 instability。2026 年一項針對 304,362 個已驗證 AI-authored commits、6,275 個 GitHub repositories 的大型實證研究更指出，AI 引入的 code smells、bugs 與 security issues 中，有 24.2% 在追蹤到 repository 最新版本時仍未消失；該研究仍屬近期 empirical preprint，數字不應被視為所有 AI 工具與所有專案的普世定律，但它已直接證明「AI 生成問題可以在真實 codebase 中形成持久維護負擔」。</p>
@@ -81,7 +85,7 @@ V_{\text{governance}}
 <p>作為概念性的 AI 生成—治理比率。真正的 AI-native engineering 不應追求最大化 generated code，而應同時提高治理吞吐量，使 AI 成為結構代謝加速器，而不是結構負擔放大器。</p>
 <p>**關鍵詞：**AI coding、coding agents、technical debt、verification debt、software quality、DORA、supervisory engineering、Dynamic MSSP、FPL、生成—治理缺口</p>
 <hr>
-<h1>1. 問題不是 AI 會不會寫 code，而是人類會突然得到多少 code</h1>
+<h2>1. 問題不是 AI 會不會寫 code，而是人類會突然得到多少 code</h2>
 <p>傳統軟體工程的一個天然限制是：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mtext>human coding</mtext></msub></mrow><annotation encoding="application/x-tex">V_{\text{human coding}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">human coding</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>有限。</p>
@@ -94,7 +98,7 @@ V_{\text{governance}}
 </ul>
 <p>這個限制雖然降低產出速度，</p>
 <p>也意外形成一種：</p>
-<h1>Natural Change Throttle</h1>
+<h2>Natural Change Throttle</h2>
 <p>亦即天然變更節流。</p>
 <p>但 coding agent 改變了這一點。</p>
 <p>同樣時間內，AI 可以：</p>
@@ -116,7 +120,7 @@ V_{\text{governance}}
 <p><strong>架構理解、驗證、整合與治理速度有沒有一起提高？</strong></p>
 </blockquote>
 <hr>
-<h1>2. AI 生產力研究沒有單一答案</h1>
+<h2>2. AI 生產力研究沒有單一答案</h2>
 <p>目前不同研究得到不同結果。</p>
 <p>Microsoft 2025 年研究結合：</p>
 <ul>
@@ -138,7 +142,7 @@ V_{\text{governance}}
 \text{Higher Throughput}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord">AI Assistance</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Higher Throughput</span></span></span></span></span></span>
 <p>在某些真實工作環境中確實成立。</p>
 <hr>
-<h1>3. METR：在熟悉大型 codebase 的資深開發者身上，早期 2025 AI 反而更慢</h1>
+<h2>3. METR：在熟悉大型 codebase 的資深開發者身上，早期 2025 AI 反而更慢</h2>
 <p>METR 的 2025 RCT 研究：</p>
 <ul>
 <li>16 名 experienced open-source developers；</li>
@@ -167,7 +171,7 @@ V_{\text{governance}}
 </blockquote>
 <p>因為研究只描述一個特定時期、特定人群、特定任務環境。</p>
 <hr>
-<h1>4. 2026 METR 更新：AI 進步太快，連實驗設計都開始失效</h1>
+<h2>4. 2026 METR 更新：AI 進步太快，連實驗設計都開始失效</h2>
 <p>METR 在 2026 年公布後續實驗狀況時指出：</p>
 <p>他們原本從 2025 年 8 月開始使用更新 AI 工具、更多開發者重新測試。</p>
 <p>但後來發現：</p>
@@ -175,7 +179,7 @@ V_{\text{governance}}
 <p>愈來愈多開發者不願意參加「不能使用 AI」的 control tasks。</p>
 </blockquote>
 <p>這造成：</p>
-<h1>Selection Bias</h1>
+<h2>Selection Bias</h2>
 <p>因而使新實驗難以可靠估計當下的 productivity uplift。</p>
 <p>這本身就很有意思。</p>
 <p>它表示：</p>
@@ -191,7 +195,7 @@ V_{\text{governance}}
 <p><strong>不同 AI-native workflow 之間有什麼差異？</strong></p>
 </blockquote>
 <hr>
-<h1>5. 所以本文不使用「AI 一定讓 coding 更快」作為前提</h1>
+<h2>5. 所以本文不使用「AI 一定讓 coding 更快」作為前提</h2>
 <p>本文需要的前提其實更弱：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mtext>AI reduces marginal cost of producing candidate changes</mtext></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
 \text{AI reduces marginal cost of producing candidate changes}
@@ -211,14 +215,14 @@ V_{\text{governance}}
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>candidate generation</mtext></msub><mo>↓</mo></mrow><annotation encoding="application/x-tex">C_{\text{candidate generation}}\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">candidate generation</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
 <p>而這已足以改變整個軟體工程結構。</p>
 <hr>
-<h1>6. Creation → Verification：瓶頸正在移動</h1>
+<h2>6. Creation → Verification：瓶頸正在移動</h2>
 <p>2026 年 Vella 與 Blincoe 的 longitudinal mixed-methods study 觀察到：</p>
 <ul>
 <li>82% 參與者表示花在 writing code 的時間下降；</li>
 <li>工作重心由 creation 向 verification activities 移動。</li>
 </ul>
 <p>研究因此提出：</p>
-<h1>Supervisory Engineering Work</h1>
+<h2>Supervisory Engineering Work</h2>
 <p>包括：</p>
 <ol>
 <li>directing AI；</li>
@@ -231,7 +235,7 @@ V_{\text{governance}}
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>supervision</mtext></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">C_{\text{supervision}}\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">supervision</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <p>這正是第七篇「複雜度轉移」的 AI 版本。</p>
 <hr>
-<h1>7. AI 不是消滅工程，而是改變工程負擔的分布</h1>
+<h2>7. AI 不是消滅工程，而是改變工程負擔的分布</h2>
 <p>可以將傳統工程粗略表示為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi mathvariant="bold">W</mi><mrow><mi>h</mi><mi>u</mi><mi>m</mi><mi>a</mi><mi>n</mi></mrow></msub><mo>=</mo><mo stretchy="false">[</mo><msub><mi>W</mi><mtext>design</mtext></msub><mo separator="true">,</mo><msub><mi>W</mi><mtext>code</mtext></msub><mo separator="true">,</mo><msub><mi>W</mi><mtext>review</mtext></msub><mo separator="true">,</mo><msub><mi>W</mi><mtext>test</mtext></msub><mo separator="true">,</mo><msub><mi>W</mi><mtext>integration</mtext></msub><mo separator="true">,</mo><msub><mi>W</mi><mtext>operations</mtext></msub><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\mathbf{W}_{human}
 =
@@ -257,10 +261,10 @@ W_{\text{operations}}
 \text{Less Software Engineering}
 }</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord text"><span class="mord">Less Human Typing</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord text"><span class="mord">Less Software Engineering</span></span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h1>8. DORA：AI 更像 amplifier，而不是 repair system</h1>
+<h2>8. DORA：AI 更像 amplifier，而不是 repair system</h2>
 <p>DORA 2025 State of AI-assisted Software Development 研究涵蓋近 5,000 名技術專業人士與超過 100 小時 qualitative data。</p>
 <p>其核心描述是：</p>
-<h1>AI as an Amplifier</h1>
+<h2>AI as an Amplifier</h2>
 <p>也就是：</p>
 <blockquote>
 <p>AI 放大高效組織的優勢，也放大低效組織的問題。</p>
@@ -282,7 +286,7 @@ W_{\text{operations}}
 <p>則：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>ρ</mi><mi>g</mi></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">\rho_g\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">ρ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <hr>
-<h1>9. AI 技術債：真正需要避免概念濫用</h1>
+<h2>9. AI 技術債：真正需要避免概念濫用</h2>
 <p>很容易直接說：</p>
 <blockquote>
 <p>AI-generated code = technical debt。</p>
@@ -304,7 +308,7 @@ W_{\text{operations}}
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>Future Cost Relation</mtext></mrow><annotation encoding="application/x-tex">\text{Future Cost Relation}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord text"><span class="mord">Future Cost Relation</span></span></span></span></span></span>
 <p>才能成立。</p>
 <hr>
-<h1>10. 但 AI 的確可以生成長期維護負擔</h1>
+<h2>10. 但 AI 的確可以生成長期維護負擔</h2>
 <p>2026 年 Liu 等人研究：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>304</mn><mo separator="true">,</mo><mn>362</mn></mrow><annotation encoding="application/x-tex">304,362</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">304</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">362</span></span></span></span></span>
 <p>個 verified AI-authored commits，</p>
@@ -342,7 +346,7 @@ W_{\text{operations}}
 <p><strong>AI 引入的問題確實可以在真實 repository 中持續存在，而不是全部在下一輪 review 自動消失。</strong></p>
 </blockquote>
 <hr>
-<h1>11. AI code 具有不同 defect profile</h1>
+<h2>11. AI code 具有不同 defect profile</h2>
 <p>2025 IEEE ISSRE 的大規模研究比較：</p>
 <ul>
 <li>human-written；</li>
@@ -382,9 +386,9 @@ W_{\text{operations}}
 <p><strong>不同種類的品質負擔。</strong></p>
 </blockquote>
 <hr>
-<h1>12. 第一種 AI 原生負擔：Verification Debt</h1>
+<h2>12. 第一種 AI 原生負擔：Verification Debt</h2>
 <p>本文提出：</p>
-<h1>Verification Debt</h1>
+<h2>Verification Debt</h2>
 <p>當生成變更的速度：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mi>g</mi></msub></mrow><annotation encoding="application/x-tex">V_g</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>高於可靠驗證速度：</p>
@@ -402,7 +406,7 @@ W_{\text{operations}}
 <p>它就可能轉化成：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>D</mi><mtext>technical</mtext></msub></mrow><annotation encoding="application/x-tex">D_{\text{technical}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">technical</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h1>13. 第二種：Context Debt</h1>
+<h2>13. 第二種：Context Debt</h2>
 <p>AI Agent 通常不是在「完整世界模型」中工作。</p>
 <p>它可能只看到：</p>
 <ul>
@@ -433,13 +437,13 @@ A_C,A_R,A_D,A_O,A_H,A_X,A_K
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>Globally Misaligned</mtext></mrow><annotation encoding="application/x-tex">\text{Globally Misaligned}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Globally Misaligned</span></span></span></span></span></span>
 <p>的修改。</p>
 <p>本文稱：</p>
-<h1>Context Debt</h1>
+<h2>Context Debt</h2>
 <p>即：</p>
 <blockquote>
 <p><strong>系統必要上下文沒有被持續外部化、索引與提供給生成者，因此每次 AI change 都需要重新猜測架構。</strong></p>
 </blockquote>
 <hr>
-<h1>14. Context Debt 不是 AI 的 hallucination 問題而已</h1>
+<h2>14. Context Debt 不是 AI 的 hallucination 問題而已</h2>
 <p>如果一個系統的重要規則只存在於：</p>
 <blockquote>
 <p>「老王知道。」</p>
@@ -457,7 +461,7 @@ K_{\text{available}}</annotation></semantics></math></span><span class="katex-ht
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>D</mi><mtext>context</mtext></msub></mrow><annotation encoding="application/x-tex">D_{\text{context}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">context</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>越重要。</p>
 <hr>
-<h1>15. 第三種：Provenance Debt</h1>
+<h2>15. 第三種：Provenance Debt</h2>
 <p>AI 生成大量 artifact 後，</p>
 <p>如果系統無法回答：</p>
 <ul>
@@ -470,7 +474,7 @@ K_{\text{available}}</annotation></semantics></math></span><span class="katex-ht
 <li>哪個 human review？</li>
 </ul>
 <p>就形成：</p>
-<h1>Provenance Debt</h1>
+<h2>Provenance Debt</h2>
 <p>記為：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>D</mi><mi>p</mi></msub></mrow><annotation encoding="application/x-tex">D_p</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>它不一定影響今天執行，</p>
@@ -480,7 +484,7 @@ K_{\text{available}}</annotation></semantics></math></span><span class="katex-ht
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>incident reconstruction</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{incident reconstruction}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">incident reconstruction</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>因此非常符合 technical debt 的跨時間成本性質。</p>
 <hr>
-<h1>16. 第四種：Specification Debt</h1>
+<h2>16. 第四種：Specification Debt</h2>
 <p>AI 很擅長：</p>
 <blockquote>
 <p>根據 prompt 寫一個東西。</p>
@@ -506,13 +510,13 @@ K_{\text{available}}</annotation></semantics></math></span><span class="katex-ht
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>underspecification</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{underspecification}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">underspecification</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>變得更明顯。</p>
 <p>本文稱：</p>
-<h1>Specification Debt</h1>
+<h2>Specification Debt</h2>
 <p>即：</p>
 <blockquote>
 <p><strong>系統要求沒有被形式化到足以支持大規模自動生成，卻已經開始大量生成 implementation。</strong></p>
 </blockquote>
 <hr>
-<h1>17. 第五種：Integration Debt</h1>
+<h2>17. 第五種：Integration Debt</h2>
 <p>AI 可以同時生成：</p>
 <pre><code class="language-text">service A
 service B
@@ -544,9 +548,9 @@ service C
 <p><strong>AI 可以非常快地生成比團隊能整合更多的組件。</strong></p>
 </blockquote>
 <p>這就是：</p>
-<h1>Integration Debt</h1>
+<h2>Integration Debt</h2>
 <hr>
-<h1>18. 第六種：Orchestration Debt</h1>
+<h2>18. 第六種：Orchestration Debt</h2>
 <p>Agentic development 不只產生 code。</p>
 <p>它還引入：</p>
 <ul>
@@ -568,10 +572,10 @@ service C
 <p>則：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>agent coordination</mtext></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">C_{\text{agent coordination}}\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">agent coordination</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <p>本文稱：</p>
-<h1>Orchestration Debt</h1>
+<h2>Orchestration Debt</h2>
 <p>這是 AI-native software 才特別突出的負擔。</p>
 <hr>
-<h1>19. 第七種：Supervision Debt</h1>
+<h2>19. 第七種：Supervision Debt</h2>
 <p>如果組織說：</p>
 <blockquote>
 <p>AI 產生的 code 全部要人工 review。</p>
@@ -590,7 +594,7 @@ service C
 <li>review quality 下降。</li>
 </ol>
 <p>因此：</p>
-<h1>Supervision Debt</h1>
+<h2>Supervision Debt</h2>
 <p>不是：</p>
 <blockquote>
 <p>人類懶得 review。</p>
@@ -600,7 +604,7 @@ service C
 <p><strong>監督能力沒有跟 generation capacity 同步擴張。</strong></p>
 </blockquote>
 <hr>
-<h1>20. AI 原生結構負擔向量</h1>
+<h2>20. AI 原生結構負擔向量</h2>
 <p>因此本文提出：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><msub><mi mathvariant="bold">B</mi><mrow><mi>A</mi><mi>I</mi></mrow></msub><mo>=</mo><mo stretchy="false">[</mo><msub><mi>D</mi><mi>v</mi></msub><mo separator="true">,</mo><msub><mi>D</mi><mi>c</mi></msub><mo separator="true">,</mo><msub><mi>D</mi><mi>p</mi></msub><mo separator="true">,</mo><msub><mi>D</mi><mi>s</mi></msub><mo separator="true">,</mo><msub><mi>D</mi><mi>i</mi></msub><mo separator="true">,</mo><msub><mi>D</mi><mi>o</mi></msub><mo separator="true">,</mo><msub><mi>D</mi><mrow><mi>s</mi><mi>u</mi><mi>p</mi></mrow></msub><mo stretchy="false">]</mo></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
 \mathbf{B}_{AI}
@@ -628,7 +632,7 @@ D_{sup}
 <p>這些不是全部都已經是既有標準 technical-debt taxonomy。</p>
 <p>它們是本文為 AI-native engineering 提出的分析維度。</p>
 <hr>
-<h1>21. 這些負擔會轉化成傳統 technical debt</h1>
+<h2>21. 這些負擔會轉化成傳統 technical debt</h2>
 <p>例如：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>D</mi><mi>v</mi></msub></mrow><annotation encoding="application/x-tex">D_v</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0278em;">D</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">v</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>未驗證 change 長期存在後，</p>
@@ -643,7 +647,7 @@ D_{sup}
 <p>所以 AI 原生負擔不是與舊世界完全分離。</p>
 <p>它們會流入前九篇建立的結構動力系統。</p>
 <hr>
-<h1>22. AI 可能加速「補償凝固」</h1>
+<h2>22. AI 可能加速「補償凝固」</h2>
 <p>以前一個 workaround 要長成 subsystem，</p>
 <p>可能需要：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>T</mi><mo>=</mo><mn>6</mn><mtext> months</mtext></mrow><annotation encoding="application/x-tex">T=6\text{ months}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">T</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord">6</span><span class="mord text"><span class="mord"> months</span></span></span></span></span></span>
@@ -664,9 +668,9 @@ D_{sup}
 <p>可以非常快上升。</p>
 <p>所以 AI 不只加快 coding。</p>
 <p>它也可能加快：</p>
-<h1>Architectural Solidification</h1>
+<h2>Architectural Solidification</h2>
 <hr>
-<h1>23. AI 可能加速 Historical Residue 的產生</h1>
+<h2>23. AI 可能加速 Historical Residue 的產生</h2>
 <p>AI 讓：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>new artifact</mtext></msub><mo>↓</mo></mrow><annotation encoding="application/x-tex">C_{\text{new artifact}}\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">new artifact</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
 <p>因此團隊較容易：</p>
@@ -689,7 +693,7 @@ adapter
 <p>即 historical residue generation rate 可能提高。</p>
 <p>這是非常值得警惕的 AI-native asymmetry。</p>
 <hr>
-<h1>24. 生成比刪除容易，會形成新的沉積偏差</h1>
+<h2>24. 生成比刪除容易，會形成新的沉積偏差</h2>
 <p>在成熟系統裡本來就有：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>delete</mtext></msub><mo>&gt;</mo><msub><mi>C</mi><mtext>add</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{delete}}
 &gt;
@@ -711,9 +715,9 @@ C_{\text{add}}
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi mathvariant="normal">∣</mi><mi>A</mi><mi>r</mi><mi>t</mi><mi>i</mi><mi>f</mi><mi>a</mi><mi>c</mi><mi>t</mi><mi>s</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mi mathvariant="normal">∣</mi></mrow><annotation encoding="application/x-tex">|Artifacts(t)|</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">∣</span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="mord mathnormal">a</span><span class="mord mathnormal">c</span><span class="mord mathnormal">t</span><span class="mord mathnormal">s</span><span class="mopen">(</span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mord">∣</span></span></span></span></span>
 <p>會快速增長。</p>
 <hr>
-<h1>25. 生成—治理缺口</h1>
+<h2>25. 生成—治理缺口</h2>
 <p>本文正式提出：</p>
-<h1>Generation–Governance Gap</h1>
+<h2>Generation–Governance Gap</h2>
 <p>令：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mrow><mi>A</mi><mi>I</mi></mrow></msub><mo>=</mo><msub><mi>V</mi><mtext>AI-assisted change</mtext></msub></mrow><annotation encoding="application/x-tex">V_{AI}
 =
@@ -739,7 +743,7 @@ V_G
 <p>持續，</p>
 <p>則未治理 change backlog 具有累積壓力。</p>
 <hr>
-<h1>26. AI 生成—治理比率</h1>
+<h2>26. AI 生成—治理比率</h2>
 <p>進一步定義：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><msub><mi>ρ</mi><mrow><mi>A</mi><mi>I</mi></mrow></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><mfrac><mrow><msub><mi>V</mi><mtext>AI-assisted change</mtext></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow><mrow><msub><mi>V</mi><mtext>verification</mtext></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>+</mo><msub><mi>V</mi><mtext>architecture</mtext></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>+</mo><msub><mi>V</mi><mtext>governance</mtext></msub><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow></mfrac></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
 \rho_{AI}(t)
@@ -767,7 +771,7 @@ V_{\text{governance}}(t)
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mfrac><mrow><mi>d</mi><msub><mi>B</mi><mrow><mi>A</mi><mi>I</mi></mrow></msub></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\frac{dB_{AI}}{dt}&gt;0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:2.0574em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3714em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">d</span><span class="mord mathnormal">t</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">d</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0502em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">A</span><span class="mord mathnormal mtight" style="margin-right:0.0785em;">I</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span></span></span></span></span>
 <p>的風險增加。</p>
 <hr>
-<h1>27. AI-native Big Ball of Mud 的形成路徑</h1>
+<h2>27. AI-native Big Ball of Mud 的形成路徑</h2>
 <p>傳統泥巴可能是：</p>
 <pre><code class="language-text">需求
 → 人類 patch
@@ -796,7 +800,7 @@ V_{\text{governance}}(t)
 \text{Global Structural Drift}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord text"><span class="mord">Local Correctness</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">High Change Velocity</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord text"><span class="mord">Global Structural Drift</span></span></span></span></span></span>
 <p>如果沒有 architecture-aware governance。</p>
 <hr>
-<h1>28. 「測試都過了」也不保證 AI change 沒有架構問題</h1>
+<h2>28. 「測試都過了」也不保證 AI change 沒有架構問題</h2>
 <p>Test 通常回答：</p>
 <blockquote>
 <p>observable behavior 是否符合某些 cases？</p>
@@ -821,9 +825,9 @@ V_{\text{governance}}(t)
 </ul>
 <p>因此 AI QA 不能只增加 tests。</p>
 <p>還需要：</p>
-<h1>Structural Verification</h1>
+<h2>Structural Verification</h2>
 <hr>
-<h1>29. Agentic Refactoring：AI 也可以是治理工具</h1>
+<h2>29. Agentic Refactoring：AI 也可以是治理工具</h2>
 <p>這一篇不能只談風險。</p>
 <p>2025 年 Agentic Refactoring 研究分析：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mn>15</mn><mo separator="true">,</mo><mn>451</mn></mrow><annotation encoding="application/x-tex">15,451</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">15</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">451</span></span></span></span></span>
@@ -847,7 +851,7 @@ V_{\text{governance}}(t)
 <p>也可以：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>R</mi><mtext>governance</mtext></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">R_{\text{governance}}\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">governance</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <hr>
-<h1>30. 真正問題不是「要不要 AI」，而是 AI 在分子還是分母</h1>
+<h2>30. 真正問題不是「要不要 AI」，而是 AI 在分子還是分母</h2>
 <p>第八篇定義：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>ρ</mi><mi>g</mi></msub><mo>=</mo><mfrac><msub><mi>V</mi><mtext>change</mtext></msub><msub><mi>V</mi><mtext>governance</mtext></msub></mfrac></mrow><annotation encoding="application/x-tex">\rho_g
 =
@@ -857,11 +861,11 @@ V_{\text{change}}
 V_{\text{governance}}
 }</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">ρ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.3324em;vertical-align:-0.9721em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">governance</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">change</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9721em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span>
 <p>AI 可以同時作用在 numerator 與 denominator。</p>
-<h3>如果主要用 AI 生成：</h3>
+<h4>如果主要用 AI 生成：</h4>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mtext>change</mtext></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">V_{\text{change}}\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">change</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <p>則：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>ρ</mi><mi>g</mi></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">\rho_g\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">ρ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.0359em;">g</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
-<h3>如果同時用 AI 做：</h3>
+<h4>如果同時用 AI 做：</h4>
 <ul>
 <li>architecture recovery；</li>
 <li>impact analysis；</li>
@@ -881,14 +885,14 @@ V_{\text{governance}}
 <p><strong>AI 是讓屎山長更快，還是讓系統代謝更快，取決於它主要被放在哪一側。</strong></p>
 </blockquote>
 <hr>
-<h1>31. AI-native engineering 的真正競爭可能是治理吞吐量</h1>
+<h2>31. AI-native engineering 的真正競爭可能是治理吞吐量</h2>
 <p>當 frontier coding agents 都能快速產生 implementation 後：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mtext>generation</mtext></msub></mrow><annotation encoding="application/x-tex">V_{\text{generation}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">generation</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>可能逐漸商品化。</p>
 <p>真正區分團隊的能力會轉向：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mtext>trusted integration</mtext></msub></mrow><annotation encoding="application/x-tex">V_{\text{trusted integration}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">trusted integration</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>即：</p>
-<h1>Trusted Integration Throughput</h1>
+<h2>Trusted Integration Throughput</h2>
 <p>它包括：</p>
 <ul>
 <li>specification；</li>
@@ -909,7 +913,7 @@ V_{\text{governance}}
 <p><strong>誰一天能安全吸收最多經過驗證的有效變更。</strong></p>
 </blockquote>
 <hr>
-<h1>32. 從 Lines of Code 轉向 Verified State Transition</h1>
+<h2>32. 從 Lines of Code 轉向 Verified State Transition</h2>
 <p>Program Ontology 的視角在這裡尤其重要。</p>
 <p>如果：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>P</mi><mi>r</mi><mi>o</mi><mi>g</mi><mi>r</mi><mi>a</mi><mi>m</mi><mo mathvariant="normal">≠</mo><mi>S</mi><mi>o</mi><mi>u</mi><mi>r</mi><mi>c</mi><mi>e</mi><mi>C</mi><mi>o</mi><mi>d</mi><mi>e</mi></mrow><annotation encoding="application/x-tex">Program\neq SourceCode</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.1389em;">P</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">o</span><span class="mord mathnormal" style="margin-right:0.0359em;">g</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">am</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal" style="margin-right:0.0576em;">S</span><span class="mord mathnormal">o</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.0278em;">r</span><span class="mord mathnormal">ce</span><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span></span></span></span></span>
@@ -924,11 +928,11 @@ V_{\text{governance}}
 \rightarrow
 \Delta W</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord">Intent</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">Structured Change</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord text"><span class="mord">Verification</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">Δ</span><span class="mord mathnormal" style="margin-right:0.1389em;">W</span></span></span></span></span>
 <p>所以產能應該衡量：</p>
-<h1>Verified State Transitions</h1>
+<h2>Verified State Transitions</h2>
 <p>而不是：</p>
-<h1>Generated Tokens</h1>
+<h2>Generated Tokens</h2>
 <hr>
-<h1>33. Dynamic MSSP 的 AI Gate</h1>
+<h2>33. Dynamic MSSP 的 AI Gate</h2>
 <p>未來 Dynamic MSSP 可以在 AI Agent change 後輸出：</p>
 <pre><code class="language-yaml">ai_change:
   agent: coding-agent-17
@@ -967,12 +971,12 @@ V_{\text{governance}}
 <p><strong>一個有來源、有證據、有結構影響的 architecture transaction。</strong></p>
 </blockquote>
 <hr>
-<h1>34. AI Change Budget</h1>
+<h2>34. AI Change Budget</h2>
 <p>如果：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mtext>generation</mtext></msub></mrow><annotation encoding="application/x-tex">V_{\text{generation}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">generation</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>可以無限上升，</p>
 <p>一個成熟組織反而可能需要：</p>
-<h1>AI Change Budget</h1>
+<h2>AI Change Budget</h2>
 <p>也就是每個時間窗口只允許：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>N</mi><mtext>AI changes</mtext></msub></mrow><annotation encoding="application/x-tex">N_{\text{AI changes}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.109em;">N</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">AI changes</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>在：</p>
@@ -985,10 +989,10 @@ V_{\text{governance}}
 <p>能吸收的範圍內。</p>
 <p>這與 SRE 的 error budget 很像，</p>
 <p>但作用在：</p>
-<h1>Change Absorption Capacity</h1>
+<h2>Change Absorption Capacity</h2>
 <p>而不是 availability。</p>
 <hr>
-<h1>35. 不是限制 AI，而是避免治理系統飽和</h1>
+<h2>35. 不是限制 AI，而是避免治理系統飽和</h2>
 <p>因此 Change Budget 的目的不是：</p>
 <blockquote>
 <p>讓 AI 少做事。</p>
@@ -1005,7 +1009,7 @@ V_{\text{trusted absorption}}</annotation></semantics></math></span><span class=
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mtext>trusted absorption</mtext></msub><mo>↑</mo></mrow><annotation encoding="application/x-tex">V_{\text{trusted absorption}}\uparrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">trusted absorption</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↑</span></span></span></span></span>
 <p>budget 就能提高。</p>
 <hr>
-<h1>36. AI 也可能第一次讓大型系統做到高頻結構治理</h1>
+<h2>36. AI 也可能第一次讓大型系統做到高頻結構治理</h2>
 <p>傳統 architecture review 的問題是：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>review</mtext></msub></mrow><annotation encoding="application/x-tex">C_{\text{review}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">review</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>太高。</p>
@@ -1031,7 +1035,7 @@ V_{\text{trusted absorption}}</annotation></semantics></math></span><span class=
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>f</mi><mtext>code change</mtext></msub></mrow><annotation encoding="application/x-tex">f_{\text{code change}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.1076em;">f</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">code change</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span>
 <p>這會是 Dynamic MSSP 最有價值的用途之一。</p>
 <hr>
-<h1>37. AI 時代真正的新架構不是「AI 幫你寫 code」</h1>
+<h2>37. AI 時代真正的新架構不是「AI 幫你寫 code」</h2>
 <p>更強的 AI-native stack 應該是：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>Intent</mtext></mrow><annotation encoding="application/x-tex">\text{Intent}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord text"><span class="mord">Intent</span></span></span></span></span></span>
 <p>↓</p>
@@ -1053,9 +1057,9 @@ V_{\text{trusted absorption}}</annotation></semantics></math></span><span class=
 → merge
 </code></pre>
 <hr>
-<h1>38. 命題 10：AI 生成—治理不對稱命題</h1>
+<h2>38. 命題 10：AI 生成—治理不對稱命題</h2>
 <p>本文提出系列第十命題。</p>
-<h2>AI 生成—治理不對稱命題</h2>
+<h3>AI 生成—治理不對稱命題</h3>
 <p>AI coding systems 降低 candidate change 的產生成本：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mtext>generation</mtext></msub><mo>↓</mo></mrow><annotation encoding="application/x-tex">C_{\text{generation}}\downarrow</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0715em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3175em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">generation</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">↓</span></span></span></span></span>
 <p>但並不自動同比降低：</p>
@@ -1076,7 +1080,7 @@ V_{\text{trusted governance}}
 }</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:2.7374em;vertical-align:-1.026em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.7114em;"><span style="top:-4.7374em;"><span class="pstrut" style="height:4.7374em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3714em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">d</span><span class="mord mathnormal">t</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">d</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0502em;">B</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0502em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">A</span><span class="mord mathnormal mtight" style="margin-right:0.0785em;">I</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">0</span></span></span></span></span><span style="top:-3.7114em;"><span class="pstrut" style="height:4.7374em;"></span><span class="stretchy fbox" style="height:2.7374em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.026em;"><span></span></span></span></span></span></span></span></span></span>
 <p>的風險上升。</p>
 <hr>
-<h1>39. 強版本：AI 是結構放大器</h1>
+<h2>39. 強版本：AI 是結構放大器</h2>
 <p>結合 DORA 的 amplifier framing，可得到：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><menclose notation="box"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="true"><mrow><mtext>AI</mtext><mo>≈</mo><mtext>Structural Amplifier</mtext></mrow></mstyle></mstyle></mstyle></menclose></mrow><annotation encoding="application/x-tex">\boxed{
 \text{AI}
@@ -1105,7 +1109,7 @@ V_{\text{trusted governance}}
 <p>AI 也可以放大：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>V</mi><mtext>structural disorder</mtext></msub></mrow><annotation encoding="application/x-tex">V_{\text{structural disorder}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.2222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.2222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">structural disorder</span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></span>
 <hr>
-<h1>40. 結論：AI 不一定讓屎山長更快，但它讓「長多快」第一次變成治理問題</h1>
+<h2>40. 結論：AI 不一定讓屎山長更快，但它讓「長多快」第一次變成治理問題</h2>
 <p>回到標題：</p>
 <blockquote>
 <p><strong>AI 寫得越快，屎山會長得越快嗎？</strong></p>
@@ -1160,7 +1164,7 @@ V_{\text{trusted governance}}
 <p><strong>更快地演化軟體，同時沒有比過去更快失去對它的理解與控制。</strong></p>
 </blockquote>
 <p>下一篇將直接把這些命題落回 MSSP：</p>
-<h1>〈從靜態 MSSP 到動態 MSSP：讓架構角色成為可觀察狀態〉</h1>
+<h2>〈從靜態 MSSP 到動態 MSSP：讓架構角色成為可觀察狀態〉</h2>
 <p>正式建立：</p>
 <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>R</mi><mi>d</mi></msub><mo stretchy="false">(</mo><mi>M</mi><mo stretchy="false">)</mo><mo mathvariant="normal">≠</mo><msub><mi>R</mi><mi>o</mi></msub><mo stretchy="false">(</mo><mi>M</mi><mo separator="true">,</mo><mi>t</mi><mo stretchy="false">)</mo><mo mathvariant="normal">≠</mo><msub><mi>R</mi><mi>e</mi></msub><mo stretchy="false">(</mo><mi>M</mi><mo separator="true">,</mo><mi>t</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">R_d(M)
 \neq
@@ -1169,7 +1173,7 @@ R_o(M,t)
 R_e(M,t)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">o</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">t</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mspace nobreak"></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0077em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.109em;">M</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">t</span><span class="mclose">)</span></span></span></span></span>
 <p>以及 Dynamic MSSP 如何利用 runtime、dependency、data flow、history、incident 與 AI evidence 進行持續架構判斷。</p>
 <hr>
-<h1>參考文獻</h1>
+<h2>參考文獻</h2>
 <ol>
 <li>Cui, Z. (K.), Demirer, M., Jaffe, S., Musolff, L., Peng, S., &amp; Salz, T. (2025). <em>The Effects of Generative AI on High-Skilled Work: Evidence from Three Field Experiments with Software Developers</em>. Microsoft Research / preprint.</li>
 <li>Becker, J., Rush, N., Barnes, E., &amp; Rein, D. (2025). <em>Measuring the Impact of Early-2025 AI on Experienced Open-Source Developer Productivity</em>. arXiv:2507.09089; METR.</li>
