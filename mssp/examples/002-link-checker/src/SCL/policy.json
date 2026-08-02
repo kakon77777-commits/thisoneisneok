@@ -1,0 +1,41 @@
+{
+  "policy_version": "1.0",
+
+  "_comment": [
+    "Knowledge and permission are separate axes. checkers/anchor knows exactly",
+    "how to resolve a fragment and holds no network permission at all, which is",
+    "what makes the pacing question below answerable by something other than",
+    "an opinion: a capability that may not reach the network cannot need pacing."
+  ],
+
+  "capabilities": {
+    "checkers/http": {
+      "network": true,
+      "may_wait": true,
+      "may_fail_run": true
+    },
+    "checkers/anchor": {
+      "network": false,
+      "may_wait": false,
+      "may_fail_run": true
+    },
+    "reporters/text": {
+      "network": false,
+      "may_wait": false,
+      "may_fail_run": false
+    }
+  },
+
+  "rules": [
+    {
+      "id": "pace-requires-network",
+      "statement": "A capability with network:false must never incur a pacing wait.",
+      "enforced_by": "SCL/policy.py::assert_pacing_is_earned, called by DMS/trace.py at the end of every run"
+    },
+    {
+      "id": "fail-requires-permission",
+      "statement": "Only a capability with may_fail_run:true may cause a non-zero exit.",
+      "enforced_by": "SCL/policy.py::may_fail_run, called by SMS/pipeline.py"
+    }
+  ]
+}

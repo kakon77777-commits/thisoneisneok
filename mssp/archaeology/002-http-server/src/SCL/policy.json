@@ -1,0 +1,26 @@
+{
+  "policy_version": "1.0",
+
+  "_comment": [
+    "Upstream, a handler's permissions are whatever its code happens to do,",
+    "because a handler is a method on the same object that owns the socket and",
+    "the filesystem helpers. translate_path exists to keep a request from",
+    "escaping the served directory, and it is a method the subclass may",
+    "override — so the boundary is enforced by the subclass agreeing to it.",
+    "",
+    "Here the permission is data next to the handler name, and dispatch checks",
+    "it before calling anything."
+  ],
+
+  "handlers": {
+    "handlers/static-file": {
+      "methods": ["GET"],
+      "read_filesystem": true,
+      "root": "public"
+    },
+    "handlers/health": {
+      "methods": ["GET"],
+      "read_filesystem": false
+    }
+  }
+}

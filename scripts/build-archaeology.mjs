@@ -51,11 +51,20 @@ function readMeta(file) {
   return meta;
 }
 
+// Same exclusion as scripts/build-mssp.mjs, and for the same reason: the first
+// Python entry brought `__pycache__/*.pyc` with it, which the walk counted as
+// source and published as part of the re-cut. Bytecode is a build artifact of
+// running the entry, so it reappears every time the runnable command is checked.
+const IGNORED_DIRS = new Set(["__pycache__", ".pytest_cache", "node_modules", ".mypy_cache"]);
+const IGNORED_FILES = /\.(pyc|pyo|class|o)$/;
+
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) walk(full, out);
-    else out.push(full);
+    if (entry.isDirectory()) {
+      if (!IGNORED_DIRS.has(entry.name)) walk(path.join(dir, entry.name), out);
+    } else if (!IGNORED_FILES.test(entry.name)) {
+      out.push(path.join(dir, entry.name));
+    }
   }
   return out;
 }

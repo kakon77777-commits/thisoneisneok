@@ -1,0 +1,42 @@
+{
+  "name": "http-server-recut",
+  "what_it_is": "A minimal HTTP request handler, re-cut so that a single verb handler can be exercised with no connection.",
+  "examined": {
+    "project": "CPython http.server",
+    "version": "3.14.5",
+    "license": "PSF-2.0",
+    "measured": {
+      "module_lines": 1441,
+      "BaseHTTPRequestHandler_methods": 28,
+      "SimpleHTTPRequestHandler_methods": 11,
+      "handle_one_request_lines": 36,
+      "parse_request_lines": 116,
+      "log_message_lines": 25,
+      "dispatch_mechanism": "getattr(self, 'do_' + command)"
+    }
+  },
+
+  "capabilities": {
+    "SMS": {
+      "message": "parse(bytes) -> Request | Response, and serialise(Response) -> bytes. Owns no connection.",
+      "dispatch": "Chooses a handler from a registry it is given, checks SCL, calls it."
+    },
+    "SCL": {
+      "policy": "Which handler may answer which method, and which may read the filesystem. Confinement to the served root lives here, not in the handler."
+    },
+    "TMS": {
+      "handlers/health": "Answers a liveness probe. Needs nothing.",
+      "handlers/static-file": "Serves a file from a confined root."
+    },
+    "DMS": {
+      "access_log": "Events, written to a sink the caller supplies."
+    }
+  },
+
+  "the_finding": "Upstream's extension point is inheritance. A new verb is a method on a subclass of the whole handler, so the smallest thing that can hold that verb is the whole handler. There is no subset to load, and therefore no island test to run.",
+
+  "non_goals": [
+    "Being an HTTP server. There is no socket here at all — requests arrive as bytes, which is the point.",
+    "Being faster, safer or more complete than the standard library. It is smaller because it does less."
+  ]
+}

@@ -66,7 +66,73 @@ export const msspExamples = [
     "lineCount": 509,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/001-task-runner.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/001-task-runner.html"
+  },
+  {
+    "id": "002-link-checker",
+    "slug": "002-link-checker",
+    "title": {
+      "zh": "連結檢查器：把一個 TMS 升成 SMS，然後付出代價",
+      "en": "Link checker: promoting a TMS to SMS, and paying for it"
+    },
+    "summary": {
+      "zh": "節流原本是可選能力，但沒有它主迴圈根本跑不完——它是核心。升上去之後，一個完全不碰網路的檢查器開始為它付出等待，代價是可以量出來的。",
+      "en": "Pacing was optional until the loop stopped closing without it, which makes it core. Promoting it made a checker that never touches the network start paying for it, and the cost is a number you can read."
+    },
+    "language": "python",
+    "date": "2026-08-02",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "tms-to-sms-promotion",
+      "identity-test",
+      "everything-becomes-sms",
+      "island-test"
+    ],
+    "runnable": "python src/main.py",
+    "files": [
+      "DMS/trace.py",
+      "FMS/manifest.json",
+      "SCL/policy.json",
+      "SCL/policy.py",
+      "SMS/model.py",
+      "SMS/pacing.py",
+      "SMS/pipeline.py",
+      "TMS/checkers/anchor.py",
+      "TMS/checkers/http.py",
+      "TMS/reporters/text.py",
+      "island-test.py",
+      "main.py"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/manifest.json"
+      ],
+      "SCL": [
+        "SCL/policy.json",
+        "SCL/policy.py"
+      ],
+      "SMS": [
+        "SMS/model.py",
+        "SMS/pacing.py",
+        "SMS/pipeline.py"
+      ],
+      "TMS": [
+        "TMS/checkers/anchor.py",
+        "TMS/checkers/http.py",
+        "TMS/reporters/text.py"
+      ],
+      "DMS": [
+        "DMS/trace.py"
+      ],
+      "root": [
+        "island-test.py",
+        "main.py"
+      ]
+    },
+    "lineCount": 730,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/002-link-checker.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/002-link-checker.html"
   }
 ];
 
-export const msspExampleCount = 1;
+export const msspExampleCount = 2;

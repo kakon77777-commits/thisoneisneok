@@ -1,0 +1,19 @@
+id: 002-http-server
+project: CPython http.server
+upstream: https://github.com/python/cpython/blob/main/Lib/http/server.py
+license: PSF-2.0
+examined_version: 3.14.5
+title:
+  zh: http.server 3.14.5：當擴充點是繼承，子集就無法單獨存在
+  en: "http.server 3.14.5: when the extension point is inheritance, no subset can stand alone"
+summary:
+  zh: 1,441 行，BaseHTTPRequestHandler 28 個方法。新增一個動詞的方式是繼承整個類別再命名一個 do_X，於是每個「子集」都是「全部 ＋ 一個方法」。handle_one_request 一個方法同時讀 socket、解析、用 getattr 分派、寫回應、記錄；log_message 寫死 sys.stderr。重切後 do_GET 的對應物不需要 socket 就能單獨測。
+  en: 1,441 lines, 28 methods on BaseHTTPRequestHandler. Adding a verb means subclassing the whole thing and naming a method do_X, so every "subset" is the whole plus one method. handle_one_request reads the socket, parses, dispatches by getattr, writes the response and logs, all in one method; log_message is hardcoded to sys.stderr. After the re-cut, the equivalent of do_GET runs alone with no socket.
+date: 2026-08-02
+version: v1.0
+verdict: seam-confirmed-by-ecosystem
+concepts:
+  - inheritance-blocks-the-island-test
+  - registry-vs-naming-convention
+  - dms-is-a-sink-not-a-destination
+runnable: python src/main.py

@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>連結檢查器：把一個 TMS 升成 SMS，然後付出代價 | MSSP | Neo.K</title>
+<meta name="description" content="節流原本是可選能力，但沒有它主迴圈根本跑不完——它是核心。升上去之後，一個完全不碰網路的檢查器開始為它付出等待，代價是可以量出來的。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/002-link-checker.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>002-link-checker</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>002-link-checker</span></div>
+    <div><b>語言</b><span>python</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-02</span></div>
+    <div><b>行數</b><span>730</span></div>
+    <div><b>執行</b><span><code>python src/main.py</code></span></div>
+  </section>
+  <article class="content"><h1>002 — Link checker: promoting a TMS to SMS, and paying for it</h1>
+<h2>What this program does</h2>
+<p>It reads a couple of documentation pages, pulls every link out of them, and says
+which ones are reachable. Two kinds of link, two different jobs: an absolute URL
+has to be fetched from a host, and an in-page <code>#fragment</code> only has to be matched
+against the headings of the page it sits on.</p>
+<pre><code class="language-bash">python src/main.py                    # the structure as published
+python src/main.py --without-pacing   # the evidence the promotion rests on
+python src/island-test.py             # each TMS alone, plus a check that the SCL rule can fail
+</code></pre>
+<p>The network is stubbed and the clock is fake, so a run is instant, offline and
+deterministic. Nothing here depends on anything outside the standard library.</p>
+<h2>The structural decision</h2>
+<p><strong>A capability was declared optional. It turned out the main loop could not
+finish without it. So it moved into SMS — and the move cost something, to a
+module that had nothing to do with it.</strong></p>
+<p><code>pacing</code> — waiting a moment between requests to the same host — started as
+<code>TMS/pacing</code>. That is the obvious place for it. It is a courtesy, it is the kind
+of thing you switch off in tests, and nothing about &quot;check some links&quot; sounds
+like it requires politeness.</p>
+<p>The first sign of trouble was mechanical. <code>TMS/checkers/http</code> imported
+<code>TMS/pacing</code>, and the build rejects a TMS that imports a sibling TMS. The
+tempting fix is to make the check pass: move <code>pacing</code> into <code>SMS/</code> and carry on.</p>
+<p>That fix is right by accident, which is not the same as right. The question the
+method actually asks is:</p>
+<blockquote>
+<p>If this capability is removed, is the system still the system it was?</p>
+</blockquote>
+<p>So remove it and look:</p>
+<pre><code class="language-console">$ python src/main.py --without-pacing
+  ok   index.md -&gt; https://docs.example.com/setup  (HTTP 200)
+  FAIL index.md -&gt; https://docs.example.com/config  (HTTP 429)
+  FAIL index.md -&gt; https://docs.example.com/tuning  (HTTP 429)
+  …
+  5 checked, 3 failed, 3 left without a verdict
+  loop closed: False
+</code></pre>
+<p>Three links never got a verdict at all. A link checker that is slow is still a
+link checker; a link checker that leaves links unchecked is not doing the one
+thing it exists to do. <strong>The loop cannot close without pacing, so pacing is
+core.</strong> Not because it is used often — because removing it ends the identity.</p>
+<p>That is the promotion. The interesting half is what it broke.</p>
+<h3>What broke</h3>
+<p>The tidiest shape after moving <code>pacing</code> into SMS is for <code>SMS/pipeline</code> to call
+it once per link, before dispatching to a checker. One call site, no checker has
+to remember anything, and it reads beautifully.</p>
+<p>It also charges the wait to whichever capability happens to be next in the list.
+<code>checkers/anchor</code> never opens a connection — it reads headings out of a string
+already in memory — and it started paying a delay for a resource it does not
+touch. Nothing failed. The report looked the same. The only visible difference
+was a number:</p>
+<pre><code class="language-text">  pacing waits by capability:
+    checkers/http        1   (network)
+    checkers/anchor      2   (no network)     ← paying for someone else&#39;s host
+</code></pre>
+<p>This is the trap the method names directly: <em>everything becomes SMS</em>. A
+capability promoted into the core does not stop at the module that needed it —
+it reaches every module the core touches, including the ones that were fine.</p>
+<p>The fix is that <code>pace()</code> is called by the capability that is about to open the
+connection, not by the pipeline. <code>SMS/pacing</code> decides nothing about who should
+wait; it asks the link, and <code>Link.host</code> is <code>None</code> for anything that never leaves
+the page.</p>
+<p>And because &quot;the anchor checker should not pay for this&quot; is exactly the kind of
+intention that quietly stops being true, it is written down where something can
+check it — <code>SCL/policy.json</code>, rule <code>pace-requires-network</code>, enforced at the end
+of every run. Section 4 of the island test builds the wrong shape on purpose and
+requires the rule to reject it.</p>
+<h2>Set by set</h2>
+<p><strong>FMS</strong> — <code>manifest.json</code>. What the program is, what each capability does, and
+decision <code>D-001</code> recording the promotion with its reason and its cost. No
+executable procedure.</p>
+<p><strong>SCL</strong> — <code>policy.json</code> says which capability may reach the network, may wait,
+and may fail the run; <code>policy.py</code> is the part a runtime calls. The separation
+matters here in a concrete way: <code>checkers/anchor</code> knows perfectly well how to
+resolve a fragment and holds <code>network: false</code>, and <em>that fact</em> is what makes
+&quot;should it ever wait?&quot; answerable by a check instead of by an opinion.</p>
+<p><strong>SMS</strong> — <code>model.py</code> (the shapes everyone agrees on), <code>pacing.py</code> (promoted
+2026-08-02), <code>pipeline.py</code> (the loop). The pipeline knows checkers only by the
+interface declared in it and imports none of them.</p>
+<p><strong>TMS</strong> — <code>checkers/http</code>, <code>checkers/anchor</code>, <code>reporters/text</code>. Three units,
+each loadable alone. <code>http</code> and <code>anchor</code> share the category directory
+<code>checkers/</code>; that is for human navigation and grants them nothing — an import
+between them would be a violation exactly as if they sat in different folders.</p>
+<p><strong>DMS</strong> — <code>trace.py</code>. Events, and the waits-per-capability table that makes the
+cost of the promotion a number rather than a claim.</p>
+<p>No set is absent. At this size that is unusual and worth saying plainly: see the
+last section.</p>
+<h2>The island test</h2>
+<pre><code class="language-console">$ python src/island-test.py
+
+== 1. each TMS alone, minimal core, no sibling loaded
+  PASS  checkers/anchor runs with no other checker loaded - 2 verdict(s), 2 link(s) left to the absent http checker
+  PASS  checkers/anchor incurred no pacing wait - waits=0
+  PASS  the loop reports the links it could not cover - unchecked links are recorded rather than silently dropped
+  PASS  checkers/http runs with no other checker loaded - 2 verdict(s)
+  PASS  checkers/http paced itself - waits=1
+
+== 2. no TMS imports a sibling TMS
+  PASS  no sibling TMS import - 3 unit(s) scanned
+
+== 3. what the promotion did to &#39;minimal core&#39;
+  PASS  pacing is part of the minimal core now - SMS = model.py, pacing.py, pipeline.py - before 2026-08-02 this was model.py, pipeline.py
+
+== 4. the SCL rule can fail
+  PASS  SCL rejects a network-free capability that waited - SCL rule &#39;pace-requires-network&#39; violated: checkers/anchor waited 1x with netw…
+  PASS  SCL accepts the published shape
+
+  island test passed
+</code></pre>
+<p>Section 3 is the honest accounting: the minimal core needed to exercise one TMS
+alone is now larger than it was yesterday. That is what a promotion costs, and
+it is permanent.</p>
+<p>Section 4 exists because <code>assert_pacing_is_earned</code> passes every ordinary run, so
+by itself it is indistinguishable from a function that returns <code>None</code>. A guard
+nobody has watched fail is not yet a guard.</p>
+<h2>What this example does not solve</h2>
+<ul>
+<li><p><strong>The promotion is easy here because the evidence is one command away.</strong> Real
+systems find out that a capability was load-bearing during an incident, months
+after someone marked it optional, and by then several modules have been built
+on the assumption that it can be switched off. Nothing in MSSP makes that
+discovery arrive earlier. The method gives you a place to record the answer
+once you have it.</p>
+</li>
+<li><p><strong>Nothing here re-asks the question later.</strong> <code>D-001</code> says pacing is core as of
+2026-08-02. If the transport is replaced next year by one that does its own
+throttling, pacing stops being constitutive and should be demoted — and no
+part of this example would notice. Demotion is the expensive direction, which
+is precisely why nobody does it.</p>
+</li>
+<li><p><strong><code>Link.host</code> is doing quiet structural work.</strong> The reason the promotion did
+not spread is that a link can say whether contacting anyone is involved. If
+that fact had lived in the checker instead of the model, <code>pace()</code> would have
+needed to know which checker was calling, and the core would have grown a
+dependency on its own subsets. That worked out; it was not forced by anything
+in the method.</p>
+</li>
+<li><p><strong>At this size the structure is a net cost, and the numbers say so.</strong> The five
+sets are 467 lines, of which 331 are code and the rest are comments explaining
+where the boundaries are. <code>main.py</code> and <code>island-test.py</code> add another 251 —
+more than half the program exists to demonstrate and verify the program. As
+one file this would be perhaps 120 lines and a reader could hold all of it at
+once. Five directories, a policy file and an interface protocol are not paying
+for themselves here.</p>
+<p>What the size buys is that the promotion is <em>visible</em>. In a single file,
+moving <code>pace()</code> from the dispatch loop into the caller is moving a line eighty
+rows up, and nobody would have asked what it cost — there would have been no
+boundary for it to cross. Read this as a demonstration of one decision, not as
+a recommendation for programs this small. The method&#39;s own scale guidance puts
+the threshold well above this, and this example sits under all of it.</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;link-checker&quot;,
+  &quot;what_it_is&quot;: &quot;Reads a list of pages, extracts their links, and reports which ones are reachable.&quot;,
+  &quot;why_it_exists&quot;: &quot;To show what happens when a capability declared optional turns out to be the reason the main loop can finish.&quot;,
+  &quot;core_task_loop&quot;: &quot;pages -&gt; links -&gt; verdict per link -&gt; report&quot;,
+
+  &quot;capabilities&quot;: {
+    &quot;SMS&quot;: {
+      &quot;model&quot;: &quot;Link, Verdict, Report. The shapes every other set agrees on.&quot;,
+      &quot;pacing&quot;: &quot;Waits between requests to the same host. Promoted from TMS on 2026-08-02 - see the README.&quot;,
+      &quot;pipeline&quot;: &quot;The loop. Selects a checker per link and collects verdicts.&quot;
+    },
+    &quot;SCL&quot;: {
+      &quot;policy&quot;: &quot;Which capability may reach the network, may wait, and may fail the run.&quot;
+    },
+    &quot;TMS&quot;: {
+      &quot;checkers/http&quot;: &quot;Checks an absolute URL. Reaches the network, so it paces.&quot;,
+      &quot;checkers/anchor&quot;: &quot;Checks an in-page #fragment against the page's own headings. Touches nothing outside the document.&quot;,
+      &quot;reporters/text&quot;: &quot;Renders a report for a terminal.&quot;
+    },
+    &quot;DMS&quot;: {
+      &quot;trace&quot;: &quot;What the run actually did, including how many waits each checker incurred.&quot;
+    }
+  },
+
+  &quot;terminology&quot;: {
+    &quot;pacing wait&quot;: &quot;A delay this run would have taken before contacting a host it has contacted recently.&quot;,
+    &quot;island test&quot;: &quot;Running one TMS with only the minimal core loaded and every other TMS absent.&quot;
+  },
+
+  &quot;decisions&quot;: [
+    {
+      &quot;id&quot;: &quot;D-001&quot;,
+      &quot;date&quot;: &quot;2026-08-02&quot;,
+      &quot;decision&quot;: &quot;pacing moves from TMS to SMS&quot;,
+      &quot;because&quot;: &quot;Without it the run does not finish: the transport begins refusing and links are left with no verdict. A capability the loop cannot close without is core, whatever it was called yesterday.&quot;,
+      &quot;cost&quot;: &quot;Stated in the README. It is not zero and it does not fall on the module that caused the promotion.&quot;
+    }
+  ],
+
+  &quot;non_goals&quot;: [
+    &quot;Real network I/O. The transport is injected and the clock is fake, so the run is deterministic and offline.&quot;,
+    &quot;Being a usable link checker. It checks enough to make one structural point.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+
+  &quot;_comment&quot;: [
+    &quot;Knowledge and permission are separate axes. checkers/anchor knows exactly&quot;,
+    &quot;how to resolve a fragment and holds no network permission at all, which is&quot;,
+    &quot;what makes the pacing question below answerable by something other than&quot;,
+    &quot;an opinion: a capability that may not reach the network cannot need pacing.&quot;
+  ],
+
+  &quot;capabilities&quot;: {
+    &quot;checkers/http&quot;: {
+      &quot;network&quot;: true,
+      &quot;may_wait&quot;: true,
+      &quot;may_fail_run&quot;: true
+    },
+    &quot;checkers/anchor&quot;: {
+      &quot;network&quot;: false,
+      &quot;may_wait&quot;: false,
+      &quot;may_fail_run&quot;: true
+    },
+    &quot;reporters/text&quot;: {
+      &quot;network&quot;: false,
+      &quot;may_wait&quot;: false,
+      &quot;may_fail_run&quot;: false
+    }
+  },
+
+  &quot;rules&quot;: [
+    {
+      &quot;id&quot;: &quot;pace-requires-network&quot;,
+      &quot;statement&quot;: &quot;A capability with network:false must never incur a pacing wait.&quot;,
+      &quot;enforced_by&quot;: &quot;SCL/policy.py::assert_pacing_is_earned, called by DMS/trace.py at the end of every run&quot;
+    },
+    {
+      &quot;id&quot;: &quot;fail-requires-permission&quot;,
+      &quot;statement&quot;: &quot;Only a capability with may_fail_run:true may cause a non-zero exit.&quot;,
+      &quot;enforced_by&quot;: &quot;SCL/policy.py::may_fail_run, called by SMS/pipeline.py&quot;
+    }
+  ]
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;What each capability is allowed to do.
+
+Permission lives here rather than inside the capability that holds it, because a
+module that grants itself a permission is describing a hope. `policy.json` is
+data a runtime can read; these functions are the checks it can call.
+
+The rule worth the trouble is `pace-requires-network`. It turns &quot;the promotion
+should not cost the anchor checker anything&quot; from a design intention into an
+assertion that fails a run — see the README's account of what promoting pacing
+to SMS actually broke.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+_POLICY = json.loads((Path(__file__).with_name(&quot;policy.json&quot;)).read_text(encoding=&quot;utf-8&quot;))
+CAPABILITIES: dict[str, dict] = _POLICY[&quot;capabilities&quot;]
+
+
+class PermissionError_(Exception):
+    &quot;&quot;&quot;Raised when a capability does something its policy entry does not allow.&quot;&quot;&quot;
+
+
+def may_use_network(capability: str) -&gt; bool:
+    return bool(CAPABILITIES.get(capability, {}).get(&quot;network&quot;, False))
+
+
+def may_fail_run(capability: str) -&gt; bool:
+    return bool(CAPABILITIES.get(capability, {}).get(&quot;may_fail_run&quot;, False))
+
+
+def assert_pacing_is_earned(waits_by_capability: dict[str, int]) -&gt; None:
+    &quot;&quot;&quot;A capability that may not reach the network must not have waited for one.
+
+    This is the check that caught the first attempt at the promotion. Pacing had
+    been moved into SMS and the pipeline called it once per link, before dispatch
+    — which is the shape that reads cleanest and is wrong, because it charges the
+    delay to whichever capability happens to be next rather than to the one that
+    is about to open a connection.
+    &quot;&quot;&quot;
+    offenders = [
+        f&quot;{cap} waited {n}x with network=false&quot;
+        for cap, n in sorted(waits_by_capability.items())
+        if n and not may_use_network(cap)
+    ]
+    if offenders:
+        raise PermissionError_(
+            &quot;SCL rule 'pace-requires-network' violated: &quot; + &quot;; &quot;.join(offenders)
+        )
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/model.py</summary><pre><code>&quot;&quot;&quot;The shapes every other set agrees on.
+
+Nothing here reaches outside itself. A TMS binds to these types, not to another
+TMS's idea of them, which is what lets a checker be replaced without any other
+module being edited.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class Link:
+    &quot;&quot;&quot;One link found on one page.&quot;&quot;&quot;
+    page: str
+    target: str
+
+    @property
+    def host(self) -&gt; str | None:
+        &quot;&quot;&quot;The host to pace against, or None when the link never leaves the page.
+
+        This is the whole reason an in-page fragment and an absolute URL can share
+        a pipeline: the link itself says whether contacting anyone is involved.
+        &quot;&quot;&quot;
+        if self.target.startswith(&quot;#&quot;):
+            return None
+        rest = self.target.split(&quot;://&quot;, 1)[-1]
+        return rest.split(&quot;/&quot;, 1)[0] or None
+
+
+@dataclass(frozen=True)
+class Verdict:
+    link: Link
+    ok: bool
+    detail: str
+    checked_by: str
+
+
+@dataclass
+class Report:
+    verdicts: list[Verdict] = field(default_factory=list)
+    unchecked: list[Link] = field(default_factory=list)
+
+    @property
+    def closed(self) -&gt; bool:
+        &quot;&quot;&quot;Whether the loop finished its job: every link got a verdict.
+
+        The identity test for pacing turns on this property and not on a
+        stopwatch. A run that is merely slow is still a link checker; a run that
+        leaves links unchecked is not.
+        &quot;&quot;&quot;
+        return not self.unchecked
+</code></pre></details><details><summary>SMS/pacing.py</summary><pre><code>&quot;&quot;&quot;Waits between requests to the same host.
+
+**This module was TMS until 2026-08-02.** It moved here because of the identity
+test, not because moving it silenced a build error — the build error is what
+made anyone look, and looking is what found the reason.
+
+    If pacing is removed, is the system still the system it was?
+
+Run `python src/main.py --without-pacing` and read the answer: the transport
+starts refusing, links are left with no verdict, and `Report.closed` is False.
+The loop does not close. A capability the loop cannot close without is core.
+
+The delay is recorded rather than slept, so a run is instant and the cost is
+still visible. What matters structurally is who is charged for it, and that is
+answered by `Link.host` being None for a link that never leaves the page — not
+by pacing knowing anything about checkers.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+
+class Pacer:
+    def __init__(self, min_gap_ticks: int = 2) -&gt; None:
+        self.min_gap = min_gap_ticks
+        self.clock = 0
+        self._last_seen: dict[str, int] = {}
+        self.waits: dict[str, int] = {}
+
+    def tick(self) -&gt; None:
+        self.clock += 1
+
+    def pace(self, host: str | None, *, on_behalf_of: str) -&gt; int:
+        &quot;&quot;&quot;Charge whatever wait this host needs to the capability asking for it.
+
+        `host=None` costs nothing and is recorded as nothing. That is the entire
+        mechanism keeping the promotion from spreading to modules that do not
+        reach the network — and it works because the caller is the capability
+        about to open a connection, not the pipeline dispatching to it.
+        &quot;&quot;&quot;
+        if host is None:
+            return 0
+
+        last = self._last_seen.get(host)
+        waited = 0
+        if last is not None and self.clock - last &lt; self.min_gap:
+            waited = self.min_gap - (self.clock - last)
+            self.clock += waited
+            self.waits[on_behalf_of] = self.waits.get(on_behalf_of, 0) + 1
+
+        self._last_seen[host] = self.clock
+        return waited
+</code></pre></details><details><summary>SMS/pipeline.py</summary><pre><code>&quot;&quot;&quot;The loop: pages in, a verdict per link out.
+
+The pipeline knows the registered checkers by the interface they publish here.
+It does not import any of them, and it does not know which ones exist until it
+is handed them — which is what makes running one alone possible.
+
+Note what the pipeline does *not* do: it does not call `pace()`. That was the
+first shape after the promotion and it is the reason the SCL rule exists. See
+`SCL/policy.py::assert_pacing_is_earned`.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from typing import Callable, Protocol
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from SCL import policy                       # noqa: E402
+from SMS.model import Link, Report, Verdict  # noqa: E402
+from SMS.pacing import Pacer                 # noqa: E402
+
+
+class Checker(Protocol):
+    &quot;&quot;&quot;What a TMS checker must publish. The only contract between core and TMS.&quot;&quot;&quot;
+
+    name: str
+
+    def handles(self, link: Link) -&gt; bool: ...
+
+    def check(self, link: Link, pacer: Pacer) -&gt; Verdict: ...
+
+
+def run(
+    pages: dict[str, str],
+    checkers: list[Checker],
+    *,
+    pacer: Pacer | None = None,
+    extract: Callable[[str, str], list[Link]],
+    on_event: Callable[..., None] = lambda **_: None,
+) -&gt; Report:
+    report = Report()
+    pacer = pacer or Pacer()
+
+    for page, body in pages.items():
+        for link in extract(page, body):
+            pacer.tick()
+            checker = next((c for c in checkers if c.handles(link)), None)
+            if checker is None:
+                # No verdict is a real outcome, not an error to swallow. It is
+                # what `Report.closed` reads to decide whether the loop finished.
+                report.unchecked.append(link)
+                on_event(kind=&quot;unchecked&quot;, link=link.target, reason=&quot;no checker loaded handles it&quot;)
+                continue
+
+            verdict = checker.check(link, pacer)
+            report.verdicts.append(verdict)
+            on_event(kind=&quot;verdict&quot;, link=link.target, ok=verdict.ok,
+                     by=verdict.checked_by, detail=verdict.detail)
+
+    return report
+
+
+def exit_code(report: Report) -&gt; int:
+    &quot;&quot;&quot;Non-zero only where a capability that is allowed to fail the run found a fault.&quot;&quot;&quot;
+    for verdict in report.verdicts:
+        if not verdict.ok and policy.may_fail_run(verdict.checked_by):
+            return 1
+    return 0 if report.closed else 2
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/checkers/anchor.py</summary><pre><code>&quot;&quot;&quot;Checks an in-page `#fragment` against the headings of the page it sits on.
+
+Nothing here leaves the document. SCL gives it `network: false`, and it is the
+module that proves the promotion did not spread: it takes a `Pacer` because the
+interface says so, and never calls it, so its wait count stays at zero.
+
+If a later change makes this module wait — most likely by moving `pace()` up
+into the pipeline where it reads more tidily — `SCL/policy.py` fails the run.
+That check exists because the first version of the promotion did exactly that.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from SMS.model import Link, Verdict  # noqa: E402
+from SMS.pacing import Pacer         # noqa: E402
+
+name = &quot;checkers/anchor&quot;
+
+_HEADING = re.compile(r&quot;^#{1,6}\s+(.+)$&quot;, re.M)
+
+
+def _slugs(body: str) -&gt; set[str]:
+    return {
+        re.sub(r&quot;[^a-z0-9]+&quot;, &quot;-&quot;, h.strip().lower()).strip(&quot;-&quot;)
+        for h in _HEADING.findall(body)
+    }
+
+
+class AnchorChecker:
+    name = name
+
+    def __init__(self, pages: dict[str, str]) -&gt; None:
+        self._pages = pages
+
+    def handles(self, link: Link) -&gt; bool:
+        return link.host is None and link.target.startswith(&quot;#&quot;)
+
+    def check(self, link: Link, pacer: Pacer) -&gt; Verdict:
+        # `pacer` is accepted and deliberately unused: the contract is the same
+        # for every checker, and this one has nobody to be polite to.
+        del pacer
+        wanted = link.target[1:]
+        available = _slugs(self._pages.get(link.page, &quot;&quot;))
+        ok = wanted in available
+        detail = &quot;found&quot; if ok else f&quot;no heading yields #{wanted}&quot;
+        return Verdict(link=link, ok=ok, detail=detail, checked_by=self.name)
+</code></pre></details><details><summary>TMS/checkers/http.py</summary><pre><code>&quot;&quot;&quot;Checks an absolute URL by asking an injected transport.
+
+This is the capability that caused the promotion, and it is the one that pays
+for it. It calls `pace()` itself, immediately before contacting the host,
+because it is the module that knows a connection is about to open.
+
+The transport is injected rather than imported so the example runs offline and
+deterministically. A real one would go here and nothing else would change.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from SMS.model import Link, Verdict  # noqa: E402
+from SMS.pacing import Pacer         # noqa: E402
+
+name = &quot;checkers/http&quot;
+
+
+class HttpChecker:
+    name = name
+
+    def __init__(self, transport) -&gt; None:
+        self._transport = transport
+
+    def handles(self, link: Link) -&gt; bool:
+        return link.host is not None
+
+    def check(self, link: Link, pacer: Pacer) -&gt; Verdict:
+        waited = pacer.pace(link.host, on_behalf_of=self.name)
+        status = self._transport(link.target)
+        detail = f&quot;HTTP {status}&quot; + (f&quot;, paced {waited}&quot; if waited else &quot;&quot;)
+        return Verdict(link=link, ok=200 &lt;= status &lt; 400, detail=detail, checked_by=self.name)
+</code></pre></details><details><summary>TMS/reporters/text.py</summary><pre><code>&quot;&quot;&quot;Renders a report for a terminal.
+
+Reads only SMS types. It never asks which checker produced a verdict in order to
+format it differently, which is what keeps adding a checker from being a change
+here as well.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from SMS.model import Report  # noqa: E402
+
+name = &quot;reporters/text&quot;
+
+
+def render(report: Report) -&gt; str:
+    lines = []
+    for v in report.verdicts:
+        mark = &quot;ok  &quot; if v.ok else &quot;FAIL&quot;
+        lines.append(f&quot;  {mark} {v.link.page} -&gt; {v.link.target}  ({v.detail})&quot;)
+    for link in report.unchecked:
+        lines.append(f&quot;  ????  {link.page} -&gt; {link.target}  (no verdict)&quot;)
+
+    failed = sum(1 for v in report.verdicts if not v.ok)
+    lines.append(&quot;&quot;)
+    lines.append(
+        f&quot;  {len(report.verdicts)} checked, {failed} failed, &quot;
+        f&quot;{len(report.unchecked)} left without a verdict&quot;
+    )
+    lines.append(f&quot;  loop closed: {report.closed}&quot;)
+    return &quot;\n&quot;.join(lines)
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/trace.py</summary><pre><code>&quot;&quot;&quot;What the run actually did.
+
+The number this example exists to make visible is the last block: how many
+pacing waits each capability incurred. Prose can claim the promotion did not
+spread; a count per capability shows it, and `SCL/policy.py` turns the same
+number into something that fails a run.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from SCL import policy  # noqa: E402
+
+
+class Trace:
+    def __init__(self) -&gt; None:
+        self.events: list[dict] = []
+
+    def record(self, **event) -&gt; None:
+        self.events.append(event)
+
+    def render(self, pacer, checkers) -&gt; str:
+        lines = [&quot;  events:&quot;]
+        for e in self.events:
+            kind = e.pop(&quot;kind&quot;)
+            body = &quot; &quot;.join(f&quot;{k}={v}&quot; for k, v in e.items())
+            lines.append(f&quot;    {kind:&lt;10} {body}&quot;)
+
+        lines.append(&quot;&quot;)
+        lines.append(&quot;  pacing waits by capability:&quot;)
+        for checker in checkers:
+            n = pacer.waits.get(checker.name, 0)
+            allowed = &quot;network&quot; if policy.may_use_network(checker.name) else &quot;no network&quot;
+            lines.append(f&quot;    {checker.name:&lt;18} {n:&gt;3}   ({allowed})&quot;)
+        lines.append(f&quot;    {'clock ticks':&lt;18} {pacer.clock:&gt;3}&quot;)
+        return &quot;\n&quot;.join(lines)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.py</summary><pre><code>&quot;&quot;&quot;The island test, plus a check that the SCL rule can fail.
+
+    python src/island-test.py
+
+Four things, in the order they are worth doing:
+
+1. Each TMS runs alone, with the minimal core and no sibling loaded.
+2. No TMS imports a sibling TMS (grep, not eyeballs).
+3. The promotion changed what &quot;minimal core&quot; means, and this says by how much.
+4. The wrong shape is built on purpose and the SCL rule is required to reject it.
+
+Point 4 is the one that matters. `assert_pacing_is_earned` passes every ordinary
+run, so on its own it is indistinguishable from a function that returns None.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+from SCL import policy                          # noqa: E402
+from SCL.policy import PermissionError_         # noqa: E402
+from SMS.model import Link                      # noqa: E402
+from SMS.pacing import Pacer                    # noqa: E402
+from SMS.pipeline import run                    # noqa: E402
+
+PAGES = {
+    &quot;solo.md&quot;: (
+        &quot;# Solo\n\n## Second heading\n\n&quot;
+        &quot;[a](https://one.example.com/a) [b](https://one.example.com/b)\n&quot;
+        &quot;[here](#second-heading) [gone](#nowhere)\n&quot;
+    )
+}
+
+
+def extract(page: str, body: str) -&gt; list[Link]:
+    return [Link(page=page, target=t) for t in re.findall(r&quot;\]\(([^)]+)\)&quot;, body)]
+
+
+failures: list[str] = []
+
+
+def report(label: str, ok: bool, detail: str = &quot;&quot;) -&gt; None:
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}&quot; + (f&quot; - {detail}&quot; if detail else &quot;&quot;))
+    if not ok:
+        failures.append(label)
+
+
+print(&quot;\n== 1. each TMS alone, minimal core, no sibling loaded&quot;)
+
+# --- anchor alone ------------------------------------------------------------
+from TMS.checkers.anchor import AnchorChecker    # noqa: E402
+
+pacer = Pacer()
+anchor_only = run(PAGES, [AnchorChecker(pages=PAGES)], pacer=pacer, extract=extract)
+handled = [v for v in anchor_only.verdicts]
+report(&quot;checkers/anchor runs with no other checker loaded&quot;, len(handled) == 2,
+       f&quot;{len(handled)} verdict(s), {len(anchor_only.unchecked)} link(s) left to the absent http checker&quot;)
+report(&quot;checkers/anchor incurred no pacing wait&quot;, pacer.waits.get(&quot;checkers/anchor&quot;, 0) == 0,
+       f&quot;waits={pacer.waits.get('checkers/anchor', 0)}&quot;)
+report(&quot;the loop reports the links it could not cover&quot;, not anchor_only.closed,
+       &quot;unchecked links are recorded rather than silently dropped&quot;)
+
+# --- http alone --------------------------------------------------------------
+from TMS.checkers.http import HttpChecker        # noqa: E402
+
+pacer = Pacer()
+
+
+def stub(url: str) -&gt; int:
+    return 200
+
+
+http_only = run(PAGES, [HttpChecker(transport=stub)], pacer=pacer, extract=extract)
+report(&quot;checkers/http runs with no other checker loaded&quot;, len(http_only.verdicts) == 2,
+       f&quot;{len(http_only.verdicts)} verdict(s)&quot;)
+report(&quot;checkers/http paced itself&quot;, pacer.waits.get(&quot;checkers/http&quot;, 0) &gt; 0,
+       f&quot;waits={pacer.waits.get('checkers/http', 0)}&quot;)
+
+print(&quot;\n== 2. no TMS imports a sibling TMS&quot;)
+tms_root = HERE / &quot;TMS&quot;
+units = sorted(p for p in tms_root.rglob(&quot;*.py&quot;))
+violations = []
+for path in units:
+    text = path.read_text(encoding=&quot;utf-8&quot;)
+    for other in units:
+        if other == path:
+            continue
+        module = other.relative_to(tms_root).with_suffix(&quot;&quot;).as_posix().replace(&quot;/&quot;, &quot;.&quot;)
+        if re.search(rf&quot;\bfrom\s+TMS\.{re.escape(module)}\b|\bimport\s+TMS\.{re.escape(module)}\b&quot;, text):
+            violations.append(f&quot;{path.name} imports {module}&quot;)
+report(&quot;no sibling TMS import&quot;, not violations, &quot;; &quot;.join(violations) or f&quot;{len(units)} unit(s) scanned&quot;)
+
+print(&quot;\n== 3. what the promotion did to 'minimal core'&quot;)
+core = sorted(p.name for p in (HERE / &quot;SMS&quot;).glob(&quot;*.py&quot;))
+report(&quot;pacing is part of the minimal core now&quot;, &quot;pacing.py&quot; in core,
+       f&quot;SMS = {', '.join(core)} - before 2026-08-02 this was model.py, pipeline.py&quot;)
+
+print(&quot;\n== 4. the SCL rule can fail&quot;)
+# The tidy-looking shape: pace once per link in the pipeline, before dispatch.
+# It reads better and it charges the wait to whichever capability is next.
+pacer = Pacer()
+charged_wrongly = {&quot;checkers/anchor&quot;: 1}
+try:
+    policy.assert_pacing_is_earned(charged_wrongly)
+    report(&quot;SCL rejects a network-free capability that waited&quot;, False,
+           &quot;it accepted checkers/anchor waiting, so the rule is decoration&quot;)
+except PermissionError_ as exc:
+    report(&quot;SCL rejects a network-free capability that waited&quot;, True, str(exc)[:78])
+
+# and it must still accept the real shape
+try:
+    policy.assert_pacing_is_earned({&quot;checkers/http&quot;: 3, &quot;checkers/anchor&quot;: 0})
+    report(&quot;SCL accepts the published shape&quot;, True)
+except PermissionError_ as exc:
+    report(&quot;SCL accepts the published shape&quot;, False, str(exc))
+
+print()
+if failures:
+    print(f&quot;  {len(failures)} check(s) failed: {', '.join(failures)}&quot;)
+    raise SystemExit(1)
+print(&quot;  island test passed&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Run the checker.
+
+    python src/main.py                  the structure as published
+    python src/main.py --without-pacing the evidence for the promotion
+
+The second one is the point. It removes pacing and shows the loop failing to
+close, which is what makes &quot;pacing is core&quot; a measured claim and not a taste.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+from DMS.trace import Trace                       # noqa: E402
+from SCL import policy                            # noqa: E402
+from SMS.model import Link                        # noqa: E402
+from SMS.pacing import Pacer                      # noqa: E402
+from SMS.pipeline import exit_code, run           # noqa: E402
+from TMS.checkers.anchor import AnchorChecker     # noqa: E402
+from TMS.checkers.http import HttpChecker         # noqa: E402
+from TMS.reporters.text import render             # noqa: E402
+
+# Consecutive links to the same host, which is the ordinary shape of a docs page
+# and the condition under which pacing has to do something. Spread the same
+# links out and pacing never fires — which is how the first version of this
+# example demonstrated nothing while printing a tidy report.
+PAGES = {
+    &quot;index.md&quot;: (
+        &quot;# Getting started\n\n&quot;
+        &quot;See [setup](https://docs.example.com/setup), [config](https://docs.example.com/config) &quot;
+        &quot;and [tuning](https://docs.example.com/tuning).\n&quot;
+        &quot;Jump to [#getting-started](#getting-started) or [#missing](#missing).\n&quot;
+    ),
+    &quot;guide.md&quot;: (
+        &quot;# Guide\n\n## Deep dive\n\n&quot;
+        &quot;More at [v1](https://api.example.com/v1) and [v2](https://api.example.com/v2).\n&quot;
+        &quot;Back to [#deep-dive](#deep-dive).\n&quot;
+    ),
+}
+
+
+def extract(page: str, body: str) -&gt; list[Link]:
+    return [Link(page=page, target=t) for t in re.findall(r&quot;\]\(([^)]+)\)&quot;, body)]
+
+
+def make_transport(clock, *, min_gap: int = 2):
+    &quot;&quot;&quot;A host that refuses when contacted again too soon.
+
+    It does not know whether pacing exists; it reads the same clock everything
+    else reads and answers on the gap it observes. An earlier version took a
+    `paced` flag, so the two runs differed because they were told to.
+    &quot;&quot;&quot;
+    last: dict[str, int] = {}
+
+    def transport(url: str) -&gt; int:
+        host = url.split(&quot;://&quot;, 1)[-1].split(&quot;/&quot;, 1)[0]
+        now = clock()
+        previous, last[host] = last.get(host), now
+        if previous is not None and now - previous &lt; min_gap:
+            return 429      # refused: no usable verdict for this link
+        return 200 if &quot;/v2&quot; not in url else 404
+
+    return transport
+
+
+def main(argv: list[str]) -&gt; int:
+    without_pacing = &quot;--without-pacing&quot; in argv
+
+    class NoPacer(Pacer):
+        &quot;&quot;&quot;What &quot;this project has no pacing&quot; looks like from every other module.&quot;&quot;&quot;
+        def pace(self, host, *, on_behalf_of):
+            return 0
+
+    trace = Trace()
+    pacer: Pacer = NoPacer() if without_pacing else Pacer()
+    checkers = [
+        HttpChecker(transport=make_transport(lambda: pacer.clock)),
+        AnchorChecker(pages=PAGES),
+    ]
+
+    report = run(PAGES, checkers, pacer=pacer, extract=extract, on_event=trace.record)
+
+    # A refusal leaves the link with no usable answer, so it counts as unchecked
+    # rather than as a link that is broken. That distinction is what
+    # `Report.closed` — and therefore the identity test — turns on.
+    for verdict in [v for v in report.verdicts if &quot;429&quot; in v.detail]:
+        report.verdicts.remove(verdict)
+        report.unchecked.append(verdict.link)
+
+    print(f&quot;\n== link-checker {'WITHOUT pacing' if without_pacing else ''}&quot;.rstrip())
+    print(render(report))
+    print()
+    print(trace.render(pacer, checkers))
+
+    if without_pacing:
+        if report.closed:
+            print(&quot;\n  pacing removed and the loop still closed — the promotion is NOT justified.&quot;)
+            return 1
+        print(&quot;\n  pacing removed: the loop did not close, so pacing is not optional.&quot;)
+        return 0
+
+    policy.assert_pacing_is_earned(pacer.waits)     # SCL rule the first promotion broke
+    print(&quot;\n  SCL rule 'pace-requires-network' holds: no network-free capability waited.&quot;)
+
+    # This program's exit code reports whether the *structure* held. Two links in
+    # the fixture are broken on purpose, so what a real link checker would return
+    # is printed rather than exited with.
+    problems = []
+    if not report.closed:
+        problems.append(&quot;the loop did not close with pacing present&quot;)
+    if not pacer.waits.get(&quot;checkers/http&quot;):
+        problems.append(&quot;pacing never fired, so this run demonstrates nothing about it&quot;)
+
+    print(f&quot;  a real run would exit {exit_code(report)} (2 fixture links are broken on purpose)&quot;)
+    if problems:
+        print(&quot;\n  STRUCTURE FAILED: &quot; + &quot;; &quot;.join(problems))
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

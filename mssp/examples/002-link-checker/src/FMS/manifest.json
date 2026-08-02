@@ -1,0 +1,45 @@
+{
+  "name": "link-checker",
+  "what_it_is": "Reads a list of pages, extracts their links, and reports which ones are reachable.",
+  "why_it_exists": "To show what happens when a capability declared optional turns out to be the reason the main loop can finish.",
+  "core_task_loop": "pages -> links -> verdict per link -> report",
+
+  "capabilities": {
+    "SMS": {
+      "model": "Link, Verdict, Report. The shapes every other set agrees on.",
+      "pacing": "Waits between requests to the same host. Promoted from TMS on 2026-08-02 - see the README.",
+      "pipeline": "The loop. Selects a checker per link and collects verdicts."
+    },
+    "SCL": {
+      "policy": "Which capability may reach the network, may wait, and may fail the run."
+    },
+    "TMS": {
+      "checkers/http": "Checks an absolute URL. Reaches the network, so it paces.",
+      "checkers/anchor": "Checks an in-page #fragment against the page's own headings. Touches nothing outside the document.",
+      "reporters/text": "Renders a report for a terminal."
+    },
+    "DMS": {
+      "trace": "What the run actually did, including how many waits each checker incurred."
+    }
+  },
+
+  "terminology": {
+    "pacing wait": "A delay this run would have taken before contacting a host it has contacted recently.",
+    "island test": "Running one TMS with only the minimal core loaded and every other TMS absent."
+  },
+
+  "decisions": [
+    {
+      "id": "D-001",
+      "date": "2026-08-02",
+      "decision": "pacing moves from TMS to SMS",
+      "because": "Without it the run does not finish: the transport begins refusing and links are left with no verdict. A capability the loop cannot close without is core, whatever it was called yesterday.",
+      "cost": "Stated in the README. It is not zero and it does not fall on the module that caused the promotion."
+    }
+  ],
+
+  "non_goals": [
+    "Real network I/O. The transport is injected and the clock is fake, so the run is deterministic and offline.",
+    "Being a usable link checker. It checks enough to make one structural point."
+  ]
+}

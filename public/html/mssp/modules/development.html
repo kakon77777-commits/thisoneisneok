@@ -33,7 +33,7 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-01</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-02</span></header>
 <main>
   <span class="state">v1.x 開發中</span>
   <article class="content"><h1>MSSP 開發區</h1>
@@ -103,6 +103,37 @@ footer a{color:var(--accent)}
 <p>每天一個開源專案，累積之後這一頁應該能回答：<strong>哪些邊界問題是普遍的，哪些只是個案。</strong></p>
 <p>目前 1 筆，還不足以說任何事。到二十筆左右應該開始有形狀。</p>
 <p><strong>驗證方式：</strong> 統計本身就是產出——如果二十筆之後看不出任何模式，那也是一個結論。</p>
+<h3>改良點 6：檢查本身要被證明會失敗</h3>
+<p>方法目前說：結構主張要能被機器驗證（見上方<a href="#%E8%A8%AD%E8%A8%88%E5%84%AA%E9%BB%9E">設計優點 2</a>）。它沒有說<strong>那個驗證要先被看著失敗一次</strong>。</p>
+<p>這條從<a href="/html/mssp/modules/log.html">開發日誌</a>升上來，因為它不是一次意外，是同一個形狀反覆出現：</p>
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>檢查</th>
+<th>為什麼它不會失敗</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>08-01</td>
+<td>架構透視器的 25 個測試</td>
+<td>全部斷言「事件」，而事件不需要被展示輸入就能存在——把整層 <code>observed:</code> 刪掉，25 個全過</td>
+</tr>
+<tr>
+<td>08-02</td>
+<td>範例 002 的節流示範</td>
+<td>時鐘間隔永遠大於門檻，節流一次都沒觸發，而輸出完全看不出來</td>
+</tr>
+<tr>
+<td>08-02</td>
+<td>考古 002 的邊界斷言</td>
+<td>寫成「不可以有 200」，而被檢查的處理器根本沒被分派到</td>
+</tr>
+</tbody></table>
+<p>三次的共同形狀是同一句：<strong>斷言寫成「壞事沒發生」，而壞事沒發生最常見的原因是那段路徑沒被走到。</strong></p>
+<p>具體提案是在範例契約裡加一條必要條件：<strong>每個範例必須包含一段刻意違反自身結構規則的程式碼，並要求檢查擋下它。</strong> 002 的孤島測試第 4 節已經是這個形狀——它蓋出錯誤的節流形狀，要求 SCL 規則拒絕。那一節應該從「這個範例剛好有做」變成「每個範例都要有」。</p>
+<p>代價要說清楚：這會讓每個範例變長，而且寫反例比寫正例難——你得先知道它會怎麼壞。</p>
+<p><strong>驗證方式：</strong> 對現有兩個範例與兩則考古回頭補這一節。如果四個裡有任何一個補不出來（想不到一個會讓檢查失敗的改動），那不是這條規則太嚴，是那個檢查本來就沒有在檢查東西。</p>
 <hr>
 <hr>
 <h2>開發路線：四個 MVP 與回饋迴圈</h2>

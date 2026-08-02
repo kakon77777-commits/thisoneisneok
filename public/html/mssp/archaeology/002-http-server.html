@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>http.server 3.14.5：當擴充點是繼承，子集就無法單獨存在 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="1,441 行，BaseHTTPRequestHandler 28 個方法。新增一個動詞的方式是繼承整個類別再命名一個 do_X，於是每個「子集」都是「全部 ＋ 一個方法」。handle_one_request 一個方法同時讀 socket、解析、用 getattr 分派、寫回應、記錄；log_message 寫死 sys.stderr。重切後 do_GET 的對應物不需要 socket 就能單獨測。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/002-http-server.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>002-http-server</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython http.server</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>3.14.5</span></div>
+    <div><b>日期</b><span>2026-08-02</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/blob/main/Lib/http/server.py">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>002 — CPython <code>http.server</code> 3.14.5</h1>
+<p><strong>專案：</strong> CPython <code>Lib/http/server.py</code>　<strong>授權：</strong> PSF-2.0　<strong>檢視版本：</strong> 3.14.5
+<strong>判定：</strong> <code>seam-confirmed-by-ecosystem</code></p>
+<pre><code class="language-bash">python src/main.py          # 重切版對幾個原始請求跑一遍，全程沒有 socket
+python src/island-test.py   # 單獨載入一個處理器，並量上游取得一個動詞的代價
+</code></pre>
+<h2>為什麼選它</h2>
+<p>因為它是幾乎每個 Python 開發者都讀過、而且大多數人都繼承過的那個檔案。<code>python -m http.server</code> 是內建的，<code>SimpleHTTPRequestHandler</code> 是新手寫的第一個伺服器，而擴充它的方法在文件裡寫得很清楚：<strong>繼承，然後定義 <code>do_GET</code></strong>。</p>
+<p>那個「很清楚」正是這次要看的東西。它不是一個被忽略的角落，它是被推薦的做法。</p>
+<p>上一則考古（<a href="/html/mssp/archaeology/001-commander.html">001 commander</a>）看的是「決策」與「效果」焊在一起。這一則看的是更前面一步的問題：<strong>當擴充點是繼承，就不存在可以單獨載入的子集</strong>——連要不要拆的討論都還沒開始，就已經沒有東西可拆了。</p>
+<h2>原專案的結構地圖</h2>
+<p>以下數字由 <code>src/island-test.py</code> 第 4 節在執行時從真正的模組讀出，不是抄來的：</p>
+<table>
+<thead>
+<tr>
+<th>量到的</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>http/server.py</code></td>
+<td>1,441 行</td>
+</tr>
+<tr>
+<td><code>BaseHTTPRequestHandler</code> 方法數</td>
+<td>28</td>
+</tr>
+<tr>
+<td><code>SimpleHTTPRequestHandler</code> 方法數</td>
+<td>11</td>
+</tr>
+<tr>
+<td><code>SimpleHTTPRequestHandler</code> MRO 深度</td>
+<td>5（<code>→ BaseHTTPRequestHandler → StreamRequestHandler → BaseRequestHandler → object</code>）</td>
+</tr>
+<tr>
+<td><code>handle_one_request</code></td>
+<td>36 行</td>
+</tr>
+<tr>
+<td><code>parse_request</code></td>
+<td>116 行</td>
+</tr>
+<tr>
+<td><code>log_message</code></td>
+<td>25 行</td>
+</tr>
+<tr>
+<td>分派機制</td>
+<td><code>getattr(self, mname)</code></td>
+</tr>
+</tbody></table>
+<p>三個地方值得逐一看。</p>
+<p><strong><code>handle_one_request</code>，36 行，五件事。</strong> 它從 <code>self.rfile</code> 讀、呼叫解析、用 <code>getattr</code> 找方法、往 <code>self.wfile</code> 寫、並呼叫 <code>self.log_*</code>。讀取、解析、分派、回應、記錄——同一個方法。要測其中任何一件，就要有前面全部。</p>
+<p><strong><code>parse_request</code>，116 行，會送回應。</strong> 輸入不合法時它呼叫 <code>self.send_error(...)</code>。所以「解析一個請求」與「回答一個請求」是同一個操作，而兩者都需要一條連線。<strong>解析是知識，送出是效果</strong>——這條縫跟 001 是同一族，但表現方式不同：commander 是終止行程，這裡是解析器自己握著 socket。</p>
+<p><strong><code>log_message</code>，25 行，寫死 <code>sys.stderr</code>。</strong> 不是寫到「伺服器被給定的某個串流」，是函式裡直接寫著 <code>sys.stderr</code>。要換地方，就得繼承請求處理器——<strong>跟新增一個動詞是同一種變更</strong>。「我想把 log 放別的地方」和「我想支援新的 HTTP 方法」在這個結構裡是同一件事。</p>
+<p><strong>而最上層的那件事：<code>getattr(self, &#39;do_&#39; + command)</code>。</strong> 處理器的集合，就是實例上的屬性集合。這有兩個後果：</p>
+<ol>
+<li>沒有辦法把「一組不同的處理器」交給分派器——因為沒有地方可以交。</li>
+<li><strong>一個類別只能有一個 <code>GET</code> 處理器</strong>，因為動詞就是屬性名。健康檢查與檔案服務都要回答 <code>GET</code>，那它們不能各自是一個處理器；其中一個必須變成另一個方法裡的分支，或者靠繼承順序決定誰贏。</li>
+</ol>
+<h2>MSSP 重切</h2>
+<p><code>src/</code> 是同一件事的重切版，刻意做到<strong>沒有任何 socket</strong>。</p>
+<p><strong>SMS <code>message.py</code></strong> — <code>parse(bytes) -&gt; Request | Response</code>。輸入不合法時<strong>回傳</strong>那個 400，而不是送出它。拒絕成為一個值，於是一個沒有連線的呼叫者（例如測試）得到跟有連線的呼叫者一樣的答案。</p>
+<p><strong>SMS <code>dispatch.py</code></strong> — 處理器是登錄表裡的值，分派器被告知有哪些存在。比對用的是方法<strong>加上</strong>目標，這是與上游的真正差別：<code>getattr(self, &#39;do_GET&#39;)</code> 只可能找到一個東西。</p>
+<blockquote>
+<p>這裡我自己踩了一次。<code>dispatch</code> 的第一版只比對方法，於是健康檢查回答了每一個 <code>GET</code>，檔案處理器一次都沒跑到——包括那個專門用來測試它會拒絕離開根目錄的請求。<strong>我用意外的方式重現了上游的限制</strong>，而 <code>main.py</code> 那條「沒有 200」的斷言照樣通過，因為它從來沒被執行到。斷言改成必須看到 403，而不只是沒看到 200。</p>
+</blockquote>
+<p><strong>SCL <code>policy.json</code> / <code>policy.py</code></strong> — 哪個處理器可以回答哪個方法、哪個可以讀檔案系統。<code>confine()</code> 對應上游的 <code>translate_path</code>：上游那個是<strong>子類別可以覆寫的方法</strong>，所以限制成立是因為子類別選擇不覆寫；這裡它是處理器必須呼叫、而且換不掉的函式。</p>
+<p><strong>TMS <code>handlers/health.py</code>（20 行）與 <code>handlers/static_file.py</code></strong> — 各自是一個單元。健康檢查沒有持有任何連線的參照，<code>island-test.py</code> 用它一個就跑起來。</p>
+<p><strong>DMS <code>access_log.py</code></strong> — sink 是參數。孤島測試傳 <code>list.append</code> 進去，不必攔截任何串流。</p>
+<p>執行結果：</p>
+<pre><code class="language-console">$ python src/main.py
+  -&gt; GET /health HTTP/1.1        HTTP/1.1 200 OK
+  -&gt; GET /index.html HTTP/1.1    HTTP/1.1 200 OK
+  -&gt; GET /../secrets.txt HTTP/1.1  HTTP/1.1 403 Forbidden
+  -&gt; POST /health HTTP/1.1       HTTP/1.1 405 Method Not Allowed
+  -&gt; nonsense                    HTTP/1.1 400 Bad Request
+
+  confinement demonstrated: the file handler refused a path outside its root
+</code></pre>
+<p>孤島測試第 1 節：<code>handlers/health</code> 在<strong>沒有其他處理器、沒有 socket、沒有 server 物件、沒有 client address</strong> 的情況下回答 200。上游做同一件事的最小形態，是那 1,441 行加上一個方法。</p>
+<h2>什麼不適合拆</h2>
+<p><strong>繼承在這裡不是疏忽，是 1999 年的正確答案。</strong> <code>socketserver</code> 的框架是模板方法模式，而模板方法在當年是把「協定處理」與「應用邏輯」分開的標準工具。要換成登錄表，就要有辦法把處理器集合傳進去——那需要標準庫在 API 上做一次破壞性變更，去換一個大多數使用者感受不到的好處。<strong>不划算，而且上游知道。</strong></p>
+<p><strong><code>BaseHTTPRequestHandler</code> 的 28 個方法裡，大部分該留在一起。</strong> <code>send_response</code> / <code>send_header</code> / <code>end_headers</code> / <code>flush_headers</code> 是同一個狀態機的四個階段——它們共享「header 送出前後」這個不可見的順序約束。把它們拆成四個模組，只會讓那個約束從「同一個類別裡看得到」變成「四個檔案之間的口頭協定」。這正是拆分不等於解耦的樣子。</p>
+<p><strong><code>log_message</code> 寫死 <code>sys.stderr</code> 的代價，比看起來小。</strong> 它是為了讓 <code>python -m http.server</code> 一行就能用而付的。標準庫的預設值要對「完全不設定」的使用者正確，而不是對「會注入 sink」的使用者正確。這是必要複雜度的一種：<strong>便利本身就是需求。</strong></p>
+<p><strong>生態系已經自己回答過這個問題了。</strong> WSGI（PEP 333, 2003）與後來的 ASGI 就是把「請求」變成一個值、把應用變成一個可呼叫物件——正是這裡重切的方向。所以判定是 <code>seam-confirmed-by-ecosystem</code>：這條縫不需要我來論證它存在，Python 世界二十多年來所有正經的 web 伺服器都不繼承 <code>BaseHTTPRequestHandler</code>。<code>http.server</code> 的文件自己也寫著它不建議用於正式環境。</p>
+<p><strong>結論不是「標準庫做錯了」。</strong> 是：<em>一個為了零設定而生的模組，其擴充機制必然把整體綁給每一個擴充者</em>，而那個代價在它自己的用途裡是合理的。搬到別的用途才不合理——而那正是生態系另外長出 WSGI 的原因。</p>
+<h2>這次沒有解決什麼</h2>
+<ul>
+<li><p><strong>重切版不是伺服器。</strong> 它沒有 socket、沒有連線管理、沒有 keep-alive、沒有分塊傳輸、沒有併發。上游那 1,441 行有很大一部分在處理這些，而它們不會因為換一種結構就消失——只會換一個位置。這裡沒有付那個代價，所以也不能宣稱贏了。</p>
+</li>
+<li><p><strong><code>matches()</code> 讓我可以有兩個 GET 處理器，也讓順序變成語義。</strong> <code>static_file.matches()</code> 回傳 <code>True</code>，意思是「其他人不要的都我來」，於是登錄表的排列順序決定行為。上游用屬性名，至少是明確的；我用順序，是另一種隱式約定。這是換掉，不是解掉。</p>
+</li>
+<li><p><strong>沒有量效能。</strong> 每個請求多一次登錄表線性掃描與一次 policy 查表。在這個規模上看不出來，在真實負載下我沒有數字，所以不說。</p>
+</li>
+<li><p><strong><code>parse</code> 只做到能講清楚那條縫的程度。</strong> 上游的 <code>parse_request</code> 有 116 行是因為 HTTP 的邊界情況真的有那麼多——版本協商、<code>Expect: 100-continue</code>、header 折行、控制字元表。<strong>重切版比較短，主要是因為它做得比較少</strong>，不是因為它切得比較好。</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;http-server-recut&quot;,
+  &quot;what_it_is&quot;: &quot;A minimal HTTP request handler, re-cut so that a single verb handler can be exercised with no connection.&quot;,
+  &quot;examined&quot;: {
+    &quot;project&quot;: &quot;CPython http.server&quot;,
+    &quot;version&quot;: &quot;3.14.5&quot;,
+    &quot;license&quot;: &quot;PSF-2.0&quot;,
+    &quot;measured&quot;: {
+      &quot;module_lines&quot;: 1441,
+      &quot;BaseHTTPRequestHandler_methods&quot;: 28,
+      &quot;SimpleHTTPRequestHandler_methods&quot;: 11,
+      &quot;handle_one_request_lines&quot;: 36,
+      &quot;parse_request_lines&quot;: 116,
+      &quot;log_message_lines&quot;: 25,
+      &quot;dispatch_mechanism&quot;: &quot;getattr(self, 'do_' + command)&quot;
+    }
+  },
+
+  &quot;capabilities&quot;: {
+    &quot;SMS&quot;: {
+      &quot;message&quot;: &quot;parse(bytes) -&gt; Request | Response, and serialise(Response) -&gt; bytes. Owns no connection.&quot;,
+      &quot;dispatch&quot;: &quot;Chooses a handler from a registry it is given, checks SCL, calls it.&quot;
+    },
+    &quot;SCL&quot;: {
+      &quot;policy&quot;: &quot;Which handler may answer which method, and which may read the filesystem. Confinement to the served root lives here, not in the handler.&quot;
+    },
+    &quot;TMS&quot;: {
+      &quot;handlers/health&quot;: &quot;Answers a liveness probe. Needs nothing.&quot;,
+      &quot;handlers/static-file&quot;: &quot;Serves a file from a confined root.&quot;
+    },
+    &quot;DMS&quot;: {
+      &quot;access_log&quot;: &quot;Events, written to a sink the caller supplies.&quot;
+    }
+  },
+
+  &quot;the_finding&quot;: &quot;Upstream's extension point is inheritance. A new verb is a method on a subclass of the whole handler, so the smallest thing that can hold that verb is the whole handler. There is no subset to load, and therefore no island test to run.&quot;,
+
+  &quot;non_goals&quot;: [
+    &quot;Being an HTTP server. There is no socket here at all — requests arrive as bytes, which is the point.&quot;,
+    &quot;Being faster, safer or more complete than the standard library. It is smaller because it does less.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+
+  &quot;_comment&quot;: [
+    &quot;Upstream, a handler's permissions are whatever its code happens to do,&quot;,
+    &quot;because a handler is a method on the same object that owns the socket and&quot;,
+    &quot;the filesystem helpers. translate_path exists to keep a request from&quot;,
+    &quot;escaping the served directory, and it is a method the subclass may&quot;,
+    &quot;override — so the boundary is enforced by the subclass agreeing to it.&quot;,
+    &quot;&quot;,
+    &quot;Here the permission is data next to the handler name, and dispatch checks&quot;,
+    &quot;it before calling anything.&quot;
+  ],
+
+  &quot;handlers&quot;: {
+    &quot;handlers/static-file&quot;: {
+      &quot;methods&quot;: [&quot;GET&quot;],
+      &quot;read_filesystem&quot;: true,
+      &quot;root&quot;: &quot;public&quot;
+    },
+    &quot;handlers/health&quot;: {
+      &quot;methods&quot;: [&quot;GET&quot;],
+      &quot;read_filesystem&quot;: false
+    }
+  }
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;What each handler may do.
+
+`may_handle` is called by SMS/dispatch before a handler runs, so a handler
+cannot answer a method its policy entry does not list — regardless of what it
+would have done.
+
+`confine` is the one worth comparing with upstream. `SimpleHTTPRequestHandler`
+keeps requests inside the served directory in `translate_path`, a method the
+subclass may override; the confinement holds because subclasses do not override
+it. Here it is a function the handler must call and cannot replace.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+_POLICY = json.loads(Path(__file__).with_name(&quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+HANDLERS: dict[str, dict] = _POLICY[&quot;handlers&quot;]
+
+
+class Refused(Exception):
+    &quot;&quot;&quot;Raised when a handler asks for something its entry does not grant.&quot;&quot;&quot;
+
+
+def may_handle(handler: str, method: str) -&gt; bool:
+    return method in HANDLERS.get(handler, {}).get(&quot;methods&quot;, [])
+
+
+def confine(handler: str, target: str, root: Path) -&gt; Path:
+    &quot;&quot;&quot;Resolve a request target inside `root`, or refuse.&quot;&quot;&quot;
+    if not HANDLERS.get(handler, {}).get(&quot;read_filesystem&quot;):
+        raise Refused(f&quot;{handler} has read_filesystem=false&quot;)
+
+    candidate = (root / target.lstrip(&quot;/&quot;)).resolve()
+    if root.resolve() not in candidate.parents and candidate != root.resolve():
+        raise Refused(f&quot;{handler} tried to leave {root}: {target}&quot;)
+    return candidate
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/dispatch.py</summary><pre><code>&quot;&quot;&quot;Choosing a handler for a request.
+
+Upstream this is one line inside `handle_one_request`:
+
+    method = getattr(self, mname)
+
+which is why adding a verb means subclassing. The set of handlers is the set of
+attributes on the instance, so there is no way to hand the dispatcher a
+different set — and no way to have one without having all of them.
+
+Here handlers are values in a registry. The dispatcher is told what exists,
+which is what lets a caller pass exactly one.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from typing import Callable, Protocol
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from SCL import policy                          # noqa: E402
+from SMS.message import Request, Response       # noqa: E402
+
+
+class Handler(Protocol):
+    name: str
+    method: str
+
+    def matches(self, request: Request) -&gt; bool: ...
+
+    def handle(self, request: Request) -&gt; Response: ...
+
+
+def dispatch(
+    request: Request,
+    handlers: list[Handler],
+    *,
+    on_event: Callable[..., None] = lambda **_: None,
+) -&gt; Response:
+    # Method *and* target, which is the difference that matters. Upstream
+    # dispatches on the verb alone, because the verb is the attribute name:
+    # `getattr(self, 'do_GET')` can only ever find one thing. Two capabilities
+    # that both answer GET — a health probe and a file server — cannot both
+    # exist as handlers there; one of them has to become a branch inside the
+    # other's method, or arrive by inheritance order.
+    #
+    # The first version of this file matched on method alone and reproduced the
+    # same limitation by accident: the health handler answered every GET and the
+    # file handler never ran once, including for the request written to test
+    # that it refuses to leave its root.
+    handler = next((h for h in handlers if h.method == request.method and h.matches(request)), None)
+
+    if handler is None:
+        on_event(kind=&quot;unhandled&quot;, method=request.method, target=request.target)
+        allowed = &quot;, &quot;.join(sorted({h.method for h in handlers})) or &quot;none&quot;
+        return Response(405, &quot;Method Not Allowed&quot;, headers={&quot;Allow&quot;: allowed})
+
+    if not policy.may_handle(handler.name, request.method):
+        on_event(kind=&quot;refused&quot;, handler=handler.name, method=request.method)
+        return Response(403, &quot;Forbidden&quot;, b&quot;handler is not permitted this method&quot;)
+
+    response = handler.handle(request)
+    on_event(kind=&quot;handled&quot;, handler=handler.name, status=response.status,
+             method=request.method, target=request.target)
+    return response
+</code></pre></details><details><summary>SMS/message.py</summary><pre><code>&quot;&quot;&quot;Requests and responses as values. Nothing here owns a socket.
+
+This is the first thing the re-cut moves. Upstream, `parse_request` is 116 lines
+that read from `self.rfile` and call `self.send_error(...)` when the input is
+malformed — so parsing a request and answering one are the same operation, and
+neither can happen without a connection.
+
+Here `parse` takes bytes and returns either a Request or a Response. A rejection
+is a *value* the caller may choose to send. Nothing is written to anyone.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class Request:
+    method: str
+    target: str
+    version: str
+    headers: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class Response:
+    status: int
+    reason: str
+    body: bytes = b&quot;&quot;
+    headers: dict[str, str] = field(default_factory=dict)
+
+
+def parse(raw: bytes) -&gt; Request | Response:
+    &quot;&quot;&quot;bytes -&gt; Request, or the Response explaining why not.
+
+    Returning the rejection instead of sending it is the whole difference. A
+    caller with no connection — a test, say — gets the same answer as one with.
+    &quot;&quot;&quot;
+    try:
+        head, _, _ = raw.partition(b&quot;\r\n\r\n&quot;)
+        lines = head.decode(&quot;iso-8859-1&quot;).split(&quot;\r\n&quot;)
+        parts = lines[0].split()
+    except Exception:
+        return Response(400, &quot;Bad Request&quot;, b&quot;unreadable request line&quot;)
+
+    if len(parts) != 3:
+        return Response(400, &quot;Bad Request&quot;, b&quot;malformed request line&quot;)
+
+    method, target, version = parts
+    if not version.startswith(&quot;HTTP/&quot;):
+        return Response(400, &quot;Bad Request&quot;, b&quot;unrecognised protocol version&quot;)
+
+    headers: dict[str, str] = {}
+    for line in lines[1:]:
+        name, sep, value = line.partition(&quot;:&quot;)
+        if sep:
+            headers[name.strip().lower()] = value.strip()
+
+    return Request(method=method, target=target, version=version, headers=headers)
+
+
+def serialise(response: Response) -&gt; bytes:
+    head = f&quot;HTTP/1.1 {response.status} {response.reason}\r\n&quot;
+    headers = {&quot;Content-Length&quot;: str(len(response.body)), **response.headers}
+    head += &quot;&quot;.join(f&quot;{k}: {v}\r\n&quot; for k, v in headers.items())
+    return head.encode(&quot;latin-1&quot;) + b&quot;\r\n&quot; + response.body
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/handlers/health.py</summary><pre><code>&quot;&quot;&quot;Answers a liveness probe. Touches nothing.
+
+The whole point of this file is how little it needs. It is 20 lines, it holds no
+reference to a connection, and `island-test.py` runs it with nothing else
+loaded. Upstream, the same capability is a `do_GET` on a subclass of
+`BaseHTTPRequestHandler`, and instantiating one requires a socket, a client
+address and a server object — so the smallest possible version of this is the
+entire 1,441-line module plus a method.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from SMS.message import Request, Response  # noqa: E402
+
+
+class HealthHandler:
+    name = &quot;handlers/health&quot;
+    method = &quot;GET&quot;
+
+    def matches(self, request: Request) -&gt; bool:
+        return request.target == &quot;/health&quot;
+
+    def handle(self, request: Request) -&gt; Response:
+        return Response(200, &quot;OK&quot;, b&quot;ok&quot;, {&quot;Content-Type&quot;: &quot;text/plain&quot;})
+</code></pre></details><details><summary>TMS/handlers/static_file.py</summary><pre><code>&quot;&quot;&quot;Serves a file from a directory.
+
+The confinement it needs — &quot;do not leave the served root&quot; — is asked of SCL
+rather than implemented here. Upstream the equivalent lives in
+`SimpleHTTPRequestHandler.translate_path`, on the class a subclass extends,
+which means a subclass that overrides it takes the confinement with it. The
+protection is real but it is held in the same place as the thing it protects
+against.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from SCL.policy import Refused, confine       # noqa: E402
+from SMS.message import Request, Response     # noqa: E402
+
+_TYPES = {&quot;.html&quot;: &quot;text/html&quot;, &quot;.css&quot;: &quot;text/css&quot;, &quot;.json&quot;: &quot;application/json&quot;, &quot;.txt&quot;: &quot;text/plain&quot;}
+
+
+class StaticFileHandler:
+    name = &quot;handlers/static-file&quot;
+    method = &quot;GET&quot;
+
+    def __init__(self, root: Path) -&gt; None:
+        self._root = root
+
+    def matches(self, request: Request) -&gt; bool:
+        # Everything the probe did not claim. Order in the registry decides, and
+        # the registry is a list the caller controls.
+        return True
+
+    def handle(self, request: Request) -&gt; Response:
+        try:
+            path = confine(self.name, request.target, self._root)
+        except Refused as exc:
+            # A refusal is reported as a value, like every other outcome here.
+            return Response(403, &quot;Forbidden&quot;, str(exc).encode())
+
+        if not path.is_file():
+            return Response(404, &quot;Not Found&quot;, b&quot;no such file&quot;)
+
+        body = path.read_bytes()
+        ctype = _TYPES.get(path.suffix, &quot;application/octet-stream&quot;)
+        return Response(200, &quot;OK&quot;, body, {&quot;Content-Type&quot;: ctype})
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/access_log.py</summary><pre><code>&quot;&quot;&quot;The access log as a sink you pass in.
+
+Upstream, `log_message` is 25 lines that write to `sys.stderr`. Not to a stream
+the server was given — to `sys.stderr`, named in the function. Redirecting it
+means subclassing the request handler, which is the same extension mechanism as
+adding a verb, so &quot;I want the log somewhere else&quot; and &quot;I want to serve a new
+method&quot; are the same kind of change.
+
+Here the sink is an argument. Passing `list.append` is how the island test reads
+what happened without capturing a stream.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+from typing import Callable
+
+
+class AccessLog:
+    def __init__(self, sink: Callable[[str], None]) -&gt; None:
+        self._sink = sink
+        self.events: list[dict] = []
+
+    def record(self, **event) -&gt; None:
+        self.events.append(event)
+        kind = event.pop(&quot;kind&quot;, &quot;event&quot;)
+        self._sink(f&quot;{kind:&lt;10} &quot; + &quot; &quot;.join(f&quot;{k}={v}&quot; for k, v in event.items()))
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the measurement that motivated the re-cut.
+
+    python src/island-test.py
+
+Section 1 runs one handler with nothing else loaded and no connection.
+Section 2 measures what the same thing costs upstream, by importing the real
+module and asking what it takes to obtain one verb.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import inspect
+import re
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+from DMS.access_log import AccessLog                     # noqa: E402
+from SCL import policy                                   # noqa: E402
+from SMS.dispatch import dispatch                        # noqa: E402
+from SMS.message import Request, Response, parse         # noqa: E402
+
+failures: list[str] = []
+
+
+def report(label: str, ok: bool, detail: str = &quot;&quot;) -&gt; None:
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}&quot; + (f&quot; - {detail}&quot; if detail else &quot;&quot;))
+    if not ok:
+        failures.append(label)
+
+
+print(&quot;\n== 1. one handler, alone, with no connection&quot;)
+
+from TMS.handlers.health import HealthHandler            # noqa: E402
+
+lines: list[str] = []
+log = AccessLog(sink=lines.append)
+parsed = parse(b&quot;GET /health HTTP/1.1\r\n\r\n&quot;)
+response = dispatch(parsed, [HealthHandler()], on_event=log.record)
+
+report(&quot;handlers/health answered with only itself loaded&quot;, response.status == 200,
+       f&quot;HTTP {response.status} {response.reason}&quot;)
+report(&quot;no socket, no server, no client address were needed&quot;,
+       isinstance(parsed, Request) and response.body == b&quot;ok&quot;)
+report(&quot;the log went to the caller's sink&quot;, len(lines) == 1, f&quot;{len(lines)} line(s)&quot;)
+
+# the static handler is absent, so its method must not be answerable
+absent = dispatch(parse(b&quot;GET /index.html HTTP/1.1\r\n\r\n&quot;), [HealthHandler()], on_event=log.record)
+report(&quot;an absent handler is absent&quot;, absent.status == 405,
+       f&quot;HTTP {absent.status} - nothing loaded claims /index.html, and that is reported rather than guessed&quot;)
+
+print(&quot;\n== 2. a rejection is a value, not a transmission&quot;)
+bad = parse(b&quot;nonsense\r\n\r\n&quot;)
+report(&quot;the parser returns the rejection&quot;, isinstance(bad, Response) and bad.status == 400,
+       &quot;upstream parse_request calls send_error, so parsing needs a connection&quot;)
+
+print(&quot;\n== 3. SCL refuses before the handler runs&quot;)
+denied = dispatch(Request(&quot;DELETE&quot;, &quot;/health&quot;, &quot;HTTP/1.1&quot;), [HealthHandler()], on_event=log.record)
+report(&quot;a method no handler declares is refused&quot;, denied.status == 405,
+       f&quot;HTTP {denied.status}, Allow: {denied.headers.get('Allow')}&quot;)
+report(&quot;policy is data, not prose&quot;, policy.may_handle(&quot;handlers/health&quot;, &quot;GET&quot;)
+       and not policy.may_handle(&quot;handlers/health&quot;, &quot;DELETE&quot;))
+
+print(&quot;\n== 4. what one verb costs upstream&quot;)
+import http.server as upstream                            # noqa: E402
+
+module_lines = len(inspect.getsource(upstream).splitlines())
+base_methods = [m for m in upstream.BaseHTTPRequestHandler.__dict__ if not m.startswith(&quot;__&quot;)]
+mro = [c.__name__ for c in upstream.SimpleHTTPRequestHandler.__mro__]
+dispatch_src = inspect.getsource(upstream.BaseHTTPRequestHandler.handle_one_request)
+uses_getattr = bool(re.search(r&quot;getattr\(self,\s*mname\)&quot;, dispatch_src))
+log_src = inspect.getsource(upstream.BaseHTTPRequestHandler.log_message)
+
+print(f&quot;    module                       {module_lines} lines&quot;)
+print(f&quot;    BaseHTTPRequestHandler       {len(base_methods)} methods&quot;)
+print(f&quot;    SimpleHTTPRequestHandler MRO {' -&gt; '.join(mro)}&quot;)
+print(f&quot;    dispatch by getattr          {uses_getattr}&quot;)
+print(f&quot;    log_message names sys.stderr {'sys.stderr' in log_src}&quot;)
+
+report(&quot;upstream dispatches by attribute lookup, so handlers cannot be passed in&quot;, uses_getattr,
+       &quot;if this stops being true the re-cut's premise needs revisiting&quot;)
+report(&quot;upstream's log destination is named in the function&quot;, &quot;sys.stderr&quot; in log_src)
+report(&quot;a verb handler is reached only through the whole handler&quot;,
+       &quot;BaseHTTPRequestHandler&quot; in mro and len(mro) &gt;= 4,
+       f&quot;{len(mro)}-deep MRO, {len(base_methods)} inherited methods before the verb&quot;)
+
+print()
+if failures:
+    print(f&quot;  {len(failures)} check(s) failed: {', '.join(failures)}&quot;)
+    raise SystemExit(1)
+print(&quot;  island test passed&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Run the re-cut against a few raw requests.
+
+    python src/main.py
+
+No socket is opened. Requests are bytes, which is what makes the handlers
+testable and what upstream cannot offer without a connection.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+import tempfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+from DMS.access_log import AccessLog                     # noqa: E402
+from SMS.dispatch import dispatch                        # noqa: E402
+from SMS.message import Request, Response, parse, serialise  # noqa: E402
+from TMS.handlers.health import HealthHandler            # noqa: E402
+from TMS.handlers.static_file import StaticFileHandler   # noqa: E402
+
+REQUESTS = [
+    b&quot;GET /health HTTP/1.1\r\nHost: localhost\r\n\r\n&quot;,
+    b&quot;GET /index.html HTTP/1.1\r\nHost: localhost\r\n\r\n&quot;,
+    b&quot;GET /../secrets.txt HTTP/1.1\r\nHost: localhost\r\n\r\n&quot;,
+    b&quot;POST /health HTTP/1.1\r\nHost: localhost\r\n\r\n&quot;,
+    b&quot;nonsense\r\n\r\n&quot;,
+]
+
+
+def main() -&gt; int:
+    root = Path(tempfile.mkdtemp()) / &quot;public&quot;
+    root.mkdir()
+    (root / &quot;index.html&quot;).write_text(&quot;&lt;h1&gt;served&lt;/h1&gt;\n&quot;, encoding=&quot;utf-8&quot;)
+    (root.parent / &quot;secrets.txt&quot;).write_text(&quot;not for you\n&quot;, encoding=&quot;utf-8&quot;)
+
+    log = AccessLog(sink=lambda line: print(f&quot;    {line}&quot;))
+    handlers = [HealthHandler(), StaticFileHandler(root=root)]
+
+    print(&quot;\n== http-server re-cut (no socket)&quot;)
+    for raw in REQUESTS:
+        first = raw.split(b&quot;\r\n&quot;, 1)[0].decode(&quot;latin-1&quot;)
+        print(f&quot;\n  -&gt; {first}&quot;)
+        parsed = parse(raw)
+        # A rejection from the parser is a Response, not something it sent.
+        response = parsed if isinstance(parsed, Response) else dispatch(
+            parsed, handlers, on_event=log.record
+        )
+        head = serialise(response).split(b&quot;\r\n&quot;, 1)[0].decode(&quot;latin-1&quot;)
+        print(f&quot;    {head}   {len(response.body)} byte(s)&quot;)
+
+    print(f&quot;\n  {len(log.events)} event(s) recorded to the sink the caller supplied&quot;)
+
+    # The confinement is the one outcome worth asserting rather than eyeballing,
+    # and the assertion has to require the refusal rather than merely permit it.
+    # Written as &quot;no 200 for a path containing secrets&quot;, it passed while the file
+    # handler was never reached at all.
+    escape = next((e for e in log.events if &quot;secrets&quot; in str(e.get(&quot;target&quot;, &quot;&quot;))), None)
+    problems = []
+    if escape is None:
+        problems.append(&quot;the escape attempt reached no handler, so nothing was tested&quot;)
+    elif escape.get(&quot;handler&quot;) != &quot;handlers/static-file&quot;:
+        problems.append(f&quot;the escape attempt went to {escape.get('handler')}, not the file handler&quot;)
+    elif escape.get(&quot;status&quot;) != 403:
+        problems.append(f&quot;the escape attempt returned {escape.get('status')}, not 403&quot;)
+
+    if problems:
+        print(&quot;  CONFINEMENT NOT DEMONSTRATED: &quot; + &quot;; &quot;.join(problems))
+        return 1
+    print(&quot;  confinement demonstrated: the file handler refused a path outside its root&quot;)
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(main())
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

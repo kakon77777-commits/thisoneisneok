@@ -64,12 +64,23 @@ function readMeta(file) {
   return meta;
 }
 
+// Build artifacts are not part of an example. The first Python example brought
+// seven `__pycache__/*.pyc` files with it: they were counted in its line total
+// (176 lines of bytecode reported as source), published alongside the code, and
+// shown to a reader as part of the structure. The walk had no reason to exclude
+// them because until then every example was JavaScript.
+const IGNORED_DIRS = new Set(["__pycache__", ".pytest_cache", "node_modules", ".mypy_cache"]);
+const IGNORED_FILES = /\.(pyc|pyo|class|o)$/;
+
 function walk(dir) {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...walk(full));
-    else out.push(full);
+    if (entry.isDirectory()) {
+      if (IGNORED_DIRS.has(entry.name)) continue;
+      out.push(...walk(path.join(dir, entry.name)));
+    } else if (!IGNORED_FILES.test(entry.name)) {
+      out.push(path.join(dir, entry.name));
+    }
   }
   return out;
 }
