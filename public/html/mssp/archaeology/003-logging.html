@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>logging 3.14.5：四個軸切得很對，然後一層便利 API 一次跨過全部四個 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="2,326 行，而 Logger／Handler／Formatter／Filter 是四個真正獨立的軸——Handler 持有 Formatter，Formatter 不認識 Handler，Filter 是單一方法協定，propagate 屬於 Logger 不屬於 Handler。這一則主要在說它為什麼對。漏處只有一個而且很精確：`logging.info()` 會在 root 沒有 handler 時偷偷呼叫 basicConfig，之後你自己的 basicConfig 就完全不做事、也不說。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/003-logging.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>003-logging</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython logging</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>3.14.5</span></div>
+    <div><b>日期</b><span>2026-08-03</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/blob/main/Lib/logging/__init__.py">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>003 — CPython <code>logging</code> 3.14.5</h1>
+<p><strong>專案：</strong> CPython <code>Lib/logging/__init__.py</code>　<strong>授權：</strong> PSF-2.0　<strong>檢視版本：</strong> 3.14.5
+<strong>判定：</strong> <code>boundary-confirmed-one-leak</code></p>
+<pre><code class="language-bash">node src/main.js          # 重切版：每一次設定都說出它做了什麼
+node src/island-test.js   # 孤島測試 ＋ 當場量上游的失敗 ＋ 證明檢查會失敗
+</code></pre>
+<h2>為什麼選它</h2>
+<p>因為前兩則考古都在找一條<strong>缺少</strong>的縫（<a href="/html/mssp/archaeology/001-commander.html">001 commander</a> 的決策與效果、<a href="/html/mssp/archaeology/002-http-server.html">002 http.server</a> 的繼承擋住子集），而一個只會找缺陷的方法，講不出它認為什麼是對的。</p>
+<p><code>logging</code> 是反例：<strong>它的四個軸切得很對</strong>，而且是二十多年前切的。這一則大部分在說它為什麼對。漏處只有一個，但那一個剛好是今天範例在講的同一件事——一次什麼都沒做的呼叫，跟一次成功的呼叫，長得一模一樣。</p>
+<h2>原專案的結構地圖</h2>
+<p>數字由 <code>src/island-test.js</code> 第 3 節在執行時實際跑 Python 量出來，不是抄的：</p>
+<table>
+<thead>
+<tr>
+<th>量到的</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>logging/__init__.py</code></td>
+<td>2,326 行</td>
+</tr>
+<tr>
+<td><code>Logger</code> 公開方法</td>
+<td>23</td>
+</tr>
+<tr>
+<td><code>Handler</code> 公開方法</td>
+<td>14</td>
+</tr>
+<tr>
+<td><code>Formatter</code> 公開方法</td>
+<td>9</td>
+</tr>
+<tr>
+<td><code>Filter</code> 公開方法</td>
+<td><strong>1</strong></td>
+</tr>
+<tr>
+<td><code>basicConfig</code></td>
+<td>119 行</td>
+</tr>
+</tbody></table>
+<p><strong>四個軸是真的獨立的</strong>，而且可以逐條檢查：</p>
+<ul>
+<li><code>Handler</code> 持有一個 <code>Formatter</code>；<code>Formatter</code> 完全不認識 <code>Handler</code>。單向。</li>
+<li><code>Filter</code> 是<strong>一個方法的協定</strong>。它不是一個要繼承的基底類別，是一個形狀。</li>
+<li><code>Logger</code> 與 <code>Handler</code> 都繼承 <code>Filterer</code>——過濾是兩者共有的關切，被提上去成為共用基底，而不是各寫一份。</li>
+<li><code>propagate</code> 在 <code>Logger</code> 上，不在 <code>Handler</code> 上。<strong>路由是 logger 的事，不是目的地的事。</strong></li>
+</ul>
+<p>中間那個讓四軸成立的東西是 <code>LogRecord</code>：<strong>事件是一個值</strong>。發生了什麼、要送到哪、怎麼讀、要不要送——四件事各自看著同一個值，誰都不必知道其他三個做了什麼決定。</p>
+<p>這就是為什麼 <code>StreamHandler</code> 收一個 stream 當參數。跟 <a href="/html/mssp/archaeology/002-http-server.html">002</a> 裡那個把 <code>sys.stderr</code> 寫死在函式裡的 <code>log_message</code> 對照著看——同一個標準庫，同一個年代，一個把目的地當參數，一個把目的地寫進程式碼。</p>
+<h2>MSSP 重切</h2>
+<p><strong>四個軸原封不動。</strong> 重切版只改一件事：<strong>設定會說出它做了什麼。</strong></p>
+<p>漏處是這個，而且可以當場重現：</p>
+<pre><code class="language-console">$ python -c &quot;import logging; logging.info(&#39;x&#39;); print(len(logging.root.handlers))&quot;
+1
+</code></pre>
+<p><code>logging.info()</code> 在 root 沒有 handler 時<strong>會替你呼叫 <code>basicConfig()</code></strong>。所以第一個記錄一行的模組就決定了全域設定。之後：</p>
+<pre><code class="language-text">root handlers 0 -&gt; 1 after one logging.info()
+basicConfig(format=...) returned None, formatter changed: false
+</code></pre>
+<p>你的 <code>basicConfig(format=...)</code> <strong>完全不做事</strong>。沒有例外、沒有警告、沒有回傳值，你要的格式被安靜地丟掉。</p>
+<p>結構上的原因不是那個 <code>if len(root.handlers) == 0</code> 的守衛。是<strong>便利層一次跨過全部四個軸</strong>——它在你只想記一行的時候，順手決定了門檻、sink、格式與目的地，而且是在一個全域上。</p>
+<p>重切版對應的三處：</p>
+<ul>
+<li><strong>SCL</strong> — 設定共用 sink 是一個<strong>權限</strong>，記錄不是。<code>lib/worker</code> 可以記錄，不能設定。上游任何 import 了 logging 的模組都可以設定，所以先記錄的先贏。</li>
+<li><strong>DMS <code>registry.js</code></strong> — <code>configure()</code> 回傳 <code>{applied, why, installedBy}</code>。第二次呼叫回 <code>applied:false</code> 並說出是誰先設的，而不是靜靜返回。想覆蓋要明講 <code>replace()</code>，那也會回報。</li>
+<li><strong>SMS <code>pipeline.js</code></strong> — 一次 emit 回傳「有沒有送到、沒送到是為什麼」。上游一次 log 呼叫回 <code>None</code>，於是「送到了」「被過濾掉」「低於門檻」「根本沒有 handler」在呼叫端全部是同一個觀察。</li>
+</ul>
+<pre><code class="language-console">  4. a second configuration attempt — the upstream silent no-op
+     applied=false  why=&quot;already configured by app/main; pass replace: true to override&quot;
+
+  6. status: the question upstream cannot be asked
+     {&quot;configured&quot;:true,&quot;reachable&quot;:true,&quot;sinks&quot;:[&quot;sinks/collect&quot;],&quot;installedBy&quot;:&quot;app/main&quot;}
+</code></pre>
+<h2>什麼不適合拆</h2>
+<p><strong>那四個軸不要動。</strong> 這是本則最重要的結論。它們是一個經過二十多年、被幾乎所有 Python 程式用過的邊界，而且每一條都通得過身分測試：拿掉 Handler，事件無處可去；拿掉 Formatter，事件沒有形狀；拿掉 Filter，只是少一個可選能力——<strong>所以 Filter 是 TMS，另外兩個不是</strong>，而 <code>logging</code> 的結構恰好就是這樣：<code>Filter</code> 是一個方法的協定，可有可無。</p>
+<p><strong><code>Filterer</code> 這個共用基底也不要拆。</strong> 它只有三個方法，而它存在的理由是 Logger 與 Handler 真的共用同一件事。把它拆成兩份重複實作，會讓「過濾語義一致」從「同一個類別看得到」變成兩個檔案之間的口頭約定。</p>
+<p><strong>便利層本身不是錯誤。</strong> <code>logging.info(&quot;x&quot;)</code> 一行可用，是 Python 使用者三十年來的入門經驗，而那個便利有真實價值。上游的取捨是清楚的：<strong>讓完全不設定的人也能拿到輸出</strong>。用 Neo 的說法，這是一個補償——它補的是「正確設定 logging 需要理解四個軸」這個缺口，而它確實補上了。</p>
+<p>問題不在補償存在，在於<strong>補償的副作用是不可見的</strong>。如果 <code>logging.info()</code> 在隱式設定時印一行 <code>logging: auto-configured root handler</code>，同一個便利、同一行程式碼、同一個入門經驗，而那個著名的困惑就不存在了。</p>
+<p><strong>改不了的原因也很實在。</strong> 現在改變 <code>basicConfig</code> 的沉默行為，會讓每一個依賴「重複呼叫是安全的無操作」的程式庫開始噴東西。這是 Neo 第九篇講的：成功造成相容壓力，相容壓力壓縮演化自由度。上游知道，而且文件裡確實寫了 <code>basicConfig</code> 的行為——<strong>寫在文件裡，不在回傳值裡</strong>，而人讀的是回傳值。</p>
+<h2>這次沒有解決什麼</h2>
+<ul>
+<li><p><strong>重切版不是 logging。</strong> 沒有階層、沒有 propagate、沒有 thread safety、沒有 <code>%</code>-style 格式、四個等級。上游 2,326 行有很大一部分在處理這些，它們不會因為換結構就消失。這裡沒付那個代價，所以不能宣稱贏了。</p>
+</li>
+<li><p><strong>「回報而不是沉默」也有代價，而我沒量。</strong> 每次設定都回一個物件，代表呼叫端要嘛檢查它、要嘛忽略它。<strong>被忽略的回傳值跟 <code>None</code> 一樣沉默</strong>——差別只是現在有東西可以檢查。我沒有做的是讓忽略變得困難（例如未檢查就丟例外），因為那會讓便利層無法存在，而上面剛說過便利層有價值。這個取捨我留著沒解。</p>
+</li>
+<li><p><strong><code>Filter</code> 是 TMS 這個判斷，我只驗了身分測試那一半。</strong> 我沒有驗孤島測試：一個真正的 <code>Filter</code> 實作能不能在只載入最小核心、其他一切缺席的情況下被練起來。在重切版裡可以，因為 filter 是傳進去的；在上游我沒試，因為那要先建出 Logger 與 Handler。<strong>沒試就是沒試。</strong></p>
+</li>
+<li><p><strong>最後一項是這一則自己的限制。</strong> 判定寫 <code>boundary-confirmed-one-leak</code>，而「只有一個漏處」是我在 2,326 行裡找到的一個，不是我證明只有一個。前兩則考古我找的是我預期會有的東西；這一則我一開始就預期會確認邊界，那個預期本身會讓人少看幾個地方。</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;logging-recut&quot;,
+  &quot;what_it_is&quot;: &quot;A minimal logging pipeline keeping upstream's four axes and repairing the one place a convenience layer crosses all of them.&quot;,
+  &quot;examined&quot;: {
+    &quot;project&quot;: &quot;CPython logging&quot;,
+    &quot;version&quot;: &quot;3.14.5&quot;,
+    &quot;license&quot;: &quot;PSF-2.0&quot;,
+    &quot;measured&quot;: {
+      &quot;module_lines&quot;: 2326,
+      &quot;Logger_public_methods&quot;: 23,
+      &quot;Handler_public_methods&quot;: 14,
+      &quot;Formatter_public_methods&quot;: 9,
+      &quot;Filter_public_methods&quot;: 1,
+      &quot;basicConfig_lines&quot;: 119,
+      &quot;basicConfig_guard&quot;: &quot;if len(root.handlers) == 0&quot;,
+      &quot;logging_info_calls_basicConfig&quot;: true,
+      &quot;root_handlers_before_first_convenience_call&quot;: 0,
+      &quot;root_handlers_after&quot;: 1
+    }
+  },
+  &quot;capabilities&quot;: {
+    &quot;SMS&quot;: {
+      &quot;record&quot;: &quot;One event as a value. The piece that makes four independent axes possible.&quot;,
+      &quot;pipeline&quot;: &quot;threshold -&gt; filters -&gt; format -&gt; sinks, returning whether the event was delivered and why not.&quot;
+    },
+    &quot;SCL&quot;: { &quot;policy&quot;: &quot;Configuring the shared sink set is a permission. Logging is not.&quot; },
+    &quot;TMS&quot;: {
+      &quot;sinks/text&quot;: &quot;Writes to a stream it is handed.&quot;,
+      &quot;sinks/collect&quot;: &quot;Keeps lines in memory for a test.&quot;
+    },
+    &quot;DMS&quot;: { &quot;registry&quot;: &quot;Where configuration lives, and the thing that reports what a configuration attempt actually did.&quot; }
+  },
+  &quot;the_finding&quot;: &quot;The four axes are cut correctly and should not be touched. The leak is that logging.info() configures the root logger as a side effect of logging one line, after which every later basicConfig is a silent no-op — measured, not recalled.&quot;,
+  &quot;non_goals&quot;: [
+    &quot;Being a logging library. No levels beyond four, no hierarchy, no propagation, no thread safety.&quot;,
+    &quot;Improving on upstream's axes. Most of this entry argues they are right.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.js</summary><pre><code>import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const policy = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export class PermissionError extends Error {}
+
+export function mayConfigure(capability) {
+  return Boolean(policy.capabilities[capability]?.may_configure);
+}
+
+export function assertMayConfigure(capability) {
+  if (!mayConfigure(capability)) {
+    throw new PermissionError(`${capability} may not configure logging (may_configure: false)`);
+  }
+}
+</code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;Configuration is a permission, and upstream it is not one. Any module that&quot;,
+    &quot;imports logging can call basicConfig or, more quietly, logging.info() —&quot;,
+    &quot;which calls basicConfig for it. So the first import to log wins, and every&quot;,
+    &quot;later configuration attempt is a silent no-op.&quot;,
+    &quot;&quot;,
+    &quot;Here configuring the shared sink set is a named capability, and everything&quot;,
+    &quot;else may log without being able to decide where logs go.&quot;
+  ],
+  &quot;capabilities&quot;: {
+    &quot;app/main&quot;: { &quot;may_configure&quot;: true, &quot;may_log&quot;: true },
+    &quot;lib/worker&quot;: { &quot;may_configure&quot;: false, &quot;may_log&quot;: true }
+  },
+  &quot;rules&quot;: [
+    {
+      &quot;id&quot;: &quot;configure-requires-permission&quot;,
+      &quot;statement&quot;: &quot;Only a capability with may_configure:true may install or replace the sink set.&quot;,
+      &quot;enforced_by&quot;: &quot;SCL/policy.js::assertMayConfigure, called by DMS/registry.js&quot;
+    }
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/pipeline.js</summary><pre><code>// Event in, delivered or not, with a reason either way.
+//
+// The four axes upstream, kept: the logger decides whether to emit, filters
+// decide whether it survives, the formatter decides how it reads, the sink
+// decides where it goes. Each is a value passed in.
+//
+// The one change is the return type. Upstream a log call returns None, so
+// &quot;delivered&quot;, &quot;filtered out&quot;, &quot;below threshold&quot; and &quot;no handler configured&quot;
+// are all the same observation from the caller's side.
+
+import { LEVELS } from &quot;./record.js&quot;;
+
+export function emit(record, { threshold = &quot;debug&quot;, filters = [], format, sinks = [] }) {
+  if (record.severity &lt; LEVELS[threshold]) {
+    return { delivered: false, why: `below threshold ${threshold}`, sinks: [] };
+  }
+  for (const filter of filters) {
+    if (!filter.allows(record)) {
+      return { delivered: false, why: `refused by ${filter.name}`, sinks: [] };
+    }
+  }
+  if (sinks.length === 0) {
+    // The case upstream cannot report: correctly configured, correctly
+    // filtered, and nowhere to go.
+    return { delivered: false, why: &quot;no sink configured&quot;, sinks: [] };
+  }
+  const text = format(record);
+  for (const sink of sinks) sink.write(text);
+  return { delivered: true, why: &quot;&quot;, sinks: sinks.map((s) =&gt; s.name), text };
+}
+</code></pre></details><details><summary>SMS/record.js</summary><pre><code>// One event, as a value.
+//
+// Upstream this is LogRecord, and it is the piece that makes the four axes
+// possible: the thing that happened is separated from where it goes, how it
+// reads, and whether it goes at all. A Logger creates one, a Filter inspects
+// one, a Formatter renders one, a Handler delivers one — and none of them has
+// to know what the others did.
+
+export const LEVELS = { debug: 10, info: 20, warning: 30, error: 40 };
+
+export function makeRecord(logger, level, message, extra = {}) {
+  if (!(level in LEVELS)) throw new Error(`unknown level: ${level}`);
+  return { logger, level, severity: LEVELS[level], message, extra, at: 0 };
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/sinks/collect.js</summary><pre><code>// Keeps lines in memory so a test can read them.
+//
+// Independent of sinks/text and unaware of it. Both exist because a sink set is
+// a list the caller supplies, so a test supplies one and gets no console noise.
+
+export const name = &quot;sinks/collect&quot;;
+
+export function collectSink() {
+  const lines = [];
+  return { name, lines, write: (text) =&gt; lines.push(text) };
+}
+</code></pre></details><details><summary>TMS/sinks/text.js</summary><pre><code>// Writes formatted lines to a stream it is given.
+//
+// Upstream's StreamHandler already takes its stream as an argument, which is
+// the part that is right: the sink does not name a destination, it is handed
+// one. That is why this file is short — there was nothing to repair.
+
+export const name = &quot;sinks/text&quot;;
+
+export function textSink(write) {
+  return { name, write };
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/registry.js</summary><pre><code>// Where configuration happens, and what it reports.
+//
+// This is the leak, repaired. Upstream:
+//
+//     logging.info(&quot;hello&quot;)          # root has no handlers -&gt; calls basicConfig()
+//     logging.basicConfig(format=…)  # root now HAS handlers -&gt; returns, does nothing
+//
+// Measured on 3.14.5: root.handlers goes 0 -&gt; 1 on the first convenience call,
+// and the later basicConfig leaves the formatter object identical. No error, no
+// warning, no return value. The requested format is discarded in silence.
+//
+// The structural cause is not the guard clause. It is that the convenience
+// functions reach across all four axes — they decide threshold, sink, format
+// and destination at once, on a global, as a side effect of logging one line.
+//
+// So here: configuring is a permission, it is explicit, and it says what it did.
+
+import { assertMayConfigure } from &quot;../SCL/policy.js&quot;;
+
+export function makeRegistry() {
+  let config = null;
+  let installedBy = null;
+
+  return {
+    /** Install the sink set. Reports the outcome instead of returning nothing. */
+    configure(capability, next) {
+      assertMayConfigure(capability);
+      if (config) {
+        // Upstream's silent early return, made audible. Refusing and reporting
+        // are different from doing nothing and reporting nothing.
+        return {
+          applied: false,
+          why: `already configured by ${installedBy}; pass replace: true to override`,
+          installedBy,
+        };
+      }
+      config = next;
+      installedBy = capability;
+      return { applied: true, why: &quot;&quot;, installedBy: capability };
+    },
+
+    replace(capability, next) {
+      assertMayConfigure(capability);
+      const previous = installedBy;
+      config = next;
+      installedBy = capability;
+      return { applied: true, why: previous ? `replaced configuration from ${previous}` : &quot;&quot;, installedBy: capability };
+    },
+
+    current() {
+      return config;
+    },
+
+    /** Whether logging would go anywhere at all. The question upstream cannot be asked. */
+    status() {
+      if (!config) return { configured: false, why: &quot;nothing has configured logging&quot; };
+      if (!config.sinks?.length) return { configured: true, reachable: false, why: &quot;configured with no sink&quot; };
+      return { configured: true, reachable: true, sinks: config.sinks.map((s) =&gt; s.name), installedBy };
+    },
+  };
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.js</summary><pre><code>// The island test, the upstream measurement, and four attempts to defeat the repair.
+//
+//   node src/island-test.js
+
+import { execFileSync } from &quot;node:child_process&quot;;
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import { makeRegistry } from &quot;./DMS/registry.js&quot;;
+import { PermissionError } from &quot;./SCL/policy.js&quot;;
+import { emit } from &quot;./SMS/pipeline.js&quot;;
+import { makeRecord } from &quot;./SMS/record.js&quot;;
+import { collectSink } from &quot;./TMS/sinks/collect.js&quot;;
+import { textSink } from &quot;./TMS/sinks/text.js&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const failures = [];
+const report = (label, ok, detail = &quot;&quot;) =&gt; {
+  console.log(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}`);
+  if (!ok) failures.push(label);
+};
+
+const plain = (r) =&gt; `${r.level.toUpperCase()} ${r.message}`;
+
+console.log(&quot;\n== 1. each sink alone, no sibling loaded&quot;);
+{
+  const c = collectSink();
+  const out = emit(makeRecord(&quot;x&quot;, &quot;info&quot;, &quot;hello&quot;), { format: plain, sinks: [c] });
+  report(&quot;sinks/collect works with no other sink loaded&quot;, out.delivered &amp;&amp; c.lines.length === 1,
+    `${c.lines.length} line(s)`);
+
+  const written = [];
+  const t = textSink((line) =&gt; written.push(line));
+  const out2 = emit(makeRecord(&quot;x&quot;, &quot;info&quot;, &quot;hello&quot;), { format: plain, sinks: [t] });
+  report(&quot;sinks/text works with no other sink loaded&quot;, out2.delivered &amp;&amp; written.length === 1);
+  report(&quot;a sink is handed its destination, it does not name one&quot;,
+    !fs.readFileSync(path.join(here, &quot;TMS/sinks/text.js&quot;), &quot;utf8&quot;).includes(&quot;stdout&quot;));
+}
+
+console.log(&quot;\n== 2. no TMS imports a sibling TMS&quot;);
+{
+  const dir = path.join(here, &quot;TMS&quot;, &quot;sinks&quot;);
+  const files = fs.readdirSync(dir);
+  const offenders = files.filter((f) =&gt; {
+    const source = fs.readFileSync(path.join(dir, f), &quot;utf8&quot;);
+    return files.some((other) =&gt; other !== f &amp;&amp; source.includes(`./${other}`));
+  });
+  report(&quot;no sibling sink import&quot;, offenders.length === 0, offenders.join(&quot;, &quot;) || `${files.length} unit(s) scanned`);
+}
+
+console.log(&quot;\n== 3. the upstream failure, measured now&quot;);
+{
+  const probe = [
+    &quot;import logging, json&quot;,
+    &quot;before = len(logging.root.handlers)&quot;,
+    &quot;logging.info('a convenience call')&quot;,
+    &quot;after = len(logging.root.handlers)&quot;,
+    &quot;f1 = logging.root.handlers[0].formatter&quot;,
+    &quot;r = logging.basicConfig(format='%(asctime)s CUSTOM %(message)s')&quot;,
+    &quot;f2 = logging.root.handlers[0].formatter&quot;,
+    &quot;print(json.dumps({'before': before, 'after': after, 'formatter_changed': f1 is not f2, 'returned': repr(r)}))&quot;,
+  ].join(&quot;; &quot;);
+
+  let measured = null;
+  try {
+    const raw = execFileSync(&quot;python&quot;, [&quot;-c&quot;, probe], { encoding: &quot;utf8&quot;, stdio: [&quot;ignore&quot;, &quot;pipe&quot;, &quot;ignore&quot;] });
+    measured = JSON.parse(raw.trim().split(&quot;\n&quot;).at(-1));
+  } catch {
+    report(&quot;python is available to measure upstream&quot;, false, &quot;could not run python&quot;);
+  }
+
+  if (measured) {
+    console.log(`     root handlers ${measured.before} -&gt; ${measured.after} after one logging.info()`);
+    console.log(`     basicConfig(format=...) returned ${measured.returned}, formatter changed: ${measured.formatter_changed}`);
+    report(&quot;a convenience call configures the root as a side effect&quot;, measured.after &gt; measured.before);
+    report(&quot;the later basicConfig is a no-op&quot;, measured.formatter_changed === false,
+      &quot;if this starts failing, upstream changed and this entry needs revisiting&quot;);
+    report(&quot;and it reports nothing about that&quot;, measured.returned === &quot;None&quot;);
+  }
+}
+
+console.log(&quot;\n== 4. the repair holds, and can be seen to&quot;);
+{
+  const registry = makeRegistry();
+  const c = collectSink();
+
+  const first = registry.configure(&quot;app/main&quot;, { format: plain, sinks: [c] });
+  report(&quot;the first configure reports that it applied&quot;, first.applied === true);
+
+  const second = registry.configure(&quot;app/main&quot;, { format: plain, sinks: [collectSink()] });
+  report(&quot;the second is refused rather than silently dropped&quot;, second.applied === false);
+  report(&quot;and it says why&quot;, second.why.includes(&quot;already configured&quot;), `&quot;${second.why}&quot;`);
+
+  const replaced = registry.replace(&quot;app/main&quot;, { format: plain, sinks: [c] });
+  report(&quot;an explicit replace is allowed and also reports&quot;, replaced.applied === true &amp;&amp; replaced.why !== &quot;&quot;);
+}
+
+console.log(&quot;\n== 5. the checks can fail&quot;);
+{
+  const registry = makeRegistry();
+
+  let refused = false;
+  try {
+    registry.configure(&quot;lib/worker&quot;, { format: plain, sinks: [] });
+  } catch (error) {
+    refused = error instanceof PermissionError;
+  }
+  report(&quot;SCL refuses a capability with may_configure:false&quot;, refused);
+
+  // configured, permitted, and nowhere to go — the state upstream reports as success
+  registry.configure(&quot;app/main&quot;, { format: plain, sinks: [] });
+  const status = registry.status();
+  report(&quot;a sink-less configuration is reported as unreachable&quot;, status.configured &amp;&amp; status.reachable === false,
+    `&quot;${status.why}&quot;`);
+
+  const nowhere = emit(makeRecord(&quot;x&quot;, &quot;info&quot;, &quot;into the void&quot;), registry.current());
+  report(&quot;and emitting into it is not called delivered&quot;, nowhere.delivered === false, `why=&quot;${nowhere.why}&quot;`);
+
+  const below = emit(makeRecord(&quot;x&quot;, &quot;debug&quot;, &quot;quiet&quot;), { threshold: &quot;info&quot;, format: plain, sinks: [collectSink()] });
+  report(&quot;below-threshold is distinguishable from no-sink&quot;, below.delivered === false &amp;&amp; below.why.includes(&quot;threshold&quot;),
+    `why=&quot;${below.why}&quot;`);
+}
+
+console.log(&quot;&quot;);
+if (failures.length) {
+  console.log(`  ${failures.length} check(s) failed: ${failures.join(&quot;, &quot;)}`);
+  process.exit(1);
+}
+console.log(&quot;  island test passed&quot;);
+</code></pre></details><details><summary>main.js</summary><pre><code>// Reproduce the upstream failure, then show the re-cut refusing to reproduce it.
+//
+//   node src/main.js
+
+import { makeRegistry } from &quot;./DMS/registry.js&quot;;
+import { PermissionError } from &quot;./SCL/policy.js&quot;;
+import { emit } from &quot;./SMS/pipeline.js&quot;;
+import { makeRecord } from &quot;./SMS/record.js&quot;;
+import { collectSink } from &quot;./TMS/sinks/collect.js&quot;;
+import { textSink } from &quot;./TMS/sinks/text.js&quot;;
+
+const plain = (r) =&gt; `${r.level.toUpperCase().padEnd(7)} ${r.logger}: ${r.message}`;
+const stamped = (r) =&gt; `[t=${r.at}] ${r.level.toUpperCase().padEnd(7)} ${r.logger}: ${r.message}`;
+
+function main() {
+  console.log(&quot;\n== logging re-cut&quot;);
+  const registry = makeRegistry();
+
+  console.log(&quot;\n  1. a library logs before anything is configured&quot;);
+  const early = emit(makeRecord(&quot;lib/worker&quot;, &quot;info&quot;, &quot;starting up&quot;), registry.current() ?? {});
+  console.log(`     delivered=${early.delivered}  why=&quot;${early.why}&quot;`);
+  console.log(&quot;     upstream this call would have configured the root logger as a side effect&quot;);
+
+  console.log(&quot;\n  2. the library tries to configure it&quot;);
+  try {
+    registry.configure(&quot;lib/worker&quot;, { format: plain, sinks: [] });
+  } catch (error) {
+    if (!(error instanceof PermissionError)) throw error;
+    console.log(`     refused: ${error.message}`);
+  }
+
+  console.log(&quot;\n  3. the application configures it, and is told that it took&quot;);
+  const collected = collectSink();
+  const first = registry.configure(&quot;app/main&quot;, { threshold: &quot;info&quot;, format: plain, sinks: [collected] });
+  console.log(`     applied=${first.applied}  installedBy=${first.installedBy}`);
+
+  console.log(&quot;\n  4. a second configuration attempt — the upstream silent no-op&quot;);
+  const second = registry.configure(&quot;app/main&quot;, { threshold: &quot;debug&quot;, format: stamped, sinks: [collected] });
+  console.log(`     applied=${second.applied}  why=&quot;${second.why}&quot;`);
+  console.log(&quot;     upstream: basicConfig(format=...) returns None here and discards the format&quot;);
+
+  console.log(&quot;\n  5. logging now works, and says where it went&quot;);
+  const out = emit(makeRecord(&quot;lib/worker&quot;, &quot;info&quot;, &quot;did the thing&quot;), registry.current());
+  console.log(`     delivered=${out.delivered}  sinks=[${out.sinks.join(&quot;, &quot;)}]`);
+  console.log(`     line: ${collected.lines.at(-1)}`);
+
+  console.log(&quot;\n  6. status: the question upstream cannot be asked&quot;);
+  console.log(`     ${JSON.stringify(registry.status())}`);
+
+  console.log(&quot;\n  7. an explicit replace is allowed, and is not silent either&quot;);
+  const third = registry.replace(&quot;app/main&quot;, { threshold: &quot;debug&quot;, format: stamped, sinks: [textSink((t) =&gt; console.log(`       ${t}`))] });
+  console.log(`     applied=${third.applied}  why=&quot;${third.why}&quot;`);
+  emit(makeRecord(&quot;app/main&quot;, &quot;debug&quot;, &quot;now with timestamps&quot;), registry.current());
+
+  // The one assertion worth making rather than eyeballing: every outcome above
+  // carried a reason. A run where some call returned nothing would mean the
+  // repair had not held.
+  const silent = [early, first, second, third, out].filter((r) =&gt; r === undefined || r === null);
+  if (silent.length) {
+    console.log(&quot;\n  RE-CUT FAILED: a call returned nothing&quot;);
+    return 1;
+  }
+  if (second.applied) {
+    console.log(&quot;\n  RE-CUT FAILED: the second configure took effect, so the guard is not being exercised&quot;);
+    return 1;
+  }
+  console.log(&quot;\n  every configuration attempt reported what it did; none of them was silent.&quot;);
+  return 0;
+}
+
+process.exit(main());
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

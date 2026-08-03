@@ -33,7 +33,7 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-02</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-03</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
@@ -41,6 +41,70 @@ footer a{color:var(--accent)}
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
 <hr>
+<h2>2026-08-03</h2>
+<h3>一、昨天加的改良點 6，今天一小時內就付了</h3>
+<p>昨天升上去的<a href="/html/mssp/modules/development.html">改良點 6</a>說：檢查本身要先被看著失敗一次。今天第一件事就是拿它去問一條既有的檢查——<strong>「沒有任何 TMS 引用兄弟 TMS」對 Python 範例到底有沒有跑？</strong></p>
+<p><code>build-mssp.mjs</code> 那段的註解自己寫著：</p>
+<blockquote>
+<p>這是唯一一條違反時在審閱中看不見、而且會摧毀「TMS 可以單獨載入」這個主張的規則。</p>
+</blockquote>
+<p>而它的檔案過濾是 <code>/\.(js|mjs|ts)$/</code>。<a href="/html/mssp/002-link-checker.html">範例 002</a> 是 Python。</p>
+<p><strong>實測</strong>：在 002 的一個 Python TMS 裡加上 <code>from TMS.checkers.http import HttpChecker</code>，建置<strong>綠燈通過</strong>。相對形式 <code>from .http import ...</code> 也一樣。考古的建置有自己一份同樣的檢查，考古 002 也是 Python，一樣沒跑。</p>
+<p>兩邊都修了：JS 與 Python 兩種 import 形式、點分與相對兩種寫法都解析，<code>__init__.py</code> 加進單元根的判定。四個方向都驗過——乾淨的樹通過、Python 點分違規擋下、Python 相對違規擋下、JS 違規擋下。</p>
+<p><strong>這跟昨天的 BC-0007 是同一個型態</strong>（<a href="https://bugology.evemiss.com">BP-0003 用列舉代替規則</a>）：檢查建立在一份手維護的清單上——那裡是網址清單，這裡是副檔名清單——而清單外的東西不會產生訊號，它的沉默跟通過長得一樣。</p>
+<p><strong>值得記下的是發現方式。</strong> 不是有人回報、不是測試變紅。是拿一條剛寫進方法的規則，去問一條已經在跑的檢查。改良點 6 的驗證方式那一欄寫的是「對現有範例回頭補這一節」——照著做，一小時內找到一個活的洞。</p>
+<h3>二、範例 003：DMS 的工作是讓「成功」變成可以查證的</h3>
+<p><a href="/html/mssp/003-record-migration.html">003 記錄遷移</a>。一句話的問題：</p>
+<pre><code class="language-text">5 records migrated, 0 errors
+</code></pre>
+<p>這句話對「五筆都正確遷移」是真的，對「沒有任何轉換命中、什麼都沒改」也是真的，對「跑到第二筆就提早返回」也是真的，對「輸入是空的」還是真的。<strong>它在每一種情況下都為真，也在每一種情況下都沒用。</strong></p>
+<p>所以帳本回答那句話回答不了的三件事：</p>
+<p><strong>收支要平。</strong> 每筆記錄必須在四種結果裡剛好出現一次。「0 錯誤」是關於一個桶子的主張，它完全沒說迴圈有沒有走過它拿到的全部東西。這條放在 <strong>SMS 不是 DMS</strong>——一份自己計算自己正確性的報告是在改自己的考卷。</p>
+<p><strong>看得到一筆嗎。</strong> 每種結果印兩筆前後對照，<strong>包含沒改動的那些</strong>，附上理由。「unchanged 2 筆」是一個主張；「unchanged，因為只有一個詞，拆開會是猜測」是一個讀者可以不同意的決定。</p>
+<p><strong>什麼沒發生。</strong> 這是這個範例存在的理由：</p>
+<pre><code class="language-text">    transforms/split-name      invoked   4, changed   3, declined   1
+    transforms/normalise-phone NEVER INVOKED
+                                 declined 5 record(s); reads phone
+                                 this run says nothing about whether it works
+</code></pre>
+<p>測試資料裡一筆電話號碼都沒有。那個轉換載入了、是正確的、從來沒被碰到。<strong>它不是錯誤也不是成功，是證據的缺席</strong>，而報告必須分得出這三者。</p>
+<h3>三、考古 003：先找對的東西，再找漏的</h3>
+<p><a href="/html/mssp/archaeology/003-logging.html">003 CPython logging 3.14.5</a>。前兩則考古都在找<strong>缺少</strong>的縫，而一個只會找缺陷的方法講不出它認為什麼是對的。</p>
+<p><code>logging</code> 的四個軸切得很對，二十多年前切的：<code>Handler</code> 持有 <code>Formatter</code>、<code>Formatter</code> 不認識 <code>Handler</code>（單向）；<code>Filter</code> 是<strong>一個方法</strong>的協定，不是要繼承的基底；<code>Logger</code> 與 <code>Handler</code> 都繼承 <code>Filterer</code>，因為過濾真的是兩者共有的關切；<code>propagate</code> 在 <code>Logger</code> 上不在 <code>Handler</code> 上——<strong>路由是 logger 的事，不是目的地的事</strong>。</p>
+<p>跟<a href="/html/mssp/archaeology/002-http-server.html">考古 002</a> 對照著看很有意思：同一個標準庫、同一個年代，<code>StreamHandler</code> 把目的地當參數收，而 <code>BaseHTTPRequestHandler.log_message</code> 把 <code>sys.stderr</code> 寫進函式裡。</p>
+<p>漏處只有一個，當場量得出來：</p>
+<pre><code class="language-text">root handlers 0 -&gt; 1 after one logging.info()
+basicConfig(format=...) returned None, formatter changed: false
+</code></pre>
+<p><code>logging.info()</code> 在 root 沒有 handler 時<strong>會替你呼叫 <code>basicConfig()</code></strong>。之後你自己的 <code>basicConfig(format=...)</code> 完全不做事，沒有例外、沒有警告、沒有回傳值。</p>
+<p>結構上的原因不是那個守衛，是<strong>便利層一次跨過全部四個軸</strong>——它在你只想記一行的時候順手決定了門檻、sink、格式與目的地，而且是在全域上。</p>
+<p>我也寫了為什麼它改不掉：現在讓 <code>basicConfig</code> 不再沉默，會弄壞每一個依賴「重複呼叫是安全無操作」的程式庫。那是第九篇講的相容壓力。<strong>便利層不是錯誤，補償的副作用不可見才是。</strong></p>
+<hr>
+<h3>今天推進了什麼</h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>狀態</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>兄弟 TMS 檢查對 Python</td>
+<td><strong>本來完全沒跑</strong>——已修，四個方向驗過</td>
+</tr>
+<tr>
+<td>範例</td>
+<td>002 → <strong>003</strong>（DMS 讓成功可查證）</td>
+</tr>
+<tr>
+<td>考古</td>
+<td>002 → <strong>003</strong>（logging：邊界確認 ＋ 一個漏處）</td>
+</tr>
+<tr>
+<td>開發區</td>
+<td>新增改良點 7：DMS 需要契約，不只是一句描述</td>
+</tr>
+</tbody></table>
 <h2>2026-08-02</h2>
 <h3>一、範例 002：把一個 TMS 升成 SMS，代價落在別人身上</h3>
 <p><a href="/html/mssp/002-link-checker.html">002 連結檢查器</a>。節流原本是 <code>TMS/pacing</code>——它聽起來就是可選的：那是禮貌，測試時會關掉，而「檢查連結」聽起來不需要禮貌。</p>

@@ -132,7 +132,71 @@ export const msspExamples = [
     "lineCount": 730,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/002-link-checker.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/002-link-checker.html"
+  },
+  {
+    "id": "003-record-migration",
+    "slug": "003-record-migration",
+    "title": {
+      "zh": "記錄遷移：「500 筆，0 錯誤」是什麼意思",
+      "en": "Record migration: what \\\"500 migrated, 0 errors\\\" actually says"
+    },
+    "summary": {
+      "zh": "一次成功的執行報告，跟一次什麼都沒做的執行報告，可以長得一模一樣。DMS 的工作不是記錄發生過什麼，是讓「成功」變成可以查證的——收支要平、每個轉換要交出見證、沒被呼叫過的要自己說出來。",
+      "en": "A successful run and a run that did nothing can print the same report. The job of DMS is not to log what happened but to make success checkable — the arithmetic has to balance, every transform has to produce a witness, and one that was never invoked has to say so itself."
+    },
+    "language": "javascript",
+    "date": "2026-08-03",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "dms-makes-success-checkable",
+      "reconciliation",
+      "unexercised-capability",
+      "island-test"
+    ],
+    "runnable": "node src/main.js",
+    "files": [
+      "DMS/ledger.js",
+      "FMS/manifest.json",
+      "SCL/policy.js",
+      "SCL/policy.json",
+      "SMS/model.js",
+      "SMS/pipeline.js",
+      "SMS/reconcile.js",
+      "TMS/transforms/normalise-phone.js",
+      "TMS/transforms/split-name.js",
+      "island-test.js",
+      "main.js"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/manifest.json"
+      ],
+      "SCL": [
+        "SCL/policy.js",
+        "SCL/policy.json"
+      ],
+      "SMS": [
+        "SMS/model.js",
+        "SMS/pipeline.js",
+        "SMS/reconcile.js"
+      ],
+      "TMS": [
+        "TMS/transforms/normalise-phone.js",
+        "TMS/transforms/split-name.js"
+      ],
+      "DMS": [
+        "DMS/ledger.js"
+      ],
+      "root": [
+        "island-test.js",
+        "main.js"
+      ]
+    },
+    "lineCount": 631,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/003-record-migration.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/003-record-migration.html"
   }
 ];
 
-export const msspExampleCount = 2;
+export const msspExampleCount = 3;

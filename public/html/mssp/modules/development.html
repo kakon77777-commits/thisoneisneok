@@ -33,7 +33,7 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-02</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-03</span></header>
 <main>
   <span class="state">v1.x 開發中</span>
   <article class="content"><h1>MSSP 開發區</h1>
@@ -134,6 +134,19 @@ footer a{color:var(--accent)}
 <p>具體提案是在範例契約裡加一條必要條件：<strong>每個範例必須包含一段刻意違反自身結構規則的程式碼，並要求檢查擋下它。</strong> 002 的孤島測試第 4 節已經是這個形狀——它蓋出錯誤的節流形狀，要求 SCL 規則拒絕。那一節應該從「這個範例剛好有做」變成「每個範例都要有」。</p>
 <p>代價要說清楚：這會讓每個範例變長，而且寫反例比寫正例難——你得先知道它會怎麼壞。</p>
 <p><strong>驗證方式：</strong> 對現有兩個範例與兩則考古回頭補這一節。如果四個裡有任何一個補不出來（想不到一個會讓檢查失敗的改動），那不是這條規則太嚴，是那個檢查本來就沒有在檢查東西。</p>
+<p><strong>2026-08-03 更新：這條加進來的隔天就付了。</strong> 拿它去問一條既有的檢查——「沒有任何 TMS 引用兄弟 TMS」對 Python 範例有沒有跑——答案是<strong>沒有</strong>。那段的檔案過濾是 <code>/\.(js|mjs|ts)$/</code>，而<a href="/html/mssp/002-link-checker.html">範例 002</a> 是 Python。在它的一個 TMS 裡加上真正的違規 import，建置綠燈通過；考古的建置有自己一份同樣的檢查，也一樣沒跑。兩邊都已修並在四個方向驗過。<strong>發現方式值得記：不是測試變紅，是拿一條新規則去問一條舊檢查。</strong></p>
+<h3>改良點 7：DMS 需要契約，不只是一句描述</h3>
+<p>FMS、SCL、SMS、TMS 在<a href="/html/mssp/modules/start.html">模組 01</a> 與<a href="/html/mssp/modules/patterns.html">模組 02</a> 裡都有判準——身分測試、孤島測試、依賴規則、權限與知識分離。<strong>DMS 只有一句話</strong>：「人可以看到實際發生了什麼」。</p>
+<p>那句話不夠，因為它沒有說 DMS 欠讀者什麼。<a href="/html/mssp/003-record-migration.html">範例 003</a> 是拿一個具體案例去逼出那個缺口的：<code>5 records migrated, 0 errors</code> 這句話，對一次正確的執行為真，對一次什麼都沒改的執行為真，對一次跑到第二筆就返回的執行也為真。<strong>符合現行 DMS 描述的報告，可以完全無法分辨這三者。</strong></p>
+<p>提案是給 DMS 三條可檢查的最低要求：</p>
+<ol>
+<li><strong>收支要平。</strong> 輸入的每個單位都必須在輸出的分類裡剛好出現一次。這條要放在 SMS——一份自己計算自己正確性的報告是在改自己的考卷。</li>
+<li><strong>要有見證。</strong> 每一類結果至少一筆具體的前後對照，<strong>包含「沒有改變」那一類</strong>。計數是主張，前後對照是讀者可以不同意的東西。</li>
+<li><strong>沒被執行到的能力要自己說出來。</strong> 載入了、正確、從未被呼叫——那不是錯誤也不是成功，是<strong>證據的缺席</strong>，而且它是「相信某個東西能用、但它一次都沒跑過」最常見的來源。</li>
+</ol>
+<p>第三條跟<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 6</a> 是同一件事的兩個方向：改良點 6 說檢查要能失敗，這一條說<strong>報告要能說出它沒看到什麼</strong>。</p>
+<p>代價：三條都會讓 DMS 變大，而 DMS 是最容易被砍掉的集合。第三條尤其麻煩——它要求 SMS 記錄「呼叫了幾次」，而一個從未被呼叫的能力不產生任何輸出可以統計，所以計數必須在迴圈裡做，不能事後從結果推。</p>
+<p><strong>驗證方式：</strong> 對<a href="/html/mssp/modules/archaeology.html">考古</a>累積的每一則問同一個問題——上游的 DMS 過得了這三條嗎。<code>logging</code>（<a href="/html/mssp/archaeology/003-logging.html">考古 003</a>）過不了第三條：<code>basicConfig</code> 在已設定時靜靜返回 <code>None</code>，而那正是第三條要抓的東西。如果二十則考古下來，第三條抓到的都是同一種東西，那它就該從改良點升成判準。</p>
 <hr>
 <hr>
 <h2>開發路線：四個 MVP 與回饋迴圈</h2>

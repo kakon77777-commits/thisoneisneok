@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-02
+updated: 2026-08-03
 ---
 
 # 開發日誌
@@ -19,6 +19,85 @@ updated: 2026-08-02
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
 
 ---
+
+## 2026-08-03
+
+### 一、昨天加的改良點 6，今天一小時內就付了
+
+昨天升上去的[改良點 6](/html/mssp/modules/development.html)說：檢查本身要先被看著失敗一次。今天第一件事就是拿它去問一條既有的檢查——**「沒有任何 TMS 引用兄弟 TMS」對 Python 範例到底有沒有跑？**
+
+`build-mssp.mjs` 那段的註解自己寫著：
+
+> 這是唯一一條違反時在審閱中看不見、而且會摧毀「TMS 可以單獨載入」這個主張的規則。
+
+而它的檔案過濾是 `/\.(js|mjs|ts)$/`。[範例 002](/html/mssp/002-link-checker.html) 是 Python。
+
+**實測**：在 002 的一個 Python TMS 裡加上 `from TMS.checkers.http import HttpChecker`，建置**綠燈通過**。相對形式 `from .http import ...` 也一樣。考古的建置有自己一份同樣的檢查，考古 002 也是 Python，一樣沒跑。
+
+兩邊都修了：JS 與 Python 兩種 import 形式、點分與相對兩種寫法都解析，`__init__.py` 加進單元根的判定。四個方向都驗過——乾淨的樹通過、Python 點分違規擋下、Python 相對違規擋下、JS 違規擋下。
+
+**這跟昨天的 BC-0007 是同一個型態**（[BP-0003 用列舉代替規則](https://bugology.evemiss.com)）：檢查建立在一份手維護的清單上——那裡是網址清單，這裡是副檔名清單——而清單外的東西不會產生訊號，它的沉默跟通過長得一樣。
+
+**值得記下的是發現方式。** 不是有人回報、不是測試變紅。是拿一條剛寫進方法的規則，去問一條已經在跑的檢查。改良點 6 的驗證方式那一欄寫的是「對現有範例回頭補這一節」——照著做，一小時內找到一個活的洞。
+
+### 二、範例 003：DMS 的工作是讓「成功」變成可以查證的
+
+[003 記錄遷移](/html/mssp/003-record-migration.html)。一句話的問題：
+
+```text
+5 records migrated, 0 errors
+```
+
+這句話對「五筆都正確遷移」是真的，對「沒有任何轉換命中、什麼都沒改」也是真的，對「跑到第二筆就提早返回」也是真的，對「輸入是空的」還是真的。**它在每一種情況下都為真，也在每一種情況下都沒用。**
+
+所以帳本回答那句話回答不了的三件事：
+
+**收支要平。** 每筆記錄必須在四種結果裡剛好出現一次。「0 錯誤」是關於一個桶子的主張，它完全沒說迴圈有沒有走過它拿到的全部東西。這條放在 **SMS 不是 DMS**——一份自己計算自己正確性的報告是在改自己的考卷。
+
+**看得到一筆嗎。** 每種結果印兩筆前後對照，**包含沒改動的那些**，附上理由。「unchanged 2 筆」是一個主張；「unchanged，因為只有一個詞，拆開會是猜測」是一個讀者可以不同意的決定。
+
+**什麼沒發生。** 這是這個範例存在的理由：
+
+```text
+    transforms/split-name      invoked   4, changed   3, declined   1
+    transforms/normalise-phone NEVER INVOKED
+                                 declined 5 record(s); reads phone
+                                 this run says nothing about whether it works
+```
+
+測試資料裡一筆電話號碼都沒有。那個轉換載入了、是正確的、從來沒被碰到。**它不是錯誤也不是成功，是證據的缺席**，而報告必須分得出這三者。
+
+### 三、考古 003：先找對的東西，再找漏的
+
+[003 CPython logging 3.14.5](/html/mssp/archaeology/003-logging.html)。前兩則考古都在找**缺少**的縫，而一個只會找缺陷的方法講不出它認為什麼是對的。
+
+`logging` 的四個軸切得很對，二十多年前切的：`Handler` 持有 `Formatter`、`Formatter` 不認識 `Handler`（單向）；`Filter` 是**一個方法**的協定，不是要繼承的基底；`Logger` 與 `Handler` 都繼承 `Filterer`，因為過濾真的是兩者共有的關切；`propagate` 在 `Logger` 上不在 `Handler` 上——**路由是 logger 的事，不是目的地的事**。
+
+跟[考古 002](/html/mssp/archaeology/002-http-server.html) 對照著看很有意思：同一個標準庫、同一個年代，`StreamHandler` 把目的地當參數收，而 `BaseHTTPRequestHandler.log_message` 把 `sys.stderr` 寫進函式裡。
+
+漏處只有一個，當場量得出來：
+
+```text
+root handlers 0 -> 1 after one logging.info()
+basicConfig(format=...) returned None, formatter changed: false
+```
+
+`logging.info()` 在 root 沒有 handler 時**會替你呼叫 `basicConfig()`**。之後你自己的 `basicConfig(format=...)` 完全不做事，沒有例外、沒有警告、沒有回傳值。
+
+結構上的原因不是那個守衛，是**便利層一次跨過全部四個軸**——它在你只想記一行的時候順手決定了門檻、sink、格式與目的地，而且是在全域上。
+
+我也寫了為什麼它改不掉：現在讓 `basicConfig` 不再沉默，會弄壞每一個依賴「重複呼叫是安全無操作」的程式庫。那是第九篇講的相容壓力。**便利層不是錯誤，補償的副作用不可見才是。**
+
+---
+
+### 今天推進了什麼
+
+| 項目 | 狀態 |
+|---|---|
+| 兄弟 TMS 檢查對 Python | **本來完全沒跑**——已修，四個方向驗過 |
+| 範例 | 002 → **003**（DMS 讓成功可查證） |
+| 考古 | 002 → **003**（logging：邊界確認 ＋ 一個漏處） |
+| 開發區 | 新增改良點 7：DMS 需要契約，不只是一句描述 |
 
 ## 2026-08-02
 

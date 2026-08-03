@@ -1,0 +1,23 @@
+{
+  "policy_version": "1.0",
+  "_comment": [
+    "Configuration is a permission, and upstream it is not one. Any module that",
+    "imports logging can call basicConfig or, more quietly, logging.info() —",
+    "which calls basicConfig for it. So the first import to log wins, and every",
+    "later configuration attempt is a silent no-op.",
+    "",
+    "Here configuring the shared sink set is a named capability, and everything",
+    "else may log without being able to decide where logs go."
+  ],
+  "capabilities": {
+    "app/main": { "may_configure": true, "may_log": true },
+    "lib/worker": { "may_configure": false, "may_log": true }
+  },
+  "rules": [
+    {
+      "id": "configure-requires-permission",
+      "statement": "Only a capability with may_configure:true may install or replace the sink set.",
+      "enforced_by": "SCL/policy.js::assertMayConfigure, called by DMS/registry.js"
+    }
+  ]
+}

@@ -124,27 +124,67 @@ function checkExample(id, dir, meta) {
   // and passed them. It was verified by adding the forbidden import on purpose:
   // the build stayed green, so the check could not have failed for the one case
   // it exists to catch.
+  // The extension filter used to be /\.(js|mjs|ts)$/, which meant the rule did
+  // not run at all on the first Python example — verified by adding the
+  // forbidden import to one of its TMS modules and watching the build stay
+  // green. The check was over an enumeration of extensions and silent about
+  // everything outside it, and its silence looked exactly like a pass.
   const tmsDir = path.join(srcDir, "TMS");
   if (fs.existsSync(tmsDir)) {
+    const INDEX_FILES = ["index.js", "index.mjs", "index.ts", "__init__.py"];
     const unitRootOf = (file) => {
       // Walk up to the highest ancestor under TMS/ that has an index file.
       let unit = file;
       let cursor = path.dirname(file);
       while (cursor.startsWith(tmsDir)) {
-        const hasIndex = ["index.js", "index.mjs", "index.ts"].some((name) => fs.existsSync(path.join(cursor, name)));
-        if (hasIndex) unit = cursor;
+        if (INDEX_FILES.some((name) => fs.existsSync(path.join(cursor, name)))) unit = cursor;
         cursor = path.dirname(cursor);
       }
       return unit;
     };
 
-    for (const file of walk(tmsDir).filter((f) => /\.(js|mjs|ts)$/.test(f))) {
+    // Resolve an import to a file under TMS/, or null when it points elsewhere.
+    const resolveJs = (file, specifier) =>
+      specifier.startsWith(".") ? path.resolve(path.dirname(file), specifier) : null;
+
+    // Python reaches its own tree two ways in these examples: a dotted path
+    // rooted at src/ (`from TMS.checkers.http import ...`, which works because
+    // the entry point puts src/ on sys.path) and a relative one
+    // (`from .text import render`). Both have to resolve, because a rule that
+    // only understands one of them is a rule an author can step around without
+    // knowing they did.
+    const resolvePy = (file, spec) => {
+      if (spec.startsWith(".")) {
+        const up = spec.match(/^\.+/)[0].length;
+        let base = path.dirname(file);
+        for (let i = 1; i < up; i += 1) base = path.dirname(base);
+        const rest = spec.slice(up).replaceAll(".", path.sep);
+        return rest ? path.join(base, rest) : base;
+      }
+      if (spec === "TMS" || spec.startsWith("TMS.")) {
+        return path.join(srcDir, spec.replaceAll(".", path.sep));
+      }
+      return null;
+    };
+
+    const IMPORTS = [
+      { ext: /\.(js|mjs|ts)$/, pattern: /^\s*import\s[^;]*?from\s+["']([^"']+)["']/gm, resolve: resolveJs },
+      { ext: /\.py$/, pattern: /^\s*(?:from\s+([.\w]+)\s+import\b|import\s+([.\w]+))/gm, resolve: resolvePy },
+    ];
+
+    for (const file of walk(tmsDir)) {
+      const rule = IMPORTS.find((r) => r.ext.test(file));
+      if (!rule) continue;
       const source = fs.readFileSync(file, "utf8");
       const selfUnit = unitRootOf(file);
-      for (const match of source.matchAll(/^\s*import\s[^;]*?from\s+["']([^"']+)["']/gm)) {
-        const specifier = match[1];
-        if (!specifier.startsWith(".")) continue;
-        const resolved = path.resolve(path.dirname(file), specifier);
+      for (const match of source.matchAll(rule.pattern)) {
+        const specifier = match[1] ?? match[2];
+        if (!specifier) continue;
+        const target = rule.resolve(file, specifier);
+        if (!target) continue;
+        // A dotted import names a module, not a file; try both shapes.
+        const resolved = [target, `${target}.py`, `${target}.js`, `${target}.mjs`, `${target}.ts`]
+          .find((candidate) => fs.existsSync(candidate)) ?? target;
         if (!resolved.startsWith(tmsDir + path.sep)) continue;
         if (unitRootOf(resolved) !== selfUnit) {
           fail(id, `TMS imports a sibling TMS: ${path.relative(dir, file).replaceAll("\\", "/")} -> ${specifier}`);

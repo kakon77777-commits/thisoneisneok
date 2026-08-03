@@ -81,27 +81,56 @@ function escapeHtml(value) {
   return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
 
+// Same rule and the same repair as scripts/build-mssp.mjs. It read only
+// .js/.mjs/.ts, so it did not run at all on the first Python re-cut — an
+// enumeration of extensions, silent about everything outside it, and its
+// silence indistinguishable from a pass.
 function checkTmsCoupling(id, dir, srcDir) {
   const tmsDir = path.join(srcDir, "TMS");
   if (!fs.existsSync(tmsDir)) return;
+  const INDEX_FILES = ["index.js", "index.mjs", "index.ts", "__init__.py"];
   const unitRootOf = (file) => {
     let unit = file;
     let cursor = path.dirname(file);
     while (cursor.startsWith(tmsDir)) {
-      if (["index.js", "index.mjs", "index.ts"].some((n) => fs.existsSync(path.join(cursor, n)))) unit = cursor;
+      if (INDEX_FILES.some((n) => fs.existsSync(path.join(cursor, n)))) unit = cursor;
       cursor = path.dirname(cursor);
     }
     return unit;
   };
-  for (const file of walk(tmsDir).filter((f) => /\.(js|mjs|ts)$/.test(f))) {
+
+  const resolveJs = (file, spec) => (spec.startsWith(".") ? path.resolve(path.dirname(file), spec) : null);
+  const resolvePy = (file, spec) => {
+    if (spec.startsWith(".")) {
+      const up = spec.match(/^\.+/)[0].length;
+      let base = path.dirname(file);
+      for (let i = 1; i < up; i += 1) base = path.dirname(base);
+      const rest = spec.slice(up).replaceAll(".", path.sep);
+      return rest ? path.join(base, rest) : base;
+    }
+    return spec === "TMS" || spec.startsWith("TMS.") ? path.join(srcDir, spec.replaceAll(".", path.sep)) : null;
+  };
+
+  const IMPORTS = [
+    { ext: /\.(js|mjs|ts)$/, pattern: /^\s*import\s[^;]*?from\s+["']([^"']+)["']/gm, resolve: resolveJs },
+    { ext: /\.py$/, pattern: /^\s*(?:from\s+([.\w]+)\s+import\b|import\s+([.\w]+))/gm, resolve: resolvePy },
+  ];
+
+  for (const file of walk(tmsDir)) {
+    const rule = IMPORTS.find((r) => r.ext.test(file));
+    if (!rule) continue;
     const source = fs.readFileSync(file, "utf8");
     const selfUnit = unitRootOf(file);
-    for (const match of source.matchAll(/^\s*import\s[^;]*?from\s+["']([^"']+)["']/gm)) {
-      if (!match[1].startsWith(".")) continue;
-      const resolved = path.resolve(path.dirname(file), match[1]);
+    for (const match of source.matchAll(rule.pattern)) {
+      const specifier = match[1] ?? match[2];
+      if (!specifier) continue;
+      const target = rule.resolve(file, specifier);
+      if (!target) continue;
+      const resolved = [target, `${target}.py`, `${target}.js`, `${target}.mjs`, `${target}.ts`]
+        .find((candidate) => fs.existsSync(candidate)) ?? target;
       if (!resolved.startsWith(tmsDir + path.sep)) continue;
       if (unitRootOf(resolved) !== selfUnit) {
-        fail(id, `TMS imports a sibling TMS: ${path.relative(dir, file).replaceAll("\\", "/")} -> ${match[1]}`);
+        fail(id, `TMS imports a sibling TMS: ${path.relative(dir, file).replaceAll("\\", "/")} -> ${specifier}`);
       }
     }
   }

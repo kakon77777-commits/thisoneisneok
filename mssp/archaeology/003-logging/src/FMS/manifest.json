@@ -1,0 +1,38 @@
+{
+  "name": "logging-recut",
+  "what_it_is": "A minimal logging pipeline keeping upstream's four axes and repairing the one place a convenience layer crosses all of them.",
+  "examined": {
+    "project": "CPython logging",
+    "version": "3.14.5",
+    "license": "PSF-2.0",
+    "measured": {
+      "module_lines": 2326,
+      "Logger_public_methods": 23,
+      "Handler_public_methods": 14,
+      "Formatter_public_methods": 9,
+      "Filter_public_methods": 1,
+      "basicConfig_lines": 119,
+      "basicConfig_guard": "if len(root.handlers) == 0",
+      "logging_info_calls_basicConfig": true,
+      "root_handlers_before_first_convenience_call": 0,
+      "root_handlers_after": 1
+    }
+  },
+  "capabilities": {
+    "SMS": {
+      "record": "One event as a value. The piece that makes four independent axes possible.",
+      "pipeline": "threshold -> filters -> format -> sinks, returning whether the event was delivered and why not."
+    },
+    "SCL": { "policy": "Configuring the shared sink set is a permission. Logging is not." },
+    "TMS": {
+      "sinks/text": "Writes to a stream it is handed.",
+      "sinks/collect": "Keeps lines in memory for a test."
+    },
+    "DMS": { "registry": "Where configuration lives, and the thing that reports what a configuration attempt actually did." }
+  },
+  "the_finding": "The four axes are cut correctly and should not be touched. The leak is that logging.info() configures the root logger as a side effect of logging one line, after which every later basicConfig is a silent no-op — measured, not recalled.",
+  "non_goals": [
+    "Being a logging library. No levels beyond four, no hierarchy, no propagation, no thread safety.",
+    "Improving on upstream's axes. Most of this entry argues they are right."
+  ]
+}

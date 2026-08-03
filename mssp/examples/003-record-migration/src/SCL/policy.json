@@ -1,0 +1,36 @@
+{
+  "policy_version": "1.0",
+
+  "_comment": [
+    "Dropping a record is a permission, not a behaviour. A transform that can",
+    "decide a record should not survive the migration is doing something",
+    "categorically different from one that can only rewrite fields, and the",
+    "difference is invisible in the code — both are a function that returns an",
+    "outcome.",
+    "",
+    "So it is stated here as data, and SMS/pipeline refuses a drop from a",
+    "transform whose entry does not allow it. The transform is not asked to",
+    "behave; it is not able to."
+  ],
+
+  "transforms": {
+    "transforms/split-name": {
+      "may_drop": false,
+      "reads": ["name"],
+      "writes": ["given_name", "family_name"]
+    },
+    "transforms/normalise-phone": {
+      "may_drop": false,
+      "reads": ["phone"],
+      "writes": ["phone"]
+    }
+  },
+
+  "rules": [
+    {
+      "id": "drop-requires-permission",
+      "statement": "A transform whose entry says may_drop:false cannot remove a record from the migration.",
+      "enforced_by": "SCL/policy.js::assertMayDrop, called by SMS/pipeline.js before the outcome is recorded"
+    }
+  ]
+}

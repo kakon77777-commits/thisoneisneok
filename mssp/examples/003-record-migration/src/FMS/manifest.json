@@ -1,0 +1,50 @@
+{
+  "name": "record-migration",
+  "what_it_is": "Runs a batch of records through a set of field transforms and reports what happened in a form somebody can check.",
+  "why_it_exists": "Because \"500 records migrated, 0 errors\" is true of a correct run, of a run that touched nothing, and of a run that lost half its input to an early return.",
+  "core_task_loop": "records -> one outcome per record -> reconciliation -> ledger",
+
+  "capabilities": {
+    "SMS": {
+      "model": "Record and Outcome. Four outcome kinds, with `unchanged` distinct from `applied` on purpose.",
+      "reconcile": "The arithmetic that must balance: every record accounted for exactly once. Core, not reporting — the pipeline cannot honestly return a result without it.",
+      "pipeline": "The loop. Imports no transform; it is handed a list."
+    },
+    "SCL": {
+      "policy": "Which transform may drop a record. Rewriting a field and removing a record look identical in code and only one of them loses data."
+    },
+    "TMS": {
+      "transforms/split-name": "Splits `name` into given and family. Declines a single token rather than guessing.",
+      "transforms/normalise-phone": "Rewrites `phone` to E.164-ish. Never invoked by the shipped fixture, deliberately."
+    },
+    "DMS": {
+      "ledger": "The report. Reconciliation, witnesses before and after, and any capability that was never invoked."
+    }
+  },
+
+  "terminology": {
+    "reconciliation": "input == applied + unchanged + dropped + failed, with no id appearing twice.",
+    "witness": "A concrete before/after pair, printed so a reader can check the transform rather than take the count on faith.",
+    "unexercised capability": "One that was loaded, was correct, and was never reached by this input."
+  },
+
+  "decisions": [
+    {
+      "id": "D-001",
+      "date": "2026-08-03",
+      "decision": "reconciliation lives in SMS, not in DMS",
+      "because": "A report that computed its own correctness would be marking its own work. DMS renders the answer; it does not decide it."
+    },
+    {
+      "id": "D-002",
+      "date": "2026-08-03",
+      "decision": "an unexercised capability is reported as loudly as a failure",
+      "because": "It is not an error, and a run that never reached it supports no claim about it. Those are different things and both need saying."
+    }
+  ],
+
+  "non_goals": [
+    "Being a migration tool. There is no source, no destination and no transaction — the records are a literal in main.js.",
+    "Deciding whether the transforms are correct. It reports what they did; correctness is the reader's call, which is the point."
+  ]
+}

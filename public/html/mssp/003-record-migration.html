@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>記錄遷移：「500 筆，0 錯誤」是什麼意思 | MSSP | Neo.K</title>
+<meta name="description" content="一次成功的執行報告，跟一次什麼都沒做的執行報告，可以長得一模一樣。DMS 的工作不是記錄發生過什麼，是讓「成功」變成可以查證的——收支要平、每個轉換要交出見證、沒被呼叫過的要自己說出來。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/003-record-migration.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>003-record-migration</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>003-record-migration</span></div>
+    <div><b>語言</b><span>javascript</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-03</span></div>
+    <div><b>行數</b><span>631</span></div>
+    <div><b>執行</b><span><code>node src/main.js</code></span></div>
+  </section>
+  <article class="content"><h1>003 — Record migration: what &quot;500 migrated, 0 errors&quot; actually says</h1>
+<h2>What this program does</h2>
+<p>It takes a batch of records, runs each one through a set of field transforms —
+split a <code>name</code> into given and family, rewrite a <code>phone</code> into a canonical form —
+and reports what happened.</p>
+<pre><code class="language-bash">node src/main.js            # the ledger
+node src/main.js --summary  # the sentence a normal migration tool prints
+node src/island-test.js     # each transform alone, plus four attempts to make the ledger lie
+</code></pre>
+<p>No dependencies, no source database, no destination. The records are a literal.</p>
+<h2>The structural decision</h2>
+<p><strong>DMS is not the run log. Its job is to make a successful run checkable — and a
+successful run is the hard case, because failure announces itself and success
+does not.</strong></p>
+<p>Here is what a migration normally tells you:</p>
+<pre><code class="language-console">$ node src/main.js --summary
+
+  5 records migrated, 0 errors
+</code></pre>
+<p>Every word is true. It is also word-for-word what you would get from:</p>
+<ul>
+<li>a run that migrated all five correctly;</li>
+<li>a run where no transform matched anything, so nothing changed;</li>
+<li>a run that returned early after two records and counted the rest as skipped;</li>
+<li>a run over an empty input.</li>
+</ul>
+<p>The sentence cannot distinguish them, and it is the sentence almost every batch
+tool prints. So the ledger answers three questions it cannot.</p>
+<p><strong>1. Does the arithmetic balance?</strong> Every record must appear exactly once across
+the four outcome kinds. Zero failures is a claim about one bucket; it says
+nothing about whether the loop visited everything it was handed. A shortfall
+means records were lost somewhere the failure counter never reached, and that
+makes the run untrustworthy regardless of how clean the error column looks.</p>
+<p>This lives in <strong>SMS</strong>, not DMS. A report that computed its own correctness would
+be marking its own work; the pipeline cannot honestly return a result without
+reconciling, so reconciliation is part of closing the loop.</p>
+<p><strong>2. Can I see one?</strong> Two witnesses per outcome kind, printed before and after —
+including for records nothing changed, with the reason. An <code>unchanged</code> count on
+its own is an assertion; an <code>unchanged</code> count next to <code>one token only; splitting it would be a guess</code> is a decision a reader can disagree with.</p>
+<p><strong>3. What did not happen?</strong></p>
+<pre><code class="language-text">  capabilities
+    transforms/split-name      invoked   4, changed   3, declined   1
+    transforms/normalise-phone NEVER INVOKED
+                                 declined 5 record(s); reads phone
+                                 this run says nothing about whether it works
+</code></pre>
+<p>Not one record in the fixture carries a phone number. The phone transform is
+loaded, correct, and never reached. <strong>It is not an error and it is not a
+success — it is the absence of evidence, and the report has to be able to say
+which of the three it is.</strong></p>
+<p>This is the decision the example exists for. A capability that was never invoked
+is reported as loudly as one that failed, because a green run over an input that
+never reaches a transform is the commonest way to believe something works that
+has never once executed.</p>
+<h2>Set by set</h2>
+<p><strong>FMS</strong> — <code>manifest.json</code>. What the program is, what each capability does, and
+the two decisions above with their reasons. No procedure.</p>
+<p><strong>SCL</strong> — <code>policy.json</code> and <code>policy.js</code>. One permission: <code>may_drop</code>. Rewriting a
+field and removing a record are the same shape in code — a function returning an
+outcome — and only one of them loses data, so the difference is stated as data a
+runtime reads rather than a rule a transform is trusted to respect. A drop from
+a transform that may not drop is recorded as <em>that transform&#39;s</em> failure, and the
+record stays accounted for.</p>
+<p><strong>SMS</strong> — <code>model.js</code> (the four outcome kinds), <code>reconcile.js</code> (the arithmetic),
+<code>pipeline.js</code> (the loop). The pipeline imports no transform; it is handed a
+list, which is what lets the island test hand it exactly one.</p>
+<p><strong>TMS</strong> — <code>transforms/split-name</code> and <code>transforms/normalise-phone</code>. Two units in
+one category directory, so an import between them is a violation. Neither knows
+the other exists.</p>
+<p><strong>DMS</strong> — <code>ledger.js</code>. Renders; decides nothing. <code>assessment()</code> is separate from
+<code>render()</code> because the report is for a person and the assessment is for a caller
+that has to act — and the two answers differ: this run is <em>trustworthy</em> (it
+balances) and only partly <em>demonstrative</em> (one capability never ran).</p>
+<h2>The island test</h2>
+<pre><code class="language-console">$ node src/island-test.js
+
+== 1. transforms/split-name alone
+  PASS  runs with no sibling loaded - 2 of 2 accounted for
+  PASS  split-name was actually invoked - invoked 2
+  PASS  phone fields survived untouched - the absent transform left its fields alone rather than nulling them
+
+== 2. transforms/normalise-phone alone
+  PASS  runs with no sibling loaded
+  PASS  normalise-phone was actually invoked
+  PASS  it changed the one that needed changing - 1 applied; the already-normalised number came back unchanged
+  PASS  assessment reports nothing unexercised here
+
+== 3. reconciliation rejects a lost record
+  PASS  a shortfall is unbalanced - missing 2
+  PASS  and the shortfall is reported, not just flagged
+  PASS  an exact match still balances
+
+== 4. reconciliation rejects a duplicated record
+  PASS  counts alone would have passed
+  PASS  the duplicate is caught anyway - duplicated [d-1]
+
+== 5. the ledger cannot hide an unexercised capability
+  PASS  the report names it
+  PASS  and says what it would have needed
+  PASS  assessment agrees
+  PASS  and stops saying it when the capability does run - otherwise the warning is decoration that is always present
+
+== 6. SCL refuses a drop from a transform that may not drop
+  PASS  the drop did not take effect - outcomes: failed
+  PASS  it was recorded as a failure, not silently ignored
+  PASS  the record is still accounted for
+  PASS  assertMayDrop itself throws
+
+  island test passed
+</code></pre>
+<p>Sections 1–2 are the island test proper. <strong>Sections 3–6 are there because of
+<a href="/html/mssp/modules/development.html">改良點 6</a>: every claim this example makes
+rests on the ledger being able to say no, and a check nobody has watched fail is
+not yet a check.</strong></p>
+<p>Two of them are worth reading closely.</p>
+<p>Section 4 builds a ledger where the totals agree — two records in, two outcomes
+out — and one id appears twice. <strong>Counting alone passes it.</strong> Reconciliation only
+catches it because it checks identity as well as arithmetic, which is a
+distinction that would never have come up if the check had been written as
+<code>accounted === input</code> and left there.</p>
+<p>Section 5 checks both directions. The report must say <code>NEVER INVOKED</code> when the
+capability is unreached, <em>and must stop saying it</em> when the same code runs with
+phone numbers present. A warning that is always there is not a warning.</p>
+<h2>What this example does not solve</h2>
+<ul>
+<li><p><strong>The ledger cannot tell you the transform is correct.</strong> It shows you a
+before/after pair and reports that split-name declined a single-token name.
+Whether &quot;Prince&quot; should have become <code>given_name: &quot;Prince&quot;</code> with no family name
+is a decision about the data, and nothing here can make it. The most the
+report can do is put the decision where a person will see it — which is why
+the reason string is printed rather than the count alone.</p>
+</li>
+<li><p><strong>&quot;Never invoked&quot; is a fact about this input, not about the code.</strong> It says
+the run supports no claim, not that the capability is broken or unused. The
+ledger has no way to distinguish a transform that never matches from one that
+never <em>should</em> match here, and treating the warning as a defect would train a
+reader to silence it.</p>
+</li>
+<li><p><strong>Reconciliation catches lost records, not wrong ones.</strong> A pipeline that
+transformed every field into <code>null</code> would balance perfectly. The arithmetic
+proves the loop visited everything; the witnesses are the only thing standing
+between that and a confident, complete, entirely wrong migration — and two
+samples out of five is a spot check, not coverage.</p>
+</li>
+<li><p><strong>The witness sample is first-N, which is the weakest possible sampling.</strong> If
+the first two <code>applied</code> records happen to be the easy ones, that is what gets
+printed. A real ledger would sample by shape — longest, shortest, most fields
+changed — or let the reader ask. That would be a better example and a worse
+demonstration of one idea, so it is left undone and named here instead.</p>
+</li>
+<li><p><strong>At this size the structure costs more than it returns.</strong> Five sets and a
+policy file to migrate five records is not a trade anyone should make. What it
+buys is that the ledger&#39;s job is <em>visible as a separate job</em> — in a single
+file, <code>console.log</code> at the end of the loop would have been the report, and
+nobody would have asked what a report owes its reader.</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;record-migration&quot;,
+  &quot;what_it_is&quot;: &quot;Runs a batch of records through a set of field transforms and reports what happened in a form somebody can check.&quot;,
+  &quot;why_it_exists&quot;: &quot;Because \&quot;500 records migrated, 0 errors\&quot; is true of a correct run, of a run that touched nothing, and of a run that lost half its input to an early return.&quot;,
+  &quot;core_task_loop&quot;: &quot;records -&gt; one outcome per record -&gt; reconciliation -&gt; ledger&quot;,
+
+  &quot;capabilities&quot;: {
+    &quot;SMS&quot;: {
+      &quot;model&quot;: &quot;Record and Outcome. Four outcome kinds, with `unchanged` distinct from `applied` on purpose.&quot;,
+      &quot;reconcile&quot;: &quot;The arithmetic that must balance: every record accounted for exactly once. Core, not reporting — the pipeline cannot honestly return a result without it.&quot;,
+      &quot;pipeline&quot;: &quot;The loop. Imports no transform; it is handed a list.&quot;
+    },
+    &quot;SCL&quot;: {
+      &quot;policy&quot;: &quot;Which transform may drop a record. Rewriting a field and removing a record look identical in code and only one of them loses data.&quot;
+    },
+    &quot;TMS&quot;: {
+      &quot;transforms/split-name&quot;: &quot;Splits `name` into given and family. Declines a single token rather than guessing.&quot;,
+      &quot;transforms/normalise-phone&quot;: &quot;Rewrites `phone` to E.164-ish. Never invoked by the shipped fixture, deliberately.&quot;
+    },
+    &quot;DMS&quot;: {
+      &quot;ledger&quot;: &quot;The report. Reconciliation, witnesses before and after, and any capability that was never invoked.&quot;
+    }
+  },
+
+  &quot;terminology&quot;: {
+    &quot;reconciliation&quot;: &quot;input == applied + unchanged + dropped + failed, with no id appearing twice.&quot;,
+    &quot;witness&quot;: &quot;A concrete before/after pair, printed so a reader can check the transform rather than take the count on faith.&quot;,
+    &quot;unexercised capability&quot;: &quot;One that was loaded, was correct, and was never reached by this input.&quot;
+  },
+
+  &quot;decisions&quot;: [
+    {
+      &quot;id&quot;: &quot;D-001&quot;,
+      &quot;date&quot;: &quot;2026-08-03&quot;,
+      &quot;decision&quot;: &quot;reconciliation lives in SMS, not in DMS&quot;,
+      &quot;because&quot;: &quot;A report that computed its own correctness would be marking its own work. DMS renders the answer; it does not decide it.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;D-002&quot;,
+      &quot;date&quot;: &quot;2026-08-03&quot;,
+      &quot;decision&quot;: &quot;an unexercised capability is reported as loudly as a failure&quot;,
+      &quot;because&quot;: &quot;It is not an error, and a run that never reached it supports no claim about it. Those are different things and both need saying.&quot;
+    }
+  ],
+
+  &quot;non_goals&quot;: [
+    &quot;Being a migration tool. There is no source, no destination and no transaction — the records are a literal in main.js.&quot;,
+    &quot;Deciding whether the transforms are correct. It reports what they did; correctness is the reader's call, which is the point.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.js</summary><pre><code>// What each transform is permitted to do.
+//
+// The interesting entry is `may_drop`. Rewriting a field and removing a record
+// look identical in code — both are a function returning an outcome — and only
+// one of them loses data. Permission is the axis that tells them apart, so it
+// is data a runtime reads rather than a rule a transform agrees to follow.
+
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const policy = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export const TRANSFORMS = policy.transforms;
+
+export class PermissionError extends Error {}
+
+export function mayDrop(name) {
+  return Boolean(TRANSFORMS[name]?.may_drop);
+}
+
+export function assertMayDrop(name) {
+  if (!mayDrop(name)) {
+    throw new PermissionError(`${name} returned a drop, and its policy entry says may_drop: false`);
+  }
+}
+
+/** Fields a transform declares it reads. Used by DMS to explain a zero. */
+export function declaredReads(name) {
+  return TRANSFORMS[name]?.reads ?? [];
+}
+</code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+
+  &quot;_comment&quot;: [
+    &quot;Dropping a record is a permission, not a behaviour. A transform that can&quot;,
+    &quot;decide a record should not survive the migration is doing something&quot;,
+    &quot;categorically different from one that can only rewrite fields, and the&quot;,
+    &quot;difference is invisible in the code — both are a function that returns an&quot;,
+    &quot;outcome.&quot;,
+    &quot;&quot;,
+    &quot;So it is stated here as data, and SMS/pipeline refuses a drop from a&quot;,
+    &quot;transform whose entry does not allow it. The transform is not asked to&quot;,
+    &quot;behave; it is not able to.&quot;
+  ],
+
+  &quot;transforms&quot;: {
+    &quot;transforms/split-name&quot;: {
+      &quot;may_drop&quot;: false,
+      &quot;reads&quot;: [&quot;name&quot;],
+      &quot;writes&quot;: [&quot;given_name&quot;, &quot;family_name&quot;]
+    },
+    &quot;transforms/normalise-phone&quot;: {
+      &quot;may_drop&quot;: false,
+      &quot;reads&quot;: [&quot;phone&quot;],
+      &quot;writes&quot;: [&quot;phone&quot;]
+    }
+  },
+
+  &quot;rules&quot;: [
+    {
+      &quot;id&quot;: &quot;drop-requires-permission&quot;,
+      &quot;statement&quot;: &quot;A transform whose entry says may_drop:false cannot remove a record from the migration.&quot;,
+      &quot;enforced_by&quot;: &quot;SCL/policy.js::assertMayDrop, called by SMS/pipeline.js before the outcome is recorded&quot;
+    }
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/model.js</summary><pre><code>// The shapes every set agrees on.
+//
+// `Outcome` is the one worth looking at. A transform returns one of four
+// things, and `unchanged` is a distinct answer from `applied` on purpose: a
+// migration where every transform declines every record is a legitimate,
+// successful, completely useless run, and the report has to be able to say so.
+
+export const APPLIED = &quot;applied&quot;;
+export const UNCHANGED = &quot;unchanged&quot;;
+export const DROPPED = &quot;dropped&quot;;
+export const FAILED = &quot;failed&quot;;
+
+export const OUTCOMES = [APPLIED, UNCHANGED, DROPPED, FAILED];
+
+/** One record, before anything touches it. */
+export function record(id, fields) {
+  return { id, fields: { ...fields } };
+}
+
+/**
+ * What one transform did to one record.
+ *
+ * `before` and `after` are carried even when nothing changed, because the
+ * witness sample in DMS needs a reader to be able to see that nothing changed
+ * — &quot;unchanged&quot; asserted without the pair is the same shape of claim this
+ * example exists to argue against.
+ */
+export function outcome(kind, { by, id, before, after = before, reason = &quot;&quot; }) {
+  if (!OUTCOMES.includes(kind)) throw new Error(`unknown outcome: ${kind}`);
+  return { kind, by, id, before, after, reason };
+}
+</code></pre></details><details><summary>SMS/pipeline.js</summary><pre><code>// The loop. Records in, one outcome per record per transform out.
+//
+// It imports no transform. It is handed a list, which is what lets the island
+// test hand it exactly one.
+
+import { assertMayDrop, PermissionError } from &quot;../SCL/policy.js&quot;;
+import { DROPPED, FAILED, outcome, UNCHANGED } from &quot;./model.js&quot;;
+import { reconcile } from &quot;./reconcile.js&quot;;
+
+/**
+ * @param records   the input, in full
+ * @param transforms  each publishing { name, applies(record), apply(record) }
+ */
+export function migrate(records, transforms) {
+  const outcomes = [];
+  // Counted here rather than derived from outcomes later: a transform that is
+  // never invoked produces no outcome to count, and &quot;never invoked&quot; is the
+  // fact this example exists to surface.
+  const invocations = Object.fromEntries(transforms.map((t) =&gt; [t.name, 0]));
+  const declines = Object.fromEntries(transforms.map((t) =&gt; [t.name, 0]));
+
+  for (const record of records) {
+    let current = record;
+    let touched = false;
+
+    for (const transform of transforms) {
+      if (!transform.applies(current)) {
+        declines[transform.name] += 1;
+        continue;
+      }
+      invocations[transform.name] += 1;
+
+      let result;
+      try {
+        result = transform.apply(current);
+      } catch (error) {
+        outcomes.push(outcome(FAILED, {
+          by: transform.name, id: current.id, before: current, reason: String(error.message),
+        }));
+        touched = true;
+        break;
+      }
+
+      if (result.kind === DROPPED) {
+        try {
+          assertMayDrop(transform.name);
+        } catch (error) {
+          if (!(error instanceof PermissionError)) throw error;
+          // A refused drop is a failure of the transform, not of the record.
+          outcomes.push(outcome(FAILED, {
+            by: transform.name, id: current.id, before: current, reason: error.message,
+          }));
+          touched = true;
+          break;
+        }
+      }
+
+      outcomes.push(result);
+      touched = true;
+      if (result.kind === DROPPED) break;
+      current = result.after;
+    }
+
+    // A record no transform claimed still has to appear in the ledger, or the
+    // arithmetic will not balance and the run cannot be trusted.
+    if (!touched) {
+      outcomes.push(outcome(UNCHANGED, {
+        by: &quot;(none)&quot;, id: record.id, before: record, reason: &quot;no transform applied to it&quot;,
+      }));
+    }
+  }
+
+  return { outcomes, invocations, declines, reconciliation: reconcile(records.length, outcomes) };
+}
+</code></pre></details><details><summary>SMS/reconcile.js</summary><pre><code>// The arithmetic that has to balance.
+//
+// This is core, not reporting. &quot;0 errors&quot; is a claim about one bucket; whether
+// the buckets add up to the input is a claim about whether the loop visited
+// everything it was given. A run can have zero failures and still have lost
+// records — by an early return, a filter applied before counting, a transform
+// that threw somewhere the counter did not reach.
+//
+// Reconciliation belongs in SMS because the pipeline cannot honestly report a
+// result without it. DMS renders the answer; it does not decide it.
+
+import { OUTCOMES } from &quot;./model.js&quot;;
+
+export function tally(outcomes) {
+  const counts = Object.fromEntries(OUTCOMES.map((kind) =&gt; [kind, 0]));
+  for (const item of outcomes) counts[item.kind] += 1;
+  return counts;
+}
+
+/**
+ * Does the ledger account for every record that went in?
+ *
+ * Returns the discrepancy rather than a boolean: a caller that only learns
+ * &quot;unbalanced&quot; has to go and find out by how much, and the difference is the
+ * first thing anyone asks.
+ */
+export function reconcile(inputCount, outcomes) {
+  const counts = tally(outcomes);
+  const accounted = OUTCOMES.reduce((sum, kind) =&gt; sum + counts[kind], 0);
+
+  // Every record must appear exactly once, so a duplicated id is as wrong as a
+  // missing one even when the totals happen to agree.
+  const seen = new Map();
+  for (const item of outcomes) seen.set(item.id, (seen.get(item.id) ?? 0) + 1);
+  const duplicated = [...seen.entries()].filter(([, n]) =&gt; n &gt; 1).map(([id]) =&gt; id);
+
+  return {
+    input: inputCount,
+    accounted,
+    counts,
+    missing: inputCount - accounted,
+    duplicated,
+    balanced: accounted === inputCount &amp;&amp; duplicated.length === 0,
+  };
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/transforms/normalise-phone.js</summary><pre><code>// Rewrites a `phone` field into E.164-ish form.
+//
+// In the shipped fixture this transform is never invoked, because none of the
+// records carries a phone number. That is deliberate: it is the capability the
+// ledger has to be able to talk about, and a report that cannot distinguish
+// &quot;ran and changed nothing&quot; from &quot;never ran&quot; is the thing this example argues
+// against.
+
+import { APPLIED, outcome, UNCHANGED } from &quot;../../SMS/model.js&quot;;
+
+export const name = &quot;transforms/normalise-phone&quot;;
+
+export const normalisePhone = {
+  name,
+
+  applies(record) {
+    return typeof record.fields.phone === &quot;string&quot; &amp;&amp; record.fields.phone.trim() !== &quot;&quot;;
+  },
+
+  apply(record) {
+    const digits = record.fields.phone.replace(/[^\d+]/g, &quot;&quot;);
+    const normalised = digits.startsWith(&quot;+&quot;) ? digits : `+886${digits.replace(/^0/, &quot;&quot;)}`;
+    if (normalised === record.fields.phone) {
+      return outcome(UNCHANGED, {
+        by: name, id: record.id, before: record, reason: &quot;already normalised&quot;,
+      });
+    }
+    return outcome(APPLIED, {
+      by: name, id: record.id, before: record,
+      after: { id: record.id, fields: { ...record.fields, phone: normalised } },
+    });
+  },
+};
+</code></pre></details><details><summary>TMS/transforms/split-name.js</summary><pre><code>// Splits a single `name` field into `given_name` and `family_name`.
+//
+// Declines anything without a `name`, and declines a name it cannot split
+// rather than guessing — a decline is a recorded answer, so declining is not
+// the same as doing nothing.
+
+import { APPLIED, outcome, UNCHANGED } from &quot;../../SMS/model.js&quot;;
+
+export const name = &quot;transforms/split-name&quot;;
+
+export const splitName = {
+  name,
+
+  applies(record) {
+    return typeof record.fields.name === &quot;string&quot; &amp;&amp; record.fields.name.trim() !== &quot;&quot;;
+  },
+
+  apply(record) {
+    const parts = record.fields.name.trim().split(/\s+/);
+    if (parts.length &lt; 2) {
+      return outcome(UNCHANGED, {
+        by: name, id: record.id, before: record,
+        reason: &quot;one token only; splitting it would be a guess&quot;,
+      });
+    }
+    const family = parts.pop();
+    const after = {
+      id: record.id,
+      fields: { ...record.fields, given_name: parts.join(&quot; &quot;), family_name: family },
+    };
+    delete after.fields.name;
+    return outcome(APPLIED, { by: name, id: record.id, before: record, after });
+  },
+};
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/ledger.js</summary><pre><code>// The run report.
+//
+// The whole example is here. A migration that says
+//
+//     500 records migrated, 0 errors
+//
+// is compatible with all of these: it migrated 500 correctly; it skipped 500
+// silently; it migrated three and returned early; the input was empty. The
+// sentence is true in every case and useless in every case.
+//
+// So this report answers three questions the summary cannot:
+//
+//   1. Does the arithmetic balance?  Every record must appear exactly once.
+//      Zero failures says nothing about whether the loop visited everything.
+//   2. Can I see one?  A witness sample, before and after, including for
+//      records nothing changed — an unchanged claim without the pair is the
+//      same shape of assertion this example argues against.
+//   3. What did NOT happen?  A capability that was never invoked is reported
+//      as loudly as one that failed, because a green run over a fixture that
+//      never reaches a transform is the commonest way to believe something
+//      works that has never executed.
+//
+// It renders; it decides nothing. Reconciliation is SMS — a report that
+// computed its own correctness would be marking its own work.
+
+import { declaredReads } from &quot;../SCL/policy.js&quot;;
+import { APPLIED, DROPPED, FAILED, UNCHANGED } from &quot;../SMS/model.js&quot;;
+
+const pad = (value, width) =&gt; String(value).padStart(width);
+
+function fields(record) {
+  return Object.entries(record.fields)
+    .map(([k, v]) =&gt; `${k}=${JSON.stringify(v)}`)
+    .join(&quot; &quot;);
+}
+
+export function render({ outcomes, invocations, declines, reconciliation }, { witnesses = 2 } = {}) {
+  const lines = [];
+  const r = reconciliation;
+
+  lines.push(&quot;  reconciliation&quot;);
+  lines.push(`    input                ${pad(r.input, 4)}`);
+  for (const kind of [APPLIED, UNCHANGED, DROPPED, FAILED]) {
+    lines.push(`    ${kind.padEnd(20)} ${pad(r.counts[kind], 4)}`);
+  }
+  lines.push(`    accounted for        ${pad(r.accounted, 4)}`);
+  if (!r.balanced) {
+    lines.push(`    UNBALANCED           missing ${r.missing}, duplicated [${r.duplicated.join(&quot;, &quot;)}]`);
+    lines.push(&quot;    the run is not trustworthy regardless of the failure count&quot;);
+  } else {
+    lines.push(&quot;    balanced: every record appears exactly once&quot;);
+  }
+
+  lines.push(&quot;&quot;);
+  lines.push(&quot;  capabilities&quot;);
+  for (const [name, count] of Object.entries(invocations)) {
+    const changed = outcomes.filter((o) =&gt; o.by === name &amp;&amp; o.kind === APPLIED).length;
+    if (count === 0) {
+      // The loud case. Not an error — but a claim about this capability is
+      // unsupported by this run, and the report says which fields would have
+      // been needed to support one.
+      const reads = declaredReads(name);
+      lines.push(`    ${name.padEnd(26)} NEVER INVOKED`);
+      lines.push(`    ${&quot; &quot;.repeat(26)}   declined ${declines[name]} record(s); reads ${reads.join(&quot;, &quot;) || &quot;(undeclared)&quot;}`);
+      lines.push(`    ${&quot; &quot;.repeat(26)}   this run says nothing about whether it works`);
+    } else {
+      lines.push(`    ${name.padEnd(26)} invoked ${pad(count, 3)}, changed ${pad(changed, 3)}, declined ${pad(declines[name], 3)}`);
+    }
+  }
+
+  lines.push(&quot;&quot;);
+  lines.push(`  witnesses (${witnesses} per outcome kind, before -&gt; after)`);
+  for (const kind of [APPLIED, UNCHANGED, DROPPED, FAILED]) {
+    const sample = outcomes.filter((o) =&gt; o.kind === kind).slice(0, witnesses);
+    if (sample.length === 0) {
+      lines.push(`    ${kind}: none in this run`);
+      continue;
+    }
+    for (const item of sample) {
+      lines.push(`    ${kind} ${item.id} by ${item.by}`);
+      lines.push(`      before  ${fields(item.before)}`);
+      if (item.kind === APPLIED) lines.push(`      after   ${fields(item.after)}`);
+      else lines.push(`      reason  ${item.reason || &quot;(none given)&quot;}`);
+    }
+  }
+
+  return lines.join(&quot;\n&quot;);
+}
+
+/**
+ * Whether this run is evidence of anything.
+ *
+ * Separate from `render` on purpose: the report is for a human, and this is for
+ * a caller that has to decide. A balanced run in which every capability was
+ * never invoked is a successful run that demonstrates nothing.
+ */
+export function assessment({ invocations, reconciliation }) {
+  const unexercised = Object.entries(invocations).filter(([, n]) =&gt; n === 0).map(([name]) =&gt; name);
+  return {
+    trustworthy: reconciliation.balanced,
+    unexercised,
+    demonstrates: reconciliation.balanced &amp;&amp; unexercised.length &lt; Object.keys(invocations).length,
+  };
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.js</summary><pre><code>// The island test, and four attempts to make the ledger lie.
+//
+//   node src/island-test.js
+//
+// Sections 1–2 are the ordinary island test: each transform alone, no sibling
+// loaded. Sections 3–5 exist because of 改良點 6 — a check nobody has watched
+// fail is not yet a check, and every claim this example makes rests on the
+// ledger being able to say no.
+
+import { assessment, render } from &quot;./DMS/ledger.js&quot;;
+import { assertMayDrop, PermissionError } from &quot;./SCL/policy.js&quot;;
+import { DROPPED, outcome, record, UNCHANGED } from &quot;./SMS/model.js&quot;;
+import { migrate } from &quot;./SMS/pipeline.js&quot;;
+import { reconcile } from &quot;./SMS/reconcile.js&quot;;
+import { normalisePhone } from &quot;./TMS/transforms/normalise-phone.js&quot;;
+import { splitName } from &quot;./TMS/transforms/split-name.js&quot;;
+
+const failures = [];
+const report = (label, ok, detail = &quot;&quot;) =&gt; {
+  console.log(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}`);
+  if (!ok) failures.push(label);
+};
+
+const PEOPLE = [
+  record(&quot;p-1&quot;, { name: &quot;Ada Lovelace&quot;, phone: &quot;0912-345-678&quot; }),
+  record(&quot;p-2&quot;, { name: &quot;Prince&quot;, phone: &quot;+886912345678&quot; }),
+];
+
+console.log(&quot;\n== 1. transforms/split-name alone&quot;);
+{
+  const result = migrate(PEOPLE, [splitName]);
+  report(&quot;runs with no sibling loaded&quot;, result.reconciliation.balanced,
+    `${result.reconciliation.accounted} of ${result.reconciliation.input} accounted for`);
+  report(&quot;split-name was actually invoked&quot;, result.invocations[&quot;transforms/split-name&quot;] === 2,
+    `invoked ${result.invocations[&quot;transforms/split-name&quot;]}`);
+  report(&quot;phone fields survived untouched&quot;, PEOPLE.every((p) =&gt; p.fields.phone !== undefined),
+    &quot;the absent transform left its fields alone rather than nulling them&quot;);
+}
+
+console.log(&quot;\n== 2. transforms/normalise-phone alone&quot;);
+{
+  const result = migrate(PEOPLE, [normalisePhone]);
+  const applied = result.outcomes.filter((o) =&gt; o.kind === &quot;applied&quot;);
+  report(&quot;runs with no sibling loaded&quot;, result.reconciliation.balanced);
+  report(&quot;normalise-phone was actually invoked&quot;, result.invocations[&quot;transforms/normalise-phone&quot;] === 2);
+  report(&quot;it changed the one that needed changing&quot;, applied.length === 1,
+    `${applied.length} applied; the already-normalised number came back unchanged`);
+  report(&quot;assessment reports nothing unexercised here&quot;, assessment(result).unexercised.length === 0);
+}
+
+console.log(&quot;\n== 3. reconciliation rejects a lost record&quot;);
+{
+  // The failure this exists for: a loop that returns early, or a filter applied
+  // before counting. Four records in, three outcomes out, zero failures.
+  const outcomes = PEOPLE.map((p) =&gt; outcome(UNCHANGED, { by: &quot;x&quot;, id: p.id, before: p }));
+  const bad = reconcile(3, outcomes.slice(0, 2));
+  const worse = reconcile(4, outcomes.slice(0, 2));
+  report(&quot;a shortfall is unbalanced&quot;, !worse.balanced, `missing ${worse.missing}`);
+  report(&quot;and the shortfall is reported, not just flagged&quot;, worse.missing === 2);
+  report(&quot;an exact match still balances&quot;, reconcile(2, outcomes).balanced);
+  void bad;
+}
+
+console.log(&quot;\n== 4. reconciliation rejects a duplicated record&quot;);
+{
+  const one = record(&quot;d-1&quot;, { name: &quot;A B&quot; });
+  const twice = [
+    outcome(UNCHANGED, { by: &quot;x&quot;, id: &quot;d-1&quot;, before: one }),
+    outcome(UNCHANGED, { by: &quot;y&quot;, id: &quot;d-1&quot;, before: one }),
+  ];
+  const r = reconcile(2, twice);
+  // The totals agree — 2 in, 2 accounted — and it is still wrong.
+  report(&quot;counts alone would have passed&quot;, r.accounted === r.input);
+  report(&quot;the duplicate is caught anyway&quot;, !r.balanced, `duplicated [${r.duplicated.join(&quot;, &quot;)}]`);
+}
+
+console.log(&quot;\n== 5. the ledger cannot hide an unexercised capability&quot;);
+{
+  const noPhones = [record(&quot;n-1&quot;, { name: &quot;Ada Lovelace&quot; })];
+  const result = migrate(noPhones, [splitName, normalisePhone]);
+  const text = render(result);
+  report(&quot;the report names it&quot;, text.includes(&quot;NEVER INVOKED&quot;));
+  report(&quot;and says what it would have needed&quot;, text.includes(&quot;reads phone&quot;));
+  report(&quot;assessment agrees&quot;, assessment(result).unexercised.includes(&quot;transforms/normalise-phone&quot;));
+
+  // and the inverse: given phones, the same code must stop saying it
+  const withPhones = [record(&quot;n-2&quot;, { name: &quot;Ada Lovelace&quot;, phone: &quot;0912345678&quot; })];
+  const covered = render(migrate(withPhones, [splitName, normalisePhone]));
+  report(&quot;and stops saying it when the capability does run&quot;, !covered.includes(&quot;NEVER INVOKED&quot;),
+    &quot;otherwise the warning is decoration that is always present&quot;);
+}
+
+console.log(&quot;\n== 6. SCL refuses a drop from a transform that may not drop&quot;);
+{
+  const rogue = {
+    name: &quot;transforms/split-name&quot;,           // policy says may_drop: false
+    applies: () =&gt; true,
+    apply: (r) =&gt; outcome(DROPPED, { by: &quot;transforms/split-name&quot;, id: r.id, before: r, reason: &quot;because I felt like it&quot; }),
+  };
+  const result = migrate([record(&quot;s-1&quot;, { name: &quot;A B&quot; })], [rogue]);
+  const kinds = result.outcomes.map((o) =&gt; o.kind);
+  report(&quot;the drop did not take effect&quot;, !kinds.includes(DROPPED), `outcomes: ${kinds.join(&quot;, &quot;)}`);
+  report(&quot;it was recorded as a failure, not silently ignored&quot;, kinds.includes(&quot;failed&quot;));
+  report(&quot;the record is still accounted for&quot;, result.reconciliation.balanced);
+
+  let threw = false;
+  try { assertMayDrop(&quot;transforms/split-name&quot;); } catch (e) { threw = e instanceof PermissionError; }
+  report(&quot;assertMayDrop itself throws&quot;, threw);
+}
+
+console.log(&quot;&quot;);
+if (failures.length) {
+  console.log(`  ${failures.length} check(s) failed: ${failures.join(&quot;, &quot;)}`);
+  process.exit(1);
+}
+console.log(&quot;  island test passed&quot;);
+</code></pre></details><details><summary>main.js</summary><pre><code>// Run the migration.
+//
+//   node src/main.js            the shipped fixture
+//   node src/main.js --summary  what a conventional report would have said
+//
+// The second one is the argument. It prints the sentence a normal migration
+// tool prints, and the sentence is true.
+
+import { render, assessment } from &quot;./DMS/ledger.js&quot;;
+import { record } from &quot;./SMS/model.js&quot;;
+import { migrate } from &quot;./SMS/pipeline.js&quot;;
+import { normalisePhone } from &quot;./TMS/transforms/normalise-phone.js&quot;;
+import { splitName } from &quot;./TMS/transforms/split-name.js&quot;;
+
+// Note what is absent: not one record carries a phone number. That is the
+// fixture doing its job — the phone transform is loaded, correct, and never
+// reached, which is the state a summary line cannot distinguish from working.
+const RECORDS = [
+  record(&quot;r-001&quot;, { name: &quot;Neo K&quot;, email: &quot;a@example.com&quot; }),
+  record(&quot;r-002&quot;, { name: &quot;Ada Lovelace&quot;, email: &quot;b@example.com&quot; }),
+  record(&quot;r-003&quot;, { name: &quot;Prince&quot;, email: &quot;c@example.com&quot; }),
+  record(&quot;r-004&quot;, { email: &quot;d@example.com&quot; }),
+  record(&quot;r-005&quot;, { name: &quot;Grace Brewster Hopper&quot;, email: &quot;e@example.com&quot; }),
+];
+
+function main(argv) {
+  const result = migrate(RECORDS, [splitName, normalisePhone]);
+  const verdict = assessment(result);
+
+  if (argv.includes(&quot;--summary&quot;)) {
+    const failed = result.reconciliation.counts.failed;
+    console.log(`\n== what a conventional migration reports`);
+    console.log(`\n  ${RECORDS.length} records migrated, ${failed} errors\n`);
+    console.log(&quot;  Every word of that is true. It is also true of a run that&quot;);
+    console.log(&quot;  touched nothing, and of a run that lost two records to an&quot;);
+    console.log(&quot;  early return. Run without --summary for the difference.\n&quot;);
+    return 0;
+  }
+
+  console.log(&quot;\n== record migration&quot;);
+  console.log(render(result));
+
+  console.log(&quot;&quot;);
+  console.log(`  trustworthy   ${verdict.trustworthy}   (the arithmetic balances)`);
+  console.log(`  demonstrates  ${verdict.demonstrates}   (at least one capability actually ran)`);
+  if (verdict.unexercised.length) {
+    console.log(`  unexercised   ${verdict.unexercised.join(&quot;, &quot;)}`);
+  }
+
+  // This program's exit code reports whether the *ledger* did its job, not
+  // whether the fixture was clean. The fixture is deliberately unclean.
+  const problems = [];
+  if (!verdict.trustworthy) problems.push(&quot;the run did not reconcile&quot;);
+  if (verdict.unexercised.length === 0) {
+    problems.push(&quot;every capability ran, so this fixture no longer demonstrates the unexercised case&quot;);
+  }
+  if (problems.length) {
+    console.log(`\n  LEDGER FAILED: ${problems.join(&quot;; &quot;)}`);
+    return 1;
+  }
+  console.log(&quot;\n  the ledger reported an unexercised capability, which a summary line cannot.&quot;);
+  return 0;
+}
+
+process.exit(main(process.argv.slice(2)));
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>
