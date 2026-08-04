@@ -1,0 +1,39 @@
+{
+  "name": "router",
+  "what_it_is": "Decides which capability should handle a request, without loading or calling it.",
+  "why_it_exists": "MSSP defines the Router and gives no implementation pattern, no scale guidance, and no way to test one. 開發區 缺點 3 puts it first on the example roadmap.",
+  "core_task_loop": "request -> rule match -> permission check -> a named capability",
+
+  "capabilities": {
+    "SMS": {
+      "model": "Request and Route. A Route names a capability; it does not hold one.",
+      "router": "Rule evaluation, permission check, and the counters that make coverage measurable."
+    },
+    "SCL": { "policy": "Which actor may use which capability. Checked before a Route is returned, not after." },
+    "TMS": {
+      "handlers/markdown": "Summarises a markdown document.",
+      "handlers/csv": "Validates CSV row widths."
+    },
+    "DMS": { "ledger": "The decisions, plus rules that never fired and requests nothing matched." }
+  },
+
+  "decisions": [
+    {
+      "id": "D-001",
+      "date": "2026-08-04",
+      "decision": "the router returns an identifier, never a module",
+      "because": "A router that imports what it selects can only be tested with every candidate present, so routing itself has no island test — and the router stops being a subset the moment it holds references to all of them."
+    },
+    {
+      "id": "D-002",
+      "date": "2026-08-04",
+      "decision": "a refused permission ends the routing decision rather than falling through to the next rule",
+      "because": "Falling through would let a caller reach a capability by being denied a better-matching one, which turns a permission check into a preference."
+    }
+  ],
+
+  "non_goals": [
+    "Model-based routing. The scale question this example makes measurable is the input to that decision, not the decision.",
+    "Loading. Resolving a name to code is done in main.py in four lines, deliberately outside the router."
+  ]
+}

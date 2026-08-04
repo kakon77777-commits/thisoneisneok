@@ -1,0 +1,19 @@
+id: 004-urllib-opener
+project: CPython urllib.request
+upstream: https://github.com/python/cpython/blob/main/Lib/urllib/request.py
+license: PSF-2.0
+examined_version: 3.14.5
+title:
+  zh: urllib.request 3.14.5：註冊表是對的，而綁定靠命名，於是打錯字的 handler 完全惰性
+  en: "urllib.request 3.14.5: the registry is right, the binding is by name, and a misspelled handler is silently inert"
+summary:
+  zh: OpenerDirector 只有 6 個方法、BaseHandler 只有 3 個，handler 是傳進去的——這正是 http.server 做不到的事。但註冊表靠掃描方法名稱建立：`data_open` 註冊成功，`data_opne` 註冊 0 個、回傳 None、不報錯，而 `htp_open` 會替一個不存在的協定註冊。能力用命名宣告，而命名沒有東西檢查。
+  en: OpenerDirector has six methods and BaseHandler has three, and handlers are passed in — the thing http.server cannot do. But the registry is built by scanning method names: data_open registers, data_opne registers nothing and returns None without complaint, and htp_open cheerfully registers a scheme that does not exist. Capability is declared by naming, and naming has nothing checking it.
+date: 2026-08-04
+version: v1.0
+verdict: registry-confirmed-binding-unchecked
+concepts:
+  - handlers-passed-in-not-inherited
+  - naming-convention-as-an-unchecked-contract
+  - registration-that-reports-nothing
+runnable: python src/main.py

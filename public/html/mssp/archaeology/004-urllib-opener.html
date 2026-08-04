@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>urllib.request 3.14.5：註冊表是對的，而綁定靠命名，於是打錯字的 handler 完全惰性 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="OpenerDirector 只有 6 個方法、BaseHandler 只有 3 個，handler 是傳進去的——這正是 http.server 做不到的事。但註冊表靠掃描方法名稱建立：`data_open` 註冊成功，`data_opne` 註冊 0 個、回傳 None、不報錯，而 `htp_open` 會替一個不存在的協定註冊。能力用命名宣告，而命名沒有東西檢查。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/004-urllib-opener.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>004-urllib-opener</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython urllib.request</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>3.14.5</span></div>
+    <div><b>日期</b><span>2026-08-04</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/blob/main/Lib/urllib/request.py">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>004 — CPython <code>urllib.request</code> 3.14.5</h1>
+<p><strong>專案：</strong> CPython <code>Lib/urllib/request.py</code>　<strong>授權：</strong> PSF-2.0　<strong>檢視版本：</strong> 3.14.5
+<strong>判定：</strong> <code>registry-confirmed-binding-unchecked</code></p>
+<pre><code class="language-bash">python src/main.py          # 綁四個 handler，其中兩個是上游會靜靜接受的失敗
+python src/island-test.py   # 孤島測試 ＋ 當場量上游 ＋ 證明修復會失敗
+</code></pre>
+<h2>為什麼選它</h2>
+<p>因為它跟<a href="/html/mssp/archaeology/002-http-server.html">考古 002</a> 在同一個標準庫裡，做同一件事，用相反的機制。</p>
+<p><code>http.server</code> 用繼承：新增一個動詞就是繼承整個 handler 再命名一個 <code>do_X</code>，於是沒有子集可以載入。<code>urllib.request</code> 用<strong>註冊</strong>：<code>build_opener(*handlers)</code> 收一串 handler，核心不知道有什麼能處理什麼，直到有人告訴它。</p>
+<p>而今天的<a href="/html/mssp/004-router.html">範例 004</a> 剛好在講 Router 該長什麼樣。所以這一則是拿真實世界的 Router 來對照——<strong>它對的地方比我寫的還乾淨，錯的地方也比我預期的更安靜。</strong></p>
+<h2>原專案的結構地圖</h2>
+<p>數字由 <code>src/island-test.py</code> 第 2 節當場跑真模組量出來：</p>
+<table>
+<thead>
+<tr>
+<th>量到的</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>urllib/request.py</code></td>
+<td>2,163 行</td>
+</tr>
+<tr>
+<td><code>OpenerDirector</code> 公開方法</td>
+<td><strong>6</strong></td>
+</tr>
+<tr>
+<td><code>BaseHandler</code> 公開方法</td>
+<td><strong>3</strong>（<code>handler_order</code> / <code>add_parent</code> / <code>close</code>）</td>
+</tr>
+<tr>
+<td>隨附的 <code>*Handler</code> 類別</td>
+<td>18</td>
+</tr>
+<tr>
+<td><code>add_handler</code></td>
+<td>46 行</td>
+</tr>
+<tr>
+<td><code>_call_chain</code></td>
+<td>10 行</td>
+</tr>
+<tr>
+<td>綁定機制</td>
+<td>掃描 handler 的屬性名稱找 <code>*_open</code> / <code>*_error</code> / <code>*_request</code> / <code>*_response</code></td>
+</tr>
+<tr>
+<td><code>add_handler</code> 的回傳值</td>
+<td><strong><code>None</code>，在每一種情況下</strong></td>
+</tr>
+</tbody></table>
+<p><strong>核心只有 6 個方法。</strong> 對照 <code>BaseHTTPRequestHandler</code> 的 28 個。<code>BaseHandler</code> 只有 3 個，繼承它幾乎什麼都拿不到——它比較接近一個協定，不是一個要繼承的基底。這是對的，而且是這一則要保留的部分。</p>
+<p><strong>handler 是傳進去的。</strong> <code>build_opener(*handlers)</code> 讓呼叫端決定有哪些存在，而這正是 <code>http.server</code> 結構上做不到的事。同一個標準庫、同一個年代、相反的答案。</p>
+<h2>MSSP 重切</h2>
+<p>註冊表原封不動。改的是<strong>綁定會說出它綁到了什麼</strong>。</p>
+<p>漏處當場重現得出來：</p>
+<pre><code class="language-text">     good          schemes=[&#39;data&#39;]  handlers=1  add_handler returned None
+     typo          schemes=[]        handlers=0  add_handler returned None
+     wrong-scheme  schemes=[&#39;htp&#39;]   handlers=1  add_handler returned None
+</code></pre>
+<p>三件事：</p>
+<p><strong>一、<code>data_opne</code> — 一個字母對調——註冊 0 個。</strong> handler 完全惰性。沒有例外、沒有警告，而 <code>add_handler</code> 回傳 <code>None</code>，<strong>跟成功那次一模一樣</strong>。呼叫端沒有任何辦法分辨。</p>
+<p><strong>二、<code>htp_open</code> 綁到 <code>htp</code>。</strong> 一個不存在的協定，欣然接受。因為綁定是名稱驅動的，而<strong>沒有一組真實協定可以拿來檢查那個名字</strong>。</p>
+<p><strong>三、完全沒有可辨識方法的 handler</strong>，一樣是 0 個、一樣沉默。</p>
+<p>結構上的說法：<strong>能力用命名宣告，而命名沒有東西在檢查。</strong> 名字同時是宣告與授權，於是打錯的名字是一個成功註冊的、不同的宣告。</p>
+<p>重切版對應：</p>
+<ul>
+<li><strong>SMS <code>chain.py</code></strong> — <code>bind()</code> 回傳一個 <code>Binding</code>，說出綁到什麼、忽略了什麼、拒絕了什麼。並且對「近似拼錯」給出建議：<code>data_opne</code> → <em>did you mean <code>data_open</code>?</em></li>
+<li><strong>SCL <code>policy.json</code></strong> — 這個系統認得哪些協定，以及哪個 handler 可以服務哪個。上游沒有這個清單，所以 <code>htp</code> 無從被否定。</li>
+<li><strong>DMS <code>report.py</code></strong> — 列出<strong>綁到 0 個的 handler</strong>。刻意構造一個這樣的 handler 沒有任何理由，所以它每一次都是錯誤，值得被列出來。</li>
+</ul>
+<pre><code class="language-text">    handlers/data      BOUND NOTHING
+                         near-miss method `data_opne` - did you mean `data_open`?
+    handlers/data      BOUND NOTHING
+                         refused htp (unknown scheme; this system serves [&#39;data&#39;, &#39;file&#39;])
+</code></pre>
+<h2>什麼不適合拆</h2>
+<p><strong>註冊表本身不要動。</strong> 六個方法的核心、三個方法的 <code>BaseHandler</code>、handler 由呼叫端傳入——這是二十多年的設計，而且它通得過孤島測試：本則的 <code>handlers/data</code> 在沒有任何其他 handler 存在的情況下綁定並服務。</p>
+<p><strong>命名慣例也不要換掉。</strong> 我一開始想的是「改成顯式宣告 <code>serves = [&#39;data&#39;]</code>」，但那會失去真正的好處：<code>http_open</code>、<code>https_open</code>、<code>http_error_302</code> 這組名字讓一個 18 個 handler 的模組<strong>用讀的就知道誰做什麼</strong>。顯式宣告會把那個資訊搬到另一個欄位，而讀者要多跳一次。</p>
+<p>所以重切版<strong>保留命名，加上檢查</strong>——這兩件事從來不衝突，而上游只是沒有做第二件。</p>
+<p><strong><code>_call_chain</code> 只有 10 行，不要碰。</strong> 它是整個機制的核心，短到可以一眼讀完，而它短是因為註冊表已經把難的部分做完了。</p>
+<p><strong>上游改不掉的理由也很實在。</strong> 讓 <code>add_handler</code> 對綁到 0 個的 handler 拋例外，會弄壞每一個「先傳一個空 handler 佔位、之後再補方法」的既有用法——而那種用法一定存在，因為二十年來沒有東西阻止它。這又是第九篇的相容壓力：成功造成表面，表面壓縮改動自由度。</p>
+<h2>這次沒有解決什麼</h2>
+<ul>
+<li><p><strong>近似拼錯的偵測是一個便宜的啟發式，而且我知道它漏。</strong> 它只抓字母重排（<code>_opne</code>、<code>_oepn</code>），抓不到 <code>data_opn</code>、<code>data_openn</code>、或大小寫錯誤。我刻意沒有寫得更聰明——一個會猜的檢查會開始誤報，而誤報的檢查會被關掉。<strong>它抓到真實發生的那一類，然後說出來，其餘留給 SCL。</strong></p>
+</li>
+<li><p><strong><code>BOUND NOTHING</code> 我當成一定是錯誤，那句話沒有被證明。</strong> 我的理由是「刻意構造一個綁不到東西的 handler 沒有理由」，而那是一個關於意圖的宣稱，不是關於程式的。一個測試用的空 handler 就是反例，而重切版會對它抱怨。</p>
+</li>
+<li><p><strong>上游的 18 個 handler 我一個都沒讀。</strong> 這一則講的是綁定機制，不是被綁的東西。<code>HTTPRedirectHandler</code>、<code>HTTPBasicAuthHandler</code> 這些各自有自己的結構問題，而我完全沒看。<strong>判定寫 <code>registry-confirmed-binding-unchecked</code>，範圍就只到綁定。</strong></p>
+</li>
+<li><p><strong>重切版沒有 <code>*_error</code> / <code>*_request</code> / <code>*_response</code> 三種鏈。</strong> 上游的 <code>add_handler</code> 有 46 行，很大一部分在處理四種後綴與 <code>handler_order</code> 排序。我只做了 <code>*_open</code> 一種，所以「保留了註冊表」這句話，保留的是它最簡單的那一面。</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;urllib-opener-recut&quot;,
+  &quot;what_it_is&quot;: &quot;A handler registry and call chain, keeping upstream's shape and making registration report what it registered.&quot;,
+  &quot;examined&quot;: {
+    &quot;project&quot;: &quot;CPython urllib.request&quot;, &quot;version&quot;: &quot;3.14.5&quot;, &quot;license&quot;: &quot;PSF-2.0&quot;,
+    &quot;measured&quot;: {
+      &quot;module_lines&quot;: 2163,
+      &quot;OpenerDirector_methods&quot;: 6,
+      &quot;BaseHandler_methods&quot;: 3,
+      &quot;handler_classes_shipped&quot;: 18,
+      &quot;add_handler_lines&quot;: 46,
+      &quot;_call_chain_lines&quot;: 10,
+      &quot;binding_mechanism&quot;: &quot;scan the handler's attribute names for *_open / *_error / *_request / *_response&quot;,
+      &quot;add_handler_return_value&quot;: &quot;None, in every case&quot;
+    },
+    &quot;reproduced&quot;: {
+      &quot;data_open&quot;: &quot;registers under 'data', 1 handler&quot;,
+      &quot;data_opne&quot;: &quot;registers nothing, 0 handlers, returns None, no error, no warning&quot;,
+      &quot;htp_open&quot;: &quot;registers under 'htp' - a scheme that does not exist&quot;,
+      &quot;no_recognised_method&quot;: &quot;0 handlers, silent&quot;
+    }
+  },
+  &quot;capabilities&quot;: {
+    &quot;SMS&quot;: { &quot;chain&quot;: &quot;The registry and the call chain. bind() returns a Binding saying what it bound, ignored and refused.&quot; },
+    &quot;SCL&quot;: { &quot;policy&quot;: &quot;Which handler may serve which scheme, and which schemes exist at all.&quot; },
+    &quot;TMS&quot;: { &quot;handlers/data&quot;: &quot;Serves data: URLs.&quot;, &quot;handlers/file&quot;: &quot;Serves file: URLs from a root it is handed.&quot; },
+    &quot;DMS&quot;: { &quot;report&quot;: &quot;Bindings, near-miss method names, refusals, and any handler that bound nothing.&quot; }
+  },
+  &quot;the_finding&quot;: &quot;The registry is right and worth keeping - handlers are passed in, the core has six methods, BaseHandler has three. The binding is by naming convention with nothing checking it, so a transposed letter produces a handler that is registered nowhere and reported as fine.&quot;,
+  &quot;non_goals&quot;: [
+    &quot;Being urllib. No redirects, no auth, no proxies, no network, two schemes.&quot;,
+    &quot;Replacing naming-based declaration. The re-cut keeps it and adds a check, because the convention is what makes a handler readable.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;Upstream, a handler claims a scheme by being named after it, and any handler&quot;,
+    &quot;may claim any scheme. `htp_open` registers a handler for a protocol that does&quot;,
+    &quot;not exist; nothing objects, because there is no list of schemes to object&quot;,
+    &quot;against. The name is both the declaration and the authorisation.&quot;,
+    &quot;&quot;,
+    &quot;Here the two are separated: a handler declares by naming, and SCL decides&quot;,
+    &quot;whether the declaration is honoured.&quot;
+  ],
+  &quot;schemes&quot;: [&quot;data&quot;, &quot;file&quot;],
+  &quot;handlers&quot;: {
+    &quot;handlers/data&quot;: { &quot;may_serve&quot;: [&quot;data&quot;] },
+    &quot;handlers/file&quot;: { &quot;may_serve&quot;: [&quot;file&quot;] }
+  },
+  &quot;rules&quot;: [
+    {
+      &quot;id&quot;: &quot;scheme-must-exist&quot;,
+      &quot;statement&quot;: &quot;A handler cannot bind a scheme this system does not recognise.&quot;,
+      &quot;enforced_by&quot;: &quot;SCL/policy.py::may_serve, called by SMS/chain.py::bind&quot;
+    }
+  ]
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Which handler may serve which scheme, and which schemes exist at all.
+
+The second half is what upstream has no place for. `htp_open` binds `htp`
+because binding is name-driven and there is no set of real schemes to check the
+name against — so a typo in the protocol produces a handler that is registered,
+reachable by nothing, and reported as fine.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+_POLICY = json.loads(Path(__file__).with_name(&quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+SCHEMES: set[str] = set(_POLICY[&quot;schemes&quot;])
+HANDLERS: dict[str, dict] = _POLICY[&quot;handlers&quot;]
+
+
+def may_serve(handler: str, scheme: str) -&gt; tuple[bool, str]:
+    if scheme not in SCHEMES:
+        return False, f&quot;unknown scheme; this system serves {sorted(SCHEMES)}&quot;
+    entry = HANDLERS.get(handler)
+    if entry is None:
+        return False, f&quot;unknown handler {handler!r}&quot;
+    if scheme not in entry[&quot;may_serve&quot;]:
+        return False, f&quot;{handler} is not permitted {scheme}&quot;
+    return True, &quot;&quot;
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/chain.py</summary><pre><code>&quot;&quot;&quot;An opener: a registry of handlers, and a call chain over it.
+
+Upstream's shape, kept — because it is right. `OpenerDirector` has six methods,
+`BaseHandler` has three, and handlers arrive through `build_opener(*handlers)`.
+The core does not know what can handle anything until it is told, which is
+exactly what `http.server` cannot do (see archaeology 002).
+
+The one change is that `bind` returns what it bound. Upstream `add_handler`
+returns `None` whether it registered five methods or zero, so a handler that
+registered nothing is indistinguishable, from the caller, from one that worked.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from SCL import policy  # noqa: E402
+
+SUFFIX = &quot;_open&quot;
+
+
+class Binding:
+    &quot;&quot;&quot;What one handler contributed, as a value.&quot;&quot;&quot;
+
+    def __init__(self, handler_name: str, schemes: list[str], ignored: list[str], refused: list[str]) -&gt; None:
+        self.handler = handler_name
+        self.schemes = schemes
+        self.ignored = ignored      # methods that look like bindings and are not
+        self.refused = refused      # schemes SCL did not permit this handler
+
+    @property
+    def bound_anything(self) -&gt; bool:
+        return bool(self.schemes)
+
+
+class Opener:
+    def __init__(self) -&gt; None:
+        self.by_scheme: dict[str, object] = {}
+        self.bindings: list[Binding] = []
+
+    def bind(self, handler) -&gt; Binding:
+        &quot;&quot;&quot;Register a handler, and say what happened.
+
+        Refusing to bind nothing is the whole repair. A handler that contributes
+        no scheme is a mistake every time — there is no reason to construct one —
+        so it is reported rather than accepted in silence.
+        &quot;&quot;&quot;
+        schemes, ignored, refused = [], [], []
+        for attr in dir(handler):
+            if attr.startswith(&quot;_&quot;):
+                continue
+            if not attr.endswith(SUFFIX):
+                # A near-miss is worth naming: `data_opne` is not a binding and
+                # is also not nothing. Upstream cannot tell these apart from a
+                # method that was never meant to bind.
+                if _looks_like_a_near_miss(attr):
+                    ignored.append(attr)
+                continue
+            scheme = attr[: -len(SUFFIX)]
+            allowed, why = policy.may_serve(getattr(handler, &quot;name&quot;, type(handler).__name__), scheme)
+            if not allowed:
+                refused.append(f&quot;{scheme} ({why})&quot;)
+                continue
+            self.by_scheme[scheme] = handler
+            schemes.append(scheme)
+
+        binding = Binding(getattr(handler, &quot;name&quot;, type(handler).__name__), schemes, ignored, refused)
+        self.bindings.append(binding)
+        return binding
+
+    def open(self, url: str) -&gt; tuple[bool, str]:
+        scheme = url.split(&quot;:&quot;, 1)[0]
+        handler = self.by_scheme.get(scheme)
+        if handler is None:
+            return False, f&quot;no handler bound for scheme {scheme!r}&quot;
+        return True, getattr(handler, scheme + SUFFIX)(url)
+
+
+def _looks_like_a_near_miss(attr: str) -&gt; bool:
+    &quot;&quot;&quot;Cheap heuristic: an anagram of the suffix at the end of the name.
+
+    Deliberately not clever. It catches `_opne`, `_oepn`, `_pen` — the
+    transpositions that actually happen — and says so rather than guessing what
+    was meant. Upstream has nothing here at all, which is the finding.
+    &quot;&quot;&quot;
+    tail = attr.rsplit(&quot;_&quot;, 1)[-1] if &quot;_&quot; in attr else &quot;&quot;
+    return tail != SUFFIX.strip(&quot;_&quot;) and sorted(tail) == sorted(SUFFIX.strip(&quot;_&quot;))
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/handlers/data.py</summary><pre><code>&quot;&quot;&quot;Serves data: URLs. Declares its scheme by method name, as upstream does.&quot;&quot;&quot;
+from __future__ import annotations
+
+import base64
+
+name = &quot;handlers/data&quot;
+
+
+class DataHandler:
+    name = name
+
+    def data_open(self, url: str) -&gt; str:
+        _, _, rest = url.partition(&quot;:&quot;)
+        meta, _, payload = rest.partition(&quot;,&quot;)
+        if &quot;base64&quot; in meta:
+            return base64.b64decode(payload).decode(&quot;utf-8&quot;, &quot;replace&quot;)
+        return payload
+</code></pre></details><details><summary>TMS/handlers/file.py</summary><pre><code>&quot;&quot;&quot;Serves file: URLs from a root it is handed.&quot;&quot;&quot;
+from __future__ import annotations
+
+from pathlib import Path
+
+name = &quot;handlers/file&quot;
+
+
+class FileHandler:
+    name = name
+
+    def __init__(self, root: Path) -&gt; None:
+        self._root = root
+
+    def file_open(self, url: str) -&gt; str:
+        target = (self._root / url.partition(&quot;:&quot;)[2].lstrip(&quot;/&quot;)).resolve()
+        if self._root.resolve() not in target.parents:
+            return &quot;refused: outside the served root&quot;
+        return target.read_text(encoding=&quot;utf-8&quot;) if target.is_file() else &quot;no such file&quot;
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;What binding actually did.
+
+Upstream `add_handler` returns None in every case: five methods bound, one
+bound, none bound. This prints the same three cases differently, which is the
+entire difference between a registry you can trust and one you hope about.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+
+def render(bindings) -&gt; str:
+    lines = [&quot;  bindings&quot;]
+    for b in bindings:
+        if b.bound_anything:
+            lines.append(f&quot;    {b.handler:&lt;18} bound {', '.join(b.schemes)}&quot;)
+        else:
+            lines.append(f&quot;    {b.handler:&lt;18} BOUND NOTHING&quot;)
+        for attr in b.ignored:
+            lines.append(f&quot;    {'':&lt;18}   near-miss method `{attr}` - did you mean `{attr.rsplit('_', 1)[0]}_open`?&quot;)
+        for scheme in b.refused:
+            lines.append(f&quot;    {'':&lt;18}   refused {scheme}&quot;)
+    return &quot;\n&quot;.join(lines)
+
+
+def inert(bindings) -&gt; list[str]:
+    &quot;&quot;&quot;Handlers that registered nothing. Constructing one is always a mistake.&quot;&quot;&quot;
+    return [b.handler for b in bindings if not b.bound_anything]
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.py</summary><pre><code>&quot;&quot;&quot;The island test, the upstream measurement, and four ways to defeat the repair.
+
+    python src/island-test.py
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+import tempfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+from DMS.report import inert                  # noqa: E402
+from SCL.policy import may_serve              # noqa: E402
+from SMS.chain import Opener                  # noqa: E402
+
+failures: list[str] = []
+
+
+def report(label: str, ok: bool, detail: str = &quot;&quot;) -&gt; None:
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}&quot; + (f&quot; - {detail}&quot; if detail else &quot;&quot;))
+    if not ok:
+        failures.append(label)
+
+
+print(&quot;\n== 1. each handler alone, no sibling loaded&quot;)
+from TMS.handlers.data import DataHandler     # noqa: E402
+
+opener = Opener()
+b = opener.bind(DataHandler())
+ok, out = opener.open(&quot;data:text/plain,alone&quot;)
+report(&quot;handlers/data binds and serves with no sibling present&quot;, b.schemes == [&quot;data&quot;] and ok and out == &quot;alone&quot;,
+       f&quot;schemes={b.schemes} out={out!r}&quot;)
+report(&quot;and nothing else is reachable&quot;, opener.open(&quot;file:/x&quot;)[0] is False)
+
+from TMS.handlers.file import FileHandler     # noqa: E402
+
+root = Path(tempfile.mkdtemp())
+(root / &quot;a.txt&quot;).write_text(&quot;only me\n&quot;, encoding=&quot;utf-8&quot;)
+solo = Opener()
+b2 = solo.bind(FileHandler(root=root))
+report(&quot;handlers/file binds and serves with no sibling present&quot;,
+       b2.schemes == [&quot;file&quot;] and solo.open(&quot;file:/a.txt&quot;)[1].strip() == &quot;only me&quot;)
+
+print(&quot;\n== 2. the upstream behaviour, measured now&quot;)
+import urllib.request as ur                   # noqa: E402
+
+
+class _Good(ur.BaseHandler):
+    def data_open(self, req): return None
+
+
+class _Typo(ur.BaseHandler):
+    def data_opne(self, req): return None
+
+
+class _Wrong(ur.BaseHandler):
+    def htp_open(self, req): return None
+
+
+measured = {}
+for label, cls in ((&quot;good&quot;, _Good), (&quot;typo&quot;, _Typo), (&quot;wrong-scheme&quot;, _Wrong)):
+    d = ur.OpenerDirector()
+    returned = d.add_handler(cls())
+    measured[label] = {&quot;schemes&quot;: sorted(d.handle_open), &quot;handlers&quot;: len(d.handlers), &quot;returned&quot;: returned}
+    print(f&quot;     {label:&lt;13} schemes={measured[label]['schemes']}  handlers={measured[label]['handlers']}  add_handler returned {returned!r}&quot;)
+
+report(&quot;a correct method binds&quot;, measured[&quot;good&quot;][&quot;schemes&quot;] == [&quot;data&quot;])
+report(&quot;a transposed method binds nothing&quot;, measured[&quot;typo&quot;][&quot;schemes&quot;] == [] and measured[&quot;typo&quot;][&quot;handlers&quot;] == 0)
+report(&quot;and add_handler reports nothing about it&quot;, measured[&quot;typo&quot;][&quot;returned&quot;] is None,
+       &quot;same return value as the successful case&quot;)
+report(&quot;a nonexistent scheme is accepted&quot;, measured[&quot;wrong-scheme&quot;][&quot;schemes&quot;] == [&quot;htp&quot;],
+       &quot;there is no set of real schemes for the name to be checked against&quot;)
+report(&quot;upstream's core is small, which is the part worth keeping&quot;,
+       len([m for m in ur.OpenerDirector.__dict__ if not m.startswith(&quot;__&quot;)]) &lt;= 8
+       and len([m for m in ur.BaseHandler.__dict__ if not m.startswith(&quot;__&quot;)]) &lt;= 4,
+       f&quot;OpenerDirector={len([m for m in ur.OpenerDirector.__dict__ if not m.startswith('__')])} &quot;
+       f&quot;BaseHandler={len([m for m in ur.BaseHandler.__dict__ if not m.startswith('__')])}&quot;)
+
+print(&quot;\n== 3. the repair catches what upstream cannot&quot;)
+class Typo:
+    name = &quot;handlers/data&quot;
+    def data_opne(self, url): return &quot;x&quot;      # noqa: N802
+
+
+class Wrong:
+    name = &quot;handlers/data&quot;
+    def htp_open(self, url): return &quot;x&quot;
+
+
+o = Opener()
+bt = o.bind(Typo())
+bw = o.bind(Wrong())
+report(&quot;the transposed handler is reported as binding nothing&quot;, not bt.bound_anything)
+report(&quot;and the near-miss method is named&quot;, bt.ignored == [&quot;data_opne&quot;], str(bt.ignored))
+report(&quot;the nonexistent scheme is refused, not bound&quot;, not bw.bound_anything and &quot;htp&quot; not in o.by_scheme,
+       f&quot;refused={bw.refused}&quot;)
+report(&quot;inert handlers are listed&quot;, sorted(set(inert(o.bindings))) == [&quot;handlers/data&quot;])
+
+print(&quot;\n== 4. and it stays quiet when there is nothing to say&quot;)
+good = Opener()
+gb = good.bind(DataHandler())
+report(&quot;a correct handler produces no near-miss and no refusal&quot;,
+       gb.bound_anything and gb.ignored == [] and gb.refused == [],
+       &quot;otherwise the warnings are decoration that is always present&quot;)
+report(&quot;and nothing is listed as inert&quot;, inert(good.bindings) == [])
+
+print(&quot;\n== 5. SCL decides what a name is allowed to mean&quot;)
+ok_data, _ = may_serve(&quot;handlers/data&quot;, &quot;data&quot;)
+ok_htp, why_htp = may_serve(&quot;handlers/data&quot;, &quot;htp&quot;)
+ok_cross, why_cross = may_serve(&quot;handlers/file&quot;, &quot;data&quot;)
+report(&quot;a permitted scheme passes&quot;, ok_data)
+report(&quot;an unknown scheme is refused with the real set&quot;, not ok_htp and &quot;data&quot; in why_htp, why_htp)
+report(&quot;a handler cannot claim another's scheme&quot;, not ok_cross, why_cross)
+
+print(&quot;&quot;)
+if failures:
+    print(f&quot;  {len(failures)} check(s) failed: {', '.join(failures)}&quot;)
+    raise SystemExit(1)
+print(&quot;  island test passed&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Bind four handlers, one of which is the upstream failure.
+
+    python src/main.py
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+import tempfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+from DMS.report import inert, render          # noqa: E402
+from SMS.chain import Opener                  # noqa: E402
+from TMS.handlers.data import DataHandler     # noqa: E402
+from TMS.handlers.file import FileHandler     # noqa: E402
+
+
+class TypoHandler:
+    &quot;&quot;&quot;The upstream failure, verbatim: one transposition and the handler is inert.&quot;&quot;&quot;
+    name = &quot;handlers/data&quot;
+
+    def data_opne(self, url: str) -&gt; str:      # noqa: N802 - deliberate
+        return &quot;never reached&quot;
+
+
+class WrongSchemeHandler:
+    &quot;&quot;&quot;Binds a protocol that does not exist. Upstream accepts this.&quot;&quot;&quot;
+    name = &quot;handlers/data&quot;
+
+    def htp_open(self, url: str) -&gt; str:
+        return &quot;never requested&quot;
+
+
+def main() -&gt; int:
+    root = Path(tempfile.mkdtemp())
+    (root / &quot;note.txt&quot;).write_text(&quot;served from disk\n&quot;, encoding=&quot;utf-8&quot;)
+
+    opener = Opener()
+    for handler in (DataHandler(), FileHandler(root=root), TypoHandler(), WrongSchemeHandler()):
+        opener.bind(handler)
+
+    print(&quot;\n== urllib opener re-cut&quot;)
+    print(render(opener.bindings))
+
+    print(&quot;\n  opening&quot;)
+    for url in (&quot;data:text/plain,hello&quot;, &quot;file:/note.txt&quot;, &quot;htp://example.com&quot;, &quot;gopher://old&quot;):
+        ok, result = opener.open(url)
+        print(f&quot;    {url:&lt;26} {'-&gt;' if ok else '  '} {result.strip()}&quot;)
+
+    dead = inert(opener.bindings)
+    print(f&quot;\n  handlers that bound nothing: {', '.join(dead) if dead else 'none'}&quot;)
+
+    # Upstream returns None for all four of these. The assertion is that this
+    # version can tell the inert one from the working one.
+    if not dead:
+        print(&quot;\n  RE-CUT FAILED: the typo handler bound something, so nothing is being demonstrated&quot;)
+        return 1
+    if &quot;htp&quot; in opener.by_scheme:
+        print(&quot;\n  RE-CUT FAILED: a nonexistent scheme was bound&quot;)
+        return 1
+    print(&quot;  a transposed letter is now a reported outcome rather than a silent one.&quot;)
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(main())
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

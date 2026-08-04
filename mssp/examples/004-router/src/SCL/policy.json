@@ -1,0 +1,21 @@
+{
+  "policy_version": "1.0",
+  "_comment": [
+    "Selecting a capability and being allowed to use it are different questions,",
+    "and the router asks the second one before it answers the first. A router",
+    "that only matched would let permission be enforced by whoever loads the",
+    "result — which means it is enforced by every caller, separately, forever."
+  ],
+  "actors": {
+    "app/editor":  { "capabilities": ["handlers/markdown", "handlers/csv"] },
+    "app/importer": { "capabilities": ["handlers/csv"] },
+    "anonymous":   { "capabilities": [] }
+  },
+  "rules": [
+    {
+      "id": "route-requires-permission",
+      "statement": "A route may only name a capability the requesting actor is permitted to use.",
+      "enforced_by": "SCL/policy.py::may_use, called by SMS/router.py before a Route is returned"
+    }
+  ]
+}

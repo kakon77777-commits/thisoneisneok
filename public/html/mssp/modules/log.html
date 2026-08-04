@@ -33,7 +33,7 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-03</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-04</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
@@ -41,6 +41,81 @@ footer a{color:var(--accent)}
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
 <hr>
+<h2>2026-08-04</h2>
+<h3>一、範例 004：Router 回傳名字，不回傳模組</h3>
+<p><a href="/html/mssp/004-router.html">004 Router</a>。這是<a href="/html/mssp/modules/development.html">開發區缺點 3</a> 自己寫著「排在範例路線的第一位」的那一條——論文定義了 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mo stretchy="false">(</mo><mi>q</mi><mo separator="true">,</mo><mi>u</mi><mo separator="true">,</mo><mi>τ</mi><mo separator="true">,</mo><mi>p</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">R(q,u,\tau,p)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.0077em;">R</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.0359em;">q</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">u</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">p</span><span class="mclose">)</span></span></span></span> ，但沒有實作模式、沒有規模指引、也沒有說路由本身要怎麼測。</p>
+<p>決定只有一個：<strong>Route 命名一個能力，不持有它。</strong></p>
+<p>聽起來像偏好，直到你試著替路由器寫孤島測試。一個回傳模組的路由器，必須 import 每一個候選才有辦法回傳任何一個——於是測路由邏輯要載入全部、路由器持有全部的參照（那就是「不是子集」的定義）、而 TMS 存在的按需載入被那個本該促成它的東西打敗。</p>
+<p>回傳識別碼在呼叫端多一行，換到的是這個——孤島測試第 1 節<strong>把整個 <code>TMS/</code> 目錄從磁碟上改名</strong>再跑：</p>
+<pre><code class="language-text">  PASS  routes with the TMS directory removed from disk - chose &#39;handlers/markdown&#39;
+  PASS  names a capability that has no file and never will
+  PASS  no TMS module was imported by routing - imported: []
+</code></pre>
+<p>路由器對 <code>handlers/does-not-exist</code> 做了正確的決定，而那個檔案從來不存在。</p>
+<p>第二個決定：<strong>權限被拒就結束這個決定，不往下一條規則掉。</strong> 往下掉看起來無害，但它讓呼叫者可以<strong>因為被拒絕一個更match的規則而拿到另一個能力</strong>——那會把權限變成偏好。</p>
+<h3>二、缺點 3 補了三分之二，第三個沒有</h3>
+<table>
+<thead>
+<tr>
+<th>原本缺什麼</th>
+<th>現況</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>路由本身要怎麼測</td>
+<td><strong>補上了</strong></td>
+</tr>
+<tr>
+<td>規則式路由在什麼規模上不夠用</td>
+<td><strong>變得可量了</strong>——從未觸發的規則、沒有規則接住的請求</td>
+</tr>
+<tr>
+<td>換成模型式路由的判準</td>
+<td><strong>仍然沒有</strong></td>
+</tr>
+</tbody></table>
+<p>那兩個數字不是錯誤。年輕的規則集有接不住的請求因為它年輕；老的規則集累積從未觸發的規則因為世界變了。<strong>重要的是方向，而沒有數字就沒有方向。</strong></p>
+<h3>三、考古 004：註冊表是對的，綁定靠命名，於是打錯字的 handler 完全惰性</h3>
+<p><a href="/html/mssp/archaeology/004-urllib-opener.html">004 CPython urllib.request 3.14.5</a>。選它是因為它跟<a href="/html/mssp/archaeology/002-http-server.html">考古 002</a> 在同一個標準庫裡做同一件事，用相反的機制：<code>http.server</code> 用繼承，<code>urllib.request</code> 用註冊。</p>
+<p>對的部分很乾淨：<code>OpenerDirector</code> <strong>只有 6 個方法</strong>、<code>BaseHandler</code> <strong>只有 3 個</strong>、handler 由 <code>build_opener(*handlers)</code> 傳入。核心不知道什麼能處理什麼，直到有人告訴它——<strong>那正是 <code>http.server</code> 結構上做不到的事，而且比我今天寫的還小。</strong></p>
+<p>漏處當場量得出來：</p>
+<pre><code class="language-text">     good          schemes=[&#39;data&#39;]  handlers=1  add_handler returned None
+     typo          schemes=[]        handlers=0  add_handler returned None
+     wrong-scheme  schemes=[&#39;htp&#39;]   handlers=1  add_handler returned None
+</code></pre>
+<p><code>data_opne</code>——<strong>一個字母對調</strong>——註冊 0 個。handler 完全惰性，沒有例外、沒有警告，而 <code>add_handler</code> 回傳 <code>None</code>，<strong>跟成功那次一模一樣</strong>。<code>htp_open</code> 則替一個不存在的協定成功註冊，因為沒有一組真實協定可以拿來檢查那個名字。</p>
+<p><strong>能力用命名宣告，而命名沒有東西在檢查。</strong> 名字同時是宣告與授權，於是打錯的名字是一個成功註冊的、不同的宣告。</p>
+<p>重切版<strong>保留命名慣例</strong>——<code>http_open</code>、<code>https_open</code> 這組名字讓一個 18 個 handler 的模組用讀的就知道誰做什麼，換成顯式欄位會失去那個——只是加上檢查。兩件事從來不衝突，上游只是沒做第二件。</p>
+<h3>四、今天三個失敗裡有兩個是我的測試前提錯了</h3>
+<p>孤島測試第一次跑，三個 FAIL：</p>
+<ul>
+<li>第 2 節挑了一個<strong>policy 本來就允許</strong>的 actor，所以「被拒絕不會往下掉」根本沒被測到；</li>
+<li>第 5 節的 grep 檢查 <code>router.py</code> 有沒有 <code>TMS</code> 字串——而它讀到的是 docstring 裡「it imports nothing from TMS」那句話。<strong>一個檢查在讀自己的文件。</strong></li>
+</ul>
+<p>兩個都是測試錯，不是程式錯。修法：第 2 節換成一個真的沒有權限的 actor，並且<strong>加測反方向</strong>（那個 actor 用自己的請求仍然拿得到它有權的能力——否則整節可以靠「全部拒絕」通過）；第 5 節只解析 import 行。</p>
+<p>這跟<a href="/html/mssp/modules/development.html">改良點 6</a> 是鄰居但不是同一件事。改良點 6 講的是<strong>檢查不會失敗</strong>；這兩個是<strong>檢查在測錯的東西</strong>。前者沉默，後者會叫，只是叫錯地方。兩者共通的是：<strong>測試的前提沒有被任何東西檢查。</strong></p>
+<hr>
+<h3>今天推進了什麼</h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>狀態</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>範例</td>
+<td>003 → <strong>004</strong>（Router 回傳識別碼，孤島測試把 TMS 目錄刪掉）</td>
+</tr>
+<tr>
+<td>考古</td>
+<td>003 → <strong>004</strong>（urllib：註冊表確認，綁定未檢查）</td>
+</tr>
+<tr>
+<td>開發區缺點 3</td>
+<td>三缺口補二，第三個照實留著</td>
+</tr>
+</tbody></table>
 <h2>2026-08-03</h2>
 <h3>一、昨天加的改良點 6，今天一小時內就付了</h3>
 <p>昨天升上去的<a href="/html/mssp/modules/development.html">改良點 6</a>說：檢查本身要先被看著失敗一次。今天第一件事就是拿它去問一條既有的檢查——<strong>「沒有任何 TMS 引用兄弟 TMS」對 Python 範例到底有沒有跑？</strong></p>

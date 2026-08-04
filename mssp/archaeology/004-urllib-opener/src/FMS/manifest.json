@@ -1,0 +1,34 @@
+{
+  "name": "urllib-opener-recut",
+  "what_it_is": "A handler registry and call chain, keeping upstream's shape and making registration report what it registered.",
+  "examined": {
+    "project": "CPython urllib.request", "version": "3.14.5", "license": "PSF-2.0",
+    "measured": {
+      "module_lines": 2163,
+      "OpenerDirector_methods": 6,
+      "BaseHandler_methods": 3,
+      "handler_classes_shipped": 18,
+      "add_handler_lines": 46,
+      "_call_chain_lines": 10,
+      "binding_mechanism": "scan the handler's attribute names for *_open / *_error / *_request / *_response",
+      "add_handler_return_value": "None, in every case"
+    },
+    "reproduced": {
+      "data_open": "registers under 'data', 1 handler",
+      "data_opne": "registers nothing, 0 handlers, returns None, no error, no warning",
+      "htp_open": "registers under 'htp' - a scheme that does not exist",
+      "no_recognised_method": "0 handlers, silent"
+    }
+  },
+  "capabilities": {
+    "SMS": { "chain": "The registry and the call chain. bind() returns a Binding saying what it bound, ignored and refused." },
+    "SCL": { "policy": "Which handler may serve which scheme, and which schemes exist at all." },
+    "TMS": { "handlers/data": "Serves data: URLs.", "handlers/file": "Serves file: URLs from a root it is handed." },
+    "DMS": { "report": "Bindings, near-miss method names, refusals, and any handler that bound nothing." }
+  },
+  "the_finding": "The registry is right and worth keeping - handlers are passed in, the core has six methods, BaseHandler has three. The binding is by naming convention with nothing checking it, so a transposed letter produces a handler that is registered nowhere and reported as fine.",
+  "non_goals": [
+    "Being urllib. No redirects, no auth, no proxies, no network, two schemes.",
+    "Replacing naming-based declaration. The re-cut keeps it and adds a check, because the convention is what makes a handler readable."
+  ]
+}

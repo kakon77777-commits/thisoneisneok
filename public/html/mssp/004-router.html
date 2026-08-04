@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Router：回傳名字，不回傳模組 | MSSP | Neo.K</title>
+<meta name="description" content="一個會 import 它所選之物的路由器，測試它就得載入全部候選——於是路由本身沒有孤島測試可跑。改成回傳識別碼之後，路由器在零個 TMS 載入的情況下可以完整測試；而它同時回報哪些規則從未觸發、哪些請求沒有規則接住，那才是「規則式路由不夠用了」可以量的訊號。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/004-router.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>004-router</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>004-router</span></div>
+    <div><b>語言</b><span>python</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-04</span></div>
+    <div><b>行數</b><span>503</span></div>
+    <div><b>執行</b><span><code>python src/main.py</code></span></div>
+  </section>
+  <article class="content"><h1>004 — Router: it returns a name, not a module</h1>
+<h2>What this program does</h2>
+<p>It decides which capability should handle a request — summarise this markdown,
+validate that CSV — and then, separately and elsewhere, something loads what was
+decided.</p>
+<pre><code class="language-bash">python src/main.py          # route four requests, then load only what was chosen
+python src/island-test.py   # the router with the TMS directory removed from disk
+</code></pre>
+<p>This is the example the method&#39;s own notes put first. <a href="/html/mssp/modules/development.html">開發區 缺點
+3</a> says the Router has a definition —
+$R(q,u,\tau,p) \rightarrow (S_q, T_q, C_q, D_q)$ — and no implementation
+pattern, no scale guidance, and no account of how you would test one.</p>
+<h2>The structural decision</h2>
+<p><strong>A Route names a capability. It does not hold one.</strong></p>
+<p>That sounds like a preference until you try to island-test the router. A router
+that returns modules has to import every candidate to be able to return any of
+them, so:</p>
+<ul>
+<li>testing the routing logic requires loading everything it might select;</li>
+<li>the router holds a reference to every capability, which is the definition of
+not being a subset;</li>
+<li>and the on-demand loading that TMS exists for is defeated by the thing whose
+job was to enable it.</li>
+</ul>
+<p>Returning an identifier costs one line at the call site and buys the island
+test. Here is what that buys, concretely — section 1 of the island test renames
+the entire <code>TMS/</code> directory off disk before it runs:</p>
+<pre><code class="language-console">== 1. the router, with no capability present at all
+  PASS  routes with the TMS directory removed from disk - chose &#39;handlers/markdown&#39;
+  PASS  names a capability that has no file and never will - rule=&#39;ghost&#39; …
+  PASS  no TMS module was imported by routing - imported: []
+</code></pre>
+<p>The router decided about <code>handlers/does-not-exist</code>, correctly, while no such
+file existed anywhere. A router returning modules cannot survive that line; one
+returning names does not notice it happened.</p>
+<p>The resolution step is four lines in <code>main.py</code>, and it is deliberately not in
+the router:</p>
+<pre><code class="language-python">module = importlib.import_module(&quot;TMS.&quot; + route.capability.replace(&quot;/&quot;, &quot;.&quot;))
+</code></pre>
+<p><code>src/SMS/router.py</code> imports <code>sys</code>, <code>pathlib</code>, <code>SCL.policy</code> and <code>SMS.model</code>. Not
+<code>importlib</code>, not anything under <code>TMS</code>. Section 5 checks that against the import
+lines rather than the file text — the first version of that check grepped the
+whole file for <code>TMS</code> and failed on the docstring sentence saying it imports
+nothing from TMS, which is a check reading its own documentation.</p>
+<h3>The second decision: a refusal ends the decision</h3>
+<p><code>SCL</code> is consulted <em>before</em> a Route is returned, and a denied match does not
+fall through to the next rule. Falling through looks harmless and lets a caller
+reach a capability <strong>by being denied a better-matching one</strong> — which turns a
+permission into a preference.</p>
+<p>The island test covers both directions, because a section that passes by
+refusing everything proves nothing: the actor denied the specific rule is also
+shown reaching, by its own request, the capability it <em>is</em> permitted.</p>
+<h2>Set by set</h2>
+<p><strong>FMS</strong> — <code>manifest.json</code>, and the two decisions above with their reasons.</p>
+<p><strong>SCL</strong> — <code>policy.json</code> / <code>policy.py</code>. Which actor may use which capability.
+<code>may_use</code> returns the reason as well as the verdict, which is what lets a Route
+say <em>refused, and what was missing</em> — a caller that only learns &quot;no&quot; cannot tell
+a missing permission from a missing rule.</p>
+<p><strong>SMS</strong> — <code>model.py</code> (Request, Route) and <code>router.py</code>. The router is core: remove
+it and nothing can decide what to do with anything, so the loop does not close.
+It is not a dispatcher — it never calls what it selects.</p>
+<p><strong>TMS</strong> — <code>handlers/markdown</code>, <code>handlers/csv</code>. Two units. Neither is imported
+until a Route has already named it.</p>
+<p><strong>DMS</strong> — <code>ledger.py</code>. The decisions, and the two numbers below.</p>
+<h2>The scale signal 缺點 3 asked for</h2>
+<p>&quot;When does rule-based routing stop being enough?&quot; has been a judgement call. Two
+counts make it a measurement, and the router keeps them because a rule that
+never fires produces no decision to count afterwards:</p>
+<pre><code class="language-text">  coverage
+    rules             3
+    never fired       image-thumbnail
+                      the rule set carries weight it did not use
+    unmatched         pdf/extract
+                      requests arrived that no rule reaches
+</code></pre>
+<p><strong>Neither is an error.</strong> A young rule set has unmatched requests because it is
+young. An old one accumulates never-fired rules because the world moved on.
+What matters is the direction over time — and there is no direction without a
+number.</p>
+<p>This is the same move as <a href="/html/mssp/003-record-migration.html">example 003</a>:
+report what was <em>not</em> reached, as loudly as what failed. A router that only
+reports its successful decisions is describing the requests it happened to
+receive, not the rule set&#39;s fit to the requests that arrive.</p>
+<h2>The island test</h2>
+<pre><code class="language-console">$ python src/island-test.py
+  ... 15 checks across 5 sections ...
+  island test passed
+</code></pre>
+<p>Sections 3–5 exist because of <a href="/html/mssp/modules/development.html">改良點 6</a>.
+Two of the three failures on the first run were <strong>wrong premises in the test,
+not defects in the code</strong>: section 2 picked an actor that policy actually
+permits, and section 5&#39;s grep read the docstring. Both are recorded here rather
+than quietly fixed, because &quot;the test was wrong&quot; is the most common way a
+check stops being a check, and it is invisible once repaired.</p>
+<h2>What this example does not solve</h2>
+<ul>
+<li><p><strong>It does not say when to switch to model-based routing.</strong> It makes the input
+to that decision measurable and stops there. Two counts trending the wrong way
+tell you the rule set is losing fit; they do not tell you that a model would
+fit better, and nothing here would notice if a model fit worse.</p>
+</li>
+<li><p><strong><code>when=</code> is a lambda, so a rule is code.</strong> Rules are data in the sense that
+the <em>set</em> is handed in, which is what the island test needs — but each
+predicate is arbitrary Python and cannot be serialised, diffed, or checked for
+overlap. A rule set you cannot compare against itself is one where two rules
+can silently claim the same request and only order decides, which is the
+problem <a href="/html/mssp/archaeology/002-http-server.html">考古 002</a> hit from the
+other side.</p>
+</li>
+<li><p><strong>Ordering is load-bearing and unstated.</strong> First match wins. With three rules
+that is legible; the method gives no guidance on what to do when it is thirty,
+and &quot;first match wins&quot; is exactly the kind of rule that is obvious to whoever
+wrote the list and invisible to whoever inherits it.</p>
+</li>
+<li><p><strong>Coverage is per-run.</strong> The counts reset every process. Making the direction
+visible — the thing the whole section argues for — needs them persisted across
+runs, and this example does not do that. It demonstrates that the numbers
+exist, not that anyone is watching them.</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;router&quot;,
+  &quot;what_it_is&quot;: &quot;Decides which capability should handle a request, without loading or calling it.&quot;,
+  &quot;why_it_exists&quot;: &quot;MSSP defines the Router and gives no implementation pattern, no scale guidance, and no way to test one. 開發區 缺點 3 puts it first on the example roadmap.&quot;,
+  &quot;core_task_loop&quot;: &quot;request -&gt; rule match -&gt; permission check -&gt; a named capability&quot;,
+
+  &quot;capabilities&quot;: {
+    &quot;SMS&quot;: {
+      &quot;model&quot;: &quot;Request and Route. A Route names a capability; it does not hold one.&quot;,
+      &quot;router&quot;: &quot;Rule evaluation, permission check, and the counters that make coverage measurable.&quot;
+    },
+    &quot;SCL&quot;: { &quot;policy&quot;: &quot;Which actor may use which capability. Checked before a Route is returned, not after.&quot; },
+    &quot;TMS&quot;: {
+      &quot;handlers/markdown&quot;: &quot;Summarises a markdown document.&quot;,
+      &quot;handlers/csv&quot;: &quot;Validates CSV row widths.&quot;
+    },
+    &quot;DMS&quot;: { &quot;ledger&quot;: &quot;The decisions, plus rules that never fired and requests nothing matched.&quot; }
+  },
+
+  &quot;decisions&quot;: [
+    {
+      &quot;id&quot;: &quot;D-001&quot;,
+      &quot;date&quot;: &quot;2026-08-04&quot;,
+      &quot;decision&quot;: &quot;the router returns an identifier, never a module&quot;,
+      &quot;because&quot;: &quot;A router that imports what it selects can only be tested with every candidate present, so routing itself has no island test — and the router stops being a subset the moment it holds references to all of them.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;D-002&quot;,
+      &quot;date&quot;: &quot;2026-08-04&quot;,
+      &quot;decision&quot;: &quot;a refused permission ends the routing decision rather than falling through to the next rule&quot;,
+      &quot;because&quot;: &quot;Falling through would let a caller reach a capability by being denied a better-matching one, which turns a permission check into a preference.&quot;
+    }
+  ],
+
+  &quot;non_goals&quot;: [
+    &quot;Model-based routing. The scale question this example makes measurable is the input to that decision, not the decision.&quot;,
+    &quot;Loading. Resolving a name to code is done in main.py in four lines, deliberately outside the router.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;Selecting a capability and being allowed to use it are different questions,&quot;,
+    &quot;and the router asks the second one before it answers the first. A router&quot;,
+    &quot;that only matched would let permission be enforced by whoever loads the&quot;,
+    &quot;result — which means it is enforced by every caller, separately, forever.&quot;
+  ],
+  &quot;actors&quot;: {
+    &quot;app/editor&quot;:  { &quot;capabilities&quot;: [&quot;handlers/markdown&quot;, &quot;handlers/csv&quot;] },
+    &quot;app/importer&quot;: { &quot;capabilities&quot;: [&quot;handlers/csv&quot;] },
+    &quot;anonymous&quot;:   { &quot;capabilities&quot;: [] }
+  },
+  &quot;rules&quot;: [
+    {
+      &quot;id&quot;: &quot;route-requires-permission&quot;,
+      &quot;statement&quot;: &quot;A route may only name a capability the requesting actor is permitted to use.&quot;,
+      &quot;enforced_by&quot;: &quot;SCL/policy.py::may_use, called by SMS/router.py before a Route is returned&quot;
+    }
+  ]
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Who may use what.
+
+Read by the router before it returns a decision, so a Route naming a capability
+is already a permitted one. The alternative — return the match and let the
+loader check — pushes the same check into every caller, and a check that lives
+in every caller lives properly in none of them.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+_POLICY = json.loads(Path(__file__).with_name(&quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+ACTORS: dict[str, dict] = _POLICY[&quot;actors&quot;]
+
+
+def may_use(actor: str, capability: str) -&gt; tuple[bool, str]:
+    &quot;&quot;&quot;Permitted, and the reason when not.
+
+    Returning the reason rather than a bare False is what lets the router put
+    &quot;refused, and by what&quot; into the Route — a caller that only learns &quot;no&quot;
+    cannot tell a missing permission from a missing rule.
+    &quot;&quot;&quot;
+    entry = ACTORS.get(actor)
+    if entry is None:
+        return False, f&quot;unknown actor {actor!r}&quot;
+    if capability not in entry[&quot;capabilities&quot;]:
+        return False, f&quot;{actor} is not permitted {capability}&quot;
+    return True, &quot;&quot;
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/model.py</summary><pre><code>&quot;&quot;&quot;The shapes routing is decided over.
+
+`Route` is the decision this example turns on. It names a capability; it does
+not hold one. That single choice is what makes the router testable alone — a
+Route can be produced, inspected and asserted about with none of the capabilities
+it names present in the process.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class Request:
+    &quot;&quot;&quot;What the caller asked for.&quot;&quot;&quot;
+    kind: str                 # the artifact: &quot;markdown&quot;, &quot;csv&quot;, &quot;image&quot;
+    intent: str               # what to do with it: &quot;summarise&quot;, &quot;validate&quot;
+    actor: str = &quot;anonymous&quot;  # who is asking; SCL reads this
+    size_kb: int = 0
+
+
+@dataclass(frozen=True)
+class Route:
+    &quot;&quot;&quot;A decision, as a value.
+
+    `capability` is a name. Nothing here imports, loads, or holds the module it
+    refers to. Resolving a name to code is the caller's job, and keeping it the
+    caller's job is the whole point.
+    &quot;&quot;&quot;
+    capability: str | None
+    rule: str | None
+    why: str
+    evidence: list[str] = field(default_factory=list)
+
+    @property
+    def matched(self) -&gt; bool:
+        return self.capability is not None
+</code></pre></details><details><summary>SMS/router.py</summary><pre><code>&quot;&quot;&quot;Choosing a capability for a request.
+
+The router is SMS: remove it and the system cannot decide what to do with
+anything, so the loop does not close. It is *not* a dispatcher — it never calls
+what it selects, and it imports nothing from TMS.
+
+Rules are data. That matters for two reasons beyond taste:
+
+  - A rule set can be handed in, so the island test hands in one rule and
+    asserts on the decision without any capability existing at all.
+  - Rules that never fire and requests that match nothing can be counted, which
+    is the only honest signal for &quot;the rule set has stopped being enough&quot;.
+    Without it, that judgement is a feeling, and 開發區 缺點 3 says the method
+    currently has nothing better than a feeling.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from SCL import policy                      # noqa: E402
+from SMS.model import Request, Route        # noqa: E402
+
+
+class Rule:
+    def __init__(self, name: str, capability: str, *, when) -&gt; None:
+        self.name = name
+        self.capability = capability
+        self._when = when
+
+    def matches(self, request: Request) -&gt; bool:
+        return bool(self._when(request))
+
+
+class Router:
+    def __init__(self, rules: list[Rule]) -&gt; None:
+        self.rules = rules
+        # Counted per rule rather than derived from decisions afterwards: a rule
+        # that never fires produces no decision to count, and that is the fact
+        # worth surfacing.
+        self.fired: dict[str, int] = {rule.name: 0 for rule in rules}
+        self.unmatched: list[Request] = []
+        self.refused: list[tuple[Request, str]] = []
+
+    def route(self, request: Request) -&gt; Route:
+        for rule in self.rules:
+            if not rule.matches(request):
+                continue
+
+            allowed, why = policy.may_use(request.actor, rule.capability)
+            if not allowed:
+                # A refusal is a decision, not an absence of one. Falling
+                # through to the next rule here would let a caller reach a
+                # capability by being denied a better-matching one.
+                self.refused.append((request, why))
+                return Route(None, rule.name, f&quot;refused: {why}&quot;,
+                             [f&quot;{request.actor} -&gt; {rule.capability}&quot;])
+
+            self.fired[rule.name] += 1
+            return Route(rule.capability, rule.name, &quot;matched&quot;,
+                         [f&quot;{rule.name} matched {request.kind}/{request.intent}&quot;])
+
+        self.unmatched.append(request)
+        return Route(None, None, &quot;no rule matched&quot;, [f&quot;{request.kind}/{request.intent}&quot;])
+
+    def coverage(self) -&gt; dict:
+        &quot;&quot;&quot;What this rule set did and did not cover.
+
+        The two numbers 開發區 缺點 3 asks for. `never_fired` says the rule set
+        carries weight it is not using; `unmatched` says it is not reaching
+        requests that arrive. Both grow as a rule set ages, and both are
+        countable, which a judgement about &quot;scale&quot; is not.
+        &quot;&quot;&quot;
+        return {
+            &quot;rules&quot;: len(self.rules),
+            &quot;never_fired&quot;: sorted(name for name, n in self.fired.items() if n == 0),
+            &quot;unmatched&quot;: [f&quot;{r.kind}/{r.intent}&quot; for r in self.unmatched],
+            &quot;refused&quot;: [f&quot;{r.actor}: {why}&quot; for r, why in self.refused],
+        }
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/handlers/csv.py</summary><pre><code>&quot;&quot;&quot;Validates a CSV document: every row the width of the header.&quot;&quot;&quot;
+from __future__ import annotations
+
+name = &quot;handlers/csv&quot;
+
+
+def handle(text: str) -&gt; str:
+    rows = [line.split(&quot;,&quot;) for line in text.strip().splitlines() if line.strip()]
+    if not rows:
+        return &quot;empty&quot;
+    width = len(rows[0])
+    bad = [i for i, row in enumerate(rows[1:], start=2) if len(row) != width]
+    return f&quot;{len(rows) - 1} row(s), width {width}, ragged at {bad}&quot; if bad else f&quot;{len(rows) - 1} row(s), all width {width}&quot;
+</code></pre></details><details><summary>TMS/handlers/markdown.py</summary><pre><code>&quot;&quot;&quot;Summarises a markdown document.
+
+Loaded only when a Route names it. Nothing imports this file at module scope
+except the resolver in main, which is the point: the router decided this was
+the right capability without this file being on disk, let alone imported.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+name = &quot;handlers/markdown&quot;
+
+
+def handle(text: str) -&gt; str:
+    headings = [line.lstrip(&quot;# &quot;).strip() for line in text.splitlines() if line.startswith(&quot;#&quot;)]
+    return f&quot;{len(headings)} heading(s): &quot; + &quot;; &quot;.join(headings[:3])
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/ledger.py</summary><pre><code>&quot;&quot;&quot;What the routing did, and what it did not reach.
+
+The second half is the one 開發區 缺點 3 asked for. &quot;When does a rule-based
+router stop being enough?&quot; has been a judgement call; these are the two numbers
+that make it a measurement:
+
+  never_fired   the rule set is carrying weight it is not using
+  unmatched     requests are arriving that no rule reaches
+
+Neither is an error. A young rule set has unmatched requests because it is
+young; an old one has never-fired rules because the world moved. What matters is
+the direction over time, and you cannot have a direction without a number.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+
+def render(coverage: dict, decisions: list) -&gt; str:
+    lines = [&quot;  decisions&quot;]
+    for request, route in decisions:
+        target = route.capability or &quot;(none)&quot;
+        asked = f&quot;{request.kind}/{request.intent}&quot;
+        lines.append(f&quot;    {request.actor:&lt;14} {asked:&lt;20} -&gt; {target:&lt;20} {route.why}&quot;)
+
+    lines.append(&quot;&quot;)
+    lines.append(&quot;  coverage&quot;)
+    lines.append(f&quot;    rules             {coverage['rules']}&quot;)
+
+    if coverage[&quot;never_fired&quot;]:
+        lines.append(f&quot;    never fired       {', '.join(coverage['never_fired'])}&quot;)
+        lines.append(&quot;                      the rule set carries weight it did not use&quot;)
+    else:
+        lines.append(&quot;    never fired       none - every rule was reached&quot;)
+
+    if coverage[&quot;unmatched&quot;]:
+        lines.append(f&quot;    unmatched         {', '.join(coverage['unmatched'])}&quot;)
+        lines.append(&quot;                      requests arrived that no rule reaches&quot;)
+    else:
+        lines.append(&quot;    unmatched         none&quot;)
+
+    if coverage[&quot;refused&quot;]:
+        lines.append(f&quot;    refused           {'; '.join(coverage['refused'])}&quot;)
+    return &quot;\n&quot;.join(lines)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.py</summary><pre><code>&quot;&quot;&quot;The island test for the router itself, plus four ways to break it.
+
+    python src/island-test.py
+
+Section 1 is the one that matters and it is unusual: it exercises the router
+with **zero TMS modules importable at all** — the package directory is hidden
+from the interpreter for the duration. A router that returned modules could not
+survive that line. A router that returns names does not notice.
+
+Sections 3-5 exist because of 改良點 6: every claim here rests on the router
+refusing things, and a refusal nobody has watched is not a refusal.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+from SCL.policy import may_use                   # noqa: E402
+from SMS.model import Request                    # noqa: E402
+from SMS.router import Router, Rule              # noqa: E402
+
+failures: list[str] = []
+
+
+def report(label: str, ok: bool, detail: str = &quot;&quot;) -&gt; None:
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}&quot; + (f&quot; - {detail}&quot; if detail else &quot;&quot;))
+    if not ok:
+        failures.append(label)
+
+
+print(&quot;\n== 1. the router, with no capability present at all&quot;)
+{
+}
+# Nothing under TMS/ has been imported, and for this section nothing can be.
+_tms = HERE / &quot;TMS&quot;
+_hidden = HERE / &quot;_TMS_hidden_for_the_island_test&quot;
+_tms.rename(_hidden)
+try:
+    rules = [
+        Rule(&quot;md&quot;, &quot;handlers/markdown&quot;, when=lambda r: r.kind == &quot;markdown&quot;),
+        Rule(&quot;csv&quot;, &quot;handlers/csv&quot;, when=lambda r: r.kind == &quot;csv&quot;),
+        Rule(&quot;ghost&quot;, &quot;handlers/does-not-exist&quot;, when=lambda r: r.kind == &quot;ghost&quot;),
+    ]
+    router = Router(rules)
+
+    decided = router.route(Request(kind=&quot;markdown&quot;, intent=&quot;summarise&quot;, actor=&quot;app/editor&quot;))
+    report(&quot;routes with the TMS directory removed from disk&quot;, decided.capability == &quot;handlers/markdown&quot;,
+           f&quot;chose {decided.capability!r}&quot;)
+
+    ghost = router.route(Request(kind=&quot;ghost&quot;, intent=&quot;anything&quot;, actor=&quot;app/editor&quot;))
+    report(&quot;names a capability that has no file and never will&quot;,
+           ghost.capability is None or ghost.rule == &quot;ghost&quot;,
+           f&quot;rule={ghost.rule!r} why={ghost.why!r}&quot;)
+
+    imported = [m for m in sys.modules if m.startswith(&quot;TMS&quot;)]
+    report(&quot;no TMS module was imported by routing&quot;, imported == [], f&quot;imported: {imported}&quot;)
+finally:
+    _hidden.rename(_tms)
+
+print(&quot;\n== 2. a refusal is a decision, not a fall-through&quot;)
+{
+}
+# app/importer is permitted handlers/csv and nothing else. The specific rule
+# names markdown, which it may not use; the catch-all names csv, which it may.
+# So a fall-through would hand it a capability by way of being denied a better
+# match — which is the shape this section exists to forbid.
+router = Router([
+    Rule(&quot;specific&quot;, &quot;handlers/markdown&quot;, when=lambda r: r.kind == &quot;markdown&quot;),
+    Rule(&quot;catch-all&quot;, &quot;handlers/csv&quot;, when=lambda r: True),
+])
+denied = router.route(Request(kind=&quot;markdown&quot;, intent=&quot;summarise&quot;, actor=&quot;app/importer&quot;))
+report(&quot;a denied match does not fall through to a later rule&quot;,
+       denied.capability is None and denied.rule == &quot;specific&quot;,
+       f&quot;capability={denied.capability!r} rule={denied.rule!r}&quot;)
+report(&quot;and the refusal says which permission was missing&quot;,
+       &quot;not permitted&quot; in denied.why, f'why=&quot;{denied.why}&quot;')
+report(&quot;the caller it WAS permitted stays reachable by its own request&quot;,
+       Router([Rule(&quot;catch-all&quot;, &quot;handlers/csv&quot;, when=lambda r: True)])
+       .route(Request(kind=&quot;csv&quot;, intent=&quot;validate&quot;, actor=&quot;app/importer&quot;)).capability == &quot;handlers/csv&quot;,
+       &quot;otherwise this section would pass by refusing everything&quot;)
+
+print(&quot;\n== 3. coverage reports what the rule set did not reach&quot;)
+{
+}
+router = Router([
+    Rule(&quot;used&quot;, &quot;handlers/markdown&quot;, when=lambda r: r.kind == &quot;markdown&quot;),
+    Rule(&quot;unused&quot;, &quot;handlers/csv&quot;, when=lambda r: r.kind == &quot;csv&quot;),
+])
+router.route(Request(kind=&quot;markdown&quot;, intent=&quot;summarise&quot;, actor=&quot;app/editor&quot;))
+router.route(Request(kind=&quot;pdf&quot;, intent=&quot;extract&quot;, actor=&quot;app/editor&quot;))
+c = router.coverage()
+report(&quot;a rule that never fired is named&quot;, c[&quot;never_fired&quot;] == [&quot;unused&quot;], str(c[&quot;never_fired&quot;]))
+report(&quot;a request nothing matched is named&quot;, c[&quot;unmatched&quot;] == [&quot;pdf/extract&quot;], str(c[&quot;unmatched&quot;]))
+
+# and the inverse, or the warning is decoration
+full = Router([Rule(&quot;used&quot;, &quot;handlers/markdown&quot;, when=lambda r: True)])
+full.route(Request(kind=&quot;markdown&quot;, intent=&quot;summarise&quot;, actor=&quot;app/editor&quot;))
+report(&quot;and both go quiet when the rule set covers everything&quot;,
+       full.coverage()[&quot;never_fired&quot;] == [] and full.coverage()[&quot;unmatched&quot;] == [])
+
+print(&quot;\n== 4. SCL is consulted before a Route exists, not after&quot;)
+{
+}
+ok_editor, _ = may_use(&quot;app/editor&quot;, &quot;handlers/markdown&quot;)
+ok_anon, why_anon = may_use(&quot;anonymous&quot;, &quot;handlers/markdown&quot;)
+report(&quot;policy itself distinguishes the two actors&quot;, ok_editor and not ok_anon, why_anon)
+
+unknown_ok, why_unknown = may_use(&quot;app/nobody&quot;, &quot;handlers/markdown&quot;)
+report(&quot;an unknown actor is refused rather than defaulted&quot;, not unknown_ok, why_unknown)
+
+routed = Router([Rule(&quot;md&quot;, &quot;handlers/markdown&quot;, when=lambda r: True)]).route(
+    Request(kind=&quot;markdown&quot;, intent=&quot;summarise&quot;, actor=&quot;app/nobody&quot;))
+report(&quot;and the router never returns a capability the actor may not use&quot;,
+       routed.capability is None, f&quot;capability={routed.capability!r}&quot;)
+
+print(&quot;\n== 5. the router holds no reference to anything it names&quot;)
+{
+}
+source = (HERE / &quot;SMS&quot; / &quot;router.py&quot;).read_text(encoding=&quot;utf-8&quot;)
+# Import lines only. The first version of this check grepped the whole file for
+# &quot;TMS&quot; and failed on the docstring sentence saying it imports nothing from TMS
+# — a check reading its own documentation and reporting on that.
+import_lines = [ln.strip() for ln in source.splitlines()
+                if ln.strip().startswith((&quot;import &quot;, &quot;from &quot;))]
+report(&quot;router.py imports nothing from TMS&quot;,
+       not any(&quot;TMS&quot; in ln for ln in import_lines),
+       f&quot;{len(import_lines)} import line(s): {', '.join(import_lines)}&quot;)
+report(&quot;router.py does not import importlib either&quot;,
+       not any(&quot;importlib&quot; in ln for ln in import_lines),
+       &quot;resolution belongs to the caller&quot;)
+
+print(&quot;&quot;)
+if failures:
+    print(f&quot;  {len(failures)} check(s) failed: {', '.join(failures)}&quot;)
+    raise SystemExit(1)
+print(&quot;  island test passed&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Route some requests, then load only what was selected.
+
+    python src/main.py
+
+The load step is four lines at the bottom and it is not part of the router. That
+separation is the example.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import importlib
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+from DMS.ledger import render                    # noqa: E402
+from SMS.model import Request                    # noqa: E402
+from SMS.router import Router, Rule              # noqa: E402
+
+RULES = [
+    Rule(&quot;markdown-summary&quot;, &quot;handlers/markdown&quot;,
+         when=lambda r: r.kind == &quot;markdown&quot; and r.intent == &quot;summarise&quot;),
+    Rule(&quot;csv-validate&quot;, &quot;handlers/csv&quot;,
+         when=lambda r: r.kind == &quot;csv&quot; and r.intent == &quot;validate&quot;),
+    # Deliberately present and unreachable by the requests below: an ageing rule
+    # set accumulates these, and the ledger is what makes that visible.
+    Rule(&quot;image-thumbnail&quot;, &quot;handlers/image&quot;,
+         when=lambda r: r.kind == &quot;image&quot;),
+]
+
+REQUESTS = [
+    Request(kind=&quot;markdown&quot;, intent=&quot;summarise&quot;, actor=&quot;app/editor&quot;),
+    Request(kind=&quot;csv&quot;, intent=&quot;validate&quot;, actor=&quot;app/importer&quot;),
+    Request(kind=&quot;csv&quot;, intent=&quot;validate&quot;, actor=&quot;anonymous&quot;),      # refused
+    Request(kind=&quot;pdf&quot;, intent=&quot;extract&quot;, actor=&quot;app/editor&quot;),      # nothing matches
+]
+
+DOCUMENTS = {
+    &quot;markdown&quot;: &quot;# Title\n\ntext\n\n## Section\n\nmore\n&quot;,
+    &quot;csv&quot;: &quot;a,b,c\n1,2,3\n4,5\n&quot;,
+}
+
+
+def main() -&gt; int:
+    router = Router(RULES)
+    decisions = [(request, router.route(request)) for request in REQUESTS]
+
+    print(&quot;\n== router&quot;)
+    print(render(router.coverage(), decisions))
+
+    print(&quot;\n  loading only what was selected&quot;)
+    for request, route in decisions:
+        if not route.matched:
+            continue
+        # The whole resolution step. It lives here rather than in the router so
+        # that the router never holds a reference to a capability.
+        module = importlib.import_module(&quot;TMS.&quot; + route.capability.replace(&quot;/&quot;, &quot;.&quot;).replace(&quot;handlers.&quot;, &quot;handlers.&quot;))
+        print(f&quot;    {route.capability:&lt;20} {module.handle(DOCUMENTS[request.kind])}&quot;)
+
+    loaded = [m for m in sys.modules if m.startswith(&quot;TMS.&quot;)]
+    print(f&quot;\n  TMS modules in sys.modules: {len(loaded)}&quot;)
+    print(f&quot;    {', '.join(sorted(loaded))}&quot;)
+
+    # The assertion worth making: the router named a capability that was never
+    # loaded, which is only possible because a Route is a name.
+    named = {r.capability for _, r in decisions if r.matched} | {&quot;handlers/image&quot;}
+    unloaded = [c for c in named if &quot;TMS.&quot; + c.replace(&quot;/&quot;, &quot;.&quot;) not in sys.modules]
+    if &quot;handlers/image&quot; not in unloaded:
+        print(&quot;\n  EXAMPLE FAILED: handlers/image was loaded, and it does not exist&quot;)
+        return 1
+    print(f&quot;    named but never loaded: {', '.join(sorted(unloaded))}&quot;)
+    print(&quot;\n  the router decided about a capability that has no file at all.&quot;)
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(main())
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

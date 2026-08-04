@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-03
+updated: 2026-08-04
 ---
 
 # 開發日誌
@@ -19,6 +19,79 @@ updated: 2026-08-03
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
 
 ---
+
+## 2026-08-04
+
+### 一、範例 004：Router 回傳名字，不回傳模組
+
+[004 Router](/html/mssp/004-router.html)。這是[開發區缺點 3](/html/mssp/modules/development.html) 自己寫著「排在範例路線的第一位」的那一條——論文定義了 $R(q,u,\tau,p)$，但沒有實作模式、沒有規模指引、也沒有說路由本身要怎麼測。
+
+決定只有一個：**Route 命名一個能力，不持有它。**
+
+聽起來像偏好，直到你試著替路由器寫孤島測試。一個回傳模組的路由器，必須 import 每一個候選才有辦法回傳任何一個——於是測路由邏輯要載入全部、路由器持有全部的參照（那就是「不是子集」的定義）、而 TMS 存在的按需載入被那個本該促成它的東西打敗。
+
+回傳識別碼在呼叫端多一行，換到的是這個——孤島測試第 1 節**把整個 `TMS/` 目錄從磁碟上改名**再跑：
+
+```text
+  PASS  routes with the TMS directory removed from disk - chose 'handlers/markdown'
+  PASS  names a capability that has no file and never will
+  PASS  no TMS module was imported by routing - imported: []
+```
+
+路由器對 `handlers/does-not-exist` 做了正確的決定，而那個檔案從來不存在。
+
+第二個決定：**權限被拒就結束這個決定，不往下一條規則掉。** 往下掉看起來無害，但它讓呼叫者可以**因為被拒絕一個更match的規則而拿到另一個能力**——那會把權限變成偏好。
+
+### 二、缺點 3 補了三分之二，第三個沒有
+
+| 原本缺什麼 | 現況 |
+|---|---|
+| 路由本身要怎麼測 | **補上了** |
+| 規則式路由在什麼規模上不夠用 | **變得可量了**——從未觸發的規則、沒有規則接住的請求 |
+| 換成模型式路由的判準 | **仍然沒有** |
+
+那兩個數字不是錯誤。年輕的規則集有接不住的請求因為它年輕；老的規則集累積從未觸發的規則因為世界變了。**重要的是方向，而沒有數字就沒有方向。**
+
+### 三、考古 004：註冊表是對的，綁定靠命名，於是打錯字的 handler 完全惰性
+
+[004 CPython urllib.request 3.14.5](/html/mssp/archaeology/004-urllib-opener.html)。選它是因為它跟[考古 002](/html/mssp/archaeology/002-http-server.html) 在同一個標準庫裡做同一件事，用相反的機制：`http.server` 用繼承，`urllib.request` 用註冊。
+
+對的部分很乾淨：`OpenerDirector` **只有 6 個方法**、`BaseHandler` **只有 3 個**、handler 由 `build_opener(*handlers)` 傳入。核心不知道什麼能處理什麼，直到有人告訴它——**那正是 `http.server` 結構上做不到的事，而且比我今天寫的還小。**
+
+漏處當場量得出來：
+
+```text
+     good          schemes=['data']  handlers=1  add_handler returned None
+     typo          schemes=[]        handlers=0  add_handler returned None
+     wrong-scheme  schemes=['htp']   handlers=1  add_handler returned None
+```
+
+`data_opne`——**一個字母對調**——註冊 0 個。handler 完全惰性，沒有例外、沒有警告，而 `add_handler` 回傳 `None`，**跟成功那次一模一樣**。`htp_open` 則替一個不存在的協定成功註冊，因為沒有一組真實協定可以拿來檢查那個名字。
+
+**能力用命名宣告，而命名沒有東西在檢查。** 名字同時是宣告與授權，於是打錯的名字是一個成功註冊的、不同的宣告。
+
+重切版**保留命名慣例**——`http_open`、`https_open` 這組名字讓一個 18 個 handler 的模組用讀的就知道誰做什麼，換成顯式欄位會失去那個——只是加上檢查。兩件事從來不衝突，上游只是沒做第二件。
+
+### 四、今天三個失敗裡有兩個是我的測試前提錯了
+
+孤島測試第一次跑，三個 FAIL：
+
+- 第 2 節挑了一個**policy 本來就允許**的 actor，所以「被拒絕不會往下掉」根本沒被測到；
+- 第 5 節的 grep 檢查 `router.py` 有沒有 `TMS` 字串——而它讀到的是 docstring 裡「it imports nothing from TMS」那句話。**一個檢查在讀自己的文件。**
+
+兩個都是測試錯，不是程式錯。修法：第 2 節換成一個真的沒有權限的 actor，並且**加測反方向**（那個 actor 用自己的請求仍然拿得到它有權的能力——否則整節可以靠「全部拒絕」通過）；第 5 節只解析 import 行。
+
+這跟[改良點 6](/html/mssp/modules/development.html) 是鄰居但不是同一件事。改良點 6 講的是**檢查不會失敗**；這兩個是**檢查在測錯的東西**。前者沉默，後者會叫，只是叫錯地方。兩者共通的是：**測試的前提沒有被任何東西檢查。**
+
+---
+
+### 今天推進了什麼
+
+| 項目 | 狀態 |
+|---|---|
+| 範例 | 003 → **004**（Router 回傳識別碼，孤島測試把 TMS 目錄刪掉） |
+| 考古 | 003 → **004**（urllib：註冊表確認，綁定未檢查） |
+| 開發區缺點 3 | 三缺口補二，第三個照實留著 |
 
 ## 2026-08-03
 

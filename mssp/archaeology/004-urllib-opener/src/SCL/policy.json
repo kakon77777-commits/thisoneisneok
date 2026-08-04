@@ -1,0 +1,24 @@
+{
+  "policy_version": "1.0",
+  "_comment": [
+    "Upstream, a handler claims a scheme by being named after it, and any handler",
+    "may claim any scheme. `htp_open` registers a handler for a protocol that does",
+    "not exist; nothing objects, because there is no list of schemes to object",
+    "against. The name is both the declaration and the authorisation.",
+    "",
+    "Here the two are separated: a handler declares by naming, and SCL decides",
+    "whether the declaration is honoured."
+  ],
+  "schemes": ["data", "file"],
+  "handlers": {
+    "handlers/data": { "may_serve": ["data"] },
+    "handlers/file": { "may_serve": ["file"] }
+  },
+  "rules": [
+    {
+      "id": "scheme-must-exist",
+      "statement": "A handler cannot bind a scheme this system does not recognise.",
+      "enforced_by": "SCL/policy.py::may_serve, called by SMS/chain.py::bind"
+    }
+  ]
+}
