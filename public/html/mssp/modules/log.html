@@ -33,13 +33,54 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-04</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-05</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-05</h2>
+<h3>發生了什麼</h3>
+<p><a href="/html/mssp/005-before-after.html">範例 005</a>：同一支程式寫兩次，一次單檔、一次 MSSP，然後<strong>量</strong>重切的代價。三項成本、兩項效益、兩項打平。</p>
+<p><a href="/html/mssp/archaeology/005-marked.html">考古 005</a>：<code>marked</code> 15.0.12（MIT），本站自己的建置相依。連續三則 CPython 之後換一個外部套件、換一個語言、換一個「上游把事情做對了」的案例。</p>
+<p><a href="/html/mssp/modules/development.html">改良點 8</a> 進開發區。</p>
+<h3>怎麼發現的</h3>
+<p><strong>範例 005：兩個「打平」是我預測不到的。</strong> 加第三種輸出格式，單檔版跟 MSSP 版都只動一個既有檔案。差別在動的是哪一個——單檔動的是程式碼，MSSP 動的是 <code>SCL/policy.json</code>。那是一個真實的差別，而<strong>它不是一個數字</strong>。整份表格裡我事先猜得到的那幾列不值得寫，猜不到的這兩列才是寫它的理由。</p>
+<p>量測本身也出了兩次錯，兩次都是「工具量到自己」：檢查「哪些既有檔案提到新能力」時 grep <code>formats/json</code>，結果報出 <code>DMS/measure.js</code>——它含有那個字串正是因為它在搜尋那個字串。另一個是孤島測試讀了整個檔案，匹配到一段<strong>描述剛被刪掉的分支的註解</strong>。本週第三次有檢查在報告「描述那個東西的文字」而不是那個東西。</p>
+<p><strong>考古 005：我差點把一個量得到的東西寫成未解決事項。</strong></p>
+<p>初稿的結論是「<code>marked.use()</code> 會靜靜蓋掉前一個 renderer」。收尾時我在「這次沒有解決什麼」寫下「我沒有檢查 <code>hooks</code> 跟 <code>walkTokens</code> 是不是也這樣」，還補了「我在這裡停下來是因為時間」。</p>
+<p>然後我回頭量了，因為那一項只需要四行 <code>use()</code> 呼叫：</p>
+<table>
+<thead>
+<tr>
+<th><code>use()</code> 收到的 key</th>
+<th>註冊兩次的結果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>walkTokens</code></td>
+<td><strong>兩個都跑</strong>（後註冊的先跑）</td>
+</tr>
+<tr>
+<td><code>hooks</code></td>
+<td><strong>兩個都跑</strong></td>
+</tr>
+<tr>
+<td><code>renderer</code></td>
+<td><strong>只有第二個跑</strong>，第一個永遠不可達</td>
+</tr>
+</tbody></table>
+<p><strong>同一個函式，兩種相反的語意，由 options 物件裡有哪個 key 決定，而三種情況的回傳值完全一樣</strong>——實例本身，為了鏈式呼叫。呼叫端分不出自己觸發了哪一種，也沒有 API 可以問現在裝了什麼。累積的那兩種還是<strong>堆疊而非佇列</strong>，後註冊的先執行。</p>
+<p>這比初稿的結論尖銳得多，尖銳到標題、<code>meta.yaml</code>、<code>manifest.json</code> 跟修復本身都得重寫——修復從「回報蓋掉了誰」變成**「規則是一個具名參數」**，而且傳一個不認識的模式會丟例外，不會挑一個。</p>
+<h3>對 MSSP 的意義</h3>
+<p><strong>兩件事，方向相反。</strong></p>
+<p>一件是往外的：這是本週第三個回傳值在每條路徑上相同的設定函式（<code>basicConfig</code>、<code>add_handler</code>、<code>use</code>）。三則同形狀還不足以升成判準，但足以把它從零星觀察改成一個<strong>有名字的族</strong>，並寫進了<a href="/html/mssp/modules/development.html">改良點 7</a> 的驗證段。設定函式常被寫成「安排一件事」而不是「回報一件事」，回傳值於是變成裝飾。</p>
+<p>一件是往內的，而且比較不舒服：<strong>「這次沒有解決什麼」那一節沒有判準，所以什麼都可以被放進去。</strong> 它本來是「已知界線」的清單，卻可以無成本地變成「我沒試的事」的清單，而兩者在讀者眼裡長得一模一樣。今天差一點就發生了。</p>
+<p><a href="/html/mssp/modules/development.html">改良點 8</a> 給那一節一個必須回答的問題——<strong>要把它變成一個量測，需要多少？</strong> 不需要新東西的（一條指令、一個現成參數）不是未解決事項，是還沒做的工作；需要新寫程式的可以留，但要寫出缺的是什麼；原則上量不到的（n=1、需要變更史、需要我沒有的母體）才是那一節本來的用途。</p>
+<p>跟<a href="/html/mssp/modules/development.html">改良點 6</a>（檢查要被證明會失敗）、<a href="/html/mssp/modules/development.html">改良點 7</a>（報告要能說出它沒看到什麼）是同一個病灶的第三面：<strong>一句在任何情況下都成立的話，不帶資訊。</strong> 檢查、報告、然後是作者自己的收尾節。</p>
+<p>而按改良點 8 自己的規則，「回頭掃已發表的十則收尾節」是一個第 1 類項目——它應該被做掉，而不是被寫成待辦。它列在改良點裡是因為那是對已發表內容的修訂，需要 Neo 的意見。</p>
 <hr>
 <h2>2026-08-04</h2>
 <h3>一、範例 004：Router 回傳名字，不回傳模組</h3>

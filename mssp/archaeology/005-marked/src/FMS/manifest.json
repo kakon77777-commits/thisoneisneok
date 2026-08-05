@@ -1,0 +1,40 @@
+{
+  "name": "marked-recut",
+  "what_it_is": "A three-stage markdown pipeline keeping marked's shape, where the installation rule is a named argument instead of a consequence of which key you passed.",
+  "examined": {
+    "project": "marked", "version": "15.0.12", "license": "MIT",
+    "measured": {
+      "marked_cjs_lines": 2212,
+      "Lexer_methods": 4,
+      "Parser_methods": 2,
+      "Renderer_methods": 21,
+      "Tokenizer_methods": 24,
+      "Renderer_surface": "one method per token type: heading, list, link, codespan, table, and 16 more",
+      "use_return_value": "the marked instance, on every path, for chaining",
+      "isolated_path": "new Marked(options) - genuinely isolated, verified"
+    },
+    "reproduced": {
+      "use_with_renderer": "OVERWRITES - the second wins, the first is unreachable, nothing reports it",
+      "use_with_walkTokens": "ACCUMULATES - both run, last-registered first",
+      "use_with_hooks": "ACCUMULATES - both run",
+      "return_value_across_all_three": "the instance, identically - the rule is not observable at the call site",
+      "inspecting_what_is_installed": "no API for it",
+      "global_after_isolated_instance": "unaffected - the isolation works"
+    }
+  },
+  "capabilities": {
+    "SMS": { "pipeline": "lex -> parse -> render, three stages that do not know each other." },
+    "SCL": { "policy": "Whether a renderer may take a token type another already owns." },
+    "TMS": {
+      "renderers/html": "HTML, one function per token type.",
+      "renderers/plain": "Plain text, handling two of three types on purpose."
+    },
+    "DMS": { "registry": "Installation under a NAMED rule, reporting what it added, what it replaced or stacked on, and who owned it before." }
+  },
+  "the_finding": "The pipeline is right and the isolated path exists and works. What is silent is the installation rule: one use() both accumulates and overwrites depending on which key of the options object it received, and returns the same value in every case, so the call site cannot tell which rule it got.",
+  "non_goals": [
+    "Being a markdown parser. Three token types, no inline handling, no extensions API.",
+    "Arguing that new Marked() is unknown. It is documented; the point is that the module-level marked is the path of least resistance and it is the shared one.",
+    "Claiming either rule is wrong. Each is defensible alone. What is missing is that the two are not distinguished at the entry point."
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "before-after",
+  "what_it_is": "One small program written twice — as a single file, and as MSSP — with the difference measured rather than argued.",
+  "why_it_exists": "The first four examples in this lab demonstrated structure and none of them produced a number. 開發區 缺點 5 says the cost at small scale is real and there is no quantitative tool for it.",
+  "core_task_loop": "readings -> validate -> summarise -> render in a requested format",
+
+  "the_program": {
+    "before": "baseline/monolith.js, 69 lines, one file. Not a strawman — it is shorter and clearer than the restructured version, and that is part of the finding.",
+    "after": "src/, the same behaviour, byte-identical output, checked by the island test."
+  },
+
+  "capabilities": {
+    "SMS": {
+      "model": "The shapes the sets agree on.",
+      "validate": "Which readings survive. Bounds come from SCL.",
+      "summarise": "Per-sensor statistics."
+    },
+    "SCL": { "policy": "The plausibility window, and which output formats this deployment recognises." },
+    "TMS": {
+      "formats/text": "Terminal report.",
+      "formats/csv": "CSV.",
+      "formats/json": "JSON — added after the first measurement, to measure what adding one costs."
+    },
+    "DMS": { "measure": "Six numbers comparing the two versions, computed from the files." }
+  },
+
+  "decisions": [
+    {
+      "id": "D-001",
+      "date": "2026-08-05",
+      "decision": "the format is derived from policy, not selected by a branch in main",
+      "because": "The first version read `argv.includes('--csv') ? ... : ...`, which is a dispatch branch in the core — the exact coupling the restructuring exists to remove. The measurement caught it: --json printed text."
+    },
+    {
+      "id": "D-002",
+      "date": "2026-08-05",
+      "decision": "the comparison excludes DMS and the island test from both sides",
+      "because": "The baseline has no test harness. Counting one side's harness against the other's absence of one measures the harness, not the restructuring."
+    }
+  ],
+
+  "non_goals": [
+    "Showing that MSSP wins. Three of six axes cost, and the table says so.",
+    "Generalising from one program. n=1, at a size the method's own guidance puts below its threshold."
+  ]
+}

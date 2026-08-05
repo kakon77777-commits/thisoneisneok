@@ -33,7 +33,7 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-04</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-05</span></header>
 <main>
   <span class="state">v1.x 開發中</span>
   <article class="content"><h1>MSSP 開發區</h1>
@@ -169,8 +169,54 @@ footer a{color:var(--accent)}
 </ol>
 <p>第三條跟<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 6</a> 是同一件事的兩個方向：改良點 6 說檢查要能失敗，這一條說<strong>報告要能說出它沒看到什麼</strong>。</p>
 <p>代價：三條都會讓 DMS 變大，而 DMS 是最容易被砍掉的集合。第三條尤其麻煩——它要求 SMS 記錄「呼叫了幾次」，而一個從未被呼叫的能力不產生任何輸出可以統計，所以計數必須在迴圈裡做，不能事後從結果推。</p>
-<p><strong>驗證方式：</strong> 對<a href="/html/mssp/modules/archaeology.html">考古</a>累積的每一則問同一個問題——上游的 DMS 過得了這三條嗎。<code>logging</code>（<a href="/html/mssp/archaeology/003-logging.html">考古 003</a>）過不了第三條：<code>basicConfig</code> 在已設定時靜靜返回 <code>None</code>，而那正是第三條要抓的東西。如果二十則考古下來，第三條抓到的都是同一種東西，那它就該從改良點升成判準。</p>
+<p><strong>驗證方式：</strong> 對<a href="/html/mssp/modules/archaeology.html">考古</a>累積的每一則問同一個問題——上游的 DMS 過得了這三條嗎。三則之後這條線已經清楚了：</p>
+<table>
+<thead>
+<tr>
+<th>考古</th>
+<th>函式</th>
+<th>成功時</th>
+<th>無聲失敗時</th>
+<th>錯誤但被接受時</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="/html/mssp/archaeology/003-logging.html">003</a></td>
+<td><code>logging.basicConfig</code></td>
+<td><code>None</code></td>
+<td><code>None</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="/html/mssp/archaeology/004-urllib-opener.html">004</a></td>
+<td><code>add_handler</code></td>
+<td><code>None</code></td>
+<td><code>None</code></td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td><a href="/html/mssp/archaeology/005-marked.html">005</a></td>
+<td><code>marked.use</code></td>
+<td>the instance</td>
+<td>the instance</td>
+<td>the instance</td>
+</tr>
+</tbody></table>
+<p>三個都是<strong>設定函式</strong>，回傳值都在每一條路徑上相同。這不是巧合：設定函式常被寫成「安排一件事」而不是「回報一件事」，回傳值於是變成裝飾。三則同形狀還不足以升成判準，但足以把它從「零星觀察」改成一個<strong>有名字的族</strong>：設定函式的回傳值預設不承載資訊，而這正是第三條要抓的東西。考古 005 還多量到一層——同一個 <code>marked.use()</code> 對 <code>renderer</code> 是覆寫、對 <code>hooks</code> 與 <code>walkTokens</code> 是累積，而<strong>兩種規則共用一個回傳值</strong>，所以呼叫端連自己觸發了哪一種都分不出來。</p>
 <hr>
+<h3>改良點 8：「這次沒有解決什麼」要區分「量不到」與「沒去量」</h3>
+<p>每一則<a href="/html/mssp/005-before-after.html">範例</a>與<a href="/html/mssp/modules/archaeology.html">考古</a>都以「這次沒有解決什麼」收尾。那一節存在的理由是誠實：把預測留在預測的位置，不要讓它偽裝成結論。</p>
+<p><strong>但今天它被我拿來裝別的東西。</strong> 考古 005 的初稿在那一節寫著「我沒有檢查 <code>hooks</code> 跟 <code>walkTokens</code> 是不是累積而非覆寫」，並補了一句「我在這裡停下來是因為時間」。那句話是真的，但那一項<strong>一條指令就能量</strong>——寫四行 <code>use()</code> 呼叫、跑一次、看誰執行了。量完之後它不但不是未解決事項，它還是整篇最尖銳的發現，尖銳到標題與 <code>meta.yaml</code> 都得重寫。</p>
+<p>問題不在於漏了一項，在於<strong>那一節沒有判準，所以什麼都可以被放進去</strong>。它本來是「已知界線」的清單，卻可以無成本地變成「我沒試的事」的清單，而兩者在讀者眼裡長得一模一樣。</p>
+<p>提案是給每一項加一個必須回答的問題：<strong>要把它變成一個量測，需要多少？</strong></p>
+<ol>
+<li><strong>不需要新東西</strong>——一條指令、一個現有工具的另一個參數。那不是未解決事項，<strong>是還沒做的工作，做完再寫</strong>。</li>
+<li><strong>需要新寫一段程式</strong>——例如考古 005 的 <code>extensions</code> 要一個真的會匹配的 tokenizer 才量得到。這可以留在那一節，但要<strong>寫出缺的是什麼</strong>，讀者才能判斷這個界線有多硬。</li>
+<li><strong>原則上量不到</strong>——n=1、需要一段變更史而不是一個快照、需要我沒有的母體。這才是那一節本來的用途。</li>
+</ol>
+<p>考古 005 的最終版三類都有，而且分開標示了。</p>
+<p>代價：這條會讓收尾變慢，而且它逼人承認「我只是沒試」。<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 6</a> 說檢查要被證明會失敗，<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 7</a> 說報告要能說出它沒看到什麼——<strong>這一條說的是作者要能說出他沒去看什麼</strong>，而且三者共用同一個病灶：一句在任何情況下都成立的話，不帶資訊。</p>
+<p><strong>驗證方式：</strong> 回頭掃已發表的五則範例與五則考古的收尾節，對每一項問那個問題。<strong>如果第 1 類的比例超過三分之一，那麼那一節在過去一直在假裝界線。</strong> 這個回掃還沒做——它本身就是一個第 1 類項目，所以按這條規則，它應該被做掉而不是被寫進來。列在這裡是因為它是對已發表內容的修訂，需要 Neo 的意見。</p>
 <hr>
 <h2>開發路線：四個 MVP 與回饋迴圈</h2>
 <p><a href="/research">程式研究區</a>的四份研究不會停在論文。每一份要先做出 MVP，而 MVP 本身用 MSSP 蓋——於是它同時是產品，也是這個方法在中等規模上的證據。</p>

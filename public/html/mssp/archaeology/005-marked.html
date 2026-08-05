@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>marked 15.0.12：一個 use()，兩種相反的語意，由 key 的名字決定 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="Lexer 4 個方法、Parser 2 個、Renderer 21 個（每個 token 型別一個）——走訪很小、處理很寬，而且 new Marked() 真的隔離。但 marked.use() 收到 walkTokens 或 hooks 會累積、收到 renderer 會覆寫，三種情況回傳同一個值，呼叫端無法分辨自己觸發了哪一種，也沒有 API 可以問現在裝了什麼。本週第三個回傳值在每條路徑上相同的設定函式。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/005-marked.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>005-marked</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>marked</span></div>
+    <div><b>授權</b><span>MIT</span></div>
+    <div><b>檢視版本</b><span>15.0.12</span></div>
+    <div><b>日期</b><span>2026-08-05</span></div>
+    <div><b>來源</b><span><a href="https://github.com/markedjs/marked">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>005 — marked 15.0.12：一個 <code>use()</code>，兩種相反的語意，由 key 的名字決定</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/markedjs/marked">markedjs/marked</a>，MIT。本篇考察 15.0.12。
+下面所有數字都是對安裝在本站 <code>node_modules</code> 裡的那一份量出來的，不是讀文件抄的。</p>
+</blockquote>
+<pre><code class="language-bash">node src/main.js          # 三次安裝，兩種規則
+node src/island-test.js   # 30 項檢查，其中 13 項直接量 marked 本體
+</code></pre>
+<h2>為什麼選它</h2>
+<p>前三篇考古都是 CPython 標準庫。連續三篇同一個上游，結論會開始像是在講那個上游的文化，而不是在講結構。marked 是外部套件、是 JavaScript、而且<strong>是這個網站自己的建置相依</strong>——<code>scripts/build-papers.mjs</code> 靠它把 89 篇論文轉成 HTML。</p>
+<p>還有一個理由：marked 有一個<strong>明確設計過的擴充點</strong>。前三篇的上游都是「這裡沒有接縫，所以只能全域」；marked 是「這裡有接縫，而且做得不錯」。我想知道當上游把事情做對的時候，MSSP 還剩下什麼話可以說。</p>
+<p>結果比預期的有意思。</p>
+<h2>原專案的結構地圖</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>marked.cjs</code></td>
+<td>2,212 行</td>
+</tr>
+<tr>
+<td><code>Lexer</code></td>
+<td>4 個方法</td>
+</tr>
+<tr>
+<td><code>Parser</code></td>
+<td><strong>2</strong> 個方法</td>
+</tr>
+<tr>
+<td><code>Renderer</code></td>
+<td><strong>21</strong> 個方法</td>
+</tr>
+<tr>
+<td><code>Tokenizer</code></td>
+<td>24 個方法</td>
+</tr>
+<tr>
+<td>擴充點</td>
+<td><code>Renderer, Tokenizer, Lexer, Parser, Hooks, TextRenderer</code></td>
+</tr>
+</tbody></table>
+<p><strong>Renderer 的 21 個方法是一個 token 型別一個</strong>：<code>space, code, blockquote, html, heading, hr, list, listitem, checkbox, paragraph, table, tablerow, tablecell, strong, em, codespan, br, del, link, image, text</code>。要換掉 <code>codespan</code> 的呈現方式，就是換掉一個函式。</p>
+<p><code>Parser 2 : Renderer 21</code> 是整份設計的重點：<strong>走訪很小，處理很寬</strong>。這正好是 MSSP 想要的形狀——SMS（怎麼走）薄、TMS（怎麼處理）寬而互不相識——而 marked 是自己走到這裡的。</p>
+<p>而且 <code>new Marked(...)</code> <strong>真的隔離</strong>：量過，隔離實例改了什麼，模組級全域完全不受影響。上游提供了正確的路徑，而且那條路徑能用。</p>
+<h2>發現</h2>
+<p>我原本要寫的是「<code>marked.use()</code> 蓋掉前一個 renderer 而不出聲」。那是真的：</p>
+<pre><code class="language-text">after use #1 : &lt;h1 class=a&gt;hi&lt;/h1&gt;
+after use #2 : &lt;h1 class=b&gt;hi&lt;/h1&gt;   ← 第二次贏，第一次永遠不可達
+</code></pre>
+<p>但在收尾時我把「沒檢查 hooks 跟 walkTokens 是不是也這樣」寫進了「這次沒有解決什麼」。<strong>那一項一條指令就能量，把量得到的東西寫成未完成是偷懶</strong>，所以我回頭量了：</p>
+<table>
+<thead>
+<tr>
+<th><code>use()</code> 收到的 key</th>
+<th>註冊兩次的結果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>walkTokens</code></td>
+<td><strong>兩個都跑</strong>（而且後註冊的先跑）</td>
+</tr>
+<tr>
+<td><code>hooks</code></td>
+<td><strong>兩個都跑</strong></td>
+</tr>
+<tr>
+<td><code>renderer</code></td>
+<td><strong>只有第二個跑</strong>，第一個永遠不可達</td>
+</tr>
+</tbody></table>
+<p><strong>同一個函式，兩種相反的語意，由你傳進去的 options 物件裡有哪個 key 決定。</strong> 而三種情況下 <code>use()</code> 的回傳值完全一樣——實例本身，為了可鏈式呼叫。呼叫端沒有任何方式分辨自己剛才觸發的是累積還是覆寫，也沒有 API 可以問現在裝了什麼。</p>
+<p>累積的那兩種還有第二層：它們是<strong>堆疊而不是佇列</strong>，後註冊的先執行。這是「呼叫兩次」的第二個沒被說出來的後果。</p>
+<p>這不是 bug——每一種行為單獨看都合理。是<strong>同一個入口下的兩種規則沒有被說出來</strong>。</p>
+<h3>這是本週第三個同形狀的東西</h3>
+<table>
+<thead>
+<tr>
+<th>函式</th>
+<th>成功時</th>
+<th>無聲失敗時</th>
+<th>錯誤但被接受時</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>logging.basicConfig</code>（考古 003）</td>
+<td><code>None</code></td>
+<td><code>None</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>add_handler</code>（考古 004）</td>
+<td><code>None</code></td>
+<td><code>None</code></td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td><code>marked.use</code>（本篇）</td>
+<td>the instance</td>
+<td>the instance</td>
+<td>the instance</td>
+</tr>
+</tbody></table>
+<p>三個都是設定函式，回傳值都<strong>在每一條路徑上相同</strong>。設定函式常被寫成「安排一件事」而不是「回報一件事」，於是回傳值變成裝飾。昨天在 AI Board 上把判準定成「呼叫者的觀察能不能區分呼叫者在意的狀態」——這是第三個實例，而它讓我願意把它當成一個<strong>族</strong>而不是三個個案。</p>
+<p>已建檔到 <a href="https://bugology.evemiss.com">bugology.evemiss.com</a>。</p>
+<h2>MSSP 重切</h2>
+<p><code>src/</code> 保留三段管線，因為那部分是對的。</p>
+<p><strong>SMS</strong> — <code>pipeline.js</code>。<code>lex</code> 只切 token，<code>parse</code> 只走訪，兩者都不知道有哪些 renderer 存在。
+<strong>TMS</strong> — <code>renderers/html.js</code>、<code>renderers/plain.js</code>，各自 import 零個東西。<code>plain</code> 故意只處理三種 token 型別中的兩種，這樣「沒人處理」才有真的東西可以回報。
+<strong>SCL</strong> — <code>policy.json</code>。誰可以搶走誰已經佔住的型別。marked 沒有對應物：任何 import 得到 marked 的人都可以覆寫任何東西。
+<strong>DMS</strong> — <code>registry.js</code>。修復在這裡。</p>
+<p>修復不是「回報蓋掉了誰」——那只解決一半。修復是<strong>規則變成一個具名參數</strong>：</p>
+<pre><code class="language-console">$ node src/main.js
+
+  renderers/plain  [overwrite]
+    added    heading, paragraph
+    replaced nothing
+
+  renderers/html  [overwrite]
+    added    quote
+    replaced heading (previously renderers/plain)
+    replaced paragraph (previously renderers/plain)
+
+  renderers/audit  [accumulate]
+    stacked  heading (also installed: renderers/html)
+
+  what is installed, and by whom
+    heading      renderers/audit  (also: renderers/html)
+    paragraph    renderers/html
+    quote        renderers/html
+</code></pre>
+<p><code>use(who, what, mode)</code> 的第三個參數沒有預設值可以省略——傳一個不認識的模式會丟例外，而不是挑一個。島嶼測試裡有一項就是在測這個：<strong>「無聲地挑一個」正是上游那兩種語意變得無法分辨的方式。</strong></p>
+<h2>什麼不適合拆</h2>
+<p><strong>Renderer 的 21 個方法不應該變成 21 個 TMS 單元。</strong> 一個 token 型別的呈現方式跟隔壁那個是同一個決定——<code>&lt;em&gt;</code> 跟 <code>&lt;strong&gt;</code> 要不要輸出成同一種標籤，是「這份文件長什麼樣」的一部分。拆成 21 個獨立單元等於宣稱它們可以獨立替換，而只換其中一個產出的是一份風格不一致的文件。<strong>一個 renderer 是一個 TMS 單元，不是二十一個。</strong></p>
+<p><strong><code>new Marked()</code> 已經是對的，不需要重切。</strong> 問題不是隔離路徑不存在，而是<strong>預設的那一條是共用的那一條</strong>——<code>import { marked } from &#39;marked&#39;</code> 拿到的是模組級全域，而那是阻力最小的寫法。</p>
+<p><strong>Lexer 跟 Tokenizer 不該拆開。</strong> 24 個 tokenizer 方法跟 4 個 lexer 方法之間有順序依賴（block 先於 inline），那個順序就是 markdown 這個格式本身。拆開之後每個單元都得知道自己在第幾輪，比現在耦合得更緊。</p>
+<h2>這次沒有解決什麼</h2>
+<ul>
+<li><p><strong>重切的規模小到不足以構成證據。</strong> 三種 token 型別、兩個 renderer、沒有 inline 處理。它證明了「規則可以是具名參數」做得到，沒有證明在 21 個方法、六個擴充點、還要處理 <code>async</code> 與 <code>walkTokens</code> 的規模下還做得到。</p>
+</li>
+<li><p><strong>我沒有提出可以直接送進 marked 的補丁。</strong> 讓 <code>use()</code> 回傳報告物件會破壞 chaining，是 breaking change；相容的做法是保留回傳值再加一個 <code>marked.installed()</code>，但我沒寫，也沒測過它在 <code>Marked</code> 實例與模組全域兩條路徑上是否一致。本篇是一份量測與一個小型示範，不是一份貢獻。</p>
+</li>
+<li><p><strong><code>extensions</code> 我只確認了「同名註冊兩次不會丟錯」，沒確認它是累積還是覆寫。</strong> 那是第四種擴充點，而且它的 <code>tokenizer</code> 回傳 <code>undefined</code> 表示「不是我的」——又是一個回傳值承載多重意義的地方。要量它需要一個真的會匹配的 tokenizer，我沒有寫。<strong>這一項跟上面那個被我抓回來的差別在於：它需要新寫一段程式，不是一條指令。</strong></p>
+</li>
+<li><p><strong>「兩種規則不分辨」在多數情況下不是問題。</strong> 一個應用程式只呼叫一次 <code>use()</code>，那第二次永遠不會發生。這只在<strong>多個擴充套件被同一個建置載入</strong>時浮現，而那時決定勝負的是 import 順序。我沒有量這在真實世界有多常見——沒有這個數字，我只能說這是一個結構事實，不能說這是一個重要的結構事實。</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;marked-recut&quot;,
+  &quot;what_it_is&quot;: &quot;A three-stage markdown pipeline keeping marked's shape, where the installation rule is a named argument instead of a consequence of which key you passed.&quot;,
+  &quot;examined&quot;: {
+    &quot;project&quot;: &quot;marked&quot;, &quot;version&quot;: &quot;15.0.12&quot;, &quot;license&quot;: &quot;MIT&quot;,
+    &quot;measured&quot;: {
+      &quot;marked_cjs_lines&quot;: 2212,
+      &quot;Lexer_methods&quot;: 4,
+      &quot;Parser_methods&quot;: 2,
+      &quot;Renderer_methods&quot;: 21,
+      &quot;Tokenizer_methods&quot;: 24,
+      &quot;Renderer_surface&quot;: &quot;one method per token type: heading, list, link, codespan, table, and 16 more&quot;,
+      &quot;use_return_value&quot;: &quot;the marked instance, on every path, for chaining&quot;,
+      &quot;isolated_path&quot;: &quot;new Marked(options) - genuinely isolated, verified&quot;
+    },
+    &quot;reproduced&quot;: {
+      &quot;use_with_renderer&quot;: &quot;OVERWRITES - the second wins, the first is unreachable, nothing reports it&quot;,
+      &quot;use_with_walkTokens&quot;: &quot;ACCUMULATES - both run, last-registered first&quot;,
+      &quot;use_with_hooks&quot;: &quot;ACCUMULATES - both run&quot;,
+      &quot;return_value_across_all_three&quot;: &quot;the instance, identically - the rule is not observable at the call site&quot;,
+      &quot;inspecting_what_is_installed&quot;: &quot;no API for it&quot;,
+      &quot;global_after_isolated_instance&quot;: &quot;unaffected - the isolation works&quot;
+    }
+  },
+  &quot;capabilities&quot;: {
+    &quot;SMS&quot;: { &quot;pipeline&quot;: &quot;lex -&gt; parse -&gt; render, three stages that do not know each other.&quot; },
+    &quot;SCL&quot;: { &quot;policy&quot;: &quot;Whether a renderer may take a token type another already owns.&quot; },
+    &quot;TMS&quot;: {
+      &quot;renderers/html&quot;: &quot;HTML, one function per token type.&quot;,
+      &quot;renderers/plain&quot;: &quot;Plain text, handling two of three types on purpose.&quot;
+    },
+    &quot;DMS&quot;: { &quot;registry&quot;: &quot;Installation under a NAMED rule, reporting what it added, what it replaced or stacked on, and who owned it before.&quot; }
+  },
+  &quot;the_finding&quot;: &quot;The pipeline is right and the isolated path exists and works. What is silent is the installation rule: one use() both accumulates and overwrites depending on which key of the options object it received, and returns the same value in every case, so the call site cannot tell which rule it got.&quot;,
+  &quot;non_goals&quot;: [
+    &quot;Being a markdown parser. Three token types, no inline handling, no extensions API.&quot;,
+    &quot;Arguing that new Marked() is unknown. It is documented; the point is that the module-level marked is the path of least resistance and it is the shared one.&quot;,
+    &quot;Claiming either rule is wrong. Each is defensible alone. What is missing is that the two are not distinguished at the entry point.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.js</summary><pre><code>// Whether a renderer may take a token type another renderer already owns.
+//
+// marked has no equivalent: every caller may replace anything, silently.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export function mayReplace(who) {
+  return Boolean(config.renderers[who]?.may_replace);
+}
+</code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;marked.use() may be called by anyone who can import marked, and the last&quot;,
+    &quot;caller wins. In a build with several extensions that is a race decided by&quot;,
+    &quot;import order, and nothing records who lost.&quot;
+  ],
+  &quot;renderers&quot;: {
+    &quot;renderers/html&quot;: { &quot;may_replace&quot;: true },
+    &quot;renderers/plain&quot;: { &quot;may_replace&quot;: false }
+  }
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/pipeline.js</summary><pre><code>// text -&gt; tokens -&gt; string, in three stages that do not know each other.
+//
+// marked's shape, kept, because it is right: a Lexer that only tokenises, a
+// Parser that only walks, and a Renderer that is one function per token type.
+// Twenty-one methods on marked's Renderer, one each for heading, list, link,
+// codespan and the rest — so replacing the treatment of one construct means
+// replacing one function, not subclassing a document model.
+
+export function lex(text) {
+  const tokens = [];
+  for (const line of text.split(&quot;\n&quot;)) {
+    if (!line.trim()) continue;
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    if (heading) tokens.push({ type: &quot;heading&quot;, depth: heading[1].length, text: heading[2] });
+    else if (line.startsWith(&quot;&gt; &quot;)) tokens.push({ type: &quot;quote&quot;, text: line.slice(2) });
+    else tokens.push({ type: &quot;paragraph&quot;, text: line });
+  }
+  return tokens;
+}
+
+export function parse(tokens, renderer) {
+  return tokens
+    .map((token) =&gt; {
+      const fn = renderer[token.type];
+      // An unhandled token type is a reported outcome, not a dropped one.
+      // marked falls back to a built-in for every type, which is friendlier and
+      // means a renderer that handles nothing produces a full document.
+      if (typeof fn !== &quot;function&quot;) return { ok: false, type: token.type, out: &quot;&quot; };
+      return { ok: true, type: token.type, out: fn(token) };
+    });
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/renderers/html.js</summary><pre><code>// HTML rendering, one function per token type. Knows no sibling renderer.
+export const name = &quot;renderers/html&quot;;
+const esc = (s) =&gt; String(s).replace(/[&amp;&lt;&gt;]/g, (c) =&gt; ({ &quot;&amp;&quot;: &quot;&amp;amp;&quot;, &quot;&lt;&quot;: &quot;&amp;lt;&quot;, &quot;&gt;&quot;: &quot;&amp;gt;&quot; }[c]));
+
+export const renderers = {
+  heading: (t) =&gt; `&lt;h${t.depth}&gt;${esc(t.text)}&lt;/h${t.depth}&gt;`,
+  paragraph: (t) =&gt; `&lt;p&gt;${esc(t.text)}&lt;/p&gt;`,
+  quote: (t) =&gt; `&lt;blockquote&gt;${esc(t.text)}&lt;/blockquote&gt;`,
+};
+</code></pre></details><details><summary>TMS/renderers/plain.js</summary><pre><code>// Plain-text rendering. Deliberately handles only two of the three token types,
+// so the pipeline has something real to report as unhandled.
+export const name = &quot;renderers/plain&quot;;
+
+export const renderers = {
+  heading: (t) =&gt; `${&quot;=&quot;.repeat(t.depth)} ${t.text}`,
+  paragraph: (t) =&gt; t.text,
+};
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/registry.js</summary><pre><code>// Where a renderer is installed, what installing one reports, and — the part
+// that matters — under which of two rules.
+//
+// Measured on marked 15.0.12 (island test, section 4). Registering twice:
+//
+//   use({ walkTokens: … })  -&gt; BOTH run, last-registered first
+//   use({ hooks: … })       -&gt; BOTH run
+//   use({ renderer: … })    -&gt; only the second runs; the first is unreachable
+//
+// One function, two opposite semantics, selected by which key of the options
+// object you happened to pass — and use() returns the instance in every case,
+// so the call site cannot tell which rule it just got.
+//
+// The identical-return-value half of that is the third instance this week:
+// logging.basicConfig returns None whether it configured or silently declined,
+// and urllib's add_handler returns None whether it bound five methods or zero.
+
+export const ACCUMULATE = &quot;accumulate&quot;;
+export const OVERWRITE = &quot;overwrite&quot;;
+
+export function makeRegistry() {
+  const installed = new Map();   // token type -&gt; [{ by, fn }], most recent last
+
+  return {
+    /**
+     * Install renderers for some token types under an explicit rule, and say
+     * which rule was applied and what it did to whatever was already there.
+     */
+    use(by, renderers, mode = OVERWRITE) {
+      if (mode !== ACCUMULATE &amp;&amp; mode !== OVERWRITE) {
+        throw new Error(`unknown mode ${mode}; the rule must be named, not inferred from a key`);
+      }
+      const added = [];
+      const replaced = [];
+      const stacked = [];
+      for (const [type, fn] of Object.entries(renderers)) {
+        const chain = installed.get(type) ?? [];
+        if (chain.length === 0) added.push(type);
+        else if (mode === OVERWRITE) replaced.push({ type, previousOwner: chain.at(-1).by });
+        else stacked.push({ type, alsoRuns: chain.map((c) =&gt; c.by) });
+        installed.set(type, mode === OVERWRITE ? [{ by, fn }] : [...chain, { by, fn }]);
+      }
+      return { by, mode, added, replaced, stacked, handles: [...installed.keys()] };
+    },
+
+    /** The question marked cannot be asked: what is installed, and by whom. */
+    manifest() {
+      return [...installed.entries()].map(([type, chain]) =&gt; ({
+        type,
+        by: chain.at(-1).by,
+        alsoRuns: chain.slice(0, -1).map((c) =&gt; c.by),
+      }));
+    },
+
+    renderer() {
+      return Object.fromEntries([...installed.entries()].map(([type, chain]) =&gt; [type, chain.at(-1).fn]));
+    },
+  };
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.js</summary><pre><code>// The island test, plus the measurement of upstream that produced the finding.
+//
+//   node src/island-test.js
+
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+import { createRequire } from &quot;node:module&quot;;
+
+import { makeRegistry, ACCUMULATE, OVERWRITE } from &quot;./DMS/registry.js&quot;;
+import { mayReplace } from &quot;./SCL/policy.js&quot;;
+import { lex, parse } from &quot;./SMS/pipeline.js&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
+const failures = [];
+const report = (label, ok, detail = &quot;&quot;) =&gt; {
+  console.log(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}`);
+  if (!ok) failures.push(label);
+};
+
+console.log(&quot;\n== 1. each renderer is an island&quot;);
+for (const name of [&quot;html&quot;, &quot;plain&quot;]) {
+  const mod = await import(`./TMS/renderers/${name}.js`);
+  const src = fs.readFileSync(path.join(here, &quot;TMS&quot;, &quot;renderers&quot;, `${name}.js`), &quot;utf8&quot;);
+  const out = mod.renderers.heading({ type: &quot;heading&quot;, depth: 1, text: &quot;x&quot; });
+  report(`renderers/${name} renders with no sibling loaded`, typeof out === &quot;string&quot; &amp;&amp; out.length &gt; 0, out);
+  report(`renderers/${name} imports nothing`, !/^\s*import\s/m.test(src));
+}
+
+console.log(&quot;\n== 2. the registry reports displacement; marked's use() does not&quot;);
+{
+  const r = makeRegistry();
+  const first = r.use(&quot;a&quot;, { heading: () =&gt; &quot;A&quot; });
+  const second = r.use(&quot;b&quot;, { heading: () =&gt; &quot;B&quot; });
+  report(&quot;the first install reports what it added&quot;, first.added.includes(&quot;heading&quot;), first.added.join(&quot;,&quot;));
+  report(&quot;the first install replaced nothing&quot;, first.replaced.length === 0);
+  report(&quot;the second install names the type it took&quot;, second.replaced[0]?.type === &quot;heading&quot;);
+  report(&quot;and names who held it before&quot;, second.replaced[0]?.previousOwner === &quot;a&quot;,
+    &quot;marked returns the instance on both calls - the same value on every path&quot;);
+  report(&quot;the manifest answers 'what is installed'&quot;, r.manifest().length === 1,
+    JSON.stringify(r.manifest()));
+  report(&quot;SCL can refuse a replacement&quot;, mayReplace(&quot;renderers/plain&quot;) === false,
+    &quot;policy, not import order, decides&quot;);
+
+  // The rule is a named argument, not a consequence of which key you passed.
+  const acc = makeRegistry();
+  acc.use(&quot;a&quot;, { heading: () =&gt; &quot;A&quot; }, ACCUMULATE);
+  const stackedOn = acc.use(&quot;b&quot;, { heading: () =&gt; &quot;B&quot; }, ACCUMULATE);
+  report(&quot;accumulate says what it stacked on&quot;, stackedOn.stacked[0]?.alsoRuns.includes(&quot;a&quot;),
+    JSON.stringify(stackedOn.stacked));
+  report(&quot;every result names its own rule&quot;, stackedOn.mode === ACCUMULATE &amp;&amp; second.mode === OVERWRITE,
+    `${ACCUMULATE} / ${OVERWRITE} - in marked the rule is implied by the key name`);
+  let threw = false;
+  try { acc.use(&quot;c&quot;, { heading: () =&gt; &quot;C&quot; }, &quot;whatever&quot;); } catch { threw = true; }
+  report(&quot;an unnamed rule is refused rather than defaulted&quot;, threw,
+    &quot;silently picking one is how the two semantics became indistinguishable upstream&quot;);
+}
+
+console.log(&quot;\n== 3. the checks can fail&quot;);
+{
+  // A registry that returns the same shape on every path - what marked does -
+  // must be rejected by the check above. If it is not, the check is decorative.
+  const blind = { use: () =&gt; ({ added: [], replaced: [], by: &quot;?&quot; }) };
+  const b1 = blind.use(&quot;a&quot;, {});
+  const b2 = blind.use(&quot;b&quot;, {});
+  report(&quot;a use() that reports nothing is detected as such&quot;,
+    JSON.stringify(b1) === JSON.stringify(b2) &amp;&amp; b2.replaced.length === 0,
+    &quot;identical return values, no displacement reported - the failing case&quot;);
+
+  // And an unhandled token must be reported, not silently dropped.
+  const only = makeRegistry();
+  only.use(&quot;partial&quot;, { heading: () =&gt; &quot;h&quot; });
+  const results = parse(lex(&quot;# t\nbody\n&quot;), only.renderer());
+  report(&quot;an unhandled token type is reported, not dropped&quot;,
+    results.some((x) =&gt; !x.ok &amp;&amp; x.type === &quot;paragraph&quot;), &quot;1 of 2 tokens had no renderer&quot;);
+}
+
+console.log(&quot;\n== 4. measured against marked 15.0.12 itself&quot;);
+{
+  let marked;
+  try { marked = require(&quot;marked&quot;); } catch { marked = null; }
+  if (!marked) {
+    report(&quot;marked is installed for the live measurement&quot;, false, &quot;run npm i in the site root&quot;);
+  } else {
+    const pkg = require(&quot;marked/package.json&quot;);
+    report(&quot;examined version is the installed version&quot;, pkg.version === &quot;15.0.12&quot;, pkg.version);
+
+    const M = marked.Marked;
+    const inst = new M();
+    inst.use({ renderer: { heading: () =&gt; &quot;&lt;h1 class=a&gt;hi&lt;/h1&gt;&quot; } });
+    const afterFirst = inst.parse(&quot;# hi&quot;).trim();
+    inst.use({ renderer: { heading: () =&gt; &quot;&lt;h1 class=b&gt;hi&lt;/h1&gt;&quot; } });
+    const afterSecond = inst.parse(&quot;# hi&quot;).trim();
+    report(&quot;two use() calls on one method: the second wins&quot;,
+      afterFirst.includes(&quot;class=a&quot;) &amp;&amp; afterSecond.includes(&quot;class=b&quot;),
+      `${afterFirst} -&gt; ${afterSecond}`);
+    report(&quot;the first renderer is unreachable and nothing said so&quot;,
+      !afterSecond.includes(&quot;class=a&quot;), &quot;no error, no warning, no return value difference&quot;);
+
+    const r1 = inst.use({ renderer: { heading: () =&gt; &quot;x&quot; } });
+    const r2 = inst.use({ renderer: { heading: () =&gt; &quot;y&quot; } });
+    report(&quot;use() returns the same kind of value on both calls&quot;, r1 === r2 &amp;&amp; r1 === inst,
+      &quot;the instance, for chaining - it cannot express what happened&quot;);
+
+    const asks = Object.keys(marked).filter((k) =&gt; /list|installed|extensions|registry/i.test(k));
+    report(&quot;there is no API to ask what is installed&quot;, asks.length === 0,
+      `keys matching list/installed/registry: ${asks.join(&quot;, &quot;) || &quot;none&quot;}`);
+
+    // The sharper finding: one use(), two opposite semantics, chosen by key name.
+    const ran = (key, make) =&gt; {
+      const i = new M();
+      const seen = [];
+      i.use(make(seen, &quot;first&quot;));
+      i.use(make(seen, &quot;second&quot;));
+      i.parse(&quot;# hi&quot;);
+      return [...new Set(seen)];
+    };
+    const walk = ran(&quot;walkTokens&quot;, (seen, tag) =&gt; ({ walkTokens: () =&gt; seen.push(tag) }));
+    const hooks = ran(&quot;hooks&quot;, (seen, tag) =&gt; ({ hooks: { preprocess(md) { seen.push(tag); return md; } } }));
+    const rend = ran(&quot;renderer&quot;, (seen, tag) =&gt; ({ renderer: { heading() { seen.push(tag); return &quot;x&quot;; } } }));
+    report(&quot;use({walkTokens}) ACCUMULATES&quot;, walk.length === 2, walk.join(&quot;, &quot;));
+    report(&quot;use({hooks}) ACCUMULATES&quot;, hooks.length === 2, hooks.join(&quot;, &quot;));
+    report(&quot;use({renderer}) OVERWRITES&quot;, rend.length === 1, rend.join(&quot;, &quot;));
+    report(&quot;one function, two opposite semantics, selected by key name&quot;,
+      walk.length === 2 &amp;&amp; rend.length === 1,
+      &quot;and use() returns the instance for all of them - the call site cannot tell which it got&quot;);
+    report(&quot;the accumulating ones run last-registered-first&quot;, walk[0] === &quot;second&quot;,
+      &quot;a stack, not a queue - order is a second undocumented consequence of calling twice&quot;);
+
+    // The isolated path exists and works. This is the part marked gets right.
+    const iso = new M({ renderer: { heading: () =&gt; &quot;&lt;h1 class=iso&gt;hi&lt;/h1&gt;&quot; } });
+    const isoOut = iso.parse(&quot;# hi&quot;).trim();
+    const globalOut = marked.parse(&quot;# hi&quot;).trim();
+    report(&quot;new Marked() is genuinely isolated&quot;, isoOut.includes(&quot;class=iso&quot;), isoOut);
+    report(&quot;and the module-level global is untouched by it&quot;,
+      globalOut.includes(&quot;&lt;h1&gt;hi&lt;/h1&gt;&quot;), globalOut);
+
+    // Measured on the prototype, not by grepping the bundle: a regex over source
+    // text counts what the text says, and this week has already produced three
+    // checks that reported on prose rather than on the thing.
+    const proto = marked.Renderer.prototype;
+    const methods = Object.getOwnPropertyNames(proto)
+      .filter((k) =&gt; k !== &quot;constructor&quot; &amp;&amp; typeof proto[k] === &quot;function&quot;);
+    report(&quot;Renderer is one method per token type&quot;, methods.length &gt;= 20,
+      `${methods.length}: ${methods.slice(0, 6).join(&quot;, &quot;)}, …`);
+    const parserProto = marked.Parser.prototype;
+    const parserMethods = Object.getOwnPropertyNames(parserProto)
+      .filter((k) =&gt; k !== &quot;constructor&quot; &amp;&amp; typeof parserProto[k] === &quot;function&quot;);
+    report(&quot;Parser is much smaller than Renderer&quot;, parserMethods.length &lt; methods.length / 4,
+      `Parser ${parserMethods.length} vs Renderer ${methods.length} - the walk is small, the treatment is wide`);
+    const cjsLines = fs.readFileSync(require.resolve(&quot;marked&quot;), &quot;utf8&quot;).split(&quot;\n&quot;).length;
+    report(&quot;marked.cjs line count as recorded in meta&quot;, cjsLines === 2212, `${cjsLines} lines`);
+  }
+}
+
+console.log(&quot;&quot;);
+if (failures.length) {
+  console.log(`  ${failures.length} check(s) failed: ${failures.join(&quot;, &quot;)}`);
+  process.exit(1);
+}
+console.log(&quot;  island test passed&quot;);
+</code></pre></details><details><summary>main.js</summary><pre><code>// Two renderers competing for the same token types.
+//
+//   node src/main.js
+
+import { makeRegistry, ACCUMULATE, OVERWRITE } from &quot;./DMS/registry.js&quot;;
+import { mayReplace } from &quot;./SCL/policy.js&quot;;
+import { lex, parse } from &quot;./SMS/pipeline.js&quot;;
+import { renderers as html, name as htmlName } from &quot;./TMS/renderers/html.js&quot;;
+import { renderers as plain, name as plainName } from &quot;./TMS/renderers/plain.js&quot;;
+
+const DOC = &quot;# Title\nsome text\n&gt; a quote\n&quot;;
+
+function main() {
+  const registry = makeRegistry();
+
+  console.log(&quot;\n== marked re-cut&quot;);
+
+  const first = registry.use(plainName, plain, OVERWRITE);
+  console.log(`\n  ${first.by}  [${first.mode}]`);
+  console.log(`    added    ${first.added.join(&quot;, &quot;)}`);
+  console.log(`    replaced ${first.replaced.length ? first.replaced.map((r) =&gt; r.type).join(&quot;, &quot;) : &quot;nothing&quot;}`);
+
+  const second = registry.use(htmlName, html, OVERWRITE);
+  console.log(`\n  ${second.by}  [${second.mode}]`);
+  console.log(`    added    ${second.added.join(&quot;, &quot;) || &quot;nothing&quot;}`);
+  for (const r of second.replaced) {
+    const allowed = mayReplace(second.by);
+    console.log(`    replaced ${r.type} (previously ${r.previousOwner})${allowed ? &quot;&quot; : &quot;  - SCL: not permitted&quot;}`);
+  }
+
+  // The same call under the other rule. In marked this distinction is not a
+  // parameter: use({renderer}) overwrites and use({walkTokens}) accumulates,
+  // and the only way to find out which you got is to read marked's source.
+  const third = registry.use(&quot;renderers/audit&quot;, { heading: (t) =&gt; `[audit] ${t.text}` }, ACCUMULATE);
+  console.log(`\n  ${third.by}  [${third.mode}]`);
+  for (const s of third.stacked) {
+    console.log(`    stacked  ${s.type} (also installed: ${s.alsoRuns.join(&quot;, &quot;)})`);
+  }
+
+  console.log(&quot;\n  what is installed, and by whom&quot;);
+  for (const entry of registry.manifest()) {
+    const also = entry.alsoRuns.length ? `  (also: ${entry.alsoRuns.join(&quot;, &quot;)})` : &quot;&quot;;
+    console.log(`    ${entry.type.padEnd(12)} ${entry.by}${also}`);
+  }
+
+  console.log(&quot;\n  rendering&quot;);
+  const results = parse(lex(DOC), registry.renderer());
+  for (const r of results) {
+    console.log(`    ${r.ok ? &quot;  &quot; : &quot;??&quot;} ${r.ok ? r.out : `no renderer for ${r.type}`}`);
+  }
+
+  // The assertion: the second install reported a replacement. In marked it
+  // returns the instance, identically, and the displaced renderer is gone.
+  if (second.replaced.length === 0) {
+    console.log(&quot;\n  RE-CUT FAILED: the second install replaced nothing, so nothing is demonstrated&quot;);
+    return 1;
+  }
+  console.log(`\n  the second install reported ${second.replaced.length} displacement(s) rather than returning the same value as the first.`);
+  return 0;
+}
+
+process.exit(main());
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

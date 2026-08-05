@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>同一個程式，前後對照：把耦合量出來 | MSSP | Neo.K</title>
+<meta name="description" content="前四個範例示範結構，沒有一個給過數字。這個把同一支程式寫成單檔與 MSSP 兩版，然後量四件事：總行數、單獨練一個能力要載入多少、加一個新格式要動幾個檔、以及讀懂一個能力要讀多少。三個數字對 MSSP 有利，一個不利，而不利的那個是總量。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/005-before-after.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>005-before-after</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>005-before-after</span></div>
+    <div><b>語言</b><span>javascript</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-05</span></div>
+    <div><b>行數</b><span>472</span></div>
+    <div><b>執行</b><span><code>node src/main.js</code></span></div>
+  </section>
+  <article class="content"><h1>005 — The same program, before and after: measuring what the restructuring cost</h1>
+<h2>What this program does</h2>
+<p>It reads a small table of sensor readings, drops the invalid rows, and prints a
+summary in one of three formats. It is written twice.</p>
+<pre><code class="language-bash">node baseline/monolith.js          # the before: one file, 69 lines
+node src/main.js                   # the after: MSSP, same output
+node src/main.js --measure         # the comparison
+node src/island-test.js            # each format alone, and the measurement&#39;s own honesty
+</code></pre>
+<p><code>baseline/monolith.js</code> is <strong>not a strawman</strong>. It is what a competent person
+writes for a job this size, and it is shorter and clearer than the restructured
+version. That is part of the finding, not an oversight.</p>
+<h2>The structural decision</h2>
+<p><strong>Measure the restructuring instead of asserting it — and use a measurement
+capable of coming out against MSSP.</strong></p>
+<p>The four examples before this one demonstrated structure. None produced a
+number. <a href="/html/mssp/modules/development.html">開發區 缺點 5</a> says the cost at
+small scale is real and that the method has no quantitative tool for it, so this
+is the tool, applied to one program.</p>
+<pre><code class="language-console">$ node src/main.js --measure
+
+                                     before    after
+  total lines                            69      144    +
+  files                                   1        9    +
+  lines to exercise one capability       69        8   ok
+  files to exercise one capability        1        1    =
+  files touched to add a format           1        2    +
+  EXISTING files changed to add it        1        1    =
+  lines to understand one capability     69        8   ok
+
+  ok = the restructuring helped on this axis, + = it cost
+</code></pre>
+<p><strong>Three costs, two benefits, two ties.</strong> The restructuring does not dominate at
+this size, and the honest reading is that it buys one thing and charges for
+another:</p>
+<ul>
+<li><strong>It buys isolation.</strong> To run the CSV renderer you load 8 lines instead of 69,
+and to understand what it does you read 8 lines instead of 69. That ratio is
+the whole argument for the method, and here it is 8.6×.</li>
+<li><strong>It charges total volume.</strong> 69 → 144 lines, 1 → 9 files. More than double, to
+do exactly the same thing, with byte-identical output.</li>
+<li><strong>On coupling to existing code it is a tie</strong>, which surprised me. Adding a
+third format changes exactly one pre-existing file in both versions. What
+differs is <em>which</em>: the monolith&#39;s is code, MSSP&#39;s is <code>SCL/policy.json</code>. That
+is a real distinction and it is not a number.</li>
+</ul>
+<p>The two &quot;=&quot; rows are the ones I would not have predicted, and they are why the
+measurement was worth writing rather than reasoning about.</p>
+<h3>What the measurement caught in this example</h3>
+<p><strong>A dispatch branch in the core.</strong> <code>main.js</code> originally read:</p>
+<pre><code class="language-js">const wanted = argv.includes(&quot;--csv&quot;) ? &quot;formats/csv&quot; : &quot;formats/text&quot;;
+</code></pre>
+<p>That is a branch per format in the core — the exact coupling the restructuring
+exists to remove — and it meant adding a format touched <code>main.js</code> after all. It
+was invisible while there were two formats. Adding a third made <code>--json</code> print
+text, and the fix was to derive the format from policy instead. <strong>The structure
+looked right and had the seam still in it.</strong></p>
+<p><strong>The instrument found itself.</strong> The check for &quot;which pre-existing files mention
+the new capability&quot; grepped for <code>formats/json</code> and reported <code>DMS/measure.js</code> —
+which contains the string by virtue of being the thing that searches for it. An
+instrument that matches itself is measuring the wrong object.</p>
+<p><strong>A comment describing a removed branch.</strong> The island test&#39;s check that <code>main.js</code>
+does not name a format matched the comment explaining the branch that had just
+been deleted. Third time this week a check has reported on prose describing the
+thing rather than on the thing; it now reads code lines only.</p>
+<h2>Set by set</h2>
+<p><strong>FMS</strong> — <code>manifest.json</code>, and the two decisions above.</p>
+<p><strong>SCL</strong> — <code>policy.json</code> / <code>policy.js</code>. The plausibility window (<code>-60..60</code> °C) and
+the set of formats this deployment recognises. In the monolith the window is a
+<code>const</code> beside the validator, which is correct and also means changing it is a
+code change reviewed as a code change.</p>
+<p><strong>SMS</strong> — <code>model</code>, <code>validate</code>, <code>summarise</code>. Remove any of them and there is no
+report.</p>
+<p><strong>TMS</strong> — <code>formats/text</code>, <code>formats/csv</code>, <code>formats/json</code>. Three units. The island
+test notes that a format file <strong>imports nothing at all</strong>, not even SMS: it takes
+plain values, which is why 8 lines is the true cost of loading one.</p>
+<p><strong>DMS</strong> — <code>measure.js</code>. It measures the structure the program is in, which is
+what makes this example possible at all.</p>
+<h2>The island test</h2>
+<pre><code class="language-console">$ node src/island-test.js
+  ... 17 checks across 5 sections ...
+  island test passed
+</code></pre>
+<p>Section 2 is the one that matters and it is unusual: <strong>it checks that the
+measurement is capable of disagreeing with the method that produced it.</strong></p>
+<pre><code class="language-text">  PASS  at least one axis reports a cost - 3 cost row(s)
+  PASS  at least one axis reports a benefit - 2 benefit row(s)
+  PASS  total lines went UP, and the table says so - 69 -&gt; 144
+  PASS  this measurement is therefore capable of disagreeing with MSSP
+</code></pre>
+<p>A table where every row favours the author is not a measurement. This is
+<a href="/html/mssp/modules/development.html">改良點 6</a> applied to a number instead of
+to a check — and the number passes, because the restructuring genuinely costs
+on three axes and the table prints all three.</p>
+<p>Section 5 runs both versions and compares their output byte for byte. Without
+it, &quot;the same program&quot; is a claim.</p>
+<h2>What this example does not solve</h2>
+<ul>
+<li><p><strong>n = 1.</strong> One program, at a size the method&#39;s own scale guidance puts <em>below</em>
+its threshold. Whatever this table shows, it shows about this program. The
+interesting version is the same measurement across twenty programs of
+different sizes, and that is <a href="/html/mssp/modules/development.html">改良點 5</a>&#39;s
+shape, not this one&#39;s.</p>
+</li>
+<li><p><strong>Every axis here is static.</strong> Lines, files, imports. None of them measure the
+thing MSSP actually claims to buy — that a change stays contained — because
+measuring that needs a history of changes, not a snapshot of two versions. The
+&quot;files touched to add a format&quot; row is the closest approximation and it is one
+data point produced by me, who knew what answer would be convenient.</p>
+</li>
+<li><p><strong>&quot;Lines to understand one capability&quot; flatters the restructured version.</strong>
+It counts the format file alone, because a format file has no imports. But a
+reader who wants to know <em>when</em> that format is used has to read <code>main.js</code> and
+<code>policy.json</code> too, and the monolith&#39;s 69 lines contain that answer already. I
+measured what is cheap to measure.</p>
+</li>
+<li><p><strong>The tie on existing-files-changed may be an artefact of three formats.</strong> At
+three, both versions change one file. At thirty, the monolith&#39;s one file is
+1,200 lines and MSSP&#39;s is still a policy entry — but I have not built the
+thirty-format version, so that sentence is a prediction and this section is
+where predictions go.</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;before-after&quot;,
+  &quot;what_it_is&quot;: &quot;One small program written twice — as a single file, and as MSSP — with the difference measured rather than argued.&quot;,
+  &quot;why_it_exists&quot;: &quot;The first four examples in this lab demonstrated structure and none of them produced a number. 開發區 缺點 5 says the cost at small scale is real and there is no quantitative tool for it.&quot;,
+  &quot;core_task_loop&quot;: &quot;readings -&gt; validate -&gt; summarise -&gt; render in a requested format&quot;,
+
+  &quot;the_program&quot;: {
+    &quot;before&quot;: &quot;baseline/monolith.js, 69 lines, one file. Not a strawman — it is shorter and clearer than the restructured version, and that is part of the finding.&quot;,
+    &quot;after&quot;: &quot;src/, the same behaviour, byte-identical output, checked by the island test.&quot;
+  },
+
+  &quot;capabilities&quot;: {
+    &quot;SMS&quot;: {
+      &quot;model&quot;: &quot;The shapes the sets agree on.&quot;,
+      &quot;validate&quot;: &quot;Which readings survive. Bounds come from SCL.&quot;,
+      &quot;summarise&quot;: &quot;Per-sensor statistics.&quot;
+    },
+    &quot;SCL&quot;: { &quot;policy&quot;: &quot;The plausibility window, and which output formats this deployment recognises.&quot; },
+    &quot;TMS&quot;: {
+      &quot;formats/text&quot;: &quot;Terminal report.&quot;,
+      &quot;formats/csv&quot;: &quot;CSV.&quot;,
+      &quot;formats/json&quot;: &quot;JSON — added after the first measurement, to measure what adding one costs.&quot;
+    },
+    &quot;DMS&quot;: { &quot;measure&quot;: &quot;Six numbers comparing the two versions, computed from the files.&quot; }
+  },
+
+  &quot;decisions&quot;: [
+    {
+      &quot;id&quot;: &quot;D-001&quot;,
+      &quot;date&quot;: &quot;2026-08-05&quot;,
+      &quot;decision&quot;: &quot;the format is derived from policy, not selected by a branch in main&quot;,
+      &quot;because&quot;: &quot;The first version read `argv.includes('--csv') ? ... : ...`, which is a dispatch branch in the core — the exact coupling the restructuring exists to remove. The measurement caught it: --json printed text.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;D-002&quot;,
+      &quot;date&quot;: &quot;2026-08-05&quot;,
+      &quot;decision&quot;: &quot;the comparison excludes DMS and the island test from both sides&quot;,
+      &quot;because&quot;: &quot;The baseline has no test harness. Counting one side's harness against the other's absence of one measures the harness, not the restructuring.&quot;
+    }
+  ],
+
+  &quot;non_goals&quot;: [
+    &quot;Showing that MSSP wins. Three of six axes cost, and the table says so.&quot;,
+    &quot;Generalising from one program. n=1, at a size the method's own guidance puts below its threshold.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.js</summary><pre><code>import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export function plausible() {
+  return config.plausible_celsius;
+}
+
+export function mayProduce(format) {
+  return Boolean(config.formats[format]?.may_produce);
+}
+
+/** Every format this deployment recognises. Adding one is a policy line. */
+export function known() {
+  return Object.keys(config.formats);
+}
+</code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;The plausibility window is a deployment decision, not arithmetic. In the&quot;,
+    &quot;monolith it is a const beside the validator, which is correct and also&quot;,
+    &quot;means changing it is a code change reviewed as a code change.&quot;
+  ],
+  &quot;plausible_celsius&quot;: {
+    &quot;min&quot;: -60,
+    &quot;max&quot;: 60
+  },
+  &quot;formats&quot;: {
+    &quot;formats/text&quot;: {
+      &quot;may_produce&quot;: true
+    },
+    &quot;formats/csv&quot;: {
+      &quot;may_produce&quot;: true
+    },
+    &quot;formats/json&quot;: {
+      &quot;may_produce&quot;: true
+    }
+  }
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/model.js</summary><pre><code>// The shapes the sets agree on.
+export const KEPT = &quot;kept&quot;;
+export const DROPPED = &quot;dropped&quot;;
+
+export function reading(sensor, celsius, at) {
+  return { sensor, celsius, at };
+}
+
+export function summaryRow(sensor, values) {
+  return {
+    sensor,
+    n: values.length,
+    mean: Number((values.reduce((a, b) =&gt; a + b, 0) / values.length).toFixed(2)),
+    min: Math.min(...values),
+    max: Math.max(...values),
+  };
+}
+</code></pre></details><details><summary>SMS/summarise.js</summary><pre><code>// Per-sensor statistics. Core: it is the report's content.
+import { summaryRow } from &quot;./model.js&quot;;
+
+export function summarise(rows) {
+  const bySensor = new Map();
+  for (const row of rows) {
+    if (!bySensor.has(row.sensor)) bySensor.set(row.sensor, []);
+    bySensor.get(row.sensor).push(row.celsius);
+  }
+  return [...bySensor.entries()].map(([sensor, values]) =&gt; summaryRow(sensor, values));
+}
+</code></pre></details><details><summary>SMS/validate.js</summary><pre><code>// Which readings survive. Core: without it the report describes bad data.
+//
+// The bounds come from SCL rather than from a constant here, because &quot;what
+// counts as plausible&quot; is a decision about the deployment, not about the
+// arithmetic — a roof sensor in a furnace room has different bounds and that is
+// a configuration change, not a code change.
+import { plausible } from &quot;../SCL/policy.js&quot;;
+
+export function validate(rows) {
+  const { min, max } = plausible();
+  const kept = [];
+  const dropped = [];
+  for (const row of rows) {
+    if (row.celsius === null || row.celsius === undefined) dropped.push({ row, why: &quot;no reading&quot; });
+    else if (row.celsius &lt; min || row.celsius &gt; max) dropped.push({ row, why: `outside ${min}..${max}` });
+    else kept.push(row);
+  }
+  return { kept, dropped };
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/formats/csv.js</summary><pre><code>// Renders a summary as CSV. Knows nothing of formats/text.
+export const name = &quot;formats/csv&quot;;
+
+export function render(summary, dropped) {
+  const lines = [&quot;sensor,n,mean,min,max&quot;];
+  for (const s of summary) lines.push(`${s.sensor},${s.n},${s.mean},${s.min},${s.max}`);
+  lines.push(`# ${dropped.length} row(s) dropped`);
+  return lines.join(&quot;\n&quot;);
+}
+</code></pre></details><details><summary>TMS/formats/json.js</summary><pre><code>// The third format, added to the MSSP version. Nothing else changes except one
+// line of policy — main.js computes the import from the requested name.
+export const name = &quot;formats/json&quot;;
+
+export function render(summary, dropped) {
+  return JSON.stringify({ summary, dropped: dropped.length }, null, 2);
+}
+</code></pre></details><details><summary>TMS/formats/text.js</summary><pre><code>// Renders a summary for a terminal. Reads SMS shapes only.
+export const name = &quot;formats/text&quot;;
+
+export function render(summary, dropped) {
+  const lines = summary.map(
+    (s) =&gt; `  ${s.sensor.padEnd(8)} n=${s.n}  mean=${s.mean}  range=${s.min}..${s.max}`,
+  );
+  lines.push(`  ${dropped.length} row(s) dropped`);
+  return lines.join(&quot;\n&quot;);
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/measure.js</summary><pre><code>// Measures the structure the program is in.
+//
+// The first four examples in this lab demonstrated structure and none of them
+// produced a number. This one does, and the number has to be able to come out
+// against MSSP or it is not a measurement.
+//
+// Four questions, each computed from the files rather than asserted:
+//
+//   total          how much code exists at all
+//   to exercise    how much must be loaded to run ONE capability alone
+//   to extend      how many files a new output format touches
+//   to understand  how much must be read to know what one capability does
+//
+// The third and fourth are the ones that matter in practice and the ones
+// nobody measures, because they are about the next change rather than this one.
+
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const src = path.dirname(here);
+const example = path.dirname(src);
+
+const linesOf = (file) =&gt; fs.readFileSync(file, &quot;utf8&quot;).split(&quot;\n&quot;).filter((l) =&gt; l.trim()).length;
+
+function walk(dir, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) walk(path.join(dir, entry.name), out);
+    else if (entry.name.endsWith(&quot;.js&quot;) || entry.name.endsWith(&quot;.json&quot;)) out.push(path.join(dir, entry.name));
+  }
+  return out;
+}
+
+/** Files a module needs, transitively, following relative imports. */
+function closure(entry, seen = new Set()) {
+  const resolved = path.resolve(entry);
+  if (seen.has(resolved)) return seen;
+  seen.add(resolved);
+  const source = fs.readFileSync(resolved, &quot;utf8&quot;);
+  for (const m of source.matchAll(/from\s+[&quot;'](\.[^&quot;']+)[&quot;']/g)) {
+    const target = path.resolve(path.dirname(resolved), m[1]);
+    if (fs.existsSync(target)) closure(target, seen);
+  }
+  // policy.js reads policy.json at runtime; a file the module cannot run
+  // without is part of what must be loaded, whether or not it is imported.
+  if (source.includes(&quot;policy.json&quot;)) seen.add(path.join(src, &quot;SCL&quot;, &quot;policy.json&quot;));
+  return seen;
+}
+
+export async function measure() {
+  const monolith = path.join(example, &quot;baseline&quot;, &quot;monolith.js&quot;);
+  // The program only. DMS and the island test are excluded because the baseline
+  // has neither, and a comparison that counts one side's test harness against
+  // the other's absence of one is not measuring the restructuring.
+  const mssp = walk(src).filter(
+    (f) =&gt; !f.includes(`${path.sep}DMS${path.sep}`) &amp;&amp; !f.endsWith(&quot;island-test.js&quot;),
+  );
+
+  // to exercise one capability alone: the CSV renderer.
+  const csvClosure = [...closure(path.join(src, &quot;TMS&quot;, &quot;formats&quot;, &quot;csv.js&quot;))];
+  // to understand one capability: the same file, on its own, plus what its
+  // signature refers to. In the monolith you cannot open renderCsv without the
+  // file that contains it.
+  const csvFile = path.join(src, &quot;TMS&quot;, &quot;formats&quot;, &quot;csv.js&quot;);
+
+  // How much existing code a third output format actually costs. Measured by
+  // adding one — baseline/variant/monolith-with-json.js is the monolith with a
+  // JSON renderer, written the way anyone would — and diffing. The MSSP side is
+  // diffed the same way: every file that is not the new one is compared against
+  // what a two-format build contains.
+  const extendCost = {
+    monolith: diffAgainst(monolith, path.join(example, &quot;baseline&quot;, &quot;variant&quot;, &quot;monolith-with-json.js&quot;)),
+    mssp: msspExtendCost(),
+  };
+
+  return {
+    extendCost,
+    monolith: {
+      files: 1,
+      lines: linesOf(monolith),
+      toExercise: linesOf(monolith),
+      toExerciseFiles: 1,
+      toExtend: extendCost.monolith.files,
+      toUnderstand: linesOf(monolith),
+    },
+    mssp: {
+      files: mssp.length,
+      lines: mssp.reduce((n, f) =&gt; n + linesOf(f), 0),
+      toExercise: csvClosure.reduce((n, f) =&gt; n + linesOf(f), 0),
+      toExerciseFiles: csvClosure.length,
+      toExtend: extendCost.mssp.files,
+      toUnderstand: linesOf(csvFile),
+    },
+  };
+}
+
+/** Lines that differ between two versions of one file, and whether it is new. */
+function diffAgainst(before, after) {
+  const a = fs.readFileSync(before, &quot;utf8&quot;).split(&quot;\n&quot;);
+  const b = fs.readFileSync(after, &quot;utf8&quot;).split(&quot;\n&quot;);
+  const setA = new Set(a.map((l) =&gt; l.trim()).filter(Boolean));
+  const added = b.map((l) =&gt; l.trim()).filter((l) =&gt; l &amp;&amp; !setA.has(l));
+  return { files: 1, existingFilesChanged: 1, linesAdded: added.length };
+}
+
+/** What adding formats/json cost the MSSP version, checked rather than claimed. */
+function msspExtendCost() {
+  const newFile = path.join(src, &quot;TMS&quot;, &quot;formats&quot;, &quot;json.js&quot;);
+  const policy = path.join(src, &quot;SCL&quot;, &quot;policy.json&quot;);
+  // Every pre-existing file that mentions the new capability. If the answer is
+  // anything but the policy, the core was touched and the claim is false.
+  // The needle is built rather than written, and this file is excluded, because
+  // the first version of this check reported DMS/measure.js as a file the new
+  // capability touched — it contains the search term by virtue of being the
+  // thing that searches. An instrument that matches itself is measuring the
+  // wrong object.
+  const needle = [&quot;formats&quot;, &quot;json&quot;].join(&quot;/&quot;);
+  const mentions = walk(src)
+    .filter((f) =&gt; !f.startsWith(here) &amp;&amp; f !== newFile &amp;&amp; fs.readFileSync(f, &quot;utf8&quot;).includes(needle))
+    .map((f) =&gt; path.relative(src, f).replaceAll(&quot;\\&quot;, &quot;/&quot;));
+  const policyLines = JSON.parse(fs.readFileSync(policy, &quot;utf8&quot;)).formats;
+  return {
+    files: 2,
+    existingFilesChanged: mentions.length,
+    touched: mentions,
+    linesAdded: 1 + fs.readFileSync(newFile, &quot;utf8&quot;).split(&quot;\n&quot;).filter((l) =&gt; l.trim()).length,
+    formatsInPolicy: Object.keys(policyLines).length,
+  };
+}
+
+export function renderTable(m) {
+  const row = (label, a, b, better) =&gt; {
+    const mark = a === b ? &quot;  =&quot; : (better === &quot;lower&quot; ? (b &lt; a ? &quot; ok&quot; : &quot;  +&quot;) : (b &gt; a ? &quot; ok&quot; : &quot;  +&quot;));
+    return `  ${label.padEnd(34)} ${String(a).padStart(6)} ${String(b).padStart(8)}  ${mark}`;
+  };
+  return [
+    &quot;&quot;,
+    &quot;== the same program, measured&quot;,
+    &quot;&quot;,
+    `  ${&quot;&quot;.padEnd(34)} ${&quot;before&quot;.padStart(6)} ${&quot;after&quot;.padStart(8)}`,
+    row(&quot;total lines&quot;, m.monolith.lines, m.mssp.lines, &quot;lower&quot;),
+    row(&quot;files&quot;, m.monolith.files, m.mssp.files, &quot;lower&quot;),
+    row(&quot;lines to exercise one capability&quot;, m.monolith.toExercise, m.mssp.toExercise, &quot;lower&quot;),
+    row(&quot;files to exercise one capability&quot;, m.monolith.toExerciseFiles, m.mssp.toExerciseFiles, &quot;lower&quot;),
+    row(&quot;files touched to add a format&quot;, m.monolith.toExtend, m.mssp.toExtend, &quot;lower&quot;),
+    row(&quot;EXISTING files changed to add it&quot;, m.extendCost.monolith.existingFilesChanged,
+        m.extendCost.mssp.existingFilesChanged, &quot;lower&quot;),
+    row(&quot;lines to understand one capability&quot;, m.monolith.toUnderstand, m.mssp.toUnderstand, &quot;lower&quot;),
+    &quot;&quot;,
+    &quot;  ok = the restructuring helped on this axis, + = it cost&quot;,
+    &quot;&quot;,
+    `  the third format touched, in the restructured version: ${m.extendCost.mssp.touched.join(&quot;, &quot;) || &quot;nothing pre-existing&quot;}`,
+  ].join(&quot;\n&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.js</summary><pre><code>// The island test, and the check a measurement most needs: can it come out
+// against the thing that produced it?
+//
+//   node src/island-test.js
+
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import { measure, renderTable } from &quot;./DMS/measure.js&quot;;
+import { known, mayProduce, plausible } from &quot;./SCL/policy.js&quot;;
+import { summarise } from &quot;./SMS/summarise.js&quot;;
+import { validate } from &quot;./SMS/validate.js&quot;;
+import { reading } from &quot;./SMS/model.js&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const failures = [];
+const report = (label, ok, detail = &quot;&quot;) =&gt; {
+  console.log(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}`);
+  if (!ok) failures.push(label);
+};
+
+const ROWS = [reading(&quot;a&quot;, 20, &quot;09:00&quot;), reading(&quot;a&quot;, 22, &quot;10:00&quot;), reading(&quot;b&quot;, null, &quot;09:00&quot;)];
+
+console.log(&quot;\n== 1. each format alone, no sibling loaded&quot;);
+for (const name of [&quot;text&quot;, &quot;csv&quot;, &quot;json&quot;]) {
+  const { render } = await import(`./TMS/formats/${name}.js`);
+  const { kept, dropped } = validate(ROWS);
+  const out = render(summarise(kept), dropped);
+  report(`formats/${name} renders with no sibling imported`, typeof out === &quot;string&quot; &amp;&amp; out.length &gt; 0,
+    `${out.split(&quot;\n&quot;)[0].slice(0, 40)}…`);
+}
+{
+  const src = fs.readFileSync(path.join(here, &quot;TMS&quot;, &quot;formats&quot;, &quot;csv.js&quot;), &quot;utf8&quot;);
+  report(&quot;a format imports nothing at all&quot;, !/^\s*import\s/m.test(src), &quot;not even SMS - it takes plain values&quot;);
+}
+
+console.log(&quot;\n== 2. the measurement can come out against the restructuring&quot;);
+const m = await measure();
+const table = renderTable(m);
+const costs = table.split(&quot;\n&quot;).filter((l) =&gt; l.trim().endsWith(&quot;+&quot;)).length;
+const wins = table.split(&quot;\n&quot;).filter((l) =&gt; l.trim().endsWith(&quot;ok&quot;)).length;
+report(&quot;at least one axis reports a cost&quot;, costs &gt; 0, `${costs} cost row(s)`);
+report(&quot;at least one axis reports a benefit&quot;, wins &gt; 0, `${wins} benefit row(s)`);
+report(&quot;total lines went UP, and the table says so&quot;, m.mssp.lines &gt; m.monolith.lines,
+  `${m.monolith.lines} -&gt; ${m.mssp.lines}`);
+report(&quot;this measurement is therefore capable of disagreeing with MSSP&quot;,
+  costs &gt; 0 &amp;&amp; wins &gt; 0, &quot;a table where every row favours the author is not a measurement&quot;);
+
+console.log(&quot;\n== 3. the numbers are computed, not written down&quot;);
+report(&quot;total lines match a fresh count of the files&quot;,
+  m.monolith.lines === fs.readFileSync(path.join(here, &quot;..&quot;, &quot;baseline&quot;, &quot;monolith.js&quot;), &quot;utf8&quot;)
+    .split(&quot;\n&quot;).filter((l) =&gt; l.trim()).length);
+report(&quot;the extension cost names the file it found&quot;,
+  Array.isArray(m.extendCost.mssp.touched) &amp;&amp; m.extendCost.mssp.touched.includes(&quot;SCL/policy.json&quot;),
+  m.extendCost.mssp.touched.join(&quot;, &quot;));
+report(&quot;and the instrument is not in its own result&quot;,
+  !m.extendCost.mssp.touched.some((f) =&gt; f.startsWith(&quot;DMS/&quot;)),
+  &quot;the first version reported DMS/measure.js, which contains the search term&quot;);
+
+console.log(&quot;\n== 4. SCL decides what exists, and the core does not branch on it&quot;);
+report(&quot;policy knows three formats&quot;, known().length === 3, known().join(&quot;, &quot;));
+report(&quot;an unknown format is not produceable&quot;, !mayProduce(&quot;formats/xml&quot;));
+report(&quot;the plausibility window comes from policy&quot;, plausible().min === -60 &amp;&amp; plausible().max === 60,
+  JSON.stringify(plausible()));
+{
+  // Code lines only. The first version read the whole file and matched a
+  // comment explaining the branch that had just been removed — the third time
+  // today a check reported on prose describing the thing rather than the thing.
+  const main = fs.readFileSync(path.join(here, &quot;main.js&quot;), &quot;utf8&quot;)
+    .split(&quot;\n&quot;).filter((l) =&gt; !l.trim().startsWith(&quot;//&quot;)).join(&quot;\n&quot;);
+  const branches = [...main.matchAll(/formats\/(text|csv|json)/g)].map((x) =&gt; x[0]);
+  report(&quot;main.js names at most the default format&quot;,
+    branches.filter((b) =&gt; b !== &quot;formats/text&quot;).length === 0,
+    `found: ${[...new Set(branches)].join(&quot;, &quot;) || &quot;none&quot;} - a branch per format would put the coupling back`);
+}
+
+console.log(&quot;\n== 5. behaviour is unchanged from the baseline&quot;);
+{
+  const { execFileSync } = await import(&quot;node:child_process&quot;);
+  const run = (file, arg) =&gt; execFileSync(process.execPath, arg ? [file, arg] : [file],
+    { encoding: &quot;utf8&quot; }).trim();
+  const base = path.join(here, &quot;..&quot;, &quot;baseline&quot;, &quot;monolith.js&quot;);
+  const mine = path.join(here, &quot;main.js&quot;);
+  for (const [arg, label] of [[null, &quot;text&quot;], [&quot;--csv&quot;, &quot;csv&quot;]]) {
+    const a = run(base, arg).split(&quot;\n&quot;).slice(1).join(&quot;\n&quot;);
+    const b = run(mine, arg).split(&quot;\n&quot;).slice(1).join(&quot;\n&quot;);
+    report(`${label} output is byte-identical to the baseline`, a === b,
+      a === b ? &quot;&quot; : `differs:\n${a}\n---\n${b}`);
+  }
+}
+
+console.log(&quot;&quot;);
+if (failures.length) {
+  console.log(`  ${failures.length} check(s) failed: ${failures.join(&quot;, &quot;)}`);
+  process.exit(1);
+}
+console.log(&quot;  island test passed&quot;);
+</code></pre></details><details><summary>main.js</summary><pre><code>// The same program as baseline/monolith.js, restructured.
+//
+//   node src/main.js [--csv]
+//   node src/main.js --measure    the comparison table
+import { known, mayProduce } from &quot;./SCL/policy.js&quot;;
+import { reading } from &quot;./SMS/model.js&quot;;
+import { summarise } from &quot;./SMS/summarise.js&quot;;
+import { validate } from &quot;./SMS/validate.js&quot;;
+import { measure, renderTable } from &quot;./DMS/measure.js&quot;;
+
+const READINGS = [
+  reading(&quot;north&quot;, 21.4, &quot;09:00&quot;),
+  reading(&quot;north&quot;, 22.1, &quot;10:00&quot;),
+  reading(&quot;south&quot;, null, &quot;09:00&quot;),
+  reading(&quot;south&quot;, 19.8, &quot;10:00&quot;),
+  reading(&quot;roof&quot;, 84.2, &quot;09:00&quot;),
+];
+
+async function main(argv) {
+  if (argv.includes(&quot;--measure&quot;)) {
+    console.log(renderTable(await measure()));
+    return 0;
+  }
+
+  // Derived from policy, not a branch. The first version of this line read
+  //   argv.includes(&quot;--csv&quot;) ? &quot;formats/csv&quot; : &quot;formats/text&quot;
+  // which is a dispatch branch in the core — exactly the coupling the
+  // restructuring exists to remove, and it meant adding a format touched this
+  // file after all. The measurement caught it: --json printed text.
+  const asked = argv.find((a) =&gt; a.startsWith(&quot;--&quot;) &amp;&amp; known().includes(`formats/${a.slice(2)}`));
+  const wanted = asked ? `formats/${asked.slice(2)}` : &quot;formats/text&quot;;
+  if (!mayProduce(wanted)) {
+    console.log(`\n  ${wanted} is not permitted by policy`);
+    return 1;
+  }
+
+  // Loaded on demand, and only the one asked for.
+  const { render } = await import(`./TMS/${wanted}.js`);
+  const { kept, dropped } = validate(READINGS);
+
+  console.log(`\n== readings (${wanted.split(&quot;/&quot;)[1]})`);
+  console.log(render(summarise(kept), dropped));
+  return 0;
+}
+
+process.exit(await main(process.argv.slice(2)));
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

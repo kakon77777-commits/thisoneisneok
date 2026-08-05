@@ -257,7 +257,72 @@ export const msspExamples = [
     "lineCount": 503,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/004-router.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/004-router.html"
+  },
+  {
+    "id": "005-before-after",
+    "slug": "005-before-after",
+    "title": {
+      "zh": "同一個程式，前後對照：把耦合量出來",
+      "en": "The same program, before and after: measuring what the restructuring cost"
+    },
+    "summary": {
+      "zh": "前四個範例示範結構，沒有一個給過數字。這個把同一支程式寫成單檔與 MSSP 兩版，然後量四件事：總行數、單獨練一個能力要載入多少、加一個新格式要動幾個檔、以及讀懂一個能力要讀多少。三個數字對 MSSP 有利，一個不利，而不利的那個是總量。",
+      "en": "The first four examples demonstrated structure and none of them produced a number. This one writes the same program twice — one file, then MSSP — and measures four things: total lines, how much must load to exercise one capability alone, how many files a new output format touches, and how much must be read to understand one capability. Three favour the restructuring, one does not, and the one that does not is the total."
+    },
+    "language": "javascript",
+    "date": "2026-08-05",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "coupling-measured-not-asserted",
+      "cost-and-benefit-in-the-same-table",
+      "dms-measures-its-own-structure"
+    ],
+    "runnable": "node src/main.js",
+    "files": [
+      "DMS/measure.js",
+      "FMS/manifest.json",
+      "SCL/policy.js",
+      "SCL/policy.json",
+      "SMS/model.js",
+      "SMS/summarise.js",
+      "SMS/validate.js",
+      "TMS/formats/csv.js",
+      "TMS/formats/json.js",
+      "TMS/formats/text.js",
+      "island-test.js",
+      "main.js"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/manifest.json"
+      ],
+      "SCL": [
+        "SCL/policy.js",
+        "SCL/policy.json"
+      ],
+      "SMS": [
+        "SMS/model.js",
+        "SMS/summarise.js",
+        "SMS/validate.js"
+      ],
+      "TMS": [
+        "TMS/formats/csv.js",
+        "TMS/formats/json.js",
+        "TMS/formats/text.js"
+      ],
+      "DMS": [
+        "DMS/measure.js"
+      ],
+      "root": [
+        "island-test.js",
+        "main.js"
+      ]
+    },
+    "lineCount": 472,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/005-before-after.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/005-before-after.html"
   }
 ];
 
-export const msspExampleCount = 4;
+export const msspExampleCount = 5;
