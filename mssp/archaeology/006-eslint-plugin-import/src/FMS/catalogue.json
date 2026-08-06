@@ -1,0 +1,44 @@
+{
+  "name": "rule-registry-recut",
+  "what_it_is": "A rule registry where a deprecated rule name is a declared rename, not a module that imports the module it was renamed to.",
+  "examined": {
+    "project": "eslint-plugin-import",
+    "version": "2.32.0",
+    "license": "MIT",
+    "measured": {
+      "rule_files": 46,
+      "configs": 8,
+      "imports_of_a_sibling_rule": 1,
+      "imports_reaching_up_to_shared_core": 79,
+      "imports_of_a_package": 108,
+      "the_one_sibling": "lib/rules/imports-first.js requires ./first, spreads it, and overrides meta with deprecated:true"
+    },
+    "context_measured_in_this_repo": {
+      "packages_declared_in_package_json": 25,
+      "packages_installed_in_node_modules": 475,
+      "requireable_but_undeclared": 450,
+      "proof": "require.resolve('@alloc/quick-lru') succeeds and it appears in neither dependencies nor devDependencies"
+    }
+  },
+  "the_finding": "45 of 46 rules are islands. The one exception is not a rule reaching a sibling for a capability — it is a rename that kept the old door open. MSSP's own modules disagree about it: module 02 forbids a TMS importing a sibling TMS, and module 06 requires replacement before removal. An alias unit satisfies one by violating the other.",
+  "the_repair": "A rename is a fact about the catalogue, so it is recorded here and resolved by the loader. No rule file mentions another rule file, the old name still works, and the resolution is reported rather than silent.",
+  "renames": [
+    {
+      "from": "rules/imports-first",
+      "to": "rules/first",
+      "since": "2.0.0",
+      "reason": "renamed for consistency with the other rule names"
+    }
+  ],
+  "sets": {
+    "FMS": "this file: the catalogue, including which names are renames of which",
+    "SCL": "which rules this deployment enables",
+    "SMS": "the registry that resolves a name to a rule, and the walk that applies rules to a file",
+    "TMS": "one file per rule, each importing nothing",
+    "DMS": "what ran, what was skipped, and every deprecated name that was resolved"
+  },
+  "non_goals": [
+    "Being a linter. Two rules, a hand-rolled line scanner, no AST.",
+    "Claiming eslint-plugin-import should have done this. A rename record needs a registry that owns names; eslint's plugin API hands over an object keyed by rule name, and the alias-as-module is the natural shape under that API."
+  ]
+}

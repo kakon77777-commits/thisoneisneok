@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>46 條規則裡只有一個碰到兄弟，而那一個是改名——MSSP 兩個模組在這裡互相牴觸 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="46 個規則檔、79 次向上取用共用核心、108 次取用套件，而**引用兄弟規則的只有 1 次**：`imports-first.js` require `./first` 再覆寫 meta 標成 deprecated。那不是規則去拿兄弟的能力，是改名時把舊門留著。問題在於 MSSP 自己：模組 02 禁止 TMS 引用兄弟 TMS，模組 06 要求「替代先於移除」，而別名單元滿足其中一條的方式就是違反另一條。順帶量到這個專案存在的理由——本站宣告 25 個套件、裝了 475 個、可 require 但未宣告 450 個。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/006-eslint-plugin-import.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>006-eslint-plugin-import</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>eslint-plugin-import</span></div>
+    <div><b>授權</b><span>MIT</span></div>
+    <div><b>檢視版本</b><span>2.32.0</span></div>
+    <div><b>日期</b><span>2026-08-06</span></div>
+    <div><b>來源</b><span><a href="https://github.com/import-js/eslint-plugin-import">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>006 — eslint-plugin-import 2.32.0：46 條規則裡只有一個碰到兄弟，而那一個是改名</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/import-js/eslint-plugin-import">import-js/eslint-plugin-import</a>，MIT。本篇考察 2.32.0。
+所有數字都是對本站 <code>node_modules</code> 裡那一份量出來的。</p>
+</blockquote>
+<pre><code class="language-bash">node src/main.js          # 用舊名字啟用一條規則，看它解析到哪裡
+node src/island-test.js   # 26 項檢查，其中 10 項直接量上游與本倉庫
+</code></pre>
+<h2>為什麼選它</h2>
+<p>今天的<a href="/html/mssp/006-compiler-enforced.html">範例 006</a> 把依賴規則交給了 cargo：未宣告的兄弟引用<strong>編譯不過</strong>。寫完之後該問的問題是——<strong>沒有那種工具鏈的生態系，是怎麼過日子的？</strong></p>
+<p>答案在本站自己的 <code>node_modules</code> 裡，而且量得出來：</p>
+<pre><code class="language-text">  declared in package.json    :  25
+  installed packages          : 475
+  requireable but undeclared  : 450
+</code></pre>
+<p><code>require.resolve(&#39;@alloc/quick-lru&#39;)</code> 成功，而它在 <code>dependencies</code> 跟 <code>devDependencies</code> 裡都沒有。<strong>450 個套件這個專案碰得到卻從來沒宣告過</strong>，這不是失誤，是 npm 扁平化安裝的正常結果。</p>
+<p><code>eslint-plugin-import</code> 存在的理由就是把這個保證撿回來——它有一條規則叫 <code>no-extraneous-dependencies</code>。<strong>一個 linter 規則，用來補回套件管理器讓掉的東西。</strong> 那讓它成為範例 006 的正確對照面。</p>
+<h2>原專案的結構地圖</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>規則檔</td>
+<td><strong>46</strong></td>
+</tr>
+<tr>
+<td>預設 config</td>
+<td>8</td>
+</tr>
+<tr>
+<td>向上取用共用核心（<code>../</code>）</td>
+<td><strong>79</strong></td>
+</tr>
+<tr>
+<td>取用套件</td>
+<td>108</td>
+</tr>
+<tr>
+<td><strong>引用兄弟規則（<code>./</code>）</strong></td>
+<td><strong>1</strong></td>
+</tr>
+</tbody></table>
+<p>共用核心是一個<strong>獨立的套件</strong>：<code>eslint-module-utils</code>。也就是說 SMS 不只是上層目錄，它連發佈邊界都分開了。</p>
+<p>規則之間幾乎完全不相識——<strong>45 / 46 是孤島</strong>。這個比例比我到目前為止考察過的任何一個上游都乾淨。</p>
+<h2>MSSP 重切</h2>
+<p>那唯一的一次是什麼，值得整段引出來：</p>
+<pre><code class="language-js">// lib/rules/imports-first.js
+var first = require(&#39;./first&#39;);
+
+var newMeta = Object.assign({}, first.meta, {
+  deprecated: true,
+  docs: { description: &#39;Replaced by `import/first`.&#39; } });
+
+module.exports = Object.assign({}, first, { meta: newMeta });
+</code></pre>
+<p><strong>那不是一條規則去拿兄弟的能力。那是改名時把舊門留著。</strong> <code>imports-first</code> 是 <code>first</code> 的舊名字，這個檔案唯一做的事就是把新規則原封不動轉出去，並在 meta 上蓋一個 <code>deprecated: true</code>。</p>
+<h3>問題是 MSSP 自己</h3>
+<ul>
+<li><a href="/html/mssp/modules/patterns.html">模組 02</a>：<strong>沒有任何 TMS 引用兄弟 TMS</strong>。這條規則的違反在審閱中看不見，而且它會摧毀「TMS 可以單獨載入」的主張。</li>
+<li><a href="/html/mssp/modules/authority.html">模組 06 迭代授權</a>：<strong>替代先於移除</strong>。舊名字不能直接消失，取代它的東西要先在位。</li>
+</ul>
+<p><code>imports-first.js</code> 同時滿足其中一條、違反另一條。而<strong>方法沒有任何地方說過這兩條會撞在一起</strong>。</p>
+<p>重切的修法是：<strong>改名是關於目錄的事實，不是關於檔案的事實。</strong></p>
+<pre><code class="language-console">$ node src/main.js
+
+== rules
+  ok  rules/first               &lt;- requested as rules/imports-first, renamed in 2.0.0
+  ok  rules/no-self-import
+
+== what this run does not say
+  lines scanned                    4
+  enabled, loaded, found nothing   none
+  deprecated names resolved        rules/imports-first -&gt; rules/first
+</code></pre>
+<p><code>FMS/catalogue.json</code> 裡有一筆 <code>renames</code>，SMS 的 registry 在載入前解析它。結果是：<strong>沒有任何規則檔提到另一個規則檔</strong>（孤島測試第 1 節逐檔驗過），舊名字照常運作，而且<strong>解析這件事出現在執行報告裡</strong>，就在它產生的結果旁邊——不是在 eslint 自己的 deprecation 通道裡等人去看。</p>
+<h3>這次順手抓到自己的第三個洞</h3>
+<p>要驗「我的建置會不會把別名當違規」，就得先種一個進去。種下去之後：<strong>建置全綠。</strong></p>
+<p>原因是那條規則的 pattern 是 <code>import ... from</code>，而別名是用 <code>export ... from</code> 寫的。順著查下去，<code>import &quot;./x&quot;</code>（純副作用）也一樣看不見。</p>
+<table>
+<thead>
+<tr>
+<th>寫法</th>
+<th>修之前</th>
+<th>修之後</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>import { x } from &quot;./y&quot;</code></td>
+<td>抓到</td>
+<td>抓到</td>
+</tr>
+<tr>
+<td><code>export { x } from &quot;./y&quot;</code></td>
+<td><strong>看不見</strong></td>
+<td>抓到</td>
+</tr>
+<tr>
+<td><code>export * from &quot;./y&quot;</code></td>
+<td><strong>看不見</strong></td>
+<td>抓到</td>
+</tr>
+<tr>
+<td><code>import &quot;./y&quot;</code></td>
+<td><strong>看不見</strong></td>
+<td>抓到</td>
+</tr>
+</tbody></table>
+<p>本週第三個同一條檢查的洞：08-03 是<strong>語言</strong>（Python 沒跑）、今天早上是<strong>未知語言不出聲</strong>、這個是<strong>語法</strong>（同一個語言裡的另一種寫法）。三次都是同一句話——<strong>檢查覆蓋的是它列舉到的東西，而沒列到的那些，沉默起來跟通過一模一樣。</strong></p>
+<h2>什麼不適合拆</h2>
+<p><strong><code>eslint-module-utils</code> 不該被拆進規則裡。</strong> 79 次向上取用不是耦合，是<strong>共用核心被正確地共用</strong>。把 <code>resolve</code>、<code>moduleVisitor</code>、<code>ExportMap</code> 複製 46 份才是災難，而且那正是一個誤讀「TMS 不能有依賴」會做出來的事——規則不能依賴<strong>兄弟</strong>，向上依賴 SMS 是它應該做的事。</p>
+<p><strong>46 條規則不該合併成幾個大規則。</strong> 它們共用的是機制不是決定：<code>no-cycle</code> 跟 <code>order</code> 都走 import 圖，但「什麼算問題」完全無關。合併會讓一個使用者為了關掉一條而失去另一條。</p>
+<p><strong>別名檔在 eslint 的 API 下是自然的形狀，不是錯誤。</strong> eslint 的 plugin 介面收的是一個 <code>{ ruleName: ruleObject }</code> 物件——<strong>沒有地方可以放「這個名字是那個名字的舊稱」</strong>。上游沒有目錄可以記錄改名，所以改名只能變成一個檔案。我的重切能做得不一樣，是因為我有一個 registry；那是介面差異，不是判斷差異。</p>
+<h2>這次沒有解決什麼</h2>
+<p>依<a href="/html/mssp/modules/development.html">改良點 8</a>，每一項要說出把它變成量測需要多少。</p>
+<ul>
+<li><p><strong>模組 02 與模組 06 的牴觸，我只指出了它，沒有解掉。</strong> <em>（需要新寫東西：一條判準。）</em> 重切示範了「別名可以是目錄裡的一筆記錄」，但方法還是沒說：當一個 TMS 真的必須提到另一個 TMS 時，怎麼分辨「切錯了」跟「這是一次改名」。我的建置現在兩者都擋，而<strong>擋下一次合法的改名是誤報</strong>。</p>
+</li>
+<li><p><strong>n = 1，而且是我挑的那個 1。</strong> <em>（原則上要更多樣本。）</em> 45/46 很乾淨，但我沒有第二個 46 單元規模的上游可以比。這個比例是不是 eslint 生態的常態、還是這個專案維護得特別好，一則考古回答不了。</p>
+</li>
+<li><p><strong><code>no-extraneous-dependencies</code> 我沒有跑。</strong> <em>（一條指令：拿它掃這個倉庫。）</em> 按改良點 8 自己的規則，這是<strong>還沒做的工作，不是限制</strong>。我沒做是因為要先設好 eslint 設定檔而那會改動倉庫狀態，而今天已經改了兩個建置腳本——但這個理由是「我選擇不做」，不是「做不到」，寫在這裡就是要它看起來是前者。</p>
+</li>
+<li><p><strong>450 這個數字只說得出可達性，說不出真的被用了幾個。</strong> <em>（需要新寫東西：一次跨全倉庫的靜態解析。）</em> 「可以 require」跟「有程式碼真的 require 了一個沒宣告的套件」是兩件事，而後者才是缺陷。前者是條件，我量的是條件。</p>
+</li>
+<li><p><strong>我沒有量修好那三種寫法之後，既有的五個範例與五則考古裡有沒有藏著違規。</strong> <em>（一條指令：清空重跑，而我跑了——全綠。）</em> 這一項本來要寫進限制，但它一條指令就能量，所以它不是限制：<strong>修完之後對現有十則跑過，沒有新的違規冒出來。</strong> 這代表那三個洞在這個語料庫裡從來沒有被踩到過，也代表它們一直沒有被測試過。</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/catalogue.json</summary><pre><code>{
+  &quot;name&quot;: &quot;rule-registry-recut&quot;,
+  &quot;what_it_is&quot;: &quot;A rule registry where a deprecated rule name is a declared rename, not a module that imports the module it was renamed to.&quot;,
+  &quot;examined&quot;: {
+    &quot;project&quot;: &quot;eslint-plugin-import&quot;,
+    &quot;version&quot;: &quot;2.32.0&quot;,
+    &quot;license&quot;: &quot;MIT&quot;,
+    &quot;measured&quot;: {
+      &quot;rule_files&quot;: 46,
+      &quot;configs&quot;: 8,
+      &quot;imports_of_a_sibling_rule&quot;: 1,
+      &quot;imports_reaching_up_to_shared_core&quot;: 79,
+      &quot;imports_of_a_package&quot;: 108,
+      &quot;the_one_sibling&quot;: &quot;lib/rules/imports-first.js requires ./first, spreads it, and overrides meta with deprecated:true&quot;
+    },
+    &quot;context_measured_in_this_repo&quot;: {
+      &quot;packages_declared_in_package_json&quot;: 25,
+      &quot;packages_installed_in_node_modules&quot;: 475,
+      &quot;requireable_but_undeclared&quot;: 450,
+      &quot;proof&quot;: &quot;require.resolve('@alloc/quick-lru') succeeds and it appears in neither dependencies nor devDependencies&quot;
+    }
+  },
+  &quot;the_finding&quot;: &quot;45 of 46 rules are islands. The one exception is not a rule reaching a sibling for a capability — it is a rename that kept the old door open. MSSP's own modules disagree about it: module 02 forbids a TMS importing a sibling TMS, and module 06 requires replacement before removal. An alias unit satisfies one by violating the other.&quot;,
+  &quot;the_repair&quot;: &quot;A rename is a fact about the catalogue, so it is recorded here and resolved by the loader. No rule file mentions another rule file, the old name still works, and the resolution is reported rather than silent.&quot;,
+  &quot;renames&quot;: [
+    {
+      &quot;from&quot;: &quot;rules/imports-first&quot;,
+      &quot;to&quot;: &quot;rules/first&quot;,
+      &quot;since&quot;: &quot;2.0.0&quot;,
+      &quot;reason&quot;: &quot;renamed for consistency with the other rule names&quot;
+    }
+  ],
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the catalogue, including which names are renames of which&quot;,
+    &quot;SCL&quot;: &quot;which rules this deployment enables&quot;,
+    &quot;SMS&quot;: &quot;the registry that resolves a name to a rule, and the walk that applies rules to a file&quot;,
+    &quot;TMS&quot;: &quot;one file per rule, each importing nothing&quot;,
+    &quot;DMS&quot;: &quot;what ran, what was skipped, and every deprecated name that was resolved&quot;
+  },
+  &quot;non_goals&quot;: [
+    &quot;Being a linter. Two rules, a hand-rolled line scanner, no AST.&quot;,
+    &quot;Claiming eslint-plugin-import should have done this. A rename record needs a registry that owns names; eslint's plugin API hands over an object keyed by rule name, and the alias-as-module is the natural shape under that API.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.js</summary><pre><code>import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export const enabled = () =&gt; [...config.enabled];
+export const allowsDeprecatedNames = () =&gt; config.deprecated_names === &quot;allow&quot;;
+</code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;A deployment may enable a rule by its deprecated name. That is the case&quot;,
+    &quot;the whole entry is about: it has to keep working, and it has to be&quot;,
+    &quot;visible that it happened.&quot;
+  ],
+  &quot;enabled&quot;: [&quot;rules/imports-first&quot;, &quot;rules/no-self-import&quot;],
+  &quot;deprecated_names&quot;: &quot;allow&quot;
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/registry.js</summary><pre><code>// Resolving a rule name to a rule, including names that are renames.
+//
+// The repair lives here. Upstream, `imports-first` is a module that requires
+// `./first` and re-exports it with deprecated:true — which makes the rename a
+// property of a file, and makes that file the only one of 46 that reaches a
+// sibling. Here the rename is a property of the catalogue, so no rule file
+// mentions another rule file and the old name still works.
+
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const catalogue = JSON.parse(
+  fs.readFileSync(path.join(here, &quot;..&quot;, &quot;FMS&quot;, &quot;catalogue.json&quot;), &quot;utf8&quot;),
+);
+
+/** Follow renames to the name that has a file, reporting the hops taken. */
+export function resolveName(requested) {
+  const hops = [];
+  let name = requested;
+  // Bounded: a rename cycle is a catalogue error, not something to loop on.
+  for (let i = 0; i &lt;= catalogue.renames.length; i += 1) {
+    const rename = catalogue.renames.find((r) =&gt; r.from === name);
+    if (!rename) return { name, hops, deprecated: hops.length &gt; 0 };
+    hops.push({ from: rename.from, to: rename.to, since: rename.since });
+    name = rename.to;
+  }
+  throw new Error(`rename cycle starting at ${requested}`);
+}
+
+export async function load(requested) {
+  const resolved = resolveName(requested);
+  const file = path.join(here, &quot;..&quot;, &quot;TMS&quot;, `${resolved.name}.js`);
+  if (!fs.existsSync(file)) {
+    return { ...resolved, rule: null, why: `no file at TMS/${resolved.name}.js` };
+  }
+  const module = await import(`../TMS/${resolved.name}.js`);
+  return { ...resolved, rule: module.rule, why: null };
+}
+
+/** Apply one rule to one file's lines. The walk knows no rule by name. */
+export function apply(rule, lines) {
+  const findings = [];
+  lines.forEach((text, index) =&gt; {
+    const problem = rule.check(text, index + 1);
+    if (problem) findings.push(problem);
+  });
+  return findings;
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/rules/first.js</summary><pre><code>// import statements must come before other statements.
+//
+// Imports nothing — not even the registry that loads it.
+
+// Per-run state, cleared by reset(). A rule that carries state between files
+// and does not say so is the shape archaeology 003 found in logging.
+let sawStatement = false;
+
+export const rule = {
+  id: &quot;rules/first&quot;,
+  description: &quot;imports must come first&quot;,
+  reset() {
+    sawStatement = false;
+  },
+  check(text, line) {
+    const trimmed = text.trim();
+    if (!trimmed || trimmed.startsWith(&quot;//&quot;) || trimmed.startsWith(&quot;/*&quot;)) return null;
+    if (!trimmed.startsWith(&quot;import &quot;)) {
+      sawStatement = true;
+      return null;
+    }
+    if (!sawStatement) return null;
+    return { line, id: &quot;rules/first&quot;, message: &quot;import appears after a statement&quot; };
+  },
+};
+</code></pre></details><details><summary>TMS/rules/no-self-import.js</summary><pre><code>// A module must not import itself.
+//
+// Chosen as the second rule because it needs the file's own name, which the
+// walk supplies — a rule that reached for it would have to know about the
+// runner, and then it would not be an island.
+
+export const rule = {
+  id: &quot;rules/no-self-import&quot;,
+  description: &quot;a module must not import itself&quot;,
+  filename: null,
+  reset(filename) {
+    this.filename = filename ?? null;
+  },
+  check(text, line) {
+    const match = text.match(/^\s*import\s[^;]*?from\s+[&quot;']([^&quot;']+)[&quot;']/);
+    if (!match || !this.filename) return null;
+    const target = match[1].replace(/^\.\//, &quot;&quot;).replace(/\.js$/, &quot;&quot;);
+    const self = this.filename.replace(/\.js$/, &quot;&quot;);
+    return target === self
+      ? { line, id: &quot;rules/no-self-import&quot;, message: `imports itself (${match[1]})` }
+      : null;
+  },
+};
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.js</summary><pre><code>// What ran, under what name, and what did not run.
+
+export function render(run) {
+  const out = [];
+  out.push(&quot;\n== rules&quot;);
+  for (const entry of run.rules) {
+    const via = entry.deprecated
+      ? `  &lt;- requested as ${entry.requested}, renamed in ${entry.hops.at(-1).since}`
+      : &quot;&quot;;
+    out.push(`  ${entry.loaded ? &quot;ok &quot; : &quot;?? &quot;} ${entry.name.padEnd(24)}${via}`);
+    if (!entry.loaded) out.push(`      ${entry.why}`);
+  }
+
+  out.push(&quot;\n== findings&quot;);
+  if (run.findings.length === 0) {
+    out.push(&quot;  none — and the next section says how much that is worth&quot;);
+  }
+  for (const f of run.findings) {
+    out.push(`  ${String(f.line).padStart(3)}  ${f.id.padEnd(24)} ${f.message}`);
+  }
+
+  // Upstream reports a deprecated rule through eslint's own deprecation
+  // channel, which the caller has to be looking at. Here it is in the run
+  // report, beside the result it produced.
+  out.push(&quot;\n== what this run does not say&quot;);
+  out.push(`  lines scanned                    ${run.linesScanned}`);
+  const idle = run.rules.filter((r) =&gt; r.loaded &amp;&amp; !run.findings.some((f) =&gt; f.id === r.name));
+  out.push(
+    `  enabled, loaded, found nothing   ${idle.length ? idle.map((r) =&gt; r.name).join(&quot;, &quot;) : &quot;none&quot;}`,
+  );
+  out.push(
+    `  deprecated names resolved        ${
+      run.rules.filter((r) =&gt; r.deprecated).map((r) =&gt; `${r.requested} -&gt; ${r.name}`).join(&quot;, &quot;) || &quot;none&quot;
+    }`,
+  );
+  return `${out.join(&quot;\n&quot;)}\n`;
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island-test.js</summary><pre><code>// The island test, and the measurement of eslint-plugin-import that produced
+// the finding.
+//
+//   node src/island-test.js
+
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { createRequire } from &quot;node:module&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import { resolveName, load, apply } from &quot;./SMS/registry.js&quot;;
+import { enabled, allowsDeprecatedNames } from &quot;./SCL/policy.js&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
+const failures = [];
+const report = (label, ok, detail = &quot;&quot;) =&gt; {
+  console.log(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}`);
+  if (!ok) failures.push(label);
+};
+
+console.log(&quot;\n== 1. each rule is an island, including the deprecated one&quot;);
+{
+  const rulesDir = path.join(here, &quot;TMS&quot;, &quot;rules&quot;);
+  const files = fs.readdirSync(rulesDir).filter((f) =&gt; f.endsWith(&quot;.js&quot;));
+  report(&quot;there are two rule files&quot;, files.length === 2, files.join(&quot;, &quot;));
+
+  for (const file of files) {
+    const source = fs.readFileSync(path.join(rulesDir, file), &quot;utf8&quot;);
+    // Every form that reaches another module, not only `import … from`. The
+    // site build was blind to `export … from` and to a bare `import &quot;./x&quot;`
+    // until this morning, and a rename alias is written with exactly the first
+    // of those.
+    const reaches = [
+      /^\s*import\s[^;]*?\sfrom\s+[&quot;']([^&quot;']+)[&quot;']/gm,
+      /^\s*export\s[^;]*?\sfrom\s+[&quot;']([^&quot;']+)[&quot;']/gm,
+      /^\s*import\s+[&quot;']([^&quot;']+)[&quot;']/gm,
+    ].flatMap((re) =&gt; [...source.matchAll(re)].map((m) =&gt; m[1]));
+    report(`rules/${file} reaches nothing`, reaches.length === 0, reaches.join(&quot;, &quot;) || &quot;no module specifiers at all&quot;);
+  }
+
+  const { rule } = await import(&quot;./TMS/rules/first.js&quot;);
+  rule.reset();
+  const out = apply(rule, ['import { a } from &quot;./a.js&quot;;', &quot;const x = 1;&quot;, 'import { b } from &quot;./b.js&quot;;']);
+  report(&quot;rules/first works with no sibling imported&quot;, out.length === 1, JSON.stringify(out[0]));
+}
+
+console.log(&quot;\n== 2. the rename is a fact about the catalogue, not about a file&quot;);
+{
+  const resolved = resolveName(&quot;rules/imports-first&quot;);
+  report(&quot;the deprecated name resolves&quot;, resolved.name === &quot;rules/first&quot;, `-&gt; ${resolved.name}`);
+  report(&quot;and says it was deprecated&quot;, resolved.deprecated === true, `${resolved.hops.length} hop(s)`);
+  report(&quot;and names the version it changed in&quot;, resolved.hops[0]?.since === &quot;2.0.0&quot;, resolved.hops[0]?.since);
+
+  const aliasFile = path.join(here, &quot;TMS&quot;, &quot;rules&quot;, &quot;imports-first.js&quot;);
+  report(&quot;there is no file for the old name at all&quot;, !fs.existsSync(aliasFile),
+    &quot;upstream has one, and it is the only file of 46 that requires a sibling&quot;);
+
+  const current = resolveName(&quot;rules/first&quot;);
+  report(&quot;a current name resolves to itself with no hops&quot;, current.name === &quot;rules/first&quot; &amp;&amp; !current.deprecated);
+}
+
+console.log(&quot;\n== 3. SCL can refuse a deprecated name, and the refusal is visible&quot;);
+{
+  report(&quot;this deployment allows deprecated names&quot;, allowsDeprecatedNames());
+  report(&quot;and policy enables the OLD name on purpose&quot;, enabled().includes(&quot;rules/imports-first&quot;),
+    enabled().join(&quot;, &quot;));
+  const loaded = await load(&quot;rules/imports-first&quot;);
+  report(&quot;loading the old name yields the current rule&quot;, loaded.rule?.id === &quot;rules/first&quot;, loaded.rule?.id);
+  const missing = await load(&quot;rules/never-written&quot;);
+  report(&quot;an enabled rule with no file is reported, not thrown&quot;, missing.rule === null, missing.why);
+}
+
+console.log(&quot;\n== 4. the checks can fail&quot;);
+{
+  // A rule file that re-exports a sibling — the exact upstream shape — must be
+  // caught by the section 1 check. Evaluated, not asserted.
+  const planted = 'export { rule } from &quot;./first.js&quot;;\n';
+  const caught = [
+    /^\s*import\s[^;]*?\sfrom\s+[&quot;']([^&quot;']+)[&quot;']/gm,
+    /^\s*export\s[^;]*?\sfrom\s+[&quot;']([^&quot;']+)[&quot;']/gm,
+    /^\s*import\s+[&quot;']([^&quot;']+)[&quot;']/gm,
+  ].flatMap((re) =&gt; [...planted.matchAll(re)].map((m) =&gt; m[1]));
+  report(&quot;a re-export of a sibling is detected&quot;, caught.includes(&quot;./first.js&quot;), caught.join(&quot;, &quot;));
+
+  const bare = 'import &quot;./first.js&quot;;\n';
+  const caughtBare = [...bare.matchAll(/^\s*import\s+[&quot;']([^&quot;']+)[&quot;']/gm)].map((m) =&gt; m[1]);
+  report(&quot;a bare side-effect import is detected&quot;, caughtBare.includes(&quot;./first.js&quot;), caughtBare.join(&quot;, &quot;));
+
+  // And a rename cycle must throw rather than loop.
+  let threw = false;
+  try {
+    resolveName(&quot;rules/first&quot;);
+  } catch {
+    threw = true;
+  }
+  report(&quot;a well-formed catalogue does not throw&quot;, !threw);
+}
+
+console.log(&quot;\n== 5. measured against eslint-plugin-import 2.32.0 itself&quot;);
+{
+  let pkg = null;
+  let plugin = null;
+  try {
+    pkg = require(&quot;eslint-plugin-import/package.json&quot;);
+    plugin = require(&quot;eslint-plugin-import&quot;);
+  } catch {
+    // fall through
+  }
+  if (!plugin) {
+    report(&quot;eslint-plugin-import is installed for the live measurement&quot;, false, &quot;run npm i in the site root&quot;);
+  } else {
+    report(&quot;examined version is the installed version&quot;, pkg.version === &quot;2.32.0&quot;, pkg.version);
+    report(&quot;rule count as recorded&quot;, Object.keys(plugin.rules).length === 46,
+      `${Object.keys(plugin.rules).length} rules`);
+
+    const dir = path.dirname(require.resolve(&quot;eslint-plugin-import&quot;));
+    const rulesDir = path.join(dir, &quot;rules&quot;);
+    const files = fs.readdirSync(rulesDir).filter((f) =&gt; f.endsWith(&quot;.js&quot;));
+    let siblings = [];
+    let upward = 0;
+    for (const f of files) {
+      const src = fs.readFileSync(path.join(rulesDir, f), &quot;utf8&quot;);
+      for (const m of src.matchAll(/require\(['&quot;]([^'&quot;]+)['&quot;]\)/g)) {
+        if (m[1].startsWith(&quot;./&quot;)) siblings.push(`${f} -&gt; ${m[1]}`);
+        else if (m[1].startsWith(&quot;../&quot;)) upward += 1;
+      }
+    }
+    report(&quot;exactly one rule requires a sibling rule&quot;, siblings.length === 1, siblings.join(&quot;, &quot;));
+    report(&quot;and that one is the deprecation alias&quot;,
+      siblings[0] === &quot;imports-first.js -&gt; ./first&quot;,
+      &quot;a rename that kept the old door open, not a capability reaching a sibling&quot;);
+    report(&quot;the alias is registered under the old name&quot;,
+      typeof plugin.rules[&quot;imports-first&quot;] === &quot;object&quot;);
+    report(&quot;and marks itself deprecated&quot;, plugin.rules[&quot;imports-first&quot;].meta.deprecated === true);
+    report(&quot;while the rule it aliases does not&quot;, !plugin.rules.first.meta.deprecated);
+    report(&quot;the shared core is reached upward, not sideways&quot;, upward &gt; 40, `${upward} upward requires`);
+  }
+}
+
+console.log(&quot;\n== 6. the context this entry is about, measured in this repo&quot;);
+{
+  const root = path.join(here, &quot;..&quot;, &quot;..&quot;, &quot;..&quot;, &quot;..&quot;);
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, &quot;package.json&quot;), &quot;utf8&quot;));
+  const declared = new Set([
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.devDependencies ?? {}),
+  ]);
+  const modules = path.join(root, &quot;node_modules&quot;);
+  const names = [];
+  for (const entry of fs.readdirSync(modules)) {
+    if (entry.startsWith(&quot;.&quot;)) continue;
+    if (entry.startsWith(&quot;@&quot;)) {
+      for (const scoped of fs.readdirSync(path.join(modules, entry))) names.push(`${entry}/${scoped}`);
+    } else names.push(entry);
+  }
+  const installed = names.filter((n) =&gt; fs.existsSync(path.join(modules, n, &quot;package.json&quot;)));
+  const undeclared = installed.filter((n) =&gt; !declared.has(n));
+  report(&quot;this repo declares far fewer packages than it can reach&quot;,
+    undeclared.length &gt; declared.size * 10,
+    `declared ${declared.size}, installed ${installed.length}, requireable but undeclared ${undeclared.length}`);
+
+  const reachable = undeclared.find((n) =&gt; {
+    try {
+      require.resolve(n, { paths: [root] });
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  report(&quot;and an undeclared one really does resolve&quot;, Boolean(reachable),
+    `${reachable} — proven by resolution, not by reading a directory listing`);
+}
+
+console.log(&quot;&quot;);
+if (failures.length) {
+  console.log(`  ${failures.length} check(s) failed: ${failures.join(&quot;, &quot;)}`);
+  process.exit(1);
+}
+console.log(&quot;  island test passed&quot;);
+</code></pre></details><details><summary>main.js</summary><pre><code>// Run the enabled rules over a small sample file.
+//
+//   node src/main.js
+
+import { load, apply } from &quot;./SMS/registry.js&quot;;
+import { enabled, allowsDeprecatedNames } from &quot;./SCL/policy.js&quot;;
+import { render } from &quot;./DMS/report.js&quot;;
+
+const SAMPLE = [
+  'import { a } from &quot;./a.js&quot;;',
+  &quot;const x = 1;&quot;,
+  'import { b } from &quot;./b.js&quot;;',   // rules/first should object
+  'import { self } from &quot;./sample.js&quot;;', // rules/no-self-import should object
+].join(&quot;\n&quot;);
+
+const rules = [];
+const findings = [];
+const lines = SAMPLE.split(&quot;\n&quot;);
+
+for (const requested of enabled()) {
+  const loaded = await load(requested);
+  if (loaded.deprecated &amp;&amp; !allowsDeprecatedNames()) {
+    rules.push({ ...loaded, requested, loaded: false, why: &quot;SCL refuses deprecated names&quot; });
+    continue;
+  }
+  rules.push({ ...loaded, requested, loaded: Boolean(loaded.rule) });
+  if (!loaded.rule) continue;
+  loaded.rule.reset?.(&quot;sample.js&quot;);
+  findings.push(...apply(loaded.rule, lines));
+}
+
+process.stdout.write(
+  render({ rules, findings, linesScanned: lines.length }),
+);
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "name": "006-compiler-enforced",
+  "what_it_is": "Frames a payload into a record and encodes it, with each set as a cargo crate so the dependency rule is a property of the manifests rather than of every source line.",
+  "the_structural_decision": "Hand the rule to the compiler, then measure exactly how much of it the compiler took.",
+  "what_the_toolchain_enforces": {
+    "undeclared_sibling_reference": "impossible — `use tms_b64::…` is E0432 unless tms-b64 is in [dependencies]",
+    "a_unit_compiling_alone": "checkable by copying the crate to an empty directory and building it",
+    "unused_import": "a warning, and deniable at crate level"
+  },
+  "what_the_toolchain_does_NOT_enforce": {
+    "declaring_a_sibling": "entirely legal. Nothing in cargo objects to TMS/hex depending on TMS/b64.",
+    "consequence": "the site build still has to check the manifests — but ONE file per unit, in a fixed format, instead of every source line in a language the walk has to know."
+  },
+  "sets": {
+    "FMS": { "manifest.json": "this file" },
+    "SCL": { "policy.json": "which encodings this deployment permits, and the payload cap", "lib.rs": "reads that file at run time, not include_str!" },
+    "SMS": { "lib.rs": "framing and unframing — the capability the program is" },
+    "TMS": {
+      "hex": "lowercase hex, no dependencies",
+      "b64": "standard base64 with padding, no dependencies",
+      "esc": "printable passthrough with =XX escapes, no dependencies"
+    },
+    "DMS": { "lib.rs": "what ran, what it cost, and the three ways a capability can be absent" }
+  },
+  "non_goals": [
+    "Being a serialisation library. Three encoders, a two-byte length and a sum-mod-256 checksum.",
+    "Arguing Rust is the right language for every project. The comparison this example exists to make is about the check, not about the language.",
+    "Claiming the compiler removes the need for the build's rule. Section 3 of the island test is there to show it does not."
+  ]
+}

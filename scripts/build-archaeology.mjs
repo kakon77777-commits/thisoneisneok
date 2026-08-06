@@ -55,7 +55,7 @@ function readMeta(file) {
 // Python entry brought `__pycache__/*.pyc` with it, which the walk counted as
 // source and published as part of the re-cut. Bytecode is a build artifact of
 // running the entry, so it reappears every time the runnable command is checked.
-const IGNORED_DIRS = new Set(["__pycache__", ".pytest_cache", "node_modules", ".mypy_cache"]);
+const IGNORED_DIRS = new Set(["__pycache__", ".pytest_cache", "node_modules", ".mypy_cache", "target"]);
 const IGNORED_FILES = /\.(pyc|pyo|class|o)$/;
 
 function walk(dir, out = []) {
@@ -88,7 +88,7 @@ function escapeHtml(value) {
 function checkTmsCoupling(id, dir, srcDir) {
   const tmsDir = path.join(srcDir, "TMS");
   if (!fs.existsSync(tmsDir)) return;
-  const INDEX_FILES = ["index.js", "index.mjs", "index.ts", "__init__.py"];
+  const INDEX_FILES = ["index.js", "index.mjs", "index.ts", "__init__.py", "Cargo.toml"];
   const unitRootOf = (file) => {
     let unit = file;
     let cursor = path.dirname(file);
@@ -112,13 +112,41 @@ function checkTmsCoupling(id, dir, srcDir) {
   };
 
   const IMPORTS = [
-    { ext: /\.(js|mjs|ts)$/, pattern: /^\s*import\s[^;]*?from\s+["']([^"']+)["']/gm, resolve: resolveJs },
+    {
+        ext: /\.(js|mjs|ts)$/,
+        // Three forms reach a sibling and only the first was matched until
+        // 2026-08-06: `import x from "./y"`, `export { x } from "./y"` (how a
+        // deprecation alias reaches the unit it replaces), and
+        // `import "./y"` for side effects. Dynamic import() is still out of
+        // scope and 開發區 缺點 1 says so.
+        pattern: /^\s*(?:import|export)\s[^;]*?\sfrom\s+["']([^"']+)["']|^\s*import\s+["']([^"']+)["']/gm,
+        resolve: resolveJs,
+      },
     { ext: /\.py$/, pattern: /^\s*(?:from\s+([.\w]+)\s+import\b|import\s+([.\w]+))/gm, resolve: resolvePy },
   ];
 
+  // Same three-way split as build-mssp.mjs, and for the same reason: until
+  // 2026-08-06 an unrecognised language produced no signal, and no signal is
+  // indistinguishable from compliance. See the comment there.
+  const NON_SOURCE = /\.(md|txt|json|ya?ml|toml|lock|csv|ini|cfg|svg|png|jpe?g|gif)$/i;
+  const inACrate = (file) => {
+    let cursor = path.dirname(file);
+    while (cursor.startsWith(tmsDir)) {
+      if (fs.existsSync(path.join(cursor, "Cargo.toml"))) return true;
+      cursor = path.dirname(cursor);
+    }
+    return false;
+  };
+
   for (const file of walk(tmsDir)) {
     const rule = IMPORTS.find((r) => r.ext.test(file));
-    if (!rule) continue;
+    if (!rule) {
+      if (NON_SOURCE.test(file) || (/\.rs$/.test(file) && inACrate(file))) continue;
+      fail(id, `TMS contains a file this build cannot check for sibling imports: ` +
+        `${path.relative(dir, file).replaceAll("\\", "/")} — add a resolver for its ` +
+        `language, or declare it non-source, but do not leave it unchecked`);
+      continue;
+    }
     const source = fs.readFileSync(file, "utf8");
     const selfUnit = unitRootOf(file);
     for (const match of source.matchAll(rule.pattern)) {
@@ -131,6 +159,30 @@ function checkTmsCoupling(id, dir, srcDir) {
       if (!resolved.startsWith(tmsDir + path.sep)) continue;
       if (unitRootOf(resolved) !== selfUnit) {
         fail(id, `TMS imports a sibling TMS: ${path.relative(dir, file).replaceAll("\\", "/")} -> ${specifier}`);
+      }
+    }
+  }
+
+  // Rust: check the manifest cargo reads, not the `use` lines that shadow it.
+  for (const manifest of walk(tmsDir).filter((f) => path.basename(f) === "Cargo.toml")) {
+    const selfUnit = path.dirname(manifest);
+    const section = fs.readFileSync(manifest, "utf8").split(/^\[/m).find((s) => /^dependencies\]/.test(s));
+    if (!section) continue;
+    for (const line of section.split("\n").slice(1)) {
+      const text = line.split("#")[0].trim();
+      if (!text) continue;
+      const dep = text.match(/^([\w-]+)\s*(?:\.path)?\s*=\s*(.+)$/);
+      if (!dep) {
+        fail(id, `Cargo.toml dependency this build cannot read: ${path.relative(dir, manifest).replaceAll("\\", "/")} — ${text}`);
+        continue;
+      }
+      const viaPath = dep[2].match(/path\s*=\s*"([^"]+)"/);
+      if (!viaPath) continue;
+      const target = path.resolve(selfUnit, viaPath[1]);
+      if (!target.startsWith(tmsDir + path.sep)) continue;
+      if (unitRootOf(target) !== unitRootOf(selfUnit)) {
+        fail(id, `TMS crate depends on a sibling TMS crate: ` +
+          `${path.relative(dir, manifest).replaceAll("\\", "/")} -> ${viaPath[1]}`);
       }
     }
   }

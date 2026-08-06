@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>讓編譯器持有規則：cargo workspace 版的 MSSP | MSSP | Neo.K</title>
+<meta name="description" content="開發區缺點 1 說依賴檢查只認得靜態 import，決心繞過的人繞得過去。改良點 2 說去有真模組邊界的語言上重做一次。這是那次重做：每個 TMS 單元是一個 crate，於是「引用兄弟」需要先在 Cargo.toml 宣告，而未宣告的 use 根本不編譯。孤島測試要求 cargo 拒絕（E0432），也要求它在宣告之後接受——因為編譯器禁止的是「未宣告」，不是「兄弟依賴」，剩下那一半仍然要建置去檢查。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/006-compiler-enforced.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>006-compiler-enforced</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>006-compiler-enforced</span></div>
+    <div><b>語言</b><span>rust</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-06</span></div>
+    <div><b>行數</b><span>879</span></div>
+    <div><b>執行</b><span><code>cargo run --offline -q --manifest-path src/Cargo.toml -p report</code></span></div>
+  </section>
+  <article class="content"><h1>006 — Handing the rule to the compiler, and measuring how much of it the compiler took</h1>
+<h2>What this program does</h2>
+<p>It frames a payload — two-byte length, payload, checksum — and encodes the
+record with whichever encoding this deployment permits.</p>
+<pre><code class="language-bash">cargo run --offline -q --manifest-path src/Cargo.toml -p report
+cargo run --offline -q --manifest-path src/Cargo.toml -p report -- --b64 &quot;hello&quot;
+cargo run --offline -q --manifest-path src/Cargo.toml -p island-test
+</code></pre>
+<p>Every set is a crate in one cargo workspace. Each TMS unit — <code>hex</code>, <code>b64</code>,
+<code>esc</code> — is a crate with an empty <code>[dependencies]</code>.</p>
+<pre><code class="language-console">$ cargo run -q -p report
+
+== record
+  payload            20 bytes
+  framed             23 bytes  (+3 for length and checksum)
+  encodings/hex      46 chars  (2.00x the record)
+
+  round trip         unframed back to the original payload
+
+== what this run does not say
+  compiled in, permitted, never called   encodings/b64
+  permitted, no crate behind it          encodings/z85
+  compiled in, refused by policy         encodings/esc
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>Hand the dependency rule to the compiler — then measure exactly how much of
+it the compiler actually took.</strong></p>
+<p><a href="/html/mssp/modules/development.html">開發區 缺點 1</a> says the dependency check
+is text matching, so <em>a determined author can step around it</em>, and
+<a href="/html/mssp/modules/development.html">改良點 2</a> says to redo it in a language
+with real module boundaries and compare the strength of the check against the
+cost of writing it. This is that comparison, and the answer is a split rather
+than a win.</p>
+<h3>What the compiler took</h3>
+<p><strong>An undeclared sibling reference cannot exist.</strong> <code>use tms_b64::encode;</code> inside
+<code>TMS/hex</code> is <code>error[E0432]: unresolved import</code> unless <code>tms-b64</code> appears in
+hex&#39;s <code>[dependencies]</code>. The island test measures this with the sibling crate
+<strong>physically present on disk</strong>, so the failure cannot be &quot;file not found.&quot;</p>
+<p>That is a different kind of guarantee from the JavaScript and Python examples.
+There, the rule is a grep, and a grep is only as good as its idea of what a
+source file is — which is exactly how it came to not run on Python at all
+(<a href="/html/mssp/modules/log.html">開發日誌 08-03</a>), and how it came to say nothing
+about a <code>.rs</code> file this morning.</p>
+<h3>What the compiler did not take</h3>
+<p><strong>Declaring the sibling is completely legal.</strong> Add two lines to hex&#39;s
+<code>Cargo.toml</code> and the same <code>use</code> compiles. Section 3 of the island test requires
+this to succeed, because an example that only showed the refusal would be
+claiming the compiler solved a problem it did not.</p>
+<p>So the rule splits cleanly:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>who enforces it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>reaching a sibling <strong>without declaring it</strong></td>
+<td>cargo, absolutely</td>
+</tr>
+<tr>
+<td><strong>declaring</strong> a sibling dependency</td>
+<td>still the site build</td>
+</tr>
+</tbody></table>
+<p>The gain is not that the check disappeared. It is that <strong>the check moved from
+every source line to one file per unit, in a fixed format</strong>. <code>scripts/build-mssp.mjs</code>
+now reads each TMS crate&#39;s <code>Cargo.toml</code> rather than pattern-matching <code>use</code>
+lines — and it reads the same manifest cargo reads, so there is no second
+representation to drift.</p>
+<p>That is the real answer to 改良點 2: a compiled language does not remove the
+rule, it makes the rule <strong>checkable in one authoritative place</strong>.</p>
+<h3>What it cost</h3>
+<p>Measured on this example:</p>
+<pre><code class="language-text">  .rs      667 lines   8 files   the program
+  .toml    125 lines   9 files   1 workspace + 8 crate manifests
+  .lock     44 lines   1 file    generated
+  .json     43 lines   2 files   FMS manifest + SCL policy
+  TOTAL    879 lines  20 files
+</code></pre>
+<p><strong>10–13 lines of manifest per unit, and one extra file per unit.</strong> For three
+encoders that is 33 lines to buy a guarantee the previous five examples could
+only assert. Whether that trade holds at thirty units, I have not
+measured — a thirty-crate workspace has its own costs (build graph, version
+churn, IDE load) that three does not show.</p>
+<p>One thing the language charged that the others did not: <strong>SCL had to decide
+when to read its policy.</strong> <code>include_str!</code> would compile <code>policy.json</code> into the
+binary and make every policy change a rebuild. <code>env!(&quot;CARGO_MANIFEST_DIR&quot;)</code> +
+<code>std::fs::read_to_string</code> keeps it a runtime read. In JavaScript and Python
+that decision does not exist, because reading a file at startup is the only
+option there is.</p>
+<h2>Set by set</h2>
+<p><strong>FMS</strong> — <code>manifest.json</code>, and specifically the two lists named
+<em>what_the_toolchain_enforces</em> and <em>what_the_toolchain_does_NOT_enforce</em>.</p>
+<p><strong>SCL</strong> — <code>policy.json</code>, read at run time. It permits <code>encodings/z85</code>, which
+<strong>no crate provides</strong>, and refuses <code>encodings/esc</code>, which is compiled in. Both
+are deliberate: policy names capabilities rather than holding them, the same
+decision as the Route in <a href="/html/mssp/004-router.html">範例 004</a>.</p>
+<p><strong>SMS</strong> — <code>frame</code> / <code>unframe</code>. Remove it and there is nothing to encode.
+<code>unframe</code> exists so <code>main</code> can verify the record instead of trusting that
+<code>frame</code> returning <code>Ok</code> means it framed.</p>
+<p><strong>TMS</strong> — three crates, three empty <code>[dependencies]</code>.</p>
+<p><strong>DMS</strong> — reports what ran, and three distinct ways a capability can be absent:
+compiled but never called, permitted with nothing behind it, compiled but
+refused. <a href="/html/mssp/modules/development.html">改良點 7</a>&#39;s third minimum, with
+the shape the compiler makes newly checkable.</p>
+<h2>The island test</h2>
+<pre><code class="language-console">$ cargo run -q -p island-test
+  ... 16 checks across 5 sections ...
+  island test passed
+</code></pre>
+<p>Section 1 copies each TMS crate <strong>alone into an empty directory</strong> and builds and
+tests it there. Not &quot;no sibling import was found&quot; — no sibling exists on disk.</p>
+<p>Sections 2 and 3 are why this example is in Rust:</p>
+<pre><code class="language-text">== 2. a sibling reference the manifest does not declare CANNOT compile
+  PASS  cargo refuses `use tms_b64` with no dependency declared - error[E0432]: unresolved import `tms_b64`
+  PASS  and it refuses for the stated reason: an unresolved crate
+
+== 3. …and DOES compile once the manifest declares it
+  PASS  declaring the sibling makes it compile
+  PASS  so the compiler is not the thing forbidding a sibling dependency
+</code></pre>
+<h3>The check that passed for the wrong reason</h3>
+<p>Section 2 passed on its first run with this:</p>
+<pre><code class="language-text">error[E0753]: expected outer doc comment
+</code></pre>
+<p>The test inserts the sibling <code>use</code> into a copy of <code>lib.rs</code>, and the first
+version inserted it at byte 0 — <strong>above the <code>//!</code> module doc comment</strong>, which is
+a syntax error. The crate never got as far as resolving anything. The
+accompanying assertion &quot;it refuses for the right reason&quot; passed too, because it
+only required the output to mention <code>tms_b64</code>, and my own inserted line was
+quoted in the error.</p>
+<p><strong>A green check, testing nothing, in the section written to prove the compiler
+enforces the rule.</strong> The fix was to insert after the doc comment and to require
+the specific diagnostic (<code>E0432</code> / <code>can&#39;t find crate</code>) rather than a substring.</p>
+<p>Section 4 checks the half the compiler left behind — that no TMS manifest
+declares a path dependency — and then evaluates the failing case, so the check
+is not decorative.</p>
+<h2>What this example does not solve</h2>
+<p>Following <a href="/html/mssp/modules/development.html">改良點 8</a>, each item says what
+turning it into a measurement would take.</p>
+<ul>
+<li><p><strong>Three units is not thirty.</strong> <em>(needs new code: a generator for an N-crate
+workspace and a build-time series.)</em> The 10–13 lines of manifest per unit is
+measured; the claim that it stays proportional is not. A thirty-crate
+workspace has costs — resolution time, lockfile churn, editor indexing — that
+three crates cannot show.</p>
+</li>
+<li><p><strong>This example does not compare against the same program in JavaScript.</strong>
+<em>(needs new code: a port, then the same measurement.)</em> <a href="/html/mssp/005-before-after.html">範例 005</a>
+measured monolith against MSSP in one language. The comparison this one
+implies — the same MSSP structure in a checked language versus a grepped one
+— would need both, and I built one.</p>
+</li>
+<li><p><strong><code>unused_import</code> is a warning here, not an error.</strong> <em>(one command: add
+<code>#![deny(unused_imports)]</code> and rebuild.)</em> By 改良點 8&#39;s own rule this is
+unfinished work rather than a limitation, and I am listing it as work: it is
+the closest thing Rust offers to
+<a href="/html/mssp/modules/development.html">改良點 3</a>&#39;s <em>loaded but never read</em>
+proxy, and I did not pursue it because the interesting version measures
+<strong>runtime</strong> unused capability, which <code>deny</code> cannot see.</p>
+</li>
+<li><p><strong>A workspace is not the only Rust shape, and I did not compare shapes.</strong>
+<em>(unmeasurable from one example.)</em> One crate with <code>pub(crate)</code> modules, or
+separate published crates, would each move the boundary somewhere else. Which
+shape MSSP should prefer in Rust is a question this example raises and does
+not answer.</p>
+</li>
+<li><p><strong>Nothing here tests what happens when a unit legitimately needs a sibling.</strong>
+<em>(needs new code, and first a criterion.)</em> The method says a TMS that needs a
+sibling is a sign the split is wrong — but &quot;declare it and be caught by the
+build&quot; and &quot;the split is wrong&quot; are different diagnoses, and the build cannot
+tell them apart. That is closer to a gap in the method than in the example.</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;006-compiler-enforced&quot;,
+  &quot;what_it_is&quot;: &quot;Frames a payload into a record and encodes it, with each set as a cargo crate so the dependency rule is a property of the manifests rather than of every source line.&quot;,
+  &quot;the_structural_decision&quot;: &quot;Hand the rule to the compiler, then measure exactly how much of it the compiler took.&quot;,
+  &quot;what_the_toolchain_enforces&quot;: {
+    &quot;undeclared_sibling_reference&quot;: &quot;impossible — `use tms_b64::…` is E0432 unless tms-b64 is in [dependencies]&quot;,
+    &quot;a_unit_compiling_alone&quot;: &quot;checkable by copying the crate to an empty directory and building it&quot;,
+    &quot;unused_import&quot;: &quot;a warning, and deniable at crate level&quot;
+  },
+  &quot;what_the_toolchain_does_NOT_enforce&quot;: {
+    &quot;declaring_a_sibling&quot;: &quot;entirely legal. Nothing in cargo objects to TMS/hex depending on TMS/b64.&quot;,
+    &quot;consequence&quot;: &quot;the site build still has to check the manifests — but ONE file per unit, in a fixed format, instead of every source line in a language the walk has to know.&quot;
+  },
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: { &quot;manifest.json&quot;: &quot;this file&quot; },
+    &quot;SCL&quot;: { &quot;policy.json&quot;: &quot;which encodings this deployment permits, and the payload cap&quot;, &quot;lib.rs&quot;: &quot;reads that file at run time, not include_str!&quot; },
+    &quot;SMS&quot;: { &quot;lib.rs&quot;: &quot;framing and unframing — the capability the program is&quot; },
+    &quot;TMS&quot;: {
+      &quot;hex&quot;: &quot;lowercase hex, no dependencies&quot;,
+      &quot;b64&quot;: &quot;standard base64 with padding, no dependencies&quot;,
+      &quot;esc&quot;: &quot;printable passthrough with =XX escapes, no dependencies&quot;
+    },
+    &quot;DMS&quot;: { &quot;lib.rs&quot;: &quot;what ran, what it cost, and the three ways a capability can be absent&quot; }
+  },
+  &quot;non_goals&quot;: [
+    &quot;Being a serialisation library. Three encoders, a two-byte length and a sum-mod-256 checksum.&quot;,
+    &quot;Arguing Rust is the right language for every project. The comparison this example exists to make is about the check, not about the language.&quot;,
+    &quot;Claiming the compiler removes the need for the build's rule. Section 3 of the island test is there to show it does not.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/Cargo.toml</summary><pre><code>[package]
+name = &quot;scl&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[lib]
+path = &quot;lib.rs&quot;
+
+# SCL names encodings as strings and depends on no encoder crate. That is what
+# lets policy list an encoding nobody has written yet, and refuse one that is
+# compiled in — see the island test.
+[dependencies]
+</code></pre></details><details><summary>SCL/lib.rs</summary><pre><code>//! What this deployment permits. Names, never crates.
+
+use std::path::PathBuf;
+
+pub struct Policy {
+    pub permitted: Vec&lt;String&gt;,
+    pub max_payload_bytes: usize,
+}
+
+pub fn load() -&gt; Policy {
+    // CARGO_MANIFEST_DIR is a compile-time constant, but the read happens at
+    // run time. include_str! would have compiled the policy into the binary and
+    // made every policy change a rebuild.
+    let path = PathBuf::from(env!(&quot;CARGO_MANIFEST_DIR&quot;)).join(&quot;policy.json&quot;);
+    let text = std::fs::read_to_string(&amp;path)
+        .unwrap_or_else(|e| panic!(&quot;SCL cannot read {}: {e}&quot;, path.display()));
+    Policy {
+        permitted: string_list(&amp;text, &quot;permitted&quot;),
+        max_payload_bytes: number(&amp;text, &quot;max_payload_bytes&quot;).unwrap_or(0),
+    }
+}
+
+impl Policy {
+    pub fn permits(&amp;self, encoding: &amp;str) -&gt; bool {
+        self.permitted.iter().any(|p| p == encoding)
+    }
+}
+
+/// Enough JSON for one array of strings. A dependency-free example pays for its
+/// dependency-freedom somewhere, and this is where.
+fn string_list(text: &amp;str, key: &amp;str) -&gt; Vec&lt;String&gt; {
+    let anchor = format!(&quot;\&quot;{key}\&quot;&quot;);
+    let Some(start) = text.find(&amp;anchor).and_then(|i| text[i..].find('[').map(|j| i + j + 1)) else {
+        return Vec::new();
+    };
+    let Some(end) = text[start..].find(']').map(|j| start + j) else {
+        return Vec::new();
+    };
+    text[start..end]
+        .split(',')
+        .map(|item| item.trim().trim_matches('&quot;').to_string())
+        .filter(|item| !item.is_empty())
+        .collect()
+}
+
+fn number(text: &amp;str, key: &amp;str) -&gt; Option&lt;usize&gt; {
+    let anchor = format!(&quot;\&quot;{key}\&quot;&quot;);
+    let start = text.find(&amp;anchor)? + anchor.len();
+    let rest = text[start..].trim_start().strip_prefix(':')?.trim_start();
+    let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
+    digits.parse().ok()
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn reads_the_file_not_a_constant() {
+        let policy = super::load();
+        assert!(policy.permits(&quot;encodings/hex&quot;));
+        assert!(!policy.permits(&quot;encodings/esc&quot;));
+        assert_eq!(policy.max_payload_bytes, 64);
+    }
+}
+</code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;Read at run time from CARGO_MANIFEST_DIR, not include_str!, so that&quot;,
+    &quot;changing which encodings a deployment permits does not require a rebuild.&quot;,
+    &quot;In a compiled language that is a decision, not a default.&quot;
+  ],
+  &quot;_z85&quot;: &quot;Permitted, and no crate provides it. SCL names capabilities rather than holding them, so policy may describe a deployment that has not been built yet — the same decision as the Router in example 004. DMS reports it as an absence rather than the program failing to start.&quot;,
+  &quot;permitted&quot;: [&quot;encodings/hex&quot;, &quot;encodings/b64&quot;, &quot;encodings/z85&quot;],
+  &quot;max_payload_bytes&quot;: 64
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/Cargo.toml</summary><pre><code>[package]
+name = &quot;sms&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[lib]
+path = &quot;lib.rs&quot;
+
+# SMS does not depend on any encoder. Remove every TMS crate from the workspace
+# and this still compiles and still frames records — which is the identity test
+# stated as a build, not as a claim.
+[dependencies]
+</code></pre></details><details><summary>SMS/lib.rs</summary><pre><code>//! Framing: a payload becomes a record with a length and a checksum.
+//!
+//! This is the capability the program is. Remove it and there is nothing left
+//! to encode — which is the identity test, and here it is also a fact about the
+//! build graph: every other crate can be deleted and this one still compiles.
+
+/// A framed record: length prefix (2 bytes, big-endian), payload, checksum.
+pub fn frame(payload: &amp;[u8]) -&gt; Result&lt;Vec&lt;u8&gt;, FrameError&gt; {
+    if payload.len() &gt; u16::MAX as usize {
+        return Err(FrameError::TooLong(payload.len()));
+    }
+    let mut record = Vec::with_capacity(payload.len() + 3);
+    record.extend_from_slice(&amp;(payload.len() as u16).to_be_bytes());
+    record.extend_from_slice(payload);
+    record.push(checksum(payload));
+    Ok(record)
+}
+
+/// Sum of bytes mod 256. Weak on purpose: the example is about structure, and a
+/// real checksum here would invite the reader to think the framing is the point.
+pub fn checksum(payload: &amp;[u8]) -&gt; u8 {
+    payload.iter().fold(0u8, |acc, b| acc.wrapping_add(*b))
+}
+
+/// Split a record back into its parts, so a caller can check a claim rather
+/// than take one. `frame` returning something is not evidence it framed.
+pub fn unframe(record: &amp;[u8]) -&gt; Result&lt;&amp;[u8], FrameError&gt; {
+    if record.len() &lt; 3 {
+        return Err(FrameError::Truncated(record.len()));
+    }
+    let declared = u16::from_be_bytes([record[0], record[1]]) as usize;
+    let payload = &amp;record[2..record.len() - 1];
+    if payload.len() != declared {
+        return Err(FrameError::LengthMismatch {
+            declared,
+            actual: payload.len(),
+        });
+    }
+    let found = record[record.len() - 1];
+    let expected = checksum(payload);
+    if found != expected {
+        return Err(FrameError::ChecksumMismatch { expected, found });
+    }
+    Ok(payload)
+}
+
+#[derive(Debug, PartialEq)]
+pub enum FrameError {
+    TooLong(usize),
+    Truncated(usize),
+    LengthMismatch { declared: usize, actual: usize },
+    ChecksumMismatch { expected: u8, found: u8 },
+}
+
+impl std::fmt::Display for FrameError {
+    fn fmt(&amp;self, f: &amp;mut std::fmt::Formatter&lt;'_&gt;) -&gt; std::fmt::Result {
+        match self {
+            Self::TooLong(n) =&gt; write!(f, &quot;payload is {n} bytes, the length prefix holds 65535&quot;),
+            Self::Truncated(n) =&gt; write!(f, &quot;record is {n} bytes, too short to hold a frame&quot;),
+            Self::LengthMismatch { declared, actual } =&gt; {
+                write!(f, &quot;frame declares {declared} bytes, carries {actual}&quot;)
+            }
+            Self::ChecksumMismatch { expected, found } =&gt; {
+                write!(f, &quot;checksum is {found:#04x}, payload computes {expected:#04x}&quot;)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn round_trips() {
+        let record = frame(b&quot;hello&quot;).unwrap();
+        assert_eq!(unframe(&amp;record).unwrap(), b&quot;hello&quot;);
+    }
+
+    #[test]
+    fn a_flipped_byte_is_reported_not_absorbed() {
+        let mut record = frame(b&quot;hello&quot;).unwrap();
+        record[3] ^= 0xff;
+        assert!(matches!(
+            unframe(&amp;record),
+            Err(FrameError::ChecksumMismatch { .. })
+        ));
+    }
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/b64/Cargo.toml</summary><pre><code>[package]
+name = &quot;tms-b64&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[lib]
+path = &quot;lib.rs&quot;
+
+[dependencies]
+</code></pre></details><details><summary>TMS/b64/lib.rs</summary><pre><code>//! Standard base64 with padding. Knows nothing about the other encoders.
+
+pub const NAME: &amp;str = &quot;encodings/b64&quot;;
+
+const ALPHABET: &amp;[u8; 64] = b&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/&quot;;
+
+pub fn encode(bytes: &amp;[u8]) -&gt; String {
+    let mut out = String::new();
+    for chunk in bytes.chunks(3) {
+        let b0 = chunk[0] as u32;
+        let b1 = *chunk.get(1).unwrap_or(&amp;0) as u32;
+        let b2 = *chunk.get(2).unwrap_or(&amp;0) as u32;
+        let packed = (b0 &lt;&lt; 16) | (b1 &lt;&lt; 8) | b2;
+
+        out.push(ALPHABET[(packed &gt;&gt; 18) as usize &amp; 0x3f] as char);
+        out.push(ALPHABET[(packed &gt;&gt; 12) as usize &amp; 0x3f] as char);
+        out.push(if chunk.len() &gt; 1 {
+            ALPHABET[(packed &gt;&gt; 6) as usize &amp; 0x3f] as char
+        } else {
+            '='
+        });
+        out.push(if chunk.len() &gt; 2 {
+            ALPHABET[packed as usize &amp; 0x3f] as char
+        } else {
+            '='
+        });
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn encodes_without_a_sibling_loaded() {
+        assert_eq!(super::encode(b&quot;Man&quot;), &quot;TWFu&quot;);
+        assert_eq!(super::encode(b&quot;Ma&quot;), &quot;TWE=&quot;);
+        assert_eq!(super::encode(b&quot;M&quot;), &quot;TQ==&quot;);
+    }
+}
+</code></pre></details><details><summary>TMS/esc/Cargo.toml</summary><pre><code>[package]
+name = &quot;tms-esc&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[lib]
+path = &quot;lib.rs&quot;
+
+[dependencies]
+</code></pre></details><details><summary>TMS/esc/lib.rs</summary><pre><code>//! Printable bytes pass through; everything else becomes =XX.
+//!
+//! Included because it is the encoder whose output length depends on the
+//! payload, so DMS has something to report that is not arithmetic.
+
+pub const NAME: &amp;str = &quot;encodings/esc&quot;;
+
+pub fn encode(bytes: &amp;[u8]) -&gt; String {
+    let mut out = String::new();
+    for &amp;byte in bytes {
+        if (0x20..0x7f).contains(&amp;byte) &amp;&amp; byte != b'=' {
+            out.push(byte as char);
+        } else {
+            out.push('=');
+            out.push(upper_nibble(byte &gt;&gt; 4));
+            out.push(upper_nibble(byte &amp; 0x0f));
+        }
+    }
+    out
+}
+
+fn upper_nibble(value: u8) -&gt; char {
+    match value {
+        0..=9 =&gt; (b'0' + value) as char,
+        _ =&gt; (b'A' + value - 10) as char,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn encodes_without_a_sibling_loaded() {
+        assert_eq!(super::encode(b&quot;ok&quot;), &quot;ok&quot;);
+        assert_eq!(super::encode(&amp;[0x0a]), &quot;=0A&quot;);
+        assert_eq!(super::encode(b&quot;=&quot;), &quot;=3D&quot;);
+    }
+}
+</code></pre></details><details><summary>TMS/hex/Cargo.toml</summary><pre><code>[package]
+name = &quot;tms-hex&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[lib]
+path = &quot;lib.rs&quot;
+
+# No dependencies. Not &quot;we chose not to add any&quot; — this crate cannot name a
+# sibling encoder even by accident, because `use tms_b64::…` does not compile
+# unless tms-b64 appears above this line.
+[dependencies]
+</code></pre></details><details><summary>TMS/hex/lib.rs</summary><pre><code>//! Lowercase hex. Two characters per byte, no padding rules, no state.
+
+pub const NAME: &amp;str = &quot;encodings/hex&quot;;
+
+pub fn encode(bytes: &amp;[u8]) -&gt; String {
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        out.push(nibble(byte &gt;&gt; 4));
+        out.push(nibble(byte &amp; 0x0f));
+    }
+    out
+}
+
+fn nibble(value: u8) -&gt; char {
+    match value {
+        0..=9 =&gt; (b'0' + value) as char,
+        _ =&gt; (b'a' + value - 10) as char,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn encodes_without_a_sibling_loaded() {
+        assert_eq!(super::encode(&amp;[0x00, 0x0f, 0xff]), &quot;000fff&quot;);
+    }
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/Cargo.toml</summary><pre><code>[package]
+name = &quot;dms&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[lib]
+path = &quot;lib.rs&quot;
+
+# DMS takes plain values. It depends on no encoder, so it cannot report on one
+# by reaching for it — everything it prints has to be handed to it by the code
+# that actually ran.
+[dependencies]
+</code></pre></details><details><summary>DMS/lib.rs</summary><pre><code>//! What actually happened, including what did not.
+
+pub struct Run {
+    pub payload_bytes: usize,
+    pub record_bytes: usize,
+    pub encoding: String,
+    pub encoded_chars: usize,
+    /// Compiled in, permitted, and never called on this run. Loaded-and-correct
+    /// and never-exercised are different states, and a report that cannot tell
+    /// them apart is the one 改良點 7 exists to forbid.
+    pub compiled_but_unused: Vec&lt;String&gt;,
+    /// Permitted by policy with no crate behind it. Not an error: policy is
+    /// allowed to describe a deployment that has not been built yet.
+    pub permitted_without_a_crate: Vec&lt;String&gt;,
+    /// Compiled in and refused by policy.
+    pub compiled_but_refused: Vec&lt;String&gt;,
+    pub verified: Result&lt;(), String&gt;,
+}
+
+pub fn render(run: &amp;Run) -&gt; String {
+    let mut out = String::new();
+    out.push_str(&quot;\n== record\n&quot;);
+    out.push_str(&amp;format!(&quot;  payload            {} bytes\n&quot;, run.payload_bytes));
+    out.push_str(&amp;format!(
+        &quot;  framed             {} bytes  (+{} for length and checksum)\n&quot;,
+        run.record_bytes,
+        run.record_bytes - run.payload_bytes
+    ));
+    out.push_str(&amp;format!(
+        &quot;  {:&lt;18} {} chars  ({:.2}x the record)\n&quot;,
+        run.encoding,
+        run.encoded_chars,
+        run.encoded_chars as f64 / run.record_bytes as f64
+    ));
+
+    out.push_str(&quot;\n  round trip         &quot;);
+    match &amp;run.verified {
+        Ok(()) =&gt; out.push_str(&quot;unframed back to the original payload\n&quot;),
+        Err(why) =&gt; out.push_str(&amp;format!(&quot;FAILED — {why}\n&quot;)),
+    }
+
+    out.push_str(&quot;\n== what this run does not say\n&quot;);
+    section(&amp;mut out, &quot;compiled in, permitted, never called&quot;, &amp;run.compiled_but_unused);
+    section(&amp;mut out, &quot;permitted, no crate behind it&quot;, &amp;run.permitted_without_a_crate);
+    section(&amp;mut out, &quot;compiled in, refused by policy&quot;, &amp;run.compiled_but_refused);
+    out
+}
+
+fn section(out: &amp;mut String, label: &amp;str, items: &amp;[String]) {
+    if items.is_empty() {
+        out.push_str(&amp;format!(&quot;  {label:&lt;38} none\n&quot;));
+        return;
+    }
+    out.push_str(&amp;format!(&quot;  {label:&lt;38} {}\n&quot;, items.join(&quot;, &quot;)));
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>Cargo.lock</summary><pre><code># This file is automatically @generated by Cargo.
+# It is not intended for manual editing.
+version = 4
+
+[[package]]
+name = &quot;dms&quot;
+version = &quot;0.1.0&quot;
+
+[[package]]
+name = &quot;island-test&quot;
+version = &quot;0.1.0&quot;
+
+[[package]]
+name = &quot;report&quot;
+version = &quot;0.1.0&quot;
+dependencies = [
+ &quot;dms&quot;,
+ &quot;scl&quot;,
+ &quot;sms&quot;,
+ &quot;tms-b64&quot;,
+ &quot;tms-esc&quot;,
+ &quot;tms-hex&quot;,
+]
+
+[[package]]
+name = &quot;scl&quot;
+version = &quot;0.1.0&quot;
+
+[[package]]
+name = &quot;sms&quot;
+version = &quot;0.1.0&quot;
+
+[[package]]
+name = &quot;tms-b64&quot;
+version = &quot;0.1.0&quot;
+
+[[package]]
+name = &quot;tms-esc&quot;
+version = &quot;0.1.0&quot;
+
+[[package]]
+name = &quot;tms-hex&quot;
+version = &quot;0.1.0&quot;
+</code></pre></details><details><summary>Cargo.toml</summary><pre><code>[workspace]
+resolver = &quot;2&quot;
+members = [
+    &quot;SCL&quot;,
+    &quot;SMS&quot;,
+    &quot;DMS&quot;,
+    &quot;TMS/hex&quot;,
+    &quot;TMS/b64&quot;,
+    &quot;TMS/esc&quot;,
+    &quot;main&quot;,
+    &quot;island-test&quot;,
+]
+
+# The dependency graph this file admits to is the dependency graph cargo builds.
+# There is no second place where a unit can reach a sibling, which is the whole
+# point of the example: the rule &quot;no TMS depends on a sibling TMS&quot; is a property
+# of the manifests, checkable in one place, rather than a property of every
+# `use` line in every file.
+</code></pre></details><details><summary>island-test/Cargo.toml</summary><pre><code>[package]
+name = &quot;island-test&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[[bin]]
+name = &quot;island-test&quot;
+path = &quot;main.rs&quot;
+
+# The island test depends on NOTHING. It copies crates to a temp directory and
+# asks cargo. A test that imported the units it is testing would be asserting
+# from inside the thing it claims to be outside of.
+[dependencies]
+</code></pre></details><details><summary>island-test/main.rs</summary><pre><code>//! The island test, asked of the compiler instead of of a grep.
+//!
+//!   cargo run --offline -q -p island-test
+//!
+//! Sections 2 and 3 are the reason this example is in Rust: one requires cargo
+//! to REFUSE, the other requires it to accept — and the gap between them is
+//! exactly what the site build has to check, because the compiler will not.
+
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+fn main() {
+    let src = PathBuf::from(env!(&quot;CARGO_MANIFEST_DIR&quot;))
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    let scratch = std::env::temp_dir().join(&quot;mssp-006-island&quot;);
+    let _ = fs::remove_dir_all(&amp;scratch);
+    fs::create_dir_all(&amp;scratch).unwrap();
+
+    let mut failures: Vec&lt;String&gt; = Vec::new();
+
+    println!(&quot;\n== 1. each TMS crate compiles alone, with no sibling on disk&quot;);
+    for unit in [&quot;hex&quot;, &quot;b64&quot;, &quot;esc&quot;] {
+        let solo = scratch.join(format!(&quot;solo-{unit}&quot;));
+        copy_crate(&amp;src.join(&quot;TMS&quot;).join(unit), &amp;solo, Detach::Yes);
+        let (ok, _) = cargo(&amp;solo, &amp;[&quot;build&quot;, &quot;--offline&quot;, &quot;-q&quot;]);
+        report(
+            &amp;mut failures,
+            &amp;format!(&quot;TMS/{unit} builds with nothing else present&quot;),
+            ok,
+            &amp;format!(&quot;copied alone to {}&quot;, solo.display()),
+        );
+
+        let (tests_ok, _) = cargo(&amp;solo, &amp;[&quot;test&quot;, &quot;--offline&quot;, &quot;-q&quot;]);
+        report(
+            &amp;mut failures,
+            &amp;format!(&quot;TMS/{unit} passes its own tests alone&quot;),
+            tests_ok,
+            &quot;&quot;,
+        );
+    }
+
+    println!(&quot;\n== 2. a sibling reference the manifest does not declare CANNOT compile&quot;);
+    {
+        let sneak = scratch.join(&quot;sneak&quot;);
+        copy_crate(&amp;src.join(&quot;TMS&quot;).join(&quot;hex&quot;), &amp;sneak, Detach::Yes);
+        // The sibling is physically present, so the failure cannot be &quot;file not
+        // found&quot; — it has to be cargo refusing an undeclared crate.
+        copy_crate(&amp;src.join(&quot;TMS&quot;).join(&quot;b64&quot;), &amp;scratch.join(&quot;sneak-b64&quot;), Detach::No);
+        add_sibling_use(&amp;sneak.join(&quot;lib.rs&quot;));
+
+        let (ok, output) = cargo(&amp;sneak, &amp;[&quot;build&quot;, &quot;--offline&quot;, &quot;-q&quot;]);
+        report(
+            &amp;mut failures,
+            &quot;cargo refuses `use tms_b64` with no dependency declared&quot;,
+            !ok,
+            &amp;first_error(&amp;output),
+        );
+        // The first version of this check accepted any failure whose text
+        // mentioned tms_b64, and it passed while cargo was actually rejecting a
+        // `use` line accidentally placed above the module doc comment
+        // (E0753). It was green without ever testing an undeclared crate.
+        report(
+            &amp;mut failures,
+            &quot;and it refuses for the stated reason: an unresolved crate&quot;,
+            !ok &amp;&amp; (output.contains(&quot;E0432&quot;) || output.contains(&quot;can't find crate&quot;)),
+            &quot;E0432 / can't find crate — not a syntax error that happens to mention it&quot;,
+        );
+    }
+
+    println!(&quot;\n== 3. …and DOES compile once the manifest declares it&quot;);
+    {
+        let declared = scratch.join(&quot;declared&quot;);
+        copy_crate(&amp;src.join(&quot;TMS&quot;).join(&quot;hex&quot;), &amp;declared, Detach::Yes);
+        // Not nested inside the crate: a copied sibling carrying its own
+        // [workspace] under a crate that also has one is two workspace roots,
+        // and cargo stops before it ever reaches the question being asked.
+        copy_crate(&amp;src.join(&quot;TMS&quot;).join(&quot;b64&quot;), &amp;scratch.join(&quot;declared-b64&quot;), Detach::No);
+        add_sibling_use(&amp;declared.join(&quot;lib.rs&quot;));
+
+        let manifest = declared.join(&quot;Cargo.toml&quot;);
+        let text = fs::read_to_string(&amp;manifest).unwrap();
+        fs::write(
+            &amp;manifest,
+            text.replace(
+                &quot;[dependencies]&quot;,
+                &quot;[dependencies]\ntms-b64 = { path = \&quot;../declared-b64\&quot; }&quot;,
+            ),
+        )
+        .unwrap();
+
+        let (ok, output) = cargo(&amp;declared, &amp;[&quot;build&quot;, &quot;--offline&quot;, &quot;-q&quot;]);
+        report(
+            &amp;mut failures,
+            &quot;declaring the sibling makes it compile&quot;,
+            ok,
+            &amp;if ok { String::new() } else { first_error(&amp;output) },
+        );
+        report(
+            &amp;mut failures,
+            &quot;so the compiler is not the thing forbidding a sibling dependency&quot;,
+            ok,
+            &quot;it forbids an UNDECLARED one — declaring it is legal and is what the site build checks&quot;,
+        );
+    }
+
+    println!(&quot;\n== 4. the build's rule, applied here to the manifests&quot;);
+    {
+        let mut offenders = Vec::new();
+        for unit in [&quot;hex&quot;, &quot;b64&quot;, &quot;esc&quot;] {
+            let manifest = src.join(&quot;TMS&quot;).join(unit).join(&quot;Cargo.toml&quot;);
+            let text = fs::read_to_string(&amp;manifest).unwrap();
+            if text.contains(&quot;path = \&quot;../&quot;) {
+                offenders.push(unit.to_string());
+            }
+        }
+        report(
+            &amp;mut failures,
+            &quot;no TMS crate declares a path dependency at all&quot;,
+            offenders.is_empty(),
+            &amp;format!(&quot;checked 3 manifests, offenders: {:?}&quot;, offenders),
+        );
+
+        // The check above must be able to fail, or it is decorative.
+        let planted = &quot;[dependencies]\ntms-b64 = { path = \&quot;../b64\&quot; }\n&quot;;
+        report(
+            &amp;mut failures,
+            &quot;and that check detects a planted sibling dependency&quot;,
+            planted.contains(&quot;path = \&quot;../&quot;),
+            &quot;the failing case, evaluated rather than asserted&quot;,
+        );
+    }
+
+    println!(&quot;\n== 5. SCL names encodings it has no crate for, and refuses one it has&quot;);
+    {
+        let policy = fs::read_to_string(src.join(&quot;SCL&quot;).join(&quot;policy.json&quot;)).unwrap();
+        report(
+            &amp;mut failures,
+            &quot;policy refuses an encoding that IS compiled in&quot;,
+            !policy.contains(&quot;encodings/esc&quot;),
+            &quot;encodings/esc has a crate and is not permitted&quot;,
+        );
+        let (ok, output) = cargo(&amp;src, &amp;[&quot;run&quot;, &quot;--offline&quot;, &quot;-q&quot;, &quot;-p&quot;, &quot;report&quot;, &quot;--&quot;, &quot;--esc&quot;]);
+        report(
+            &amp;mut failures,
+            &quot;and the program exits non-zero rather than encoding anyway&quot;,
+            !ok &amp;&amp; output.contains(&quot;refuses&quot;),
+            output.lines().next().unwrap_or(&quot;&quot;).trim(),
+        );
+    }
+
+    println!();
+    if failures.is_empty() {
+        println!(&quot;  island test passed&quot;);
+    } else {
+        println!(&quot;  {} check(s) failed:&quot;, failures.len());
+        for f in &amp;failures {
+            println!(&quot;    - {f}&quot;);
+        }
+        std::process::exit(1);
+    }
+}
+
+fn report(failures: &amp;mut Vec&lt;String&gt;, label: &amp;str, ok: bool, detail: &amp;str) {
+    let suffix = if detail.is_empty() {
+        String::new()
+    } else {
+        format!(&quot; - {detail}&quot;)
+    };
+    println!(&quot;  {}  {label}{suffix}&quot;, if ok { &quot;PASS&quot; } else { &quot;FAIL&quot; });
+    if !ok {
+        failures.push(label.to_string());
+    }
+}
+
+#[derive(PartialEq)]
+enum Detach {
+    /// Give the copy its own `[workspace]`, so cargo treats it as a package
+    /// standing on its own rather than a member of whatever is above it.
+    Yes,
+    /// Leave it alone: a crate that will be a path dependency of another copy
+    /// must not declare a workspace, or there are two roots and cargo refuses
+    /// before reaching the question.
+    No,
+}
+
+/// Copy a crate's own files (not its subdirectories).
+fn copy_crate(from: &amp;Path, to: &amp;Path, detach: Detach) {
+    fs::create_dir_all(to).unwrap();
+    for entry in fs::read_dir(from).unwrap() {
+        let entry = entry.unwrap();
+        if entry.file_type().unwrap().is_file() {
+            fs::copy(entry.path(), to.join(entry.file_name())).unwrap();
+        }
+    }
+    if detach == Detach::No {
+        return;
+    }
+    let manifest = to.join(&quot;Cargo.toml&quot;);
+    let text = fs::read_to_string(&amp;manifest).unwrap();
+    if !text.contains(&quot;[workspace]&quot;) {
+        fs::write(&amp;manifest, format!(&quot;{text}\n[workspace]\n&quot;)).unwrap();
+    }
+}
+
+/// Add a sibling `use` AFTER the module doc comment. Inserting at byte 0 puts
+/// it above `//!`, which is E0753 — a syntax error, and a crate that fails to
+/// parse never gets as far as resolving the import the test is about.
+fn add_sibling_use(lib: &amp;Path) {
+    let source = fs::read_to_string(lib).unwrap();
+    let body_starts = source
+        .lines()
+        .position(|line| !line.starts_with(&quot;//!&quot;) &amp;&amp; !line.trim().is_empty())
+        .unwrap_or(0);
+    let mut lines: Vec&lt;String&gt; = source.lines().map(str::to_string).collect();
+    lines.insert(body_starts, &quot;use tms_b64::encode as sibling;&quot;.to_string());
+    lines.insert(
+        body_starts + 1,
+        &quot;pub fn leak(b: &amp;[u8]) -&gt; String { sibling(b) }&quot;.to_string(),
+    );
+    fs::write(lib, lines.join(&quot;\n&quot;)).unwrap();
+}
+
+fn cargo(dir: &amp;Path, args: &amp;[&amp;str]) -&gt; (bool, String) {
+    let out = Command::new(&quot;cargo&quot;)
+        .args(args)
+        .current_dir(dir)
+        // A separate target directory: the parent cargo holds a lock on its own.
+        .env(&quot;CARGO_TARGET_DIR&quot;, std::env::temp_dir().join(&quot;mssp-006-target&quot;))
+        .output()
+        .expect(&quot;cargo is not on PATH&quot;);
+    let text = format!(
+        &quot;{}{}&quot;,
+        String::from_utf8_lossy(&amp;out.stdout),
+        String::from_utf8_lossy(&amp;out.stderr)
+    );
+    (out.status.success(), text)
+}
+
+fn first_error(output: &amp;str) -&gt; String {
+    output
+        .lines()
+        .find(|l| l.trim_start().starts_with(&quot;error&quot;))
+        .unwrap_or(&quot;&quot;)
+        .trim()
+        .chars()
+        .take(90)
+        .collect()
+}
+</code></pre></details><details><summary>main/Cargo.toml</summary><pre><code>[package]
+name = &quot;report&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[[bin]]
+name = &quot;report&quot;
+path = &quot;main.rs&quot;
+
+# The entry point is the ONE crate allowed to depend on more than one encoder,
+# because composing them is what it is for. Every dependency below is visible
+# here and nowhere else — which is the property the whole example rests on.
+[dependencies]
+scl = { path = &quot;../SCL&quot; }
+sms = { path = &quot;../SMS&quot; }
+dms = { path = &quot;../DMS&quot; }
+tms-hex = { path = &quot;../TMS/hex&quot; }
+tms-b64 = { path = &quot;../TMS/b64&quot; }
+tms-esc = { path = &quot;../TMS/esc&quot; }
+</code></pre></details><details><summary>main/main.rs</summary><pre><code>//! Frame a payload and encode it with whichever encoding policy permits.
+//!
+//!   cargo run --offline -q -p report -- [--b64 | --hex | --esc] [text]
+
+fn main() {
+    let args: Vec&lt;String&gt; = std::env::args().skip(1).collect();
+    let policy = scl::load();
+
+    // Every encoder compiled into this binary, as (name, function). This list
+    // is the one place the entry point knows more than one encoder exists.
+    let compiled: Vec&lt;(&amp;str, fn(&amp;[u8]) -&gt; String)&gt; = vec![
+        (tms_hex::NAME, tms_hex::encode),
+        (tms_b64::NAME, tms_b64::encode),
+        (tms_esc::NAME, tms_esc::encode),
+    ];
+
+    // Which one to run comes from the flag if there is one, otherwise from the
+    // first encoding policy permits that is also compiled in. No branch per
+    // encoder — that is the seam example 005 caught me leaving in.
+    let asked = args
+        .iter()
+        .find(|a| a.starts_with(&quot;--&quot;))
+        .map(|a| format!(&quot;encodings/{}&quot;, &amp;a[2..]));
+    let chosen = match asked {
+        Some(name) =&gt; name,
+        None =&gt; compiled
+            .iter()
+            .map(|(name, _)| name.to_string())
+            .find(|name| policy.permits(name))
+            .unwrap_or_else(|| &quot;encodings/hex&quot;.to_string()),
+    };
+
+    if !policy.permits(&amp;chosen) {
+        eprintln!(&quot;SCL refuses {chosen}: this deployment permits {:?}&quot;, policy.permitted);
+        std::process::exit(2);
+    }
+    let Some((_, encode)) = compiled.iter().find(|(name, _)| *name == chosen) else {
+        eprintln!(&quot;{chosen} is permitted by policy but no crate provides it&quot;);
+        std::process::exit(3);
+    };
+
+    let payload: Vec&lt;u8&gt; = args
+        .iter()
+        .find(|a| !a.starts_with(&quot;--&quot;))
+        .map(|s| s.as_bytes().to_vec())
+        .unwrap_or_else(|| b&quot;the quick brown fox\n&quot;.to_vec());
+
+    if payload.len() &gt; policy.max_payload_bytes {
+        eprintln!(
+            &quot;SCL refuses a {}-byte payload: this deployment caps it at {}&quot;,
+            payload.len(),
+            policy.max_payload_bytes
+        );
+        std::process::exit(2);
+    }
+
+    let record = match sms::frame(&amp;payload) {
+        Ok(record) =&gt; record,
+        Err(why) =&gt; {
+            eprintln!(&quot;framing failed: {why}&quot;);
+            std::process::exit(1);
+        }
+    };
+    let encoded = encode(&amp;record);
+
+    let run = dms::Run {
+        payload_bytes: payload.len(),
+        record_bytes: record.len(),
+        encoding: chosen.clone(),
+        encoded_chars: encoded.chars().count(),
+        compiled_but_unused: compiled
+            .iter()
+            .map(|(name, _)| name.to_string())
+            .filter(|name| *name != chosen &amp;&amp; policy.permits(name))
+            .collect(),
+        permitted_without_a_crate: policy
+            .permitted
+            .iter()
+            .filter(|name| !compiled.iter().any(|(c, _)| c == *name))
+            .cloned()
+            .collect(),
+        compiled_but_refused: compiled
+            .iter()
+            .map(|(name, _)| name.to_string())
+            .filter(|name| !policy.permits(name))
+            .collect(),
+        // Verified by taking the record apart again, not by trusting that
+        // frame() returning Ok means it framed.
+        verified: match sms::unframe(&amp;record) {
+            Ok(back) if back == payload.as_slice() =&gt; Ok(()),
+            Ok(_) =&gt; Err(&quot;unframed to different bytes&quot;.to_string()),
+            Err(why) =&gt; Err(why.to_string()),
+        },
+    };
+
+    print!(&quot;{}&quot;, dms::render(&amp;run));
+    println!(&quot;\n  {encoded}&quot;);
+}
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

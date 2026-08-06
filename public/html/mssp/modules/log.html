@@ -33,13 +33,82 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-05</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-06</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-06</h2>
+<h3>發生了什麼</h3>
+<p><a href="/html/mssp/006-compiler-enforced.html">範例 006</a>：cargo workspace，每個 TMS 單元一個 crate。這是<a href="/html/mssp/modules/development.html">改良點 2</a> 自己寫著的驗證方式——在有真模組邊界的語言上重做依賴檢查，比較檢查的強度與寫起來的代價。</p>
+<p><a href="/html/mssp/archaeology/006-eslint-plugin-import.html">考古 006</a>：<code>eslint-plugin-import</code> 2.32.0（MIT）。46 條規則裡<strong>只有 1 條引用兄弟</strong>，而那一條是改名的轉接層。</p>
+<p>依賴檢查今天被補了兩個洞，<a href="/html/mssp/modules/development.html">缺點 1</a> 整條重寫，<a href="/html/mssp/modules/development.html">缺點 7</a> 是新的。</p>
+<h3>怎麼發現的</h3>
+<p><strong>在寫 Rust 範例之前，先問建置會不會檢查它。</strong> 這是<a href="/html/mssp/modules/development.html">改良點 6</a> 的用法，08-03 用過一次。答案是不會：</p>
+<pre><code class="language-js">const rule = IMPORTS.find((r) =&gt; r.ext.test(file));
+if (!rule) continue;          // ← 全部的缺陷在這一行
+</code></pre>
+<p>實測——在範例 001 的一個 TMS 底下放一個 <code>.rs</code> 檔，裡面寫一個刻意的兄弟 import：<strong>建置全綠，而且把它算進行數發佈出去</strong>（13 檔變 14 檔）。不認識的語言不但不檢查，還照樣當成範例原始碼。</p>
+<p>08-03 的修法是把 Python 加進清單，也就是擴充列舉；<strong>根沒有動</strong>。今天的修法不同，因為語言的集合推導不出來：<strong>「不認識」這件事可以被弄響。</strong> 現在 TMS 底下一個既非已知原始碼、也非已宣告的非原始碼、也不在 crate 裡的檔案，會讓建置失敗並要求作者選一邊。三個方向都驗過——裸 <code>.rs</code> 擋下、兄弟 crate 依賴擋下、乾淨的樹通過。</p>
+<p><strong>第二個洞是考古逼出來的。</strong> 要驗「我的建置會不會把一個棄用別名當成違規」，就得先種一個進去。種下去之後建置全綠——原因是 pattern 只認 <code>import … from</code>，而別名是用 <code>export … from</code> 寫的。順著查，<code>import &quot;./x&quot;</code>（純副作用）也一樣看不見。</p>
+<table>
+<thead>
+<tr>
+<th>寫法</th>
+<th>修之前</th>
+<th>修之後</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>import { x } from &quot;./y&quot;</code></td>
+<td>抓到</td>
+<td>抓到</td>
+</tr>
+<tr>
+<td><code>export { x } from &quot;./y&quot;</code></td>
+<td><strong>看不見</strong></td>
+<td>抓到</td>
+</tr>
+<tr>
+<td><code>export * from &quot;./y&quot;</code></td>
+<td><strong>看不見</strong></td>
+<td>抓到</td>
+</tr>
+<tr>
+<td><code>import &quot;./y&quot;</code></td>
+<td><strong>看不見</strong></td>
+<td>抓到</td>
+</tr>
+</tbody></table>
+<p><strong>範例 006 的孤島測試自己也出了一次同樣的錯，而且是在證明編譯器有效的那一節。</strong> 第 2 節要求 cargo 拒絕未宣告的兄弟引用，第一次跑就 PASS——但錯誤碼是 <code>E0753: expected outer doc comment</code>。我把 <code>use</code> 插到 <code>//!</code> 模組註解<strong>前面</strong>，cargo 是因為語法壞掉才拒絕，根本沒走到解析 crate 那一步。而旁邊那條「它是因為對的理由拒絕的」也 PASS 了，因為它只要求輸出裡出現 <code>tms_b64</code>——而那正是我自己插進去的那一行被引在錯誤訊息裡。<strong>一個全綠、什麼都沒測到的檢查，長在專門用來證明規則被強制執行的那一節裡。</strong> 改成插在註解之後，並要求具體的 <code>E0432</code>。</p>
+<h3>對 MSSP 的意義</h3>
+<p><strong>改良點 2 有答案了，而答案是對半分。</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>誰在保證</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>未宣告</strong>就引用兄弟</td>
+<td>cargo，絕對地（<code>E0432</code>）</td>
+</tr>
+<tr>
+<td><strong>宣告</strong>一個兄弟依賴</td>
+<td>仍然是建置的事——cargo 完全不反對</td>
+</tr>
+</tbody></table>
+<p>所以孤島測試有兩節：第 2 節要求編譯器拒絕，第 3 節要求它在宣告之後<strong>接受</strong>。只寫前者，等於宣稱編譯器解決了一個它沒有解決的問題。</p>
+<p><strong>真正的收穫不是規則消失了，是規則從「每一行原始碼」搬到「每個單元一個檔案、固定格式」，而且那正是 cargo 讀的同一份檔案。</strong> 對照今天補的兩個洞：兩個都是「文字比對認不出某種寫法」，而 manifest 沒有第二種寫法。代價量出來是每個單元 10–13 行、多一個檔案。</p>
+<p><strong>考古 006 找到的是方法自己的矛盾。</strong></p>
+<p><code>eslint-plugin-import</code> 45/46 的規則是孤島，比我考察過的任何上游都乾淨。唯一那一個是 <code>imports-first.js</code>——<code>first</code> 的舊名字，整個檔案只做一件事：把新規則原封不動轉出去，並在 meta 蓋上 <code>deprecated: true</code>。</p>
+<p><strong>那不是一條規則去拿兄弟的能力，是改名時把舊門留著。</strong> 而模組 02 說「沒有任何 TMS 引用兄弟 TMS」，模組 06 說「替代先於移除」——<strong>別名單元滿足其中一條的方式就是違反另一條</strong>，而方法沒有任何地方說過這兩條會撞在一起。這個網站的建置現在兩者都擋，也就是說它會把一次合法的改名報成違規。誤報比漏報更傷：被誤報一次之後，下一次真的違規時人會先懷疑檢查。</p>
+<p>重切示範了一條路——<strong>改名是關於目錄的事實，不是關於檔案的事實</strong>——但那還不是判準。當一個 TMS 真的必須提到另一個時，怎麼分辨「切錯了」跟「這是一次改名」，方法還是沒說。上游沒有這個選項：eslint 的 plugin 介面收的是 <code>{ 規則名: 規則物件 }</code>，<strong>沒有地方可以放「這個名字是那個名字的舊稱」</strong>。那是介面差異，不是判斷差異。</p>
+<p>順帶量到考古 006 那個專案存在的理由，就在本站自己的 <code>node_modules</code> 裡：<strong>宣告 25 個套件、裝了 475 個、可 require 但從未宣告 450 個</strong>，而且 <code>require.resolve(&#39;@alloc/quick-lru&#39;)</code> 真的成功。範例 006 那半個編譯器保證，在這裡是完全不存在的。</p>
 <hr>
 <h2>2026-08-05</h2>
 <h3>發生了什麼</h3>

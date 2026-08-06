@@ -322,7 +322,89 @@ export const msspExamples = [
     "lineCount": 472,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/005-before-after.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/005-before-after.html"
+  },
+  {
+    "id": "006-compiler-enforced",
+    "slug": "006-compiler-enforced",
+    "title": {
+      "zh": "讓編譯器持有規則：cargo workspace 版的 MSSP",
+      "en": "Handing the rule to the compiler: MSSP as a cargo workspace"
+    },
+    "summary": {
+      "zh": "開發區缺點 1 說依賴檢查只認得靜態 import，決心繞過的人繞得過去。改良點 2 說去有真模組邊界的語言上重做一次。這是那次重做：每個 TMS 單元是一個 crate，於是「引用兄弟」需要先在 Cargo.toml 宣告，而未宣告的 use 根本不編譯。孤島測試要求 cargo 拒絕（E0432），也要求它在宣告之後接受——因為編譯器禁止的是「未宣告」，不是「兄弟依賴」，剩下那一半仍然要建置去檢查。",
+      "en": "Development note 1 says the dependency check only understands static imports and a determined author can step around it; improvement 2 says redo it in a language with real module boundaries. This is that redo. Each TMS unit is a crate, so reaching a sibling must first be declared in Cargo.toml, and an undeclared use does not compile. The island test requires cargo to refuse (E0432) and also to accept once declared — because what the compiler forbids is the undeclared reference, not the sibling dependency, and the other half is still the build's job."
+    },
+    "language": "rust",
+    "date": "2026-08-06",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "the-rule-becomes-a-property-of-the-manifest",
+      "the-compiler-forbids-undeclared-not-sibling",
+      "an-island-test-that-requires-a-compile-error",
+      "policy-may-name-a-capability-with-no-crate"
+    ],
+    "runnable": "cargo run --offline -q --manifest-path src/Cargo.toml -p report",
+    "files": [
+      "Cargo.lock",
+      "Cargo.toml",
+      "DMS/Cargo.toml",
+      "DMS/lib.rs",
+      "FMS/manifest.json",
+      "SCL/Cargo.toml",
+      "SCL/lib.rs",
+      "SCL/policy.json",
+      "SMS/Cargo.toml",
+      "SMS/lib.rs",
+      "TMS/b64/Cargo.toml",
+      "TMS/b64/lib.rs",
+      "TMS/esc/Cargo.toml",
+      "TMS/esc/lib.rs",
+      "TMS/hex/Cargo.toml",
+      "TMS/hex/lib.rs",
+      "island-test/Cargo.toml",
+      "island-test/main.rs",
+      "main/Cargo.toml",
+      "main/main.rs"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/manifest.json"
+      ],
+      "SCL": [
+        "SCL/Cargo.toml",
+        "SCL/lib.rs",
+        "SCL/policy.json"
+      ],
+      "SMS": [
+        "SMS/Cargo.toml",
+        "SMS/lib.rs"
+      ],
+      "TMS": [
+        "TMS/b64/Cargo.toml",
+        "TMS/b64/lib.rs",
+        "TMS/esc/Cargo.toml",
+        "TMS/esc/lib.rs",
+        "TMS/hex/Cargo.toml",
+        "TMS/hex/lib.rs"
+      ],
+      "DMS": [
+        "DMS/Cargo.toml",
+        "DMS/lib.rs"
+      ],
+      "root": [
+        "Cargo.lock",
+        "Cargo.toml",
+        "island-test/Cargo.toml",
+        "island-test/main.rs",
+        "main/Cargo.toml",
+        "main/main.rs"
+      ]
+    },
+    "lineCount": 879,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/006-compiler-enforced.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/006-compiler-enforced.html"
   }
 ];
 
-export const msspExampleCount = 5;
+export const msspExampleCount = 6;

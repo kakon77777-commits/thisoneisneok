@@ -69,7 +69,7 @@ function readMeta(file) {
 // (176 lines of bytecode reported as source), published alongside the code, and
 // shown to a reader as part of the structure. The walk had no reason to exclude
 // them because until then every example was JavaScript.
-const IGNORED_DIRS = new Set(["__pycache__", ".pytest_cache", "node_modules", ".mypy_cache"]);
+const IGNORED_DIRS = new Set(["__pycache__", ".pytest_cache", "node_modules", ".mypy_cache", "target"]);
 const IGNORED_FILES = /\.(pyc|pyo|class|o)$/;
 
 function walk(dir) {
@@ -131,7 +131,10 @@ function checkExample(id, dir, meta) {
   // everything outside it, and its silence looked exactly like a pass.
   const tmsDir = path.join(srcDir, "TMS");
   if (fs.existsSync(tmsDir)) {
-    const INDEX_FILES = ["index.js", "index.mjs", "index.ts", "__init__.py"];
+    // Cargo.toml is here because in Rust the crate — not the directory — is the
+    // unit the toolchain enforces a boundary around, and Cargo.toml is what
+    // declares one.
+    const INDEX_FILES = ["index.js", "index.mjs", "index.ts", "__init__.py", "Cargo.toml"];
     const unitRootOf = (file) => {
       // Walk up to the highest ancestor under TMS/ that has an index file.
       let unit = file;
@@ -168,13 +171,56 @@ function checkExample(id, dir, meta) {
     };
 
     const IMPORTS = [
-      { ext: /\.(js|mjs|ts)$/, pattern: /^\s*import\s[^;]*?from\s+["']([^"']+)["']/gm, resolve: resolveJs },
+      {
+        ext: /\.(js|mjs|ts)$/,
+        // Three forms reach a sibling and only the first was matched until
+        // 2026-08-06: `import x from "./y"`, `export { x } from "./y"` (how a
+        // deprecation alias reaches the unit it replaces), and
+        // `import "./y"` for side effects. Dynamic import() is still out of
+        // scope and 開發區 缺點 1 says so.
+        pattern: /^\s*(?:import|export)\s[^;]*?\sfrom\s+["']([^"']+)["']|^\s*import\s+["']([^"']+)["']/gm,
+        resolve: resolveJs,
+      },
       { ext: /\.py$/, pattern: /^\s*(?:from\s+([.\w]+)\s+import\b|import\s+([.\w]+))/gm, resolve: resolvePy },
     ];
 
+    // Files that cannot carry an import, so the rule has nothing to say about
+    // them. This list has to be explicit for the same reason the next one does.
+    const NON_SOURCE = /\.(md|txt|json|ya?ml|toml|lock|csv|ini|cfg|svg|png|jpe?g|gif)$/i;
+
+    // A .rs file is exempt from the source grep only when it is actually inside
+    // a crate, because the exemption is not "Rust is trustworthy" — it is that
+    // cargo will not let `use` name a crate the manifest does not declare, and
+    // that is checked below against the manifest. A .rs file with no Cargo.toml
+    // above it is in no crate, cargo never sees it, and nothing is enforcing
+    // anything.
+    const inACrate = (file) => {
+      let cursor = path.dirname(file);
+      while (cursor.startsWith(tmsDir)) {
+        if (fs.existsSync(path.join(cursor, "Cargo.toml"))) return true;
+        cursor = path.dirname(cursor);
+      }
+      return false;
+    };
+    const toolchainEnforced = (file) => /\.rs$/.test(file) && inACrate(file);
+
     for (const file of walk(tmsDir)) {
       const rule = IMPORTS.find((r) => r.ext.test(file));
-      if (!rule) continue;
+      if (!rule) {
+        // Until 2026-08-06 this was `continue`, and that is the whole defect:
+        // a file in a language the walk does not know produced no signal, and
+        // no signal is what compliance looks like. A deliberate sibling import
+        // written in .rs built green, and the file was counted and published
+        // as example source while being exempt from the one rule that matters.
+        // Fixing it by adding another extension would repeat 2026-08-03. The
+        // set of languages cannot be derived, but the unknown case can be made
+        // loud instead of silent.
+        if (NON_SOURCE.test(file) || toolchainEnforced(file)) continue;
+        fail(id, `TMS contains a file this build cannot check for sibling imports: ` +
+          `${path.relative(dir, file).replaceAll("\\", "/")} — add a resolver for its ` +
+          `language, or declare it non-source, but do not leave it unchecked`);
+        continue;
+      }
       const source = fs.readFileSync(file, "utf8");
       const selfUnit = unitRootOf(file);
       for (const match of source.matchAll(rule.pattern)) {
@@ -188,6 +234,39 @@ function checkExample(id, dir, meta) {
         if (!resolved.startsWith(tmsDir + path.sep)) continue;
         if (unitRootOf(resolved) !== selfUnit) {
           fail(id, `TMS imports a sibling TMS: ${path.relative(dir, file).replaceAll("\\", "/")} -> ${specifier}`);
+        }
+      }
+    }
+
+    // Rust: the authoritative answer to "does this unit depend on a sibling"
+    // is in the crate's Cargo.toml, because `use` cannot name a crate that is
+    // not declared there. Reading the source would be checking a shadow of the
+    // manifest cargo actually reads.
+    for (const manifest of walk(tmsDir).filter((f) => path.basename(f) === "Cargo.toml")) {
+      const selfUnit = path.dirname(manifest);
+      const body = fs.readFileSync(manifest, "utf8");
+      const section = body.split(/^\[/m).find((s) => /^dependencies\]/.test(s));
+      if (!section) continue;
+      for (const line of section.split("\n").slice(1)) {
+        const text = line.split("#")[0].trim();
+        if (!text) continue;
+        const dep = text.match(/^([\w-]+)\s*(?:\.path)?\s*=\s*(.+)$/);
+        if (!dep) {
+          fail(id, `Cargo.toml dependency this build cannot read: ${path.relative(dir, manifest).replaceAll("\\", "/")} — ${text}`);
+          continue;
+        }
+        const viaPath = dep[2].match(/path\s*=\s*"([^"]+)"/) ?? (dep[2].startsWith('"') ? null : null);
+        if (!viaPath) {
+          // A registry dependency cannot be a sibling unit in this tree.
+          if (/^["{]/.test(dep[2])) continue;
+          fail(id, `Cargo.toml dependency in an unrecognised form: ${dep[1]} = ${dep[2]}`);
+          continue;
+        }
+        const target = path.resolve(selfUnit, viaPath[1]);
+        if (!target.startsWith(tmsDir + path.sep)) continue;
+        if (unitRootOf(target) !== unitRootOf(selfUnit)) {
+          fail(id, `TMS crate depends on a sibling TMS crate: ` +
+            `${path.relative(dir, manifest).replaceAll("\\", "/")} -> ${viaPath[1]}`);
         }
       }
     }
