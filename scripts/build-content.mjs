@@ -128,7 +128,11 @@ fs.writeFileSync(path.join(publicDir, "feed.xml"), `<?xml version="1.0" encoding
 
 ensure(path.join(publicDir, "ai"));
 const aiIndex = `# Neo.K × EveMissLab AI Index\n\nCanonical site: ${siteUrl}/\n\n## Sections\n\n${routes.map((route) => `- ${siteUrl}${route}`).join("\n")}\n\n## Blog entries\n\n${posts.map((post) => `- ${post.canonicalUrl}\n  - ZH Markdown: ${post.locales.zh?.sourceUrl || "not available"}\n  - EN Markdown: ${post.locales.en?.sourceUrl || "not available"}`).join("\n")}\n\n## Wider network\n\n- https://evemiss.com/ — main navigation site, reaching most of the network\n- https://evemisslab.com/ — research and application brand entrance\n`;
-fs.writeFileSync(path.join(publicDir, "ai", "site-index.md"), aiIndex);
+const aiIndexWithCollaboration = aiIndex.replace(
+  "\n\n## Blog entries",
+  `\n\n## MSSP collaboration\n\n- ${siteUrl}/html/mssp/discussions/guide.html\n- ${siteUrl}/ai/mssp-discussions-index.json\n\nDiscussion is evidence-aware working state and does not itself authorise a method change.\n\n## Blog entries`,
+);
+fs.writeFileSync(path.join(publicDir, "ai", "site-index.md"), aiIndexWithCollaboration);
 fs.writeFileSync(path.join(publicDir, "ai", "blog-index.json"), JSON.stringify(posts.map(({ slug, date, tags, canonicalUrl, locales }) => ({ slug, date, tags, canonicalUrl, locales: Object.fromEntries(Object.entries(locales).map(([locale, value]) => [locale, { title: value.title, description: value.description, sourceUrl: value.sourceUrl }])) })), null, 2));
 
 console.log(`Generated ${posts.length} bilingual blog entries.`);

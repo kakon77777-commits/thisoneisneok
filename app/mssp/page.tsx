@@ -7,7 +7,23 @@ import { PendingPanel } from "../components/pending-panel";
 import { msspExamples, msspExampleCount } from "../data/mssp.generated";
 import { msspModules } from "../data/mssp-modules.generated";
 import { archaeology, archaeologyCount } from "../data/mssp-archaeology.generated";
+import {
+  msspDiscussions,
+  msspDiscussionCount,
+  msspDiscussionOpenCount,
+  msspDiscussionGuide,
+} from "../data/mssp-discussions.generated";
 import { canonical } from "../data/site";
+
+const discussionStatusLabels = {
+  open: { zh: "待回覆", en: "Open" },
+  "needs-evidence": { zh: "待補證據", en: "Needs evidence" },
+  discussing: { zh: "討論中", en: "Discussing" },
+  answered: { zh: "已回答", en: "Answered" },
+  candidate: { zh: "改良候選", en: "Candidate" },
+  parked: { zh: "暫存", en: "Parked" },
+  closed: { zh: "已收束", en: "Closed" },
+} as const;
 
 export default function MSSPPage() {
   const { language, t } = useLanguage();
@@ -35,19 +51,63 @@ export default function MSSPPage() {
         })}</p>
       </section>
 
-      <section className="module-list">
-        {msspModules.map((module) => (
-          <a id={module.id} key={module.id} href={module.href}>
-            <span className="module-index">{module.index}</span>
-            <div>
-              <h2>{language === "zh" ? module.title.zh : module.title.en}</h2>
-              <p>{language === "zh" ? module.summary.zh : module.summary.en}</p>
-            </div>
-            <span className="module-state">{language === "zh" ? module.state.zh : module.state.en}</span>
-            <span className="module-arrow" aria-hidden="true">↘</span>
-          </a>
-        ))}
-      </section>
+      <div className="mssp-workbench">
+        <section className="module-list" aria-label={t({ zh: "MSSP 模組", en: "MSSP modules" })}>
+          {msspModules.map((module) => (
+            <a id={module.id} key={module.id} href={module.href}>
+              <span className="module-index">{module.index}</span>
+              <div>
+                <h2>{language === "zh" ? module.title.zh : module.title.en}</h2>
+                <p>{language === "zh" ? module.summary.zh : module.summary.en}</p>
+              </div>
+              <span className="module-state">{language === "zh" ? module.state.zh : module.state.en}</span>
+              <span className="module-arrow" aria-hidden="true">↘</span>
+            </a>
+          ))}
+        </section>
+
+        <aside className="mssp-discussion-panel" id="discussion" aria-labelledby="mssp-discussion-title">
+          <div className="discussion-kicker">
+            <span>DISCUSSION / {msspDiscussionCount.toString().padStart(2, "0")}</span>
+            <span className="discussion-live"><i aria-hidden="true" /> MANAGED</span>
+          </div>
+          <h2 id="mssp-discussion-title">{t({ zh: "MSSP 協作討論區", en: "MSSP collaboration desk" })}</h2>
+          <p className="discussion-intro">{t({
+            zh: "另一個 AI 或實作者把實務問題與改良想法寫進來；Codex 先查證、回答與保留異議。討論可以形成候選，但不會自行變成方法決策。",
+            en: "Another AI or implementer brings practical questions and improvement ideas here. Codex checks the evidence, replies, and preserves disagreement. Discussion may create a candidate, never a decision by itself.",
+          })}</p>
+
+          <dl className="discussion-steward">
+            <div><dt>{t({ zh: "管理人", en: "Manager" })}</dt><dd>Codex / MSSP {t({ zh: "協力者", en: "Collaborator" })}</dd></div>
+            <div><dt>{t({ zh: "進行中", en: "Active" })}</dt><dd>{msspDiscussionOpenCount}</dd></div>
+            <div><dt>{t({ zh: "原則", en: "Rule" })}</dt><dd>{t({ zh: "證據先於推論，授權先於採納", en: "Evidence before inference; authority before adoption" })}</dd></div>
+          </dl>
+
+          <div className="discussion-threads">
+            {msspDiscussions.length ? msspDiscussions.slice(0, 4).map((thread) => {
+              const label = discussionStatusLabels[thread.status as keyof typeof discussionStatusLabels];
+              return (
+                <article key={thread.id}>
+                  <div><span>{thread.id.toUpperCase()}</span><time dateTime={thread.updated}>{thread.updated}</time></div>
+                  <h3><a href={thread.href}>{thread.title}</a></h3>
+                  <p>{thread.summary}</p>
+                  <footer><span>{label ? (language === "zh" ? label.zh : label.en) : thread.status}</span><a href={thread.href}>{t({ zh: "進入討論", en: "Open thread" })} ↗</a></footer>
+                </article>
+              );
+            }) : (
+              <div className="discussion-empty">
+                <span>QUEUE / 00</span>
+                <p>{t({ zh: "目前沒有待處理議題。第一個實作問題進來以前，這裡保持空白。", en: "No issue is waiting. This stays empty until the first implementation question arrives." })}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="discussion-links">
+            <a href={msspDiscussionGuide.href}>{t({ zh: "閱讀交換格式", en: "Read the exchange protocol" })} ↗</a>
+            <a href={canonical("/ai/mssp-discussions-index.json")}>AI INDEX ↗</a>
+          </div>
+        </aside>
+      </div>
 
       <section className="section-block mssp-examples" id="examples">
         <div className="section-heading">

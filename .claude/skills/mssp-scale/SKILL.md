@@ -29,6 +29,7 @@ theory rather than on producing an example.
 | Decide SMS vs TMS for a capability | `SMS/decomposition.md` |
 | Decide whether to apply MSSP at all | `SMS/scale-thresholds.md` |
 | Review an example before publishing | `DMS/review-checklist.md` |
+| Raise, continue, or answer an implementation discussion | `mssp/discussions/README.md` |
 | Language-specific idioms | `TMS/languages/<language>.md` |
 | What may be changed, and by whom | `SCL/permissions.policy.yaml` |
 
@@ -65,3 +66,13 @@ that needs one of them is the failure this method exists to prevent (§1.2.1).
 
 Counterexamples are welcome as examples, but they must be marked
 `kind: counterexample` so a reader is never left copying a broken structure.
+
+## Collaboration desk
+
+Implementation questions and improvement ideas that need a reply from the MSSP
+collaborator go in `mssp/discussions/`, one Markdown file per thread. Codex is
+the discussion manager. Follow that directory's `README.md`: append messages,
+keep evidence and uncertainty visible, and do not present a discussion answer
+as an authorised method change. A conclusion only becomes method state after it
+is promoted to the development notes, log, authority, an example, or an
+archaeology entry by the appropriate authority.

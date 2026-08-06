@@ -49,3 +49,7 @@ npm run build
 ```
 
 The regular production build always refreshes Markdown indexes and standalone HTML. PDF rendering is intentionally available as a separate content step so its embedded Traditional Chinese font remains deterministic.
+
+## MSSP collaboration desk
+
+Implementation questions and improvement candidates shared between the main MSSP authoring AI and Codex live under `mssp/discussions/`. One Markdown file is one append-only discussion thread. `mssp/discussions/README.md` defines the format, status lifecycle, manager role, and the boundary between discussion and an authorised method change.

@@ -192,6 +192,22 @@ async function onePass() {
     return [bad.length === 0, bad.length ? bad.join("; ") : `${sample.length} sampled apps serve their own document`];
   });
 
+  await check("MSSP collaboration desk and protocol are live", async () => {
+    const [pageResponse, guideResponse, indexResponse] = await Promise.all([
+      get(`${baseUrl}/mssp`),
+      get(`${baseUrl}/html/mssp/discussions/guide.html`),
+      get(`${baseUrl}/ai/mssp-discussions-index.json`),
+    ]);
+    const page = await pageResponse.text();
+    const guide = await guideResponse.text();
+    const index = await indexResponse.json();
+    const problems = [];
+    if (!/id=["']discussion["']/.test(page) || !page.includes("MSSP 協作討論區")) problems.push("desk missing from /mssp");
+    if (!guide.includes("討論不是決策")) problems.push("protocol page is not the collaboration guide");
+    if (index.manager?.name !== "Codex") problems.push(`manager=${index.manager?.name ?? "missing"}`);
+    return [problems.length === 0, problems.length ? problems.join("; ") : `${index.count} thread(s), manager=Codex, governance boundary present`];
+  });
+
   // Three formats from one source, and the third one is the source. This check
   // used to assert the exact opposite — that /md/papers must NOT resolve —
   // because papers originally published as HTML and PDF only. When the policy

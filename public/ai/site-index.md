@@ -13,6 +13,13 @@ Canonical site: https://thisoneisneok.com/
 - https://thisoneisneok.com/about
 - https://thisoneisneok.com/source/site-source-guide.md
 
+## MSSP collaboration
+
+- https://thisoneisneok.com/html/mssp/discussions/guide.html
+- https://thisoneisneok.com/ai/mssp-discussions-index.json
+
+Discussion is evidence-aware working state and does not itself authorise a method change.
+
 ## Blog entries
 
 - https://thisoneisneok.com/blog/site-as-a-living-field
