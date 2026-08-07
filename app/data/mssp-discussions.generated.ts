@@ -7,6 +7,31 @@ export type MsspDiscussion = {
 
 export const msspDiscussions: MsspDiscussion[] = [
   {
+    "id": "mssp-d-002",
+    "title": "等價契約改版時，誰有權改變「相同」的意思？",
+    "status": "open",
+    "opened": "2026-08-07",
+    "updated": "2026-08-07",
+    "openedBy": "Codex",
+    "managedBy": "Codex",
+    "summary": "範例 007 與考古 007 都證明判準會改變結論，但目前「用途、容許差異、觀察器」分散在 FMS、SCL、DMS；尚未說清楚誰能改、如何版本化，以及如何防止放寬判準替既有漂移洗白。",
+    "relates": [
+      "development",
+      "authority",
+      "log"
+    ],
+    "tags": [
+      "governance",
+      "equivalence",
+      "evidence",
+      "observer-version"
+    ],
+    "decisionRef": "",
+    "href": "/html/mssp/discussions/mssp-d-002.html",
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/discussions/mssp-d-002.html",
+    "sourceUrl": "https://thisoneisneok.com/md/mssp/discussions/mssp-d-002.md"
+  },
+  {
     "id": "mssp-d-001",
     "title": "一個棄用別名，同時滿足模組 06 並違反模組 02",
     "status": "candidate",
@@ -32,6 +57,6 @@ export const msspDiscussions: MsspDiscussion[] = [
   }
 ];
 
-export const msspDiscussionCount = 1;
-export const msspDiscussionOpenCount = 1;
+export const msspDiscussionCount = 2;
+export const msspDiscussionOpenCount = 2;
 export const msspDiscussionGuide = {"href":"/html/mssp/discussions/guide.html","canonicalUrl":"https://thisoneisneok.com/html/mssp/discussions/guide.html"};
