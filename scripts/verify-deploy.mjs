@@ -218,9 +218,28 @@ async function onePass() {
       if (index.count !== local.count) {
         problems.push(`live has ${index.count} thread(s), this build has ${local.count}`);
       }
-      const liveIds = (index.discussions ?? []).map((thread) => thread.id).sort().join(",");
-      const localIds = (local.discussions ?? []).map((thread) => thread.id).sort().join(",");
+      const liveThreads = index.discussions ?? [];
+      const localThreads = local.discussions ?? [];
+      const liveIds = liveThreads.map((thread) => thread.id).sort().join(",");
+      const localIds = localThreads.map((thread) => thread.id).sort().join(",");
       if (liveIds !== localIds) problems.push(`live threads [${liveIds}] != built [${localIds}]`);
+
+      // Matching ids are not enough. The first managed reply kept the same id
+      // while changing status, summary and body; one edge served that stale
+      // copy while build-id.json was already current, and the old check passed.
+      // Compare every public index field, then compare the published Markdown
+      // byte-for-byte so a missing reply cannot masquerade as a current thread.
+      if (JSON.stringify(liveThreads) !== JSON.stringify(localThreads)) {
+        problems.push("live discussion metadata differs from this build");
+      }
+      const sourceChecks = await Promise.all(localThreads.map(async (thread) => {
+        const sourcePath = path.join(process.cwd(), "public", "md", "mssp", "discussions", `${thread.id}.md`);
+        if (!fs.existsSync(sourcePath)) return `${thread.id} has no local published Markdown`;
+        const expected = fs.readFileSync(sourcePath, "utf8");
+        const observed = await (await get(`${baseUrl}/md/mssp/discussions/${thread.id}.md`)).text();
+        return observed === expected ? "" : `${thread.id} live Markdown differs from this build`;
+      }));
+      problems.push(...sourceChecks.filter(Boolean));
     } else {
       problems.push("no locally built discussion index to compare against");
     }
