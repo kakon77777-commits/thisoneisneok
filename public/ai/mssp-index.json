@@ -1,6 +1,6 @@
 {
   "site": "https://thisoneisneok.com",
-  "count": 6,
+  "count": 7,
   "note": "MSSP architecture examples. Each entry runs, and each is checked for TMS-to-TMS coupling at build time.",
   "examples": [
     {
@@ -143,6 +143,30 @@
       "runnable": "cargo run --offline -q --manifest-path src/Cargo.toml -p report",
       "html": "https://thisoneisneok.com/html/mssp/006-compiler-enforced.html",
       "lines": 879
+    },
+    {
+      "id": "007-identity-test-run",
+      "title": {
+        "zh": "把身分測試變成會跑的東西，然後發現它量的不是「結構」",
+        "en": "Making the identity test executable, and finding out what it actually measures"
+      },
+      "summary": {
+        "zh": "缺點 2 說 SMS 沒有防止自己長大的機制，改良點 1 提的是給一個數字上限——而任何數字都是沒有根據的規則。身分測試已經用文字定義了邊界，所以這次把文字變成可執行的：把宣稱是 SMS 的模組換成 stub，跑，然後問答案還在不在。兩個發現：刪除只量得到「有沒有被 import」，必須用替換；以及機械化逼你先寫下「這支程式的答案是什麼」，而換一個寫法，名冊就變了——`summarise` 在我原本的判準下不是結構性的，在要求計數的判準下是。**機械化能檢查的是結構與宣稱用途之間的一致性，不是成員資格。**",
+        "en": "Development note 2 says SMS has no mechanism against its own growth, and improvement 1 proposes a numeric budget — but any number is a rule with nothing behind it. The identity test already defines the boundary in words, so this makes the words executable: replace a module that claims to be SMS with a stub, run, and ask whether the answer survived. Two findings. Deletion measures reachability, not necessity, so substitution is required. And mechanising it forces you to write down what the program's answer IS — change that statement and the roster changes. summarise is not structural under the witness I first wrote, and is under one that also requires the counts. What a machine can check is the consistency between a structure and a stated purpose, not membership."
+      },
+      "language": "python",
+      "date": "2026-08-07",
+      "version": "v1.0",
+      "kind": "example",
+      "concepts": [
+        "the-identity-test-as-something-that-runs",
+        "substitution-not-deletion",
+        "the-roster-is-a-function-of-the-witness",
+        "a-budget-that-is-a-result-rather-than-a-target"
+      ],
+      "runnable": "python src/main.py",
+      "html": "https://thisoneisneok.com/html/mssp/007-identity-test-run.html",
+      "lines": 507
     }
   ]
 }

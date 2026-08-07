@@ -1,0 +1,19 @@
+id: 007-cpython-json
+project: CPython json
+upstream: https://github.com/python/cpython/tree/main/Lib/json
+license: PSF-2.0
+examined_version: 3.14.5
+title:
+  zh: CPython 的 json 早就在跑身分測試——而它的答案取決於你問哪一種相同
+  en: "CPython's json has been running the identity test for twenty years — and its answer depends on which sameness you ask about"
+summary:
+  zh: `json` 有一個 C 加速器 `_json` 跟一份純 Python 後備，整個模組的結構就是為了「這東西可以不在」。對它跑身分測試：**12 個值字串完全相同、12 個輸入的錯誤類別完全相同、而 12 個錯誤訊息裡有 1 個不同**（`"\x"` 的欄位與是否指名那個字元）。所以「加速器不是結構性的」在「同一個值」這個判準下為真，在「同一則訊息」這個判準下為偽——跟範例 007 是同一件事，只是這份程式碼比那個發現早了二十年。第二個發現：關掉加速器比看起來難，`make_scanner = c_make_scanner or py_make_scanner` 在 import 時就跑完了，我第一次量的是 C 跟 C 自己比並回報「相同」。
+  en: json ships a C accelerator, _json, and a pure-Python fallback, and the module is shaped so the accelerator can be absent. Running the identity test on it: 12 value strings byte-identical, 12 inputs producing the same error class, and 1 of 12 error messages different — the column, and whether the offending character is named. So "the accelerator is not structural" is true under the witness "same value" and false under "same message", which is example 007's finding in code that predates it by two decades. Second finding: turning the accelerator off is harder than it looks, because make_scanner = c_make_scanner or py_make_scanner runs at import time; my first measurement compared C against C and reported them identical.
+date: 2026-08-07
+version: v1.0
+verdict: fallback-confirmed-equivalence-is-witness-relative
+concepts:
+  - the-identity-test-already-runs-in-the-stdlib
+  - equivalence-is-relative-to-a-stated-contract
+  - a-choice-bound-at-import-time-cannot-be-unmade
+runnable: python src/main.py

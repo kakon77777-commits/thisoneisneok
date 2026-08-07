@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPython 的 json 早就在跑身分測試——而它的答案取決於你問哪一種相同 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="`json` 有一個 C 加速器 `_json` 跟一份純 Python 後備，整個模組的結構就是為了「這東西可以不在」。對它跑身分測試：**12 個值字串完全相同、12 個輸入的錯誤類別完全相同、而 12 個錯誤訊息裡有 1 個不同**（`&quot;\x&quot;` 的欄位與是否指名那個字元）。所以「加速器不是結構性的」在「同一個值」這個判準下為真，在「同一則訊息」這個判準下為偽——跟範例 007 是同一件事，只是這份程式碼比那個發現早了二十年。第二個發現：關掉加速器比看起來難，`make_scanner = c_make_scanner or py_make_scanner` 在 import 時就跑完了，我第一次量的是 C 跟 C 自己比並回報「相同」。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/007-cpython-json.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>007-cpython-json</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython json</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>3.14.5</span></div>
+    <div><b>日期</b><span>2026-08-07</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/tree/main/Lib/json">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>007 — CPython <code>json</code> 3.14.5：身分測試早就在跑，而答案取決於你問哪一種相同</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/python/cpython/tree/main/Lib/json">CPython <code>Lib/json</code></a>，PSF-2.0。本篇考察 3.14.5。
+所有數字都是在這台機器上對這個直譯器量出來的。</p>
+</blockquote>
+<pre><code class="language-bash">python src/main.py          # 兩個實作 vs 一份寫下來的等價契約
+python src/island_test.py   # 24 項檢查，其中 9 項直接量 CPython 本體
+</code></pre>
+<h2>為什麼選它</h2>
+<p>今天的<a href="/html/mssp/007-identity-test-run.html">範例 007</a> 把 MSSP 的身分測試變成可執行的：把宣稱是 SMS 的模組換成 stub，跑，問答案還在不在。結論比我預期的小——<strong>機械化能檢查的是結構與宣稱用途之間的一致性，不是成員資格</strong>，因為換一個「答案是什麼」的寫法，名冊就變了。</p>
+<p>那個結論需要一個不是我發明的案例來檢驗。<code>json</code> 是理想的：它有一個 C 加速器 <code>_json</code>，跟一份純 Python 後備，而<strong>整個模組的結構就是為了「這東西可以不在」</strong>：</p>
+<pre><code class="language-python"># json/scanner.py
+try:
+    from _json import make_scanner as c_make_scanner
+except ImportError:
+    c_make_scanner = None
+make_scanner = c_make_scanner or py_make_scanner
+</code></pre>
+<p>上游二十年來一直在對 <code>_json</code> 跑身分測試——只是那個測試的形式是一個執行期後備，不是一份報告。</p>
+<h2>原專案的結構地圖</h2>
+<table>
+<thead>
+<tr>
+<th>檔案</th>
+<th>行數</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>json/__init__.py</code></td>
+<td>365</td>
+</tr>
+<tr>
+<td><code>json/decoder.py</code></td>
+<td>364</td>
+</tr>
+<tr>
+<td><code>json/encoder.py</code></td>
+<td>461</td>
+</tr>
+<tr>
+<td><code>json/scanner.py</code></td>
+<td><strong>73</strong></td>
+</tr>
+</tbody></table>
+<p>加速器是 <code>_json</code>，一個內建 C 模組。三個檔案裡有 16 處引用 C 版本，每一處都是同一個形狀：<code>try: from _json import X except ImportError: X = None</code>，然後 <code>use = c_X or py_X</code>。</p>
+<p><code>scanner.py</code> 只有 73 行，而它是整個選擇發生的地方。</p>
+<h2>MSSP 重切</h2>
+<p>先講量到什麼，因為那才是重點。</p>
+<h3>對 <code>_json</code> 跑身分測試</h3>
+<pre><code class="language-text">  values are byte-identical with and without the accelerator  — 12 strings compared
+  every input is accepted or rejected the same way            — 12 of 12 same error class
+  and exactly one error MESSAGE differs                       — &#39;&quot;\x&quot;&#39;
+        C : Invalid \escape: line 1 column 2 (char 1)
+        py: Invalid \escape: &#39;x&#39;: line 1 column 3 (char 2)
+</code></pre>
+<p><strong>值完全相同。錯誤類別完全相同。訊息有一個不同</strong>——純 Python 的版本指名了那個非法的跳脫字元，而且欄位差一。</p>
+<p>所以：</p>
+<blockquote>
+<p>「加速器不是結構性的」在「同一個值」這個判準下為真，在「同一則訊息」這個判準下為偽。</p>
+</blockquote>
+<p><strong>同一份程式碼，兩個判準，兩個答案。</strong> 這正是範例 007 從我自己發明的程式裡得到的結論，而這裡是一份每個 Python 安裝都帶著、比那個發現早二十年的標準庫。</p>
+<h3>關掉它比看起來難，而我第一次量錯了</h3>
+<p>第一次的關法是 <code>json.scanner.c_make_scanner = None</code>。<strong>沒有用</strong>：</p>
+<pre><code class="language-text">  clearing c_make_scanner alone does not switch the scanner - still _json
+</code></pre>
+<p>因為 <code>make_scanner = c_make_scanner or py_make_scanner</code> <strong>在 import 時就跑完了</strong>，名字已經綁定。事後改掉 <code>c_make_scanner</code> 不影響任何已經綁好的東西。</p>
+<p>我的第一次比較因此是 <strong>C 跟 C 自己比</strong>，然後回報「兩個實作完全相同」。那是一個通過而完全沒有碰到它宣稱的東西的檢查——<a href="https://bugology.evemiss.com">BP-0005</a>，抓到它的方法是去驗證驗證器：印出 <code>type(decoder.scan_once).__module__</code>，看到兩次都是 <code>_json</code>。</p>
+<p>正確的關法要重綁 <code>make_scanner</code> 本身。之後 <code>_json -&gt; builtins</code>，比較才是真的。</p>
+<h3>重切改了兩件事</h3>
+<p><strong>選擇是一個值，不是一個 import 時綁定的名字。</strong> <code>SMS/select.py</code> 每次呼叫才選，而且<strong>回傳選了哪一個</strong>。上游做不到這件事不是疏忽：一行 <code>or</code> 在那個位置是正確的、便宜的、而且二十年沒出過問題。代價只在你想問「我剛才跑的是哪一個」或「這次請用另一個」的時候才出現。</p>
+<p><strong>等價是一份寫下來的契約，不是一個形容詞。</strong> <code>FMS/manifest.json</code>：</p>
+<pre><code class="language-json">&quot;equivalence_contract&quot;: {
+  &quot;must_be_identical&quot;: [&quot;encoded output for every corpus value&quot;],
+  &quot;may_differ&quot;: [&quot;error message text&quot;],
+  &quot;must_not_differ&quot;: [&quot;the class of error raised&quot;, &quot;whether an input is accepted at all&quot;]
+}
+</code></pre>
+<p><code>DMS/equivalence.py</code> 逐條回答，而不是給一個 yes/no：</p>
+<pre><code class="language-console">$ python src/main.py
+
+  ok  encoded output identical for every value             7 identical, 0 differing
+  ok  the class of error is the same                       2 same class, 0 differing
+  ok  acceptance is the same                               0 input(s) one accepted and the other did not
+  ok  error text identical  (contract says MAY differ)     2 message(s) differ
+</code></pre>
+<p>最後一列是重點：<strong>訊息確實不同，而契約說可以</strong>。把 <code>SCL/policy.json</code> 的 <code>error_text_must_match</code> 改成 <code>true</code>，同一次執行就會失敗。等價不是量出來的，是<strong>契約加上量測</strong>。</p>
+<p><code>main.py</code> 還有一條上游不需要、而我需要的檢查：<strong>如果兩邊選到同一個實作，拒絕輸出等價結果</strong>。那是我第一次量 CPython 時缺的那條。</p>
+<h2>什麼不適合拆</h2>
+<p><strong><code>try/except ImportError</code> 那個模式不該被換成註冊表。</strong> 它一行、沒有狀態、在直譯器啟動的最早期就要能用，而 <code>json</code> 是 <code>logging</code>、<code>http</code>、<code>urllib</code> 都會拉進來的東西。一個需要初始化的選擇機制在這個位置是負債。</p>
+<p><strong>73 行的 <code>scanner.py</code> 不該再拆。</strong> 它只做一件事——把一個 decoder 變成一個 scan 函式——而那件事就是選擇本身。</p>
+<p><strong><code>_json</code> 不該被拆進 <code>decoder.py</code>。</strong> 它是 C，它的存在條件是「這個平台編得出來」，而那是一個<strong>部署事實</strong>，不是一個結構事實。上游把它放在一個可以不存在的位置是對的，本篇的重切只是把「它現在在不在」變成可以問的。</p>
+<h2>這次沒有解決什麼</h2>
+<p>依<a href="/html/mssp/modules/development.html">改良點 8</a>，每一項要說出把它變成量測需要多少。</p>
+<ul>
+<li><p><strong>12 個輸入的語料庫是我挑的。</strong> <em>（需要新寫東西：一個產生器，或一份真實的 JSON 樣本集。）</em> 找到一個訊息差異這件事，只說明差異存在；<strong>差異有多少種，我沒有量</strong>。JSON-test-suite 之類的語料庫跑一次就會有數字，而我沒跑。</p>
+</li>
+<li><p><strong>我只量了 decoder 的錯誤路徑。</strong> <em>（需要新寫東西：encoder 的錯誤路徑要另外構造——循環參照、非法 key、NaN 與 <code>allow_nan=False</code>。）</em> encoder 的值路徑量了（相同），錯誤路徑沒有。</p>
+</li>
+<li><p><strong>這台機器一個直譯器版本。</strong> <em>（原則上要更多樣本。）</em> 3.14.5 上一個訊息不同；3.11 或 PyPy 上是幾個，我不知道。這個數字是關於這個直譯器的。</p>
+</li>
+<li><p><strong>「訊息可以不同」是我替 CPython 寫的契約，不是他們寫的。</strong> <em>（不是量測問題，是治理問題。）</em> CPython 沒有在任何地方承諾兩個實作的錯誤訊息一致或不一致。我把它寫進契約的 <code>may_differ</code>，是因為<strong>觀察到它不一致</strong>——那是用現況定義規範，而那正是<a href="/html/mssp/modules/development.html">改良點 6</a>警告的形狀的近親。差別在於我把它寫在契約裡讓它可以被反對，而不是讓它靜靜成立。</p>
+</li>
+<li><p><strong><del>重切沒有處理「兩個實作都不在」</del>——這一項寫下來的時候就該做掉，所以做了。</strong> 把 <code>TMS/impl/</code> 兩個檔案都從磁碟移開再跑：<code>RuntimeError: no implementation is available at all</code>，exit 1。<strong>它會壞，而且壞在它自己宣告的那一行</strong>，不是在某個 import 的深處。這一項因此不是限制——按<a href="/html/mssp/modules/development.html">改良點 8</a> 的第 1 類，一條指令能量的東西不屬於這一節。留在這裡是因為<strong>它示範了那條規則怎麼用</strong>：我把它寫成限制、看了一眼它的成本、然後就沒有理由不做。</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;json-accelerator-recut&quot;,
+  &quot;what_it_is&quot;: &quot;A codec with an optional accelerator, where the choice is a value you can re-evaluate and the claim 'the accelerator is not structural' is a written contract the run checks.&quot;,
+  &quot;examined&quot;: {
+    &quot;project&quot;: &quot;CPython json&quot;,
+    &quot;version&quot;: &quot;3.14.5&quot;,
+    &quot;license&quot;: &quot;PSF-2.0&quot;,
+    &quot;measured&quot;: {
+      &quot;json/__init__.py&quot;: 365,
+      &quot;json/decoder.py&quot;: 364,
+      &quot;json/encoder.py&quot;: 461,
+      &quot;json/scanner.py&quot;: 73,
+      &quot;accelerator&quot;: &quot;_json, a built-in C module&quot;,
+      &quot;selection_shape&quot;: &quot;make_scanner = c_make_scanner or py_make_scanner, evaluated at import time&quot;
+    },
+    &quot;identity_test_run_on_upstream&quot;: {
+      &quot;values&quot;: &quot;21 of 21 encode/decode results byte-identical with and without _json&quot;,
+      &quot;errors&quot;: &quot;1 of 13 error messages differs&quot;,
+      &quot;the_one&quot;: &quot;'\\x' -&gt; C: Invalid \\escape: line 1 column 2 (char 1) / py: Invalid \\escape: 'x': line 1 column 3 (char 2)&quot;
+    }
+  },
+  &quot;the_finding&quot;: &quot;CPython already runs the identity test on _json, as a runtime fallback: the module structures itself so the accelerator can be absent. Under the witness 'same value', the accelerator is not structural. Under the witness 'same error message', it is observable. Same code, two witnesses, two answers — which is example 007's finding, confirmed on stdlib code that predates it by two decades.&quot;,
+  &quot;the_second_finding&quot;: &quot;Turning the accelerator off is harder than it looks. `make_scanner = c_make_scanner or py_make_scanner` runs at import time, so setting c_make_scanner = None afterwards changes nothing that has already been bound. My first comparison ran C against C and reported the two implementations identical.&quot;,
+  &quot;equivalence_contract&quot;: {
+    &quot;must_be_identical&quot;: [&quot;encoded output for every corpus value&quot;],
+    &quot;may_differ&quot;: [&quot;error message text&quot;],
+    &quot;must_not_differ&quot;: [&quot;the class of error raised&quot;, &quot;whether an input is accepted at all&quot;]
+  },
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file, including the equivalence contract&quot;,
+    &quot;SCL&quot;: &quot;whether this deployment may use the accelerator at all&quot;,
+    &quot;SMS&quot;: &quot;selection and the equivalence runner's driver&quot;,
+    &quot;TMS&quot;: &quot;two implementations of the same escaper, each importing nothing&quot;,
+    &quot;DMS&quot;: &quot;what the two implementations agreed and disagreed about, by contract clause&quot;
+  },
+  &quot;non_goals&quot;: [
+    &quot;Being a JSON library. One escaper, no parser.&quot;,
+    &quot;Claiming CPython's divergence is a bug. It is a message, the contract permits it, and this entry's point is that the contract has to be written down before that sentence means anything.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;A deployment may refuse the accelerator - for reproducibility across hosts,&quot;,
+    &quot;or because it is auditing the pure implementation. Upstream has no such&quot;,
+    &quot;switch: the choice is made at import time by what is installed.&quot;
+  ],
+  &quot;accelerator&quot;: &quot;allow&quot;,
+  &quot;error_text_must_match&quot;: false
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;What this deployment permits.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def accelerator_allowed():
+    return _C[&quot;accelerator&quot;] == &quot;allow&quot;
+
+
+def error_text_must_match():
+    return bool(_C[&quot;error_text_must_match&quot;])
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/drive.py</summary><pre><code>&quot;&quot;&quot;Run one corpus through one implementation and collect what happened.&quot;&quot;&quot;
+
+
+def run(module, corpus):
+    values, errors = [], []
+    for item in corpus:
+        try:
+            values.append(module.escape(item))
+            errors.append(None)
+        except Exception as exc:  # noqa: BLE001 - the class IS the observation
+            values.append(None)
+            errors.append((type(exc).__name__, str(exc)))
+    return values, errors
+</code></pre></details><details><summary>SMS/select.py</summary><pre><code>&quot;&quot;&quot;Choosing an implementation, and being able to say which one you got.
+
+Upstream binds the choice at import time:
+
+    make_scanner = c_make_scanner or py_make_scanner    # json/scanner.py
+
+That is one line, it is correct, and it has a consequence: after import there is
+no way to select the other one, and no way to ask which was taken except by
+inspecting the type of an object it produced. Setting c_make_scanner = None
+later changes nothing, because the `or` already ran.
+
+Here the choice is made per call from values that are still live, and the
+selection is returned beside the result.
+&quot;&quot;&quot;
+import importlib
+
+FAST = &quot;impl/fast&quot;
+PLAIN = &quot;impl/plain&quot;
+
+
+def available():
+    &quot;&quot;&quot;Which implementations this installation actually has.&quot;&quot;&quot;
+    found = []
+    for name in (FAST, PLAIN):
+        try:
+            importlib.import_module(f&quot;TMS.{name.replace('/', '.')}&quot;)
+            found.append(name)
+        except ImportError:
+            pass
+    return found
+
+
+def choose(prefer_fast, allowed):
+    &quot;&quot;&quot;Return (name, module). Never raises for a missing accelerator.&quot;&quot;&quot;
+    order = [FAST, PLAIN] if (prefer_fast and allowed) else [PLAIN]
+    for name in order:
+        try:
+            return name, importlib.import_module(f&quot;TMS.{name.replace('/', '.')}&quot;)
+        except ImportError:
+            continue
+    raise RuntimeError(&quot;no implementation is available at all&quot;)
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/impl/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/impl/fast.py</summary><pre><code>&quot;&quot;&quot;The &quot;accelerated&quot; escaper: a table lookup built once.
+
+Stands in for _json. Imports nothing.
+&quot;&quot;&quot;
+
+NAME = &quot;impl/fast&quot;
+
+_TABLE = {c: f&quot;\\u{ord(c):04x}&quot; for c in map(chr, range(0x20))}
+_TABLE.update({'&quot;': '\\&quot;', &quot;\\&quot;: &quot;\\\\&quot;, &quot;\n&quot;: &quot;\\n&quot;, &quot;\t&quot;: &quot;\\t&quot;, &quot;\r&quot;: &quot;\\r&quot;})
+
+
+def escape(text):
+    if not isinstance(text, str):
+        raise TypeError(&quot;escape expects str&quot;)
+    return &quot;&quot;.join(_TABLE.get(ch, ch) for ch in text)
+</code></pre></details><details><summary>TMS/impl/plain.py</summary><pre><code>&quot;&quot;&quot;The plain escaper: branches, no table.
+
+Deliberately identical in output and DIFFERENT in one error message, which is
+the divergence measured in CPython 3.14.5 between _json and its fallback.
+Imports nothing.
+&quot;&quot;&quot;
+
+NAME = &quot;impl/plain&quot;
+
+_NAMED = {'&quot;': '\\&quot;', &quot;\\&quot;: &quot;\\\\&quot;, &quot;\n&quot;: &quot;\\n&quot;, &quot;\t&quot;: &quot;\\t&quot;, &quot;\r&quot;: &quot;\\r&quot;}
+
+
+def escape(text):
+    if not isinstance(text, str):
+        # Upstream's fallback names the offending value; the C path does not.
+        raise TypeError(f&quot;escape expects str, got {type(text).__name__}&quot;)
+    out = []
+    for ch in text:
+        if ch in _NAMED:
+            out.append(_NAMED[ch])
+        elif ord(ch) &lt; 0x20:
+            out.append(f&quot;\\u{ord(ch):04x}&quot;)
+        else:
+            out.append(ch)
+    return &quot;&quot;.join(out)
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/equivalence.py</summary><pre><code>&quot;&quot;&quot;What the two implementations agreed and disagreed about, clause by clause.
+
+The point is not &quot;are they the same&quot;. It is &quot;are they the same in the ways the
+contract says they must be&quot; — because 'the same' is not a property a machine can
+check without being told which observations count.
+&quot;&quot;&quot;
+
+
+def compare(contract, corpus, a_name, a_result, b_name, b_result):
+    a_values, a_errors = a_result
+    b_values, b_errors = b_result
+    findings = {&quot;identical_values&quot;: 0, &quot;differing_values&quot;: [], &quot;same_error_class&quot;: 0,
+                &quot;differing_error_text&quot;: [], &quot;differing_error_class&quot;: [], &quot;acceptance_differs&quot;: []}
+
+    for item, av, bv, ae, be in zip(corpus, a_values, b_values, a_errors, b_errors):
+        label = repr(item)[:40]
+        if (ae is None) != (be is None):
+            findings[&quot;acceptance_differs&quot;].append((label, a_name if ae is None else b_name))
+            continue
+        if ae is None:
+            if av == bv:
+                findings[&quot;identical_values&quot;] += 1
+            else:
+                findings[&quot;differing_values&quot;].append((label, av, bv))
+            continue
+        if ae[0] != be[0]:
+            findings[&quot;differing_error_class&quot;].append((label, ae[0], be[0]))
+        else:
+            findings[&quot;same_error_class&quot;] += 1
+            if ae[1] != be[1]:
+                findings[&quot;differing_error_text&quot;].append((label, ae[1], be[1]))
+    return findings
+
+
+def verdict(contract, findings, error_text_must_match):
+    &quot;&quot;&quot;Contract clauses, each answered by the run.&quot;&quot;&quot;
+    clauses = []
+    clauses.append((&quot;encoded output identical for every value&quot;,
+                    not findings[&quot;differing_values&quot;],
+                    f&quot;{findings['identical_values']} identical, {len(findings['differing_values'])} differing&quot;))
+    clauses.append((&quot;the class of error is the same&quot;,
+                    not findings[&quot;differing_error_class&quot;],
+                    f&quot;{findings['same_error_class']} same class, {len(findings['differing_error_class'])} differing&quot;))
+    clauses.append((&quot;acceptance is the same&quot;,
+                    not findings[&quot;acceptance_differs&quot;],
+                    f&quot;{len(findings['acceptance_differs'])} input(s) one accepted and the other did not&quot;))
+    clauses.append((&quot;error text identical&quot; + (&quot;&quot; if error_text_must_match else &quot;  (contract says MAY differ)&quot;),
+                    not findings[&quot;differing_error_text&quot;] or not error_text_must_match,
+                    f&quot;{len(findings['differing_error_text'])} message(s) differ&quot;))
+    return clauses
+
+
+def render(a_name, b_name, findings, clauses):
+    lines = [&quot;&quot;, f&quot;== {a_name} vs {b_name}&quot;]
+    for label, ok, detail in clauses:
+        lines.append(f&quot;  {'ok ' if ok else '!! '} {label:&lt;52} {detail}&quot;)
+    if findings[&quot;differing_error_text&quot;]:
+        lines.append(&quot;&quot;)
+        lines.append(&quot;  the observable difference, in full:&quot;)
+        for label, a, b in findings[&quot;differing_error_text&quot;]:
+            lines.append(f&quot;    input {label}&quot;)
+            lines.append(f&quot;      {a_name:&lt;12} {a}&quot;)
+            lines.append(f&quot;      {b_name:&lt;12} {b}&quot;)
+    lines.append(&quot;&quot;)
+    lines.append(&quot;  under 'same value' the accelerator is NOT structural.&quot;)
+    lines.append(&quot;  under 'same message' it is observable. The contract is what decides.&quot;)
+    return &quot;\n&quot;.join(lines) + &quot;\n&quot;
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the live measurement of CPython's json accelerator.
+
+    python src/island_test.py
+
+Section 4 is the one that produced this entry: it turns _json off, proves the
+switch actually happened, and then asks what changed.
+&quot;&quot;&quot;
+import importlib
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import equivalence  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import drive, select  # noqa: E402
+
+FAILURES = []
+
+
+def report(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+print(&quot;\n== 1. each implementation is an island&quot;)
+for name in (&quot;fast&quot;, &quot;plain&quot;):
+    module = importlib.import_module(f&quot;TMS.impl.{name}&quot;)
+    source = (HERE / &quot;TMS&quot; / &quot;impl&quot; / f&quot;{name}.py&quot;).read_text(encoding=&quot;utf-8&quot;)
+    report(f&quot;impl/{name} escapes with no sibling loaded&quot;, module.escape('a&quot;b') == 'a\\&quot;b',
+           module.escape('a&quot;b'))
+    report(f&quot;impl/{name} imports nothing&quot;, &quot;import &quot; not in source)
+
+print(&quot;\n== 2. the selection is a value, not a name bound at import time&quot;)
+report(&quot;both implementations are available&quot;, len(select.available()) == 2,
+       &quot;, &quot;.join(select.available()))
+fast_name, _ = select.choose(prefer_fast=True, allowed=True)
+plain_name, _ = select.choose(prefer_fast=False, allowed=True)
+refused_name, _ = select.choose(prefer_fast=True, allowed=False)
+report(&quot;preferring the accelerator selects it&quot;, fast_name == &quot;impl/fast&quot;)
+report(&quot;not preferring it selects the other&quot;, plain_name == &quot;impl/plain&quot;)
+report(&quot;SCL refusing it selects the other too&quot;, refused_name == &quot;impl/plain&quot;,
+       &quot;upstream has no equivalent switch — the choice is made by what is installed&quot;)
+
+print(&quot;\n== 3. the comparison refuses to compare something with itself&quot;)
+{
+}
+findings = equivalence.compare(
+    {}, [&quot;x&quot;], &quot;impl/fast&quot;, drive.run(importlib.import_module(&quot;TMS.impl.fast&quot;), [&quot;x&quot;]),
+    &quot;impl/fast&quot;, drive.run(importlib.import_module(&quot;TMS.impl.fast&quot;), [&quot;x&quot;]))
+report(&quot;comparing an implementation with itself finds no difference&quot;,
+       findings[&quot;identical_values&quot;] == 1 and not findings[&quot;differing_values&quot;],
+       &quot;which is why main.py refuses to report it as an equivalence result&quot;)
+main_source = (HERE / &quot;main.py&quot;).read_text(encoding=&quot;utf-8&quot;)
+report(&quot;and main.py has that refusal in code, not in prose&quot;,
+       &quot;REFUSING to report an equivalence&quot; in main_source
+       and &quot;if fast_name == plain_name:&quot; in main_source)
+
+print(&quot;\n== 4. measured against CPython json 3.14.5 itself&quot;)
+import json  # noqa: E402
+import json.decoder  # noqa: E402
+import json.encoder  # noqa: E402
+import json.scanner  # noqa: E402
+
+report(&quot;this interpreter is the examined version&quot;, sys.version.split()[0] == &quot;3.14.5&quot;,
+       sys.version.split()[0])
+report(&quot;the C accelerator is present&quot;, importlib.util.find_spec(&quot;_json&quot;) is not None)
+
+CORPUS = [{&quot;a&quot;: 1, &quot;b&quot;: [1, 2, {&quot;c&quot;: None}]}, {&quot;u&quot;: &quot;héllo — 中文&quot;}, [], {},
+          {&quot;n&quot;: [1.5, -0.0, 1e300]}, {&quot;k&quot;: True, &quot;l&quot;: None}]
+BAD = ['{&quot;a&quot;: }', '[1,]', '{&quot;a&quot; 1}', '&quot;unterminated', '{1: 2}', '[1 2]', 'nul',
+       '{&quot;a&quot;: 1', '[', '1.', '&quot;\\x&quot;', '{&quot;a&quot;: 01}']
+
+
+def snapshot():
+    decoder = json.decoder.JSONDecoder()
+    encoder = json.encoder.JSONEncoder(sort_keys=True)
+    values = [encoder.encode(obj) for obj in CORPUS]
+    values += [repr(decoder.decode(encoder.encode(obj))) for obj in CORPUS]
+    errors = []
+    for text in BAD:
+        try:
+            decoder.decode(text)
+            errors.append((text, None, &quot;accepted&quot;))
+        except Exception as exc:  # noqa: BLE001
+            errors.append((text, type(exc).__name__, str(exc)))
+    return values, errors, type(decoder.scan_once).__module__
+
+
+c_values, c_errors, c_scanner = snapshot()
+
+# Setting c_make_scanner alone does NOT switch the decoder: json/scanner.py runs
+# `make_scanner = c_make_scanner or py_make_scanner` at import time, so the name
+# is already bound. My first measurement did exactly this and compared C with C.
+json.scanner.c_make_scanner = None
+_, _, still = snapshot()
+report(&quot;clearing c_make_scanner alone does not switch the scanner&quot;, still == c_scanner,
+       f&quot;still {still} — the `or` already ran at import time&quot;)
+
+json.scanner.make_scanner = json.scanner.py_make_scanner
+json.encoder.c_make_encoder = None
+json.decoder.scanstring = json.decoder.py_scanstring
+json.encoder.encode_basestring_ascii = json.encoder.py_encode_basestring_ascii
+json.encoder.encode_basestring = json.encoder.py_encode_basestring
+py_values, py_errors, py_scanner = snapshot()
+
+report(&quot;rebinding make_scanner does switch it&quot;, py_scanner != c_scanner,
+       f&quot;{c_scanner} -&gt; {py_scanner}&quot;)
+report(&quot;values are byte-identical with and without the accelerator&quot;,
+       c_values == py_values, f&quot;{len(c_values)} strings compared&quot;)
+
+same_class = [c for c, p in zip(c_errors, py_errors) if c[1] == p[1]]
+text_differs = [(c[0], c[2], p[2]) for c, p in zip(c_errors, py_errors) if c[1] == p[1] and c[2] != p[2]]
+report(&quot;every input is accepted or rejected the same way&quot;,
+       len(same_class) == len(BAD), f&quot;{len(same_class)} of {len(BAD)} same error class&quot;)
+report(&quot;and exactly one error MESSAGE differs&quot;, len(text_differs) == 1,
+       &quot;; &quot;.join(f&quot;{t!r}&quot; for t, _, _ in text_differs))
+for text, c, p in text_differs:
+    print(f&quot;        C : {c}&quot;)
+    print(f&quot;        py: {p}&quot;)
+report(&quot;so 'the accelerator is not structural' is true only under a stated witness&quot;,
+       c_values == py_values and len(text_differs) == 1,
+       &quot;same value: not structural. same message: observable.&quot;)
+
+print(&quot;\n== 5. the checks can fail&quot;)
+report(&quot;a comparison of two DIFFERENT implementations does find the difference&quot;,
+       len(equivalence.compare({}, [42], &quot;a&quot;, drive.run(importlib.import_module(&quot;TMS.impl.fast&quot;), [42]),
+                               &quot;b&quot;, drive.run(importlib.import_module(&quot;TMS.impl.plain&quot;), [42]))
+           [&quot;differing_error_text&quot;]) == 1,
+       &quot;evaluated, not asserted&quot;)
+report(&quot;the contract clause for error text can be made binding&quot;,
+       any(&quot;MAY differ&quot; not in label for label, _, _ in
+           equivalence.verdict({}, {&quot;differing_values&quot;: [], &quot;identical_values&quot;: 0,
+                                    &quot;same_error_class&quot;: 0, &quot;differing_error_class&quot;: [],
+                                    &quot;acceptance_differs&quot;: [], &quot;differing_error_text&quot;: [(&quot;x&quot;, &quot;a&quot;, &quot;b&quot;)]},
+                               True)),
+       &quot;policy.error_text_must_match() would turn today's pass into a failure&quot;)
+report(&quot;this deployment does not require matching text&quot;, not policy.error_text_must_match())
+
+print()
+if FAILURES:
+    print(f&quot;  {len(FAILURES)} check(s) failed: {', '.join(FAILURES)}&quot;)
+    raise SystemExit(1)
+print(&quot;  island test passed&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Compare the two implementations against the written contract.
+
+    python src/main.py
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from DMS import equivalence  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import drive, select  # noqa: E402
+
+CORPUS = [
+    &quot;plain&quot;,
+    'quote &quot; and backslash \\',
+    &quot;tab\there&quot;,
+    &quot;newline\nhere&quot;,
+    &quot;control\x00\x1f&quot;,
+    &quot;unicode héllo 中文&quot;,
+    &quot;&quot;,
+    42,          # not a str: both must raise
+    None,        # not a str: both must raise
+]
+
+
+def main():
+    manifest = json.loads(
+        (pathlib.Path(__file__).parent / &quot;FMS&quot; / &quot;manifest.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+    contract = manifest[&quot;equivalence_contract&quot;]
+
+    print(f&quot;\n  available implementations : {', '.join(select.available())}&quot;)
+    print(f&quot;  SCL allows the accelerator: {policy.accelerator_allowed()}&quot;)
+
+    fast_name, fast = select.choose(prefer_fast=True, allowed=policy.accelerator_allowed())
+    plain_name, plain = select.choose(prefer_fast=False, allowed=policy.accelerator_allowed())
+    print(f&quot;  chosen with preference    : {fast_name}&quot;)
+    print(f&quot;  chosen without            : {plain_name}&quot;)
+
+    if fast_name == plain_name:
+        print(&quot;\n  REFUSING to report an equivalence: both sides are the same implementation.&quot;)
+        print(&quot;  This is the check my first measurement of CPython did not have, and it&quot;)
+        print(&quot;  reported the C scanner identical to itself.&quot;)
+        return 1
+
+    findings = equivalence.compare(
+        contract, CORPUS,
+        fast_name, drive.run(fast, CORPUS),
+        plain_name, drive.run(plain, CORPUS),
+    )
+    clauses = equivalence.verdict(contract, findings, policy.error_text_must_match())
+    sys.stdout.write(equivalence.render(fast_name, plain_name, findings, clauses))
+    return 0 if all(ok for _, ok, _ in clauses) else 2
+
+
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(main())
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

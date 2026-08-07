@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>把身分測試變成會跑的東西，然後發現它量的不是「結構」 | MSSP | Neo.K</title>
+<meta name="description" content="缺點 2 說 SMS 沒有防止自己長大的機制，改良點 1 提的是給一個數字上限——而任何數字都是沒有根據的規則。身分測試已經用文字定義了邊界，所以這次把文字變成可執行的：把宣稱是 SMS 的模組換成 stub，跑，然後問答案還在不在。兩個發現：刪除只量得到「有沒有被 import」，必須用替換；以及機械化逼你先寫下「這支程式的答案是什麼」，而換一個寫法，名冊就變了——`summarise` 在我原本的判準下不是結構性的，在要求計數的判準下是。**機械化能檢查的是結構與宣稱用途之間的一致性，不是成員資格。**">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/007-identity-test-run.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>007-identity-test-run</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>007-identity-test-run</span></div>
+    <div><b>語言</b><span>python</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-07</span></div>
+    <div><b>行數</b><span>507</span></div>
+    <div><b>執行</b><span><code>python src/main.py</code></span></div>
+  </section>
+  <article class="content"><h1>007 — Making the identity test executable, and finding out what it measures</h1>
+<h2>What this program does</h2>
+<p>It reconciles two ledgers — matching entries by id, comparing amounts within a
+tolerance — and reports which entries disagree.</p>
+<pre><code class="language-bash">python src/main.py              # the reconciliation
+python src/main.py --csv        # the same, as CSV
+python src/main.py --identity   # run the identity test over the SMS roster
+python src/island_test.py       # 21 checks across 6 sections
+</code></pre>
+<p>Six modules under <code>src/SMS/</code> claim to be structural. Three of them are not, and
+the program is what says so.</p>
+<h2>The structural decision</h2>
+<p><strong>Stop treating the identity test as a question a person answers once, and make
+it something the build runs.</strong></p>
+<p><a href="/html/mssp/modules/development.html">開發區 缺點 2</a> says SMS has no mechanism
+against its own growth and that this is the method&#39;s most likely failure mode.
+<a href="/html/mssp/modules/development.html">改良點 1</a> proposes a budget — a count.
+A count has to come from somewhere, and any number I pick is a rule with
+nothing behind it.</p>
+<p>But MSSP already defines the boundary in words: <strong>remove it, and is the system
+still itself?</strong> So the number is not the thing to invent. The words are the
+thing to make executable, and then the size of SMS is a result rather than a
+target.</p>
+<p>Two things went wrong on the way, and both are the content of this example.</p>
+<h3>Deletion measures reachability, not necessity</h3>
+<p>The first version deleted each module and ran the program:</p>
+<pre><code class="language-text">  ok  parse          structural   ImportError: cannot import name &#39;parse&#39; from &#39;SMS&#39;
+  ok  normalise      structural   ImportError: cannot import name &#39;normalise&#39; from &#39;SMS&#39;
+  ...
+  !!  format_money   NOT STRUCTURAL   ran, and produced byte-identical output
+</code></pre>
+<p>That table is worthless, twice over. <strong>Every module the entry point imports
+raises <code>ImportError</code> when deleted</strong>, so deletion asks &quot;is this reachable from
+<code>main.py</code>&quot;, which is not the question. And the two modules it did flag were
+flagged because I had not wired them into <code>main.py</code> at all — the test was
+distinguishing dead code from live code and reporting it as a structural
+finding.</p>
+<p>The fix is <strong>substitution</strong>: each rostered module is replaced by a stub in
+<code>DMS/stubs/</code> that keeps the signature and does nothing meaningful.</p>
+<p>Writing that stub turns out to be the useful part. You cannot run this test on a
+module without first saying <em>what this module would be if it did not matter</em> —
+and for two of the six, writing that sentence was already the answer.</p>
+<h3>The mechanisation needs a witness, and the witness decides the answer</h3>
+<p>&quot;Still itself&quot; needs someone to say what the program is <strong>for</strong>. A stub run that
+exits 0 proves nothing on its own; the question is whether the answer survived.</p>
+<p><code>FMS/manifest.json</code> states it:</p>
+<pre><code class="language-json">&quot;answer_witness&quot;: {
+  &quot;what_the_program_is_for&quot;: &quot;Saying which ledger entries disagree, and how.&quot;,
+  &quot;present_when&quot;: &quot;the output names every id that differs or is unmatched&quot;,
+  &quot;ids&quot;: [&quot;INV-3&quot;, &quot;INV-5&quot;, &quot;INV-6&quot;]
+}
+</code></pre>
+<p>With that in place:</p>
+<pre><code class="language-console">$ python src/main.py --identity
+
+  ok  parse          structural       runs, but the answer is gone: missing INV-3, INV-5, INV-6
+  ok  normalise      structural       runs, but the answer is gone: missing INV-3
+  ok  reconcile      structural       runs, but the answer is gone: missing INV-3, INV-5, INV-6
+  !!  summarise      NOT STRUCTURAL   answer intact, output differs — presentation, not structure
+  !!  format_money   NOT STRUCTURAL   answer intact, output differs — presentation, not structure
+  !!  sort_entries   NOT STRUCTURAL   answer intact, and the output did not even change
+
+  claimed SMS        6
+  survives the test  3  parse, normalise, reconcile
+  does not           3  summarise, format_money, sort_entries
+</code></pre>
+<p><strong><code>summarise</code> coming out not-structural is the result I did not expect.</strong> It
+produces the counts. I would have called it obviously SMS. Under the witness I
+wrote, stubbing it leaves the answer intact, because the rows come from the
+reconciliation and not from the summary.</p>
+<p>Two readings, and I cannot settle between them from inside:</p>
+<ul>
+<li>the witness is too weak, and the counts genuinely <em>are</em> part of the answer;</li>
+<li>or <code>summarise</code> really is a convenience view over data the report already holds.</li>
+</ul>
+<p>Section 3 of the island test settles what <em>kind</em> of question that is, by running
+the whole thing again with a stricter witness:</p>
+<pre><code class="language-text">  PASS  under the stated witness, summarise is not structural
+  PASS  under a witness that also requires the counts, it is
+  PASS  and nothing else moved - [&#39;normalise&#39;,&#39;parse&#39;,&#39;reconcile&#39;,&#39;summarise&#39;] vs [&#39;normalise&#39;,&#39;parse&#39;,&#39;reconcile&#39;]
+</code></pre>
+<p>One module moves. Nothing else does. So:</p>
+<blockquote>
+<p><strong>The mechanised identity test does not decide which modules are structural.
+It decides whether a structure is consistent with a stated purpose.</strong></p>
+</blockquote>
+<p>That is less than I set out to build and more useful than a budget. A number
+tells you SMS is too big. This tells you <em>which</em> module is not carrying its
+claim, <strong>relative to a sentence you had to write down</strong> — and writing that
+sentence is the part no mechanisation removes.</p>
+<p><code>normalise</code> is worth a look too: it is structural, but only INV-3 disappears
+without it. With every amount zeroed, the two ledgers agree within tolerance and
+the differing row vanishes, while the unmatched ids survive because they are
+matched by id. <strong>The verdict is binary and the evidence is partial</strong>, and the
+report prints the partial evidence rather than the verdict alone.</p>
+<h2>Set by set</h2>
+<p><strong>FMS</strong> — <code>manifest.json</code>: the roster, and the witness. The witness is the only
+place in this example where a human judgement is written down as data.</p>
+<p><strong>SCL</strong> — <code>policy.json</code>: the tolerance (2 cents, which is why INV-2&#39;s one-cent
+difference is a match) and which reports this deployment permits.</p>
+<p><strong>SMS</strong> — six modules, three of which survive their own test.</p>
+<p><strong>TMS</strong> — <code>reports/text</code>, <code>reports/csv</code>. Neither imports anything, not even SMS.</p>
+<p><strong>DMS</strong> — <code>identity.py</code> and <code>stubs/</code>. It runs subprocesses over a copy of the
+tree, because the only honest way to ask &quot;does this work without the module&quot; is
+to not have the module.</p>
+<h2>The island test</h2>
+<pre><code class="language-console">$ python src/island_test.py
+  ... 21 checks across 6 sections ...
+  island test passed
+</code></pre>
+<p>Section 4 is the failing-case section. It substitutes <code>reconcile.py</code> <strong>as its
+own stub</strong> and requires the test to report NOT STRUCTURAL — because a
+substitution that changes nothing has proved nothing, and a test that reported
+&quot;structural&quot; there would be reporting on the module rather than on the
+substitution. It also requires a module with no stub to be refused rather than
+skipped: this test cannot say anything about a module nobody has written a
+neutralisation for, and silence would look like a pass.</p>
+<h2>What this example does not solve</h2>
+<p>Following <a href="/html/mssp/modules/development.html">改良點 8</a>, each item says what
+turning it into a measurement would take.</p>
+<ul>
+<li><p><strong>One run, one input.</strong> <em>(needs new code: a corpus of inputs and a per-input
+verdict.)</em> A module can be genuinely required on inputs this ledger does not
+contain. <code>parse</code> is structural here because the sample has rows; on empty
+input every module would look structural or none would. The verdict is a
+statement about this run, and the report does not currently say so on its own
+face.</p>
+</li>
+<li><p><strong>The witness is one sentence and I wrote it.</strong> <em>(unmeasurable in principle
+from inside the example.)</em> Section 3 shows the roster moves when the witness
+moves. It does not show which witness is right, and nothing in the method
+says how to write one. That is the gap this example opens rather than closes.</p>
+</li>
+<li><p><strong>Stubs are hand-written, so the test is only as honest as they are.</strong>
+<em>(needs new code: a generated stub from the signature, plus a check that the
+stub is not accidentally faithful.)</em> Section 4 catches the extreme case — a
+stub identical to the module — but a stub that is <em>nearly</em> faithful would
+pass quietly. A generated one would remove the author&#39;s chance to write a
+convenient stub.</p>
+</li>
+<li><p><strong><code>summarise</code> is left unresolved on purpose.</strong> <em>(needs a criterion, not a
+measurement.)</em> I did not demote it. Demoting it would mean deciding the counts
+are not part of the answer, and I do not think one example is enough to decide
+that about a program I invented for the example.</p>
+</li>
+<li><p><strong>The relationship to a numeric budget is untested.</strong> <em>(one command per
+candidate, but no repo to run it on yet.)</em> If this test were run on a real
+project with a large SMS, it would either agree with a count-based budget or
+disagree with it, and that comparison is the thing that would tell you whether
+改良點 1 should become this instead of a number. I have no such project
+instrumented, and one invented ledger is not evidence about real ones.</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/manifest.json</summary><pre><code>{
+  &quot;name&quot;: &quot;007-identity-test-run&quot;,
+  &quot;what_it_is&quot;: &quot;A ledger reconciler whose SMS roster is decided by running the identity test rather than by asserting it.&quot;,
+  &quot;the_structural_decision&quot;: &quot;Make the identity test executable — and discover that doing so forces you to write down what the program's answer IS.&quot;,
+  &quot;the_test&quot;: &quot;Replace one rostered module with a stub that does nothing meaningful. Run the program. Then ask whether the answer is still there.&quot;,
+  &quot;why_not_delete&quot;: &quot;Deleting an imported module raises ImportError, so every imported module looks structural. Deletion measures whether a module is reachable from the entry point, which is not the same question.&quot;,
+  &quot;why_not_a_number&quot;: &quot;改良點 1 proposes an SMS budget as a count. Any number is a rule with nothing behind it. The identity test already states the boundary in words; this makes the words executable, and the size of SMS comes out as a consequence.&quot;,
+  &quot;answer_witness&quot;: {
+    &quot;what_the_program_is_for&quot;: &quot;Saying which ledger entries disagree, and how.&quot;,
+    &quot;present_when&quot;: &quot;the output names every id that differs or is unmatched&quot;,
+    &quot;ids&quot;: [&quot;INV-3&quot;, &quot;INV-5&quot;, &quot;INV-6&quot;],
+    &quot;note&quot;: &quot;This is the part the mechanisation cannot supply. A person has to say what the answer is before a machine can ask whether it survived.&quot;
+  },
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the roster, and the witness for what counts as the answer&quot;,
+    &quot;SCL&quot;: &quot;the reconciliation tolerance and which reports this deployment permits&quot;,
+    &quot;SMS&quot;: &quot;six modules that claim to be structural. The run says which are.&quot;,
+    &quot;TMS&quot;: &quot;two report formats, each importing nothing&quot;,
+    &quot;DMS&quot;: &quot;the identity-test runner, its stubs, and its report&quot;
+  },
+  &quot;sms_roster&quot;: [&quot;parse&quot;, &quot;normalise&quot;, &quot;reconcile&quot;, &quot;summarise&quot;, &quot;format_money&quot;, &quot;sort_entries&quot;],
+  &quot;non_goals&quot;: [
+    &quot;Being an accounting tool. Two ledgers, six rows, a tolerance in cents.&quot;,
+    &quot;Claiming the mechanised test is complete. It observes one run over one input — see the README.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;Tolerance is policy, not code: two ledgers agreeing to the cent is a&quot;,
+    &quot;different deployment from two ledgers agreeing to the dollar.&quot;
+  ],
+  &quot;tolerance_cents&quot;: 2,
+  &quot;permitted_reports&quot;: [&quot;reports/text&quot;, &quot;reports/csv&quot;]
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;What this deployment permits. Reads the file at run time.&quot;&quot;&quot;
+import json
+import pathlib
+
+_CONFIG = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def tolerance_cents():
+    return _CONFIG[&quot;tolerance_cents&quot;]
+
+
+def permitted_reports():
+    return list(_CONFIG[&quot;permitted_reports&quot;])
+
+
+def permits(report):
+    return report in _CONFIG[&quot;permitted_reports&quot;]
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/format_money.py</summary><pre><code>&quot;&quot;&quot;Cents to a display string.
+
+Claims to be SMS because &quot;every report needs it&quot;. The identity test disagrees,
+and the run is what says so — not this docstring.
+&quot;&quot;&quot;
+
+
+def money(cents):
+    sign = &quot;-&quot; if cents &lt; 0 else &quot;&quot;
+    value = abs(cents)
+    return f&quot;{sign}${value // 100}.{value % 100:02d}&quot;
+</code></pre></details><details><summary>SMS/normalise.py</summary><pre><code>&quot;&quot;&quot;Amounts as integer cents. Remove it and nothing can be compared.&quot;&quot;&quot;
+
+
+def normalise(entries):
+    out = []
+    for entry in entries:
+        raw = entry[&quot;amount_raw&quot;].replace(&quot;$&quot;, &quot;&quot;).replace(&quot;,&quot;, &quot;&quot;).strip()
+        negative = raw.startswith(&quot;(&quot;) and raw.endswith(&quot;)&quot;)
+        if negative:
+            raw = raw[1:-1]
+        cents = int(round(float(raw) * 100))
+        out.append({**entry, &quot;cents&quot;: -cents if negative else cents})
+    return out
+</code></pre></details><details><summary>SMS/parse.py</summary><pre><code>&quot;&quot;&quot;Read a ledger from text into entries. Remove it and there is no input.&quot;&quot;&quot;
+
+
+def parse(text):
+    entries = []
+    for line_no, raw in enumerate(text.strip().split(&quot;\n&quot;), start=1):
+        line = raw.strip()
+        if not line or line.startswith(&quot;#&quot;):
+            continue
+        parts = [p.strip() for p in line.split(&quot;,&quot;)]
+        if len(parts) != 3:
+            raise ValueError(f&quot;line {line_no}: expected id,description,amount&quot;)
+        entries.append({&quot;id&quot;: parts[0], &quot;description&quot;: parts[1], &quot;amount_raw&quot;: parts[2]})
+    return entries
+</code></pre></details><details><summary>SMS/reconcile.py</summary><pre><code>&quot;&quot;&quot;Match two ledgers by id. Remove it and the program has no answer.&quot;&quot;&quot;
+
+
+def reconcile(left, right, tolerance_cents):
+    by_id_right = {e[&quot;id&quot;]: e for e in right}
+    matched, differing, only_left, only_right = [], [], [], []
+
+    for entry in left:
+        other = by_id_right.pop(entry[&quot;id&quot;], None)
+        if other is None:
+            only_left.append(entry)
+        elif abs(entry[&quot;cents&quot;] - other[&quot;cents&quot;]) &lt;= tolerance_cents:
+            matched.append((entry, other))
+        else:
+            differing.append((entry, other))
+
+    only_right = list(by_id_right.values())
+
+    total = len(matched) + len(differing) + len(only_left) + len(only_right)
+    if total != len(left) + len(only_right):
+        raise AssertionError(
+            f&quot;reconciliation lost entries: {total} accounted for, {len(left) + len(only_right)} seen&quot;
+        )
+    return {&quot;matched&quot;: matched, &quot;differing&quot;: differing, &quot;only_left&quot;: only_left, &quot;only_right&quot;: only_right}
+</code></pre></details><details><summary>SMS/sort_entries.py</summary><pre><code>&quot;&quot;&quot;Stable ordering for display.
+
+Also claims to be SMS. Also added because it was used in more than one place,
+which is a reason to share code and not a reason to call it structural.
+&quot;&quot;&quot;
+
+
+def by_id(entries):
+    return sorted(entries, key=lambda e: e[&quot;id&quot;])
+</code></pre></details><details><summary>SMS/summarise.py</summary><pre><code>&quot;&quot;&quot;Counts and net difference. Remove it and there is nothing to report.&quot;&quot;&quot;
+
+
+def summarise(result):
+    net = sum(a[&quot;cents&quot;] - b[&quot;cents&quot;] for a, b in result[&quot;differing&quot;])
+    return {
+        &quot;matched&quot;: len(result[&quot;matched&quot;]),
+        &quot;differing&quot;: len(result[&quot;differing&quot;]),
+        &quot;only_left&quot;: len(result[&quot;only_left&quot;]),
+        &quot;only_right&quot;: len(result[&quot;only_right&quot;]),
+        &quot;net_difference_cents&quot;: net,
+    }
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/reports/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/reports/csv.py</summary><pre><code>&quot;&quot;&quot;Machine-readable report. Imports nothing, takes plain values.&quot;&quot;&quot;
+
+NAME = &quot;reports/csv&quot;
+
+
+def render(summary, rows):
+    out = [&quot;metric,value&quot;]
+    for key in (&quot;matched&quot;, &quot;differing&quot;, &quot;only_left&quot;, &quot;only_right&quot;, &quot;net_difference_cents&quot;):
+        out.append(f&quot;{key},{summary[key]}&quot;)
+    out.append(&quot;&quot;)
+    out.append(&quot;id,left,right,note&quot;)
+    for row in rows:
+        out.append(f&quot;{row['id']},{row['left']},{row['right']},{row['note']}&quot;)
+    return &quot;\n&quot;.join(out) + &quot;\n&quot;
+</code></pre></details><details><summary>TMS/reports/text.py</summary><pre><code>&quot;&quot;&quot;Human-readable report. Imports nothing, takes plain values.&quot;&quot;&quot;
+
+NAME = &quot;reports/text&quot;
+
+
+def render(summary, rows):
+    lines = [&quot;&quot;, &quot;  reconciliation&quot;]
+    lines.append(f&quot;    matched          {summary['matched']}&quot;)
+    lines.append(f&quot;    differing        {summary['differing']}&quot;)
+    lines.append(f&quot;    only in left     {summary['only_left']}&quot;)
+    lines.append(f&quot;    only in right    {summary['only_right']}&quot;)
+    lines.append(f&quot;    net difference   {summary['net_difference_cents']} cents&quot;)
+    if rows:
+        lines.append(&quot;&quot;)
+        for row in rows:
+            lines.append(f&quot;    {row['id']:&lt;8} {row['left']:&gt;10} {row['right']:&gt;10}  {row['note']}&quot;)
+    return &quot;\n&quot;.join(lines) + &quot;\n&quot;
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/identity.py</summary><pre><code>&quot;&quot;&quot;The identity test, run rather than asserted.
+
+MSSP states it in words: remove it, and is the system still itself? Mechanising
+that turned out to need two things I did not expect.
+
+**Substitution, not deletion.** Deleting an imported module raises ImportError,
+so every module the entry point imports looks structural. Deletion measures
+reachability. Each rostered module is therefore replaced with a stub in
+DMS/stubs/ that keeps the signature and does nothing meaningful — and writing
+that stub is itself the act of saying what the module would be if it did not
+matter.
+
+**A witness for the answer.** &quot;Still itself&quot; needs someone to say what the
+program is FOR. FMS declares it: the answer is present when the output names
+every id that differs or is unmatched. A machine can check that. A machine
+cannot decide it.
+&quot;&quot;&quot;
+import pathlib
+import shutil
+import subprocess
+import sys
+import tempfile
+
+
+def run(src_dir, manifest, baseline_output):
+    roster = manifest[&quot;sms_roster&quot;]
+    witness = manifest[&quot;answer_witness&quot;]
+    stubs = pathlib.Path(__file__).parent / &quot;stubs&quot;
+    results = []
+
+    for module in roster:
+        stub = stubs / f&quot;{module}.py&quot;
+        if not stub.exists():
+            results.append({&quot;module&quot;: module, &quot;verdict&quot;: &quot;NO STUB&quot;,
+                            &quot;detail&quot;: f&quot;write DMS/stubs/{module}.py — the test cannot run without it&quot;})
+            continue
+
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = pathlib.Path(tmp) / &quot;src&quot;
+            shutil.copytree(src_dir, copy, ignore=shutil.ignore_patterns(&quot;__pycache__&quot;))
+            shutil.copyfile(stub, copy / &quot;SMS&quot; / f&quot;{module}.py&quot;)
+
+            proc = subprocess.run([sys.executable, str(copy / &quot;main.py&quot;)],
+                                  capture_output=True, text=True, timeout=60)
+
+        if proc.returncode != 0:
+            last = [line for line in proc.stderr.strip().split(&quot;\n&quot;) if line.strip()]
+            results.append({&quot;module&quot;: module, &quot;verdict&quot;: &quot;structural&quot;,
+                            &quot;detail&quot;: f&quot;cannot run: {last[-1][:64] if last else 'no stderr'}&quot;})
+            continue
+
+        missing = [i for i in witness[&quot;ids&quot;] if i not in proc.stdout]
+        if missing:
+            results.append({&quot;module&quot;: module, &quot;verdict&quot;: &quot;structural&quot;,
+                            &quot;detail&quot;: f&quot;runs, but the answer is gone: missing {', '.join(missing)}&quot;})
+        elif proc.stdout == baseline_output:
+            results.append({&quot;module&quot;: module, &quot;verdict&quot;: &quot;NOT STRUCTURAL&quot;,
+                            &quot;detail&quot;: &quot;answer intact, and the output did not even change&quot;})
+        else:
+            results.append({&quot;module&quot;: module, &quot;verdict&quot;: &quot;NOT STRUCTURAL&quot;,
+                            &quot;detail&quot;: &quot;answer intact, output differs — presentation, not structure&quot;})
+    return results
+
+
+def render(results, manifest):
+    roster = manifest[&quot;sms_roster&quot;]
+    lines = [&quot;&quot;, &quot;== identity test: replace with a stub, then ask if the answer survived&quot;]
+    lines.append(f&quot;   the answer is: {manifest['answer_witness']['what_the_program_is_for']}&quot;)
+    lines.append(f&quot;   present when:  {manifest['answer_witness']['present_when']}&quot;)
+    lines.append(&quot;&quot;)
+    for record in results:
+        mark = &quot;ok &quot; if record[&quot;verdict&quot;] == &quot;structural&quot; else &quot;!! &quot;
+        lines.append(f&quot;  {mark} {record['module']:&lt;14} {record['verdict']:&lt;16} {record['detail']}&quot;)
+
+    structural = [r[&quot;module&quot;] for r in results if r[&quot;verdict&quot;] == &quot;structural&quot;]
+    other = [r[&quot;module&quot;] for r in results if r[&quot;verdict&quot;] != &quot;structural&quot;]
+    lines.append(&quot;&quot;)
+    lines.append(f&quot;  claimed SMS        {len(roster)}&quot;)
+    lines.append(f&quot;  survives the test  {len(structural)}  {', '.join(structural)}&quot;)
+    lines.append(f&quot;  does not           {len(other)}  {', '.join(other) if other else 'none'}&quot;)
+    lines.append(&quot;&quot;)
+    lines.append(&quot;  the size of SMS is a RESULT here, not a budget anyone chose&quot;)
+    return &quot;\n&quot;.join(lines) + &quot;\n&quot;
+</code></pre></details><details><summary>DMS/stubs/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/stubs/format_money.py</summary><pre><code>&quot;&quot;&quot;Stub: the raw integer, no currency shaping.&quot;&quot;&quot;
+
+
+def money(cents):
+    return str(cents)
+</code></pre></details><details><summary>DMS/stubs/normalise.py</summary><pre><code>&quot;&quot;&quot;Stub: every amount is zero cents. Entries keep their ids.&quot;&quot;&quot;
+
+
+def normalise(entries):
+    return [{**e, &quot;cents&quot;: 0} for e in entries]
+</code></pre></details><details><summary>DMS/stubs/parse.py</summary><pre><code>&quot;&quot;&quot;Stub: reads nothing. Every ledger is empty.&quot;&quot;&quot;
+
+
+def parse(text):
+    return []
+</code></pre></details><details><summary>DMS/stubs/reconcile.py</summary><pre><code>&quot;&quot;&quot;Stub: nothing is compared, so nothing is matched or differing.&quot;&quot;&quot;
+
+
+def reconcile(left, right, tolerance_cents):
+    return {&quot;matched&quot;: [], &quot;differing&quot;: [], &quot;only_left&quot;: [], &quot;only_right&quot;: []}
+</code></pre></details><details><summary>DMS/stubs/sort_entries.py</summary><pre><code>&quot;&quot;&quot;Stub: input order, untouched.&quot;&quot;&quot;
+
+
+def by_id(entries):
+    return list(entries)
+</code></pre></details><details><summary>DMS/stubs/summarise.py</summary><pre><code>&quot;&quot;&quot;Stub: all counts zero.&quot;&quot;&quot;
+
+
+def summarise(result):
+    return {&quot;matched&quot;: 0, &quot;differing&quot;: 0, &quot;only_left&quot;: 0, &quot;only_right&quot;: 0,
+            &quot;net_difference_cents&quot;: 0}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the demonstration that the roster is a function of the witness.
+
+    python src/island_test.py
+
+Section 3 is the one that matters. It runs the identity test twice with two
+different definitions of &quot;the answer&quot; and shows the SMS roster change — which
+is the finding this example exists for.
+&quot;&quot;&quot;
+import copy
+import json
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import identity  # noqa: E402
+from SCL import policy  # noqa: E402
+
+FAILURES = []
+
+
+def report(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+MANIFEST = json.loads((HERE / &quot;FMS&quot; / &quot;manifest.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+import main as entry  # noqa: E402
+BASELINE = entry.build_output([])
+
+print(&quot;\n== 1. each report is an island&quot;)
+for name in (&quot;text&quot;, &quot;csv&quot;):
+    module = __import__(f&quot;TMS.reports.{name}&quot;, fromlist=[&quot;render&quot;])
+    source = (HERE / &quot;TMS&quot; / &quot;reports&quot; / f&quot;{name}.py&quot;).read_text(encoding=&quot;utf-8&quot;)
+    out = module.render(
+        {&quot;matched&quot;: 1, &quot;differing&quot;: 1, &quot;only_left&quot;: 0, &quot;only_right&quot;: 0, &quot;net_difference_cents&quot;: -5},
+        [{&quot;id&quot;: &quot;X-1&quot;, &quot;left&quot;: &quot;1&quot;, &quot;right&quot;: &quot;2&quot;, &quot;note&quot;: &quot;amounts differ&quot;}],
+    )
+    report(f&quot;reports/{name} renders with no sibling loaded&quot;, isinstance(out, str) and &quot;X-1&quot; in out)
+    report(f&quot;reports/{name} imports nothing&quot;, &quot;import &quot; not in source,
+           &quot;not even SMS - it takes plain values&quot;)
+
+print(&quot;\n== 2. the identity test reaches both verdicts&quot;)
+RESULTS = identity.run(HERE, MANIFEST, BASELINE)
+structural = [r[&quot;module&quot;] for r in RESULTS if r[&quot;verdict&quot;] == &quot;structural&quot;]
+other = [r[&quot;module&quot;] for r in RESULTS if r[&quot;verdict&quot;] != &quot;structural&quot;]
+report(&quot;every rostered module was actually run&quot;, len(RESULTS) == len(MANIFEST[&quot;sms_roster&quot;]),
+       f&quot;{len(RESULTS)} of {len(MANIFEST['sms_roster'])}&quot;)
+report(&quot;at least one module survives the test&quot;, len(structural) &gt; 0, &quot;, &quot;.join(structural))
+report(&quot;at least one does not&quot;, len(other) &gt; 0, &quot;, &quot;.join(other))
+report(&quot;so the test is capable of both answers&quot;, structural and other,
+       &quot;a test that called everything structural would be a test of nothing&quot;)
+report(&quot;no module reported NO STUB&quot;, not [r for r in RESULTS if r[&quot;verdict&quot;] == &quot;NO STUB&quot;],
+       &quot;the test cannot run on a module nobody has said how to neutralise&quot;)
+
+print(&quot;\n== 3. the roster is a function of the witness, not of the code&quot;)
+strict = copy.deepcopy(MANIFEST)
+strict[&quot;answer_witness&quot;] = {
+    &quot;what_the_program_is_for&quot;: &quot;Saying which entries disagree, how, AND how many.&quot;,
+    &quot;present_when&quot;: &quot;the output names every differing id and reports a non-zero differing count&quot;,
+    &quot;ids&quot;: [&quot;INV-3&quot;, &quot;INV-5&quot;, &quot;INV-6&quot;, &quot;differing        1&quot;],
+    &quot;note&quot;: &quot;the same program, a stricter statement of what its answer is&quot;,
+}
+STRICT = identity.run(HERE, strict, BASELINE)
+strict_structural = [r[&quot;module&quot;] for r in STRICT if r[&quot;verdict&quot;] == &quot;structural&quot;]
+report(&quot;under the stated witness, summarise is not structural&quot;,
+       &quot;summarise&quot; in other, &quot;the rows come from the reconciliation, not from the summary&quot;)
+report(&quot;under a witness that also requires the counts, it is&quot;,
+       &quot;summarise&quot; in strict_structural, &quot;, &quot;.join(strict_structural))
+report(&quot;and nothing else moved&quot;, set(strict_structural) - set(structural) == {&quot;summarise&quot;},
+       f&quot;{sorted(set(strict_structural))} vs {sorted(set(structural))}&quot;)
+report(&quot;so the mechanisation decides consistency, not membership&quot;, True,
+       &quot;a machine can check the structure against a stated purpose; it cannot state the purpose&quot;)
+
+print(&quot;\n== 4. the checks can fail&quot;)
+# A stub that does not actually neutralise the module must not be reported as
+# structural evidence. Evaluated by substituting the REAL module as its own stub.
+fake = copy.deepcopy(MANIFEST)
+fake[&quot;sms_roster&quot;] = [&quot;reconcile&quot;]
+real_as_stub = (HERE / &quot;SMS&quot; / &quot;reconcile.py&quot;).read_text(encoding=&quot;utf-8&quot;)
+stub_path = HERE / &quot;DMS&quot; / &quot;stubs&quot; / &quot;reconcile.py&quot;
+saved = stub_path.read_text(encoding=&quot;utf-8&quot;)
+try:
+    stub_path.write_text(real_as_stub, encoding=&quot;utf-8&quot;)
+    sham = identity.run(HERE, fake, BASELINE)
+    report(&quot;a stub identical to the module reports NOT STRUCTURAL&quot;,
+           sham[0][&quot;verdict&quot;] == &quot;NOT STRUCTURAL&quot;,
+           &quot;the run is unchanged, so the test correctly says the substitution proved nothing&quot;)
+    report(&quot;and it says the output did not change at all&quot;,
+           &quot;did not even change&quot; in sham[0][&quot;detail&quot;], sham[0][&quot;detail&quot;])
+finally:
+    stub_path.write_text(saved, encoding=&quot;utf-8&quot;)
+
+missing = copy.deepcopy(MANIFEST)
+missing[&quot;sms_roster&quot;] = [&quot;nonexistent_module&quot;]
+gap = identity.run(HERE, missing, BASELINE)
+report(&quot;a module with no stub is refused, not skipped&quot;, gap[0][&quot;verdict&quot;] == &quot;NO STUB&quot;,
+       gap[0][&quot;detail&quot;])
+
+print(&quot;\n== 5. SCL decides what may be produced&quot;)
+report(&quot;policy permits two reports&quot;, len(policy.permitted_reports()) == 2,
+       &quot;, &quot;.join(policy.permitted_reports()))
+report(&quot;an unlisted report is refused&quot;, not policy.permits(&quot;reports/pdf&quot;))
+report(&quot;the tolerance comes from policy&quot;, policy.tolerance_cents() == 2,
+       &quot;INV-2 differs by 1 cent and is matched because of it&quot;)
+
+print(&quot;\n== 6. the reconciliation accounts for every entry&quot;)
+report(&quot;the baseline names all three unmatched ids&quot;,
+       all(i in BASELINE for i in MANIFEST[&quot;answer_witness&quot;][&quot;ids&quot;]),
+       &quot;if this ever fails, the witness and the program have drifted apart&quot;)
+
+print()
+if FAILURES:
+    print(f&quot;  {len(FAILURES)} check(s) failed: {', '.join(FAILURES)}&quot;)
+    raise SystemExit(1)
+print(&quot;  island test passed&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Reconcile two ledgers and report.
+
+    python src/main.py                # the reconciliation
+    python src/main.py --csv          # the same, as CSV
+    python src/main.py --identity     # run the identity test over the SMS roster
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from SCL import policy  # noqa: E402
+from SMS import format_money, normalise, parse, reconcile, sort_entries, summarise  # noqa: E402
+
+LEFT = &quot;&quot;&quot;
+# id, description, amount
+INV-3, storage,         42.50
+INV-1, hosting,        120.00
+INV-5, support,        300.00
+INV-2, domain,          15.00
+INV-4, cdn,             (8.00)
+&quot;&quot;&quot;
+
+RIGHT = &quot;&quot;&quot;
+INV-2, domain,          15.01
+INV-6, consulting,     250.00
+INV-1, hosting,        120.00
+INV-3, storage,         44.00
+INV-4, cdn,             (8.00)
+&quot;&quot;&quot;
+
+
+def rows_for(result):
+    rows = []
+    for left, right in result[&quot;differing&quot;]:
+        rows.append({
+            &quot;id&quot;: left[&quot;id&quot;],
+            &quot;left&quot;: format_money.money(left[&quot;cents&quot;]),
+            &quot;right&quot;: format_money.money(right[&quot;cents&quot;]),
+            &quot;note&quot;: &quot;amounts differ&quot;,
+        })
+    for entry in result[&quot;only_left&quot;]:
+        rows.append({&quot;id&quot;: entry[&quot;id&quot;], &quot;left&quot;: format_money.money(entry[&quot;cents&quot;]),
+                     &quot;right&quot;: &quot;-&quot;, &quot;note&quot;: &quot;left only&quot;})
+    for entry in result[&quot;only_right&quot;]:
+        rows.append({&quot;id&quot;: entry[&quot;id&quot;], &quot;left&quot;: &quot;-&quot;,
+                     &quot;right&quot;: format_money.money(entry[&quot;cents&quot;]), &quot;note&quot;: &quot;right only&quot;})
+    return rows
+
+
+def build_output(argv):
+    left = sort_entries.by_id(normalise.normalise(parse.parse(LEFT)))
+    right = sort_entries.by_id(normalise.normalise(parse.parse(RIGHT)))
+    result = reconcile.reconcile(left, right, policy.tolerance_cents())
+    summary = summarise.summarise(result)
+
+    wanted = &quot;reports/csv&quot; if &quot;--csv&quot; in argv else &quot;reports/text&quot;
+    if not policy.permits(wanted):
+        raise SystemExit(f&quot;SCL refuses {wanted}; permitted: {policy.permitted_reports()}&quot;)
+
+    module = __import__(f&quot;TMS.reports.{wanted.split('/')[1]}&quot;, fromlist=[&quot;render&quot;])
+    return module.render(summary, rows_for(result))
+
+
+def main(argv):
+    if &quot;--identity&quot; in argv:
+        from DMS import identity
+
+        here = pathlib.Path(__file__).parent
+        manifest = json.loads((here / &quot;FMS&quot; / &quot;manifest.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+        results = identity.run(here, manifest, build_output([]))
+        sys.stdout.write(identity.render(results, manifest))
+        return 0
+
+    sys.stdout.write(build_output(argv))
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

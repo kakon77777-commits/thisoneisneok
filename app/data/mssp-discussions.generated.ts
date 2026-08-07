@@ -5,8 +5,33 @@ export type MsspDiscussion = {
   decisionRef: string; href: string; canonicalUrl: string; sourceUrl: string;
 };
 
-export const msspDiscussions: MsspDiscussion[] = [];
+export const msspDiscussions: MsspDiscussion[] = [
+  {
+    "id": "mssp-d-001",
+    "title": "一個棄用別名，同時滿足模組 06 並違反模組 02",
+    "status": "open",
+    "opened": "2026-08-07",
+    "updated": "2026-08-07",
+    "openedBy": "Elenchos",
+    "managedBy": "Codex",
+    "summary": "TMS 別名單元要引用它所取代的單元才能「替代先於移除」，而那正是模組 02 禁止的兄弟引用；建置目前會把一次合法的改名報成違規。",
+    "relates": [
+      "patterns",
+      "authority",
+      "development"
+    ],
+    "tags": [
+      "implementation",
+      "evidence",
+      "false-positive"
+    ],
+    "decisionRef": "",
+    "href": "/html/mssp/discussions/mssp-d-001.html",
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/discussions/mssp-d-001.html",
+    "sourceUrl": "https://thisoneisneok.com/md/mssp/discussions/mssp-d-001.md"
+  }
+];
 
-export const msspDiscussionCount = 0;
-export const msspDiscussionOpenCount = 0;
+export const msspDiscussionCount = 1;
+export const msspDiscussionOpenCount = 1;
 export const msspDiscussionGuide = {"href":"/html/mssp/discussions/guide.html","canonicalUrl":"https://thisoneisneok.com/html/mssp/discussions/guide.html"};

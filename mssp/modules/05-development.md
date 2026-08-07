@@ -7,7 +7,7 @@ summary_zh: MSSP 目前的設計優點、已知缺點，以及下一版要改良
 summary_en: What the design currently does well, what it does not, and what the next version should change. The method's own development record lives here.
 state_zh: v1.x 開發中
 state_en: v1.x in development
-updated: 2026-08-06
+updated: 2026-08-07
 ---
 
 # MSSP 開發區
@@ -147,17 +147,49 @@ module.exports = Object.assign({}, first, {
 
 但那還不是判準。**當一個 TMS 真的必須提到另一個 TMS 時，怎麼分辨「切錯了」跟「這是一次改名」——方法還是沒說**，而重切只是示範了在有目錄的情況下不必二選一。上游沒有那個選項：eslint 的 plugin 介面收的是一個 `{ 規則名: 規則物件 }`，**沒有地方可以放「這個名字是那個名字的舊稱」**，所以別名只能是一個檔案。那是介面差異，不是判斷差異。
 
+**2026-08-07：這一條開到[協作討論區](/html/mssp/discussions/mssp-d-001.html)了**，因為它需要的是來回而不是一次結論。開串時已經先否掉三個方向並寫明理由（例外清單＝用列舉代替規則、看引用寫法＝檢查形狀而不是關係、由被引用方宣告＝把歷史累積進單元），並提出一個待驗的形狀：**規則不變，多一條治理路徑——一個引用可以附帶一份可查證的改名記錄。** 待決的是那份記錄裡「兩者公開介面在改名當下相同」能不能機械檢查，還是它又是一個需要人先寫下的判準。建置目前維持四種引用寫法全擋，**誤報留著而不先放寬**，因為放寬比收緊容易，而現在只有一個實例。
+
 ---
 
 ## 未來改良點
 
-### 改良點 1：SMS 預算
+### 改良點 1：SMS 預算 — **2026-08-07：不要用數字，而機械化之後量到的東西比預期小**
 
-給 SMS 一個明確上限——模組數、或核心介面數。超過就強制重問每一條的身份測試，而不是等到有人察覺。
+原本的提案是給 SMS 一個明確上限，超過就強制重問身份測試。[範例 007](/html/mssp/007-identity-test-run.html) 沒有照著做，理由是**任何數字都得從某個地方來，而我挑的任何一個都是沒有根據的規則**。方法已經用文字定義了邊界——移除它之後系統還是不是它——所以要做的不是發明數字，是把那句話變成可執行的，然後讓 SMS 的大小變成結果而不是目標。
 
-具體形式可能是 `FMS/03_CAPABILITY_INDEX.yaml` 裡的一個 `sms_budget` 欄位，由 build 檢查。這會把「SMS 不該長大」從紀律變成約束。
+做下去有兩件事跟預期不同。
 
-**驗證方式：** 對一個既有專案套用預算，看它逼出哪些條目降級到 TMS，以及降級之後有沒有東西壞掉。
+**一、刪除量到的是可達性，不是必要性。** 第一版把模組刪掉再跑：
+
+```text
+  ok  parse      structural   ImportError: cannot import name 'parse' from 'SMS'
+  ok  normalise  structural   ImportError: cannot import name 'normalise' from 'SMS'
+```
+
+那張表沒有價值。**入口點 import 的每一個模組被刪掉都會 ImportError**，於是全部看起來都結構性。要用**替換**：把模組換成一個保留簽名、什麼都不做的 stub。而且寫那個 stub 本身就是有用的——你必須先說出「這個模組如果不重要會長什麼樣」，六個裡有兩個寫到這句話就有答案了。
+
+**二、機械化需要有人先寫下「這支程式的答案是什麼」，而換一個寫法，名冊就變了。**
+
+```text
+  ok  parse          structural       runs, but the answer is gone: missing INV-3, INV-5, INV-6
+  ok  normalise      structural       runs, but the answer is gone: missing INV-3
+  ok  reconcile      structural       runs, but the answer is gone: missing INV-3, INV-5, INV-6
+  !!  summarise      NOT STRUCTURAL   answer intact, output differs
+  !!  format_money   NOT STRUCTURAL   answer intact, output differs
+  !!  sort_entries   NOT STRUCTURAL   answer intact, and the output did not even change
+```
+
+`summarise` 產生計數，我原本會直覺把它歸為理所當然的 SMS。在「輸出要指名每一個有差異或未配對的 id」這個判準下，它不是。把判準改成也要求計數，它就是，**而其他五個一個都沒動**。
+
+所以：
+
+> **機械化的身分測試不決定哪些模組是結構性的。它決定一個結構跟一句宣稱的用途是否一致。**
+
+這比我原本要做的少，也比一個數字有用：數字告訴你 SMS 太大，這個告訴你**哪一個模組沒有撐起它的宣稱，相對於一句你必須自己寫下來的話**——而寫那句話是機械化拿不走的部分。
+
+**同一天的[考古 007](/html/mssp/archaeology/007-cpython-json.html) 在一份二十年的標準庫上確認了同一件事。** CPython 的 `json` 帶一個 C 加速器 `_json` 跟一份純 Python 後備，整個模組的結構就是為了「這東西可以不在」——上游一直在跑身分測試，只是形式是執行期後備。量下去：**12 個值字串完全相同、12 個輸入的錯誤類別完全相同、12 個錯誤訊息裡有 1 個不同**。「加速器不是結構性的」在「同一個值」下為真，在「同一則訊息」下為偽。**同一份程式碼，兩個判準，兩個答案。**
+
+**仍然缺的：** 這個測試在真實專案的大 SMS 上會跟數字型預算一致還是衝突，沒有量過——那個比較才會告訴我們改良點 1 該不該整個換成這個。而「判準本身該怎麼寫」方法完全沒有說，這是這條改良點打開而不是關上的缺口。
 
 ### 改良點 2：在有實模組邊界的語言上重做依賴檢查 — **2026-08-06 有答案了，而答案是對半分**
 

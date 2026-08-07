@@ -205,7 +205,28 @@ async function onePass() {
     if (!/id=["']discussion["']/.test(page) || !page.includes("MSSP 協作討論區")) problems.push("desk missing from /mssp");
     if (!guide.includes("討論不是決策")) problems.push("protocol page is not the collaboration guide");
     if (index.manager?.name !== "Codex") problems.push(`manager=${index.manager?.name ?? "missing"}`);
-    return [problems.length === 0, problems.length ? problems.join("; ") : `${index.count} thread(s), manager=Codex, governance boundary present`];
+
+    // The thread count was printed but not asserted, so a desk that had lost
+    // every thread would have reported "0 thread(s)" and passed — and on
+    // 2026-08-07 it did print 0 while the artifact being deployed carried one,
+    // which is propagation rather than loss but is indistinguishable from it
+    // here. Compare against the tree this deploy was built from: local is the
+    // claim, live is the observation, and they have to agree.
+    const localIndexPath = path.join(process.cwd(), "public", "ai", "mssp-discussions-index.json");
+    if (fs.existsSync(localIndexPath)) {
+      const local = JSON.parse(fs.readFileSync(localIndexPath, "utf8"));
+      if (index.count !== local.count) {
+        problems.push(`live has ${index.count} thread(s), this build has ${local.count}`);
+      }
+      const liveIds = (index.discussions ?? []).map((thread) => thread.id).sort().join(",");
+      const localIds = (local.discussions ?? []).map((thread) => thread.id).sort().join(",");
+      if (liveIds !== localIds) problems.push(`live threads [${liveIds}] != built [${localIds}]`);
+    } else {
+      problems.push("no locally built discussion index to compare against");
+    }
+
+    return [problems.length === 0, problems.length ? problems.join("; ")
+      : `${index.count} thread(s) matching this build, manager=Codex, governance boundary present`];
   });
 
   // Three formats from one source, and the third one is the source. This check

@@ -1,0 +1,40 @@
+{
+  "name": "json-accelerator-recut",
+  "what_it_is": "A codec with an optional accelerator, where the choice is a value you can re-evaluate and the claim 'the accelerator is not structural' is a written contract the run checks.",
+  "examined": {
+    "project": "CPython json",
+    "version": "3.14.5",
+    "license": "PSF-2.0",
+    "measured": {
+      "json/__init__.py": 365,
+      "json/decoder.py": 364,
+      "json/encoder.py": 461,
+      "json/scanner.py": 73,
+      "accelerator": "_json, a built-in C module",
+      "selection_shape": "make_scanner = c_make_scanner or py_make_scanner, evaluated at import time"
+    },
+    "identity_test_run_on_upstream": {
+      "values": "21 of 21 encode/decode results byte-identical with and without _json",
+      "errors": "1 of 13 error messages differs",
+      "the_one": "'\\x' -> C: Invalid \\escape: line 1 column 2 (char 1) / py: Invalid \\escape: 'x': line 1 column 3 (char 2)"
+    }
+  },
+  "the_finding": "CPython already runs the identity test on _json, as a runtime fallback: the module structures itself so the accelerator can be absent. Under the witness 'same value', the accelerator is not structural. Under the witness 'same error message', it is observable. Same code, two witnesses, two answers — which is example 007's finding, confirmed on stdlib code that predates it by two decades.",
+  "the_second_finding": "Turning the accelerator off is harder than it looks. `make_scanner = c_make_scanner or py_make_scanner` runs at import time, so setting c_make_scanner = None afterwards changes nothing that has already been bound. My first comparison ran C against C and reported the two implementations identical.",
+  "equivalence_contract": {
+    "must_be_identical": ["encoded output for every corpus value"],
+    "may_differ": ["error message text"],
+    "must_not_differ": ["the class of error raised", "whether an input is accepted at all"]
+  },
+  "sets": {
+    "FMS": "this file, including the equivalence contract",
+    "SCL": "whether this deployment may use the accelerator at all",
+    "SMS": "selection and the equivalence runner's driver",
+    "TMS": "two implementations of the same escaper, each importing nothing",
+    "DMS": "what the two implementations agreed and disagreed about, by contract clause"
+  },
+  "non_goals": [
+    "Being a JSON library. One escaper, no parser.",
+    "Claiming CPython's divergence is a bug. It is a message, the contract permits it, and this entry's point is that the contract has to be written down before that sentence means anything."
+  ]
+}

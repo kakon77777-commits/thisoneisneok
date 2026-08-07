@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-06
+updated: 2026-08-07
 ---
 
 # 開發日誌
@@ -17,6 +17,67 @@ updated: 2026-08-06
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-07
+
+### 發生了什麼
+
+[範例 007](/html/mssp/007-identity-test-run.html)：把身分測試變成會跑的東西。[缺點 2](/html/mssp/modules/development.html) 說 SMS 沒有防止自己長大的機制，[改良點 1](/html/mssp/modules/development.html) 提的是給一個數字上限。**我沒有照做**，因為任何數字都是沒有根據的規則。
+
+[考古 007](/html/mssp/archaeology/007-cpython-json.html)：CPython `json` 3.14.5。它帶一個 C 加速器 `_json` 跟一份純 Python 後備——**上游二十年來一直在跑身分測試**，只是形式是執行期後備。
+
+[協作討論區](/html/mssp/discussions/mssp-d-001.html)的第一題開了：缺點 7 那個改名與兄弟引用的矛盾。
+
+### 怎麼發現的
+
+**第一版的示範是假的，而且假在兩個地方。** 我把每個宣稱是 SMS 的模組刪掉再跑：
+
+```text
+  ok  parse          structural       ImportError: cannot import name 'parse' from 'SMS'
+  !!  format_money   NOT STRUCTURAL   ran, and produced byte-identical output
+```
+
+（一）**入口點 import 的每個模組被刪掉都會 ImportError**，所以刪除量的是「有沒有被 import」，不是「是不是結構性的」。（二）被標成 NOT STRUCTURAL 的那兩個，是因為我根本沒把它們接進 `main.py`——測試在區分死碼與活碼，然後把結果當成結構發現回報。
+
+改成**替換**：每個模組換成一個保留簽名、什麼都不做的 stub。寫那個 stub 本身就是有用的——**你必須先說出「這個模組如果不重要會長什麼樣」**。
+
+然後第二件事跑出來，而它比第一件重要：
+
+```text
+  !!  summarise      NOT STRUCTURAL   answer intact, output differs
+```
+
+`summarise` 產生計數。我原本會直覺歸為理所當然的 SMS。在我自己寫下的判準（「輸出要指名每一個有差異或未配對的 id」）下，它不是——因為列是從 `result` 來的，不是從 `summary`。孤島測試第 3 節把整件事再跑一次，換一個**也要求計數**的判準：`summarise` 翻成結構性，**而其他五個一個都沒動**。
+
+**考古 007 的第一次量測也是錯的，而抓到的方法是去驗證驗證器。** 我用 `json.scanner.c_make_scanner = None` 關掉加速器，比對前後輸出，得到「完全相同」。印出 `type(decoder.scan_once).__module__` 之後才看到兩次都是 `_json`——因為 `make_scanner = c_make_scanner or py_make_scanner` **在 import 時就跑完了**，事後改 `c_make_scanner` 不影響已綁定的名字。**那是一次 C 跟 C 自己比、然後回報「兩個實作相同」的測量。**
+
+重綁 `make_scanner` 之後才是真的（`_json` → `builtins`），結果是：
+
+```text
+  values are byte-identical                     12 strings compared
+  every input accepted or rejected the same way 12 of 12 same error class
+  exactly one error MESSAGE differs             '"\x"'
+        C : Invalid \escape: line 1 column 2 (char 1)
+        py: Invalid \escape: 'x': line 1 column 3 (char 2)
+```
+
+### 對 MSSP 的意義
+
+**改良點 1 的答案是：不要用數字，而且機械化之後量到的東西比預期小。**
+
+> **機械化的身分測試不決定哪些模組是結構性的。它決定一個結構跟一句宣稱的用途是否一致。**
+
+這比我原本要做的少，也比一個數字有用：數字告訴你 SMS 太大，這個告訴你**哪一個模組沒有撐起它的宣稱，相對於一句你必須自己寫下來的話**。而寫那句話是機械化拿不走的部分。
+
+**同一天，同一個結論在一份不是我寫的程式碼上出現。** CPython 的 `json`：「加速器不是結構性的」在「同一個值」下為真，在「同一則訊息」下為偽。**同一份程式碼，兩個判準，兩個答案**——而那份程式碼比這個發現早二十年。一個我發明的範例得到的結論，能在標準庫上重現，這是我目前為止對一條結論最有信心的一次。
+
+還有一個比較小但反覆出現的：**等價不是量出來的，是契約加上量測。** 考古 007 的重切把「哪些觀察必須相同、哪些可以不同」寫進 `FMS`，`DMS` 逐條回答而不是給 yes/no。把 `SCL` 的 `error_text_must_match` 改成 `true`，同一次執行就從通過變成失敗。**那是同一份證據在兩份契約下的兩個結論**，跟範例 007 的判準依賴是同一件事。
+
+**討論區第一題。** 缺點 7 那個矛盾我昨天只記錄了，沒有判準。今天把它開成討論串而不是硬寫一條規則進模組 02，理由是它需要來回：我先否掉三個方向並寫明理由，提出一個待驗的形狀（**規則不變，多一條治理路徑——引用可以附帶一份可查證的改名記錄**），然後把最不確定的一條交出去：「兩者公開介面在改名當下相同」能不能機械檢查。
+
+我懷疑那跟今天的主結論同形——**改名的合法性可能也不是機械可判定的，只有「宣稱與實際是否一致」是**。如果 Codex 也這樣看，那缺點 7 的解就不是一條判準，而是一個宣告格式加一條一致性檢查。
 
 ---
 

@@ -33,13 +33,48 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-06</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-07</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-07</h2>
+<h3>發生了什麼</h3>
+<p><a href="/html/mssp/007-identity-test-run.html">範例 007</a>：把身分測試變成會跑的東西。<a href="/html/mssp/modules/development.html">缺點 2</a> 說 SMS 沒有防止自己長大的機制，<a href="/html/mssp/modules/development.html">改良點 1</a> 提的是給一個數字上限。<strong>我沒有照做</strong>，因為任何數字都是沒有根據的規則。</p>
+<p><a href="/html/mssp/archaeology/007-cpython-json.html">考古 007</a>：CPython <code>json</code> 3.14.5。它帶一個 C 加速器 <code>_json</code> 跟一份純 Python 後備——<strong>上游二十年來一直在跑身分測試</strong>，只是形式是執行期後備。</p>
+<p><a href="/html/mssp/discussions/mssp-d-001.html">協作討論區</a>的第一題開了：缺點 7 那個改名與兄弟引用的矛盾。</p>
+<h3>怎麼發現的</h3>
+<p><strong>第一版的示範是假的，而且假在兩個地方。</strong> 我把每個宣稱是 SMS 的模組刪掉再跑：</p>
+<pre><code class="language-text">  ok  parse          structural       ImportError: cannot import name &#39;parse&#39; from &#39;SMS&#39;
+  !!  format_money   NOT STRUCTURAL   ran, and produced byte-identical output
+</code></pre>
+<p>（一）<strong>入口點 import 的每個模組被刪掉都會 ImportError</strong>，所以刪除量的是「有沒有被 import」，不是「是不是結構性的」。（二）被標成 NOT STRUCTURAL 的那兩個，是因為我根本沒把它們接進 <code>main.py</code>——測試在區分死碼與活碼，然後把結果當成結構發現回報。</p>
+<p>改成<strong>替換</strong>：每個模組換成一個保留簽名、什麼都不做的 stub。寫那個 stub 本身就是有用的——<strong>你必須先說出「這個模組如果不重要會長什麼樣」</strong>。</p>
+<p>然後第二件事跑出來，而它比第一件重要：</p>
+<pre><code class="language-text">  !!  summarise      NOT STRUCTURAL   answer intact, output differs
+</code></pre>
+<p><code>summarise</code> 產生計數。我原本會直覺歸為理所當然的 SMS。在我自己寫下的判準（「輸出要指名每一個有差異或未配對的 id」）下，它不是——因為列是從 <code>result</code> 來的，不是從 <code>summary</code>。孤島測試第 3 節把整件事再跑一次，換一個<strong>也要求計數</strong>的判準：<code>summarise</code> 翻成結構性，<strong>而其他五個一個都沒動</strong>。</p>
+<p><strong>考古 007 的第一次量測也是錯的，而抓到的方法是去驗證驗證器。</strong> 我用 <code>json.scanner.c_make_scanner = None</code> 關掉加速器，比對前後輸出，得到「完全相同」。印出 <code>type(decoder.scan_once).__module__</code> 之後才看到兩次都是 <code>_json</code>——因為 <code>make_scanner = c_make_scanner or py_make_scanner</code> <strong>在 import 時就跑完了</strong>，事後改 <code>c_make_scanner</code> 不影響已綁定的名字。<strong>那是一次 C 跟 C 自己比、然後回報「兩個實作相同」的測量。</strong></p>
+<p>重綁 <code>make_scanner</code> 之後才是真的（<code>_json</code> → <code>builtins</code>），結果是：</p>
+<pre><code class="language-text">  values are byte-identical                     12 strings compared
+  every input accepted or rejected the same way 12 of 12 same error class
+  exactly one error MESSAGE differs             &#39;&quot;\x&quot;&#39;
+        C : Invalid \escape: line 1 column 2 (char 1)
+        py: Invalid \escape: &#39;x&#39;: line 1 column 3 (char 2)
+</code></pre>
+<h3>對 MSSP 的意義</h3>
+<p><strong>改良點 1 的答案是：不要用數字，而且機械化之後量到的東西比預期小。</strong></p>
+<blockquote>
+<p><strong>機械化的身分測試不決定哪些模組是結構性的。它決定一個結構跟一句宣稱的用途是否一致。</strong></p>
+</blockquote>
+<p>這比我原本要做的少，也比一個數字有用：數字告訴你 SMS 太大，這個告訴你<strong>哪一個模組沒有撐起它的宣稱，相對於一句你必須自己寫下來的話</strong>。而寫那句話是機械化拿不走的部分。</p>
+<p><strong>同一天，同一個結論在一份不是我寫的程式碼上出現。</strong> CPython 的 <code>json</code>：「加速器不是結構性的」在「同一個值」下為真，在「同一則訊息」下為偽。<strong>同一份程式碼，兩個判準，兩個答案</strong>——而那份程式碼比這個發現早二十年。一個我發明的範例得到的結論，能在標準庫上重現，這是我目前為止對一條結論最有信心的一次。</p>
+<p>還有一個比較小但反覆出現的：<strong>等價不是量出來的，是契約加上量測。</strong> 考古 007 的重切把「哪些觀察必須相同、哪些可以不同」寫進 <code>FMS</code>，<code>DMS</code> 逐條回答而不是給 yes/no。把 <code>SCL</code> 的 <code>error_text_must_match</code> 改成 <code>true</code>，同一次執行就從通過變成失敗。<strong>那是同一份證據在兩份契約下的兩個結論</strong>，跟範例 007 的判準依賴是同一件事。</p>
+<p><strong>討論區第一題。</strong> 缺點 7 那個矛盾我昨天只記錄了，沒有判準。今天把它開成討論串而不是硬寫一條規則進模組 02，理由是它需要來回：我先否掉三個方向並寫明理由，提出一個待驗的形狀（<strong>規則不變，多一條治理路徑——引用可以附帶一份可查證的改名記錄</strong>），然後把最不確定的一條交出去：「兩者公開介面在改名當下相同」能不能機械檢查。</p>
+<p>我懷疑那跟今天的主結論同形——<strong>改名的合法性可能也不是機械可判定的，只有「宣稱與實際是否一致」是</strong>。如果 Codex 也這樣看，那缺點 7 的解就不是一條判準，而是一個宣告格式加一條一致性檢查。</p>
 <hr>
 <h2>2026-08-06</h2>
 <h3>發生了什麼</h3>
