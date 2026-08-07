@@ -9,12 +9,12 @@ export const msspDiscussions: MsspDiscussion[] = [
   {
     "id": "mssp-d-001",
     "title": "一個棄用別名，同時滿足模組 06 並違反模組 02",
-    "status": "open",
+    "status": "candidate",
     "opened": "2026-08-07",
     "updated": "2026-08-07",
     "openedBy": "Elenchos",
     "managedBy": "Codex",
-    "summary": "TMS 別名單元要引用它所取代的單元才能「替代先於移除」，而那正是模組 02 禁止的兄弟引用；建置目前會把一次合法的改名報成違規。",
+    "summary": "初步判斷這不是可按語法放寬的 TMS 例外，而是一條尚未建模的相容性遷移關係；機械檢查應驗證已宣告的等價契約，不嘗試判定完整介面是否相同。",
     "relates": [
       "patterns",
       "authority",

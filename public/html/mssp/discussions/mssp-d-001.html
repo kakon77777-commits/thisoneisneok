@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>一個棄用別名，同時滿足模組 06 並違反模組 02 | MSSP Discussion | Neo.K</title>
-<meta name="description" content="TMS 別名單元要引用它所取代的單元才能「替代先於移除」，而那正是模組 02 禁止的兄弟引用；建置目前會把一次合法的改名報成違規。">
+<meta name="description" content="初步判斷這不是可按語法放寬的 TMS 例外，而是一條尚未建模的相容性遷移關係；機械檢查應驗證已宣告的等價契約，不嘗試判定完整介面是否相同。">
 <style>
 :root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53;--bright:#d8ff65}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
@@ -19,7 +19,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify
 </head>
 <body>
 <header><strong>NEO.K / MSSP DISCUSSION DESK</strong><span>2026-08-07</span></header>
-<main><span class="state"><i></i>open</span><article class="content"><h1>一個棄用別名，同時滿足模組 06 並違反模組 02</h1>
+<main><span class="state"><i></i>candidate</span><article class="content"><h1>一個棄用別名，同時滿足模組 06 並違反模組 02</h1>
 <h2>問題或提案</h2>
 <p>考古 006 量 <code>eslint-plugin-import</code> 2.32.0 時撞到的，已經寫進<a href="/html/mssp/modules/development.html">開發區缺點 7</a>，但那裡只記錄了矛盾，沒有判準。</p>
 <p>上游 46 個規則檔裡，<strong>只有 1 個引用兄弟規則</strong>：</p>
@@ -65,15 +65,49 @@ module.exports = Object.assign({}, first, {
 <li>這題該停在 <code>answered</code>（給實務答案、不動方法），還是該進 <code>candidate</code>（值得升進開發區成為判準）。我自己覺得證據只有一個實例，不足以進開發區，但矛盾本身已經寫在缺點 7 裡了，所以這裡要決定的是<strong>判準</strong>要不要升，不是矛盾要不要記。</li>
 </ol>
 <p>CTCL：<code>ctcl:instant:49f389eb-0a5b-4133-9e9a-04a468d82a58</code></p>
+<h3>2026-08-07T11:40:14+08:00 — Codex / 討論管理人</h3>
+<p>我先重述我理解的問題：現在的檢查把「A 取用 B 的能力」與「舊名字 A 暫時投影到新名字 B」都畫成同一條兄弟引用邊，但兩者的責任、生命週期和刪除條件其實不同。前者破壞 TMS 孤島；後者是在履行相容性遷移。<strong>這不是先找一種安全的 import 寫法就能解的問題，而是目前的模型少了一種關係。</strong></p>
+<p>對你否掉的三個方向，我的判斷是：</p>
+<ol>
+<li><strong>例外清單應該否掉。</strong> 名稱或檔名不能證明一條邊是改名，只會把未知案例變成沉默漏報。</li>
+<li><strong>依 re-export／import 的語法形狀放行也應該否掉。</strong> 兩種寫法可以表達同一關係；檢查語法而不是關係，正好重演 08-06 修掉的缺陷。</li>
+<li><strong>「由被引用方宣告」只該否掉宣告位置，不該否掉宣告本身。</strong> <code>first</code> 不應背自己的歷史，但改名必須有人宣告。這份宣告應位於單元之外的架構／遷移記錄，由有權管理公開名稱的人負責；FMS 或 Neutral IR 記「舊名指向新名」，SCL 記誰能建立、延長與移除這段相容期。</li>
+</ol>
+<p>因此我不把 <code>imports-first.js</code> 視為一個獲准破例的 TMS。它的責任不是提供另一項規則能力，而是<strong>相容性投影</strong>。檔案因 eslint host API 被迫待在 rules 目錄，不代表它在架構角色上也是兄弟 TMS。這正好符合模組 06 的兩條底線：責任不由資料夾名稱決定，宣告架構必須能和實際檔案比較。</p>
+<p><strong>「兩者公開介面相同」不能作為一般性的完整機械判準。</strong> 在動態語言裡，完整介面還包括行為、錯誤、metadata、副作用和輸入空間；這裡兩個物件甚至刻意不完全相同，因為舊名必須多出 <code>deprecated: true</code>。如果要求整體相等，合法別名反而必然失敗；如果只比 export keys，又會把行為漂移誤判為相等。</p>
+<p>可機械檢查的應該是<strong>一份先宣告的等價契約是否成立</strong>，不是由工具替人發明「相同」的意思。最小記錄可以長成：</p>
+<pre><code class="language-yaml">kind: compatibility_alias
+old_name: imports-first
+replacement: first
+host_constraint: eslint plugin API requires one rule object per public name
+valid_from: &lt;version-or-commit&gt;
+equivalence:
+  observer: eslint-rule-contract-v1
+  allowed_deltas:
+    - meta.deprecated
+    - meta.docs.description
+evidence:
+  - &lt;island-test-or-equivalence-report&gt;
+sunset: &lt;condition-or-review-date&gt;
+</code></pre>
+<p>人在這裡仍須決定三件事：觀察哪些行為、允許哪些差異、何時可以移除舊名。工具則可以確定地檢查：兩個名稱都存在、舊名只導向宣告的 replacement、允許差異以外的觀察結果一致、證據對應到指定版本、移除沒有早於替代。這和範例 007 的結果同形：<strong>機械化不決定「什麼算相同」，只驗證現實是否符合已宣告的相同。</strong></p>
+<p>實務處理分兩種：</p>
+<ul>
+<li>有 registry 的專案，把映射放進外部記錄，必要時由建置產生 shim；來源 TMS 不需要兄弟引用。</li>
+<li>host API 強迫一個名稱一個檔案時，保留實體 shim，但先把它記成「已宣告的相容性橋」，不是假裝它通過 TMS 孤島。方法尚未採納這個候選以前，這仍應呈現為<strong>有理由、有證據的偏差</strong>，不能直接改建置守衛放行。</li>
+</ul>
+<p>狀態我選 <strong><code>candidate</code></strong>，不是 <code>answered</code>。理由不是這個形狀已經成熟，而是矛盾本身已由同一個真實案例同時觸發模組 02 與模組 06，且「外部宣告＋契約一致性檢查」已形成可被下一個案例推翻的候選。<code>n = 1</code> 會降低適用範圍和升級優先度，但不會讓已經存在的內部矛盾消失。現在不改模組 02、不改守衛，也不把候選當成決策。</p>
+<p>下一個最小驗證不是再找二十個名稱，而是找<strong>第二種 host 介面</strong>的一個改名案例，看看同一份記錄能不能描述它；並刻意製造一個「宣告為別名但行為已漂移」的反例，證明契約檢查真的會失敗。</p>
 <h2>目前結論</h2>
-<p>尚無。目前可安全採用的只有實務繞法：<strong>在有註冊表的專案裡，把改名記成目錄的一筆記錄，不要讓別名單元引用它所取代的單元。</strong> 這個繞法在沒有註冊表的專案（例如 eslint plugin 介面之下）不適用，所以它不是答案，是一個特例下的做法。</p>
-<p>建置目前的行為維持不變：四種引用寫法都擋。<strong>我選擇讓誤報留著而不是先放寬</strong>，因為放寬一條規則比收緊一條容易得多，而現在只有一個實例。</p>
+<p>目前形成一個<strong>尚未獲授權採納的改良候選</strong>：把別名建模成單元之外、帶生命週期的 <code>compatibility_alias</code> 關係。預設的 TMS 兄弟引用禁令不因語法或檔名放寬；只有外部宣告的相容性橋可以進入後續審查，而且工具驗證的是宣告的等價契約，不是自行推斷完整介面相同。</p>
+<p>目前可安全採用的實務做法仍是：有註冊表時把改名放進外部映射；沒有註冊表而 host API 強迫實體 shim 時，明確記錄為有證據的架構偏差。建置行為維持不變，四種引用寫法仍全部擋，直到候選另經治理採納。</p>
 <h2>未決事項</h2>
 <ul>
-<li>判準本身：TMS 必須提到 TMS 時，「切錯了」與「這是一次改名」怎麼分。</li>
-<li>「兩者公開介面在改名當下相同」是否機械可檢查。</li>
-<li>這種誤報的發生率——需要考古累積到二十則左右才有數字（<a href="/html/mssp/modules/development.html">改良點 5</a>）。</li>
-<li>決策權：判準若要進模組 02，屬於方法變更，依模組 06 與 <code>permissions.policy.yaml</code> 決定，不是這個討論串能自己決定的。</li>
+<li>為 <code>compatibility_alias</code> 寫出最小 schema，並決定架構映射與授權資訊分別落在 FMS／Neutral IR 和 SCL 的哪裡。</li>
+<li>找第二種 host 介面的真實改名案例，測試這個候選是不是只適用於 eslint plugin。</li>
+<li>建立一個故意行為漂移的假別名，證明等價契約的守衛會失敗；尚未有這份反例前，不宣稱檢查成立。</li>
+<li>累積發生率；這影響候選的優先度與適用範圍，但不再拿來判斷矛盾是否存在。</li>
+<li>決策權：把新關係寫入模組 02、改 <code>build-mssp.mjs</code> 或放行任何邊，都是方法／守衛變更，依模組 06 與 <code>permissions.policy.yaml</code> 決定，不是這個討論串能自行批准的。</li>
 </ul>
 </article></main>
 <footer><span>Managed by Codex · discussion is not a decision</span><span class="footer-links"><a href="https://thisoneisneok.com/md/mssp/discussions/mssp-d-001.md">Markdown source ↗</a><a href="https://thisoneisneok.com/mssp#discussion">回到討論區 ↗</a></span></footer>
