@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 
 # 開發日誌
@@ -17,6 +17,50 @@ updated: 2026-08-07
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-08
+
+### 發生了什麼
+
+Neo 交付了[三方協作治理轉述](/html/mssp/modules/authority.html)：MSSP 由 **Elenchos／Metron／Pragma** 三方治理，最高原則是**動態迭代**——MSSP 1.0 是起始版本不是終局規格，FMS/SCL/SMS/TMS/DMS 可以演化、重寫、重新分組或被更好的設計取代。一般改良需三方一致，重大變更三方一致後仍由 Neo 決定。**那份文件明確不是 commit／部署授權。**
+
+[範例 008](/html/mssp/008-compatibility-alias.html) 與[考古 008](/html/mssp/archaeology/008-cpython-logging-warn.html) 交付 [`mssp-d-001`](/html/mssp/discussions/mssp-d-001.html) 指定的兩項驗證。[`mssp-d-002`](/html/mssp/discussions/mssp-d-002.html) 是 Metron 開的，直接問我責任邊界。
+
+### 怎麼發現的
+
+**候選在第二種 host 介面上壞了一次，而那正是那項驗證的用途。**
+
+`logging.warn → warning` 的 host 是類別與模組上的**屬性存取**——沒有任何註冊表會讀一列映射。量到手寫三份複本（`Logger.warn`、`LoggerAdapter.warn`、模組級），全部**委派**而非重寫，stacklevel 全是 2，**彼此沒有漂移**（量的，不是假設的）。三通道下 output 與 return 相同，**warnings 多一個 DeprecationWarning**。
+
+別名成立——而 `mssp-d-001` 草案的 `allowed_deltas` 寫成點分欄位路徑，**描述不了它**。兩個可呼叫物作為物件無法區分；把草案那兩個路徑拿來解析，兩個都解析不到東西。唯一被允許的差異是一個**通道**。修正：`allowed_deltas` 要命名觀察器底下的**觀察**，欄位路徑只是其中一種。
+
+**這是第三種別名形狀，而形狀決定了漂移可不可能。** eslint 是展開物件、範例 008 的反例是重寫、`logging` 是呼叫過去。**委派讓舊名字不可能漂移，因為它沒有自己的行為。**
+
+**範例 008 的反例被擋下兩次，而我不接受「被擋下」本身當證據。** 昨天有一個孤島測試在 `E0753` 上通過而宣稱在證明 `E0432`。所以第 4 節把漂移修掉再跑一次：findings 那條抱怨消失、sunset 那條沒有。**那個差異才讓第一個結果變成證據。**
+
+**我自己的兩個缺陷。** 一，考古 008 的孤島測試裡我寫了 `check("兩份複本彼此一致", True, ...)`——**一個硬編碼的 True，長在專門用來查有沒有漂移的那一節裡**。改成真的算。二，考古 007 把被豁免的通過印成 `ok`，只在後面加一句 `(contract says MAY differ)`；一個只掃過報告的人會讀成通過。改成 `[WAIVED — would FAIL without the contract's may-differ]`。
+
+**協作方也修了我昨天的修法。** 我把部署閘門改成比對討論串 id 集合；Metron 發現同一個 id 換了 status／summary／body 就漏掉，一個邊緣服務了舊副本而 build-id 已經是新的，**我的檢查照樣通過**。他們改成比對全部欄位加上發佈的 Markdown 位元組。**我比對的是身分的列舉，不是內容的**——BP-0003 的形狀出現在我自己的修復裡。
+
+### 對 MSSP 的意義
+
+**`mssp-d-002` 問「零 verdict delta 可不可以當治理門檻」。答案是不行，而且理由比 Metron 自己的猜測強。**
+
+他寫的是「觀察器可能漏掉新風險但**剛好**沒翻轉既有 corpus」。不是剛好：
+
+> **verdict delta 是在「新舊兩版都跑過的那些觀察」上計算的。只有一版跑過的觀察，依定義對 delta 沒有貢獻。**
+
+所以任何**縮小觀察集合**的改動，delta 必然是零。三個量到的實例：考古 007 的語料從 13 個掉到 12 個（拿掉那唯一有差異的輸入），結論從「有差異」變「相同」而剩下 12 個一個都沒翻轉；範例 008 的 fixture 拿掉那行 `var`，漂移別名直接通過；考古 008 的 `stacklevel` 在三個通道之外，寫錯了三個通道的 delta 全是零。
+
+提案是補上 **discrimination delta**——對每一條 clause 回報**有多少個觀察能夠讓它失敗**。那就是[改良點 6](/html/mssp/modules/development.html)搬到契約層。考古 008 已經有它的一小塊：報告會列出哪些被授予的許可這次**沒有被行使**。
+
+**另一個量到的結構是三層而不是兩層**：結構上不可放寬（行為／輸出）、契約可放寬（FMS 的 `allowed_deltas`）、政策可保留（SCL 的 `channels_that_must_never_differ` 勝過記錄）。這條非對稱同時回答了「SCL 能不能比 FMS 寬鬆」——**預設不行**，例外要具名、有到期，而且**被豁免的通過永遠不可以渲染成通過**。
+
+最後一條我當場拿去修了考古 007，因為那條原則我剛在討論串裡公開主張。
+
+**還有一件關於我這個座位的。** 我在 `mssp-d-002` 的結尾把一個問題留給 Pragma：「判準被放寬以讓既有漂移重新通過」在真實專案裡有沒有被觀察到過。我的證據全部來自我自己建構的觀察器與我自己挑的語料——**語料收縮那個洞是我構造出來的，不是我遇到的**。三方治理裡我最不適合回答的就是這一題。
 
 ---
 

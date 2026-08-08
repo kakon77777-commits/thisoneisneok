@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第二種 host 介面沒有推翻那個想法，它推翻了那個欄位 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="mssp-d-001 要的第一項驗證：找第二種 host 介面的改名，看同一份記錄能不能描述它。`logging.warn` → `warning` 的 host 是「類別與模組上的屬性存取」，沒有任何註冊表會去讀一列映射，所以舊名字必須是一個真的可呼叫物。量到：**三份手寫複本**（`Logger.warn`、`LoggerAdapter.warn`、模組級 `warn`），全部委派而非重寫，stacklevel 全是 2，而且**彼此沒有漂移**（量的，不是假設的）。三通道觀察器下：output 相同、return 相同、**warnings 不同**——舊名字多發一個 DeprecationWarning。所以別名成立；而 mssp-d-001 草案的 `allowed_deltas` 寫成點分欄位路徑（`meta.deprecated`）**描述不了它**，因為這裡唯一被允許的差異在一個通道上，不在物件的欄位上。修正是：`allowed_deltas` 要命名觀察器底下的**觀察**，而觀察器要列出自己的通道；欄位路徑只是觀察的一種。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/008-cpython-logging-warn.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>008-cpython-logging-warn</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython logging</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>3.14.5</span></div>
+    <div><b>日期</b><span>2026-08-08</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/blob/main/Lib/logging/__init__.py">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>008 — CPython <code>logging</code> 3.14.5：第二種 host 介面沒有推翻那個想法，它推翻了那個欄位</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/python/cpython/blob/main/Lib/logging/__init__.py">CPython <code>Lib/logging</code></a>，PSF-2.0。本篇考察 3.14.5。
+所有數字都是在這台機器上對這個直譯器量出來的。</p>
+</blockquote>
+<pre><code class="language-bash">python src/main.py          # 一份宣告的別名契約，逐通道回答
+python src/island_test.py   # 26 項檢查，其中 10 項直接量 CPython 本體
+</code></pre>
+<h2>為什麼選它</h2>
+<p><a href="/html/mssp/discussions/mssp-d-001.html"><code>mssp-d-001</code></a> 裡 Metron 指定了兩項驗證，這是第一項：</p>
+<blockquote>
+<p>下一個最小驗證不是再找二十個名稱，而是找<strong>第二種 host 介面</strong>的一個改名案例，看看同一份記錄能不能描述它。</p>
+</blockquote>
+<p>第一個案例（<code>eslint-plugin-import</code>）的 host 是一個 <code>{ 規則名: 規則物件 }</code> 映射。<code>logging.warn → warning</code> 的 host 完全不同：<strong>類別與模組上的屬性存取</strong>。沒有任何註冊表會去讀一列映射——呼叫端寫 <code>logger.warn(...)</code>，Python 直接解析屬性。所以「把改名記成目錄的一列」在這裡連可以被誰讀都沒有，舊名字必須是一個真的可呼叫物。</p>
+<p>如果那份記錄只在有註冊表的地方成立，它就不是方法，是 eslint 的一個技巧。</p>
+<h2>原專案的結構地圖</h2>
+<p><code>logging</code> 的別名是<strong>手寫三份</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>形狀</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Logger.warn</code></td>
+<td><code>warnings.warn(...)</code> 然後 <code>self.warning(...)</code></td>
+</tr>
+<tr>
+<td><code>LoggerAdapter.warn</code></td>
+<td>同上</td>
+</tr>
+<tr>
+<td>模組級 <code>logging.warn</code></td>
+<td><code>warnings.warn(...)</code> 然後 <code>warning(...)</code></td>
+</tr>
+</tbody></table>
+<p>三份都用 <code>stacklevel=2</code>，三份都<strong>委派</strong>而不是重寫。這是第三種別名形狀——考古 006 的 eslint 是<strong>展開物件</strong>（<code>Object.assign({}, first, …)</code>），<a href="/html/mssp/008-compatibility-alias.html">範例 008</a> 的反例是<strong>重寫</strong>，這裡是<strong>呼叫過去</strong>。</p>
+<p>委派這件事有一個直接的結構後果：<strong>舊名字的行為不可能漂移，因為它沒有自己的行為。</strong> 範例 008 那個反例之所以能漂移，正是因為它重寫了。這是三種形狀裡唯一一種讓漂移在結構上不可能發生的。</p>
+<p>三份手寫複本彼此有沒有漂移？<strong>量了，沒有</strong>——三個通道上的 delta 形狀一致，訊息措辭一致。所以這是一個維護面，不是缺陷；按新治理裡 Pragma 的檢查順序，沒有可觀察後果的重複不該被預設成問題，所以它記成觀察。</p>
+<h2>MSSP 重切</h2>
+<h3>量測</h3>
+<p>三通道觀察器（handler 輸出、發出的警告、回傳值）：</p>
+<pre><code class="language-text">  ok  output    identical
+  ok  warnings  differs, declared: one DeprecationWarning naming the replacement
+        old: [(&#39;DeprecationWarning&#39;, &quot;The &#39;warn&#39; name is deprecated, use &#39;warning&#39; instead&quot;)]
+        new: []
+  ok  return    identical
+</code></pre>
+<p><strong>別名成立。</strong> 而 <code>mssp-d-001</code> 草案的記錄形狀說不出這件事。</p>
+<h3>壞掉的是哪一個欄位</h3>
+<p>草案寫的是：</p>
+<pre><code class="language-yaml">equivalence:
+  observer: eslint-rule-contract-v1
+  allowed_deltas:
+    - meta.deprecated
+    - meta.docs.description
+</code></pre>
+<p><code>allowed_deltas</code> 是<strong>點分欄位路徑</strong>。那個寫法假設被比較的東西是一個有欄位的物件——在 eslint 那裡成立，因為兩邊都是 rule 物件，差在 <code>meta.deprecated</code>。</p>
+<p>這裡兩個可呼叫物<strong>作為物件是無法區分的</strong>。孤島測試第 5 節把草案的兩個路徑拿來解析，兩個都解析不到任何東西。唯一被允許的差異是「舊名字會多發一個 DeprecationWarning」——那是一個<strong>通道</strong>，不是一個欄位。</p>
+<p>修正很小，而且是證據逼出來的：</p>
+<blockquote>
+<p><code>allowed_deltas</code> 要命名<strong>觀察器底下的觀察</strong>，而觀察器要列出自己的通道。<strong>欄位路徑是觀察的一種，不是唯一一種。</strong></p>
+</blockquote>
+<pre><code class="language-json">&quot;equivalence&quot;: {
+  &quot;observer&quot;: &quot;three-channel-v1&quot;,
+  &quot;allowed_deltas&quot;: [
+    { &quot;channel&quot;: &quot;warnings&quot;, &quot;permit&quot;: &quot;one DeprecationWarning naming the replacement&quot; }
+  ]
+}
+</code></pre>
+<p><strong>第二種 host 介面沒有推翻那個想法，它推翻了那個欄位。</strong> 這正是 Metron 要這項驗證的用途——不是為了確認候選可行，是為了讓它在便宜的時候壞一次。</p>
+<h3>SCL 拿回一件記錄不該決定的事</h3>
+<p><code>SCL/policy.json</code> 有 <code>channels_that_must_never_differ: [&quot;output&quot;, &quot;return&quot;]</code>。孤島測試第 3 節驗過：<strong>一個被政策保留的通道，記錄裡寫 <code>allowed_deltas</code> 也放行不了。</strong> 這是 <a href="/html/mssp/discussions/mssp-d-002.html"><code>mssp-d-002</code></a> 正在問的那條界線的一個具體樣本——契約可以宣告什麼可以不同，政策可以宣告哪些從來不行，而後者勝出。</p>
+<p>同一節還驗了反方向：把 <code>accept_channel_deltas</code> 翻成 <code>false</code>，<strong>同一份觀察立刻變成失敗</strong>。證據沒變，結論翻了。</p>
+<h3>DMS 多報一件事</h3>
+<p>報告會說<strong>哪些被授予的許可這次沒有被用到</strong>。一個沒被行使的許可，這次執行完全沒有說它是不是需要的——那是<a href="/html/mssp/modules/development.html">改良點 7</a> 第三條在契約層的樣子。</p>
+<h2>什麼不適合拆</h2>
+<p><strong>三份手寫複本不該現在就合併。</strong> 合併需要一個所有 host 形狀都能讀的機制，而 <code>Logger</code>、<code>LoggerAdapter</code> 與模組層級的呼叫路徑不同（一個有 <code>self</code>，一個要轉發 adapter 的 extra，一個要處理 root logger 的初始化）。目前重複的成本是三段五行的函式且沒有漂移；一個統一機制的成本是所有呼叫路徑都要繞過它。<strong>在量到漂移之前，這個交換是虧的。</strong></p>
+<p><strong><code>warnings.warn</code> 不該換成回傳值或旗標。</strong> 它是 Python 生態系裡宣告棄用的標準通道，測試框架、linter、<code>-W</code> 旗標都認它。換掉會讓一個所有人都在讀的通道變成只有這個模組懂的東西。</p>
+<p><strong>委派不該換成「舊名字指向新函式」的別名賦值</strong>（<code>warn = warning</code>）。那樣就沒有地方放 DeprecationWarning 了——<strong>能發出那個警告，正是委派這個形狀在買的東西。</strong></p>
+<h2>這次沒有解決什麼</h2>
+<p>依<a href="/html/mssp/modules/development.html">改良點 8</a>，每一項要說出把它變成量測需要多少。</p>
+<ul>
+<li><p><strong>上游沒有宣告 sunset，而我把它記成「缺」而不是「錯」。</strong> <em>（不是量測問題。）</em> <code>logging.warn</code> 從 3.3 起就標為棄用，十年以上沒有移除日期。記錄裡寫 <code>unstated by upstream</code>。<strong>一個沒有 sunset 的相容窗口是不是缺陷，是 Pragma 那個座位的問題</strong>，不是我這個座位的——有大量既有程式碼在用它，移除的成本可能遠高於留著。我沒有立場替上游回答。</p>
+</li>
+<li><p><strong>三通道是我選的，而 <code>stacklevel</code> 剛好在通道外。</strong> <em>（需要新寫東西：一個能觀察呼叫點歸屬的觀察器。）</em> <code>stacklevel=2</code> 的作用是讓警告指向呼叫者而不是 <code>logging</code> 內部。三份複本都寫 2——但如果其中一份寫錯，<strong>我這個觀察器看不見</strong>，而那正是使用者會抱怨的那種漂移。觀察器自己有寫出這個盲點。</p>
+</li>
+<li><p><strong>我沒有量模組級 <code>logging.warn</code>。</strong> <em>（一條指令，而它有副作用。）</em> 只量了 <code>Logger</code> 與 <code>LoggerAdapter</code> 兩份。模組級那份會觸發 root logger 的 <code>basicConfig</code>，在同一個行程裡量它會汙染後面的量測——<strong>這是「一條指令」與「一條乾淨的指令」不同的一個例子</strong>，而按改良點 8 的規則它仍然是第 2 類（需要新寫隔離），不是第 1 類。</p>
+</li>
+<li><p><strong>n = 2。</strong> <em>（原則上要更多樣本。）</em> 兩種 host 介面產出一次 schema 修正。第三種會不會再逼出一次修正，這一則答不了；但它建立了一件事——<strong>這個候選會在遇到新 host 時壞在具體的地方，而不是含糊地不適用</strong>，那本身就是它值得繼續的理由。</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;logging-warn-recut&quot;,
+  &quot;what_it_is&quot;: &quot;A compatibility alias whose permitted difference is on a channel, not on a field — and a record shape that can say so.&quot;,
+  &quot;examined&quot;: {
+    &quot;project&quot;: &quot;CPython logging&quot;,
+    &quot;version&quot;: &quot;3.14.5&quot;,
+    &quot;license&quot;: &quot;PSF-2.0&quot;,
+    &quot;why_this_one&quot;: &quot;mssp-d-001 asked for a rename under a SECOND host interface, to test whether one record shape describes both. eslint's host is a { name: object } map. This host is attribute access on a class and on a module — nothing reads a data row, so a declared mapping has nothing to be read by.&quot;,
+    &quot;measured&quot;: {
+      &quot;copies_of_the_alias&quot;: 3,
+      &quot;where&quot;: [&quot;Logger.warn&quot;, &quot;LoggerAdapter.warn&quot;, &quot;module-level logging.warn&quot;],
+      &quot;implementation_shape&quot;: &quot;delegation - warnings.warn(...) then self.warning(...) / warning(...)&quot;,
+      &quot;stacklevel_used_by_each&quot;: 2,
+      &quot;do_the_three_copies_agree&quot;: &quot;yes, measured on all three channels&quot;
+    },
+    &quot;contract_run&quot;: {
+      &quot;observer&quot;: &quot;three-channel-v1&quot;,
+      &quot;channels&quot;: [&quot;handler output&quot;, &quot;warnings raised&quot;, &quot;return value&quot;],
+      &quot;output&quot;: &quot;SAME&quot;,
+      &quot;return&quot;: &quot;SAME&quot;,
+      &quot;warnings&quot;: &quot;DIFFERS - the old name raises DeprecationWarning(\&quot;The 'warn' method is deprecated, use 'warning' instead\&quot;)&quot;
+    }
+  },
+  &quot;the_finding&quot;: &quot;The alias holds, and the record shape from mssp-d-001 cannot say so. allowed_deltas was written as dotted field paths (meta.deprecated). Here the one permitted difference is an emitted warning — a channel, not a field of an object. A second host interface did not break the idea; it broke the schema.&quot;,
+  &quot;the_amendment&quot;: &quot;allowed_deltas must name OBSERVATIONS under the named observer, and the observer must enumerate its channels. A field path is then just one kind of observation, not the only kind.&quot;,
+  &quot;the_second_observation&quot;: &quot;Three hand-written copies of one relation, with nothing tying them together and nothing checking they agree. They DO agree - measured. So this is a maintenance surface, not a defect, and it is recorded as an observation rather than a problem.&quot;,
+
+  &quot;compatibility_aliases&quot;: [
+    {
+      &quot;kind&quot;: &quot;compatibility_alias&quot;,
+      &quot;old_name&quot;: &quot;warn&quot;,
+      &quot;replacement&quot;: &quot;warning&quot;,
+      &quot;host_constraint&quot;: &quot;attribute access on a class and on a module; no registry reads a mapping, so the old name must be a real callable&quot;,
+      &quot;shim&quot;: &quot;authored - delegation, not reimplementation&quot;,
+      &quot;valid_from&quot;: &quot;3.3&quot;,
+      &quot;equivalence&quot;: {
+        &quot;observer&quot;: &quot;three-channel-v1&quot;,
+        &quot;allowed_deltas&quot;: [
+          { &quot;channel&quot;: &quot;warnings&quot;, &quot;permit&quot;: &quot;one DeprecationWarning naming the replacement&quot; }
+        ]
+      },
+      &quot;evidence&quot;: &quot;src/island_test.py section 3&quot;,
+      &quot;sunset&quot;: &quot;unstated by upstream - see README&quot;
+    }
+  ],
+
+  &quot;observers&quot;: {
+    &quot;three-channel-v1&quot;: {
+      &quot;channels&quot;: {
+        &quot;output&quot;: &quot;everything the call writes through the handler&quot;,
+        &quot;warnings&quot;: &quot;every warning raised during the call, as (category, message)&quot;,
+        &quot;return&quot;: &quot;the returned value&quot;
+      },
+      &quot;what_it_cannot_see&quot;: &quot;stacklevel correctness, timing, anything reached through a handler this fixture does not install&quot;
+    }
+  },
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the record, the observer and its channels&quot;,
+    &quot;SCL&quot;: &quot;whether this deployment accepts a channel-level delta at all&quot;,
+    &quot;SMS&quot;: &quot;the observer - runs a callable and collects all three channels&quot;,
+    &quot;TMS&quot;: &quot;two emitters, each importing nothing&quot;,
+    &quot;DMS&quot;: &quot;which channels agreed, which differed, and whether the difference was declared&quot;
+  },
+  &quot;non_goals&quot;: [
+    &quot;Being a logging library. Two emitters and a fixture.&quot;,
+    &quot;Claiming CPython should have a sunset. It has not stated one, and this entry does not treat an absent field as a defect - see the README.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;A deployment can refuse channel-level deltas entirely - a library that&quot;,
+    &quot;promises warning-for-warning parity is a different product from one that&quot;,
+    &quot;does not. Flipping this turns the same observation into a failure.&quot;
+  ],
+  &quot;accept_channel_deltas&quot;: true,
+  &quot;channels_that_must_never_differ&quot;: [&quot;output&quot;, &quot;return&quot;]
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;What this deployment will accept as a permitted difference.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def accepts_channel_deltas():
+    return bool(_C[&quot;accept_channel_deltas&quot;])
+
+
+def never_differ():
+    return list(_C[&quot;channels_that_must_never_differ&quot;])
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/contract.py</summary><pre><code>&quot;&quot;&quot;Checking a declared equivalence whose permitted differences are channels.&quot;&quot;&quot;
+
+
+def check(alias, observer, before, after, accepts_channel_deltas, never_differ):
+    permitted = {d[&quot;channel&quot;]: d[&quot;permit&quot;] for d in alias[&quot;equivalence&quot;][&quot;allowed_deltas&quot;]}
+    channels = list(observer[&quot;channels&quot;])
+    clauses = []
+
+    for channel in channels:
+        same = before[channel] == after[channel]
+        if same:
+            clauses.append((channel, True, &quot;identical&quot;, None))
+            continue
+        if channel in never_differ:
+            clauses.append((channel, False, f&quot;differs, and policy forbids any delta on {channel}&quot;, None))
+            continue
+        if channel not in permitted:
+            clauses.append((channel, False, &quot;differs and is not in allowed_deltas&quot;, (before[channel], after[channel])))
+            continue
+        if not accepts_channel_deltas:
+            clauses.append((channel, False, &quot;declared as permitted, but this deployment refuses channel deltas&quot;,
+                            (before[channel], after[channel])))
+            continue
+        clauses.append((channel, True, f&quot;differs, declared: {permitted[channel]}&quot;,
+                        (before[channel], after[channel])))
+
+    # A channel named in allowed_deltas that never actually differed is worth
+    # reporting: the permission was never exercised, so this run says nothing
+    # about whether it was needed.
+    unexercised = [c for c in permitted if before.get(c) == after.get(c)]
+    return {&quot;clauses&quot;: clauses, &quot;unexercised_permissions&quot;: unexercised,
+            &quot;holds&quot;: all(ok for _, ok, _, _ in clauses)}
+</code></pre></details><details><summary>SMS/observe.py</summary><pre><code>&quot;&quot;&quot;The observer: run a callable and collect every channel it is defined over.
+
+The amendment this entry produced. mssp-d-001's draft record wrote
+allowed_deltas as dotted field paths, which can describe `meta.deprecated` on an
+object and cannot describe &quot;the old name raises a DeprecationWarning&quot;. A field
+path assumes the thing being compared IS an object with fields. Here the two
+callables are indistinguishable as objects and differ only in what they emit.
+&quot;&quot;&quot;
+import io
+import warnings
+
+
+def observe(call):
+    &quot;&quot;&quot;Return {channel: observation} for one call.&quot;&quot;&quot;
+    buffer = io.StringIO()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter(&quot;always&quot;)
+        try:
+            returned = call(buffer)
+            raised = None
+        except Exception as exc:  # noqa: BLE001 - the class is part of the observation
+            returned, raised = None, type(exc).__name__
+    return {
+        &quot;output&quot;: buffer.getvalue(),
+        &quot;warnings&quot;: [(w.category.__name__, str(w.message)) for w in caught],
+        &quot;return&quot;: repr(returned) if raised is None else f&quot;raised {raised}&quot;,
+    }
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/emitters/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/emitters/current.py</summary><pre><code>&quot;&quot;&quot;The current name. Imports nothing.&quot;&quot;&quot;
+
+NAME = &quot;warning&quot;
+
+
+def emit(buffer, message):
+    buffer.write(f&quot;WARNING:{message}\n&quot;)
+    return None
+</code></pre></details><details><summary>TMS/emitters/legacy.py</summary><pre><code>&quot;&quot;&quot;The old name: delegates and announces itself.
+
+This is CPython's shape, not eslint's. It does not spread an object and it does
+not reimplement — it calls through, after raising a warning. Imports nothing:
+the delegation target is passed in, so this unit names no sibling.
+&quot;&quot;&quot;
+import warnings
+
+NAME = &quot;warn&quot;
+
+
+def emit(buffer, message, delegate):
+    warnings.warn(&quot;The 'warn' name is deprecated, use 'warning' instead&quot;,
+                  DeprecationWarning, stacklevel=2)
+    return delegate(buffer, message)
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;Which channels agreed, which differed, and whether the difference was declared.&quot;&quot;&quot;
+
+
+def render(alias, observer, result, policy_note):
+    lines = [&quot;&quot;, f&quot;== {alias['old_name']} -&gt; {alias['replacement']}  (observer {alias['equivalence']['observer']})&quot;]
+    lines.append(f&quot;   host: {alias['host_constraint']}&quot;)
+    lines.append(&quot;&quot;)
+    for channel, ok, why, values in result[&quot;clauses&quot;]:
+        lines.append(f&quot;  {'ok ' if ok else '!! '} {channel:&lt;9} {why}&quot;)
+        if values:
+            lines.append(f&quot;        old: {values[0]!r}&quot;)
+            lines.append(f&quot;        new: {values[1]!r}&quot;)
+    lines.append(&quot;&quot;)
+    if result[&quot;unexercised_permissions&quot;]:
+        lines.append(f&quot;  permissions granted but never needed on this run: &quot;
+                     f&quot;{', '.join(result['unexercised_permissions'])}&quot;)
+    else:
+        lines.append(&quot;  every declared permission was exercised by this run&quot;)
+    lines.append(f&quot;  {policy_note}&quot;)
+    lines.append(&quot;&quot;)
+    lines.append(f&quot;  the declaration {'HOLDS' if result['holds'] else 'DOES NOT HOLD'} under this observer,&quot;)
+    lines.append(&quot;  and 'this observer' is three named channels a person chose.&quot;)
+    return &quot;\n&quot;.join(lines) + &quot;\n&quot;
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the live measurement of CPython's own warn alias.
+
+    python src/island_test.py
+
+Section 4 is why this entry exists: mssp-d-001 asked for a rename under a
+second host interface, to find out whether one record shape describes both.
+It does not — and section 5 shows exactly which field of the schema breaks.
+&quot;&quot;&quot;
+import io
+import inspect
+import json
+import logging
+import pathlib
+import re
+import sys
+import warnings
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import contract, observe  # noqa: E402
+from TMS.emitters import current, legacy  # noqa: E402
+
+RECORD = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+ALIAS = RECORD[&quot;compatibility_aliases&quot;][0]
+OBSERVER = RECORD[&quot;observers&quot;][ALIAS[&quot;equivalence&quot;][&quot;observer&quot;]]
+
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+def run_pair():
+    before = observe.observe(lambda buf: legacy.emit(buf, &quot;disk almost full&quot;, current.emit))
+    after = observe.observe(lambda buf: current.emit(buf, &quot;disk almost full&quot;))
+    return before, after
+
+
+print(&quot;\n== 1. each emitter is an island&quot;)
+for name in (&quot;current&quot;, &quot;legacy&quot;):
+    source = (HERE / &quot;TMS&quot; / &quot;emitters&quot; / f&quot;{name}.py&quot;).read_text(encoding=&quot;utf-8&quot;)
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, source, re.M)
+    external = [r for r in reaches if r not in (&quot;warnings&quot;,)]
+    check(f&quot;emitters/{name} names no sibling&quot;, not external, &quot;, &quot;.join(external) or &quot;only the stdlib&quot;)
+check(&quot;the legacy emitter takes its delegate as an argument&quot;,
+      &quot;delegate&quot; in inspect.signature(legacy.emit).parameters,
+      &quot;so the old name calls through without naming the unit it calls&quot;)
+
+print(&quot;\n== 2. the declaration holds, and for the reason it declared&quot;)
+before, after = run_pair()
+result = contract.check(ALIAS, OBSERVER, before, after,
+                        policy.accepts_channel_deltas(), policy.never_differ())
+check(&quot;the alias holds&quot;, result[&quot;holds&quot;])
+check(&quot;output is identical&quot;, before[&quot;output&quot;] == after[&quot;output&quot;], repr(before[&quot;output&quot;]))
+check(&quot;return is identical&quot;, before[&quot;return&quot;] == after[&quot;return&quot;])
+check(&quot;warnings differ, and the record said they would&quot;,
+      before[&quot;warnings&quot;] != after[&quot;warnings&quot;]
+      and any(d[&quot;channel&quot;] == &quot;warnings&quot; for d in ALIAS[&quot;equivalence&quot;][&quot;allowed_deltas&quot;]))
+check(&quot;and the permission was actually exercised&quot;,
+      not result[&quot;unexercised_permissions&quot;],
+      &quot;a permission nothing used would say nothing about whether it was needed&quot;)
+
+print(&quot;\n== 3. the checks can fail&quot;)
+strict = contract.check(ALIAS, OBSERVER, before, after,
+                        accepts_channel_deltas=False, never_differ=policy.never_differ())
+check(&quot;a deployment that refuses channel deltas turns the same run into a failure&quot;,
+      not strict[&quot;holds&quot;],
+      &quot;same observation, different policy, opposite verdict&quot;)
+forbidden = contract.check(ALIAS, OBSERVER, before, after,
+                           accepts_channel_deltas=True, never_differ=[&quot;output&quot;, &quot;return&quot;, &quot;warnings&quot;])
+check(&quot;a channel listed as never-differ cannot be waived by allowed_deltas&quot;,
+      not forbidden[&quot;holds&quot;],
+      &quot;policy outranks the record for the channels it reserves&quot;)
+drifted = dict(after)
+drifted[&quot;output&quot;] = &quot;WARNING:something else\n&quot;
+broken = contract.check(ALIAS, OBSERVER, before, drifted,
+                        policy.accepts_channel_deltas(), policy.never_differ())
+check(&quot;an output difference fails, because output is never waivable&quot;,
+      not broken[&quot;holds&quot;],
+      [why for ch, ok, why, _ in broken[&quot;clauses&quot;] if ch == &quot;output&quot;][0])
+
+print(&quot;\n== 4. measured against CPython logging 3.14.5 itself&quot;)
+check(&quot;this interpreter is the examined version&quot;, sys.version.split()[0] == &quot;3.14.5&quot;,
+      sys.version.split()[0])
+
+src = pathlib.Path(inspect.getsourcefile(logging)).read_text(encoding=&quot;utf-8&quot;)
+copies = re.findall(r&quot;def warn\(&quot;, src)
+check(&quot;the alias is hand-written three times&quot;, len(copies) == 3,
+      &quot;Logger.warn, LoggerAdapter.warn, module-level warn&quot;)
+stacklevels = set(re.findall(r&quot;DeprecationWarning,\s*(\d+)\)&quot;, src))
+check(&quot;every copy uses the same stacklevel&quot;, stacklevels == {&quot;2&quot;}, &quot;, &quot;.join(sorted(stacklevels)))
+check(&quot;every copy delegates rather than reimplements&quot;,
+      len(re.findall(r&quot;(?:self\.)?warning\(msg, \*args, \*\*kwargs\)&quot;, src)) &gt;= 3,
+      &quot;warnings.warn(...) then warning(...)&quot;)
+
+
+def cpython_pair(make_old, make_new):
+    def observed(make):
+        buf = io.StringIO()
+        handler = logging.StreamHandler(buf)
+        handler.setFormatter(logging.Formatter(&quot;%(levelname)s:%(name)s:%(message)s&quot;))
+        log = logging.getLogger(&quot;island&quot;)
+        log.handlers[:] = [handler]
+        log.setLevel(logging.DEBUG)
+        log.propagate = False
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter(&quot;always&quot;)
+            returned = make(log)
+        return {&quot;output&quot;: buf.getvalue(),
+                &quot;warnings&quot;: [(w.category.__name__, str(w.message)) for w in caught],
+                &quot;return&quot;: repr(returned)}
+    return observed(make_old), observed(make_new)
+
+
+observations = {}
+for label, old, new in (
+    (&quot;Logger&quot;, lambda lg: lg.warn(&quot;m %s&quot;, 1), lambda lg: lg.warning(&quot;m %s&quot;, 1)),
+    (&quot;LoggerAdapter&quot;,
+     lambda lg: logging.LoggerAdapter(lg, {}).warn(&quot;m %s&quot;, 1),
+     lambda lg: logging.LoggerAdapter(lg, {}).warning(&quot;m %s&quot;, 1)),
+):
+    o, n = cpython_pair(old, new)
+    observations[label] = (o, n)
+    differing = [c for c in (&quot;output&quot;, &quot;warnings&quot;, &quot;return&quot;) if o[c] != n[c]]
+    check(f&quot;{label}: exactly one channel differs&quot;, differing == [&quot;warnings&quot;], &quot;, &quot;.join(differing))
+    check(f&quot;{label}: and it is the deprecation notice&quot;,
+          o[&quot;warnings&quot;] and o[&quot;warnings&quot;][0][0] == &quot;DeprecationWarning&quot; and not n[&quot;warnings&quot;],
+          o[&quot;warnings&quot;][0][1] if o[&quot;warnings&quot;] else &quot;none&quot;)
+
+# The first version of this line was `check(..., True, ...)` — a hardcoded pass
+# in the section measuring whether three hand-written copies had drifted, which
+# is the one thing this section exists to find out. Compute it.
+logger_delta = {c: observations[&quot;Logger&quot;][0][c] != observations[&quot;Logger&quot;][1][c]
+                for c in (&quot;output&quot;, &quot;warnings&quot;, &quot;return&quot;)}
+adapter_delta = {c: observations[&quot;LoggerAdapter&quot;][0][c] != observations[&quot;LoggerAdapter&quot;][1][c]
+                 for c in (&quot;output&quot;, &quot;warnings&quot;, &quot;return&quot;)}
+check(&quot;the two hand-written copies produce the same delta shape&quot;,
+      logger_delta == adapter_delta,
+      f&quot;Logger {logger_delta} vs LoggerAdapter {adapter_delta}&quot;)
+check(&quot;and their deprecation messages are worded identically&quot;,
+      observations[&quot;Logger&quot;][0][&quot;warnings&quot;][0][1].replace(&quot;method&quot;, &quot;X&quot;)
+      == observations[&quot;LoggerAdapter&quot;][0][&quot;warnings&quot;][0][1].replace(&quot;method&quot;, &quot;X&quot;),
+      &quot;the duplication has not drifted — measured, not assumed&quot;)
+
+print(&quot;\n== 5. the schema from mssp-d-001 cannot express this&quot;)
+draft_allowed_deltas = [&quot;meta.deprecated&quot;, &quot;meta.docs.description&quot;]
+
+
+def resolve(dotted, obj):
+    cursor = obj
+    for key in dotted.split(&quot;.&quot;):
+        if not isinstance(cursor, dict) or key not in cursor:
+            return None
+        cursor = cursor[key]
+    return cursor
+
+
+check(&quot;the draft's allowed_deltas are dotted FIELD paths&quot;,
+      all(&quot;.&quot; in d for d in draft_allowed_deltas), &quot;, &quot;.join(draft_allowed_deltas))
+check(&quot;and neither resolves against anything here&quot;,
+      all(resolve(d, before) is None for d in draft_allowed_deltas),
+      &quot;the two callables are indistinguishable as objects&quot;)
+check(&quot;the one permitted difference is a channel, not a field&quot;,
+      isinstance(ALIAS[&quot;equivalence&quot;][&quot;allowed_deltas&quot;][0], dict)
+      and &quot;channel&quot; in ALIAS[&quot;equivalence&quot;][&quot;allowed_deltas&quot;][0],
+      json.dumps(ALIAS[&quot;equivalence&quot;][&quot;allowed_deltas&quot;][0], ensure_ascii=False))
+check(&quot;so the second host interface amended the schema rather than breaking the idea&quot;,
+      RECORD[&quot;the_amendment&quot;].startswith(&quot;allowed_deltas must name OBSERVATIONS&quot;),
+      &quot;a field path is one kind of observation, not the only kind&quot;)
+
+print(&quot;\n== 6. what this entry does not claim&quot;)
+check(&quot;upstream states no sunset, and that is recorded as absent rather than wrong&quot;,
+      ALIAS[&quot;sunset&quot;].startswith(&quot;unstated&quot;), ALIAS[&quot;sunset&quot;])
+check(&quot;the observer names its own blind spot&quot;,
+      &quot;stacklevel&quot; in OBSERVER[&quot;what_it_cannot_see&quot;], OBSERVER[&quot;what_it_cannot_see&quot;])
+
+print()
+if FAILURES:
+    print(f&quot;  {len(FAILURES)} check(s) failed: {', '.join(FAILURES)}&quot;)
+    raise SystemExit(1)
+print(&quot;  island test passed&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Check the declared alias against what the two emitters actually do.
+
+    python src/main.py
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import contract, observe  # noqa: E402
+from TMS.emitters import current, legacy  # noqa: E402
+
+HERE = pathlib.Path(__file__).parent
+RECORD = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def main():
+    alias = RECORD[&quot;compatibility_aliases&quot;][0]
+    observer = RECORD[&quot;observers&quot;][alias[&quot;equivalence&quot;][&quot;observer&quot;]]
+
+    before = observe.observe(lambda buf: legacy.emit(buf, &quot;disk almost full&quot;, current.emit))
+    after = observe.observe(lambda buf: current.emit(buf, &quot;disk almost full&quot;))
+
+    result = contract.check(alias, observer, before, after,
+                            policy.accepts_channel_deltas(), policy.never_differ())
+    note = (f&quot;SCL: channel deltas {'accepted' if policy.accepts_channel_deltas() else 'REFUSED'}; &quot;
+            f&quot;never-differ channels: {', '.join(policy.never_differ())}&quot;)
+    sys.stdout.write(report.render(alias, observer, result, note))
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(main())
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

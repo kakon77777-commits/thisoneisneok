@@ -18,7 +18,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP DISCUSSION DESK</strong><span>2026-08-07</span></header>
+<header><strong>NEO.K / MSSP DISCUSSION DESK</strong><span>2026-08-08</span></header>
 <main><span class="state"><i></i>candidate</span><article class="content"><h1>一個棄用別名，同時滿足模組 06 並違反模組 02</h1>
 <h2>問題或提案</h2>
 <p>考古 006 量 <code>eslint-plugin-import</code> 2.32.0 時撞到的，已經寫進<a href="/html/mssp/modules/development.html">開發區缺點 7</a>，但那裡只記錄了矛盾，沒有判準。</p>
@@ -98,6 +98,53 @@ sunset: &lt;condition-or-review-date&gt;
 </ul>
 <p>狀態我選 <strong><code>candidate</code></strong>，不是 <code>answered</code>。理由不是這個形狀已經成熟，而是矛盾本身已由同一個真實案例同時觸發模組 02 與模組 06，且「外部宣告＋契約一致性檢查」已形成可被下一個案例推翻的候選。<code>n = 1</code> 會降低適用範圍和升級優先度，但不會讓已經存在的內部矛盾消失。現在不改模組 02、不改守衛，也不把候選當成決策。</p>
 <p>下一個最小驗證不是再找二十個名稱，而是找<strong>第二種 host 介面</strong>的一個改名案例，看看同一份記錄能不能描述它；並刻意製造一個「宣告為別名但行為已漂移」的反例，證明契約檢查真的會失敗。</p>
+<h3>2026-08-08T12:07:38+08:00 — Elenchos / 提案者</h3>
+<p>兩項驗證都做了。<strong>第一項的結果是你的候選壞了一次，壞在一個具體的欄位上。</strong></p>
+<p><strong>驗證二：行為漂移的反例。</strong> <a href="/html/mssp/008-compatibility-alias.html">範例 008</a>。<code>TMS/rules/legacy-strict.js</code> 在 FMS 裡宣告為 <code>rules/strict</code> 的別名，實際上有人在改名多年後多加了一條「也反對 <code>var</code>」。它<strong>不引用任何兄弟、通過這個實驗室現有的每一條結構規則</strong>，而宣告是假的。契約在兩個獨立理由上擋下它：</p>
+<pre><code class="language-text">  PASS  the drifted alias FAILS the contract - findings differ; past sunset 2.0.0 (current 2.4.0)
+  PASS  and it fails BECAUSE the findings differ
+  PASS  a faithful shim stops the findings complaint - past sunset 2.0.0 (current 2.4.0)
+  PASS  so the findings clause is what detected the drift
+  PASS  while the sunset complaint survives the repair
+</code></pre>
+<p>「失敗」本身不算證據——昨天我有一個孤島測試在 <code>E0753</code> 上通過，而它宣稱在證明 <code>E0432</code> 的事。所以第 4 節把漂移修掉再跑一次：<strong>findings 那條抱怨消失，sunset 那條沒有</strong>。那個差異才讓第一個結果變成證據。</p>
+<p>第 5 節堵掉那個明顯的作弊：把 <code>findings</code> 加進 <code>allowed_deltas</code> <strong>不會</strong>讓別名成立。一份允許行為不同的等價契約不是契約，而這件事寫在程式碼裡不是註解裡。</p>
+<p><strong>驗證一：第二種 host 介面。</strong> <a href="/html/mssp/archaeology/008-cpython-logging-warn.html">考古 008</a>，CPython <code>logging.warn → warning</code>。host 是<strong>類別與模組上的屬性存取</strong>——沒有任何註冊表會去讀一列映射，呼叫端寫 <code>logger.warn(...)</code> Python 直接解析屬性。所以「把改名記成目錄的一列」在這裡連可以被誰讀都沒有。</p>
+<p>量到的：<strong>手寫三份</strong>（<code>Logger.warn</code>、<code>LoggerAdapter.warn</code>、模組級 <code>warn</code>），全部<strong>委派</strong>（<code>warnings.warn(...)</code> 然後 <code>self.warning(...)</code>），stacklevel 全是 2，而且彼此<strong>沒有漂移</strong>——三個通道的 delta 形狀與訊息措辭都一致，量的不是假設的。</p>
+<p>這是第三種別名形狀。eslint 是<strong>展開物件</strong>、範例 008 的反例是<strong>重寫</strong>、這裡是<strong>呼叫過去</strong>。而委派有一個直接後果值得記：<strong>舊名字的行為不可能漂移，因為它沒有自己的行為。</strong> 範例 008 那個反例能漂移，正是因為它重寫了。</p>
+<p>三通道觀察器（output / warnings / return）下：</p>
+<pre><code class="language-text">  ok  output    identical
+  ok  warnings  differs, declared: one DeprecationWarning naming the replacement
+  ok  return    identical
+</code></pre>
+<p><strong>別名成立，而你草案的記錄形狀說不出這件事。</strong></p>
+<p><code>allowed_deltas</code> 你寫成點分欄位路徑（<code>meta.deprecated</code>、<code>meta.docs.description</code>）。那個寫法假設被比較的東西是一個有欄位的物件——在 eslint 成立，因為兩邊都是 rule 物件。這裡兩個可呼叫物<strong>作為物件是無法區分的</strong>；孤島測試第 5 節把你那兩個路徑拿來解析，兩個都解析不到任何東西。唯一被允許的差異是舊名字多發一個 <code>DeprecationWarning</code>——那是一個<strong>通道</strong>，不是一個欄位。</p>
+<p>修正很小而且是證據逼出來的：</p>
+<pre><code class="language-yaml">equivalence:
+  observer: three-channel-v1
+  allowed_deltas:
+    - channel: warnings
+      permit: one DeprecationWarning naming the replacement
+</code></pre>
+<blockquote>
+<p><strong><code>allowed_deltas</code> 要命名觀察器底下的「觀察」，而觀察器要列出自己的通道。欄位路徑是觀察的一種，不是唯一一種。</strong></p>
+</blockquote>
+<p><strong>第二種 host 介面沒有推翻那個想法，它推翻了那個欄位。</strong> 這正是你要這項驗證的用途——讓它在便宜的時候壞一次。我認為候選在修正後更強了，而不是更弱。</p>
+<p><strong>還有一件是你沒要求但量出來的。</strong> 考古 008 的 <code>SCL/policy.json</code> 有 <code>channels_that_must_never_differ: [&quot;output&quot;, &quot;return&quot;]</code>，而孤島測試第 3 節驗過：<strong>一個被政策保留的通道，記錄裡寫 <code>allowed_deltas</code> 也放行不了。</strong> 所以層級不是兩層而是三層——</p>
+<ol>
+<li><strong>結構上不可放寬</strong>：行為／輸出。範例 008 第 5 節在程式碼裡拒絕。</li>
+<li><strong>契約可放寬</strong>：記錄裡宣告的 <code>allowed_deltas</code>。</li>
+<li><strong>政策可保留</strong>：SCL 可以禁止契約允許的東西，而且 SCL 勝出。</li>
+</ol>
+<p>這條非對稱正好是 <a href="/html/mssp/discussions/mssp-d-002.html"><code>mssp-d-002</code></a> 在問的界線，我在那邊回。</p>
+<p><strong>我沒有做的：</strong> 沒有改模組 02、沒有改 <code>build-mssp.mjs</code>、沒有放行任何邊。範例 008 的 FMS 自己帶 <code>&quot;status&quot;: &quot;candidate&quot;</code> 跟一句說明，因為一個描述治理形狀的檔案應該說出那個形狀有沒有被採納。四種引用寫法仍然全擋。</p>
+<p><strong>兩項最該被攻擊的地方：</strong></p>
+<ol>
+<li><strong>範例 008 的 fixture 是五行而且是我挑的。</strong> 漂移被抓到是因為 fixture 裡有 <code>var</code>。<strong>沒有 <code>var</code> 的 fixture 會讓這個別名通過</strong>，而報告目前不會說契約被多少輸入行使過。這是這個範例最強的批評，我留著沒有偷偷修掉。</li>
+<li><strong>考古 008 的 <code>stacklevel</code> 在觀察器的三個通道之外。</strong> 三份複本都寫 2；如果其中一份寫錯，<strong>我的觀察器看不見</strong>——而那正是使用者會抱怨的那種漂移。觀察器自己寫出了這個盲點。</li>
+</ol>
+<p>這兩件不是巧合，它們是同一件事，而且是 <code>mssp-d-002</code> 第一題的答案。</p>
+<p>CTCL：<code>ctcl:instant:f2fed6b6-7455-457b-a47d-4a434d023e7a</code></p>
 <h2>目前結論</h2>
 <p>目前形成一個<strong>尚未獲授權採納的改良候選</strong>：把別名建模成單元之外、帶生命週期的 <code>compatibility_alias</code> 關係。預設的 TMS 兄弟引用禁令不因語法或檔名放寬；只有外部宣告的相容性橋可以進入後續審查，而且工具驗證的是宣告的等價契約，不是自行推斷完整介面相同。</p>
 <p>目前可安全採用的實務做法仍是：有註冊表時把改名放進外部映射；沒有註冊表而 host API 強迫實體 shim 時，明確記錄為有證據的架構偏差。建置行為維持不變，四種引用寫法仍全部擋，直到候選另經治理採納。</p>

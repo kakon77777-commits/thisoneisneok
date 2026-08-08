@@ -33,7 +33,7 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-07</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-08</span></header>
 <main>
   <span class="state">v1.x 開發中</span>
   <article class="content"><h1>MSSP 開發區</h1>
@@ -147,8 +147,14 @@ module.exports = Object.assign({}, first, {
 <p><strong>方向（不是解法）：</strong> <a href="/html/mssp/archaeology/006-eslint-plugin-import.html">考古 006 的重切</a>示範了一個做法——<strong>改名是關於目錄的事實，不是關於檔案的事實</strong>。<code>FMS</code> 記一筆 rename，載入器在載入前解析它，於是沒有任何規則檔提到另一個規則檔，舊名字照常運作，而且解析這件事出現在執行報告裡。</p>
 <p>但那還不是判準。<strong>當一個 TMS 真的必須提到另一個 TMS 時，怎麼分辨「切錯了」跟「這是一次改名」——方法還是沒說</strong>，而重切只是示範了在有目錄的情況下不必二選一。上游沒有那個選項：eslint 的 plugin 介面收的是一個 <code>{ 規則名: 規則物件 }</code>，<strong>沒有地方可以放「這個名字是那個名字的舊稱」</strong>，所以別名只能是一個檔案。那是介面差異，不是判斷差異。</p>
 <p><strong>2026-08-07：這一條開到<a href="/html/mssp/discussions/mssp-d-001.html">協作討論區</a>了</strong>，因為它需要的是來回而不是一次結論。開串時已經先否掉三個方向並寫明理由（例外清單＝用列舉代替規則、看引用寫法＝檢查形狀而不是關係、由被引用方宣告＝把歷史累積進單元），並提出一個待驗的形狀：<strong>規則不變，多一條治理路徑——一個引用可以附帶一份可查證的改名記錄。</strong> 待決的是那份記錄裡「兩者公開介面在改名當下相同」能不能機械檢查，還是它又是一個需要人先寫下的判準。建置目前維持四種引用寫法全擋，<strong>誤報留著而不先放寬</strong>，因為放寬比收緊容易，而現在只有一個實例。</p>
+<p><strong>2026-08-08 補：候選在第二種 host 介面上壞了一次，而那是好事。</strong> <a href="/html/mssp/archaeology/008-cpython-logging-warn.html">考古 008</a> 拿 <code>logging.warn</code> 去試那份記錄——host 是類別與模組上的<strong>屬性存取</strong>，沒有任何註冊表會讀一列映射，所以「把改名記成目錄的一列」在那裡連可以被誰讀都沒有。量到的別名成立（output 相同、return 相同、warnings 多一個 DeprecationWarning），而草案的 <code>allowed_deltas</code> 寫成點分欄位路徑<strong>描述不了它</strong>：兩個可呼叫物作為物件無法區分，唯一被允許的差異在一個<strong>通道</strong>上。修正是 <code>allowed_deltas</code> 要命名觀察器底下的<strong>觀察</strong>，欄位路徑只是其中一種。</p>
+<p><a href="/html/mssp/008-compatibility-alias.html">範例 008</a> 交付了第二項驗證：一個宣告為別名而行為已漂移的單元，<strong>不引用任何兄弟、通過每一條結構規則</strong>，被契約在兩個獨立理由上擋下。第 4 節把漂移修掉再跑一次——findings 那條抱怨消失、sunset 那條沒有——<strong>那個差異才讓第一個結果變成證據</strong>。</p>
+<p>同時量到的是<strong>三層而不是兩層</strong>：結構上不可放寬（行為／輸出，範例 008 第 5 節在程式碼裡拒絕把 <code>findings</code> 列為 allowed delta）、契約可放寬（FMS 的 <code>allowed_deltas</code>）、政策可保留（考古 008 的 SCL <code>channels_that_must_never_differ</code> 勝過記錄）。</p>
 <hr>
 <h2>未來改良點</h2>
+<blockquote>
+<p><strong>2026-08-07 起，這一節的每一條都是 <code>candidate</code>。</strong> Neo 交付的三方治理把 MSSP 的採納流程寫定了：一般改良需要 Elenchos、Metron、Pragma 三方一致；重大變更三方一致後仍由 Neo 決定。<strong>寫進這一節不等於採納</strong>——它等於「一方提出了一個帶證據的候選」。已知缺點那一節則是 <code>observation</code> 或 <code>needs-evidence</code>。真正的採納會動到模組 02 或建置守衛，那時會另外標記。</p>
+</blockquote>
 <h3>改良點 1：SMS 預算 — <strong>2026-08-07：不要用數字，而機械化之後量到的東西比預期小</strong></h3>
 <p>原本的提案是給 SMS 一個明確上限，超過就強制重問身份測試。<a href="/html/mssp/007-identity-test-run.html">範例 007</a> 沒有照著做，理由是<strong>任何數字都得從某個地方來，而我挑的任何一個都是沒有根據的規則</strong>。方法已經用文字定義了邊界——移除它之後系統還是不是它——所以要做的不是發明數字，是把那句話變成可執行的，然後讓 SMS 的大小變成結果而不是目標。</p>
 <p>做下去有兩件事跟預期不同。</p>

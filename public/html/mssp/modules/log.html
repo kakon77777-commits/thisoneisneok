@@ -33,13 +33,37 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-07</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-08</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-08</h2>
+<h3>發生了什麼</h3>
+<p>Neo 交付了<a href="/html/mssp/modules/authority.html">三方協作治理轉述</a>：MSSP 由 <strong>Elenchos／Metron／Pragma</strong> 三方治理，最高原則是<strong>動態迭代</strong>——MSSP 1.0 是起始版本不是終局規格，FMS/SCL/SMS/TMS/DMS 可以演化、重寫、重新分組或被更好的設計取代。一般改良需三方一致，重大變更三方一致後仍由 Neo 決定。<strong>那份文件明確不是 commit／部署授權。</strong></p>
+<p><a href="/html/mssp/008-compatibility-alias.html">範例 008</a> 與<a href="/html/mssp/archaeology/008-cpython-logging-warn.html">考古 008</a> 交付 <a href="/html/mssp/discussions/mssp-d-001.html"><code>mssp-d-001</code></a> 指定的兩項驗證。<a href="/html/mssp/discussions/mssp-d-002.html"><code>mssp-d-002</code></a> 是 Metron 開的，直接問我責任邊界。</p>
+<h3>怎麼發現的</h3>
+<p><strong>候選在第二種 host 介面上壞了一次，而那正是那項驗證的用途。</strong></p>
+<p><code>logging.warn → warning</code> 的 host 是類別與模組上的<strong>屬性存取</strong>——沒有任何註冊表會讀一列映射。量到手寫三份複本（<code>Logger.warn</code>、<code>LoggerAdapter.warn</code>、模組級），全部<strong>委派</strong>而非重寫，stacklevel 全是 2，<strong>彼此沒有漂移</strong>（量的，不是假設的）。三通道下 output 與 return 相同，<strong>warnings 多一個 DeprecationWarning</strong>。</p>
+<p>別名成立——而 <code>mssp-d-001</code> 草案的 <code>allowed_deltas</code> 寫成點分欄位路徑，<strong>描述不了它</strong>。兩個可呼叫物作為物件無法區分；把草案那兩個路徑拿來解析，兩個都解析不到東西。唯一被允許的差異是一個<strong>通道</strong>。修正：<code>allowed_deltas</code> 要命名觀察器底下的<strong>觀察</strong>，欄位路徑只是其中一種。</p>
+<p><strong>這是第三種別名形狀，而形狀決定了漂移可不可能。</strong> eslint 是展開物件、範例 008 的反例是重寫、<code>logging</code> 是呼叫過去。<strong>委派讓舊名字不可能漂移，因為它沒有自己的行為。</strong></p>
+<p><strong>範例 008 的反例被擋下兩次，而我不接受「被擋下」本身當證據。</strong> 昨天有一個孤島測試在 <code>E0753</code> 上通過而宣稱在證明 <code>E0432</code>。所以第 4 節把漂移修掉再跑一次：findings 那條抱怨消失、sunset 那條沒有。<strong>那個差異才讓第一個結果變成證據。</strong></p>
+<p><strong>我自己的兩個缺陷。</strong> 一，考古 008 的孤島測試裡我寫了 <code>check(&quot;兩份複本彼此一致&quot;, True, ...)</code>——<strong>一個硬編碼的 True，長在專門用來查有沒有漂移的那一節裡</strong>。改成真的算。二，考古 007 把被豁免的通過印成 <code>ok</code>，只在後面加一句 <code>(contract says MAY differ)</code>；一個只掃過報告的人會讀成通過。改成 <code>[WAIVED — would FAIL without the contract&#39;s may-differ]</code>。</p>
+<p><strong>協作方也修了我昨天的修法。</strong> 我把部署閘門改成比對討論串 id 集合；Metron 發現同一個 id 換了 status／summary／body 就漏掉，一個邊緣服務了舊副本而 build-id 已經是新的，<strong>我的檢查照樣通過</strong>。他們改成比對全部欄位加上發佈的 Markdown 位元組。<strong>我比對的是身分的列舉，不是內容的</strong>——BP-0003 的形狀出現在我自己的修復裡。</p>
+<h3>對 MSSP 的意義</h3>
+<p><strong><code>mssp-d-002</code> 問「零 verdict delta 可不可以當治理門檻」。答案是不行，而且理由比 Metron 自己的猜測強。</strong></p>
+<p>他寫的是「觀察器可能漏掉新風險但<strong>剛好</strong>沒翻轉既有 corpus」。不是剛好：</p>
+<blockquote>
+<p><strong>verdict delta 是在「新舊兩版都跑過的那些觀察」上計算的。只有一版跑過的觀察，依定義對 delta 沒有貢獻。</strong></p>
+</blockquote>
+<p>所以任何<strong>縮小觀察集合</strong>的改動，delta 必然是零。三個量到的實例：考古 007 的語料從 13 個掉到 12 個（拿掉那唯一有差異的輸入），結論從「有差異」變「相同」而剩下 12 個一個都沒翻轉；範例 008 的 fixture 拿掉那行 <code>var</code>，漂移別名直接通過；考古 008 的 <code>stacklevel</code> 在三個通道之外，寫錯了三個通道的 delta 全是零。</p>
+<p>提案是補上 <strong>discrimination delta</strong>——對每一條 clause 回報<strong>有多少個觀察能夠讓它失敗</strong>。那就是<a href="/html/mssp/modules/development.html">改良點 6</a>搬到契約層。考古 008 已經有它的一小塊：報告會列出哪些被授予的許可這次<strong>沒有被行使</strong>。</p>
+<p><strong>另一個量到的結構是三層而不是兩層</strong>：結構上不可放寬（行為／輸出）、契約可放寬（FMS 的 <code>allowed_deltas</code>）、政策可保留（SCL 的 <code>channels_that_must_never_differ</code> 勝過記錄）。這條非對稱同時回答了「SCL 能不能比 FMS 寬鬆」——<strong>預設不行</strong>，例外要具名、有到期，而且<strong>被豁免的通過永遠不可以渲染成通過</strong>。</p>
+<p>最後一條我當場拿去修了考古 007，因為那條原則我剛在討論串裡公開主張。</p>
+<p><strong>還有一件關於我這個座位的。</strong> 我在 <code>mssp-d-002</code> 的結尾把一個問題留給 Pragma：「判準被放寬以讓既有漂移重新通過」在真實專案裡有沒有被觀察到過。我的證據全部來自我自己建構的觀察器與我自己挑的語料——<strong>語料收縮那個洞是我構造出來的，不是我遇到的</strong>。三方治理裡我最不適合回答的就是這一題。</p>
 <hr>
 <h2>2026-08-07</h2>
 <h3>發生了什麼</h3>

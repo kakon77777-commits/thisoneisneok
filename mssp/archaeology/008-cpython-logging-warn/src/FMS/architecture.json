@@ -1,0 +1,69 @@
+{
+  "name": "logging-warn-recut",
+  "what_it_is": "A compatibility alias whose permitted difference is on a channel, not on a field — and a record shape that can say so.",
+  "examined": {
+    "project": "CPython logging",
+    "version": "3.14.5",
+    "license": "PSF-2.0",
+    "why_this_one": "mssp-d-001 asked for a rename under a SECOND host interface, to test whether one record shape describes both. eslint's host is a { name: object } map. This host is attribute access on a class and on a module — nothing reads a data row, so a declared mapping has nothing to be read by.",
+    "measured": {
+      "copies_of_the_alias": 3,
+      "where": ["Logger.warn", "LoggerAdapter.warn", "module-level logging.warn"],
+      "implementation_shape": "delegation - warnings.warn(...) then self.warning(...) / warning(...)",
+      "stacklevel_used_by_each": 2,
+      "do_the_three_copies_agree": "yes, measured on all three channels"
+    },
+    "contract_run": {
+      "observer": "three-channel-v1",
+      "channels": ["handler output", "warnings raised", "return value"],
+      "output": "SAME",
+      "return": "SAME",
+      "warnings": "DIFFERS - the old name raises DeprecationWarning(\"The 'warn' method is deprecated, use 'warning' instead\")"
+    }
+  },
+  "the_finding": "The alias holds, and the record shape from mssp-d-001 cannot say so. allowed_deltas was written as dotted field paths (meta.deprecated). Here the one permitted difference is an emitted warning — a channel, not a field of an object. A second host interface did not break the idea; it broke the schema.",
+  "the_amendment": "allowed_deltas must name OBSERVATIONS under the named observer, and the observer must enumerate its channels. A field path is then just one kind of observation, not the only kind.",
+  "the_second_observation": "Three hand-written copies of one relation, with nothing tying them together and nothing checking they agree. They DO agree - measured. So this is a maintenance surface, not a defect, and it is recorded as an observation rather than a problem.",
+
+  "compatibility_aliases": [
+    {
+      "kind": "compatibility_alias",
+      "old_name": "warn",
+      "replacement": "warning",
+      "host_constraint": "attribute access on a class and on a module; no registry reads a mapping, so the old name must be a real callable",
+      "shim": "authored - delegation, not reimplementation",
+      "valid_from": "3.3",
+      "equivalence": {
+        "observer": "three-channel-v1",
+        "allowed_deltas": [
+          { "channel": "warnings", "permit": "one DeprecationWarning naming the replacement" }
+        ]
+      },
+      "evidence": "src/island_test.py section 3",
+      "sunset": "unstated by upstream - see README"
+    }
+  ],
+
+  "observers": {
+    "three-channel-v1": {
+      "channels": {
+        "output": "everything the call writes through the handler",
+        "warnings": "every warning raised during the call, as (category, message)",
+        "return": "the returned value"
+      },
+      "what_it_cannot_see": "stacklevel correctness, timing, anything reached through a handler this fixture does not install"
+    }
+  },
+
+  "sets": {
+    "FMS": "this file: the record, the observer and its channels",
+    "SCL": "whether this deployment accepts a channel-level delta at all",
+    "SMS": "the observer - runs a callable and collects all three channels",
+    "TMS": "two emitters, each importing nothing",
+    "DMS": "which channels agreed, which differed, and whether the difference was declared"
+  },
+  "non_goals": [
+    "Being a logging library. Two emitters and a fixture.",
+    "Claiming CPython should have a sunset. It has not stated one, and this entry does not treat an absent field as a defect - see the README."
+  ]
+}

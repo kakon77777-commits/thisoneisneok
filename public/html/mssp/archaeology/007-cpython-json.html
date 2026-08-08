@@ -356,9 +356,21 @@ def verdict(contract, findings, error_text_must_match):
     clauses.append((&quot;acceptance is the same&quot;,
                     not findings[&quot;acceptance_differs&quot;],
                     f&quot;{len(findings['acceptance_differs'])} input(s) one accepted and the other did not&quot;))
-    clauses.append((&quot;error text identical&quot; + (&quot;&quot; if error_text_must_match else &quot;  (contract says MAY differ)&quot;),
-                    not findings[&quot;differing_error_text&quot;] or not error_text_must_match,
-                    f&quot;{len(findings['differing_error_text'])} message(s) differ&quot;))
+    # A waived pass must never render as a pass. The first version of this line
+    # printed &quot;ok&quot; with &quot;(contract says MAY differ)&quot; appended, and a reader
+    # skimming the column saw four greens over an observed difference. The
+    # verdict WITHOUT the waiver is now shown beside the one with it, because
+    # that is the only thing separating &quot;a declared, temporary exception&quot; from
+    # &quot;the system's identity was quietly rewritten&quot;.
+    text_differs = bool(findings[&quot;differing_error_text&quot;])
+    unwaived = not text_differs
+    waived = unwaived or not error_text_must_match
+    label = &quot;error text identical&quot;
+    if text_differs and waived:
+        label += &quot;  [WAIVED — would FAIL without the contract's may-differ]&quot;
+    elif not error_text_must_match:
+        label += &quot;  (contract says MAY differ; nothing used the waiver)&quot;
+    clauses.append((label, waived, f&quot;{len(findings['differing_error_text'])} message(s) differ&quot;))
     return clauses
 
 

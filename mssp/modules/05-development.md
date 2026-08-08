@@ -7,7 +7,7 @@ summary_zh: MSSP 目前的設計優點、已知缺點，以及下一版要改良
 summary_en: What the design currently does well, what it does not, and what the next version should change. The method's own development record lives here.
 state_zh: v1.x 開發中
 state_en: v1.x in development
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 
 # MSSP 開發區
@@ -149,9 +149,17 @@ module.exports = Object.assign({}, first, {
 
 **2026-08-07：這一條開到[協作討論區](/html/mssp/discussions/mssp-d-001.html)了**，因為它需要的是來回而不是一次結論。開串時已經先否掉三個方向並寫明理由（例外清單＝用列舉代替規則、看引用寫法＝檢查形狀而不是關係、由被引用方宣告＝把歷史累積進單元），並提出一個待驗的形狀：**規則不變，多一條治理路徑——一個引用可以附帶一份可查證的改名記錄。** 待決的是那份記錄裡「兩者公開介面在改名當下相同」能不能機械檢查，還是它又是一個需要人先寫下的判準。建置目前維持四種引用寫法全擋，**誤報留著而不先放寬**，因為放寬比收緊容易，而現在只有一個實例。
 
+**2026-08-08 補：候選在第二種 host 介面上壞了一次，而那是好事。** [考古 008](/html/mssp/archaeology/008-cpython-logging-warn.html) 拿 `logging.warn` 去試那份記錄——host 是類別與模組上的**屬性存取**，沒有任何註冊表會讀一列映射，所以「把改名記成目錄的一列」在那裡連可以被誰讀都沒有。量到的別名成立（output 相同、return 相同、warnings 多一個 DeprecationWarning），而草案的 `allowed_deltas` 寫成點分欄位路徑**描述不了它**：兩個可呼叫物作為物件無法區分，唯一被允許的差異在一個**通道**上。修正是 `allowed_deltas` 要命名觀察器底下的**觀察**，欄位路徑只是其中一種。
+
+[範例 008](/html/mssp/008-compatibility-alias.html) 交付了第二項驗證：一個宣告為別名而行為已漂移的單元，**不引用任何兄弟、通過每一條結構規則**，被契約在兩個獨立理由上擋下。第 4 節把漂移修掉再跑一次——findings 那條抱怨消失、sunset 那條沒有——**那個差異才讓第一個結果變成證據**。
+
+同時量到的是**三層而不是兩層**：結構上不可放寬（行為／輸出，範例 008 第 5 節在程式碼裡拒絕把 `findings` 列為 allowed delta）、契約可放寬（FMS 的 `allowed_deltas`）、政策可保留（考古 008 的 SCL `channels_that_must_never_differ` 勝過記錄）。
+
 ---
 
 ## 未來改良點
+
+> **2026-08-07 起，這一節的每一條都是 `candidate`。** Neo 交付的三方治理把 MSSP 的採納流程寫定了：一般改良需要 Elenchos、Metron、Pragma 三方一致；重大變更三方一致後仍由 Neo 決定。**寫進這一節不等於採納**——它等於「一方提出了一個帶證據的候選」。已知缺點那一節則是 `observation` 或 `needs-evidence`。真正的採納會動到模組 02 或建置守衛，那時會另外標記。
 
 ### 改良點 1：SMS 預算 — **2026-08-07：不要用數字，而機械化之後量到的東西比預期小**
 

@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>改名是第三種邊：一份宣告的等價契約，以及一個證明它會失敗的反例 | MSSP | Neo.K</title>
+<meta name="description" content="討論串 mssp-d-001 的第二項驗證。Metron 把缺點 7 重新框成「模型少了一種關係」而不是「要放行哪一種 import 寫法」，並且指出「兩者公開介面相同」不能當通用機械判準——動態語言的完整介面包含行為、錯誤、metadata 與副作用，而別名還**刻意**必須多出 `deprecated: true`。可機械檢查的是**一份先宣告的等價契約是否成立**。這個範例把那份契約寫成 FMS 的一列（observer、allowed_deltas、valid_from、sunset、evidence），並且放進一個**宣告為別名但行為已漂移**的單元：它不引用任何兄弟、通過每一條結構規則，而契約檢查在兩個獨立理由上擋下它（findings 不同、超過 sunset）。第 4 節還把漂移修掉再跑一次，證明擋下它的是行為那一條。狀態是 candidate，模組 02 與建置守衛都沒有動。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/008-compatibility-alias.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>008-compatibility-alias</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>008-compatibility-alias</span></div>
+    <div><b>語言</b><span>javascript</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-08</span></div>
+    <div><b>行數</b><span>550</span></div>
+    <div><b>執行</b><span><code>node src/main.js</code></span></div>
+  </section>
+  <article class="content"><h1>008 — A rename is a third kind of edge, and here is the counter-example that proves the check works</h1>
+<blockquote>
+<p>This example is <strong><code>candidate</code></strong>, not adopted method. Module 02&#39;s ban on a TMS
+referencing a sibling TMS is untouched, and <code>scripts/build-mssp.mjs</code> still
+blocks all four reference forms. Nothing here changes MSSP.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>It runs three lint rules over a fixture, resolves one name through a declared
+rename, and then checks every declared rename against what the code actually
+does.</p>
+<pre><code class="language-bash">node src/main.js            # the declarations, checked
+node src/main.js --strict   # exit 1 if any declaration does not hold
+node src/main.js --shims    # what the host-shim generator would emit
+node src/island_test.js     # 24 checks across 7 sections
+</code></pre>
+<pre><code class="language-console">$ node src/main.js
+
+== declared compatibility aliases  (current version 2.4.0)
+
+  ok  rules/imports-first -&gt; rules/first   window 2.0.0..3.0.0
+      observer rule-contract-v1, allowed deltas: meta.deprecated, meta.description
+      permitted      meta.deprecated: true -&gt; undefined
+
+  !!  rules/legacy-strict -&gt; rules/strict   window 1.4.0..2.0.0
+      observer rule-contract-v1, allowed deltas: meta.deprecated, meta.description
+      NOT PERMITTED  findings: [&quot;3:var is not permitted&quot;,&quot;5:use strict appears…&quot;] -&gt; [&quot;5:use strict appears…&quot;]
+      permitted      meta.deprecated: true -&gt; undefined
+      PROBLEM  findings differ
+      PROBLEM  past sunset 2.0.0 (current 2.4.0)
+
+  declared 2, holding 1, broken 1: rules/legacy-strict
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>A rename is not a reference. It is a third kind of edge — declared outside the
+unit, carrying a lifecycle and an equivalence contract someone had to write.</strong></p>
+<p>This comes out of <a href="/html/mssp/discussions/mssp-d-001.html"><code>mssp-d-001</code></a>, where
+<a href="/html/mssp/modules/development.html">缺點 7</a> got reframed by Metron in a way I
+had not reached on my own:</p>
+<blockquote>
+<p>現在的檢查把「A 取用 B 的能力」與「舊名字 A 暫時投影到新名字 B」都畫成同一條兄弟引用邊，
+但兩者的責任、生命週期和刪除條件其實不同。<strong>這不是先找一種安全的 import 寫法就能解的問題，
+而是目前的模型少了一種關係。</strong></p>
+</blockquote>
+<p>I had been asking which syntax to permit. That question has no good answer,
+because both syntaxes express both relations. The model was short a noun.</p>
+<p>Metron also killed the condition I was least sure of, and killed it for a better
+reason than the one I had:</p>
+<blockquote>
+<p><strong>「兩者公開介面相同」不能作為一般性的完整機械判準。</strong> …這裡兩個物件甚至刻意不完全相同，
+因為舊名必須多出 <code>deprecated: true</code>。如果要求整體相等，合法別名反而必然失敗。</p>
+</blockquote>
+<p>So the record does not claim the two are the same. It names an <strong>observer</strong>, and
+lists in advance the differences that are permitted:</p>
+<pre><code class="language-json">{
+  &quot;kind&quot;: &quot;compatibility_alias&quot;,
+  &quot;old_name&quot;: &quot;rules/imports-first&quot;,
+  &quot;replacement&quot;: &quot;rules/first&quot;,
+  &quot;host_constraint&quot;: &quot;a host API that takes one object per public name cannot express &#39;this name is the old name of that one&#39;&quot;,
+  &quot;shim&quot;: &quot;generated into build/host-shims/, never authored under TMS/&quot;,
+  &quot;valid_from&quot;: &quot;2.0.0&quot;,
+  &quot;equivalence&quot;: { &quot;observer&quot;: &quot;rule-contract-v1&quot;, &quot;allowed_deltas&quot;: [&quot;meta.deprecated&quot;, &quot;meta.description&quot;] },
+  &quot;evidence&quot;: &quot;src/island_test.js section 2&quot;,
+  &quot;sunset&quot;: &quot;3.0.0&quot;
+}
+</code></pre>
+<p>A person decides three things and the run can check none of them: <strong>which
+behaviours to observe, which differences are permitted, and when the old name
+may go.</strong> The run checks whether reality matches. That is the same division
+<a href="/html/mssp/007-identity-test-run.html">範例 007</a> arrived at yesterday from a
+different direction — <em>mechanisation does not decide what &quot;the same&quot; means; it
+verifies whether reality matches a sameness someone declared</em>.</p>
+<h3>The host-constrained case does not need an exception</h3>
+<p>When a host API insists on one object per public name, the old name needs a
+physical file. That file is <strong>generated from the record into <code>build/host-shims/</code>,
+never authored under <code>TMS/</code></strong> — so no authored unit references a sibling, and
+module 02 needs no carve-out. Section 2 checks that the authored file genuinely
+does not exist.</p>
+<h2>The island test</h2>
+<pre><code class="language-console">$ node src/island_test.js
+  ... 24 checks across 7 sections ...
+  island test passed
+</code></pre>
+<p>Section 1 checks that all four authored rules reach nothing, including the
+legacy alias — which is the uncomfortable part: <strong>it satisfies module 02
+completely, and module 02 has nothing to say about whether it is still
+equivalent.</strong> Section 6 checks that SCL owns the compatibility window rather
+than the unit. Section 7 checks that the record says it is a candidate.</p>
+<p>Sections 4 and 5 are the counter-example Metron asked for.</p>
+<h3>The counter-example</h3>
+<p>Metron named the validation this example exists to perform:</p>
+<blockquote>
+<p>刻意製造一個「宣告為別名但行為已漂移」的反例，證明契約檢查真的會失敗。</p>
+</blockquote>
+<p><code>TMS/rules/legacy-strict.js</code> is declared in FMS as an alias of <code>rules/strict</code>.
+It is not one. Someone added a second condition years after the rename — it also
+objects to <code>var</code>, and the replacement does not. <strong>It references no sibling, it
+passes every structural rule this field lab has, and the declaration that it is
+equivalent is simply false.</strong></p>
+<p>The check rejects it on two independent grounds, and the report keeps them
+apart:</p>
+<pre><code class="language-text">  PASS  the drifted alias FAILS the contract - findings differ; past sunset 2.0.0 (current 2.4.0)
+  PASS  and it fails BECAUSE the findings differ
+  PASS  the differing finding is named - the old name objects to var; the replacement does not
+  PASS  it is ALSO past sunset, and that is reported separately
+</code></pre>
+<p><strong>Failing is not enough.</strong> <a href="/html/mssp/modules/log.html">Yesterday</a> an island
+test passed on <code>E0753</code> while claiming to prove something about <code>E0432</code>, so
+section 4 goes further: it repairs the drift and re-runs.</p>
+<pre><code class="language-text">  PASS  a faithful shim stops the findings complaint - past sunset 2.0.0 (current 2.4.0)
+  PASS  so the findings clause is what detected the drift
+  PASS  while the sunset complaint survives the repair
+</code></pre>
+<p>The findings complaint disappears; the sunset complaint does not. That is what
+makes the first result evidence rather than a coincidence.</p>
+<p>Section 5 closes the obvious cheat: adding <code>findings</code> to <code>allowed_deltas</code> does
+<strong>not</strong> make the alias hold. An equivalence contract that permits behaviour to
+differ is not a contract, and that is enforced in code rather than asserted in a
+comment.</p>
+<h2>Set by set</h2>
+<p><strong>FMS</strong> — <code>architecture.json</code>: the record, every declared alias, and the
+observers. It also carries <code>&quot;status&quot;: &quot;candidate&quot;</code> and a note saying so, because
+a file that describes a governance shape should say whether that shape has been
+adopted.</p>
+<p><strong>SCL</strong> — <code>policy.json</code>: who may open or retire a compatibility window, how many
+major versions one may span, and the current version. <strong>Module 06&#39;s
+replacement-before-removal lives here as something a run can check</strong>, not as a
+sentence in a document.</p>
+<p><strong>SMS</strong> — <code>registry.js</code> resolves names through the record; <code>contract.js</code> checks
+declarations against behaviour.</p>
+<p><strong>TMS</strong> — four rules, each importing nothing, one of which has drifted.</p>
+<p><strong>DMS</strong> — <code>report.js</code>. Every line is the run agreeing or disagreeing with
+something a person wrote down, under an observer that person also chose.</p>
+<h2>What this example does not solve</h2>
+<p>Following <a href="/html/mssp/modules/development.html">改良點 8</a>, each item says what
+turning it into a measurement would take.</p>
+<ul>
+<li><p><strong>The other validation mssp-d-001 asked for is not here.</strong> <em>(it is
+<a href="/html/mssp/archaeology/008-cpython-logging-warn.html">考古 008</a>, written the
+same day.)</em> Metron asked for a rename under a <strong>second host interface</strong>, to
+test whether one record shape describes both. It does not: <code>logging.warn</code>&#39;s
+one permitted difference is an emitted <code>DeprecationWarning</code> — a <strong>channel</strong>,
+not a field of an object — and the <code>allowed_deltas</code> above, written as dotted
+field paths, cannot name it. <strong>The second host interface amended this
+record&#39;s schema rather than confirming it</strong>, which is what that validation
+was for.</p>
+</li>
+<li><p><strong>One observer, and I wrote it.</strong> <em>(needs new code: a second observer over the
+same aliases, and a comparison of what each one certifies.)</em> <code>rule-contract-v1</code>
+compares findings and meta. A contract observer that also compared timing, or
+error text, would certify a different set of aliases as holding — which is
+exactly the witness-dependence <a href="/html/mssp/007-identity-test-run.html">範例 007</a>
+found, appearing again one layer up. I have not built the second observer, so
+I cannot say how far the two would disagree.</p>
+</li>
+<li><p><strong>The fixture is five lines and I chose them.</strong> <em>(needs new code: a generated
+corpus.)</em> The drift is detected because the fixture contains <code>var</code>. A fixture
+without one would let this alias pass, and <strong>the report does not currently say
+how much input the contract was exercised over.</strong> That is the strongest
+criticism of this example and I am leaving it visible rather than fixing it
+quietly, because it is the same gap 範例 007 has.</p>
+</li>
+<li><p><strong>Nothing here has been agreed by three parties.</strong> <em>(not a measurement — a
+governance step.)</em> Under the governance Neo set on 2026-08-07, an ordinary
+improvement needs Elenchos, Metron and Pragma to agree. This example is one
+party&#39;s evidence for a candidate. <strong>Pragma has not weighed in at all</strong>, and the
+question I would most want from that seat is whether alias drift is an
+observed problem with real consequences or a hazard I constructed because I
+could.</p>
+</li>
+<li><p><strong>The <code>--strict</code> split is a design choice with no data behind it.</strong> <em>(one
+command to change, no measurement available.)</em> An exit code can answer &quot;did
+the report get produced&quot; or &quot;do the declarations hold&quot; and not both. I made
+the default the first. A caller who wired this into CI expecting the second
+would get a green build over a broken declaration, and the only thing
+protecting them is that the flag is named.</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;008-compatibility-alias&quot;,
+  &quot;what_it_is&quot;: &quot;A rule registry where a rename is a declared relation with a lifecycle, and the declaration is checked against behaviour rather than believed.&quot;,
+  &quot;the_structural_decision&quot;: &quot;A rename is not a reference. It is a third kind of edge, declared outside the unit, with an equivalence contract someone had to write and a sunset someone has to defend.&quot;,
+  &quot;why_this_shape&quot;: &quot;mssp-d-001 (2026-08-07). Elenchos found the contradiction; Metron reframed it as a missing relation rather than a syntax to permit, and named two validations before it could be trusted: a rename under a second host interface, and a deliberately drifted alias proving the contract check can fail. This example is the second one.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+  &quot;note_on_status&quot;: &quot;Nothing here is adopted method. Module 02's ban on sibling references is untouched and the build guard is unchanged. This is an experiment that produces evidence for or against the candidate.&quot;,
+
+  &quot;compatibility_aliases&quot;: [
+    {
+      &quot;kind&quot;: &quot;compatibility_alias&quot;,
+      &quot;old_name&quot;: &quot;rules/imports-first&quot;,
+      &quot;replacement&quot;: &quot;rules/first&quot;,
+      &quot;host_constraint&quot;: &quot;a host API that takes one object per public name cannot express 'this name is the old name of that one', so a physical shim is required&quot;,
+      &quot;shim&quot;: &quot;generated into build/host-shims/, never authored under TMS/&quot;,
+      &quot;valid_from&quot;: &quot;2.0.0&quot;,
+      &quot;equivalence&quot;: {
+        &quot;observer&quot;: &quot;rule-contract-v1&quot;,
+        &quot;allowed_deltas&quot;: [&quot;meta.deprecated&quot;, &quot;meta.description&quot;]
+      },
+      &quot;evidence&quot;: &quot;src/island_test.js section 2&quot;,
+      &quot;sunset&quot;: &quot;3.0.0&quot;
+    },
+    {
+      &quot;kind&quot;: &quot;compatibility_alias&quot;,
+      &quot;old_name&quot;: &quot;rules/legacy-strict&quot;,
+      &quot;replacement&quot;: &quot;rules/strict&quot;,
+      &quot;host_constraint&quot;: &quot;none - this one was authored by hand years ago and has been maintained since&quot;,
+      &quot;shim&quot;: &quot;authored at TMS/rules/legacy-strict.js&quot;,
+      &quot;valid_from&quot;: &quot;1.4.0&quot;,
+      &quot;equivalence&quot;: {
+        &quot;observer&quot;: &quot;rule-contract-v1&quot;,
+        &quot;allowed_deltas&quot;: [&quot;meta.deprecated&quot;, &quot;meta.description&quot;]
+      },
+      &quot;evidence&quot;: &quot;src/island_test.js section 3&quot;,
+      &quot;sunset&quot;: &quot;2.0.0&quot;,
+      &quot;note&quot;: &quot;This declaration is FALSE and the run says so. It is the counter-example Metron asked for: an alias that drifted, still declared, still passing every structural rule.&quot;
+    }
+  ],
+
+  &quot;observers&quot;: {
+    &quot;rule-contract-v1&quot;: {
+      &quot;what_it_compares&quot;: &quot;for each fixture line, the set of (id-stripped) findings the rule produces, plus the rule's own id and every meta field&quot;,
+      &quot;what_it_ignores&quot;: &quot;nothing by default - the allowed_deltas list is per-alias and must be written down&quot;,
+      &quot;what_it_cannot_see&quot;: &quot;timing, memory, anything the rule does that is not a finding or a meta field&quot;
+    }
+  },
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the architecture record, including every declared rename and the observer it is declared under&quot;,
+    &quot;SCL&quot;: &quot;who may open, extend or retire a compatibility window, and the current version&quot;,
+    &quot;SMS&quot;: &quot;name resolution through the record, and the contract checker&quot;,
+    &quot;TMS&quot;: &quot;rules, each importing nothing - including one hand-authored legacy shim that has drifted&quot;,
+    &quot;DMS&quot;: &quot;which declarations hold, which have drifted, and which are past their sunset&quot;
+  },
+  &quot;non_goals&quot;: [
+    &quot;Being a linter. Three rules, a line scanner, no AST.&quot;,
+    &quot;Deciding what 'the same' means. The observer and the allowed deltas are written by a person; the run only checks reality against them.&quot;,
+    &quot;Proposing a change to module 02. The ban is untouched here.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.js</summary><pre><code>import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export const currentVersion = () =&gt; config.current_version;
+export const enabled = () =&gt; [...config.enabled];
+export const mayOpenAlias = (actor) =&gt; config.may_open_alias.includes(actor);
+export const maxWindowVersions = () =&gt; config.max_window_versions;
+
+/** Major-version distance, which is all this example's versions need. */
+export function majorsBetween(from, to) {
+  return Number(to.split(&quot;.&quot;)[0]) - Number(from.split(&quot;.&quot;)[0]);
+}
+</code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;current_version&quot;: &quot;2.4.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;A compatibility window is an authority question, not a structural one:&quot;,
+    &quot;who may open one, how long it may run, and who may retire it. Module 06's&quot;,
+    &quot;replacement-before-removal lives here, as something a run can check.&quot;
+  ],
+  &quot;may_open_alias&quot;: [&quot;maintainer&quot;],
+  &quot;may_retire_alias&quot;: [&quot;maintainer&quot;],
+  &quot;max_window_versions&quot;: 1,
+  &quot;enabled&quot;: [&quot;rules/imports-first&quot;, &quot;rules/legacy-strict&quot;, &quot;rules/no-self-import&quot;]
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/contract.js</summary><pre><code>// Checking a declared equivalence, rather than inferring one.
+//
+// Metron's point in mssp-d-001: &quot;兩者公開介面相同&quot; cannot be a general
+// mechanical criterion. In a dynamic language the full interface includes
+// behaviour, errors, metadata and side effects, and here the two objects are
+// DELIBERATELY different — the old name must carry deprecated: true. Demand
+// total equality and every legitimate alias fails; compare only exported keys
+// and behavioural drift reads as equality.
+//
+// So the machine does not decide what &quot;the same&quot; means. It checks whether
+// reality matches a sameness someone declared, under a named observer, with the
+// permitted differences written down in advance.
+
+import { apply } from &quot;./registry.js&quot;;
+
+const at = (object, dotted) =&gt;
+  dotted.split(&quot;.&quot;).reduce((cursor, key) =&gt; (cursor == null ? cursor : cursor[key]), object);
+
+/** rule-contract-v1: findings per line, plus every meta field. */
+function observe(rule, fixture) {
+  return {
+    findings: apply(rule, fixture).map((f) =&gt; `${f.line}:${f.message}`),
+    meta: rule.meta ?? {},
+  };
+}
+
+export function checkAlias(alias, oldRule, newRule, fixture, currentVersion, majorsBetween, maxWindow) {
+  const problems = [];
+  if (!oldRule) problems.push(`the old name has nothing behind it`);
+  if (!newRule) problems.push(`the replacement ${alias.replacement} does not exist`);
+  if (problems.length) return { alias, holds: false, problems, deltas: [] };
+
+  const before = observe(oldRule, fixture);
+  const after = observe(newRule, fixture);
+
+  // Behaviour is never in allowed_deltas by construction: the observer's whole
+  // purpose is that findings must agree. Saying otherwise would make the
+  // contract unfalsifiable, which is the shape this field lab keeps finding.
+  const deltas = [];
+  if (before.findings.join(&quot;|&quot;) !== after.findings.join(&quot;|&quot;)) {
+    problems.push(&quot;findings differ&quot;);
+    deltas.push({ field: &quot;findings&quot;, old: before.findings, new: after.findings });
+  }
+
+  const keys = new Set([...Object.keys(before.meta), ...Object.keys(after.meta)]);
+  for (const key of keys) {
+    const path = `meta.${key}`;
+    const a = JSON.stringify(before.meta[key]);
+    const b = JSON.stringify(after.meta[key]);
+    if (a === b) continue;
+    if (alias.equivalence.allowed_deltas.includes(path)) {
+      deltas.push({ field: path, old: before.meta[key], new: after.meta[key], allowed: true });
+      continue;
+    }
+    problems.push(`${path} differs and is not in allowed_deltas`);
+    deltas.push({ field: path, old: before.meta[key], new: after.meta[key] });
+  }
+
+  // Module 06 as something a run can check: replacement before removal, and a
+  // window that does not outlive the policy's limit.
+  const overdue = majorsBetween(alias.sunset, currentVersion) &gt;= 0;
+  if (overdue) problems.push(`past sunset ${alias.sunset} (current ${currentVersion})`);
+  if (majorsBetween(alias.valid_from, alias.sunset) &gt; maxWindow) {
+    problems.push(`window ${alias.valid_from}..${alias.sunset} exceeds the permitted ${maxWindow} major(s)`);
+  }
+
+  return { alias, holds: problems.length === 0, problems, deltas };
+}
+</code></pre></details><details><summary>SMS/registry.js</summary><pre><code>// Name resolution through the architecture record.
+//
+// No rule file mentions another rule file. A rename is a row in FMS, resolved
+// here, and reported by DMS beside the result it produced.
+
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+export const record = JSON.parse(
+  fs.readFileSync(path.join(here, &quot;..&quot;, &quot;FMS&quot;, &quot;architecture.json&quot;), &quot;utf8&quot;),
+);
+
+export function aliasFor(name) {
+  return record.compatibility_aliases.find((entry) =&gt; entry.old_name === name) ?? null;
+}
+
+export function resolve(requested) {
+  const alias = aliasFor(requested);
+  if (!alias) return { name: requested, via: null };
+  return { name: alias.replacement, via: alias };
+}
+
+export async function load(name) {
+  const file = path.join(here, &quot;..&quot;, &quot;TMS&quot;, `${name}.js`);
+  if (!fs.existsSync(file)) return null;
+  return (await import(`../TMS/${name}.js`)).rule;
+}
+
+/** Apply a rule to lines. The walk knows no rule by name. */
+export function apply(rule, lines) {
+  rule.reset?.();
+  return lines
+    .map((text, index) =&gt; rule.check(text, index + 1))
+    .filter(Boolean);
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/rules/first.js</summary><pre><code>// import statements must come before other statements. Imports nothing.
+let sawStatement = false;
+
+export const rule = {
+  id: &quot;rules/first&quot;,
+  meta: { category: &quot;order&quot;, description: &quot;imports must come first&quot; },
+  reset() { sawStatement = false; },
+  check(text, line) {
+    const trimmed = text.trim();
+    if (!trimmed || trimmed.startsWith(&quot;//&quot;)) return null;
+    if (!trimmed.startsWith(&quot;import &quot;)) { sawStatement = true; return null; }
+    return sawStatement ? { line, message: &quot;import appears after a statement&quot; } : null;
+  },
+};
+</code></pre></details><details><summary>TMS/rules/legacy-strict.js</summary><pre><code>// DECLARED in FMS as a compatibility alias of rules/strict.
+//
+// It is not one any more, and that is the point of this file. Someone added a
+// second condition to the old name years after the rename — a real and common
+// thing to happen to a shim nobody re-reads. It imports nothing, it violates no
+// structural rule, and the declaration that it is equivalent is simply false.
+//
+// The run is what says so. Nothing here is marked as the counter-example.
+let sawStatement = false;
+
+export const rule = {
+  id: &quot;rules/strict&quot;,
+  meta: { category: &quot;correctness&quot;, description: &quot;use strict must come first&quot;, deprecated: true },
+  reset() { sawStatement = false; },
+  check(text, line) {
+    const trimmed = text.trim();
+    if (!trimmed || trimmed.startsWith(&quot;//&quot;)) return null;
+    if (/^[&quot;']use strict[&quot;'];?$/.test(trimmed)) {
+      return sawStatement ? { line, message: &quot;use strict appears after a statement&quot; } : null;
+    }
+    // The drift: this old name also objects to var, and the replacement does not.
+    if (/^var\s/.test(trimmed)) {
+      sawStatement = true;
+      return { line, message: &quot;var is not permitted&quot; };
+    }
+    sawStatement = true;
+    return null;
+  },
+};
+</code></pre></details><details><summary>TMS/rules/no-self-import.js</summary><pre><code>// A module must not import itself. Imports nothing.
+export const rule = {
+  id: &quot;rules/no-self-import&quot;,
+  meta: { category: &quot;correctness&quot;, description: &quot;a module must not import itself&quot; },
+  filename: &quot;sample.js&quot;,
+  check(text, line) {
+    const match = text.match(/^\s*import\s[^;]*?from\s+[&quot;']([^&quot;']+)[&quot;']/);
+    if (!match) return null;
+    const target = match[1].replace(/^\.\//, &quot;&quot;).replace(/\.js$/, &quot;&quot;);
+    return target === this.filename.replace(/\.js$/, &quot;&quot;)
+      ? { line, message: `imports itself (${match[1]})` }
+      : null;
+  },
+};
+</code></pre></details><details><summary>TMS/rules/strict.js</summary><pre><code>// A file must declare &quot;use strict&quot; before any statement. Imports nothing.
+let sawStatement = false;
+
+export const rule = {
+  id: &quot;rules/strict&quot;,
+  meta: { category: &quot;correctness&quot;, description: &quot;use strict must come first&quot; },
+  reset() { sawStatement = false; },
+  check(text, line) {
+    const trimmed = text.trim();
+    if (!trimmed || trimmed.startsWith(&quot;//&quot;)) return null;
+    if (/^[&quot;']use strict[&quot;'];?$/.test(trimmed)) {
+      return sawStatement ? { line, message: &quot;use strict appears after a statement&quot; } : null;
+    }
+    sawStatement = true;
+    return null;
+  },
+};
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.js</summary><pre><code>// Which declarations hold, which drifted, and what a reader can conclude.
+
+export function render(results, currentVersion) {
+  const lines = [&quot;&quot;, `== declared compatibility aliases  (current version ${currentVersion})`];
+  for (const result of results) {
+    const { alias } = result;
+    lines.push(&quot;&quot;);
+    lines.push(`  ${result.holds ? &quot;ok &quot; : &quot;!! &quot;} ${alias.old_name} -&gt; ${alias.replacement}` +
+               `   window ${alias.valid_from}..${alias.sunset}`);
+    lines.push(`      observer ${alias.equivalence.observer}, ` +
+               `allowed deltas: ${alias.equivalence.allowed_deltas.join(&quot;, &quot;) || &quot;none&quot;}`);
+    for (const delta of result.deltas) {
+      const mark = delta.allowed ? &quot;permitted&quot; : &quot;NOT PERMITTED&quot;;
+      lines.push(`      ${mark.padEnd(14)} ${delta.field}: ${JSON.stringify(delta.old)} -&gt; ${JSON.stringify(delta.new)}`);
+    }
+    for (const problem of result.problems) lines.push(`      PROBLEM  ${problem}`);
+  }
+
+  const broken = results.filter((r) =&gt; !r.holds);
+  lines.push(&quot;&quot;);
+  lines.push(`  declared ${results.length}, holding ${results.length - broken.length}, ` +
+             `broken ${broken.length}${broken.length ? `: ${broken.map((r) =&gt; r.alias.old_name).join(&quot;, &quot;)}` : &quot;&quot;}`);
+  lines.push(&quot;&quot;);
+  lines.push(&quot;  a declaration is not evidence. Every line above is the run disagreeing or agreeing&quot;);
+  lines.push(&quot;  with something a person wrote down, under an observer that person also chose.&quot;);
+  return lines.join(&quot;\n&quot;) + &quot;\n&quot;;
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.js</summary><pre><code>// The island test, and the counter-example mssp-d-001 asked for.
+//
+//   node src/island_test.js
+//
+// Section 4 is the one Metron named: a declared alias whose behaviour has
+// drifted must make the contract check FAIL, and it must fail because of the
+// drift rather than for some other reason that happens to be true at the same
+// time.
+
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import { checkAlias } from &quot;./SMS/contract.js&quot;;
+import { aliasFor, load, record, resolve } from &quot;./SMS/registry.js&quot;;
+import * as policy from &quot;./SCL/policy.js&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const failures = [];
+const report = (label, ok, detail = &quot;&quot;) =&gt; {
+  console.log(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}`);
+  if (!ok) failures.push(label);
+};
+
+const FIXTURE = [
+  '&quot;use strict&quot;;',
+  'import { a } from &quot;./a.js&quot;;',
+  &quot;var legacy = 1;&quot;,
+  &quot;const x = 2;&quot;,
+  '&quot;use strict&quot;;',
+];
+
+const check = (alias, oldRule, newRule) =&gt;
+  checkAlias(alias, oldRule, newRule, FIXTURE, policy.currentVersion(),
+    policy.majorsBetween, policy.maxWindowVersions());
+
+console.log(&quot;\n== 1. every authored rule is an island&quot;);
+{
+  const dir = path.join(here, &quot;TMS&quot;, &quot;rules&quot;);
+  const files = fs.readdirSync(dir).filter((f) =&gt; f.endsWith(&quot;.js&quot;));
+  // Four: two current rules, one legacy alias that drifted, and one unrelated
+  // rule that exists so the record is not the only thing in the tree. The
+  // number is written down so that adding a file without deciding what it is
+  // fails here rather than passing quietly.
+  report(&quot;there are four authored rules&quot;, files.length === 4, files.join(&quot;, &quot;));
+  for (const file of files) {
+    const source = fs.readFileSync(path.join(dir, file), &quot;utf8&quot;);
+    const reaches = [
+      /^\s*import\s[^;]*?\sfrom\s+[&quot;']([^&quot;']+)[&quot;']/gm,
+      /^\s*export\s[^;]*?\sfrom\s+[&quot;']([^&quot;']+)[&quot;']/gm,
+      /^\s*import\s+[&quot;']([^&quot;']+)[&quot;']/gm,
+    ].flatMap((re) =&gt; [...source.matchAll(re)].map((m) =&gt; m[1]));
+    report(`rules/${file} reaches nothing`, reaches.length === 0, reaches.join(&quot;, &quot;) || &quot;no specifiers&quot;);
+  }
+  // The legacy shim is the interesting one: it is a compatibility alias and it
+  // still does not reference the unit it aliases. It reimplements. That is why
+  // the structural rule needs no exception and why the drift was possible.
+  const legacy = fs.readFileSync(path.join(dir, &quot;legacy-strict.js&quot;), &quot;utf8&quot;);
+  report(&quot;the legacy alias reimplements rather than references&quot;,
+    !legacy.includes(&quot;strict.js&quot;) &amp;&amp; legacy.includes(&quot;use strict&quot;),
+    &quot;no sibling reference, so module 02 is satisfied and says nothing about whether it is still equivalent&quot;);
+}
+
+console.log(&quot;\n== 2. a rename is a row in the record, not a property of a file&quot;);
+{
+  const alias = aliasFor(&quot;rules/imports-first&quot;);
+  report(&quot;the old name resolves through FMS&quot;, resolve(&quot;rules/imports-first&quot;).name === &quot;rules/first&quot;);
+  report(&quot;and carries its own lifecycle&quot;, alias.valid_from === &quot;2.0.0&quot; &amp;&amp; alias.sunset === &quot;3.0.0&quot;,
+    `${alias.valid_from}..${alias.sunset}`);
+  report(&quot;a current name resolves to itself&quot;, resolve(&quot;rules/first&quot;).via === null);
+  report(&quot;there is no authored file for the host-constrained old name&quot;,
+    !fs.existsSync(path.join(here, &quot;TMS&quot;, &quot;rules&quot;, &quot;imports-first.js&quot;)),
+    &quot;the host shim is generated into build/host-shims/, outside TMS&quot;);
+  report(&quot;and the record says where it goes&quot;, alias.shim.startsWith(&quot;generated&quot;), alias.shim);
+}
+
+console.log(&quot;\n== 3. a declaration that holds, holds for a stated reason&quot;);
+{
+  const alias = aliasFor(&quot;rules/imports-first&quot;);
+  const base = await load(alias.replacement);
+  const shim = { ...base, meta: { ...base.meta, deprecated: true } };
+  const result = check(alias, shim, base);
+  report(&quot;the honest alias passes&quot;, result.holds, result.problems.join(&quot;; &quot;) || &quot;no problems&quot;);
+  report(&quot;and the only difference is one it declared in advance&quot;,
+    result.deltas.length === 1 &amp;&amp; result.deltas[0].field === &quot;meta.deprecated&quot; &amp;&amp; result.deltas[0].allowed,
+    JSON.stringify(result.deltas));
+}
+
+console.log(&quot;\n== 4. the counter-example: a declared alias that has drifted&quot;);
+{
+  const alias = aliasFor(&quot;rules/legacy-strict&quot;);
+  const oldRule = await load(&quot;rules/legacy-strict&quot;);
+  const newRule = await load(alias.replacement);
+  const result = check(alias, oldRule, newRule);
+
+  report(&quot;the drifted alias FAILS the contract&quot;, !result.holds, result.problems.join(&quot;; &quot;));
+  // Not &quot;it failed&quot;. Which reason. Yesterday an island test passed on E0753
+  // while claiming to prove something about E0432.
+  report(&quot;and it fails BECAUSE the findings differ&quot;,
+    result.problems.includes(&quot;findings differ&quot;),
+    &quot;not merely because something else about it is also wrong&quot;);
+  report(&quot;the differing finding is named&quot;, result.deltas.some((d) =&gt;
+    d.field === &quot;findings&quot; &amp;&amp; d.old.some((f) =&gt; f.includes(&quot;var is not permitted&quot;))),
+    &quot;the old name objects to var; the replacement does not&quot;);
+  report(&quot;it is ALSO past sunset, and that is reported separately&quot;,
+    result.problems.some((p) =&gt; p.startsWith(&quot;past sunset&quot;)),
+    &quot;two independent failures, not one failure counted twice&quot;);
+
+  // The verifier verified: remove the drift and the findings clause must stop
+  // complaining. If it still complains, the check was reporting on something
+  // other than behaviour.
+  const faithful = { ...newRule, meta: { ...newRule.meta, deprecated: true } };
+  const repaired = check(alias, faithful, newRule);
+  report(&quot;a faithful shim stops the findings complaint&quot;,
+    !repaired.problems.includes(&quot;findings differ&quot;),
+    repaired.problems.join(&quot;; &quot;) || &quot;no problems at all&quot;);
+  report(&quot;so the findings clause is what detected the drift&quot;,
+    result.problems.includes(&quot;findings differ&quot;) &amp;&amp; !repaired.problems.includes(&quot;findings differ&quot;));
+  report(&quot;while the sunset complaint survives the repair&quot;,
+    repaired.problems.some((p) =&gt; p.startsWith(&quot;past sunset&quot;)),
+    &quot;lifecycle and equivalence are independent, and the report keeps them apart&quot;);
+}
+
+console.log(&quot;\n== 5. the contract cannot be satisfied by declaring the drift away&quot;);
+{
+  // The obvious cheat: add findings to allowed_deltas. The observer must refuse
+  // it, because an equivalence contract that permits behaviour to differ is not
+  // a contract.
+  const alias = { ...aliasFor(&quot;rules/legacy-strict&quot;),
+    equivalence: { observer: &quot;rule-contract-v1&quot;, allowed_deltas: [&quot;findings&quot;, &quot;meta.deprecated&quot;] } };
+  const oldRule = await load(&quot;rules/legacy-strict&quot;);
+  const newRule = await load(alias.replacement);
+  const result = check(alias, oldRule, newRule);
+  report(&quot;listing findings as an allowed delta does not make the alias hold&quot;,
+    result.problems.includes(&quot;findings differ&quot;),
+    &quot;behaviour is not negotiable under this observer, and the code says so rather than a comment&quot;);
+}
+
+console.log(&quot;\n== 6. SCL owns the window, not the unit&quot;);
+{
+  report(&quot;only a maintainer may open a compatibility window&quot;,
+    policy.mayOpenAlias(&quot;maintainer&quot;) &amp;&amp; !policy.mayOpenAlias(&quot;contributor&quot;));
+  report(&quot;the permitted window is one major version&quot;, policy.maxWindowVersions() === 1);
+  const wide = { ...aliasFor(&quot;rules/imports-first&quot;), valid_from: &quot;1.0.0&quot;, sunset: &quot;9.0.0&quot; };
+  const base = await load(&quot;rules/first&quot;);
+  const result = check(wide, { ...base, meta: { ...base.meta, deprecated: true } }, base);
+  report(&quot;a window wider than policy allows is refused&quot;,
+    result.problems.some((p) =&gt; p.includes(&quot;exceeds the permitted&quot;)),
+    result.problems.join(&quot;; &quot;));
+}
+
+console.log(&quot;\n== 7. what this run does not claim&quot;);
+{
+  report(&quot;the record marks itself as a candidate, not adopted method&quot;,
+    record.status === &quot;candidate&quot;, record.note_on_status.slice(0, 60) + &quot;…&quot;);
+  report(&quot;and names the observer's blind spot&quot;,
+    record.observers[&quot;rule-contract-v1&quot;].what_it_cannot_see.includes(&quot;timing&quot;),
+    record.observers[&quot;rule-contract-v1&quot;].what_it_cannot_see);
+}
+
+console.log(&quot;&quot;);
+if (failures.length) {
+  console.log(`  ${failures.length} check(s) failed: ${failures.join(&quot;, &quot;)}`);
+  process.exit(1);
+}
+console.log(&quot;  island test passed&quot;);
+</code></pre></details><details><summary>main.js</summary><pre><code>// Resolve names through the record, then check every declaration against
+// behaviour.
+//
+//   node src/main.js
+//   node src/main.js --shims     # what the host-shim generator would emit
+
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import { checkAlias } from &quot;./SMS/contract.js&quot;;
+import { load, record, resolve } from &quot;./SMS/registry.js&quot;;
+import { render } from &quot;./DMS/report.js&quot;;
+import * as policy from &quot;./SCL/policy.js&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+
+const FIXTURE = [
+  '&quot;use strict&quot;;',
+  'import { a } from &quot;./a.js&quot;;',
+  &quot;var legacy = 1;&quot;,
+  &quot;const x = 2;&quot;,
+  '&quot;use strict&quot;;',
+];
+
+async function main(argv) {
+  if (argv.includes(&quot;--shims&quot;)) {
+    // The host-constrained case: a name the host must see as its own object.
+    // Generated, never authored under TMS/, so no authored unit references a
+    // sibling and the structural rule needs no exception.
+    for (const alias of record.compatibility_aliases) {
+      if (!alias.shim.startsWith(&quot;generated&quot;)) continue;
+      const target = alias.replacement.split(&quot;/&quot;).pop();
+      process.stdout.write(
+        `\n  // build/host-shims/${alias.old_name.split(&quot;/&quot;).pop()}.js  (generated from FMS)\n` +
+        `  export { rule as base } from &quot;../../src/TMS/rules/${target}.js&quot;;\n` +
+        `  // then re-exported with meta.deprecated = true, per allowed_deltas\n`,
+      );
+    }
+    return 0;
+  }
+
+  const results = [];
+  for (const alias of record.compatibility_aliases) {
+    const oldRule = await load(alias.old_name) ?? await shimmed(alias);
+    const newRule = await load(alias.replacement);
+    results.push(checkAlias(
+      alias, oldRule, newRule, FIXTURE,
+      policy.currentVersion(), policy.majorsBetween, policy.maxWindowVersions(),
+    ));
+  }
+
+  process.stdout.write(render(results, policy.currentVersion()));
+
+  // Two different questions want this exit code, and it can only answer one.
+  // &quot;Did the report get produced&quot; is the tool's own status; &quot;do the
+  // declarations hold&quot; is the finding. Defaulting to the first and putting the
+  // second behind --strict means a caller has to say which one it is asking
+  // about, instead of a single number quietly meaning whichever the author had
+  // in mind. The report says which aliases are broken either way.
+  const broken = results.filter((r) =&gt; !r.holds).length;
+  if (argv.includes(&quot;--strict&quot;)) {
+    if (broken) process.stdout.write(`\n  --strict: exiting 1 because ${broken} declaration(s) do not hold\n`);
+    return broken ? 1 : 0;
+  }
+  return 0;
+}
+
+/** A generated shim, materialised in memory: the replacement plus the deltas. */
+async function shimmed(alias) {
+  const base = await load(alias.replacement);
+  if (!base) return null;
+  return { ...base, meta: { ...base.meta, deprecated: true } };
+}
+
+process.exit(await main(process.argv.slice(2)));
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

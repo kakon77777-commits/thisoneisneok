@@ -500,7 +500,73 @@ export const msspExamples = [
     "lineCount": 507,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/007-identity-test-run.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/007-identity-test-run.html"
+  },
+  {
+    "id": "008-compatibility-alias",
+    "slug": "008-compatibility-alias",
+    "title": {
+      "zh": "改名是第三種邊：一份宣告的等價契約，以及一個證明它會失敗的反例",
+      "en": "A rename is a third kind of edge: a declared equivalence contract, and the counter-example proving it fails"
+    },
+    "summary": {
+      "zh": "討論串 mssp-d-001 的第二項驗證。Metron 把缺點 7 重新框成「模型少了一種關係」而不是「要放行哪一種 import 寫法」，並且指出「兩者公開介面相同」不能當通用機械判準——動態語言的完整介面包含行為、錯誤、metadata 與副作用，而別名還**刻意**必須多出 `deprecated: true`。可機械檢查的是**一份先宣告的等價契約是否成立**。這個範例把那份契約寫成 FMS 的一列（observer、allowed_deltas、valid_from、sunset、evidence），並且放進一個**宣告為別名但行為已漂移**的單元：它不引用任何兄弟、通過每一條結構規則，而契約檢查在兩個獨立理由上擋下它（findings 不同、超過 sunset）。第 4 節還把漂移修掉再跑一次，證明擋下它的是行為那一條。狀態是 candidate，模組 02 與建置守衛都沒有動。",
+      "en": "The second validation asked for in mssp-d-001. Metron reframed 缺點 7 as a missing relation rather than a question of which import syntax to permit, and argued that \"both public interfaces are identical\" cannot be a general mechanical criterion — in a dynamic language the full interface includes behaviour, errors, metadata and side effects, and an alias must deliberately differ by deprecated: true. What is checkable is whether a pre-declared equivalence contract holds. This example writes that contract as a row in FMS (observer, allowed_deltas, valid_from, sunset, evidence) and includes a unit declared as an alias whose behaviour has drifted: it references no sibling, satisfies every structural rule, and the contract check rejects it on two independent grounds. Section 4 repairs the drift and re-runs to prove which clause did the detecting. Status is candidate; module 02 and the build guard are untouched."
+    },
+    "language": "javascript",
+    "date": "2026-08-08",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "a-rename-is-a-declared-relation-not-a-reference",
+      "the-machine-checks-declared-sameness-not-sameness",
+      "a-host-constrained-shim-is-generated-never-authored",
+      "an-exit-code-answers-one-question-and-must-say-which"
+    ],
+    "runnable": "node src/main.js",
+    "files": [
+      "DMS/report.js",
+      "FMS/architecture.json",
+      "SCL/policy.js",
+      "SCL/policy.json",
+      "SMS/contract.js",
+      "SMS/registry.js",
+      "TMS/rules/first.js",
+      "TMS/rules/legacy-strict.js",
+      "TMS/rules/no-self-import.js",
+      "TMS/rules/strict.js",
+      "island_test.js",
+      "main.js"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/architecture.json"
+      ],
+      "SCL": [
+        "SCL/policy.js",
+        "SCL/policy.json"
+      ],
+      "SMS": [
+        "SMS/contract.js",
+        "SMS/registry.js"
+      ],
+      "TMS": [
+        "TMS/rules/first.js",
+        "TMS/rules/legacy-strict.js",
+        "TMS/rules/no-self-import.js",
+        "TMS/rules/strict.js"
+      ],
+      "DMS": [
+        "DMS/report.js"
+      ],
+      "root": [
+        "island_test.js",
+        "main.js"
+      ]
+    },
+    "lineCount": 550,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/008-compatibility-alias.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/008-compatibility-alias.html"
   }
 ];
 
-export const msspExampleCount = 7;
+export const msspExampleCount = 8;

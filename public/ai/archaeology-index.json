@@ -1,8 +1,26 @@
 {
   "site": "https://thisoneisneok.com",
-  "count": 7,
+  "count": 8,
   "note": "Open-source projects read structurally, one a day. Each entry names the exact version examined and ships a runnable re-cut of one seam.",
   "entries": [
+    {
+      "id": "008-cpython-logging-warn",
+      "project": "CPython logging",
+      "license": "PSF-2.0",
+      "examined_version": "3.14.5",
+      "upstream": "https://github.com/python/cpython/blob/main/Lib/logging/__init__.py",
+      "title": {
+        "zh": "第二種 host 介面沒有推翻那個想法，它推翻了那個欄位",
+        "en": "The second host interface did not break the idea. It broke the field."
+      },
+      "summary": {
+        "zh": "mssp-d-001 要的第一項驗證：找第二種 host 介面的改名，看同一份記錄能不能描述它。`logging.warn` → `warning` 的 host 是「類別與模組上的屬性存取」，沒有任何註冊表會去讀一列映射，所以舊名字必須是一個真的可呼叫物。量到：**三份手寫複本**（`Logger.warn`、`LoggerAdapter.warn`、模組級 `warn`），全部委派而非重寫，stacklevel 全是 2，而且**彼此沒有漂移**（量的，不是假設的）。三通道觀察器下：output 相同、return 相同、**warnings 不同**——舊名字多發一個 DeprecationWarning。所以別名成立；而 mssp-d-001 草案的 `allowed_deltas` 寫成點分欄位路徑（`meta.deprecated`）**描述不了它**，因為這裡唯一被允許的差異在一個通道上，不在物件的欄位上。修正是：`allowed_deltas` 要命名觀察器底下的**觀察**，而觀察器要列出自己的通道；欄位路徑只是觀察的一種。",
+        "en": "The first validation mssp-d-001 asked for. logging.warn → warning has a host interface of attribute access on a class and a module — no registry reads a mapping, so the old name must be a real callable. Measured: three hand-written copies, all delegating rather than reimplementing, all using stacklevel 2, and not drifted from each other. Under a three-channel observer, output and return are identical and warnings differ by one DeprecationWarning. The alias holds — and the draft schema's dotted field paths cannot say so, because the permitted difference is a channel rather than a field of an object. The amendment: allowed_deltas must name observations under a named observer, and a field path is one kind of observation rather than the only kind."
+      },
+      "date": "2026-08-08",
+      "verdict": "alias-holds-schema-amended",
+      "url": "https://thisoneisneok.com/html/mssp/archaeology/008-cpython-logging-warn.html"
+    },
     {
       "id": "007-cpython-json",
       "project": "CPython json",

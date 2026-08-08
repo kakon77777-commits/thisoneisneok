@@ -1,0 +1,61 @@
+{
+  "name": "008-compatibility-alias",
+  "what_it_is": "A rule registry where a rename is a declared relation with a lifecycle, and the declaration is checked against behaviour rather than believed.",
+  "the_structural_decision": "A rename is not a reference. It is a third kind of edge, declared outside the unit, with an equivalence contract someone had to write and a sunset someone has to defend.",
+  "why_this_shape": "mssp-d-001 (2026-08-07). Elenchos found the contradiction; Metron reframed it as a missing relation rather than a syntax to permit, and named two validations before it could be trusted: a rename under a second host interface, and a deliberately drifted alias proving the contract check can fail. This example is the second one.",
+  "status": "candidate",
+  "note_on_status": "Nothing here is adopted method. Module 02's ban on sibling references is untouched and the build guard is unchanged. This is an experiment that produces evidence for or against the candidate.",
+
+  "compatibility_aliases": [
+    {
+      "kind": "compatibility_alias",
+      "old_name": "rules/imports-first",
+      "replacement": "rules/first",
+      "host_constraint": "a host API that takes one object per public name cannot express 'this name is the old name of that one', so a physical shim is required",
+      "shim": "generated into build/host-shims/, never authored under TMS/",
+      "valid_from": "2.0.0",
+      "equivalence": {
+        "observer": "rule-contract-v1",
+        "allowed_deltas": ["meta.deprecated", "meta.description"]
+      },
+      "evidence": "src/island_test.js section 2",
+      "sunset": "3.0.0"
+    },
+    {
+      "kind": "compatibility_alias",
+      "old_name": "rules/legacy-strict",
+      "replacement": "rules/strict",
+      "host_constraint": "none - this one was authored by hand years ago and has been maintained since",
+      "shim": "authored at TMS/rules/legacy-strict.js",
+      "valid_from": "1.4.0",
+      "equivalence": {
+        "observer": "rule-contract-v1",
+        "allowed_deltas": ["meta.deprecated", "meta.description"]
+      },
+      "evidence": "src/island_test.js section 3",
+      "sunset": "2.0.0",
+      "note": "This declaration is FALSE and the run says so. It is the counter-example Metron asked for: an alias that drifted, still declared, still passing every structural rule."
+    }
+  ],
+
+  "observers": {
+    "rule-contract-v1": {
+      "what_it_compares": "for each fixture line, the set of (id-stripped) findings the rule produces, plus the rule's own id and every meta field",
+      "what_it_ignores": "nothing by default - the allowed_deltas list is per-alias and must be written down",
+      "what_it_cannot_see": "timing, memory, anything the rule does that is not a finding or a meta field"
+    }
+  },
+
+  "sets": {
+    "FMS": "this file: the architecture record, including every declared rename and the observer it is declared under",
+    "SCL": "who may open, extend or retire a compatibility window, and the current version",
+    "SMS": "name resolution through the record, and the contract checker",
+    "TMS": "rules, each importing nothing - including one hand-authored legacy shim that has drifted",
+    "DMS": "which declarations hold, which have drifted, and which are past their sunset"
+  },
+  "non_goals": [
+    "Being a linter. Three rules, a line scanner, no AST.",
+    "Deciding what 'the same' means. The observer and the allowed deltas are written by a person; the run only checks reality against them.",
+    "Proposing a change to module 02. The ban is untouched here."
+  ]
+}
