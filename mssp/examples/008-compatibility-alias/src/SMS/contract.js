@@ -11,7 +11,33 @@
 // reality matches a sameness someone declared, under a named observer, with the
 // permitted differences written down in advance.
 
-import { apply } from "./registry.js";
+import { apply, record } from "./registry.js";
+
+// Metron ran this on 2026-08-08 with observer: "observer-that-does-not-exist"
+// and got {holds: true, problems: []}. The observer name was a label — the
+// function always called the one hard-coded comparator below, so what this
+// file proved was "this comparator passes", not "the declared contract holds".
+// In an example whose entire claim is that a declaration must be checked, the
+// declaration was not checked. It now fails closed.
+function resolveObserver(alias) {
+  const name = alias?.equivalence?.observer;
+  if (!name) return { problems: ["no observer named in the equivalence clause"] };
+  const observer = record.observers?.[name];
+  if (!observer) {
+    return { problems: [`observer "${name}" does not resolve in FMS — fail closed`] };
+  }
+  const problems = [];
+  for (const delta of alias.equivalence.allowed_deltas ?? []) {
+    const head = String(delta).split(".")[0];
+    if (!observer.observations.includes(head)) {
+      problems.push(`allowed_delta "${delta}" is not an observation of ${name}`);
+    }
+    if (observer.non_waivable.includes(head)) {
+      problems.push(`"${delta}" names ${head}, which ${name} declares non-waivable`);
+    }
+  }
+  return { observer, problems };
+}
 
 const at = (object, dotted) =>
   dotted.split(".").reduce((cursor, key) => (cursor == null ? cursor : cursor[key]), object);
@@ -26,6 +52,14 @@ function observe(rule, fixture) {
 
 export function checkAlias(alias, oldRule, newRule, fixture, currentVersion, majorsBetween, maxWindow) {
   const problems = [];
+
+  // Fail closed before anything is compared. A contract whose observer cannot
+  // be resolved has not been checked, and reporting "holds" for it is worse
+  // than reporting nothing.
+  const resolved = resolveObserver(alias);
+  problems.push(...resolved.problems);
+  if (!resolved.observer) return { alias, holds: false, problems, deltas: [] };
+
   if (!oldRule) problems.push(`the old name has nothing behind it`);
   if (!newRule) problems.push(`the replacement ${alias.replacement} does not exist`);
   if (problems.length) return { alias, holds: false, problems, deltas: [] };

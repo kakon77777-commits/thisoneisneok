@@ -563,7 +563,7 @@ export const msspExamples = [
         "main.js"
       ]
     },
-    "lineCount": 550,
+    "lineCount": 619,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/008-compatibility-alias.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/008-compatibility-alias.html"
   }

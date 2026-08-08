@@ -26,40 +26,58 @@ Neo，2026-08-08：
 
 ```text
   example                 lang       lines  units  worst  ratio  SMS%  sets  enforcement
-  001-task-runner         javascript 455    4      94     4.8    34    4     source text match
-  002-link-checker        python     642    3      156    4.1    27    4     source text match
-  003-record-migration    javascript 543    2      67     8.1    28    4     source text match
-  004-router              python     441    2      15     29.4   27    4     source text match
-  005-before-after        javascript 401    3      11     36.5   12    4     source text match
-  006-compiler-enforced   rust       667    3      40     16.7   13    4     manifest + compiler
+  001-task-runner         javascript 455    4      94     4.8    34    5     source text match
+  002-link-checker        python     642    3      156    4.1    27    5     source text match
+  003-record-migration    javascript 543    2      67     8.1    28    5     source text match
+  004-router              python     441    2      15     29.4   27    5     source text match
+  005-before-after        javascript 401    3      11     36.5   12    5     source text match
+  006-compiler-enforced   rust       667    3      40     16.7   13    5     manifest + compiler
   007-identity-test-run   python     470    1      35     13.4   19    5     source text match
-  008-compatibility-alias javascript 474    4      30     15.8   23    4     source text match
+  008-compatibility-alias javascript 532    4      30     17.7   27    5     source text match
 ```
 
 - **worst** — 要使用最貴的那個 TMS 單元，必須載入多少行（跟著本地 import 走）
 - **ratio** — 總行數 ÷ worst。這是[範例 005](/html/mssp/005-before-after.html) 拿來當「隔離」證據的那個數字
 - **enforcement** — 「不引用兄弟」這條規則實際上由誰保證。[範例 006](/html/mssp/006-compiler-enforced.html) 是目前唯一不靠文字比對的
 
-## 第一次執行抓到的是錨點自己的缺陷
+## 狀態：experimental measurement prototype
 
-`005` 贏了每一個計分的軸。我的第一反應是「所有軸都只是在追大小」，於是加了一節讓錨點量自己的軸獨立性——**然後量測不同意我**：
+Metron 2026-08-08 的審查結論，我接受：**它成功揭露了要量哪些軸，但還不能裁決哪一個 MSSP 結構較好。** 現在不依它採納任何方法變更。
+
+## 第一次執行抓到的是錨點自己的缺陷，而第二次是別人抓到我的
+
+`005` 贏了每一個計分的軸。我的第一反應是「所有軸都只是在追大小」，於是加了一節讓錨點量自己的軸獨立性——**然後量測不同意我**。我把那件事寫進了改良點 9 跟這份 README。
+
+**然後 Metron 指出那個量測本身是錯的。** 我用的是 `1 - 6Σd²/n(n²-1)` 這個捷徑公式，它只在**沒有並列**時成立，而 SMS% 有兩個 27。也就是說：**我拿一個不適用的統計量去「修正」自己，然後把那個修正當成誠實的示範。**
+
+改成平均排名加上排名上的 Pearson（定義本身，不是捷徑）之後：
 
 ```text
-  isolation_ratio         worst_unit_load_lines   rho  -0.93  <- these two are not independent evidence
+  isolation_ratio         worst_unit_load_lines   rho  -0.98  <- these two are not independent evidence
   worst_unit_load_lines   total_source_lines      rho   0.64
-  isolation_ratio         sms_share_pct           rho  -0.62
-  worst_unit_load_lines   sms_share_pct           rho   0.55
-  isolation_ratio         total_source_lines      rho  -0.48
-  total_source_lines      sms_share_pct           rho      0
+  isolation_ratio         sms_share_pct           rho  -0.61
+  worst_unit_load_lines   sms_share_pct           rho   0.59
+  isolation_ratio         total_source_lines      rho  -0.55
+  total_source_lines      sms_share_pct           rho   0.07
 
   1 of 6 axis pairs move together at |rho| >= 0.8.
 ```
 
-只有一對過線，而且**那一對是代數上必然的**：`ratio = total ÷ worst`，它永遠不可能跟這兩個之中任何一個構成獨立證據。它留著是因為比值好讀，但它跟 `worst` 算**一個**軸不是兩個。
+結論沒有翻——只有一對過線，而且那一對是代數上必然的（`ratio = total ÷ worst`）；`total_source_lines` 與 `sms_share_pct` 仍然幾乎不相關。**但我先前引用的那個「rho 0」是錯的，正確值是 0.07，而我是拿它當作「量測比我誠實」的證據在講。** 那個結論現在有正確的數字撐著，先前沒有。
 
-`total_source_lines` 跟 `sms_share_pct` 的相關是 **0**——一個結構可以很大而 SMS 很小，反之亦然。**重疊比我以為的窄，而如果我沒有把這一節算出來，我會把那個比較寬的說法直接發出去。**
+## Metron 找到而尚未修好的量測缺陷
 
-這一節現在留在工具裡。一個給別人拿來比較結構的東西，應該先講自己的軸有多少是重複計算的。
+修好的：
+
+- **`sets_used` 在量副檔名不是在量 set。** 它只數原始碼檔，所以七個範例只有 JSON 的 FMS 被算成「沒用到」，而範例 007 剛好多一個空的 `FMS/__init__.py` 就獨得 5。現在改成「該目錄下有任何非空檔案」——八個範例全部是 5，因為它們本來就都用了五個集合。
+- **Spearman 的並列處理**（上面那一節）。
+
+**還沒修好，而且工具自己會印出來：**
+
+- Python 的空 `TMS/__init__.py` 會把所有子模組合併成一個 unit，所以範例 007 顯示 1 unit——**那是在量 packaging convention**。
+- Rust 的 `use` 與 Cargo 依賴沒有被 `loadCost()` 追蹤，所以 Rust 的 worst load **不能跟 JS/Python 同義比較**。
+
+這兩個沒修的直接後果是：`units` 與 `worst` 這兩欄**跨語言不可比**。工具的表頭現在就這樣寫。
 
 ## 它還沒有的軸
 

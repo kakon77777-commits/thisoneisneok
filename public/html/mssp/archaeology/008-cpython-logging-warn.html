@@ -151,23 +151,31 @@ python src/island_test.py   # 26 項檢查，其中 10 項直接量 CPython 本�
     &quot;why_this_one&quot;: &quot;mssp-d-001 asked for a rename under a SECOND host interface, to test whether one record shape describes both. eslint's host is a { name: object } map. This host is attribute access on a class and on a module — nothing reads a data row, so a declared mapping has nothing to be read by.&quot;,
     &quot;measured&quot;: {
       &quot;copies_of_the_alias&quot;: 3,
-      &quot;where&quot;: [&quot;Logger.warn&quot;, &quot;LoggerAdapter.warn&quot;, &quot;module-level logging.warn&quot;],
+      &quot;where&quot;: [
+        &quot;Logger.warn&quot;,
+        &quot;LoggerAdapter.warn&quot;,
+        &quot;module-level logging.warn&quot;
+      ],
       &quot;implementation_shape&quot;: &quot;delegation - warnings.warn(...) then self.warning(...) / warning(...)&quot;,
       &quot;stacklevel_used_by_each&quot;: 2,
-      &quot;do_the_three_copies_agree&quot;: &quot;yes, measured on all three channels&quot;
+      &quot;do_the_three_copies_agree&quot;: &quot;three confirmed statically (present, delegate, stacklevel=2); TWO measured behaviourally on all three channels (Logger, LoggerAdapter); module-level logging.warn NOT isolated for behavioural measurement&quot;
     },
     &quot;contract_run&quot;: {
       &quot;observer&quot;: &quot;three-channel-v1&quot;,
-      &quot;channels&quot;: [&quot;handler output&quot;, &quot;warnings raised&quot;, &quot;return value&quot;],
+      &quot;channels&quot;: [
+        &quot;handler output&quot;,
+        &quot;warnings raised&quot;,
+        &quot;return value&quot;
+      ],
       &quot;output&quot;: &quot;SAME&quot;,
       &quot;return&quot;: &quot;SAME&quot;,
-      &quot;warnings&quot;: &quot;DIFFERS - the old name raises DeprecationWarning(\&quot;The 'warn' method is deprecated, use 'warning' instead\&quot;)&quot;
+      &quot;warnings&quot;: &quot;DIFFERS - the old name raises DeprecationWarning(\&quot;The 'warn' method is deprecated, use 'warning' instead\&quot;)&quot;,
+      &quot;note&quot;: &quot;measured on Logger and LoggerAdapter; module-level warn triggers root basicConfig and was not isolated&quot;
     }
   },
   &quot;the_finding&quot;: &quot;The alias holds, and the record shape from mssp-d-001 cannot say so. allowed_deltas was written as dotted field paths (meta.deprecated). Here the one permitted difference is an emitted warning — a channel, not a field of an object. A second host interface did not break the idea; it broke the schema.&quot;,
   &quot;the_amendment&quot;: &quot;allowed_deltas must name OBSERVATIONS under the named observer, and the observer must enumerate its channels. A field path is then just one kind of observation, not the only kind.&quot;,
-  &quot;the_second_observation&quot;: &quot;Three hand-written copies of one relation, with nothing tying them together and nothing checking they agree. They DO agree - measured. So this is a maintenance surface, not a defect, and it is recorded as an observation rather than a problem.&quot;,
-
+  &quot;the_second_observation&quot;: &quot;Three hand-written copies of one relation, with nothing tying them together. Two of the three were measured behaviourally and agree; the third was only confirmed statically. So this is a maintenance surface with partial evidence, recorded as an observation rather than a problem.&quot;,
   &quot;compatibility_aliases&quot;: [
     {
       &quot;kind&quot;: &quot;compatibility_alias&quot;,
@@ -179,14 +187,16 @@ python src/island_test.py   # 26 項檢查，其中 10 項直接量 CPython 本�
       &quot;equivalence&quot;: {
         &quot;observer&quot;: &quot;three-channel-v1&quot;,
         &quot;allowed_deltas&quot;: [
-          { &quot;channel&quot;: &quot;warnings&quot;, &quot;permit&quot;: &quot;one DeprecationWarning naming the replacement&quot; }
+          {
+            &quot;observation&quot;: &quot;warnings&quot;,
+            &quot;predicate&quot;: &quot;one-deprecation-warning-naming-replacement-v1&quot;
+          }
         ]
       },
-      &quot;evidence&quot;: &quot;src/island_test.py section 3&quot;,
+      &quot;evidence&quot;: &quot;src/island_test.py — the sections measuring CPython and the schema; section numbers deliberately not cited, they drifted once already&quot;,
       &quot;sunset&quot;: &quot;unstated by upstream - see README&quot;
     }
   ],
-
   &quot;observers&quot;: {
     &quot;three-channel-v1&quot;: {
       &quot;channels&quot;: {
@@ -197,7 +207,6 @@ python src/island_test.py   # 26 項檢查，其中 10 項直接量 CPython 本�
       &quot;what_it_cannot_see&quot;: &quot;stacklevel correctness, timing, anything reached through a handler this fixture does not install&quot;
     }
   },
-
   &quot;sets&quot;: {
     &quot;FMS&quot;: &quot;this file: the record, the observer and its channels&quot;,
     &quot;SCL&quot;: &quot;whether this deployment accepts a channel-level delta at all&quot;,
@@ -208,7 +217,8 @@ python src/island_test.py   # 26 項檢查，其中 10 項直接量 CPython 本�
   &quot;non_goals&quot;: [
     &quot;Being a logging library. Two emitters and a fixture.&quot;,
     &quot;Claiming CPython should have a sunset. It has not stated one, and this entry does not treat an absent field as a defect - see the README.&quot;
-  ]
+  ],
+  &quot;the_finding_correction&quot;: &quot;\&quot;Delegation makes drift impossible\&quot; was too strong — Metron, 2026-08-08. Delegation removes the RE-IMPLEMENTATION drift of the core logic, because there is no second copy of it. The wrapper still has behaviour of its own: warning class, message, stacklevel, argument transformation, and whether it delegates on every path. This entry already notes that stacklevel is outside the observer, which is exactly such a case.&quot;
 }
 </code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
   &quot;policy_version&quot;: &quot;1.0&quot;,
@@ -236,8 +246,11 @@ def never_differ():
 </code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/contract.py</summary><pre><code>&quot;&quot;&quot;Checking a declared equivalence whose permitted differences are channels.&quot;&quot;&quot;
 
 
+from . import predicates
+
+
 def check(alias, observer, before, after, accepts_channel_deltas, never_differ):
-    permitted = {d[&quot;channel&quot;]: d[&quot;permit&quot;] for d in alias[&quot;equivalence&quot;][&quot;allowed_deltas&quot;]}
+    permitted = {d[&quot;observation&quot;]: d.get(&quot;predicate&quot;) for d in alias[&quot;equivalence&quot;][&quot;allowed_deltas&quot;]}
     channels = list(observer[&quot;channels&quot;])
     clauses = []
 
@@ -256,7 +269,19 @@ def check(alias, observer, before, after, accepts_channel_deltas, never_differ):
             clauses.append((channel, False, &quot;declared as permitted, but this deployment refuses channel deltas&quot;,
                             (before[channel], after[channel])))
             continue
-        clauses.append((channel, True, f&quot;differs, declared: {permitted[channel]}&quot;,
+
+        # The permit is executed, not read. An id that does not resolve, or a
+        # difference the predicate rejects, is not a permitted difference.
+        predicate, problem = predicates.resolve(permitted[channel])
+        if problem:
+            clauses.append((channel, False, problem, (before[channel], after[channel])))
+            continue
+        verdict = predicate(before, after, alias)
+        if verdict:
+            clauses.append((channel, False, f&quot;declared permit not satisfied: {verdict}&quot;,
+                            (before[channel], after[channel])))
+            continue
+        clauses.append((channel, True, f&quot;differs, and the permit holds: {permitted[channel]}&quot;,
                         (before[channel], after[channel])))
 
     # A channel named in allowed_deltas that never actually differed is worth
@@ -292,6 +317,54 @@ def observe(call):
         &quot;warnings&quot;: [(w.category.__name__, str(w.message)) for w in caught],
         &quot;return&quot;: repr(returned) if raised is None else f&quot;raised {raised}&quot;,
     }
+</code></pre></details><details><summary>SMS/predicates.py</summary><pre><code>&quot;&quot;&quot;Executable predicates for allowed deltas.
+
+Metron ran this entry on 2026-08-08 and replaced the real difference with
+`RuntimeWarning(&quot;not a deprecation and does not name replacement&quot;)`. The
+contract still returned holds: true, because the record's
+
+    permit: one DeprecationWarning naming the replacement
+
+was prose. The check only asked whether the `warnings` channel appeared in
+allowed_deltas — it never read the sentence. **The declaration looked precise
+and the verdict read a wider layer**, which is the exact shape this field lab
+keeps finding in other people's code.
+
+A permit is now an id resolved here. An id that does not resolve fails closed:
+an unverifiable declaration is not a permitted difference, it is an unchecked
+one.
+&quot;&quot;&quot;
+
+
+def _one_deprecation_warning_naming_replacement(before, after, alias):
+    &quot;&quot;&quot;The old name raises exactly one DeprecationWarning that names the new name.&quot;&quot;&quot;
+    old = before.get(&quot;warnings&quot;, [])
+    new = after.get(&quot;warnings&quot;, [])
+    if new:
+        return f&quot;the replacement raised {len(new)} warning(s); it must raise none&quot;
+    if len(old) != 1:
+        return f&quot;the old name raised {len(old)} warning(s); the permit allows exactly one&quot;
+    category, message = old[0]
+    if category != &quot;DeprecationWarning&quot;:
+        return f&quot;the warning is a {category}; the permit allows only DeprecationWarning&quot;
+    if alias[&quot;replacement&quot;] not in message:
+        return (f&quot;the warning does not name the replacement &quot;
+                f&quot;({alias['replacement']!r} not in {message!r})&quot;)
+    return None
+
+
+REGISTRY = {
+    &quot;one-deprecation-warning-naming-replacement-v1&quot;: _one_deprecation_warning_naming_replacement,
+}
+
+
+def resolve(name):
+    &quot;&quot;&quot;Return (predicate, problem). A missing id is a problem, never a pass.&quot;&quot;&quot;
+    if not name:
+        return None, &quot;the allowed delta names no predicate&quot;
+    if name not in REGISTRY:
+        return None, f'predicate &quot;{name}&quot; does not resolve — fail closed'
+    return REGISTRY[name], None
 </code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/emitters/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/emitters/current.py</summary><pre><code>&quot;&quot;&quot;The current name. Imports nothing.&quot;&quot;&quot;
 
 NAME = &quot;warning&quot;
@@ -401,7 +474,7 @@ check(&quot;output is identical&quot;, before[&quot;output&quot;] == after[&quot
 check(&quot;return is identical&quot;, before[&quot;return&quot;] == after[&quot;return&quot;])
 check(&quot;warnings differ, and the record said they would&quot;,
       before[&quot;warnings&quot;] != after[&quot;warnings&quot;]
-      and any(d[&quot;channel&quot;] == &quot;warnings&quot; for d in ALIAS[&quot;equivalence&quot;][&quot;allowed_deltas&quot;]))
+      and any(d[&quot;observation&quot;] == &quot;warnings&quot; for d in ALIAS[&quot;equivalence&quot;][&quot;allowed_deltas&quot;]))
 check(&quot;and the permission was actually exercised&quot;,
       not result[&quot;unexercised_permissions&quot;],
       &quot;a permission nothing used would say nothing about whether it was needed&quot;)
@@ -480,6 +553,12 @@ logger_delta = {c: observations[&quot;Logger&quot;][0][c] != observations[&quot;
                 for c in (&quot;output&quot;, &quot;warnings&quot;, &quot;return&quot;)}
 adapter_delta = {c: observations[&quot;LoggerAdapter&quot;][0][c] != observations[&quot;LoggerAdapter&quot;][1][c]
                  for c in (&quot;output&quot;, &quot;warnings&quot;, &quot;return&quot;)}
+# Metron: the FMS said all three copies were measured on all three channels.
+# Two were. The module-level one triggers root basicConfig and was not isolated,
+# and the README always said so — the record was the thing overclaiming.
+check(&quot;the record no longer claims all three were measured behaviourally&quot;,
+      &quot;TWO measured behaviourally&quot; in RECORD[&quot;examined&quot;][&quot;measured&quot;][&quot;do_the_three_copies_agree&quot;],
+      &quot;three confirmed statically, two measured&quot;)
 check(&quot;the two hand-written copies produce the same delta shape&quot;,
       logger_delta == adapter_delta,
       f&quot;Logger {logger_delta} vs LoggerAdapter {adapter_delta}&quot;)
@@ -506,10 +585,27 @@ check(&quot;the draft's allowed_deltas are dotted FIELD paths&quot;,
 check(&quot;and neither resolves against anything here&quot;,
       all(resolve(d, before) is None for d in draft_allowed_deltas),
       &quot;the two callables are indistinguishable as objects&quot;)
-check(&quot;the one permitted difference is a channel, not a field&quot;,
+check(&quot;the one permitted difference is an observation, not a field&quot;,
       isinstance(ALIAS[&quot;equivalence&quot;][&quot;allowed_deltas&quot;][0], dict)
-      and &quot;channel&quot; in ALIAS[&quot;equivalence&quot;][&quot;allowed_deltas&quot;][0],
+      and &quot;observation&quot; in ALIAS[&quot;equivalence&quot;][&quot;allowed_deltas&quot;][0],
       json.dumps(ALIAS[&quot;equivalence&quot;][&quot;allowed_deltas&quot;][0], ensure_ascii=False))
+# Metron, 2026-08-08: the permit was prose and a RuntimeWarning with the wrong
+# message still passed. It is a predicate id now, and an unresolvable one fails
+# closed.
+from SMS import predicates  # noqa: E402
+_bad = dict(ALIAS); _bad[&quot;equivalence&quot;] = dict(ALIAS[&quot;equivalence&quot;],
+    allowed_deltas=[{&quot;observation&quot;: &quot;warnings&quot;, &quot;predicate&quot;: &quot;no-such-predicate&quot;}])
+_r = contract.check(_bad, OBSERVER, before, after, True, policy.never_differ())
+check(&quot;an unresolvable predicate id fails closed&quot;, not _r[&quot;holds&quot;],
+      [t for c, ok, t, _ in _r[&quot;clauses&quot;] if c == &quot;warnings&quot;][0])
+_wrong = dict(before, warnings=[(&quot;RuntimeWarning&quot;, &quot;not a deprecation and does not name replacement&quot;)])
+_r2 = contract.check(ALIAS, OBSERVER, _wrong, after, True, policy.never_differ())
+check(&quot;Metron's exact counter-case now fails&quot;, not _r2[&quot;holds&quot;],
+      [t for c, ok, t, _ in _r2[&quot;clauses&quot;] if c == &quot;warnings&quot;][0][:72])
+_unnamed = dict(before, warnings=[(&quot;DeprecationWarning&quot;, &quot;this is old, stop using it&quot;)])
+_r3 = contract.check(ALIAS, OBSERVER, _unnamed, after, True, policy.never_differ())
+check(&quot;a right-class warning that does not name the replacement also fails&quot;, not _r3[&quot;holds&quot;],
+      &quot;the predicate reads the message, not just the channel&quot;)
 check(&quot;so the second host interface amended the schema rather than breaking the idea&quot;,
       RECORD[&quot;the_amendment&quot;].startswith(&quot;allowed_deltas must name OBSERVATIONS&quot;),
       &quot;a field path is one kind of observation, not the only kind&quot;)

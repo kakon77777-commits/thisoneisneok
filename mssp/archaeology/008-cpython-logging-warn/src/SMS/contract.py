@@ -1,8 +1,11 @@
 """Checking a declared equivalence whose permitted differences are channels."""
 
 
+from . import predicates
+
+
 def check(alias, observer, before, after, accepts_channel_deltas, never_differ):
-    permitted = {d["channel"]: d["permit"] for d in alias["equivalence"]["allowed_deltas"]}
+    permitted = {d["observation"]: d.get("predicate") for d in alias["equivalence"]["allowed_deltas"]}
     channels = list(observer["channels"])
     clauses = []
 
@@ -21,7 +24,19 @@ def check(alias, observer, before, after, accepts_channel_deltas, never_differ):
             clauses.append((channel, False, "declared as permitted, but this deployment refuses channel deltas",
                             (before[channel], after[channel])))
             continue
-        clauses.append((channel, True, f"differs, declared: {permitted[channel]}",
+
+        # The permit is executed, not read. An id that does not resolve, or a
+        # difference the predicate rejects, is not a permitted difference.
+        predicate, problem = predicates.resolve(permitted[channel])
+        if problem:
+            clauses.append((channel, False, problem, (before[channel], after[channel])))
+            continue
+        verdict = predicate(before, after, alias)
+        if verdict:
+            clauses.append((channel, False, f"declared permit not satisfied: {verdict}",
+                            (before[channel], after[channel])))
+            continue
+        clauses.append((channel, True, f"differs, and the permit holds: {permitted[channel]}",
                         (before[channel], after[channel])))
 
     # A channel named in allowed_deltas that never actually differed is worth

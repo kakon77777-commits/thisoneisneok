@@ -8,23 +8,31 @@
     "why_this_one": "mssp-d-001 asked for a rename under a SECOND host interface, to test whether one record shape describes both. eslint's host is a { name: object } map. This host is attribute access on a class and on a module — nothing reads a data row, so a declared mapping has nothing to be read by.",
     "measured": {
       "copies_of_the_alias": 3,
-      "where": ["Logger.warn", "LoggerAdapter.warn", "module-level logging.warn"],
+      "where": [
+        "Logger.warn",
+        "LoggerAdapter.warn",
+        "module-level logging.warn"
+      ],
       "implementation_shape": "delegation - warnings.warn(...) then self.warning(...) / warning(...)",
       "stacklevel_used_by_each": 2,
-      "do_the_three_copies_agree": "yes, measured on all three channels"
+      "do_the_three_copies_agree": "three confirmed statically (present, delegate, stacklevel=2); TWO measured behaviourally on all three channels (Logger, LoggerAdapter); module-level logging.warn NOT isolated for behavioural measurement"
     },
     "contract_run": {
       "observer": "three-channel-v1",
-      "channels": ["handler output", "warnings raised", "return value"],
+      "channels": [
+        "handler output",
+        "warnings raised",
+        "return value"
+      ],
       "output": "SAME",
       "return": "SAME",
-      "warnings": "DIFFERS - the old name raises DeprecationWarning(\"The 'warn' method is deprecated, use 'warning' instead\")"
+      "warnings": "DIFFERS - the old name raises DeprecationWarning(\"The 'warn' method is deprecated, use 'warning' instead\")",
+      "note": "measured on Logger and LoggerAdapter; module-level warn triggers root basicConfig and was not isolated"
     }
   },
   "the_finding": "The alias holds, and the record shape from mssp-d-001 cannot say so. allowed_deltas was written as dotted field paths (meta.deprecated). Here the one permitted difference is an emitted warning — a channel, not a field of an object. A second host interface did not break the idea; it broke the schema.",
   "the_amendment": "allowed_deltas must name OBSERVATIONS under the named observer, and the observer must enumerate its channels. A field path is then just one kind of observation, not the only kind.",
-  "the_second_observation": "Three hand-written copies of one relation, with nothing tying them together and nothing checking they agree. They DO agree - measured. So this is a maintenance surface, not a defect, and it is recorded as an observation rather than a problem.",
-
+  "the_second_observation": "Three hand-written copies of one relation, with nothing tying them together. Two of the three were measured behaviourally and agree; the third was only confirmed statically. So this is a maintenance surface with partial evidence, recorded as an observation rather than a problem.",
   "compatibility_aliases": [
     {
       "kind": "compatibility_alias",
@@ -36,14 +44,16 @@
       "equivalence": {
         "observer": "three-channel-v1",
         "allowed_deltas": [
-          { "channel": "warnings", "permit": "one DeprecationWarning naming the replacement" }
+          {
+            "observation": "warnings",
+            "predicate": "one-deprecation-warning-naming-replacement-v1"
+          }
         ]
       },
-      "evidence": "src/island_test.py section 3",
+      "evidence": "src/island_test.py — the sections measuring CPython and the schema; section numbers deliberately not cited, they drifted once already",
       "sunset": "unstated by upstream - see README"
     }
   ],
-
   "observers": {
     "three-channel-v1": {
       "channels": {
@@ -54,7 +64,6 @@
       "what_it_cannot_see": "stacklevel correctness, timing, anything reached through a handler this fixture does not install"
     }
   },
-
   "sets": {
     "FMS": "this file: the record, the observer and its channels",
     "SCL": "whether this deployment accepts a channel-level delta at all",
@@ -65,5 +74,6 @@
   "non_goals": [
     "Being a logging library. Two emitters and a fixture.",
     "Claiming CPython should have a sunset. It has not stated one, and this entry does not treat an absent field as a defect - see the README."
-  ]
+  ],
+  "the_finding_correction": "\"Delegation makes drift impossible\" was too strong — Metron, 2026-08-08. Delegation removes the RE-IMPLEMENTATION drift of the core logic, because there is no second copy of it. The wrapper still has behaviour of its own: warning class, message, stacklevel, argument transformation, and whether it delegates on every path. This entry already notes that stacklevel is outside the observer, which is exactly such a case."
 }

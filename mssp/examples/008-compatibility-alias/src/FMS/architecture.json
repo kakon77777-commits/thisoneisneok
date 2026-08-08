@@ -5,7 +5,6 @@
   "why_this_shape": "mssp-d-001 (2026-08-07). Elenchos found the contradiction; Metron reframed it as a missing relation rather than a syntax to permit, and named two validations before it could be trusted: a rename under a second host interface, and a deliberately drifted alias proving the contract check can fail. This example is the second one.",
   "status": "candidate",
   "note_on_status": "Nothing here is adopted method. Module 02's ban on sibling references is untouched and the build guard is unchanged. This is an experiment that produces evidence for or against the candidate.",
-
   "compatibility_aliases": [
     {
       "kind": "compatibility_alias",
@@ -16,7 +15,10 @@
       "valid_from": "2.0.0",
       "equivalence": {
         "observer": "rule-contract-v1",
-        "allowed_deltas": ["meta.deprecated", "meta.description"]
+        "allowed_deltas": [
+          "meta.deprecated",
+          "meta.description"
+        ]
       },
       "evidence": "src/island_test.js section 2",
       "sunset": "3.0.0"
@@ -30,22 +32,31 @@
       "valid_from": "1.4.0",
       "equivalence": {
         "observer": "rule-contract-v1",
-        "allowed_deltas": ["meta.deprecated", "meta.description"]
+        "allowed_deltas": [
+          "meta.deprecated",
+          "meta.description"
+        ]
       },
       "evidence": "src/island_test.js section 3",
       "sunset": "2.0.0",
       "note": "This declaration is FALSE and the run says so. It is the counter-example Metron asked for: an alias that drifted, still declared, still passing every structural rule."
     }
   ],
-
   "observers": {
     "rule-contract-v1": {
-      "what_it_compares": "for each fixture line, the set of (id-stripped) findings the rule produces, plus the rule's own id and every meta field",
-      "what_it_ignores": "nothing by default - the allowed_deltas list is per-alias and must be written down",
-      "what_it_cannot_see": "timing, memory, anything the rule does that is not a finding or a meta field"
+      "observations": [
+        "findings",
+        "meta"
+      ],
+      "non_waivable": [
+        "findings"
+      ],
+      "what_it_compares": "for each fixture line, the set of findings the rule produces, plus every meta field",
+      "what_it_ignores": "nothing by default — allowed_deltas is per-alias and must name an observation listed above",
+      "what_it_cannot_see": "timing, memory, anything the rule does that is not a finding or a meta field",
+      "note": "observations and non_waivable are read by SMS/contract.js. Metron found on 2026-08-08 that the observer name was only a label — an unresolvable id still returned holds:true."
     }
   },
-
   "sets": {
     "FMS": "this file: the architecture record, including every declared rename and the observer it is declared under",
     "SCL": "who may open, extend or retire a compatibility window, and the current version",

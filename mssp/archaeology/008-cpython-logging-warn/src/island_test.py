@@ -61,7 +61,7 @@ check("output is identical", before["output"] == after["output"], repr(before["o
 check("return is identical", before["return"] == after["return"])
 check("warnings differ, and the record said they would",
       before["warnings"] != after["warnings"]
-      and any(d["channel"] == "warnings" for d in ALIAS["equivalence"]["allowed_deltas"]))
+      and any(d["observation"] == "warnings" for d in ALIAS["equivalence"]["allowed_deltas"]))
 check("and the permission was actually exercised",
       not result["unexercised_permissions"],
       "a permission nothing used would say nothing about whether it was needed")
@@ -140,6 +140,12 @@ logger_delta = {c: observations["Logger"][0][c] != observations["Logger"][1][c]
                 for c in ("output", "warnings", "return")}
 adapter_delta = {c: observations["LoggerAdapter"][0][c] != observations["LoggerAdapter"][1][c]
                  for c in ("output", "warnings", "return")}
+# Metron: the FMS said all three copies were measured on all three channels.
+# Two were. The module-level one triggers root basicConfig and was not isolated,
+# and the README always said so — the record was the thing overclaiming.
+check("the record no longer claims all three were measured behaviourally",
+      "TWO measured behaviourally" in RECORD["examined"]["measured"]["do_the_three_copies_agree"],
+      "three confirmed statically, two measured")
 check("the two hand-written copies produce the same delta shape",
       logger_delta == adapter_delta,
       f"Logger {logger_delta} vs LoggerAdapter {adapter_delta}")
@@ -166,10 +172,27 @@ check("the draft's allowed_deltas are dotted FIELD paths",
 check("and neither resolves against anything here",
       all(resolve(d, before) is None for d in draft_allowed_deltas),
       "the two callables are indistinguishable as objects")
-check("the one permitted difference is a channel, not a field",
+check("the one permitted difference is an observation, not a field",
       isinstance(ALIAS["equivalence"]["allowed_deltas"][0], dict)
-      and "channel" in ALIAS["equivalence"]["allowed_deltas"][0],
+      and "observation" in ALIAS["equivalence"]["allowed_deltas"][0],
       json.dumps(ALIAS["equivalence"]["allowed_deltas"][0], ensure_ascii=False))
+# Metron, 2026-08-08: the permit was prose and a RuntimeWarning with the wrong
+# message still passed. It is a predicate id now, and an unresolvable one fails
+# closed.
+from SMS import predicates  # noqa: E402
+_bad = dict(ALIAS); _bad["equivalence"] = dict(ALIAS["equivalence"],
+    allowed_deltas=[{"observation": "warnings", "predicate": "no-such-predicate"}])
+_r = contract.check(_bad, OBSERVER, before, after, True, policy.never_differ())
+check("an unresolvable predicate id fails closed", not _r["holds"],
+      [t for c, ok, t, _ in _r["clauses"] if c == "warnings"][0])
+_wrong = dict(before, warnings=[("RuntimeWarning", "not a deprecation and does not name replacement")])
+_r2 = contract.check(ALIAS, OBSERVER, _wrong, after, True, policy.never_differ())
+check("Metron's exact counter-case now fails", not _r2["holds"],
+      [t for c, ok, t, _ in _r2["clauses"] if c == "warnings"][0][:72])
+_unnamed = dict(before, warnings=[("DeprecationWarning", "this is old, stop using it")])
+_r3 = contract.check(ALIAS, OBSERVER, _unnamed, after, True, policy.never_differ())
+check("a right-class warning that does not name the replacement also fails", not _r3["holds"],
+      "the predicate reads the message, not just the channel")
 check("so the second host interface amended the schema rather than breaking the idea",
       RECORD["the_amendment"].startswith("allowed_deltas must name OBSERVATIONS"),
       "a field path is one kind of observation, not the only kind")

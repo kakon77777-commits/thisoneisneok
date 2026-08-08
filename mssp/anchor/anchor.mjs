@@ -126,7 +126,11 @@ function profile(id) {
   const bySet = {};
   for (const set of SETS) {
     const files = walk(path.join(srcDir, set)).filter(isSource);
-    bySet[set] = { files: files.length, lines: files.reduce((n, f) => n + lines(f), 0) };
+    // Metron: this counted SOURCE files, so an FMS holding only manifest.json
+    // read as unused, and one example scored 5 sets purely for having an empty
+    // FMS/__init__.py. That measures file extensions, not MSSP sets.
+    const anyFile = walk(path.join(srcDir, set)).filter((f) => lines(f) > 1);
+    bySet[set] = { files: files.length, lines: files.reduce((n, f) => n + lines(f), 0), present: anyFile.length > 0 };
   }
 
   const units = tmsUnits(path.join(srcDir, "TMS"));
@@ -141,7 +145,7 @@ function profile(id) {
     worst_unit_load_lines: worst,
     isolation_ratio: worst ? Number((total / worst).toFixed(1)) : null,
     sms_share_pct: total ? Math.round((bySet.SMS.lines / total) * 100) : 0,
-    sets_used: SETS.filter((s) => bySet[s].files > 0).length,
+    sets_used: SETS.filter((s) => bySet[s].present).length,
     enforcement: enforcement(srcDir, language),
   };
 }
@@ -170,7 +174,13 @@ if (process.argv.includes("--json")) {
 }
 
 const w = (s, n) => String(s).padEnd(n);
-console.log("\n== 虛擬錨點 — MSSP structurings, side by side\n");
+console.log("\n== 虛擬錨點 — MSSP structurings, side by side");
+console.log("   STATUS: experimental measurement prototype (Metron's review, 2026-08-08).");
+console.log("   It shows which axes are worth measuring. It cannot yet adjudicate which");
+console.log("   structuring is better, and no method change should rest on it.");
+console.log("   Known measurement defects still open: Python's empty TMS/__init__.py merges");
+console.log("   submodules into one unit, and Rust `use`/Cargo edges are not followed by");
+console.log("   loadCost — so `units` and `worst` are not comparable across languages.\n");
 console.log(`  ${w("example", 24)}${w("lang", 11)}${w("lines", 7)}${w("units", 7)}${w("worst", 7)}${w("ratio", 7)}${w("SMS%", 6)}${w("sets", 6)}enforcement`);
 console.log(`  ${"-".repeat(94)}`);
 for (const r of rows) {
@@ -196,16 +206,36 @@ for (const axis of AXES) {
 // axes, which is not a result about that example — two of the axes are
 // algebraically linked (ratio = total ÷ worst), and the rest track size. So the
 // anchor reports its own axis independence before anyone reads the table.
+// Metron, 2026-08-08: the first version used the 1 - 6Σd²/n(n²-1) shortcut with
+// dense ranks and no tie handling. SMS% has two 27s, so the shortcut does not
+// apply and the numbers were wrong — and I had quoted one of them (rho 0) as
+// the measurement that corrected me. Average ranks, and Pearson over the ranks,
+// which is the definition rather than the shortcut.
 function spearman(a, b) {
   const rank = (xs) => {
-    const sorted = [...xs].map((v, i) => [v, i]).sort((p, q) => p[0] - q[0]);
+    const order = [...xs].map((v, i) => [v, i]).sort((p, q) => p[0] - q[0]);
     const r = new Array(xs.length);
-    sorted.forEach(([, i], k) => { r[i] = k + 1; });
+    let i = 0;
+    while (i < order.length) {
+      let j = i;
+      while (j + 1 < order.length && order[j + 1][0] === order[i][0]) j += 1;
+      const average = (i + j + 2) / 2; // ranks are 1-based
+      for (let k = i; k <= j; k += 1) r[order[k][1]] = average;
+      i = j + 1;
+    }
     return r;
   };
   const ra = rank(a); const rb = rank(b); const n = a.length;
-  const d2 = ra.reduce((s, v, i) => s + (v - rb[i]) ** 2, 0);
-  return Number((1 - (6 * d2) / (n * (n * n - 1))).toFixed(2));
+  const mean = (xs) => xs.reduce((s, v) => s + v, 0) / n;
+  const ma = mean(ra); const mb = mean(rb);
+  let num = 0; let da = 0; let db = 0;
+  for (let i = 0; i < n; i += 1) {
+    num += (ra[i] - ma) * (rb[i] - mb);
+    da += (ra[i] - ma) ** 2;
+    db += (rb[i] - mb) ** 2;
+  }
+  if (da === 0 || db === 0) return 0;
+  return Number((num / Math.sqrt(da * db)).toFixed(2));
 }
 
 console.log("\n== how independent are these axes, really\n");

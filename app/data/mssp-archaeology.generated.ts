@@ -21,7 +21,7 @@ export const archaeology = [
       "three-hand-written-copies-of-one-relation",
       "delegation-as-a-third-alias-shape"
     ],
-    "lineCount": 436,
+    "lineCount": 533,
     "href": "/html/mssp/archaeology/008-cpython-logging-warn.html",
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/archaeology/008-cpython-logging-warn.html"
   },

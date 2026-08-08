@@ -132,8 +132,32 @@ console.log("\n== 5. the contract cannot be satisfied by declaring the drift awa
   const newRule = await load(alias.replacement);
   const result = check(alias, oldRule, newRule);
   report("listing findings as an allowed delta does not make the alias hold",
-    result.problems.includes("findings differ"),
-    "behaviour is not negotiable under this observer, and the code says so rather than a comment");
+    !result.holds, result.problems.join("; "));
+  // It now fails EARLIER than it used to. Before 2026-08-08 the refusal came out
+  // of the comparison ("findings differ"); the observer now declares findings
+  // non-waivable and the contract is rejected at declaration time, before
+  // anything is compared. Refusing an unacceptable declaration beats refusing
+  // its result, because the result depends on a fixture and the declaration
+  // does not.
+  report("and it is refused at declaration time, not by the comparison",
+    result.problems.some((p) => p.includes("non-waivable")),
+    "the observer declares findings non-waivable, so the contract never gets to run");
+
+  // Metron ran this file on 2026-08-08 with an observer id that does not exist
+  // and got holds:true — the name was a label and the comparator was hard-coded.
+  const bogus = { ...aliasFor("rules/imports-first"),
+    equivalence: { observer: "observer-that-does-not-exist", allowed_deltas: ["meta.deprecated"] } };
+  const base = await load("rules/first");
+  const bogusResult = check(bogus, { ...base, meta: { ...base.meta, deprecated: true } }, base);
+  report("an observer id that does not resolve fails closed",
+    !bogusResult.holds && bogusResult.problems.some((p) => p.includes("does not resolve")),
+    bogusResult.problems.join("; "));
+
+  const offObserver = { ...aliasFor("rules/imports-first"),
+    equivalence: { observer: "rule-contract-v1", allowed_deltas: ["timing.ms"] } };
+  const offResult = check(offObserver, { ...base, meta: { ...base.meta, deprecated: true } }, base);
+  report("an allowed_delta the observer does not observe is refused",
+    !offResult.holds, offResult.problems.join("; "));
 }
 
 console.log("\n== 6. SCL owns the window, not the unit");

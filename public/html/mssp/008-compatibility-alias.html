@@ -45,7 +45,7 @@ footer a{color:var(--accent)}
     <div><b>語言</b><span>javascript</span></div>
     <div><b>版本</b><span>v1.0</span></div>
     <div><b>日期</b><span>2026-08-08</span></div>
-    <div><b>行數</b><span>550</span></div>
+    <div><b>行數</b><span>619</span></div>
     <div><b>執行</b><span><code>node src/main.js</code></span></div>
   </section>
   <article class="content"><h1>008 — A rename is a third kind of edge, and here is the counter-example that proves the check works</h1>
@@ -233,7 +233,6 @@ protecting them is that the flag is named.</p>
   &quot;why_this_shape&quot;: &quot;mssp-d-001 (2026-08-07). Elenchos found the contradiction; Metron reframed it as a missing relation rather than a syntax to permit, and named two validations before it could be trusted: a rename under a second host interface, and a deliberately drifted alias proving the contract check can fail. This example is the second one.&quot;,
   &quot;status&quot;: &quot;candidate&quot;,
   &quot;note_on_status&quot;: &quot;Nothing here is adopted method. Module 02's ban on sibling references is untouched and the build guard is unchanged. This is an experiment that produces evidence for or against the candidate.&quot;,
-
   &quot;compatibility_aliases&quot;: [
     {
       &quot;kind&quot;: &quot;compatibility_alias&quot;,
@@ -244,7 +243,10 @@ protecting them is that the flag is named.</p>
       &quot;valid_from&quot;: &quot;2.0.0&quot;,
       &quot;equivalence&quot;: {
         &quot;observer&quot;: &quot;rule-contract-v1&quot;,
-        &quot;allowed_deltas&quot;: [&quot;meta.deprecated&quot;, &quot;meta.description&quot;]
+        &quot;allowed_deltas&quot;: [
+          &quot;meta.deprecated&quot;,
+          &quot;meta.description&quot;
+        ]
       },
       &quot;evidence&quot;: &quot;src/island_test.js section 2&quot;,
       &quot;sunset&quot;: &quot;3.0.0&quot;
@@ -258,22 +260,31 @@ protecting them is that the flag is named.</p>
       &quot;valid_from&quot;: &quot;1.4.0&quot;,
       &quot;equivalence&quot;: {
         &quot;observer&quot;: &quot;rule-contract-v1&quot;,
-        &quot;allowed_deltas&quot;: [&quot;meta.deprecated&quot;, &quot;meta.description&quot;]
+        &quot;allowed_deltas&quot;: [
+          &quot;meta.deprecated&quot;,
+          &quot;meta.description&quot;
+        ]
       },
       &quot;evidence&quot;: &quot;src/island_test.js section 3&quot;,
       &quot;sunset&quot;: &quot;2.0.0&quot;,
       &quot;note&quot;: &quot;This declaration is FALSE and the run says so. It is the counter-example Metron asked for: an alias that drifted, still declared, still passing every structural rule.&quot;
     }
   ],
-
   &quot;observers&quot;: {
     &quot;rule-contract-v1&quot;: {
-      &quot;what_it_compares&quot;: &quot;for each fixture line, the set of (id-stripped) findings the rule produces, plus the rule's own id and every meta field&quot;,
-      &quot;what_it_ignores&quot;: &quot;nothing by default - the allowed_deltas list is per-alias and must be written down&quot;,
-      &quot;what_it_cannot_see&quot;: &quot;timing, memory, anything the rule does that is not a finding or a meta field&quot;
+      &quot;observations&quot;: [
+        &quot;findings&quot;,
+        &quot;meta&quot;
+      ],
+      &quot;non_waivable&quot;: [
+        &quot;findings&quot;
+      ],
+      &quot;what_it_compares&quot;: &quot;for each fixture line, the set of findings the rule produces, plus every meta field&quot;,
+      &quot;what_it_ignores&quot;: &quot;nothing by default — allowed_deltas is per-alias and must name an observation listed above&quot;,
+      &quot;what_it_cannot_see&quot;: &quot;timing, memory, anything the rule does that is not a finding or a meta field&quot;,
+      &quot;note&quot;: &quot;observations and non_waivable are read by SMS/contract.js. Metron found on 2026-08-08 that the observer name was only a label — an unresolvable id still returned holds:true.&quot;
     }
   },
-
   &quot;sets&quot;: {
     &quot;FMS&quot;: &quot;this file: the architecture record, including every declared rename and the observer it is declared under&quot;,
     &quot;SCL&quot;: &quot;who may open, extend or retire a compatibility window, and the current version&quot;,
@@ -329,7 +340,33 @@ export function majorsBetween(from, to) {
 // reality matches a sameness someone declared, under a named observer, with the
 // permitted differences written down in advance.
 
-import { apply } from &quot;./registry.js&quot;;
+import { apply, record } from &quot;./registry.js&quot;;
+
+// Metron ran this on 2026-08-08 with observer: &quot;observer-that-does-not-exist&quot;
+// and got {holds: true, problems: []}. The observer name was a label — the
+// function always called the one hard-coded comparator below, so what this
+// file proved was &quot;this comparator passes&quot;, not &quot;the declared contract holds&quot;.
+// In an example whose entire claim is that a declaration must be checked, the
+// declaration was not checked. It now fails closed.
+function resolveObserver(alias) {
+  const name = alias?.equivalence?.observer;
+  if (!name) return { problems: [&quot;no observer named in the equivalence clause&quot;] };
+  const observer = record.observers?.[name];
+  if (!observer) {
+    return { problems: [`observer &quot;${name}&quot; does not resolve in FMS — fail closed`] };
+  }
+  const problems = [];
+  for (const delta of alias.equivalence.allowed_deltas ?? []) {
+    const head = String(delta).split(&quot;.&quot;)[0];
+    if (!observer.observations.includes(head)) {
+      problems.push(`allowed_delta &quot;${delta}&quot; is not an observation of ${name}`);
+    }
+    if (observer.non_waivable.includes(head)) {
+      problems.push(`&quot;${delta}&quot; names ${head}, which ${name} declares non-waivable`);
+    }
+  }
+  return { observer, problems };
+}
 
 const at = (object, dotted) =&gt;
   dotted.split(&quot;.&quot;).reduce((cursor, key) =&gt; (cursor == null ? cursor : cursor[key]), object);
@@ -344,6 +381,14 @@ function observe(rule, fixture) {
 
 export function checkAlias(alias, oldRule, newRule, fixture, currentVersion, majorsBetween, maxWindow) {
   const problems = [];
+
+  // Fail closed before anything is compared. A contract whose observer cannot
+  // be resolved has not been checked, and reporting &quot;holds&quot; for it is worse
+  // than reporting nothing.
+  const resolved = resolveObserver(alias);
+  problems.push(...resolved.problems);
+  if (!resolved.observer) return { alias, holds: false, problems, deltas: [] };
+
   if (!oldRule) problems.push(`the old name has nothing behind it`);
   if (!newRule) problems.push(`the replacement ${alias.replacement} does not exist`);
   if (problems.length) return { alias, holds: false, problems, deltas: [] };
@@ -656,8 +701,32 @@ console.log(&quot;\n== 5. the contract cannot be satisfied by declaring the drif
   const newRule = await load(alias.replacement);
   const result = check(alias, oldRule, newRule);
   report(&quot;listing findings as an allowed delta does not make the alias hold&quot;,
-    result.problems.includes(&quot;findings differ&quot;),
-    &quot;behaviour is not negotiable under this observer, and the code says so rather than a comment&quot;);
+    !result.holds, result.problems.join(&quot;; &quot;));
+  // It now fails EARLIER than it used to. Before 2026-08-08 the refusal came out
+  // of the comparison (&quot;findings differ&quot;); the observer now declares findings
+  // non-waivable and the contract is rejected at declaration time, before
+  // anything is compared. Refusing an unacceptable declaration beats refusing
+  // its result, because the result depends on a fixture and the declaration
+  // does not.
+  report(&quot;and it is refused at declaration time, not by the comparison&quot;,
+    result.problems.some((p) =&gt; p.includes(&quot;non-waivable&quot;)),
+    &quot;the observer declares findings non-waivable, so the contract never gets to run&quot;);
+
+  // Metron ran this file on 2026-08-08 with an observer id that does not exist
+  // and got holds:true — the name was a label and the comparator was hard-coded.
+  const bogus = { ...aliasFor(&quot;rules/imports-first&quot;),
+    equivalence: { observer: &quot;observer-that-does-not-exist&quot;, allowed_deltas: [&quot;meta.deprecated&quot;] } };
+  const base = await load(&quot;rules/first&quot;);
+  const bogusResult = check(bogus, { ...base, meta: { ...base.meta, deprecated: true } }, base);
+  report(&quot;an observer id that does not resolve fails closed&quot;,
+    !bogusResult.holds &amp;&amp; bogusResult.problems.some((p) =&gt; p.includes(&quot;does not resolve&quot;)),
+    bogusResult.problems.join(&quot;; &quot;));
+
+  const offObserver = { ...aliasFor(&quot;rules/imports-first&quot;),
+    equivalence: { observer: &quot;rule-contract-v1&quot;, allowed_deltas: [&quot;timing.ms&quot;] } };
+  const offResult = check(offObserver, { ...base, meta: { ...base.meta, deprecated: true } }, base);
+  report(&quot;an allowed_delta the observer does not observe is refused&quot;,
+    !offResult.holds, offResult.problems.join(&quot;; &quot;));
 }
 
 console.log(&quot;\n== 6. SCL owns the window, not the unit&quot;);
