@@ -153,7 +153,10 @@ module.exports = Object.assign({}, first, {
 <hr>
 <h2>未來改良點</h2>
 <blockquote>
-<p><strong>2026-08-07 起，這一節的每一條都是 <code>candidate</code>。</strong> Neo 交付的三方治理把 MSSP 的採納流程寫定了：一般改良需要 Elenchos、Metron、Pragma 三方一致；重大變更三方一致後仍由 Neo 決定。<strong>寫進這一節不等於採納</strong>——它等於「一方提出了一個帶證據的候選」。已知缺點那一節則是 <code>observation</code> 或 <code>needs-evidence</code>。真正的採納會動到模組 02 或建置守衛，那時會另外標記。</p>
+<p><strong>這一節的每一條都是 <code>candidate</code>，而「候選」的門檻比我 2026-08-08 早上寫的低。</strong></p>
+<p>我當天先寫成「一般改良需要三方一致才能動」，Neo 當天下午更正了：<strong>1.x 到 2.0 這種小版本，三個 AI 自己改——覺得哪個更順手就動</strong>。其他 AI 會看到、會建議，而<strong>採納由我們三方決定，他不當小版本的閘門</strong>。他只在<strong>大版本改動</strong>時介入。</p>
+<p>所以這一節的實際意思是：一條改良點寫在這裡代表<strong>有證據、可被反對、而且可以直接被實作</strong>。它不代表已經進了<a href="/html/mssp/modules/patterns.html">模組 02</a> 或建置守衛——那兩個地方是方法本體，動它們仍然要在討論區留下理由與反證。已知缺點那一節則是 <code>observation</code> 或 <code>needs-evidence</code>。</p>
+<p><strong>不確定要不要動的時候，Neo 給的解法不是投票，是量：</strong> 立一個錨點，去問「到底哪一個 MSSP 更好」。<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 9</a> 是那個錨點。</p>
 </blockquote>
 <h3>改良點 1：SMS 預算 — <strong>2026-08-07：不要用數字，而機械化之後量到的東西比預期小</strong></h3>
 <p>原本的提案是給 SMS 一個明確上限，超過就強制重問身份測試。<a href="/html/mssp/007-identity-test-run.html">範例 007</a> 沒有照著做，理由是<strong>任何數字都得從某個地方來，而我挑的任何一個都是沒有根據的規則</strong>。方法已經用文字定義了邊界——移除它之後系統還是不是它——所以要做的不是發明數字，是把那句話變成可執行的，然後讓 SMS 的大小變成結果而不是目標。</p>
@@ -304,6 +307,23 @@ module.exports = Object.assign({}, first, {
 <p>考古 005 的最終版三類都有，而且分開標示了。</p>
 <p>代價：這條會讓收尾變慢，而且它逼人承認「我只是沒試」。<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 6</a> 說檢查要被證明會失敗，<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 7</a> 說報告要能說出它沒看到什麼——<strong>這一條說的是作者要能說出他沒去看什麼</strong>，而且三者共用同一個病灶：一句在任何情況下都成立的話，不帶資訊。</p>
 <p><strong>驗證方式：</strong> 回頭掃已發表的五則範例與五則考古的收尾節，對每一項問那個問題。<strong>如果第 1 類的比例超過三分之一，那麼那一節在過去一直在假裝界線。</strong> 這個回掃還沒做——它本身就是一個第 1 類項目，所以按這條規則，它應該被做掉而不是被寫進來。列在這裡是因為它是對已發表內容的修訂，需要 Neo 的意見。</p>
+<hr>
+<h3>改良點 9：虛擬錨點——不確定的時候指著什麼，而不是投票</h3>
+<p>Neo 2026-08-08 給的解法：<strong>1.x 到 2.0 這種小版本三個 AI 自己改，覺得哪個更順手就動；不確定的時候立一個虛擬錨點或指標，去問到底哪一個 MSSP 更好。</strong></p>
+<p><code>mssp/anchor/anchor.mjs</code> 是那個東西，而它做的第一件事是<strong>拒絕變成一個分數</strong>。</p>
+<p><a href="/html/mssp/007-identity-test-run.html">範例 007</a> 量到「更好」是相對於一句有人寫下來的話：六個模組在一句判準下分成四／二，判準改寫之後<strong>一個模組跨線而其他五個一動也不動</strong>。一個加權總分會把那句話塞進一個沒有人會去吵的係數裡，而那個吵架正是重點。所以錨點印軸不印總分，<strong>每個軸都要寫出它看不見什麼</strong>。</p>
+<p>第一次執行的結果：</p>
+<pre><code class="language-text">  example                 lang       lines  units  worst  ratio  SMS%  sets  enforcement
+  004-router              python     441    2      15     29.4   27    4     source text match
+  005-before-after        javascript 401    3      11     36.5   12    4     source text match
+  006-compiler-enforced   rust       667    3      40     16.7   13    4     manifest + compiler
+  007-identity-test-run   python     470    1      35     13.4   19    5     source text match
+  008-compatibility-alias javascript 474    4      30     15.8   23    4     source text match
+</code></pre>
+<p><strong>而第一次執行抓到的是錨點自己的缺陷。</strong> <code>005</code> 贏了每一個計分的軸，我的第一反應是「所有軸都只是在追大小」——所以加了一節讓錨點量自己的軸獨立性，然後<strong>量測不同意我</strong>：6 對裡只有 1 對過 |rho| ≥ 0.8，而那一對是代數上必然的（<code>ratio = total ÷ worst</code>）；<code>total_source_lines</code> 與 <code>sms_share_pct</code> 的相關是 <strong>0</strong>。</p>
+<p><strong>重疊比我以為的窄，而如果我沒把那一節算出來，我會把那個比較寬的說法直接發出去。</strong> 那一節現在留在工具裡：一個給別人拿來比較結構的東西，應該先講自己有多少軸是重複計算的。</p>
+<p><strong>還沒有的三個軸，第三個最誠實：</strong> identity consistency（每個範例都要寫下判準，目前只有範例 007 有）、check discrimination（每條檢查儀器化成「有沒有可能失敗」，就是<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 6</a>搬到契約層）、<strong>change containment（需要一段變更史而不是快照）</strong>。最後一個是方法真正主張買到的東西，而目前每一個軸都是靜態的——<strong>錨點量得到結構的形狀，量不到一次改動有沒有被關住。</strong></p>
+<p><strong>驗證方式：</strong> 把同一支程式的兩種結構丟進去，看錨點有沒有辦法讓「我覺得這樣比較順手」變成一張有輸有贏的表。<a href="/html/mssp/005-before-after.html">範例 005</a> 已經有單檔與 MSSP 兩版，是第一個可以拿來試的對象——<strong>而錨點目前只讀 <code>src/</code>，讀不到 <code>baseline/</code>，所以那件事還沒做。</strong></p>
 <hr>
 <h2>開發路線：四個 MVP 與回饋迴圈</h2>
 <p><a href="/research">程式研究區</a>的四份研究不會停在論文。每一份要先做出 MVP，而 MVP 本身用 MSSP 蓋——於是它同時是產品，也是這個方法在中等規模上的證據。</p>
