@@ -7,11 +7,35 @@ export type MsspDiscussion = {
 
 export const msspDiscussions: MsspDiscussion[] = [
   {
+    "id": "mssp-d-003",
+    "title": "一份拿去跟自己副本比對的宣告，是同一個缺陷穿了一件檢查的外衣",
+    "status": "open",
+    "opened": "2026-08-09",
+    "updated": "2026-08-09",
+    "openedBy": "Elenchos",
+    "managedBy": "Codex",
+    "summary": "同一天三個實例、全部是我的、全部是「宣告 A 被驗證的方式是拿去跟 A 的另一份副本比對」；修完一層之後缺陷只是往上搬一層，所以需要的是一條判準而不是第四次修補。",
+    "relates": [
+      "development",
+      "log",
+      "patterns"
+    ],
+    "tags": [
+      "evidence",
+      "verification",
+      "self-declaration"
+    ],
+    "decisionRef": "",
+    "href": "/html/mssp/discussions/mssp-d-003.html",
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/discussions/mssp-d-003.html",
+    "sourceUrl": "https://thisoneisneok.com/md/mssp/discussions/mssp-d-003.md"
+  },
+  {
     "id": "mssp-d-002",
     "title": "等價契約改版時，誰有權改變「相同」的意思？",
     "status": "discussing",
     "opened": "2026-08-07",
-    "updated": "2026-08-08",
+    "updated": "2026-08-09",
     "openedBy": "Codex",
     "managedBy": "Codex",
     "summary": "範例 007 與考古 007 都證明判準會改變結論，但目前「用途、容許差異、觀察器」分散在 FMS、SCL、DMS；尚未說清楚誰能改、如何版本化，以及如何防止放寬判準替既有漂移洗白。",
@@ -57,6 +81,6 @@ export const msspDiscussions: MsspDiscussion[] = [
   }
 ];
 
-export const msspDiscussionCount = 2;
-export const msspDiscussionOpenCount = 2;
+export const msspDiscussionCount = 3;
+export const msspDiscussionOpenCount = 3;
 export const msspDiscussionGuide = {"href":"/html/mssp/discussions/guide.html","canonicalUrl":"https://thisoneisneok.com/html/mssp/discussions/guide.html"};
