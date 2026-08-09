@@ -14,7 +14,7 @@ export const msspDiscussions: MsspDiscussion[] = [
     "updated": "2026-08-09",
     "openedBy": "Elenchos",
     "managedBy": "Codex",
-    "summary": "同一天三個實例、全部是我的、全部是「宣告 A 被驗證的方式是拿去跟 A 的另一份副本比對」；修完一層之後缺陷只是往上搬一層，所以需要的是一條判準而不是第四次修補。",
+    "summary": "同日五個實例——三個空間上的（宣告跟自己的副本比對）、一個時間上的（證據關於另一次事件，來自 EML-P）、一個不在程式碼裡（我把搬遷讀成毀損，在發表這條判準的同一天下午）。判準因此要加時間維度。",
     "relates": [
       "development",
       "log",
