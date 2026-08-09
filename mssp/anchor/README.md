@@ -24,17 +24,15 @@ Neo，2026-08-08：
 
 ## 目前的輸出
 
-```text
-  example                 lang       lines  units  worst  ratio  SMS%  sets  enforcement
-  001-task-runner         javascript 455    4      94     4.8    34    5     source text match
-  002-link-checker        python     642    3      156    4.1    27    5     source text match
-  003-record-migration    javascript 543    2      67     8.1    28    5     source text match
-  004-router              python     441    2      15     29.4   27    5     source text match
-  005-before-after        javascript 401    3      11     36.5   12    5     source text match
-  006-compiler-enforced   rust       667    3      40     16.7   13    5     manifest + compiler
-  007-identity-test-run   python     470    1      35     13.4   19    5     source text match
-  008-compatibility-alias javascript 532    4      30     17.7   27    5     source text match
+跑它，不要引它：
+
+```bash
+node mssp/anchor/anchor.mjs
 ```
+
+**這份 README 先前貼了一張表跟六個 rho 值。那是錯的做法。** 每加一個範例，每一個數字都會動——Metron 在 2026-08-09 看到 `rho -0.05`，我文件裡寫的是 `0.07`，而我重跑得到 `0.08`。三個都對，對應三個不同時刻的語料。**一份引用計算值當固定事實的文件，隔天就開始說謊。**
+
+所以這裡只寫不會隨語料變動的東西：
 
 - **worst** — 要使用最貴的那個 TMS 單元，必須載入多少行（跟著本地 import 走）
 - **ratio** — 總行數 ÷ worst。這是[範例 005](/html/mssp/005-before-after.html) 拿來當「隔離」證據的那個數字
@@ -50,20 +48,12 @@ Metron 2026-08-08 的審查結論，我接受：**它成功揭露了要量哪些
 
 **然後 Metron 指出那個量測本身是錯的。** 我用的是 `1 - 6Σd²/n(n²-1)` 這個捷徑公式，它只在**沒有並列**時成立，而 SMS% 有兩個 27。也就是說：**我拿一個不適用的統計量去「修正」自己，然後把那個修正當成誠實的示範。**
 
-改成平均排名加上排名上的 Pearson（定義本身，不是捷徑）之後：
+改成平均排名加上排名上的 Pearson（定義本身，不是捷徑）之後，**結論沒有翻，但撐著它的數字先前是錯的**：
 
-```text
-  isolation_ratio         worst_unit_load_lines   rho  -0.98  <- these two are not independent evidence
-  worst_unit_load_lines   total_source_lines      rho   0.64
-  isolation_ratio         sms_share_pct           rho  -0.61
-  worst_unit_load_lines   sms_share_pct           rho   0.59
-  isolation_ratio         total_source_lines      rho  -0.55
-  total_source_lines      sms_share_pct           rho   0.07
+- 六對裡**只有一對**過 `|rho| >= 0.8`，而那一對是代數上必然的（`ratio = total ÷ worst`），它永遠不可能跟這兩個之中任何一個構成獨立證據；
+- `total_source_lines` 與 `sms_share_pct` 幾乎不相關——一個結構可以很大而 SMS 很小。
 
-  1 of 6 axis pairs move together at |rho| >= 0.8.
-```
-
-結論沒有翻——只有一對過線，而且那一對是代數上必然的（`ratio = total ÷ worst`）；`total_source_lines` 與 `sms_share_pct` 仍然幾乎不相關。**但我先前引用的那個「rho 0」是錯的，正確值是 0.07，而我是拿它當作「量測比我誠實」的證據在講。** 那個結論現在有正確的數字撐著，先前沒有。
+**具體的小數不寫在這裡**，因為它每加一個範例就會動（見上）。工具自己會印，而工具印的那一份是唯一跟語料同步的。
 
 ## Metron 找到而尚未修好的量測缺陷
 
@@ -91,4 +81,4 @@ Metron 2026-08-08 的審查結論，我接受：**它成功揭露了要量哪些
 
 ## 它不決定什麼
 
-它不是治理機制。三方一致、大版本由 Neo 決定——那些都沒有因為有了一張表而改變。錨點的用途只有一個：**把「我覺得這樣比較順手」變成「這裡有八列數字，其中一列對我不利」。**
+它不是治理機制。**1.x 到 2.0 的小版本由三個 AI 自己改、大版本由 Neo 決定**（Neo 2026-08-08 的更正；先前這裡寫「三方一致」，那是更正前的讀法）——那些都沒有因為有了一張表而改變。錨點的用途只有一個：**把「我覺得這樣比較順手」變成「這裡有八列數字，其中一列對我不利」。**

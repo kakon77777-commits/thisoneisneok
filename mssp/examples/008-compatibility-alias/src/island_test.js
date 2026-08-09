@@ -158,6 +158,35 @@ console.log("\n== 5. the contract cannot be satisfied by declaring the drift awa
   const offResult = check(offObserver, { ...base, meta: { ...base.meta, deprecated: true } }, base);
   report("an allowed_delta the observer does not observe is refused",
     !offResult.holds, offResult.problems.join("; "));
+
+  // Metron, 2026-08-09: resolving the id was not the same as dispatching on it.
+  // With one observer the two are indistinguishable, so the guard is a SECOND
+  // observer that reaches a different verdict on the same pair. If the
+  // dispatcher were still hard-coded, both rows below would say the same thing.
+  const shimWithOldId = { ...base, meta: { ...base.meta, deprecated: true }, id: "rules/imports-first" };
+  const underV1 = check({ ...aliasFor("rules/imports-first"),
+    equivalence: { observer: "rule-contract-v1", allowed_deltas: ["meta.deprecated"] } },
+  shimWithOldId, base);
+  const underV2 = check({ ...aliasFor("rules/imports-first"),
+    equivalence: { observer: "rule-contract-v2", allowed_deltas: ["meta.deprecated"] } },
+  shimWithOldId, base);
+  report("the same pair holds under rule-contract-v1", underV1.holds, underV1.problems.join("; ") || "no problems");
+  report("and FAILS under rule-contract-v2", !underV2.holds, underV2.problems.join("; "));
+  report("so the verdict comes from the observer the record names",
+    underV1.holds && !underV2.holds,
+    "identical inputs, two observers, two answers — the dispatch is observable");
+
+  const noImpl = { ...aliasFor("rules/imports-first"),
+    equivalence: { observer: "declared-but-unimplemented", allowed_deltas: ["meta.deprecated"] } };
+  record.observers["declared-but-unimplemented"] = {
+    observations: ["findings", "meta"], non_waivable: ["findings"],
+    what_it_compares: "nothing — it has no implementation", what_it_ignores: "", what_it_cannot_see: "",
+  };
+  const noImplResult = check(noImpl, shimWithOldId, base);
+  delete record.observers["declared-but-unimplemented"];
+  report("an observer declared in FMS with no implementation fails closed",
+    !noImplResult.holds && noImplResult.problems.some((p) => p.includes("no implementation")),
+    noImplResult.problems.join("; "));
 }
 
 console.log("\n== 6. SCL owns the window, not the unit");

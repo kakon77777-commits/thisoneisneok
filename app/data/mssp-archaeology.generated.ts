@@ -21,7 +21,7 @@ export const archaeology = [
       "the-standard-instrument-erases-that-memory",
       "a-three-layer-facade-where-the-file-you-read-is-not-the-one-that-runs"
     ],
-    "lineCount": 396,
+    "lineCount": 461,
     "href": "/html/mssp/archaeology/009-cpython-warnings.html",
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/archaeology/009-cpython-warnings.html"
   },

@@ -47,11 +47,23 @@ def main(argv):
                    for lost in entry["lost"] if not lost["reason"]]
     unfalsifiable = [r["clause"] for r in clause_reports if not r["falsifiable"]]
 
+    # Metron, 2026-08-09: the README said "every listed witness must really
+    # falsify the clause it is listed under" and this gate only read
+    # report["falsifiable"] — one working witness covered for a broken one. The
+    # report printed PROVES NOTHING and the verdict did not care.
+    invalid = [(r["clause"], w["witness"]) for r in clause_reports
+               for w in r["witnesses"] if not w["falsifies"]]
+    if invalid:
+        listed = ", ".join(f"{c}/{w}" for c, w in invalid)
+        sys.stdout.write(f"\n  witnesses that prove nothing: {listed}\n")
+
     if "--strict" not in argv:
         return 0
     if unexplained and policy.removal_is_fatal():
         return 1
     if unfalsifiable and policy.every_clause_must_be_falsifiable():
+        return 1
+    if invalid and policy.every_named_witness_must_be_valid():
         return 1
     return 0
 

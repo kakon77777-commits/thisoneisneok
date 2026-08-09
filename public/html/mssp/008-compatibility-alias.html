@@ -45,7 +45,7 @@ footer a{color:var(--accent)}
     <div><b>語言</b><span>javascript</span></div>
     <div><b>版本</b><span>v1.0</span></div>
     <div><b>日期</b><span>2026-08-08</span></div>
-    <div><b>行數</b><span>619</span></div>
+    <div><b>行數</b><span>711</span></div>
     <div><b>執行</b><span><code>node src/main.js</code></span></div>
   </section>
   <article class="content"><h1>008 — A rename is a third kind of edge, and here is the counter-example that proves the check works</h1>
@@ -282,7 +282,20 @@ protecting them is that the flag is named.</p>
       &quot;what_it_compares&quot;: &quot;for each fixture line, the set of findings the rule produces, plus every meta field&quot;,
       &quot;what_it_ignores&quot;: &quot;nothing by default — allowed_deltas is per-alias and must name an observation listed above&quot;,
       &quot;what_it_cannot_see&quot;: &quot;timing, memory, anything the rule does that is not a finding or a meta field&quot;,
-      &quot;note&quot;: &quot;observations and non_waivable are read by SMS/contract.js. Metron found on 2026-08-08 that the observer name was only a label — an unresolvable id still returned holds:true.&quot;
+      &quot;note&quot;: &quot;observations and non_waivable are read by SMS/contract.js. Metron found on 2026-08-08 that the observer name was only a label — an unresolvable id still returned holds:true. 2026-08-09: implementations now live in SMS/observers.js and are resolved by id; an id with no implementation fails closed.&quot;
+    },
+    &quot;rule-contract-v2&quot;: {
+      &quot;observations&quot;: [
+        &quot;findings&quot;,
+        &quot;meta&quot;
+      ],
+      &quot;non_waivable&quot;: [
+        &quot;findings&quot;
+      ],
+      &quot;what_it_compares&quot;: &quot;the same as v1, plus the rule id — so two rules with different ids and identical behaviour are NOT equivalent under it&quot;,
+      &quot;what_it_ignores&quot;: &quot;nothing by default&quot;,
+      &quot;what_it_cannot_see&quot;: &quot;timing, memory, anything that is not a finding or a meta field&quot;,
+      &quot;why_it_exists&quot;: &quot;Metron, 2026-08-09: with one observer, resolving an id and dispatching on it are indistinguishable. A second observer that gives a DIFFERENT verdict on the same pair is what makes the dispatch observable.&quot;
     }
   },
   &quot;sets&quot;: {
@@ -340,7 +353,8 @@ export function majorsBetween(from, to) {
 // reality matches a sameness someone declared, under a named observer, with the
 // permitted differences written down in advance.
 
-import { apply, record } from &quot;./registry.js&quot;;
+import { record } from &quot;./registry.js&quot;;
+import { resolveImplementation } from &quot;./observers.js&quot;;
 
 // Metron ran this on 2026-08-08 with observer: &quot;observer-that-does-not-exist&quot;
 // and got {holds: true, problems: []}. The observer name was a label — the
@@ -355,6 +369,12 @@ function resolveObserver(alias) {
   if (!observer) {
     return { problems: [`observer &quot;${name}&quot; does not resolve in FMS — fail closed`] };
   }
+  // Metron, 2026-08-09: resolving the id was not enough. The verdict has to be
+  // produced BY the implementation that id names, or the check still only
+  // proves &quot;the one comparator in this file passes&quot;.
+  const bound = resolveImplementation(name);
+  if (bound.problem) return { problems: [bound.problem] };
+
   const problems = [];
   for (const delta of alias.equivalence.allowed_deltas ?? []) {
     const head = String(delta).split(&quot;.&quot;)[0];
@@ -365,18 +385,7 @@ function resolveObserver(alias) {
       problems.push(`&quot;${delta}&quot; names ${head}, which ${name} declares non-waivable`);
     }
   }
-  return { observer, problems };
-}
-
-const at = (object, dotted) =&gt;
-  dotted.split(&quot;.&quot;).reduce((cursor, key) =&gt; (cursor == null ? cursor : cursor[key]), object);
-
-/** rule-contract-v1: findings per line, plus every meta field. */
-function observe(rule, fixture) {
-  return {
-    findings: apply(rule, fixture).map((f) =&gt; `${f.line}:${f.message}`),
-    meta: rule.meta ?? {},
-  };
+  return { observer, observe: bound.implementation, problems };
 }
 
 export function checkAlias(alias, oldRule, newRule, fixture, currentVersion, majorsBetween, maxWindow) {
@@ -393,8 +402,8 @@ export function checkAlias(alias, oldRule, newRule, fixture, currentVersion, maj
   if (!newRule) problems.push(`the replacement ${alias.replacement} does not exist`);
   if (problems.length) return { alias, holds: false, problems, deltas: [] };
 
-  const before = observe(oldRule, fixture);
-  const after = observe(newRule, fixture);
+  const before = resolved.observe(oldRule, fixture);
+  const after = resolved.observe(newRule, fixture);
 
   // Behaviour is never in allowed_deltas by construction: the observer's whole
   // purpose is that findings must agree. Saying otherwise would make the
@@ -428,6 +437,59 @@ export function checkAlias(alias, oldRule, newRule, fixture, currentVersion, maj
   }
 
   return { alias, holds: problems.length === 0, problems, deltas };
+}
+</code></pre></details><details><summary>SMS/observers.js</summary><pre><code>// Observer implementations, resolved by the id the record names.
+//
+// Metron, 2026-08-09, on yesterday's repair:
+//
+//   現在 resolveObserver() 會確認 id 存在於 FMS；但實際執行仍固定呼叫檔案裡唯一的
+//   observe()。… 所以修復目前保證的是「id 必須存在」，還不是「verdict 由該 id 所指
+//   的 observer implementation 產生」。
+//
+// They added a resolvable `different-observer-v2`, pointed an alias at it, and
+// got holds: true from the rule-contract-v1 comparator. With one observer that
+// is not yet a wrong answer; the moment mssp-d-002 starts versioning observers
+// it becomes one.
+//
+// So an observer is a function here, not a description. An id in the record
+// with nothing behind it fails closed, the same way a predicate id does.
+
+import { apply } from &quot;./registry.js&quot;;
+
+/** rule-contract-v1: findings per fixture line, plus every meta field. */
+function ruleContractV1(rule, fixture) {
+  return {
+    findings: apply(rule, fixture).map((f) =&gt; `${f.line}:${f.message}`),
+    meta: rule.meta ?? {},
+  };
+}
+
+/**
+ * rule-contract-v2: the same, plus the rule's own id.
+ *
+ * It exists so the dispatcher has something to be wrong about. Under v1 two
+ * rules with different ids and identical behaviour are equivalent; under v2
+ * they are not, and the island test uses exactly that difference to prove the
+ * verdict came from the named observer rather than from the only one there is.
+ */
+function ruleContractV2(rule, fixture) {
+  return {
+    findings: apply(rule, fixture).map((f) =&gt; `${f.line}:${f.message}`),
+    meta: { ...(rule.meta ?? {}), id: rule.id },
+  };
+}
+
+export const IMPLEMENTATIONS = {
+  &quot;rule-contract-v1&quot;: ruleContractV1,
+  &quot;rule-contract-v2&quot;: ruleContractV2,
+};
+
+export function resolveImplementation(name) {
+  const implementation = IMPLEMENTATIONS[name];
+  if (!implementation) {
+    return { problem: `observer &quot;${name}&quot; has no implementation — fail closed` };
+  }
+  return { implementation };
 }
 </code></pre></details><details><summary>SMS/registry.js</summary><pre><code>// Name resolution through the architecture record.
 //
@@ -727,6 +789,35 @@ console.log(&quot;\n== 5. the contract cannot be satisfied by declaring the drif
   const offResult = check(offObserver, { ...base, meta: { ...base.meta, deprecated: true } }, base);
   report(&quot;an allowed_delta the observer does not observe is refused&quot;,
     !offResult.holds, offResult.problems.join(&quot;; &quot;));
+
+  // Metron, 2026-08-09: resolving the id was not the same as dispatching on it.
+  // With one observer the two are indistinguishable, so the guard is a SECOND
+  // observer that reaches a different verdict on the same pair. If the
+  // dispatcher were still hard-coded, both rows below would say the same thing.
+  const shimWithOldId = { ...base, meta: { ...base.meta, deprecated: true }, id: &quot;rules/imports-first&quot; };
+  const underV1 = check({ ...aliasFor(&quot;rules/imports-first&quot;),
+    equivalence: { observer: &quot;rule-contract-v1&quot;, allowed_deltas: [&quot;meta.deprecated&quot;] } },
+  shimWithOldId, base);
+  const underV2 = check({ ...aliasFor(&quot;rules/imports-first&quot;),
+    equivalence: { observer: &quot;rule-contract-v2&quot;, allowed_deltas: [&quot;meta.deprecated&quot;] } },
+  shimWithOldId, base);
+  report(&quot;the same pair holds under rule-contract-v1&quot;, underV1.holds, underV1.problems.join(&quot;; &quot;) || &quot;no problems&quot;);
+  report(&quot;and FAILS under rule-contract-v2&quot;, !underV2.holds, underV2.problems.join(&quot;; &quot;));
+  report(&quot;so the verdict comes from the observer the record names&quot;,
+    underV1.holds &amp;&amp; !underV2.holds,
+    &quot;identical inputs, two observers, two answers — the dispatch is observable&quot;);
+
+  const noImpl = { ...aliasFor(&quot;rules/imports-first&quot;),
+    equivalence: { observer: &quot;declared-but-unimplemented&quot;, allowed_deltas: [&quot;meta.deprecated&quot;] } };
+  record.observers[&quot;declared-but-unimplemented&quot;] = {
+    observations: [&quot;findings&quot;, &quot;meta&quot;], non_waivable: [&quot;findings&quot;],
+    what_it_compares: &quot;nothing — it has no implementation&quot;, what_it_ignores: &quot;&quot;, what_it_cannot_see: &quot;&quot;,
+  };
+  const noImplResult = check(noImpl, shimWithOldId, base);
+  delete record.observers[&quot;declared-but-unimplemented&quot;];
+  report(&quot;an observer declared in FMS with no implementation fails closed&quot;,
+    !noImplResult.holds &amp;&amp; noImplResult.problems.some((p) =&gt; p.includes(&quot;no implementation&quot;)),
+    noImplResult.problems.join(&quot;; &quot;));
 }
 
 console.log(&quot;\n== 6. SCL owns the window, not the unit&quot;);

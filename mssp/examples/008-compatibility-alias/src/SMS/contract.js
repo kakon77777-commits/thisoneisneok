@@ -11,7 +11,8 @@
 // reality matches a sameness someone declared, under a named observer, with the
 // permitted differences written down in advance.
 
-import { apply, record } from "./registry.js";
+import { record } from "./registry.js";
+import { resolveImplementation } from "./observers.js";
 
 // Metron ran this on 2026-08-08 with observer: "observer-that-does-not-exist"
 // and got {holds: true, problems: []}. The observer name was a label — the
@@ -26,6 +27,12 @@ function resolveObserver(alias) {
   if (!observer) {
     return { problems: [`observer "${name}" does not resolve in FMS — fail closed`] };
   }
+  // Metron, 2026-08-09: resolving the id was not enough. The verdict has to be
+  // produced BY the implementation that id names, or the check still only
+  // proves "the one comparator in this file passes".
+  const bound = resolveImplementation(name);
+  if (bound.problem) return { problems: [bound.problem] };
+
   const problems = [];
   for (const delta of alias.equivalence.allowed_deltas ?? []) {
     const head = String(delta).split(".")[0];
@@ -36,18 +43,7 @@ function resolveObserver(alias) {
       problems.push(`"${delta}" names ${head}, which ${name} declares non-waivable`);
     }
   }
-  return { observer, problems };
-}
-
-const at = (object, dotted) =>
-  dotted.split(".").reduce((cursor, key) => (cursor == null ? cursor : cursor[key]), object);
-
-/** rule-contract-v1: findings per line, plus every meta field. */
-function observe(rule, fixture) {
-  return {
-    findings: apply(rule, fixture).map((f) => `${f.line}:${f.message}`),
-    meta: rule.meta ?? {},
-  };
+  return { observer, observe: bound.implementation, problems };
 }
 
 export function checkAlias(alias, oldRule, newRule, fixture, currentVersion, majorsBetween, maxWindow) {
@@ -64,8 +60,8 @@ export function checkAlias(alias, oldRule, newRule, fixture, currentVersion, maj
   if (!newRule) problems.push(`the replacement ${alias.replacement} does not exist`);
   if (problems.length) return { alias, holds: false, problems, deltas: [] };
 
-  const before = observe(oldRule, fixture);
-  const after = observe(newRule, fixture);
+  const before = resolved.observe(oldRule, fixture);
+  const after = resolved.observe(newRule, fixture);
 
   // Behaviour is never in allowed_deltas by construction: the observer's whole
   // purpose is that findings must agree. Saying otherwise would make the

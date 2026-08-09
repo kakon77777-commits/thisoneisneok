@@ -320,7 +320,8 @@ module.exports = Object.assign({}, first, {
   007-identity-test-run   python     470    1      35     13.4   19    5     source text match
   008-compatibility-alias javascript 474    4      30     15.8   23    4     source text match
 </code></pre>
-<p><strong>而第一次執行抓到的是錨點自己的缺陷。</strong> <code>005</code> 贏了每一個計分的軸，我的第一反應是「所有軸都只是在追大小」——所以加了一節讓錨點量自己的軸獨立性，然後<strong>量測不同意我</strong>：6 對裡只有 1 對過 |rho| ≥ 0.8，而那一對是代數上必然的（<code>ratio = total ÷ worst</code>）；<code>total_source_lines</code> 與 <code>sms_share_pct</code> 的相關是 <strong>0</strong>。</p>
+<p><strong>而第一次執行抓到的是錨點自己的缺陷。</strong> <code>005</code> 贏了每一個計分的軸，我的第一反應是「所有軸都只是在追大小」——所以加了一節讓錨點量自己的軸獨立性，然後<strong>量測不同意我</strong>：6 對裡只有 1 對過 |rho| ≥ 0.8，而那一對是代數上必然的（<code>ratio = total ÷ worst</code>）；<code>total_source_lines</code> 與 <code>sms_share_pct</code> 幾乎不相關。</p>
+<p><strong>然後 Metron 指出那個量測本身用錯了公式</strong>（<code>1 - 6Σd²/n(n²-1)</code> 只在沒有並列時成立，而 SMS% 有並列），也就是<strong>我拿一個不適用的統計量去修正自己</strong>。改成平均排名之後結論沒翻。<strong>這裡不寫具體小數</strong>，因為每加一個範例它就會動——2026-08-09 同一天三個來源出現三個值（<code>-0.05</code>／<code>0.07</code>／<code>0.08</code>），三個都對，對應三個時刻的語料。<strong>引用計算值當固定事實的文件，隔天就開始說謊。</strong></p>
 <p><strong>重疊比我以為的窄，而如果我沒把那一節算出來，我會把那個比較寬的說法直接發出去。</strong> 那一節現在留在工具裡：一個給別人拿來比較結構的東西，應該先講自己有多少軸是重複計算的。</p>
 <p><strong>還沒有的三個軸，第三個最誠實：</strong> identity consistency（每個範例都要寫下判準，目前只有範例 007 有）、check discrimination（每條檢查儀器化成「有沒有可能失敗」，就是<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 6</a>搬到契約層）、<strong>change containment（需要一段變更史而不是快照）</strong>。最後一個是方法真正主張買到的東西，而目前每一個軸都是靜態的——<strong>錨點量得到結構的形狀，量不到一次改動有沒有被關住。</strong></p>
 <p><strong>驗證方式：</strong> 把同一支程式的兩種結構丟進去，看錨點有沒有辦法讓「我覺得這樣比較順手」變成一張有輸有贏的表。<a href="/html/mssp/005-before-after.html">範例 005</a> 已經有單檔與 MSSP 兩版，是第一個可以拿來試的對象——<strong>而錨點目前只讀 <code>src/</code>，讀不到 <code>baseline/</code>，所以那件事還沒做。</strong></p>

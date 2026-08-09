@@ -32,14 +32,60 @@ def check(label, ok, detail=""):
         FAILURES.append(label)
 
 
-print("\n== 1. each observer is an island, and declares whether it perturbs")
+print("\n== 1. each observer is an island, and its perturbation is MEASURED")
 for module in (passive, resetting):
     source = (HERE / "TMS" / "observers" / f"{module.NAME}.py").read_text(encoding="utf-8")
     reaches = re.findall(r"^\s*(?:from|import)\s+(\S+)", source, re.M)
     check(f"observers/{module.NAME} imports nothing", not reaches, ", ".join(reaches) or "none")
+
+
+def measure_perturbation(run_observer):
+    """Run an observer against a primed channel and watch what it does to it.
+
+    Metron and Pragma both found, independently on 2026-08-09, that this
+    section previously compared `module.PERTURBS` with the record's
+    `perturbs_the_channel` — two declarations agreeing with each other. Setting
+    both to False left the resetting observer clearing the memory twice and the
+    check still passed. That is the same shape as "the permit was prose nobody
+    read", one layer up: a self-declaration verified against a copy of itself.
+    """
+    ch = Channel()
+    ch.send("primed.py:1", "already delivered")
+    before = (len(ch.clears), len(ch.delivered))
+    run_observer(ch)
+    after = (len(ch.clears), len(ch.delivered))
+    return {
+        "cleared_memory": after[0] > before[0]
+                          and any(state == "cleared" for _, state in ch.clears),
+        "clear_events": [c for c in ch.clears],
+    }
+
+
+measured = {
+    passive.NAME: measure_perturbation(
+        lambda ch: passive.observe(ch, lambda: ch.send("primed.py:1", "already delivered"))),
+    resetting.NAME: measure_perturbation(
+        lambda ch: resetting.observe(ch, lambda: ch.send("primed.py:1", "already delivered"),
+                                     lambda: ch.clear_memory("test-harness", policy.may_clear))),
+}
+for module in (passive, resetting):
     declared = RECORD["observers"][module.NAME]["perturbs_the_channel"]
-    check(f"observers/{module.NAME} agrees with the record about perturbing",
-          module.PERTURBS == declared, f"module says {module.PERTURBS}, record says {declared}")
+    observed = measured[module.NAME]["cleared_memory"]
+    check(f"observers/{module.NAME}: the record's claim matches what it actually did",
+          declared == observed,
+          f"record says {declared}, the run shows cleared_memory={observed} "
+          f"({measured[module.NAME]['clear_events'] or 'no clear events'})")
+    check(f"observers/{module.NAME}: and the module constant agrees too",
+          module.PERTURBS == observed, f"module says {module.PERTURBS}, measured {observed}")
+
+# The failing case: a declaration that lies is caught by the measurement, which
+# is the whole point of measuring rather than comparing two labels.
+lying = measure_perturbation(
+    lambda ch: resetting.observe(ch, lambda: ch.send("primed.py:1", "x"),
+                                 lambda: ch.clear_memory("test-harness", policy.may_clear)))
+check("an observer declared passive while clearing memory would be caught",
+      lying["cleared_memory"] is True,
+      "the measurement sees the clear events regardless of what any file says")
 
 print("\n== 2. the same code, two observers, different numbers")
 ch = Channel()
@@ -118,6 +164,23 @@ for _ in range(5):
         instrumented += len(w)
 check("the same five calls, each wrapped, emit FIVE", instrumented == 5,
       f"{instrumented} of 5 — catch_warnings mutates the filters and every registry is discarded")
+
+# Pragma, 2026-08-09: the row above uses catch_warnings AND simplefilter, so it
+# demonstrates the combination and cannot isolate the cause. A caller reading it
+# could reasonably conclude simplefilter("always") is what does the work. The
+# control below removes simplefilter entirely.
+catch_only = 0
+for _ in range(5):
+    with warnings.catch_warnings(record=True) as w:
+        emit()
+        catch_only += len(w)
+check("CONTROL: catch_warnings alone, no simplefilter, also emits FIVE",
+      catch_only == 5,
+      f"{catch_only} of 5 — so entering the context manager is sufficient; "
+      "simplefilter is not what restores the notice")
+check("which isolates the cause to the filter mutation, not the filter setting",
+      catch_only == instrumented == 5 and uninstrumented == 1,
+      "baseline 1, catch-only 5, catch+simplefilter 5")
 check("so the instrument changed the channel it was measuring",
       uninstrumented == 1 and instrumented == 5,
       "1 vs 5 from identical code — this is archaeology 008's observer")

@@ -54,7 +54,20 @@
       "what_it_compares": "for each fixture line, the set of findings the rule produces, plus every meta field",
       "what_it_ignores": "nothing by default — allowed_deltas is per-alias and must name an observation listed above",
       "what_it_cannot_see": "timing, memory, anything the rule does that is not a finding or a meta field",
-      "note": "observations and non_waivable are read by SMS/contract.js. Metron found on 2026-08-08 that the observer name was only a label — an unresolvable id still returned holds:true."
+      "note": "observations and non_waivable are read by SMS/contract.js. Metron found on 2026-08-08 that the observer name was only a label — an unresolvable id still returned holds:true. 2026-08-09: implementations now live in SMS/observers.js and are resolved by id; an id with no implementation fails closed."
+    },
+    "rule-contract-v2": {
+      "observations": [
+        "findings",
+        "meta"
+      ],
+      "non_waivable": [
+        "findings"
+      ],
+      "what_it_compares": "the same as v1, plus the rule id — so two rules with different ids and identical behaviour are NOT equivalent under it",
+      "what_it_ignores": "nothing by default",
+      "what_it_cannot_see": "timing, memory, anything that is not a finding or a meta field",
+      "why_it_exists": "Metron, 2026-08-09: with one observer, resolving an id and dispatching on it are indistinguishable. A second observer that gives a DIFFERENT verdict on the same pair is what makes the dispatch observable."
     }
   },
   "sets": {

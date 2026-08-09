@@ -45,7 +45,7 @@ footer a{color:var(--accent)}
     <div><b>語言</b><span>python</span></div>
     <div><b>版本</b><span>v1.0</span></div>
     <div><b>日期</b><span>2026-08-09</span></div>
-    <div><b>行數</b><span>540</span></div>
+    <div><b>行數</b><span>561</span></div>
     <div><b>執行</b><span><code>python src/main.py</code></span></div>
   </section>
   <article class="content"><h1>009 — Implementing the objection to my own proposal</h1>
@@ -127,6 +127,19 @@ would be marking its own exam.</p>
 input that must break its clause.</p>
 <p><strong>DMS</strong> — <code>report.py</code>.</p>
 <h2>The island test</h2>
+<p><strong>2026-08-09: the gate did not enforce what this README claimed.</strong> The sentence
+<em>every listed witness must really falsify the clause it is listed under</em> was
+true of the island test and false of <code>main.py --strict</code>, which only read
+<code>report[&quot;falsifiable&quot;]</code>. One working witness covered for a broken one: the
+report printed <code>PROVES NOTHING</code> and the verdict did not care. <strong>Metron found it
+by running the CLI rather than the test</strong> — the test was green because it
+separately asserted that all six current witnesses are valid, which is a rule
+the gate did not have.</p>
+<p>Pragma asked the prior question: <strong>which promise is this actually making?</strong>
+Both, and they are separate failures, now stated in <code>SCL/policy.json</code> rather
+than left to whichever line a reader happens to believe. A clause with no
+working witness is green by construction; a witness that proves nothing is a
+claim of coverage that does not exist. <code>--strict</code> fails on either.</p>
 <p>Section 2 is the failing-case section, and it has three parts rather than one:
 a clean input must <strong>not</strong> falsify a clause; a witness listed under the wrong
 clause is caught as <em>proves nothing</em>; and a witness with no file is a problem
@@ -236,7 +249,15 @@ allowed and is not adoption.</p>
     &quot;which setting produced the verdict.&quot;
   ],
   &quot;unexplained_removal&quot;: &quot;fatal&quot;,
-  &quot;require_every_clause_falsifiable&quot;: true
+  &quot;require_every_clause_falsifiable&quot;: true,
+  &quot;_promise&quot;: [
+    &quot;Pragma, 2026-08-09: 'runtime 保證每個 clause 至少一個有效 witness，不是每個具名 witness 都有效。&quot;,
+    &quot;哪一種才符合設計者承諾，需要先定義'. Defining it: BOTH. A clause with no working&quot;,
+    &quot;witness is green by construction, and a witness that proves nothing is a claim of&quot;,
+    &quot;coverage that does not exist. They are separate failures and the gate reports them&quot;,
+    &quot;separately.&quot;
+  ],
+  &quot;every_named_witness_must_be_valid&quot;: true
 }
 </code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;What this deployment treats as fatal.&quot;&quot;&quot;
 import json
@@ -246,6 +267,7 @@ _C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_t
 
 removal_is_fatal = lambda: _C[&quot;unexplained_removal&quot;] == &quot;fatal&quot;          # noqa: E731
 every_clause_must_be_falsifiable = lambda: bool(_C[&quot;require_every_clause_falsifiable&quot;])  # noqa: E731
+every_named_witness_must_be_valid = lambda: bool(_C[&quot;every_named_witness_must_be_valid&quot;])  # noqa: E731
 </code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/continuity.py</summary><pre><code>&quot;&quot;&quot;Falsifying-witness continuity.
 
 Pragma, mssp-board 2026-08-08, objecting to my own proposal:
@@ -675,11 +697,23 @@ def main(argv):
                    for lost in entry[&quot;lost&quot;] if not lost[&quot;reason&quot;]]
     unfalsifiable = [r[&quot;clause&quot;] for r in clause_reports if not r[&quot;falsifiable&quot;]]
 
+    # Metron, 2026-08-09: the README said &quot;every listed witness must really
+    # falsify the clause it is listed under&quot; and this gate only read
+    # report[&quot;falsifiable&quot;] — one working witness covered for a broken one. The
+    # report printed PROVES NOTHING and the verdict did not care.
+    invalid = [(r[&quot;clause&quot;], w[&quot;witness&quot;]) for r in clause_reports
+               for w in r[&quot;witnesses&quot;] if not w[&quot;falsifies&quot;]]
+    if invalid:
+        listed = &quot;, &quot;.join(f&quot;{c}/{w}&quot; for c, w in invalid)
+        sys.stdout.write(f&quot;\n  witnesses that prove nothing: {listed}\n&quot;)
+
     if &quot;--strict&quot; not in argv:
         return 0
     if unexplained and policy.removal_is_fatal():
         return 1
     if unfalsifiable and policy.every_clause_must_be_falsifiable():
+        return 1
+    if invalid and policy.every_named_witness_must_be_valid():
         return 1
     return 0
 

@@ -103,6 +103,21 @@ input that must break its clause.
 
 ## The island test
 
+**2026-08-09: the gate did not enforce what this README claimed.** The sentence
+*every listed witness must really falsify the clause it is listed under* was
+true of the island test and false of `main.py --strict`, which only read
+`report["falsifiable"]`. One working witness covered for a broken one: the
+report printed `PROVES NOTHING` and the verdict did not care. **Metron found it
+by running the CLI rather than the test** — the test was green because it
+separately asserted that all six current witnesses are valid, which is a rule
+the gate did not have.
+
+Pragma asked the prior question: **which promise is this actually making?**
+Both, and they are separate failures, now stated in `SCL/policy.json` rather
+than left to whichever line a reader happens to believe. A clause with no
+working witness is green by construction; a witness that proves nothing is a
+claim of coverage that does not exist. `--strict` fails on either.
+
 Section 2 is the failing-case section, and it has three parts rather than one:
 a clean input must **not** falsify a clause; a witness listed under the wrong
 clause is caught as *proves nothing*; and a witness with no file is a problem

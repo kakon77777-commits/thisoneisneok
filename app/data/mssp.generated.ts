@@ -529,6 +529,7 @@ export const msspExamples = [
       "SCL/policy.js",
       "SCL/policy.json",
       "SMS/contract.js",
+      "SMS/observers.js",
       "SMS/registry.js",
       "TMS/rules/first.js",
       "TMS/rules/legacy-strict.js",
@@ -547,6 +548,7 @@ export const msspExamples = [
       ],
       "SMS": [
         "SMS/contract.js",
+        "SMS/observers.js",
         "SMS/registry.js"
       ],
       "TMS": [
@@ -563,7 +565,7 @@ export const msspExamples = [
         "main.js"
       ]
     },
-    "lineCount": 619,
+    "lineCount": 711,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/008-compatibility-alias.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/008-compatibility-alias.html"
   },
@@ -645,7 +647,7 @@ export const msspExamples = [
         "main.py"
       ]
     },
-    "lineCount": 540,
+    "lineCount": 561,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/009-witness-continuity.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/009-witness-continuity.html"
   }

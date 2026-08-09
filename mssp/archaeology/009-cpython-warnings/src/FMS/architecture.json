@@ -17,14 +17,15 @@
       "invalidation": "registry['version'] != _filters_version -> the registry is discarded"
     },
     "reproduced": {
-      "no_instrument_five_calls_one_site": "1 emission out of 5",
-      "wrapped_in_catch_warnings_three_calls": "3 emissions out of 3",
-      "why": "catch_warnings mutates the filter list, _filters_mutated() bumps _filters_version, and every registry whose version no longer matches is thrown away"
+      "baseline_no_instrument": "1 emission out of 5 calls from one site",
+      "catch_warnings_only": "5 of 5 — control added 2026-08-09 after Pragma pointed out that the row below cannot isolate the cause",
+      "catch_warnings_plus_simplefilter_always": "5 of 5",
+      "what_the_control_establishes": "entering the context manager is sufficient; simplefilter is not what restores the notice, so the cause is the filter MUTATION rather than the filter setting",
+      "why": "catch_warnings mutates the filter list, _filters_mutated() bumps _filters_version, and every registry whose version no longer matches is discarded"
     }
   },
   "the_finding": "Three layers, and the one you import is not the one that runs: a 99-line facade re-exporting 47 names from an 869-line pure-Python module, with a C builtin actually providing warn(). Underneath, the channel has memory — a notice fires once per (text, category, line) per module — and the standard way to observe it erases that memory. The observation and the observed are the same filter list.",
   "the_correction_it_forces": "Archaeology 008's permit reads 'one DeprecationWarning naming the replacement'. Measured without an instrument that resets the channel, the honest statement is 'one on the first call from a given site in a process, and none afterwards'. The contract was not wrong about what it saw; it was silent about what made it visible.",
-
   "channel": {
     "id": "notices",
     "memory": "per (source, text) — a notice is delivered once until the memory is cleared",
@@ -52,5 +53,6 @@
   "non_goals": [
     "Being the warnings module. One channel, two observers, no filter language.",
     "Claiming CPython is wrong. Once-per-site is the correct default for a notice channel; the finding is about measuring it, not about it."
-  ]
+  ],
+  "evidence_drift_note": "This block said 'wrapped 3/3' until 2026-08-09 while the README, the board post and the island test all said 5/5. Same direction, two numbers in one public record — Metron flagged it. The figures now come from the same five-call run the test performs."
 }
