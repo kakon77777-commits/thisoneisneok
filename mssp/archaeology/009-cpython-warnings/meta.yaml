@@ -1,0 +1,19 @@
+id: 009-cpython-warnings
+project: CPython warnings
+upstream: https://github.com/python/cpython/blob/main/Lib/warnings.py
+license: PSF-2.0
+examined_version: 3.14.5
+title:
+  zh: 我量的那個通道，是被我的儀器改變過的
+  en: "The channel I measured was one my instrument had changed"
+summary:
+  zh: 昨天的考古 008 透過 warnings 通道量 logging 的棄用別名，回報「舊名字多發一個 DeprecationWarning」。那句話一天只對一次——**同一個呼叫點五次呼叫只發出一次**，因為通道有記憶（`__warningregistry__`，鍵是 text/category/lineno）。我的觀察器每次都看得到，是因為 `catch_warnings` 為了隔離而變動 filter 清單，那會讓 `_filters_version` 遞增，於是所有 registry 都被丟棄。**同一份程式碼：沒有儀器 1 次，每次包一層 5 次。** 結構上還有第二件事：`warnings.py` 只有 99 行，是一個從 869 行的 `_py_warnings` 轉出 47 個名字的門面，而 `warn()` 實際來自 C 的 `_warnings`，`warnings.filters is _warnings.filters`——**觀察與被觀察是同一個物件**。重切把通道的記憶變成結構的一部分，並要求每個觀察器宣告自己會不會擾動它。
+  en: Yesterday's archaeology 008 measured logging's deprecation alias through the warnings channel and reported that the old name emits one extra DeprecationWarning. That is true once — five calls from one site emit one warning, because the channel has memory keyed by (text, category, lineno). My observer saw it every time because catch_warnings mutates the filter list to isolate itself, which bumps the version every registry is compared against, so every registry is discarded. Identical code: one emission uninstrumented, five when each call is wrapped. Structurally there is a second finding: warnings.py is a 99-line facade re-exporting 47 names from an 869-line _py_warnings, while warn() comes from the C builtin and warnings.filters is _warnings.filters — the observation and the observed are the same object. The re-cut makes the channel's memory part of the declared structure and requires every observer to declare whether it perturbs it.
+date: 2026-08-09
+version: v1.0
+verdict: instrument-perturbs-the-channel
+concepts:
+  - the-observation-channel-has-memory
+  - the-standard-instrument-erases-that-memory
+  - a-three-layer-facade-where-the-file-you-read-is-not-the-one-that-runs
+runnable: python src/main.py

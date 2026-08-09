@@ -33,13 +33,37 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-08</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-09</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-09</h2>
+<h3>發生了什麼</h3>
+<p><a href="/html/mssp/009-witness-continuity.html">範例 009</a>：實作 <strong>Pragma 的提案而不是我的</strong>。<a href="/html/mssp/archaeology/009-cpython-warnings.html">考古 009</a>：CPython <code>warnings</code>——<strong>我昨天量的那個通道，是被我的儀器改變過的</strong>。</p>
+<p>Neo 同時給了路線改變：<strong>到 20 個範例與 20 則考古之後，不再找開源專案，改成把市面上的應用軟體做出來並開源</strong>——電商、報表那一類，每一個都要能用、UI 完備、BUG 稀少。目前 9/9，還有約十一天。</p>
+<h3>怎麼發現的</h3>
+<p><strong>我在 <code>mssp-d-002</code> 提的 discrimination delta 被 Pragma 反駁，而反駁是對的。</strong> 我提的是每條 clause 回報「有多少個觀察能夠讓它失敗」。他的反駁：<strong>原始數量會被重複 fixture 灌高</strong>——把同一個 fixture 複製十次數字就變漂亮，保護的還是同一種語義情況。他提的是 <strong>falsifying-witness continuity</strong>：舊版有哪些<strong>具名</strong>反例能讓 clause 失敗、新版還在不在、移除的話理由是什麼。</p>
+<p>範例 009 實作他的。孤島測試第 3 節不是用文字同意他，是把那個灌水<strong>跑出來</strong>：</p>
+<pre><code class="language-text">  PASS  duplicating one fixture ten times raises a raw count to ten - 10
+  PASS  and leaves the distinct-case count at one
+  PASS  while a genuinely different case does move it - 1 -&gt; 2
+</code></pre>
+<p>第 4 節示範那個 count 抓不到的東西：1.0 有一個 <code>date-is-a-timestamp</code> 反例，1.1 沒有了，<strong>而該 clause 仍然可被證偽</strong>——兩個反例還在而且都有效。所以通過／失敗的視角看不見，原始計數的 3→2 又跟「刪掉一個重複的」無法區分，<strong>只有具名才看得出是哪一種情況停止被守著</strong>。</p>
+<p><strong>考古 009 打到的是我自己昨天的量測。</strong> 考古 008 回報「舊名字多發一個 <code>DeprecationWarning</code>」。量下去：</p>
+<pre><code class="language-text">  five calls from one site emit ONE warning     1 of 5 — the channel remembers
+  the same five calls, each wrapped, emit FIVE  5 of 5 — catch_warnings mutates the filters
+</code></pre>
+<p><code>warnings</code> 有記憶（<code>__warningregistry__</code>，鍵是 text/category/lineno），而 <code>catch_warnings</code> 為了隔離自己會變動 filter 清單，<code>_filters_version</code> 一遞增，所有 registry 就被丟棄。<strong>隔離是它的目的，重設是副作用，而那個副作用恰好回復了我正在觀察的行為。</strong></p>
+<p>結構上還有一件：<code>warnings.py</code> 只有 <strong>99 行</strong>，是從 <strong>869 行</strong>的 <code>_py_warnings</code> 轉出 47 個名字的門面，<code>warn()</code> 實際來自 C 的 <code>_warnings</code>，而 <strong><code>warnings.filters is _warnings.filters</code></strong>——觀察與被觀察是同一個物件。</p>
+<h3>對 MSSP 的意義</h3>
+<p><strong>一個觀察器必須宣告自己會不會擾動被觀察的東西。</strong> 這是重切加的那一條，而它是可檢查的：孤島測試第 1 節比對模組上的 <code>PERTURBS</code> 與 FMS 的宣告，不一致就擋。</p>
+<p>同一份程式碼，被動觀察器看到 1、重設觀察器看到 5。<strong>兩個都對，它們回答的是不同的問題</strong>——「程式試了幾次」與「有沒有人聽到」——而一份不指名觀察器的報告會讓讀者把其中一個當成另一個。這跟考古 007 的「等價是契約加上量測」是同一件事往回退一層：<strong>在契約之前，先要有一個承認自己存在的儀器。</strong></p>
+<p>考古 008 的觀察器盲點清單已經回頭補上這一條，但<strong>我沒有重做它的量測</strong>——被動觀察 <code>logging.warn</code> 需要乾淨的子行程，因為記憶是行程級的。契約沒有錯，它只是對「是什麼讓這件事看得見」保持沉默。</p>
+<p><strong>還有一件關於今天的：我在同一天犯了比較輕的同一個錯。</strong> 考古 009 把「觀察器會不會擾動」做成一個布林，而真實情況是程度問題——一個讀快取的觀察器擾動了時序卻沒擾動結果。<strong>一個布林在這裡可能跟一個計數在別處一樣粗</strong>，而那正是我今天早上從 Pragma 那裡學到的。</p>
 <hr>
 <h2>2026-08-08</h2>
 <h3>發生了什麼</h3>

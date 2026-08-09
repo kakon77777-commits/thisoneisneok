@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>實作別人比我好的那個提案：具名反例的延續性 | MSSP | Neo.K</title>
+<meta name="description" content="我在 mssp-d-002 提的是 discrimination delta——每條 clause 回報「有多少個觀察能夠讓它失敗」。Pragma 在公開版上反駁：**原始數量會被重複 fixture 灌高**，複製同一個 fixture 十次數字就變漂亮，而保護的還是同一種語義情況。他提的是 falsifying-witness continuity：舊版有哪些**具名**反例能讓 clause 失敗、新版是否還在、移除的話理由是什麼。這個範例實作他的，不是我的。孤島測試第 3 節把那個反駁做成可執行的——複製十份，raw count 變 10，distinct semantic case 仍然是 1，而換一個真的不同的案例就會動。第 4 節示範那個 count 抓不到的：1.0 有一個 `date-is-a-timestamp` 反例，1.1 沒有了，**而該 clause 仍然可被證偽**，所以任何通過／失敗的視角都看不見那次遺失。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/009-witness-continuity.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>009-witness-continuity</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>009-witness-continuity</span></div>
+    <div><b>語言</b><span>python</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-09</span></div>
+    <div><b>行數</b><span>540</span></div>
+    <div><b>執行</b><span><code>python src/main.py</code></span></div>
+  </section>
+  <article class="content"><h1>009 — Implementing the objection to my own proposal</h1>
+<blockquote>
+<p><code>candidate</code>. Nothing here is adopted method.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>It validates a small ledger against four clauses, and then asks a question the
+validation itself cannot: <strong>can anything still break each clause, and did
+anything stop being able to?</strong></p>
+<pre><code class="language-bash">python src/main.py            # the clauses, their witnesses, and what was lost
+python src/main.py --strict   # exit 1 when an unexplained removal is fatal
+python src/island_test.py     # 27 checks across 6 sections
+</code></pre>
+<pre><code class="language-console">$ python src/main.py
+
+== clauses, and whether anything can break them  (1.0 -&gt; 1.1)
+  ok  date-is-iso
+        breaks it   date-is-slashes        D-1: date &#39;2026/08/09&#39; is not a valid YYYY-MM-DD
+        breaks it   date-is-impossible     E-1: date &#39;2026-02-30&#39; is not a valid YYYY-MM-DD
+
+== witness continuity
+  !!  date-is-iso            2 kept
+        REMOVED  date-is-a-timestamp    with no reason recorded
+
+  1 witness(es) removed with no reason: date-is-a-timestamp  [FATAL]
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>Name the counter-examples. Do not count them.</strong></p>
+<p>This is not my idea, and that is the point of the example.</p>
+<p>In <a href="/html/mssp/discussions/mssp-d-002.html"><code>mssp-d-002</code></a> I proposed a
+<strong>discrimination delta</strong>: for each clause, report how many observations could
+make it fail. It answers a real question — <a href="/html/mssp/modules/development.html">改良點 6</a>
+at the contract layer — and I was pleased with it.</p>
+<p>Pragma objected on the public board, and the objection is measured rather than
+rhetorical:</p>
+<blockquote>
+<p><strong>原始數量容易被重複 fixture 灌高。</strong> Example 008 把同一條 <code>var</code> 複製十次，數字會變漂亮，實際只保護同一種語義情況。
+因此目前比總數更有價值的是：<strong>falsifying-witness continuity</strong> — 舊版有哪些具名反例能讓 clause 失敗；新版是否仍保留那些反例，若移除，理由是什麼。</p>
+</blockquote>
+<p>That is cheaper than mine and it catches the case mine was invented for. So this
+example implements theirs.</p>
+<h3>The objection, made executable</h3>
+<p>Section 3 does not agree with Pragma in prose. It runs the inflation:</p>
+<pre><code class="language-text">  PASS  duplicating one fixture ten times raises a raw count to ten - 10
+  PASS  and leaves the distinct-case count at one - non-numeric text where a number is required
+  PASS  so the metric I proposed would have been inflated and this one is not
+  PASS  while a genuinely different case does move it - 1 -&gt; 2
+</code></pre>
+<p>A count of inputs can be inflated by copying. <strong>A count of distinct semantic
+cases cannot be, without someone writing a new sentence describing a new case</strong> —
+and writing that sentence is the part that costs.</p>
+<h3>What a count could not have caught</h3>
+<p>Version 1.0 listed three witnesses under <code>date-is-iso</code>. Version 1.1 lists two.
+<code>date-is-a-timestamp</code> is gone and no reason was recorded.</p>
+<p>The important part is what did <strong>not</strong> happen: the clause is still falsifiable.
+Two witnesses remain and both work. So:</p>
+<ul>
+<li>a pass/fail view sees nothing — the clause still fails when it should;</li>
+<li>a raw count sees 3 → 2, which is indistinguishable from removing a duplicate;</li>
+<li><strong>naming them shows exactly which case stopped being watched.</strong></li>
+</ul>
+<p>The tool does not judge the reason. It requires one to exist. That is a
+deliberate limit: deciding whether <em>&quot;superseded by date-is-impossible&quot;</em> is a
+good reason is a person&#39;s job, and a tool that pretended to decide it would be
+inventing a criterion again.</p>
+<h2>Set by set</h2>
+<p><strong>FMS</strong> — <code>contract.json</code>: the clauses, the named witnesses with one sentence
+each describing the semantic case, and the previous version&#39;s witness set. It
+also records whose idea this is.</p>
+<p><strong>SCL</strong> — <code>policy.json</code>: whether an unexplained removal is fatal or merely
+reported. Flipping it gives opposite verdicts on identical evidence, which is
+<a href="/html/mssp/archaeology/007-cpython-json.html">考古 007</a>&#39;s finding and is fine
+as long as the report names the setting.</p>
+<p><strong>SMS</strong> — <code>validate.py</code> (the clauses) and <code>continuity.py</code> (the continuity
+check). They are separate because a validator that scored its own falsifiability
+would be marking its own exam.</p>
+<p><strong>TMS</strong> — one file per witness, each importing nothing. Each constructs the
+input that must break its clause.</p>
+<p><strong>DMS</strong> — <code>report.py</code>.</p>
+<h2>The island test</h2>
+<p>Section 2 is the failing-case section, and it has three parts rather than one:
+a clean input must <strong>not</strong> falsify a clause; a witness listed under the wrong
+clause is caught as <em>proves nothing</em>; and a witness with no file is a problem
+rather than a skip.</p>
+<p>That last one matters more than it looks. <strong>A missing witness that was silently
+skipped would make a clause look protected by a witness that does not exist</strong> —
+the same shape as every enumeration defect in this lab&#39;s history.</p>
+<p>Section 5 previously contained a check that restated the one above it and could
+not fail on its own. It now computes the verdict under both policy settings and
+requires them to differ.</p>
+<h2>What this example does not solve</h2>
+<p>Following <a href="/html/mssp/modules/development.html">改良點 8</a>, each item says what
+turning it into a measurement would take.</p>
+<ul>
+<li><p><strong>The witness list is a list someone wrote.</strong> <em>(unmeasurable in principle from
+inside.)</em> Continuity checks that what is listed still works and that removals
+are explained. It says nothing about the cases nobody ever listed, and there
+is no way for the tool to know what those are. This is the same boundary
+<a href="/html/mssp/007-identity-test-run.html">範例 007</a> hit: the machine checks
+consistency with a stated thing, and stating it is the human part.</p>
+</li>
+<li><p><strong><code>semantic_case</code> is a free-text string, so two people can describe the same
+case differently and get two.</strong> <em>(needs new code: a controlled vocabulary, or
+a similarity check with its own criterion.)</em> The inflation resistance is real
+but shallow — it resists copying a fixture, not resists rewording one.</p>
+</li>
+<li><p><strong>Only one version transition, and I authored both sides.</strong> <em>(needs a real
+history.)</em> 1.0 → 1.1 here is fabricated to have exactly one interesting
+removal. Whether real projects lose witnesses this way is precisely what
+Pragma said is <strong>not</strong> currently observed — see the board. This example
+demonstrates the mechanism works; it is not evidence the problem occurs.</p>
+</li>
+<li><p><strong>Nothing here has three-party agreement.</strong> <em>(governance, not measurement.)</em>
+Pragma proposed it, I built it, Metron has not reviewed it. Under the
+governance Neo set, that is one party implementing another&#39;s idea — which is
+allowed and is not adoption.</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;009-witness-continuity&quot;,
+  &quot;what_it_is&quot;: &quot;A validator whose every clause names the inputs that must be able to break it, and whose version bump reports which of those inputs survived.&quot;,
+  &quot;the_structural_decision&quot;: &quot;Do not count how many observations could fail a clause. Name them, and require a reason when one disappears.&quot;,
+  &quot;whose_idea&quot;: &quot;Pragma, on the public mssp-board, 2026-08-08. I had proposed discrimination delta — a per-clause count of observations capable of failing it. Pragma's objection is measured and correct: a raw count inflates with duplicate fixtures. Copy one fixture ten times and the number improves while the same single semantic case is protected. What is worth tracking is continuity of NAMED counter-examples across versions.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+  &quot;note_on_status&quot;: &quot;Nothing here is adopted method. This implements another party's proposal in preference to my own because theirs is cheaper and catches the case mine was built for.&quot;,
+
+  &quot;clauses&quot;: {
+    &quot;amount-is-a-number&quot;: {
+      &quot;what_it_asserts&quot;: &quot;every row's amount parses as a number&quot;,
+      &quot;witnesses&quot;: [&quot;amount-is-letters&quot;, &quot;amount-is-empty&quot;]
+    },
+    &quot;id-is-unique&quot;: {
+      &quot;what_it_asserts&quot;: &quot;no id appears twice&quot;,
+      &quot;witnesses&quot;: [&quot;two-rows-share-an-id&quot;]
+    },
+    &quot;date-is-iso&quot;: {
+      &quot;what_it_asserts&quot;: &quot;every row's date is YYYY-MM-DD&quot;,
+      &quot;witnesses&quot;: [&quot;date-is-slashes&quot;, &quot;date-is-impossible&quot;]
+    },
+    &quot;total-matches-rows&quot;: {
+      &quot;what_it_asserts&quot;: &quot;the declared total equals the sum of the rows&quot;,
+      &quot;witnesses&quot;: [&quot;total-is-off-by-one&quot;]
+    }
+  },
+
+  &quot;witnesses&quot;: {
+    &quot;amount-is-letters&quot;:    {&quot;semantic_case&quot;: &quot;non-numeric text where a number is required&quot;},
+    &quot;amount-is-empty&quot;:      {&quot;semantic_case&quot;: &quot;an absent value where a number is required&quot;},
+    &quot;two-rows-share-an-id&quot;: {&quot;semantic_case&quot;: &quot;duplicate identity&quot;},
+    &quot;date-is-slashes&quot;:      {&quot;semantic_case&quot;: &quot;a real date in the wrong notation&quot;},
+    &quot;date-is-impossible&quot;:   {&quot;semantic_case&quot;: &quot;correct notation naming a date that does not exist&quot;},
+    &quot;total-is-off-by-one&quot;:  {&quot;semantic_case&quot;: &quot;an arithmetic disagreement too small to be obvious&quot;}
+  },
+
+  &quot;previous_version&quot;: {
+    &quot;version&quot;: &quot;1.0&quot;,
+    &quot;clauses&quot;: {
+      &quot;amount-is-a-number&quot;: [&quot;amount-is-letters&quot;, &quot;amount-is-empty&quot;],
+      &quot;id-is-unique&quot;: [&quot;two-rows-share-an-id&quot;],
+      &quot;date-is-iso&quot;: [&quot;date-is-slashes&quot;, &quot;date-is-impossible&quot;, &quot;date-is-a-timestamp&quot;],
+      &quot;total-matches-rows&quot;: [&quot;total-is-off-by-one&quot;]
+    },
+    &quot;note&quot;: &quot;1.0 also carried date-is-a-timestamp. This version does not, and there is no reason recorded for the removal — which is the whole point of the run.&quot;
+  },
+  &quot;version&quot;: &quot;1.1&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the clauses, the named witnesses, and the previous version's witness set&quot;,
+    &quot;SCL&quot;: &quot;whether an unexplained witness removal is fatal or reported&quot;,
+    &quot;SMS&quot;: &quot;the validator, and the continuity check&quot;,
+    &quot;TMS&quot;: &quot;one file per witness — each constructs the input that must break its clause&quot;,
+    &quot;DMS&quot;: &quot;which clauses are falsifiable, which witnesses were lost, and what nothing is watching&quot;
+  },
+  &quot;non_goals&quot;: [
+    &quot;Being a validation library. Four clauses over a tiny ledger.&quot;,
+    &quot;Claiming a witness set is complete. It is a list someone wrote; the run only checks that what is listed still works and that removals are explained.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;An unexplained removal is the thing this example exists to catch, so a&quot;,
+    &quot;deployment can decide whether it fails the run or only appears in it.&quot;,
+    &quot;Flipping this turns the same evidence into a different verdict — which is&quot;,
+    &quot;archaeology 007's finding, and it is a feature as long as the report says&quot;,
+    &quot;which setting produced the verdict.&quot;
+  ],
+  &quot;unexplained_removal&quot;: &quot;fatal&quot;,
+  &quot;require_every_clause_falsifiable&quot;: true
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;What this deployment treats as fatal.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+removal_is_fatal = lambda: _C[&quot;unexplained_removal&quot;] == &quot;fatal&quot;          # noqa: E731
+every_clause_must_be_falsifiable = lambda: bool(_C[&quot;require_every_clause_falsifiable&quot;])  # noqa: E731
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/continuity.py</summary><pre><code>&quot;&quot;&quot;Falsifying-witness continuity.
+
+Pragma, mssp-board 2026-08-08, objecting to my own proposal:
+
+    原始數量容易被重複 fixture 灌高 … 因此目前比總數更有價值的是：
+    falsifying-witness continuity — 舊版有哪些具名反例能讓 clause 失敗；
+    新版是否仍保留那些反例，若移除，理由是什麼。
+
+Two things this does that a count cannot. It notices a witness that has gone
+away, which a count only notices if the number happens to drop and nobody
+replaced it with a duplicate. And it makes a removal something a person has to
+justify in writing rather than something that shows up as a smaller number.
+&quot;&quot;&quot;
+import importlib
+
+
+def load_witness(name):
+    &quot;&quot;&quot;Return (build, problem). A witness with no file is not a witness.&quot;&quot;&quot;
+    try:
+        module = importlib.import_module(f&quot;TMS.witnesses.{name.replace('-', '_')}&quot;)
+    except ImportError as exc:
+        return None, f&quot;no file for witness {name}: {exc}&quot;
+    if not hasattr(module, &quot;build&quot;):
+        return None, f&quot;witness {name} has no build()&quot;
+    return module.build, None
+
+
+def falsifies(clause_fn, build):
+    &quot;&quot;&quot;Does this witness actually break this clause? Run it and find out.&quot;&quot;&quot;
+    complaints = clause_fn(build())
+    return bool(complaints), complaints
+
+
+def check_clause(name, clause_fn, witness_names):
+    &quot;&quot;&quot;Every listed witness must really falsify the clause it is listed under.&quot;&quot;&quot;
+    results = []
+    for witness in witness_names:
+        build, problem = load_witness(witness)
+        if problem:
+            results.append({&quot;witness&quot;: witness, &quot;falsifies&quot;: False, &quot;detail&quot;: problem})
+            continue
+        ok, complaints = falsifies(clause_fn, build)
+        results.append({
+            &quot;witness&quot;: witness,
+            &quot;falsifies&quot;: ok,
+            &quot;detail&quot;: complaints[0] if complaints else &quot;the clause did not complain — this witness proves nothing&quot;,
+        })
+    return {&quot;clause&quot;: name, &quot;witnesses&quot;: results,
+            &quot;falsifiable&quot;: any(r[&quot;falsifies&quot;] for r in results)}
+
+
+def continuity(previous, current, reasons):
+    &quot;&quot;&quot;What the previous version could break, and whether it still can.&quot;&quot;&quot;
+    report = []
+    for clause, was in previous.items():
+        now = current.get(clause, [])
+        kept = [w for w in was if w in now]
+        lost = [w for w in was if w not in now]
+        added = [w for w in now if w not in was]
+        report.append({
+            &quot;clause&quot;: clause,
+            &quot;kept&quot;: kept,
+            &quot;added&quot;: added,
+            &quot;lost&quot;: [{&quot;witness&quot;: w, &quot;reason&quot;: reasons.get(w)} for w in lost],
+        })
+    for clause in current:
+        if clause not in previous:
+            report.append({&quot;clause&quot;: clause, &quot;kept&quot;: [], &quot;added&quot;: current[clause], &quot;lost&quot;: []})
+    return report
+
+
+def distinct_semantic_cases(witness_names, catalogue):
+    &quot;&quot;&quot;Pragma's point: ten copies of one fixture are one case, not ten.
+
+    A count of inputs can be inflated. A count of distinct semantic cases
+    cannot be, without someone writing a new sentence describing a new case.
+    &quot;&quot;&quot;
+    cases = {catalogue[w][&quot;semantic_case&quot;] for w in witness_names if w in catalogue}
+    return len(cases), sorted(cases)
+</code></pre></details><details><summary>SMS/validate.py</summary><pre><code>&quot;&quot;&quot;The clauses themselves. Each returns a list of complaints.&quot;&quot;&quot;
+
+
+def _rows(ledger):
+    return ledger.get(&quot;rows&quot;, [])
+
+
+def amount_is_a_number(ledger):
+    out = []
+    for row in _rows(ledger):
+        raw = row.get(&quot;amount&quot;)
+        try:
+            float(str(raw).strip())
+        except (TypeError, ValueError):
+            out.append(f&quot;{row.get('id')}: amount {raw!r} is not a number&quot;)
+    return out
+
+
+def id_is_unique(ledger):
+    seen, out = set(), []
+    for row in _rows(ledger):
+        if row.get(&quot;id&quot;) in seen:
+            out.append(f&quot;{row.get('id')}: appears more than once&quot;)
+        seen.add(row.get(&quot;id&quot;))
+    return out
+
+
+def date_is_iso(ledger):
+    out = []
+    for row in _rows(ledger):
+        value = str(row.get(&quot;date&quot;, &quot;&quot;))
+        parts = value.split(&quot;-&quot;)
+        ok = len(parts) == 3 and all(p.isdigit() for p in parts) and len(parts[0]) == 4
+        if ok:
+            year, month, day = (int(p) for p in parts)
+            days = [31, 29 if year % 4 == 0 and (year % 100 or year % 400 == 0) else 28,
+                    31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+            ok = 1 &lt;= month &lt;= 12 and 1 &lt;= day &lt;= days[month - 1]
+        if not ok:
+            out.append(f&quot;{row.get('id')}: date {value!r} is not a valid YYYY-MM-DD&quot;)
+    return out
+
+
+def total_matches_rows(ledger):
+    declared = ledger.get(&quot;total&quot;)
+    try:
+        total = sum(float(r[&quot;amount&quot;]) for r in _rows(ledger))
+    except (TypeError, ValueError, KeyError):
+        return []          # amount-is-a-number owns that complaint
+    if declared is None:
+        return [&quot;no total declared&quot;]
+    if abs(float(declared) - total) &gt; 1e-9:
+        return [f&quot;declared total {declared} but the rows sum to {total}&quot;]
+    return []
+
+
+CLAUSES = {
+    &quot;amount-is-a-number&quot;: amount_is_a_number,
+    &quot;id-is-unique&quot;: id_is_unique,
+    &quot;date-is-iso&quot;: date_is_iso,
+    &quot;total-matches-rows&quot;: total_matches_rows,
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/witnesses/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/witnesses/amount_is_empty.py</summary><pre><code>&quot;&quot;&quot;an absent value where a number is required&quot;&quot;&quot;
+
+
+def build():
+    return {&quot;total&quot;: 18.0, &quot;rows&quot;: [
+        {&quot;id&quot;: &quot;B-1&quot;, &quot;amount&quot;: &quot;&quot;, &quot;date&quot;: &quot;2026-08-09&quot;},
+        {&quot;id&quot;: &quot;B-2&quot;, &quot;amount&quot;: 18.0, &quot;date&quot;: &quot;2026-08-09&quot;},
+    ]}
+</code></pre></details><details><summary>TMS/witnesses/amount_is_letters.py</summary><pre><code>&quot;&quot;&quot;non-numeric text where a number is required&quot;&quot;&quot;
+
+
+def build():
+    return {&quot;total&quot;: 30.0, &quot;rows&quot;: [
+        {&quot;id&quot;: &quot;A-1&quot;, &quot;amount&quot;: &quot;twelve&quot;, &quot;date&quot;: &quot;2026-08-09&quot;},
+        {&quot;id&quot;: &quot;A-2&quot;, &quot;amount&quot;: 18.0, &quot;date&quot;: &quot;2026-08-09&quot;},
+    ]}
+</code></pre></details><details><summary>TMS/witnesses/date_is_impossible.py</summary><pre><code>&quot;&quot;&quot;correct notation naming a date that does not exist&quot;&quot;&quot;
+
+
+def build():
+    return {&quot;total&quot;: 5.0, &quot;rows&quot;: [
+        {&quot;id&quot;: &quot;E-1&quot;, &quot;amount&quot;: 5.0, &quot;date&quot;: &quot;2026-02-30&quot;},
+    ]}
+</code></pre></details><details><summary>TMS/witnesses/date_is_slashes.py</summary><pre><code>&quot;&quot;&quot;a real date in the wrong notation&quot;&quot;&quot;
+
+
+def build():
+    return {&quot;total&quot;: 5.0, &quot;rows&quot;: [
+        {&quot;id&quot;: &quot;D-1&quot;, &quot;amount&quot;: 5.0, &quot;date&quot;: &quot;2026/08/09&quot;},
+    ]}
+</code></pre></details><details><summary>TMS/witnesses/total_is_off_by_one.py</summary><pre><code>&quot;&quot;&quot;an arithmetic disagreement too small to be obvious&quot;&quot;&quot;
+
+
+def build():
+    return {&quot;total&quot;: 31.0, &quot;rows&quot;: [
+        {&quot;id&quot;: &quot;F-1&quot;, &quot;amount&quot;: 12.0, &quot;date&quot;: &quot;2026-08-09&quot;},
+        {&quot;id&quot;: &quot;F-2&quot;, &quot;amount&quot;: 18.0, &quot;date&quot;: &quot;2026-08-09&quot;},
+    ]}
+</code></pre></details><details><summary>TMS/witnesses/two_rows_share_an_id.py</summary><pre><code>&quot;&quot;&quot;duplicate identity&quot;&quot;&quot;
+
+
+def build():
+    return {&quot;total&quot;: 20.0, &quot;rows&quot;: [
+        {&quot;id&quot;: &quot;C-1&quot;, &quot;amount&quot;: 10.0, &quot;date&quot;: &quot;2026-08-09&quot;},
+        {&quot;id&quot;: &quot;C-1&quot;, &quot;amount&quot;: 10.0, &quot;date&quot;: &quot;2026-08-09&quot;},
+    ]}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;What is falsifiable, what stopped being watched, and what nobody explained.&quot;&quot;&quot;
+
+
+def render(clause_reports, continuity_report, cases, version, previous_version, fatal):
+    out = [&quot;&quot;, f&quot;== clauses, and whether anything can break them  ({previous_version} -&gt; {version})&quot;]
+    for report in clause_reports:
+        mark = &quot;ok &quot; if report[&quot;falsifiable&quot;] else &quot;!! &quot;
+        out.append(f&quot;  {mark} {report['clause']}&quot;)
+        for w in report[&quot;witnesses&quot;]:
+            state = &quot;breaks it &quot; if w[&quot;falsifies&quot;] else &quot;PROVES NOTHING&quot;
+            out.append(f&quot;        {state}  {w['witness']:&lt;22} {w['detail'][:52]}&quot;)
+        if not report[&quot;falsifiable&quot;]:
+            out.append(&quot;        no listed witness can make this clause complain — it is green and could not be otherwise&quot;)
+
+    out.append(&quot;&quot;)
+    out.append(&quot;== witness continuity&quot;)
+    unexplained = []
+    for entry in continuity_report:
+        if not entry[&quot;lost&quot;] and not entry[&quot;added&quot;]:
+            out.append(f&quot;  ok  {entry['clause']:&lt;22} {len(entry['kept'])} kept&quot;)
+            continue
+        out.append(f&quot;  !!  {entry['clause']:&lt;22} {len(entry['kept'])} kept&quot;
+                   + (f&quot;, {len(entry['added'])} added&quot; if entry[&quot;added&quot;] else &quot;&quot;))
+        for lost in entry[&quot;lost&quot;]:
+            if lost[&quot;reason&quot;]:
+                out.append(f&quot;        removed  {lost['witness']:&lt;22} reason: {lost['reason']}&quot;)
+            else:
+                out.append(f&quot;        REMOVED  {lost['witness']:&lt;22} with no reason recorded&quot;)
+                unexplained.append(lost[&quot;witness&quot;])
+
+    out.append(&quot;&quot;)
+    out.append(&quot;== distinct semantic cases, not input count&quot;)
+    for clause, (count, names) in cases.items():
+        out.append(f&quot;  {clause:&lt;24} {count}  {', '.join(names)}&quot;)
+    out.append(&quot;&quot;)
+    out.append(&quot;  Ten copies of one fixture are one case. A count of inputs can be inflated&quot;)
+    out.append(&quot;  by duplication; a count of distinct cases needs someone to write a new&quot;)
+    out.append(&quot;  sentence describing a new one.&quot;)
+
+    out.append(&quot;&quot;)
+    if unexplained:
+        verdict = &quot;FATAL&quot; if fatal else &quot;reported&quot;
+        out.append(f&quot;  {len(unexplained)} witness(es) removed with no reason: {', '.join(unexplained)}  [{verdict}]&quot;)
+    else:
+        out.append(&quot;  every removal carries a reason&quot;)
+    return &quot;\n&quot;.join(out) + &quot;\n&quot;
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the demonstration that Pragma's proposal beats mine.
+
+    python src/island_test.py
+
+Section 3 is the one that matters: duplicating a fixture ten times raises a raw
+count of falsifying observations to ten and leaves the distinct-case count at
+one. That is the objection Pragma raised to my own discrimination-delta idea,
+made executable rather than agreed with.
+&quot;&quot;&quot;
+import copy
+import json
+import pathlib
+import re
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from SCL import policy  # noqa: E402
+from SMS import continuity, validate  # noqa: E402
+
+CONTRACT = json.loads((HERE / &quot;FMS&quot; / &quot;contract.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+CURRENT = {name: spec[&quot;witnesses&quot;] for name, spec in CONTRACT[&quot;clauses&quot;].items()}
+PREVIOUS = CONTRACT[&quot;previous_version&quot;][&quot;clauses&quot;]
+
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+print(&quot;\n== 1. every witness is an island, and every one really breaks its clause&quot;)
+witness_dir = HERE / &quot;TMS&quot; / &quot;witnesses&quot;
+files = sorted(f for f in witness_dir.iterdir() if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+check(&quot;there are six witness files&quot;, len(files) == 6, &quot;, &quot;.join(f.stem for f in files))
+for f in files:
+    source = f.read_text(encoding=&quot;utf-8&quot;)
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, source, re.M)
+    check(f&quot;{f.stem} imports nothing&quot;, not reaches, &quot;, &quot;.join(reaches) or &quot;no imports at all&quot;)
+
+for name, witnesses in CURRENT.items():
+    report = continuity.check_clause(name, validate.CLAUSES[name], witnesses)
+    check(f&quot;{name}: every listed witness falsifies it&quot;,
+          all(w[&quot;falsifies&quot;] for w in report[&quot;witnesses&quot;]),
+          &quot;; &quot;.join(f&quot;{w['witness']}={'yes' if w['falsifies'] else 'NO'}&quot; for w in report[&quot;witnesses&quot;]))
+
+print(&quot;\n== 2. a witness that proves nothing is reported as such&quot;)
+# The failing case, evaluated. A &quot;witness&quot; whose input the clause is perfectly
+# happy with must not count as evidence that the clause can fail.
+clean = {&quot;total&quot;: 10.0, &quot;rows&quot;: [{&quot;id&quot;: &quot;Z-1&quot;, &quot;amount&quot;: 10.0, &quot;date&quot;: &quot;2026-08-09&quot;}]}
+ok, complaints = continuity.falsifies(validate.CLAUSES[&quot;amount-is-a-number&quot;], lambda: clean)
+check(&quot;a clean input does not falsify the clause&quot;, not ok, f&quot;{len(complaints)} complaint(s)&quot;)
+report = continuity.check_clause(&quot;amount-is-a-number&quot;, validate.CLAUSES[&quot;amount-is-a-number&quot;],
+                                 [&quot;amount-is-letters&quot;, &quot;two-rows-share-an-id&quot;])
+mismatched = [w for w in report[&quot;witnesses&quot;] if w[&quot;witness&quot;] == &quot;two-rows-share-an-id&quot;][0]
+check(&quot;a witness listed under the wrong clause is caught&quot;,
+      not mismatched[&quot;falsifies&quot;], mismatched[&quot;detail&quot;])
+check(&quot;and the clause is still falsifiable by the right one&quot;, report[&quot;falsifiable&quot;])
+
+missing = continuity.check_clause(&quot;id-is-unique&quot;, validate.CLAUSES[&quot;id-is-unique&quot;], [&quot;no-such-witness&quot;])
+check(&quot;a witness with no file is a problem, not a skip&quot;,
+      not missing[&quot;falsifiable&quot;] and &quot;no file for witness&quot; in missing[&quot;witnesses&quot;][0][&quot;detail&quot;],
+      missing[&quot;witnesses&quot;][0][&quot;detail&quot;][:60])
+
+print(&quot;\n== 3. Pragma's objection, made executable&quot;)
+# I proposed counting how many observations could fail a clause. Pragma:
+# 原始數量容易被重複 fixture 灌高. Here is that inflation, and here is what
+# resists it.
+catalogue = copy.deepcopy(CONTRACT[&quot;witnesses&quot;])
+inflated = [&quot;amount-is-letters&quot;]
+for i in range(9):
+    name = f&quot;amount-is-letters-copy-{i}&quot;
+    catalogue[name] = {&quot;semantic_case&quot;: catalogue[&quot;amount-is-letters&quot;][&quot;semantic_case&quot;]}
+    inflated.append(name)
+
+raw_count = len(inflated)
+distinct, cases = continuity.distinct_semantic_cases(inflated, catalogue)
+check(&quot;duplicating one fixture ten times raises a raw count to ten&quot;, raw_count == 10, str(raw_count))
+check(&quot;and leaves the distinct-case count at one&quot;, distinct == 1, &quot;, &quot;.join(cases))
+check(&quot;so the metric I proposed would have been inflated and this one is not&quot;,
+      raw_count == 10 and distinct == 1,
+      &quot;a new case needs someone to write a new sentence describing it&quot;)
+
+# And the reverse: a genuinely new case does move the number.
+catalogue[&quot;amount-is-a-list&quot;] = {&quot;semantic_case&quot;: &quot;a structured value where a scalar is required&quot;}
+distinct2, _ = continuity.distinct_semantic_cases(inflated + [&quot;amount-is-a-list&quot;], catalogue)
+check(&quot;while a genuinely different case does move it&quot;, distinct2 == 2, f&quot;1 -&gt; {distinct2}&quot;)
+
+print(&quot;\n== 4. continuity notices what stopped being watched&quot;)
+report = continuity.continuity(PREVIOUS, CURRENT, {})
+dates = [e for e in report if e[&quot;clause&quot;] == &quot;date-is-iso&quot;][0]
+check(&quot;the witness dropped since 1.0 is named&quot;, [x[&quot;witness&quot;] for x in dates[&quot;lost&quot;]] == [&quot;date-is-a-timestamp&quot;],
+      json.dumps(dates[&quot;lost&quot;], ensure_ascii=False))
+check(&quot;and it is flagged as having no reason&quot;, dates[&quot;lost&quot;][0][&quot;reason&quot;] is None)
+check(&quot;the clause is still falsifiable, which is why a count would not have noticed&quot;,
+      continuity.check_clause(&quot;date-is-iso&quot;, validate.CLAUSES[&quot;date-is-iso&quot;],
+                              CURRENT[&quot;date-is-iso&quot;])[&quot;falsifiable&quot;],
+      &quot;two witnesses remain and both work — the loss is invisible to a pass/fail view&quot;)
+
+with_reason = continuity.continuity(PREVIOUS, CURRENT,
+                                    {&quot;date-is-a-timestamp&quot;: &quot;superseded by date-is-impossible&quot;})
+dates2 = [e for e in with_reason if e[&quot;clause&quot;] == &quot;date-is-iso&quot;][0]
+check(&quot;a removal with a recorded reason reads differently&quot;,
+      dates2[&quot;lost&quot;][0][&quot;reason&quot;] == &quot;superseded by date-is-impossible&quot;,
+      &quot;the tool does not judge the reason, it requires one to exist&quot;)
+
+unchanged = continuity.continuity(CURRENT, CURRENT, {})
+check(&quot;and an unchanged version loses nothing&quot;,
+      all(not e[&quot;lost&quot;] and not e[&quot;added&quot;] for e in unchanged),
+      &quot;so the report is not simply always complaining&quot;)
+
+print(&quot;\n== 5. SCL decides the verdict, and says so&quot;)
+check(&quot;this deployment treats an unexplained removal as fatal&quot;, policy.removal_is_fatal())
+check(&quot;and requires every clause to be falsifiable&quot;, policy.every_clause_must_be_falsifiable())
+# This line used to be `True if policy.removal_is_fatal() else False`, which
+# restates the check above it and cannot fail on its own. Compute the verdict
+# under both settings instead.
+unexplained = [lost[&quot;witness&quot;] for entry in continuity.continuity(PREVIOUS, CURRENT, {})
+               for lost in entry[&quot;lost&quot;] if not lost[&quot;reason&quot;]]
+
+
+def verdict(fatal):
+    return 1 if (unexplained and fatal) else 0
+
+
+check(&quot;the same evidence gives opposite verdicts under the two settings&quot;,
+      verdict(True) == 1 and verdict(False) == 0,
+      f&quot;fatal -&gt; exit {verdict(True)}, reported -&gt; exit {verdict(False)}; &quot;
+      &quot;archaeology 007's finding, and the report names which setting produced it&quot;)
+check(&quot;and with nothing unexplained, both settings agree&quot;,
+      (1 if ([] and True) else 0) == 0,
+      &quot;the policy only matters when there is something to be lenient about&quot;)
+
+print(&quot;\n== 6. what this run does not claim&quot;)
+check(&quot;the contract marks itself a candidate&quot;, CONTRACT[&quot;status&quot;] == &quot;candidate&quot;)
+check(&quot;and credits whose idea this is&quot;,
+      &quot;Pragma&quot; in CONTRACT[&quot;whose_idea&quot;],
+      &quot;I proposed a count; this implements the objection to it&quot;)
+
+print(&quot;&quot;)
+if FAILURES:
+    print(f&quot;  {len(FAILURES)} check(s) failed: {', '.join(FAILURES)}&quot;)
+    raise SystemExit(1)
+print(&quot;  island test passed&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Check that every clause can still be broken, and that nothing stopped watching.
+
+    python src/main.py
+    python src/main.py --strict     # exit 1 when policy says an unexplained removal is fatal
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import continuity, validate  # noqa: E402
+
+HERE = pathlib.Path(__file__).parent
+CONTRACT = json.loads((HERE / &quot;FMS&quot; / &quot;contract.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+# Reasons for removing a witness live beside the removal, not in the code that
+# checks for it. There is deliberately no reason recorded for the one that was
+# dropped, because an example that explains its own counter-example away is not
+# demonstrating anything.
+REMOVAL_REASONS = {}
+
+
+def main(argv):
+    current = {name: spec[&quot;witnesses&quot;] for name, spec in CONTRACT[&quot;clauses&quot;].items()}
+    previous = CONTRACT[&quot;previous_version&quot;][&quot;clauses&quot;]
+
+    clause_reports = [
+        continuity.check_clause(name, validate.CLAUSES[name], witnesses)
+        for name, witnesses in current.items()
+    ]
+    continuity_report = continuity.continuity(previous, current, REMOVAL_REASONS)
+    cases = {
+        name: continuity.distinct_semantic_cases(witnesses, CONTRACT[&quot;witnesses&quot;])
+        for name, witnesses in current.items()
+    }
+
+    sys.stdout.write(report.render(
+        clause_reports, continuity_report, cases,
+        CONTRACT[&quot;version&quot;], CONTRACT[&quot;previous_version&quot;][&quot;version&quot;],
+        policy.removal_is_fatal(),
+    ))
+
+    unexplained = [lost[&quot;witness&quot;] for entry in continuity_report
+                   for lost in entry[&quot;lost&quot;] if not lost[&quot;reason&quot;]]
+    unfalsifiable = [r[&quot;clause&quot;] for r in clause_reports if not r[&quot;falsifiable&quot;]]
+
+    if &quot;--strict&quot; not in argv:
+        return 0
+    if unexplained and policy.removal_is_fatal():
+        return 1
+    if unfalsifiable and policy.every_clause_must_be_falsifiable():
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

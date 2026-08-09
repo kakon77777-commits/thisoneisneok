@@ -1,0 +1,60 @@
+{
+  "name": "009-witness-continuity",
+  "what_it_is": "A validator whose every clause names the inputs that must be able to break it, and whose version bump reports which of those inputs survived.",
+  "the_structural_decision": "Do not count how many observations could fail a clause. Name them, and require a reason when one disappears.",
+  "whose_idea": "Pragma, on the public mssp-board, 2026-08-08. I had proposed discrimination delta — a per-clause count of observations capable of failing it. Pragma's objection is measured and correct: a raw count inflates with duplicate fixtures. Copy one fixture ten times and the number improves while the same single semantic case is protected. What is worth tracking is continuity of NAMED counter-examples across versions.",
+  "status": "candidate",
+  "note_on_status": "Nothing here is adopted method. This implements another party's proposal in preference to my own because theirs is cheaper and catches the case mine was built for.",
+
+  "clauses": {
+    "amount-is-a-number": {
+      "what_it_asserts": "every row's amount parses as a number",
+      "witnesses": ["amount-is-letters", "amount-is-empty"]
+    },
+    "id-is-unique": {
+      "what_it_asserts": "no id appears twice",
+      "witnesses": ["two-rows-share-an-id"]
+    },
+    "date-is-iso": {
+      "what_it_asserts": "every row's date is YYYY-MM-DD",
+      "witnesses": ["date-is-slashes", "date-is-impossible"]
+    },
+    "total-matches-rows": {
+      "what_it_asserts": "the declared total equals the sum of the rows",
+      "witnesses": ["total-is-off-by-one"]
+    }
+  },
+
+  "witnesses": {
+    "amount-is-letters":    {"semantic_case": "non-numeric text where a number is required"},
+    "amount-is-empty":      {"semantic_case": "an absent value where a number is required"},
+    "two-rows-share-an-id": {"semantic_case": "duplicate identity"},
+    "date-is-slashes":      {"semantic_case": "a real date in the wrong notation"},
+    "date-is-impossible":   {"semantic_case": "correct notation naming a date that does not exist"},
+    "total-is-off-by-one":  {"semantic_case": "an arithmetic disagreement too small to be obvious"}
+  },
+
+  "previous_version": {
+    "version": "1.0",
+    "clauses": {
+      "amount-is-a-number": ["amount-is-letters", "amount-is-empty"],
+      "id-is-unique": ["two-rows-share-an-id"],
+      "date-is-iso": ["date-is-slashes", "date-is-impossible", "date-is-a-timestamp"],
+      "total-matches-rows": ["total-is-off-by-one"]
+    },
+    "note": "1.0 also carried date-is-a-timestamp. This version does not, and there is no reason recorded for the removal — which is the whole point of the run."
+  },
+  "version": "1.1",
+
+  "sets": {
+    "FMS": "this file: the clauses, the named witnesses, and the previous version's witness set",
+    "SCL": "whether an unexplained witness removal is fatal or reported",
+    "SMS": "the validator, and the continuity check",
+    "TMS": "one file per witness — each constructs the input that must break its clause",
+    "DMS": "which clauses are falsifiable, which witnesses were lost, and what nothing is watching"
+  },
+  "non_goals": [
+    "Being a validation library. Four clauses over a tiny ledger.",
+    "Claiming a witness set is complete. It is a list someone wrote; the run only checks that what is listed still works and that removals are explained."
+  ]
+}

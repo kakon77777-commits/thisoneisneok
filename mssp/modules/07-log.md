@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-08
+updated: 2026-08-09
 ---
 
 # 開發日誌
@@ -17,6 +17,51 @@ updated: 2026-08-08
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-09
+
+### 發生了什麼
+
+[範例 009](/html/mssp/009-witness-continuity.html)：實作 **Pragma 的提案而不是我的**。[考古 009](/html/mssp/archaeology/009-cpython-warnings.html)：CPython `warnings`——**我昨天量的那個通道，是被我的儀器改變過的**。
+
+Neo 同時給了路線改變：**到 20 個範例與 20 則考古之後，不再找開源專案，改成把市面上的應用軟體做出來並開源**——電商、報表那一類，每一個都要能用、UI 完備、BUG 稀少。目前 9/9，還有約十一天。
+
+### 怎麼發現的
+
+**我在 `mssp-d-002` 提的 discrimination delta 被 Pragma 反駁，而反駁是對的。** 我提的是每條 clause 回報「有多少個觀察能夠讓它失敗」。他的反駁：**原始數量會被重複 fixture 灌高**——把同一個 fixture 複製十次數字就變漂亮，保護的還是同一種語義情況。他提的是 **falsifying-witness continuity**：舊版有哪些**具名**反例能讓 clause 失敗、新版還在不在、移除的話理由是什麼。
+
+範例 009 實作他的。孤島測試第 3 節不是用文字同意他，是把那個灌水**跑出來**：
+
+```text
+  PASS  duplicating one fixture ten times raises a raw count to ten - 10
+  PASS  and leaves the distinct-case count at one
+  PASS  while a genuinely different case does move it - 1 -> 2
+```
+
+第 4 節示範那個 count 抓不到的東西：1.0 有一個 `date-is-a-timestamp` 反例，1.1 沒有了，**而該 clause 仍然可被證偽**——兩個反例還在而且都有效。所以通過／失敗的視角看不見，原始計數的 3→2 又跟「刪掉一個重複的」無法區分，**只有具名才看得出是哪一種情況停止被守著**。
+
+**考古 009 打到的是我自己昨天的量測。** 考古 008 回報「舊名字多發一個 `DeprecationWarning`」。量下去：
+
+```text
+  five calls from one site emit ONE warning     1 of 5 — the channel remembers
+  the same five calls, each wrapped, emit FIVE  5 of 5 — catch_warnings mutates the filters
+```
+
+`warnings` 有記憶（`__warningregistry__`，鍵是 text/category/lineno），而 `catch_warnings` 為了隔離自己會變動 filter 清單，`_filters_version` 一遞增，所有 registry 就被丟棄。**隔離是它的目的，重設是副作用，而那個副作用恰好回復了我正在觀察的行為。**
+
+結構上還有一件：`warnings.py` 只有 **99 行**，是從 **869 行**的 `_py_warnings` 轉出 47 個名字的門面，`warn()` 實際來自 C 的 `_warnings`，而 **`warnings.filters is _warnings.filters`**——觀察與被觀察是同一個物件。
+
+### 對 MSSP 的意義
+
+**一個觀察器必須宣告自己會不會擾動被觀察的東西。** 這是重切加的那一條，而它是可檢查的：孤島測試第 1 節比對模組上的 `PERTURBS` 與 FMS 的宣告，不一致就擋。
+
+同一份程式碼，被動觀察器看到 1、重設觀察器看到 5。**兩個都對，它們回答的是不同的問題**——「程式試了幾次」與「有沒有人聽到」——而一份不指名觀察器的報告會讓讀者把其中一個當成另一個。這跟考古 007 的「等價是契約加上量測」是同一件事往回退一層：**在契約之前，先要有一個承認自己存在的儀器。**
+
+考古 008 的觀察器盲點清單已經回頭補上這一條，但**我沒有重做它的量測**——被動觀察 `logging.warn` 需要乾淨的子行程，因為記憶是行程級的。契約沒有錯，它只是對「是什麼讓這件事看得見」保持沉默。
+
+**還有一件關於今天的：我在同一天犯了比較輕的同一個錯。** 考古 009 把「觀察器會不會擾動」做成一個布林，而真實情況是程度問題——一個讀快取的觀察器擾動了時序卻沒擾動結果。**一個布林在這裡可能跟一個計數在別處一樣粗**，而那正是我今天早上從 Pragma 那裡學到的。
 
 ---
 

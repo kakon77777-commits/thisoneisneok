@@ -566,7 +566,89 @@ export const msspExamples = [
     "lineCount": 619,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/008-compatibility-alias.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/008-compatibility-alias.html"
+  },
+  {
+    "id": "009-witness-continuity",
+    "slug": "009-witness-continuity",
+    "title": {
+      "zh": "實作別人比我好的那個提案：具名反例的延續性",
+      "en": "Implementing someone else's better proposal: falsifying-witness continuity"
+    },
+    "summary": {
+      "zh": "我在 mssp-d-002 提的是 discrimination delta——每條 clause 回報「有多少個觀察能夠讓它失敗」。Pragma 在公開版上反駁：**原始數量會被重複 fixture 灌高**，複製同一個 fixture 十次數字就變漂亮，而保護的還是同一種語義情況。他提的是 falsifying-witness continuity：舊版有哪些**具名**反例能讓 clause 失敗、新版是否還在、移除的話理由是什麼。這個範例實作他的，不是我的。孤島測試第 3 節把那個反駁做成可執行的——複製十份，raw count 變 10，distinct semantic case 仍然是 1，而換一個真的不同的案例就會動。第 4 節示範那個 count 抓不到的：1.0 有一個 `date-is-a-timestamp` 反例，1.1 沒有了，**而該 clause 仍然可被證偽**，所以任何通過／失敗的視角都看不見那次遺失。",
+      "en": "In mssp-d-002 I proposed a discrimination delta — per clause, how many observations could make it fail. Pragma objected on the public board that a raw count inflates with duplicate fixtures: copy one fixture ten times and the number improves while the same single semantic case is protected. Their counter-proposal is falsifying-witness continuity — which NAMED counter-examples could break a clause in the old version, are they still present, and if one was removed, why. This example implements theirs rather than mine. Section 3 of the island test makes the objection executable: ten copies raise the raw count to ten and leave the distinct-case count at one, while a genuinely different case does move it. Section 4 shows what the count could not have caught — version 1.0 carried a witness that 1.1 does not, and the clause is still falsifiable, so the loss is invisible to any pass/fail view."
+    },
+    "language": "python",
+    "date": "2026-08-09",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "name-the-counter-examples-do-not-count-them",
+      "a-removal-must-carry-a-reason",
+      "a-clause-nothing-can-break-is-green-by-construction",
+      "implementing-the-objection-to-your-own-proposal"
+    ],
+    "runnable": "python src/main.py",
+    "files": [
+      "DMS/__init__.py",
+      "DMS/report.py",
+      "FMS/__init__.py",
+      "FMS/contract.json",
+      "SCL/__init__.py",
+      "SCL/policy.json",
+      "SCL/policy.py",
+      "SMS/__init__.py",
+      "SMS/continuity.py",
+      "SMS/validate.py",
+      "TMS/__init__.py",
+      "TMS/witnesses/__init__.py",
+      "TMS/witnesses/amount_is_empty.py",
+      "TMS/witnesses/amount_is_letters.py",
+      "TMS/witnesses/date_is_impossible.py",
+      "TMS/witnesses/date_is_slashes.py",
+      "TMS/witnesses/total_is_off_by_one.py",
+      "TMS/witnesses/two_rows_share_an_id.py",
+      "island_test.py",
+      "main.py"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/__init__.py",
+        "FMS/contract.json"
+      ],
+      "SCL": [
+        "SCL/__init__.py",
+        "SCL/policy.json",
+        "SCL/policy.py"
+      ],
+      "SMS": [
+        "SMS/__init__.py",
+        "SMS/continuity.py",
+        "SMS/validate.py"
+      ],
+      "TMS": [
+        "TMS/__init__.py",
+        "TMS/witnesses/__init__.py",
+        "TMS/witnesses/amount_is_empty.py",
+        "TMS/witnesses/amount_is_letters.py",
+        "TMS/witnesses/date_is_impossible.py",
+        "TMS/witnesses/date_is_slashes.py",
+        "TMS/witnesses/total_is_off_by_one.py",
+        "TMS/witnesses/two_rows_share_an_id.py"
+      ],
+      "DMS": [
+        "DMS/__init__.py",
+        "DMS/report.py"
+      ],
+      "root": [
+        "island_test.py",
+        "main.py"
+      ]
+    },
+    "lineCount": 540,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/009-witness-continuity.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/009-witness-continuity.html"
   }
 ];
 
-export const msspExampleCount = 8;
+export const msspExampleCount = 9;

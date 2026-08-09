@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>我量的那個通道，是被我的儀器改變過的 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="昨天的考古 008 透過 warnings 通道量 logging 的棄用別名，回報「舊名字多發一個 DeprecationWarning」。那句話一天只對一次——**同一個呼叫點五次呼叫只發出一次**，因為通道有記憶（`__warningregistry__`，鍵是 text/category/lineno）。我的觀察器每次都看得到，是因為 `catch_warnings` 為了隔離而變動 filter 清單，那會讓 `_filters_version` 遞增，於是所有 registry 都被丟棄。**同一份程式碼：沒有儀器 1 次，每次包一層 5 次。** 結構上還有第二件事：`warnings.py` 只有 99 行，是一個從 869 行的 `_py_warnings` 轉出 47 個名字的門面，而 `warn()` 實際來自 C 的 `_warnings`，`warnings.filters is _warnings.filters`——**觀察與被觀察是同一個物件**。重切把通道的記憶變成結構的一部分，並要求每個觀察器宣告自己會不會擾動它。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/009-cpython-warnings.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>009-cpython-warnings</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython warnings</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>3.14.5</span></div>
+    <div><b>日期</b><span>2026-08-09</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/blob/main/Lib/warnings.py">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>009 — CPython <code>warnings</code> 3.14.5：我量的那個通道，是被我的儀器改變過的</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/python/cpython/blob/main/Lib/warnings.py">CPython <code>Lib/warnings.py</code></a>，PSF-2.0。本篇考察 3.14.5。
+所有數字都是在這台機器上對這個直譯器量出來的。</p>
+</blockquote>
+<pre><code class="language-bash">python src/main.py          # 同一份程式碼，兩個觀察器，不同的數字
+python src/island_test.py   # 25 項檢查，其中 11 項直接量 CPython 本體
+</code></pre>
+<h2>為什麼選它</h2>
+<p><a href="/html/mssp/archaeology/008-cpython-logging-warn.html">考古 008</a> 昨天透過 <code>warnings</code> 通道量 <code>logging</code> 的棄用別名，回報：</p>
+<blockquote>
+<p><code>warnings</code> 不同，舊名字多發一個 <code>DeprecationWarning</code>。</p>
+</blockquote>
+<p>那句話成立，<strong>但只成立一次</strong>。</p>
+<pre><code class="language-text">  PASS  five calls from one site emit ONE warning - 1 of 5 — the channel remembers
+  PASS  the same five calls, each wrapped, emit FIVE - 5 of 5 — catch_warnings mutates the filters
+  PASS  so the instrument changed the channel it was measuring - 1 vs 5 from identical code
+</code></pre>
+<p><code>warnings</code> 有記憶：<code>__warningregistry__</code>，鍵是 <code>(text, category, lineno)</code>。同一個呼叫點的同一則警告發過一次之後就不再發。<strong>而我的觀察器每次都看得到，是因為 <code>catch_warnings</code> 為了隔離自己而變動 filter 清單</strong>，那會讓 <code>_filters_version</code> 遞增，於是每一份版本號不匹配的 registry 都被丟棄。</p>
+<p>隔離是它的目的，重設是它的副作用，而那個副作用<strong>恰好回復了我正在觀察的那個行為</strong>。</p>
+<h2>原專案的結構地圖</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>warnings.py</code>（你 import 的那個）</td>
+<td><strong>99 行</strong></td>
+</tr>
+<tr>
+<td><code>_py_warnings.py</code>（純 Python 實作）</td>
+<td><strong>869 行</strong></td>
+</tr>
+<tr>
+<td><code>_warnings</code></td>
+<td>C 內建</td>
+</tr>
+<tr>
+<td>門面轉出的名字</td>
+<td>47 個（9 個公開）</td>
+</tr>
+<tr>
+<td><code>warnings.warn.__module__</code></td>
+<td><strong><code>_warnings</code></strong></td>
+</tr>
+<tr>
+<td><code>warnings.filters is _warnings.filters</code></td>
+<td><strong>True</strong></td>
+</tr>
+</tbody></table>
+<p><strong>你讀的那個檔案不是會跑的那個。</strong> 99 行裡幾乎全是 <code>from _py_warnings import (...)</code>，而實際執行 <code>warn()</code> 的是 C。這是<a href="/html/mssp/archaeology/007-cpython-json.html">考古 007</a> 那個 <code>json</code>/<code>_json</code> 形狀再一次，多了一層：中間還有一個純 Python 實作。</p>
+<p>最後一列最重要：<strong><code>warnings.filters</code> 跟 <code>_warnings.filters</code> 是同一個物件</strong>。觀察這個通道的方式，就是變動這個通道本身。觀察與被觀察在這裡不是兩個東西。</p>
+<p>記憶的失效機制在 <code>_py_warnings.py</code> 裡三行就看得完：</p>
+<pre><code class="language-python">_filters_version = 1
+_wm._filters_version += 1                              # _filters_mutated()
+if registry.get(&#39;version&#39;, 0) != _wm._filters_version: # 版本不合就整份丟掉
+</code></pre>
+<h2>MSSP 重切</h2>
+<p><code>src/</code> 把兩件事變成結構的一部分。</p>
+<p><strong>通道的記憶是一個欄位，不是一個模組全域。</strong> <code>SMS/channel.py</code> 的 <code>Channel</code> 帶 <code>delivered</code>、<code>attempted</code> 與 <code>_seen</code>，而 <code>clear_memory(actor, may_clear)</code> 是一個<strong>有行為者的操作</strong>，會被 SCL 拒絕。上游的等價物是一個沒有人會去看的 <code>__warningregistry__</code>，以及一個不知道自己會清掉它的 context manager。</p>
+<p><strong>每個觀察器必須宣告自己會不會擾動通道。</strong> <code>FMS</code> 記著，<code>TMS</code> 的模組上有 <code>PERTURBS</code>，而孤島測試第 1 節要求兩者一致——一個宣告自己被動而實際會重設的觀察器會被擋下。</p>
+<pre><code class="language-console">$ python src/main.py
+
+  ok  passive    delivered 1   perturbs the channel: False
+        cost   a notice already delivered is invisible to it
+  !!  resetting  delivered 5   perturbs the channel: True
+        cost   it reports a frequency no caller experiences
+
+  attempts made by the code : 10
+  notices actually delivered: 6
+  suppressed by the memory  : 4
+</code></pre>
+<p><strong>同一份程式碼，1 對 5。</strong> 兩個數字都是對的，它們回答的是不同的問題——「程式試了幾次」與「有沒有人聽到」——而一份不指名觀察器的報告，會讓讀者把其中一個當成另一個。</p>
+<h2>什麼不適合拆</h2>
+<p><strong>once-per-site 不該被改掉。</strong> 一個每次呼叫都吼的棄用通知會在第一天被關掉，而關掉之後它一次都不會再響。<strong>記憶正是這個通道有用的原因</strong>，本篇的發現是關於量它的方式，不是關於它。</p>
+<p><strong>99 行的門面不該被合併掉。</strong> 它讓 <code>import warnings</code> 在 C 實作存在時拿到 C 的、不存在時拿到 Python 的，而呼叫端一個字都不用改。那跟考古 007 的結論一致：<strong>上游提供的隔離路徑是對的</strong>，代價只在你想問「我剛才跑的是哪一個」時才出現。</p>
+<p><strong><code>catch_warnings</code> 不該為了不擾動而放棄隔離。</strong> 它必須換掉 filter 清單，否則它就不是隔離。<strong>問題不在它做了什麼，在於它沒有說</strong>——一個回報「我會重設這個通道的記憶」的 context manager，會讓昨天那個量測在第一次跑的時候就露餡。</p>
+<h2>這次沒有解決什麼</h2>
+<p>依<a href="/html/mssp/modules/development.html">改良點 8</a>，每一項要說出把它變成量測需要多少。</p>
+<ul>
+<li><p><strong>我已經回頭改了考古 008 的觀察器盲點清單，但沒有重做它的量測。</strong> <em>（需要新寫東西：一個被動觀察器，而被動觀察 <code>logging.warn</code> 需要一個乾淨的子行程，因為記憶是行程級的。）</em> 那份 <code>permit</code> 現在的措辭「one DeprecationWarning naming the replacement」在被動觀察下應該是「第一次呼叫時一則，之後零則」。<strong>契約沒有錯，它只是對「是什麼讓這件事看得見」保持沉默。</strong></p>
+</li>
+<li><p><strong>我沒有量這件事影響到多少既有的量測。</strong> <em>（需要新寫東西：掃過九則考古與九個範例，找出所有用 <code>catch_warnings</code>、<code>caplog</code>、<code>assertWarns</code> 之類會重設狀態的觀察。）</em> 這是一整類的問題而不是一個實例，而我只確認了一個。</p>
+</li>
+<li><p><strong>重切的通道沒有 filter 語言。</strong> <em>（需要新寫程式。）</em> 上游的 registry 之所以複雜，是因為 filter 可以按模組、按行號、按類別匹配，而我的 <code>_seen</code> 是一個集合。所以我示範了「記憶可以是顯式的」，沒有示範在真實的過濾規則下它還一樣簡單。</p>
+</li>
+<li><p><strong>「觀察器擾動」這件事我只做了一個布林。</strong> <em>（需要一條判準。）</em> 真實情況是程度問題——一個讀取快取的觀察器擾動了時序但沒擾動結果。<strong>一個布林在這裡可能跟一個計數在別處一樣粗</strong>，而那正是<a href="/html/mssp/009-witness-continuity.html">範例 009</a> 今天從 Pragma 那裡學到的教訓，我在同一天又犯了一次比較輕的版本。</p>
+</li>
+</ul>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;warnings-channel-recut&quot;,
+  &quot;what_it_is&quot;: &quot;A notice channel whose memory is part of the declared structure, and whose observers must say whether they perturb it.&quot;,
+  &quot;examined&quot;: {
+    &quot;project&quot;: &quot;CPython warnings&quot;,
+    &quot;version&quot;: &quot;3.14.5&quot;,
+    &quot;license&quot;: &quot;PSF-2.0&quot;,
+    &quot;why_this_one&quot;: &quot;Archaeology 008 measured logging's deprecation alias through the warnings channel and reported 'the old name emits one DeprecationWarning'. That sentence is true once per call site per process, and the only reason my observer saw it every time is that the observer itself resets the channel's memory. I measured a channel my instrument had changed.&quot;,
+    &quot;measured&quot;: {
+      &quot;warnings_py_lines&quot;: 99,
+      &quot;_py_warnings_py_lines&quot;: 869,
+      &quot;_warnings&quot;: &quot;C builtin; warnings.warn.__module__ == '_warnings'&quot;,
+      &quot;names_re_exported_by_the_facade&quot;: 47,
+      &quot;public_names&quot;: 9,
+      &quot;filters_are_the_same_object&quot;: &quot;warnings.filters is _warnings.filters&quot;,
+      &quot;memory&quot;: &quot;__warningregistry__ per module, keyed by (text, category, lineno)&quot;,
+      &quot;invalidation&quot;: &quot;registry['version'] != _filters_version -&gt; the registry is discarded&quot;
+    },
+    &quot;reproduced&quot;: {
+      &quot;no_instrument_five_calls_one_site&quot;: &quot;1 emission out of 5&quot;,
+      &quot;wrapped_in_catch_warnings_three_calls&quot;: &quot;3 emissions out of 3&quot;,
+      &quot;why&quot;: &quot;catch_warnings mutates the filter list, _filters_mutated() bumps _filters_version, and every registry whose version no longer matches is thrown away&quot;
+    }
+  },
+  &quot;the_finding&quot;: &quot;Three layers, and the one you import is not the one that runs: a 99-line facade re-exporting 47 names from an 869-line pure-Python module, with a C builtin actually providing warn(). Underneath, the channel has memory — a notice fires once per (text, category, line) per module — and the standard way to observe it erases that memory. The observation and the observed are the same filter list.&quot;,
+  &quot;the_correction_it_forces&quot;: &quot;Archaeology 008's permit reads 'one DeprecationWarning naming the replacement'. Measured without an instrument that resets the channel, the honest statement is 'one on the first call from a given site in a process, and none afterwards'. The contract was not wrong about what it saw; it was silent about what made it visible.&quot;,
+
+  &quot;channel&quot;: {
+    &quot;id&quot;: &quot;notices&quot;,
+    &quot;memory&quot;: &quot;per (source, text) — a notice is delivered once until the memory is cleared&quot;,
+    &quot;who_may_clear_it&quot;: &quot;declared in SCL&quot;
+  },
+  &quot;observers&quot;: {
+    &quot;passive&quot;: {
+      &quot;perturbs_the_channel&quot;: false,
+      &quot;sees&quot;: &quot;exactly what a caller in the same process would see&quot;,
+      &quot;cost&quot;: &quot;a notice already delivered is invisible to it&quot;
+    },
+    &quot;resetting&quot;: {
+      &quot;perturbs_the_channel&quot;: true,
+      &quot;sees&quot;: &quot;every notice the code attempts to send&quot;,
+      &quot;cost&quot;: &quot;it reports a frequency no caller experiences&quot;
+    }
+  },
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the channel, its memory, and the two observers with their declared perturbation&quot;,
+    &quot;SCL&quot;: &quot;which observer this deployment permits, and who may clear the memory&quot;,
+    &quot;SMS&quot;: &quot;the channel itself — deliver, remember, clear&quot;,
+    &quot;TMS&quot;: &quot;two observers, each importing nothing&quot;,
+    &quot;DMS&quot;: &quot;what was seen, under which observer, and what that observer cannot see&quot;
+  },
+  &quot;non_goals&quot;: [
+    &quot;Being the warnings module. One channel, two observers, no filter language.&quot;,
+    &quot;Claiming CPython is wrong. Once-per-site is the correct default for a notice channel; the finding is about measuring it, not about it.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;policy_version&quot;: &quot;1.0&quot;,
+  &quot;_comment&quot;: [
+    &quot;A deployment that permits only the passive observer gets numbers a caller&quot;,
+    &quot;would recognise. One that permits the resetting observer gets numbers no&quot;,
+    &quot;caller experiences. Neither is wrong; reporting which one produced a&quot;,
+    &quot;figure is not optional.&quot;
+  ],
+  &quot;permitted_observers&quot;: [&quot;passive&quot;, &quot;resetting&quot;],
+  &quot;default_observer&quot;: &quot;passive&quot;,
+  &quot;may_clear_memory&quot;: [&quot;test-harness&quot;]
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Which observer, and who may clear the channel's memory.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+permits = lambda name: name in _C[&quot;permitted_observers&quot;]          # noqa: E731
+default_observer = lambda: _C[&quot;default_observer&quot;]                 # noqa: E731
+may_clear = lambda actor: actor in _C[&quot;may_clear_memory&quot;]         # noqa: E731
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/channel.py</summary><pre><code>&quot;&quot;&quot;The channel, with its memory made explicit.
+
+CPython keeps this in a module-global `__warningregistry__` keyed by
+(text, category, lineno), invalidated whenever the filter list is mutated. That
+is efficient and it is invisible: nothing in the caller's view says &quot;this notice
+has a memory, and something you did earlier reset it&quot;.
+
+Here the memory is a field on the channel, and clearing it is an operation with
+an actor.
+&quot;&quot;&quot;
+
+
+class Channel:
+    def __init__(self):
+        self.delivered = []        # what a listener actually received
+        self.attempted = []        # every send, whether delivered or not
+        self._seen = set()
+        self.clears = []
+
+    def send(self, source, text):
+        &quot;&quot;&quot;Deliver a notice once per (source, text) until the memory is cleared.&quot;&quot;&quot;
+        self.attempted.append((source, text))
+        key = (source, text)
+        if key in self._seen:
+            return False
+        self._seen.add(key)
+        self.delivered.append((source, text))
+        return True
+
+    def clear_memory(self, actor, may_clear):
+        &quot;&quot;&quot;Forget what has been delivered. Refused unless policy allows it.&quot;&quot;&quot;
+        if not may_clear(actor):
+            self.clears.append((actor, &quot;refused&quot;))
+            return False
+        self._seen.clear()
+        self.clears.append((actor, &quot;cleared&quot;))
+        return True
+
+    def suppressed(self):
+        return len(self.attempted) - len(self.delivered)
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/observers/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/observers/passive.py</summary><pre><code>&quot;&quot;&quot;Watches without touching. Imports nothing.
+
+Sees what a caller in the same process sees — which means a notice already
+delivered before this observer started is invisible to it, and it will report
+zero for a channel that is working exactly as designed.
+&quot;&quot;&quot;
+
+NAME = &quot;passive&quot;
+PERTURBS = False
+
+
+def observe(channel, run):
+    before = len(channel.delivered)
+    run()
+    return {&quot;delivered&quot;: channel.delivered[before:], &quot;attempted_since&quot;: None}
+</code></pre></details><details><summary>TMS/observers/resetting.py</summary><pre><code>&quot;&quot;&quot;Clears the memory first, so every send is delivered. Imports nothing.
+
+This is what `catch_warnings` does, though not on purpose: it mutates the filter
+list, which bumps the version every registry is compared against, so every
+registry is discarded. The reset is a side effect of the isolation.
+
+It sees more, and what it sees is a frequency no caller experiences.
+&quot;&quot;&quot;
+
+NAME = &quot;resetting&quot;
+PERTURBS = True
+
+
+def observe(channel, run, clear, times=1):
+    &quot;&quot;&quot;Clear before EACH observation, which is what one catch_warnings block per
+    call actually does — the isolation is per block, so the memory is discarded
+    once per observation rather than once per session.&quot;&quot;&quot;
+    before = len(channel.delivered)
+    for _ in range(times):
+        if not clear():
+            return {&quot;delivered&quot;: [], &quot;refused&quot;: &quot;policy did not permit clearing the memory&quot;}
+        run()
+    return {&quot;delivered&quot;: channel.delivered[before:], &quot;attempted_since&quot;: None}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;What was seen, under which observer, and what that observer cannot see.&quot;&quot;&quot;
+
+
+def render(record, results, channel, policy_note):
+    out = [&quot;&quot;, &quot;== the same code, watched two ways&quot;]
+    for name, seen in results.items():
+        spec = record[&quot;observers&quot;][name]
+        mark = &quot;!! &quot; if spec[&quot;perturbs_the_channel&quot;] else &quot;ok &quot;
+        out.append(f&quot;  {mark} {name:&lt;10} delivered {len(seen['delivered'])}&quot;
+                   f&quot;   perturbs the channel: {spec['perturbs_the_channel']}&quot;)
+        out.append(f&quot;        sees   {spec['sees']}&quot;)
+        out.append(f&quot;        cost   {spec['cost']}&quot;)
+
+    out.append(&quot;&quot;)
+    out.append(f&quot;  attempts made by the code : {len(channel.attempted)}&quot;)
+    out.append(f&quot;  notices actually delivered: {len(channel.delivered)}&quot;)
+    out.append(f&quot;  suppressed by the memory  : {channel.suppressed()}&quot;)
+    out.append(&quot;&quot;)
+    out.append(f&quot;  {policy_note}&quot;)
+    out.append(&quot;&quot;)
+    out.append(&quot;  A figure from a perturbing observer is not wrong. It answers a different&quot;)
+    out.append(&quot;  question — 'how often does the code try' rather than 'how often does anyone&quot;)
+    out.append(&quot;  hear' — and a report that does not name the observer lets a reader take one&quot;)
+    out.append(&quot;  for the other.&quot;)
+    return &quot;\n&quot;.join(out) + &quot;\n&quot;
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the measurement that corrects archaeology 008.
+
+    python src/island_test.py
+
+Section 4 is why this entry exists. Archaeology 008 reported that logging's
+deprecated alias &quot;emits one DeprecationWarning&quot;. It does — once per call site
+per process. My observer saw it every time because the observer resets the
+channel's memory as a side effect of isolating itself.
+&quot;&quot;&quot;
+import inspect
+import io
+import json
+import pathlib
+import re
+import sys
+import warnings
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from SCL import policy  # noqa: E402
+from SMS.channel import Channel  # noqa: E402
+from TMS.observers import passive, resetting  # noqa: E402
+
+RECORD = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+print(&quot;\n== 1. each observer is an island, and declares whether it perturbs&quot;)
+for module in (passive, resetting):
+    source = (HERE / &quot;TMS&quot; / &quot;observers&quot; / f&quot;{module.NAME}.py&quot;).read_text(encoding=&quot;utf-8&quot;)
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, source, re.M)
+    check(f&quot;observers/{module.NAME} imports nothing&quot;, not reaches, &quot;, &quot;.join(reaches) or &quot;none&quot;)
+    declared = RECORD[&quot;observers&quot;][module.NAME][&quot;perturbs_the_channel&quot;]
+    check(f&quot;observers/{module.NAME} agrees with the record about perturbing&quot;,
+          module.PERTURBS == declared, f&quot;module says {module.PERTURBS}, record says {declared}&quot;)
+
+print(&quot;\n== 2. the same code, two observers, different numbers&quot;)
+ch = Channel()
+send = lambda: ch.send(&quot;a.py:1&quot;, &quot;notice&quot;)  # noqa: E731
+seen_passive = passive.observe(ch, lambda: [send() for _ in range(5)])
+seen_reset = resetting.observe(ch, send, lambda: ch.clear_memory(&quot;test-harness&quot;, policy.may_clear), times=5)
+check(&quot;passive sees the notice once out of five&quot;, len(seen_passive[&quot;delivered&quot;]) == 1,
+      f&quot;{len(seen_passive['delivered'])} of 5&quot;)
+check(&quot;resetting sees it five times out of five&quot;, len(seen_reset[&quot;delivered&quot;]) == 5,
+      f&quot;{len(seen_reset['delivered'])} of 5&quot;)
+check(&quot;and the code did exactly the same thing both times&quot;, len(ch.attempted) == 10,
+      f&quot;{len(ch.attempted)} attempts, {len(ch.delivered)} delivered, {ch.suppressed()} suppressed&quot;)
+
+print(&quot;\n== 3. the checks can fail&quot;)
+ch2 = Channel()
+refused = resetting.observe(ch2, lambda: ch2.send(&quot;b.py:1&quot;, &quot;x&quot;),
+                            lambda: ch2.clear_memory(&quot;nobody&quot;, policy.may_clear), times=3)
+check(&quot;an actor policy does not permit cannot clear the memory&quot;,
+      refused.get(&quot;refused&quot;) is not None, refused.get(&quot;refused&quot;, &quot;&quot;))
+check(&quot;and the refusal is recorded on the channel&quot;,
+      (&quot;nobody&quot;, &quot;refused&quot;) in ch2.clears, str(ch2.clears))
+ch3 = Channel()
+ch3.send(&quot;c.py:1&quot;, &quot;first&quot;)
+ch3.send(&quot;c.py:1&quot;, &quot;first&quot;)
+ch3.send(&quot;c.py:2&quot;, &quot;first&quot;)
+check(&quot;the memory is keyed by source AND text, not by text alone&quot;,
+      len(ch3.delivered) == 2, f&quot;{len(ch3.delivered)} delivered from 3 sends&quot;)
+
+print(&quot;\n== 4. measured against CPython warnings 3.14.5 itself&quot;)
+check(&quot;this interpreter is the examined version&quot;, sys.version.split()[0] == &quot;3.14.5&quot;,
+      sys.version.split()[0])
+
+facade = pathlib.Path(inspect.getsourcefile(warnings))
+facade_lines = len(facade.read_text(encoding=&quot;utf-8&quot;).splitlines())
+check(&quot;the module you import is a 99-line facade&quot;, facade_lines == 99, f&quot;{facade_lines} lines&quot;)
+
+import _py_warnings  # noqa: E402
+impl = pathlib.Path(inspect.getsourcefile(_py_warnings))
+impl_lines = len(impl.read_text(encoding=&quot;utf-8&quot;).splitlines())
+check(&quot;the pure-Python implementation is elsewhere and far larger&quot;,
+      impl_lines &gt; 800, f&quot;_py_warnings.py = {impl_lines} lines&quot;)
+check(&quot;and warn() actually comes from the C module&quot;,
+      warnings.warn.__module__ == &quot;_warnings&quot;, warnings.warn.__module__)
+
+import _warnings  # noqa: E402
+check(&quot;the facade's filter list IS the C module's&quot;, warnings.filters is _warnings.filters,
+      &quot;the observation and the observed are the same object&quot;)
+
+# The memory, measured without an instrument that resets it.
+captured = []
+warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: \
+    captured.append((category.__name__, str(message)))
+warnings.simplefilter(&quot;default&quot;)
+
+
+def emit():
+    warnings.warn(&quot;a deprecated thing&quot;, DeprecationWarning, stacklevel=2)
+
+
+before = len(captured)
+for _ in range(5):
+    emit()
+uninstrumented = len(captured) - before
+check(&quot;five calls from one site emit ONE warning&quot;, uninstrumented == 1,
+      f&quot;{uninstrumented} of 5 — the channel remembers&quot;)
+
+registry = sys.modules[&quot;__main__&quot;].__dict__.get(&quot;__warningregistry__&quot;, {})
+check(&quot;and the memory is visible as __warningregistry__&quot;,
+      any(isinstance(k, tuple) for k in registry), str(registry)[:70])
+
+instrumented = 0
+for _ in range(5):
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter(&quot;always&quot;)
+        emit()
+        instrumented += len(w)
+check(&quot;the same five calls, each wrapped, emit FIVE&quot;, instrumented == 5,
+      f&quot;{instrumented} of 5 — catch_warnings mutates the filters and every registry is discarded&quot;)
+check(&quot;so the instrument changed the channel it was measuring&quot;,
+      uninstrumented == 1 and instrumented == 5,
+      &quot;1 vs 5 from identical code — this is archaeology 008's observer&quot;)
+
+print(&quot;\n== 5. the correction this forces on archaeology 008&quot;)
+prior = pathlib.Path(HERE / &quot;..&quot; / &quot;..&quot; / &quot;008-cpython-logging-warn&quot; / &quot;src&quot; / &quot;FMS&quot; / &quot;architecture.json&quot;).resolve()
+if prior.exists():
+    prior_record = json.loads(prior.read_text(encoding=&quot;utf-8&quot;))
+    permit = prior_record[&quot;compatibility_aliases&quot;][0][&quot;equivalence&quot;][&quot;allowed_deltas&quot;][0]
+    check(&quot;archaeology 008's permit is still stated as 'one DeprecationWarning'&quot;,
+          &quot;one-deprecation-warning&quot; in str(permit.get(&quot;predicate&quot;, &quot;&quot;)), str(permit))
+    check(&quot;and that is true only under a resetting observer&quot;,
+          uninstrumented == 1,
+          &quot;a passive observer sees one on the FIRST call from a site and none after&quot;)
+    observer = prior_record[&quot;observers&quot;][&quot;three-channel-v1&quot;]
+    check(&quot;008's observer now names this in what it cannot see&quot;,
+          &quot;memory&quot; in observer[&quot;what_it_cannot_see&quot;] or &quot;registry&quot; in observer[&quot;what_it_cannot_see&quot;],
+          observer[&quot;what_it_cannot_see&quot;][:80])
+else:
+    check(&quot;archaeology 008 is on disk to be corrected&quot;, False, str(prior))
+
+print(&quot;\n== 6. what this entry does not claim&quot;)
+check(&quot;the record does not call CPython wrong&quot;,
+      &quot;not about it&quot; in RECORD[&quot;non_goals&quot;][1], RECORD[&quot;non_goals&quot;][1][:70])
+check(&quot;once-per-site is recorded as the correct default for a notice channel&quot;,
+      &quot;correct default&quot; in RECORD[&quot;non_goals&quot;][1])
+
+print(&quot;&quot;)
+if FAILURES:
+    print(f&quot;  {len(FAILURES)} check(s) failed: {', '.join(FAILURES)}&quot;)
+    raise SystemExit(1)
+print(&quot;  island test passed&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Send the same notice five times, watched two ways.
+
+    python src/main.py
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS.channel import Channel  # noqa: E402
+from TMS.observers import passive, resetting  # noqa: E402
+
+HERE = pathlib.Path(__file__).parent
+RECORD = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def main():
+    channel = Channel()
+
+    def one_call():
+        channel.send(&quot;ledger.py:41&quot;, &quot;the 'warn' name is deprecated, use 'warning'&quot;)
+
+    def five_calls():
+        for _ in range(5):
+            one_call()
+
+    results = {}
+    if policy.permits(passive.NAME):
+        results[passive.NAME] = passive.observe(channel, five_calls)
+    if policy.permits(resetting.NAME):
+        # Five observations, each isolated — the shape of a test that wraps
+        # every call in its own catch_warnings block.
+        results[resetting.NAME] = resetting.observe(
+            channel, one_call,
+            lambda: channel.clear_memory(&quot;test-harness&quot;, policy.may_clear),
+            times=5,
+        )
+
+    note = (f&quot;SCL: default observer is {policy.default_observer()}; &quot;
+            f&quot;may clear the memory: {'test-harness' if policy.may_clear('test-harness') else 'nobody'}&quot;)
+    sys.stdout.write(report.render(RECORD, results, channel, note))
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(main())
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

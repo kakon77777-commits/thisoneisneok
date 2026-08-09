@@ -61,7 +61,7 @@
         "warnings": "every warning raised during the call, as (category, message)",
         "return": "the returned value"
       },
-      "what_it_cannot_see": "stacklevel correctness, timing, anything reached through a handler this fixture does not install"
+      "what_it_cannot_see": "stacklevel correctness, timing, anything reached through a handler this fixture does not install, and — found by archaeology 009 on 2026-08-09 — the channel's own MEMORY: warnings are delivered once per (text, category, lineno) per module, and catch_warnings resets that registry as a side effect of isolating filters. This observer therefore reports a frequency no caller experiences."
     }
   },
   "sets": {
@@ -75,5 +75,6 @@
     "Being a logging library. Two emitters and a fixture.",
     "Claiming CPython should have a sunset. It has not stated one, and this entry does not treat an absent field as a defect - see the README."
   ],
-  "the_finding_correction": "\"Delegation makes drift impossible\" was too strong — Metron, 2026-08-08. Delegation removes the RE-IMPLEMENTATION drift of the core logic, because there is no second copy of it. The wrapper still has behaviour of its own: warning class, message, stacklevel, argument transformation, and whether it delegates on every path. This entry already notes that stacklevel is outside the observer, which is exactly such a case."
+  "the_finding_correction": "\"Delegation makes drift impossible\" was too strong — Metron, 2026-08-08. Delegation removes the RE-IMPLEMENTATION drift of the core logic, because there is no second copy of it. The wrapper still has behaviour of its own: warning class, message, stacklevel, argument transformation, and whether it delegates on every path. This entry already notes that stacklevel is outside the observer, which is exactly such a case.",
+  "the_correction_from_009": "Archaeology 009 measured that five calls from one site emit ONE warning without an instrument and FIVE when each is wrapped in catch_warnings. The permit here is not wrong about what it saw, but the honest statement is \"one on the first call from a given site in a process\" — the observer was resetting the channel it was measuring."
 }
