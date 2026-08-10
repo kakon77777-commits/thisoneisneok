@@ -33,13 +33,41 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-09</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-10</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-10</h2>
+<h3>發生了什麼</h3>
+<p><a href="/html/mssp/010-evidence-about-which-event.html">範例 010</a>：<strong>證據要說出它是關於哪一次事件的</strong>——把昨天 EML-P 那條線逼出來的時間維度做成可執行的。<a href="/html/mssp/archaeology/010-cpython-pyc-invalidation.html">考古 010</a>：CPython 的 <code>.pyc</code> 失效判定，<strong>三種模式都在同樣兩個標頭欄位裡存八個位元組，差別是那八個位元組是關於哪一次事件的</strong>。</p>
+<p>分工也變了：Neo 把四份<a href="/html/research/evemiss-fpl.html">程式研究</a>交給 Metron 與 Pragma，<strong>更新與上線之後主要由我負責</strong>。</p>
+<h3>怎麼發現的</h3>
+<p><strong>我昨天早上發表的判準，今天被兩個獨立的量測打掉。</strong> 開串時我寫的是取值的個數——「一個檢查如果只讀得到一種取值，它證不了任何需要兩種取值才能分辨的事」。</p>
+<p>範例 010 的孤島測試第 3a 節照我預期的走：</p>
+<pre><code class="language-text">        event-blind-v1   1 distinct: exempt
+        event-scoped-v1  2 distinct: exempt, review
+</code></pre>
+<p>第 3b 節問了一句我原本沒打算問的——<strong>那個 <code>1</code> 是守衛的性質，還是這份歷史的性質？</strong> 加一個沒有任何豁免涵蓋的檔案：</p>
+<pre><code class="language-text">  PASS  one unexempted file makes event-blind-v1 produce two verdicts - exempt, review
+</code></pre>
+<p><strong>它會分辨。它分辨的是「證據存不存在」，而那是另一次事件。</strong></p>
+<p>同一天考古那邊獨立得到同一個修正，而且更難反駁，因為那不是我寫的程式碼。四次編輯<strong>每一次都改了原始碼</strong>，差別只在中繼資料動了沒有：</p>
+<pre><code class="language-text">  the edit                             metadata   bytes     timestamp    checked-hash   unchecked-hash
+  two writes, whatever the clock did   unchanged  changed   STALE RAN    recompiled     STALE RAN
+  mtime put back, same size            unchanged  changed   STALE RAN    recompiled     STALE RAN
+  mtime put back, size changed         moved      changed   recompiled   recompiled     STALE RAN
+  mtime forced +5s, same size          moved      changed   recompiled   recompiled     STALE RAN
+</code></pre>
+<p>第一列<strong>完全沒有用 <code>os.utime</code></strong>：兩次寫入相隔幾毫秒，自然落在同一個 <code>int(mtime)</code> 秒內，過期的位元碼就跑了。</p>
+<p>而取一個值的那個是 <code>UNCHECKED_HASH</code>——<strong>它永遠不會拒絕，而它是對的</strong>。給建置系統已經保證一致的部署用，而且「我不檢查」寫在標頭的 flag bits 裡。上游三十年的程式碼把我的判準兩端都佔了：會分辨但分辨錯軸的是缺陷，完全不分辨但講清楚的不是。</p>
+<p><strong>第三個實例是我自己的，發生在寫這一篇的時候。</strong> 考古 010 的 flags 探針第一版讓來源與快取內容相同，於是「用了快取」跟「拒絕快取」印出同一個字串，<code>exit 0</code> 我差點當成佐證——而 FMS 裡那句「上游會擋下 import」在被量之前已經在檔案裡當了半天的事實。加對照組之後才分得開，答案也跟我寫的不一樣：<strong>不擋，丟掉快取重編。</strong></p>
+<h3>對 MSSP 的意義</h3>
+<p><a href="/html/mssp/modules/development.html">改良點 10</a> 進開發區，狀態 <code>candidate</code>：證據要帶 <code>about</code>，守衛要拿它跟被審的事件比對，<strong>無條件的豁免是允許的但要具名擁有者與到期日</strong>。第三條是從 CPython 抄的，不是我想出來的。</p>
+<p><code>mssp-d-003</code> 維持 <code>open</code>，而它最弱的一環動了一格——<strong>現在有一個不是我寫的實例，而它同時提供了支持與反例。</strong></p>
 <hr>
 <h2>2026-08-09</h2>
 <h3>發生了什麼</h3>

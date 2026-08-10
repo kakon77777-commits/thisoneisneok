@@ -1,0 +1,47 @@
+{
+  "name": "010-cpython-pyc-invalidation",
+  "upstream": "CPython Lib/importlib/_bootstrap_external.py",
+  "examined_version": "3.14.5",
+  "license": "PSF-2.0",
+  "what_it_is": "The rule that decides whether a cached .pyc still describes its source file.",
+
+  "why_this_one": "mssp-d-003 lists one weakness above all others: every instance of the pattern so far is my own code. This is upstream, it is thirty years old, it is on the hot path of every Python import ever run, and CPython replaced the mechanism in PEP 552 for exactly the reason the thread is about.",
+
+  "declared_and_then_remeasured": {
+    "_note": "Every number below is re-measured by main.py against the running interpreter. A disagreement is a failure, not a warning. A file of measurements nobody re-reads is a declaration compared to nothing, which is the pattern this whole entry is about.",
+    "bootstrap_external_lines": 1562,
+    "validate_timestamp_pyc_lines": 26,
+    "validate_hash_pyc_lines": 22,
+    "header_bytes": 16,
+    "evidence_bytes": 8,
+    "default_invalidation_mode": "TIMESTAMP"
+  },
+
+  "header": {
+    "layout": "magic(4) flags(4) field2(4) field3(4)",
+    "flags": {
+      "0": {"mode": "TIMESTAMP", "field2": "source mtime, low 32 bits", "field3": "source size"},
+      "1": {"mode": "UNCHECKED_HASH", "field2_field3": "8-byte source hash, never compared"},
+      "3": {"mode": "CHECKED_HASH", "field2_field3": "8-byte source hash, compared on every import"}
+    },
+    "unsupported_bits": "flags & ~0b11 discards the cache and recompiles from source. It does NOT stop the import, which is what this field claimed until the probe was given a control that could tell the two apart - see the note in SMS/upstream.unsupported_flags."
+  },
+
+  "the_finding": "All three modes store eight bytes of evidence in the same two header fields. TIMESTAMP's eight bytes are about the file's metadata. The two hash modes' eight bytes are about the file's bytes. The size of the evidence is identical; what differs is which event it is evidence of.",
+
+  "the_correction_this_forced": "I expected to find a check stuck on one value. TIMESTAMP is not: across four edits that all changed the source, it answers stale twice and fresh twice. It discriminates. It discriminates on whether the file's metadata moved, which is a different event from the one the import cares about. UNCHECKED_HASH is the one that takes a single value - and it is deliberate, flagged, documented, and correct for the deployment it exists for.",
+
+  "sets": {
+    "FMS": "this file: the header layout, the flag meanings, and the numbers main.py re-measures",
+    "SCL": "which mode this deployment writes, and whether an unconditional validator must be declared",
+    "SMS": "the cache: writing a header, resolving flags to a validator, and running the validation",
+    "TMS": "one file per validator - timestamp, checked-hash, unchecked-hash - each takes plain data and imports nothing",
+    "DMS": "the discrimination table, the comparison against the real interpreter, and what none of it can see"
+  },
+
+  "non_goals": [
+    "Saying timestamp invalidation is a bug. It is the default, it is fast, it avoids reading the source at all, and PEP 552 kept it as the default when it added the alternative.",
+    "Reimplementing importlib. Three comparison functions and a header struct.",
+    "Claiming the re-cut is better than upstream's arrangement. It is the same rule with the validator lifted out, which is worth exactly as much as the comparison against the real interpreter says it is."
+  ]
+}

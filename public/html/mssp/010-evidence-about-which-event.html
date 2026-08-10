@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>證據要說出它是關於哪一次事件的 | MSSP | Neo.K</title>
+<meta name="description" content="一個審查閘門，讓漂移的原始檔在有豁免時通過——並且多問一句：這份證據是關於什麼的證據？`tests/test_parser.py changed` 是真的、是剛剛觀察到的，而在第 4 輪它是關於第 1 輪的。**新鮮不等於相關。** 這是 mssp-d-003 昨天被 EML-P 那條線逼出來的時間維度，做成可執行的。而孤島測試第 3b 節推翻了我開串時那條判準的形式：event-blind-v1 在這份歷史上只取一個值，但加進一個沒有任何豁免涵蓋的檔案，它就取兩個值——**它會分辨，只是分辨的是「證據存不存在」，那是另一次事件**。同日的考古 010 從 CPython 量到同一個修正。留下來的是第 4 節：把觀察逐位元組固定住，只移動它屬於哪一輪，判決就翻轉。另外，豁免可以是無條件的——`generated-file` 永遠不會拒絕，這是對的，代價是要具名擁有者與到期日；這個設計不是我發明的，同一天在 CPython 的 UNCHECKED_HASH 量到一模一樣的形狀。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/010-evidence-about-which-event.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>010-evidence-about-which-event</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>010-evidence-about-which-event</span></div>
+    <div><b>語言</b><span>python</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-10</span></div>
+    <div><b>行數</b><span>608</span></div>
+    <div><b>執行</b><span><code>python src/main.py</code></span></div>
+  </section>
+  <article class="content"><h1>010 — Evidence has to say which event it is about</h1>
+<blockquote>
+<p><code>candidate</code>. Nothing here is adopted method, and section 3b of the island test
+is evidence against the criterion this example set out to demonstrate.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>It reviews five rounds of changes. A source file that drifted needs review
+unless an exemption applies — and it asks the exemptions a second question:
+<strong>what is this evidence evidence of?</strong></p>
+<pre><code class="language-bash">python src/main.py             # the review under the guard SCL names
+python src/main.py --strict    # exit 1 when a fatal code appears
+python src/main.py --compare   # both guards over the same history
+python src/island_test.py      # 21 checks across 6 sections
+</code></pre>
+<pre><code class="language-console">$ python src/main.py
+
+  r2  2026-08-04
+    !!  core/parser.py           review  the evidence is about r1, this change is r2
+            evidence   tests/test_parser.py changed  [about r1]
+
+  r4  2026-08-08
+    !!  core/emit.py             review  owner-waived expired 2026-07-01, this change is 2026-08-08
+            evidence   emitter rewrite in flight  [about *]
+
+  r5  2026-08-10
+    ok  build/schema_pb2.py      exempt  generated-file, unconditional by declaration, build-team until 2026-12-01
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>Evidence names the event it is about, and the guard compares that name to the
+event under judgement.</strong></p>
+<p>Freshness is not age. <code>tests/test_parser.py changed</code> is true, it was observed
+just now, and in round 4 it is about round 1.</p>
+<h2>Where it came from</h2>
+<p><a href="/html/mssp/discussions/mssp-d-003.html"><code>mssp-d-003</code></a>, opened the morning of
+2026-08-09 with this criterion:</p>
+<blockquote>
+<p>A check that can only read one value cannot prove anything that needs two
+values to distinguish.</p>
+</blockquote>
+<p>The EML-P line broke it the same afternoon. Their semantic monitor drilled
+correctly when it was built, and now reports <code>no drift</code> for a change that
+rewrites an interpreter&#39;s assignment semantics. Nothing broke it — the exemption
+&quot;the tests changed too&quot; reads test files the baseline has not seen, and
+&quot;not seen&quot; is relative to a baseline nobody has accepted. The observation takes
+several values. The value it takes belongs to a change three rounds back.</p>
+<p>So the criterion needed a second axis: not only how many values, but <strong>which
+event each value is about.</strong> This example is that amendment made executable.</p>
+<h2>The island test — and the part of it I did not expect</h2>
+<p>Section 3a measures what I went in to show:</p>
+<pre><code class="language-text">        event-blind-v1   1 distinct: exempt
+        event-scoped-v1  2 distinct: exempt, review
+</code></pre>
+<p>Then section 3b asks whether that <code>1</code> is a property of the guard or of the
+history, by adding one file no exemption covers:</p>
+<pre><code class="language-text">  PASS  one unexempted file makes event-blind-v1 produce two verdicts - exempt, review
+</code></pre>
+<p><strong>event-blind-v1 is not stuck on one value. It discriminates perfectly well —
+on whether evidence exists, which is a different event from the one being
+judged.</strong> The arity framing was the wrong diagnosis of my own three defects.</p>
+<p>The same correction arrived independently from the archaeology filed today.
+<a href="/html/mssp/archaeology/010-cpython-pyc-invalidation.html">CPython&#39;s timestamp <code>.pyc</code> validation</a>
+also takes two values over four edits that all changed the source — it is not a
+constant either. Its eight bytes of evidence are about the file&#39;s metadata; the
+hash-based mode&#39;s eight bytes are about the file&#39;s bytes. Same size of evidence,
+different event.</p>
+<p>Section 4 is what survives: hold the observation byte-for-byte identical and
+move only which round it belongs to.</p>
+<pre><code class="language-text">  PASS  both runs observed the very same thing - &#39;tests/test_parser.py changed&#39;
+  PASS  and they disagree only about which event it was about - r2 vs r1
+  PASS  event-scoped-v1 gives different verdicts - exempt vs review
+  PASS  event-blind-v1 gives the same verdict to both - exempt and exempt
+</code></pre>
+<h2>An exemption is allowed to be unconditional. It is not allowed to be quiet about it.</h2>
+<p><code>generated-file</code> returns <code>about: &quot;*&quot;</code> and can never refuse. That is correct: a
+generated file is generated, and dating that fact would be pedantry. What it
+pays instead is an owner and a sunset.</p>
+<p>This is not a hedge I invented. The archaeology measured the same design
+upstream on the same day: CPython&#39;s <code>UNCHECKED_HASH</code> <code>.pyc</code> mode never
+revalidates anything, deliberately, and records that choice in two flag bits.</p>
+<p><code>owner-waived</code> is the same shape with its sunset in the past, and that is what
+the sunset is for.</p>
+<table>
+<thead>
+<tr>
+<th>an exemption that</th>
+<th>is</th>
+<th>caught by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>cites evidence about this event</td>
+<td>valid</td>
+<td>—</td>
+</tr>
+<tr>
+<td>cites evidence about an earlier event</td>
+<td><code>stale-evidence</code></td>
+<td>the <code>about</code> comparison</td>
+</tr>
+<tr>
+<td>never refuses, by declaration, with an owner and a live sunset</td>
+<td>valid</td>
+<td>—</td>
+</tr>
+<tr>
+<td>never refuses, and its sunset has passed</td>
+<td><code>expired-waiver</code></td>
+<td>the date comparison</td>
+</tr>
+<tr>
+<td>never refuses, and nobody wrote down that it never refuses</td>
+<td><code>malformed-evidence</code></td>
+<td>fail closed</td>
+</tr>
+</tbody></table>
+<h2>The sets</h2>
+<table>
+<thead>
+<tr>
+<th>set</th>
+<th>what is in it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>the guards and what each reads, the evidence contract, the declarations, the history</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>which guard runs here, and which codes are fatal</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>the two guard implementations, resolution by id, the review walk</td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>one file per exemption rule — plain data in, evidence or nothing out, no imports</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td>the verdicts, what each was based on, and what nothing here is watching</td>
+</tr>
+</tbody></table>
+<h2>What this example does not solve</h2>
+<p><strong>Measurable, not measured.</strong> How often exemption evidence goes stale in a real
+repository, and what requiring <code>about</code> costs the people who write exemptions.</p>
+<p><strong>Not measurable here at all.</strong> Whether an exemption <em>should</em> be event-scoped.
+<code>generated-file</code> is unconditional because of what a generated file is;
+<code>owner-waived</code> is unconditional because a person decided. The contract knows
+which is which because someone wrote it down — nothing in the program found out.</p>
+<p>And the open one: whether any of this is a rule, or a mistake I happen to make
+often. Section 3b is the strongest thing said against it so far, and it is in
+the test rather than in a footnote because
+<a href="/html/mssp/modules/development.html">改良點 6</a> says a check has to be shown to
+be able to fail.</p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;010-evidence-about-which-event&quot;,
+  &quot;what_it_is&quot;: &quot;A review gate that lets a drifting source file through when an exemption applies — and refuses the exemption when the evidence behind it is about a different change than the one being judged.&quot;,
+  &quot;the_structural_decision&quot;: &quot;Evidence must name the event it is about, and the guard must compare that name against the event under judgement. Freshness is not age. A perfectly current, perfectly true observation can still be about something else.&quot;,
+  &quot;where_it_came_from&quot;: &quot;mssp-d-003, 2026-08-09. The criterion I published that morning was: a check that can only read one value cannot prove anything that needs two values to distinguish. The EML-P line broke it the same day with a monitor whose exemption read an observation that took several values — and the value it took belonged to a change three rounds earlier. The criterion needed a second axis: not only how many values, but which event each value is about. This example is that amendment, made executable.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+  &quot;note_on_status&quot;: &quot;Nothing here is adopted method. mssp-d-003 is still open, and the archaeology filed the same day (010-cpython-pyc-invalidation) found a case upstream that argues against reading this as a defect detector.&quot;,
+
+  &quot;guards&quot;: {
+    &quot;event-blind-v1&quot;: {
+      &quot;reads&quot;: [&quot;whether an exemption produced evidence&quot;],
+      &quot;does_not_read&quot;: [&quot;which event the evidence is about&quot;],
+      &quot;note&quot;: &quot;The obvious implementation. It is not wrong about anything it looks at.&quot;
+    },
+    &quot;event-scoped-v1&quot;: {
+      &quot;reads&quot;: [&quot;whether an exemption produced evidence&quot;, &quot;evidence.about&quot;, &quot;the round under judgement&quot;, &quot;owner and sunset when the evidence declares itself unconditional&quot;],
+      &quot;note&quot;: &quot;The same evidence, plus the question of what it is evidence OF.&quot;
+    }
+  },
+
+  &quot;evidence_contract&quot;: {
+    &quot;required_fields&quot;: [&quot;rule&quot;, &quot;about&quot;, &quot;observed&quot;],
+    &quot;about&quot;: &quot;the id of the event this observation is about, or \&quot;*\&quot; when the exemption is unconditional by design&quot;,
+    &quot;unconditional_requires&quot;: [&quot;owner&quot;, &quot;sunset&quot;],
+    &quot;why_unconditional_is_allowed&quot;: &quot;Some exemptions genuinely are not about an event. A file that is generated is generated; dating that fact would be pedantry. What such an exemption must carry instead is an owner and an expiry, so that 'this can never refuse' is a declared position with someone's name on it rather than an accident. Measured upstream the same day: CPython's UNCHECKED_HASH .pyc mode never revalidates, deliberately, and says so in its header flags.&quot;
+  },
+
+  &quot;exemption_order&quot;: [&quot;generated-file&quot;, &quot;owner-waived&quot;, &quot;tests-changed-too&quot;],
+
+  &quot;declarations&quot;: {
+    &quot;generated&quot;: {
+      &quot;build/schema_pb2.py&quot;: {&quot;owner&quot;: &quot;build-team&quot;, &quot;sunset&quot;: &quot;2026-12-01&quot;, &quot;declared_in&quot;: &quot;r1&quot;}
+    },
+    &quot;waivers&quot;: {
+      &quot;core/emit.py&quot;: {&quot;owner&quot;: &quot;neo&quot;, &quot;sunset&quot;: &quot;2026-07-01&quot;, &quot;reason&quot;: &quot;emitter rewrite in flight&quot;}
+    },
+    &quot;test_for&quot;: {
+      &quot;core/parser.py&quot;: &quot;tests/test_parser.py&quot;,
+      &quot;core/lexer.py&quot;: &quot;tests/test_lexer.py&quot;,
+      &quot;core/emit.py&quot;: &quot;tests/test_emit.py&quot;
+    }
+  },
+
+  &quot;history&quot;: {
+    &quot;rounds&quot;: [
+      {&quot;id&quot;: &quot;r1&quot;, &quot;date&quot;: &quot;2026-08-01&quot;, &quot;changes&quot;: [
+        {&quot;path&quot;: &quot;core/parser.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true},
+        {&quot;path&quot;: &quot;tests/test_parser.py&quot;, &quot;kind&quot;: &quot;test&quot;, &quot;drift&quot;: false}
+      ]},
+      {&quot;id&quot;: &quot;r2&quot;, &quot;date&quot;: &quot;2026-08-04&quot;, &quot;changes&quot;: [
+        {&quot;path&quot;: &quot;core/parser.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true}
+      ]},
+      {&quot;id&quot;: &quot;r3&quot;, &quot;date&quot;: &quot;2026-08-06&quot;, &quot;changes&quot;: [
+        {&quot;path&quot;: &quot;core/lexer.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true},
+        {&quot;path&quot;: &quot;tests/test_lexer.py&quot;, &quot;kind&quot;: &quot;test&quot;, &quot;drift&quot;: false}
+      ]},
+      {&quot;id&quot;: &quot;r4&quot;, &quot;date&quot;: &quot;2026-08-08&quot;, &quot;changes&quot;: [
+        {&quot;path&quot;: &quot;core/parser.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true},
+        {&quot;path&quot;: &quot;core/emit.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true}
+      ]},
+      {&quot;id&quot;: &quot;r5&quot;, &quot;date&quot;: &quot;2026-08-10&quot;, &quot;changes&quot;: [
+        {&quot;path&quot;: &quot;build/schema_pb2.py&quot;, &quot;kind&quot;: &quot;generated&quot;, &quot;drift&quot;: true},
+        {&quot;path&quot;: &quot;core/lexer.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true}
+      ]}
+    ]
+  },
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the guards and what each reads, the evidence contract, the declarations, and the history under review&quot;,
+    &quot;SCL&quot;: &quot;which guard this deployment runs, and whether evidence about another event is fatal or reported&quot;,
+    &quot;SMS&quot;: &quot;the guard implementations, resolution by id, and the review that walks the history&quot;,
+    &quot;TMS&quot;: &quot;one file per exemption rule — each takes plain data and returns evidence or nothing, and imports nothing&quot;,
+    &quot;DMS&quot;: &quot;the verdicts, what each was based on, and what nothing here is watching&quot;
+  },
+
+  &quot;non_goals&quot;: [
+    &quot;Being a review tool. Five rounds and three exemption rules over a made-up file list.&quot;,
+    &quot;Claiming the exemption set is complete. It is three rules someone wrote.&quot;,
+    &quot;Claiming event-scoped-v1 is correct in general. It refuses evidence about another event; whether that is the right call depends on whether the exemption was ever meant to be about an event at all, which is why unconditional exemptions exist here as a first-class case rather than as a bug.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;guard&quot;: &quot;event-scoped-v1&quot;,
+  &quot;stale_evidence_is_fatal&quot;: true,
+  &quot;expired_waiver_is_fatal&quot;: true,
+  &quot;malformed_evidence_is_fatal&quot;: true,
+  &quot;_note&quot;: &quot;The guard is named here rather than imported, so that swapping it is a deployment decision and not an edit to SMS. island_test.py runs both regardless of what this says - a policy that could silence the comparison would make the comparison worthless.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Which guard this deployment runs, and what it treats as fatal.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+guard = lambda: _C[&quot;guard&quot;]                                              # noqa: E731
+FATAL_CODES = {
+    &quot;stale-evidence&quot;: &quot;stale_evidence_is_fatal&quot;,
+    &quot;expired-waiver&quot;: &quot;expired_waiver_is_fatal&quot;,
+    &quot;malformed-evidence&quot;: &quot;malformed_evidence_is_fatal&quot;,
+}
+
+
+def is_fatal(code):
+    key = FATAL_CODES.get(code)
+    return bool(_C.get(key)) if key else False
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/guards.py</summary><pre><code>&quot;&quot;&quot;Two guards over the same evidence. Only one of them asks what it is evidence OF.
+
+Both are honest implementations. event-blind-v1 is not wrong about anything it
+looks at — it is the version most people write, and across the whole history it
+returns a single verdict, which is the property island_test.py section 3
+measures rather than asserts.
+&quot;&quot;&quot;
+
+
+def event_blind_v1(change, evidence, view):
+    if evidence is None:
+        return {&quot;verdict&quot;: &quot;review&quot;, &quot;code&quot;: &quot;no-evidence&quot;,
+                &quot;because&quot;: &quot;no exemption produced evidence&quot;}
+    return {&quot;verdict&quot;: &quot;exempt&quot;, &quot;code&quot;: &quot;evidence-exists&quot;,
+            &quot;because&quot;: f&quot;{evidence['rule']} produced evidence&quot;}
+
+
+def event_scoped_v1(change, evidence, view):
+    if evidence is None:
+        return {&quot;verdict&quot;: &quot;review&quot;, &quot;code&quot;: &quot;no-evidence&quot;,
+                &quot;because&quot;: &quot;no exemption produced evidence&quot;}
+
+    about = evidence.get(&quot;about&quot;)
+    if not about:
+        return {&quot;verdict&quot;: &quot;review&quot;, &quot;code&quot;: &quot;malformed-evidence&quot;,
+                &quot;because&quot;: &quot;the evidence does not say what event it is about - fail closed&quot;}
+
+    if about == &quot;*&quot;:
+        missing = [f for f in view[&quot;unconditional_requires&quot;] if not evidence.get(f)]
+        if missing:
+            return {&quot;verdict&quot;: &quot;review&quot;, &quot;code&quot;: &quot;malformed-evidence&quot;,
+                    &quot;because&quot;: f&quot;unconditional evidence with no {', '.join(missing)} - fail closed&quot;}
+        # Dates are compared as ISO strings against the round's own date, not
+        # against today, so this test means the same thing next month.
+        if evidence[&quot;sunset&quot;] &lt; change[&quot;date&quot;]:
+            return {&quot;verdict&quot;: &quot;review&quot;, &quot;code&quot;: &quot;expired-waiver&quot;,
+                    &quot;because&quot;: f&quot;{evidence['rule']} expired {evidence['sunset']}, this change is {change['date']}&quot;}
+        return {&quot;verdict&quot;: &quot;exempt&quot;, &quot;code&quot;: &quot;unconditional&quot;,
+                &quot;because&quot;: f&quot;{evidence['rule']}, unconditional by declaration, {evidence['owner']} until {evidence['sunset']}&quot;}
+
+    if about != change[&quot;round&quot;]:
+        return {&quot;verdict&quot;: &quot;review&quot;, &quot;code&quot;: &quot;stale-evidence&quot;,
+                &quot;because&quot;: f&quot;the evidence is about {about}, this change is {change['round']}&quot;}
+
+    return {&quot;verdict&quot;: &quot;exempt&quot;, &quot;code&quot;: &quot;evidence-about-this-event&quot;,
+            &quot;because&quot;: f&quot;{evidence['rule']}, observed in {about}&quot;}
+
+
+IMPLEMENTATIONS = {
+    &quot;event-blind-v1&quot;: event_blind_v1,
+    &quot;event-scoped-v1&quot;: event_scoped_v1,
+}
+
+
+def resolve(name):
+    &quot;&quot;&quot;A guard id that does not resolve is not a warning. Nothing runs.&quot;&quot;&quot;
+    implementation = IMPLEMENTATIONS.get(name)
+    if implementation is None:
+        known = &quot;, &quot;.join(sorted(IMPLEMENTATIONS))
+        return None, f'guard &quot;{name}&quot; has no implementation - fail closed (known: {known})'
+    return implementation, None
+</code></pre></details><details><summary>SMS/review.py</summary><pre><code>&quot;&quot;&quot;Walk the history, ask each exemption in the declared order, judge with the named guard.&quot;&quot;&quot;
+import importlib
+
+from SMS import guards
+
+
+def load_exemptions(order):
+    &quot;&quot;&quot;Resolve rule ids to modules, and check that each module agrees it is that rule.
+
+    The RULE-vs-order comparison is here because 008 taught it the expensive
+    way: an id that is resolved but never checked against what actually runs is
+    a name with nothing behind it.
+    &quot;&quot;&quot;
+    loaded, problems = [], []
+    for rule in order:
+        module_name = &quot;TMS.exemptions.&quot; + rule.replace(&quot;-&quot;, &quot;_&quot;)
+        try:
+            module = importlib.import_module(module_name)
+        except ModuleNotFoundError:
+            problems.append(f'exemption &quot;{rule}&quot; has no module - fail closed')
+            continue
+        declared = getattr(module, &quot;RULE&quot;, None)
+        if declared != rule:
+            problems.append(f'{module_name} declares RULE={declared!r} but was ordered as {rule!r}')
+            continue
+        loaded.append((rule, module))
+    return loaded, problems
+
+
+def first_evidence(change, ctx, exemptions):
+    for _rule, module in exemptions:
+        evidence = module.look(change, ctx)
+        if evidence is not None:
+            return evidence
+    return None
+
+
+def judged_changes(contract):
+    &quot;&quot;&quot;Every drifting change in the history, flattened, with its round attached.&quot;&quot;&quot;
+    for rnd in contract[&quot;history&quot;][&quot;rounds&quot;]:
+        for change in rnd[&quot;changes&quot;]:
+            if not change.get(&quot;drift&quot;):
+                continue
+            yield {&quot;round&quot;: rnd[&quot;id&quot;], &quot;date&quot;: rnd[&quot;date&quot;],
+                   &quot;path&quot;: change[&quot;path&quot;], &quot;kind&quot;: change[&quot;kind&quot;]}
+
+
+def review(contract, guard_name):
+    guard, problem = guards.resolve(guard_name)
+    if problem:
+        return None, [problem]
+
+    exemptions, problems = load_exemptions(contract[&quot;exemption_order&quot;])
+    ctx = {&quot;rounds&quot;: contract[&quot;history&quot;][&quot;rounds&quot;], &quot;declarations&quot;: contract[&quot;declarations&quot;]}
+    view = {&quot;unconditional_requires&quot;: contract[&quot;evidence_contract&quot;][&quot;unconditional_requires&quot;]}
+
+    rows = []
+    for change in judged_changes(contract):
+        evidence = first_evidence(change, ctx, exemptions)
+        rows.append({**change, &quot;evidence&quot;: evidence, **guard(change, evidence, view)})
+    return rows, problems
+
+
+def verdict_values(rows):
+    &quot;&quot;&quot;How many distinct verdicts a guard produced over this history.
+
+    One means it could not have come out any other way here - which is not proof
+    that it never can, only that this history never made it.
+    &quot;&quot;&quot;
+    return sorted({row[&quot;verdict&quot;] for row in rows})
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/exemptions/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/exemptions/generated_file.py</summary><pre><code>&quot;&quot;&quot;A generated file is generated. That is not an event, and dating it would be pedantry.
+
+So this exemption returns `about: &quot;*&quot;` — unconditional by design — and pays for
+that by carrying an owner and a sunset. The point is not that it never refuses;
+the point is that &quot;this can never refuse&quot; is a position with someone's name on
+it rather than something nobody noticed.
+&quot;&quot;&quot;
+RULE = &quot;generated-file&quot;
+
+
+def look(change, ctx):
+    declared = ctx[&quot;declarations&quot;][&quot;generated&quot;].get(change[&quot;path&quot;])
+    if not declared:
+        return None
+    return {
+        &quot;rule&quot;: RULE,
+        &quot;about&quot;: &quot;*&quot;,
+        &quot;unconditional&quot;: True,
+        &quot;observed&quot;: f&quot;{change['path']} was declared generated in {declared['declared_in']}&quot;,
+        &quot;owner&quot;: declared[&quot;owner&quot;],
+        &quot;sunset&quot;: declared[&quot;sunset&quot;],
+    }
+</code></pre></details><details><summary>TMS/exemptions/owner_waived.py</summary><pre><code>&quot;&quot;&quot;Someone decided this file is exempt while a rewrite is in flight.
+
+Same shape as generated-file — unconditional, owner, sunset — and the only
+difference in this history is that this one's sunset has passed. That is what
+the sunset is for: an unconditional exemption is allowed, an unconditional
+exemption that outlives its reason is the thing being caught.
+&quot;&quot;&quot;
+RULE = &quot;owner-waived&quot;
+
+
+def look(change, ctx):
+    waiver = ctx[&quot;declarations&quot;][&quot;waivers&quot;].get(change[&quot;path&quot;])
+    if not waiver:
+        return None
+    return {
+        &quot;rule&quot;: RULE,
+        &quot;about&quot;: &quot;*&quot;,
+        &quot;unconditional&quot;: True,
+        &quot;observed&quot;: waiver[&quot;reason&quot;],
+        &quot;owner&quot;: waiver[&quot;owner&quot;],
+        &quot;sunset&quot;: waiver[&quot;sunset&quot;],
+    }
+</code></pre></details><details><summary>TMS/exemptions/tests_changed_too.py</summary><pre><code>&quot;&quot;&quot;The exemption that started all this: a source file may drift if its tests moved too.
+
+The observation is real and it is not a constant — across the history it takes
+several values. What it does not carry, unless someone asks for it, is which
+round it took that value in. Note that `observed` reads identically whether the
+test changed in this round or four rounds ago; only `about` can tell them apart.
+&quot;&quot;&quot;
+RULE = &quot;tests-changed-too&quot;
+
+
+def look(change, ctx):
+    test_path = ctx[&quot;declarations&quot;][&quot;test_for&quot;].get(change[&quot;path&quot;])
+    if not test_path:
+        return None
+
+    # The most recent round, at or before the one under judgement, in which that
+    # test file changed. Walking forward and stopping is deliberate: a test
+    # change from a LATER round is not evidence about this one either.
+    seen_in = None
+    for rnd in ctx[&quot;rounds&quot;]:
+        for changed in rnd[&quot;changes&quot;]:
+            if changed[&quot;path&quot;] == test_path:
+                seen_in = rnd[&quot;id&quot;]
+        if rnd[&quot;id&quot;] == change[&quot;round&quot;]:
+            break
+
+    if seen_in is None:
+        return None
+    return {&quot;rule&quot;: RULE, &quot;about&quot;: seen_in, &quot;observed&quot;: f&quot;{test_path} changed&quot;}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;What the review saw, what it was based on, and what nothing here is watching.&quot;&quot;&quot;
+
+MARK = {&quot;exempt&quot;: &quot;ok&quot;, &quot;review&quot;: &quot;!!&quot;}
+
+
+def rows(review_rows, out):
+    current = None
+    for row in review_rows:
+        if row[&quot;round&quot;] != current:
+            current = row[&quot;round&quot;]
+            out(f&quot;\n  {row['round']}  {row['date']}&quot;)
+        out(f&quot;    {MARK[row['verdict']]}  {row['path']:&lt;24} {row['verdict']:&lt;7} {row['because']}&quot;)
+        evidence = row[&quot;evidence&quot;]
+        if evidence:
+            out(f&quot;            evidence   {evidence['observed']}  [about {evidence['about']}]&quot;)
+
+
+def verdict_counts(review_rows, out):
+    counts = {}
+    for row in review_rows:
+        counts[row[&quot;code&quot;]] = counts.get(row[&quot;code&quot;], 0) + 1
+    for code in sorted(counts):
+        out(f&quot;    {counts[code]:&gt;2}  {code}&quot;)
+
+
+def blind_spots(out):
+    &quot;&quot;&quot;改良點 8: what was not solved, split into what cannot be measured here
+    and what simply was not.&quot;&quot;&quot;
+    out(&quot;\n  not measured here, but measurable:&quot;)
+    out(&quot;    - how often an exemption's evidence goes stale in a real repository&quot;)
+    out(&quot;    - whether requiring `about` changes how often people write exemptions at all&quot;)
+    out(&quot;\n  not measurable by this program at all:&quot;)
+    out(&quot;    - whether an exemption SHOULD have been event-scoped. generated-file is&quot;)
+    out(&quot;      unconditional because a generated file is generated; owner-waived is&quot;)
+    out(&quot;      unconditional because someone said so. Only the second is a judgement,&quot;)
+    out(&quot;      and nothing here can tell them apart - the contract records which is which&quot;)
+    out(&quot;      because a person decided, not because the program found out.&quot;)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the drill that corrected the claim this example started from.
+
+    python src/island_test.py
+
+Section 3 is the one that matters, and it does not come out the way I expected.
+I opened mssp-d-003 with &quot;a check that can only read one value cannot prove
+anything that needs two&quot;. event-blind-v1 reads one value over this history — and
+section 3b shows it is not a constant at all: extend the history by one
+unexempted file and it produces two. So the defect was never the arity. It is
+that the values it does take are about a different event than the one under
+judgement. Section 4 holds the observation byte-identical and moves only which
+event it belongs to.
+&quot;&quot;&quot;
+import copy
+import json
+import pathlib
+import re
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from SCL import policy  # noqa: E402
+from SMS import guards, review  # noqa: E402
+
+CONTRACT = json.loads((HERE / &quot;FMS&quot; / &quot;contract.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+def run(contract, guard_name):
+    rows, problems = review.review(contract, guard_name)
+    assert not problems, problems
+    return rows
+
+
+print(&quot;\n== 1. every exemption is an island, and every one honours the evidence contract&quot;)
+exemption_dir = HERE / &quot;TMS&quot; / &quot;exemptions&quot;
+files = sorted(f for f in exemption_dir.iterdir() if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+check(&quot;there are three exemption files&quot;, len(files) == 3, &quot;, &quot;.join(f.stem for f in files))
+for f in files:
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, f.read_text(encoding=&quot;utf-8&quot;), re.M)
+    siblings = [r for r in reaches if r.split(&quot;.&quot;)[0] in {&quot;TMS&quot;, &quot;SMS&quot;, &quot;SCL&quot;, &quot;DMS&quot;, &quot;FMS&quot;}]
+    check(f&quot;{f.stem} reaches no sibling set&quot;, not siblings, &quot;, &quot;.join(reaches) or &quot;no imports at all&quot;)
+
+required = CONTRACT[&quot;evidence_contract&quot;][&quot;required_fields&quot;]
+seen_evidence = [row[&quot;evidence&quot;] for row in run(CONTRACT, &quot;event-scoped-v1&quot;) if row[&quot;evidence&quot;]]
+check(&quot;every piece of evidence produced carries every required field&quot;,
+      all(all(field in ev for field in required) for ev in seen_evidence),
+      f&quot;{len(seen_evidence)} pieces, fields {', '.join(required)}&quot;)
+unconditional = [ev for ev in seen_evidence if ev[&quot;about&quot;] == &quot;*&quot;]
+check(&quot;every unconditional exemption names an owner and a sunset&quot;,
+      all(ev.get(&quot;owner&quot;) and ev.get(&quot;sunset&quot;) for ev in unconditional),
+      f&quot;{len(unconditional)} unconditional: &quot; + &quot;, &quot;.join(sorted({ev['rule'] for ev in unconditional})))
+
+print(&quot;\n== 2. the guard id selects behaviour, it is not just resolved&quot;)
+# 008 was lost to exactly this: an id that resolved and never reached the thing
+# it named. Resolution is proved by disagreement, not by the lookup succeeding.
+blind = run(CONTRACT, &quot;event-blind-v1&quot;)
+scoped = run(CONTRACT, &quot;event-scoped-v1&quot;)
+differ = [(b[&quot;round&quot;], b[&quot;path&quot;]) for b, s in zip(blind, scoped) if b[&quot;verdict&quot;] != s[&quot;verdict&quot;]]
+check(&quot;the two ids produce different verdicts on the same history&quot;, bool(differ),
+      f&quot;{len(differ)} of {len(blind)} changes differ&quot;)
+_, problem = guards.resolve(&quot;event-scoped-v2&quot;)
+check(&quot;an id with no implementation stops the run&quot;, problem is not None, problem or &quot;resolved anyway&quot;)
+rows, problems = review.review(CONTRACT, &quot;event-scoped-v2&quot;)
+check(&quot;and nothing is reviewed when it does not resolve&quot;, rows is None, f&quot;{len(problems)} problem(s)&quot;)
+
+print(&quot;\n== 3a. how many verdicts each guard produced over THIS history&quot;)
+for name in (&quot;event-blind-v1&quot;, &quot;event-scoped-v1&quot;):
+    values = review.verdict_values(run(CONTRACT, name))
+    print(f&quot;        {name:&lt;16} {len(values)} distinct: {', '.join(values)}&quot;)
+check(&quot;event-blind-v1 produced exactly one verdict here&quot;,
+      review.verdict_values(blind) == [&quot;exempt&quot;], &quot;, &quot;.join(review.verdict_values(blind)))
+check(&quot;event-scoped-v1 produced two&quot;, len(review.verdict_values(scoped)) == 2,
+      &quot;, &quot;.join(review.verdict_values(scoped)))
+
+print(&quot;\n== 3b. the drill: is that one value a property of the guard, or of the history?&quot;)
+# If this section cannot come out the other way, section 3a proves nothing about
+# the guard. Add one file no exemption covers and see whether blind moves.
+extended = copy.deepcopy(CONTRACT)
+extended[&quot;history&quot;][&quot;rounds&quot;].append({&quot;id&quot;: &quot;r6&quot;, &quot;date&quot;: &quot;2026-08-11&quot;, &quot;changes&quot;: [
+    {&quot;path&quot;: &quot;core/unclaimed.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: True}]})
+blind_extended = review.verdict_values(run(extended, &quot;event-blind-v1&quot;))
+check(&quot;one unexempted file makes event-blind-v1 produce two verdicts&quot;,
+      len(blind_extended) == 2, &quot;, &quot;.join(blind_extended))
+print(&quot;        so the single value in 3a is not an inability to say 'review'.&quot;)
+print(&quot;        event-blind-v1 discriminates. It discriminates on whether evidence&quot;)
+print(&quot;        EXISTS - which is a different event from the one being judged.&quot;)
+
+print(&quot;\n== 4. the same observation, byte for byte, about two different events&quot;)
+# Hold everything constant except which round the test change belongs to. If the
+# `observed` strings are not identical, this section is comparing two different
+# observations and proves nothing.
+def parser_drift_in_r2(test_round):
+    c = copy.deepcopy(CONTRACT)
+    c[&quot;history&quot;][&quot;rounds&quot;] = [
+        {&quot;id&quot;: &quot;r1&quot;, &quot;date&quot;: &quot;2026-08-01&quot;, &quot;changes&quot;:
+            ([{&quot;path&quot;: &quot;tests/test_parser.py&quot;, &quot;kind&quot;: &quot;test&quot;, &quot;drift&quot;: False}]
+             if test_round == &quot;r1&quot; else [])},
+        {&quot;id&quot;: &quot;r2&quot;, &quot;date&quot;: &quot;2026-08-04&quot;, &quot;changes&quot;:
+            [{&quot;path&quot;: &quot;core/parser.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: True}]
+            + ([{&quot;path&quot;: &quot;tests/test_parser.py&quot;, &quot;kind&quot;: &quot;test&quot;, &quot;drift&quot;: False}]
+               if test_round == &quot;r2&quot; else [])},
+    ]
+    return c
+
+same_round = run(parser_drift_in_r2(&quot;r2&quot;), &quot;event-scoped-v1&quot;)[0]
+earlier = run(parser_drift_in_r2(&quot;r1&quot;), &quot;event-scoped-v1&quot;)[0]
+check(&quot;both runs observed the very same thing&quot;,
+      same_round[&quot;evidence&quot;][&quot;observed&quot;] == earlier[&quot;evidence&quot;][&quot;observed&quot;],
+      repr(same_round[&quot;evidence&quot;][&quot;observed&quot;]))
+check(&quot;and they disagree only about which event it was about&quot;,
+      same_round[&quot;evidence&quot;][&quot;about&quot;] != earlier[&quot;evidence&quot;][&quot;about&quot;],
+      f&quot;{same_round['evidence']['about']} vs {earlier['evidence']['about']}&quot;)
+check(&quot;event-scoped-v1 gives different verdicts&quot;, same_round[&quot;verdict&quot;] != earlier[&quot;verdict&quot;],
+      f&quot;{same_round['verdict']} vs {earlier['verdict']}&quot;)
+blind_same = run(parser_drift_in_r2(&quot;r2&quot;), &quot;event-blind-v1&quot;)[0]
+blind_earlier = run(parser_drift_in_r2(&quot;r1&quot;), &quot;event-blind-v1&quot;)[0]
+check(&quot;event-blind-v1 gives the same verdict to both&quot;,
+      blind_same[&quot;verdict&quot;] == blind_earlier[&quot;verdict&quot;],
+      f&quot;{blind_same['verdict']} and {blind_earlier['verdict']}&quot;)
+
+print(&quot;\n== 5. fail closed&quot;)
+view = {&quot;unconditional_requires&quot;: CONTRACT[&quot;evidence_contract&quot;][&quot;unconditional_requires&quot;]}
+change = {&quot;round&quot;: &quot;r2&quot;, &quot;date&quot;: &quot;2026-08-04&quot;, &quot;path&quot;: &quot;core/parser.py&quot;, &quot;kind&quot;: &quot;source&quot;}
+for label, evidence, expected in [
+    (&quot;evidence with no `about`&quot;, {&quot;rule&quot;: &quot;x&quot;, &quot;observed&quot;: &quot;something&quot;}, &quot;malformed-evidence&quot;),
+    (&quot;unconditional with no owner&quot;,
+     {&quot;rule&quot;: &quot;x&quot;, &quot;about&quot;: &quot;*&quot;, &quot;observed&quot;: &quot;s&quot;, &quot;sunset&quot;: &quot;2026-12-01&quot;}, &quot;malformed-evidence&quot;),
+    (&quot;unconditional past its sunset&quot;,
+     {&quot;rule&quot;: &quot;x&quot;, &quot;about&quot;: &quot;*&quot;, &quot;observed&quot;: &quot;s&quot;, &quot;owner&quot;: &quot;n&quot;, &quot;sunset&quot;: &quot;2026-07-01&quot;}, &quot;expired-waiver&quot;),
+]:
+    out = guards.event_scoped_v1(change, evidence, view)
+    check(f&quot;{label} -&gt; review&quot;, out[&quot;verdict&quot;] == &quot;review&quot; and out[&quot;code&quot;] == expected, out[&quot;code&quot;])
+
+order = list(CONTRACT[&quot;exemption_order&quot;]) + [&quot;a-rule-nobody-wrote&quot;]
+_, problems = review.load_exemptions(order)
+check(&quot;an ordered rule with no module is a problem, not a skip&quot;, len(problems) == 1,
+      problems[0] if problems else &quot;silently skipped&quot;)
+
+import TMS.exemptions.owner_waived as ow  # noqa: E402
+ow.RULE, restored = &quot;something-else&quot;, &quot;owner-waived&quot;
+_, problems = review.load_exemptions(CONTRACT[&quot;exemption_order&quot;])
+ow.RULE = restored
+check(&quot;a module that disagrees with the id it was reached by is a problem&quot;,
+      len(problems) == 1, problems[0] if problems else &quot;accepted anyway&quot;)
+
+print(&quot;\n== 6. what this does not settle&quot;)
+print(&quot;        MEASURABLE, NOT MEASURED&quot;)
+print(&quot;          - how often exemption evidence goes stale in a real repository&quot;)
+print(&quot;          - what requiring `about` costs the people writing exemptions&quot;)
+print(&quot;        NOT MEASURABLE HERE&quot;)
+print(&quot;          - whether an exemption SHOULD be event-scoped. generated-file is&quot;)
+print(&quot;            unconditional because a generated file is generated; owner-waived is&quot;)
+print(&quot;            unconditional because a person said so. The contract knows which is&quot;)
+print(&quot;            which because someone wrote it down, not because anything found out.&quot;)
+print(&quot;          - whether event-scoped-v1 is right. Section 3b is evidence against the&quot;)
+print(&quot;            form of the criterion I opened mssp-d-003 with, not for it.&quot;)
+
+print(f&quot;\n{len(FAILURES)} failure(s)&quot; if FAILURES else &quot;\nall checks passed&quot;)
+for f in FAILURES:
+    print(f&quot;  - {f}&quot;)
+sys.exit(1 if FAILURES else 0)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;A review gate that asks what its evidence is evidence OF.
+
+    python src/main.py             the review under the guard SCL names
+    python src/main.py --strict    exit 1 when a fatal code appears
+    python src/main.py --compare   both guards over the same history, side by side
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import review  # noqa: E402
+
+CONTRACT = json.loads((HERE / &quot;FMS&quot; / &quot;contract.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def main(argv):
+    out = lambda line=&quot;&quot;: sys.stdout.write(line + &quot;\n&quot;)  # noqa: E731
+    strict = &quot;--strict&quot; in argv
+
+    if &quot;--compare&quot; in argv:
+        out(&quot;\n== the same history, judged by each guard&quot;)
+        out(f&quot;\n  {'change':&lt;34} {'event-blind-v1':&lt;16} event-scoped-v1&quot;)
+        results = {}
+        for name in CONTRACT[&quot;guards&quot;]:
+            rows, problems = review.review(CONTRACT, name)
+            if problems:
+                for problem in problems:
+                    out(f&quot;  !! {problem}&quot;)
+                return 1
+            results[name] = rows
+        blind, scoped = results[&quot;event-blind-v1&quot;], results[&quot;event-scoped-v1&quot;]
+        for left, right in zip(blind, scoped):
+            label = f&quot;{left['round']} {left['path']}&quot;
+            flag = &quot;  &lt;-- differs&quot; if left[&quot;verdict&quot;] != right[&quot;verdict&quot;] else &quot;&quot;
+            out(f&quot;  {label:&lt;34} {left['verdict']:&lt;16} {right['verdict']}{flag}&quot;)
+        for name, rows in results.items():
+            values = review.verdict_values(rows)
+            out(f&quot;\n  {name:&lt;16} produced {len(values)} distinct verdict(s): {', '.join(values)}&quot;)
+        out(&quot;\n  A guard that produced one verdict over this history could not have&quot;)
+        out(&quot;  come out any other way here. That is a fact about this history as&quot;)
+        out(&quot;  much as about the guard - see island_test.py section 3.&quot;)
+        return 0
+
+    guard_name = policy.guard()
+    rows, problems = review.review(CONTRACT, guard_name)
+    if problems:
+        for problem in problems:
+            out(f&quot;  !! {problem}&quot;)
+        return 1
+
+    out(f&quot;\n== review under {guard_name}&quot;)
+    report.rows(rows, out)
+
+    out(&quot;\n== why each change was let through, or was not&quot;)
+    report.verdict_counts(rows, out)
+
+    fatal = [row for row in rows if policy.is_fatal(row[&quot;code&quot;])]
+    if fatal:
+        out(f&quot;\n  {len(fatal)} change(s) the deployment treats as fatal:&quot;)
+        for row in fatal:
+            out(f&quot;    {row['round']} {row['path']:&lt;24} {row['code']:&lt;20} {row['because']}&quot;)
+
+    report.blind_spots(out)
+
+    if strict and fatal:
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

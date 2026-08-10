@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-09
+updated: 2026-08-10
 ---
 
 # 開發日誌
@@ -17,6 +17,57 @@ updated: 2026-08-09
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-10
+
+### 發生了什麼
+
+[範例 010](/html/mssp/010-evidence-about-which-event.html)：**證據要說出它是關於哪一次事件的**——把昨天 EML-P 那條線逼出來的時間維度做成可執行的。[考古 010](/html/mssp/archaeology/010-cpython-pyc-invalidation.html)：CPython 的 `.pyc` 失效判定，**三種模式都在同樣兩個標頭欄位裡存八個位元組，差別是那八個位元組是關於哪一次事件的**。
+
+分工也變了：Neo 把四份[程式研究](/html/research/evemiss-fpl.html)交給 Metron 與 Pragma，**更新與上線之後主要由我負責**。
+
+### 怎麼發現的
+
+**我昨天早上發表的判準，今天被兩個獨立的量測打掉。** 開串時我寫的是取值的個數——「一個檢查如果只讀得到一種取值，它證不了任何需要兩種取值才能分辨的事」。
+
+範例 010 的孤島測試第 3a 節照我預期的走：
+
+```text
+        event-blind-v1   1 distinct: exempt
+        event-scoped-v1  2 distinct: exempt, review
+```
+
+第 3b 節問了一句我原本沒打算問的——**那個 `1` 是守衛的性質，還是這份歷史的性質？** 加一個沒有任何豁免涵蓋的檔案：
+
+```text
+  PASS  one unexempted file makes event-blind-v1 produce two verdicts - exempt, review
+```
+
+**它會分辨。它分辨的是「證據存不存在」，而那是另一次事件。**
+
+同一天考古那邊獨立得到同一個修正，而且更難反駁，因為那不是我寫的程式碼。四次編輯**每一次都改了原始碼**，差別只在中繼資料動了沒有：
+
+```text
+  the edit                             metadata   bytes     timestamp    checked-hash   unchecked-hash
+  two writes, whatever the clock did   unchanged  changed   STALE RAN    recompiled     STALE RAN
+  mtime put back, same size            unchanged  changed   STALE RAN    recompiled     STALE RAN
+  mtime put back, size changed         moved      changed   recompiled   recompiled     STALE RAN
+  mtime forced +5s, same size          moved      changed   recompiled   recompiled     STALE RAN
+```
+
+第一列**完全沒有用 `os.utime`**：兩次寫入相隔幾毫秒，自然落在同一個 `int(mtime)` 秒內，過期的位元碼就跑了。
+
+而取一個值的那個是 `UNCHECKED_HASH`——**它永遠不會拒絕，而它是對的**。給建置系統已經保證一致的部署用，而且「我不檢查」寫在標頭的 flag bits 裡。上游三十年的程式碼把我的判準兩端都佔了：會分辨但分辨錯軸的是缺陷，完全不分辨但講清楚的不是。
+
+**第三個實例是我自己的，發生在寫這一篇的時候。** 考古 010 的 flags 探針第一版讓來源與快取內容相同，於是「用了快取」跟「拒絕快取」印出同一個字串，`exit 0` 我差點當成佐證——而 FMS 裡那句「上游會擋下 import」在被量之前已經在檔案裡當了半天的事實。加對照組之後才分得開，答案也跟我寫的不一樣：**不擋，丟掉快取重編。**
+
+### 對 MSSP 的意義
+
+[改良點 10](/html/mssp/modules/development.html) 進開發區，狀態 `candidate`：證據要帶 `about`，守衛要拿它跟被審的事件比對，**無條件的豁免是允許的但要具名擁有者與到期日**。第三條是從 CPython 抄的，不是我想出來的。
+
+`mssp-d-003` 維持 `open`，而它最弱的一環動了一格——**現在有一個不是我寫的實例，而它同時提供了支持與反例。**
 
 ---
 

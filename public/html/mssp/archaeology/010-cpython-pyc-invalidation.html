@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>八個位元組的證據，以及它們是關於哪一次事件的 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="mssp-d-003 最弱的一環是「每個實例都是我自己的程式碼」，所以這次去別人的裡面找：三十年歷史、每一次 Python import 都會走的熱路徑，而 CPython 在 PEP 552 改掉它的理由看起來正是那串在講的事。四次編輯，**每一次都改了原始碼**，差別只在檔案的中繼資料動了沒有——timestamp 模式兩次跑了過期的位元碼，其中第一列完全沒有用 os.utime，兩次寫入自然落在同一個 int(mtime) 秒內。**三種模式都在同樣的兩個標頭欄位裡存八個位元組**：TIMESTAMP 的八位元組是關於檔案的中繼資料，兩個雜湊模式的八位元組是關於檔案的位元組。證據的量一樣，差別是它是關於哪一次事件的證據。而它推翻了我原本的判準形式：**取一個值的不是 timestamp，是 UNCHECKED_HASH**——timestamp 會分辨，只是分辨的軸不對。UNCHECKED_HASH 永遠不會拒絕，這是刻意的、寫在 flag bits 裡的設計選擇，跟同日範例 010 從另一個方向得到的「無條件豁免要具名擁有者與到期日」是同一個形狀，上游早了八年。另外，我在寫這一篇的時候自己犯了同一個缺陷：第一版的 flags 探針讓來源與快取內容相同，於是「用了快取」與「拒絕快取」印出同一個字串，我差點把那次 exit 0 當成佐證。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/010-cpython-pyc-invalidation.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>010-cpython-pyc-invalidation</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython importlib</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>3.14.5</span></div>
+    <div><b>日期</b><span>2026-08-10</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/blob/main/Lib/importlib/_bootstrap_external.py">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>010 — CPython <code>.pyc</code> 失效判定 3.14.5：八個位元組的證據，以及它們是關於哪一次事件的</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/python/cpython/blob/main/Lib/importlib/_bootstrap_external.py">CPython <code>Lib/importlib/_bootstrap_external.py</code></a>，PSF-2.0。本篇考察 3.14.5，1,562 行。
+所有數字都是在這台機器上對這個直譯器量出來的。</p>
+</blockquote>
+<pre><code class="language-bash">python src/main.py            # 四次編輯 × 三種模式，以及重切與真直譯器的逐格比對
+python src/main.py --strict   # 重切跟直譯器不一致就 exit 1
+python src/island_test.py     # 25 項檢查，其中 12 項直接跑 CPython 本體
+</code></pre>
+<h2>為什麼選它</h2>
+<p><a href="/html/mssp/discussions/mssp-d-003.html"><code>mssp-d-003</code></a> 目前最弱的一環寫在串裡：<strong>每一個實例都是我自己的程式碼。</strong></p>
+<p>所以這次去別人的裡面找。三十年歷史、每一次 Python import 都會走的熱路徑，而 CPython 在 <a href="https://peps.python.org/pep-0552/">PEP 552</a> 加了替代機制，理由看起來正是那串在講的事。</p>
+<p><strong>四次編輯，每一次都改了原始碼。</strong> 差別只在檔案的<strong>中繼資料</strong>動了沒有：</p>
+<pre><code class="language-text">  the edit                             metadata   bytes     timestamp    checked-hash   unchecked-hash
+  two writes, whatever the clock did   unchanged  changed   STALE RAN    recompiled     STALE RAN
+  mtime put back, same size            unchanged  changed   STALE RAN    recompiled     STALE RAN
+  mtime put back, size changed         moved      changed   recompiled   recompiled     STALE RAN
+  mtime forced +5s, same size          moved      changed   recompiled   recompiled     STALE RAN
+</code></pre>
+<p>第一列<strong>完全沒有用 <code>os.utime</code></strong>。兩次寫入相隔幾毫秒，自然落在同一個 <code>int(st_mtime)</code> 秒裡，過期的位元碼就跑了。這不是刻意佈置的情境，是一次快速存檔的樣子。</p>
+<h2>原專案的結構地圖</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>_bootstrap_external.py</code></td>
+<td><strong>1,562 行</strong></td>
+</tr>
+<tr>
+<td><code>_validate_timestamp_pyc</code></td>
+<td>26 行</td>
+</tr>
+<tr>
+<td><code>_validate_hash_pyc</code></td>
+<td><strong>22 行</strong></td>
+</tr>
+<tr>
+<td>標頭</td>
+<td>16 位元組 = magic(4) flags(4) field2(4) field3(4)</td>
+</tr>
+<tr>
+<td>每種模式存的證據</td>
+<td><strong>8 位元組，同樣兩個欄位</strong></td>
+</tr>
+<tr>
+<td>預設模式</td>
+<td><code>TIMESTAMP</code></td>
+</tr>
+</tbody></table>
+<p>上面六個數字都由 <code>main.py</code> 對正在跑的直譯器<strong>重新量一次</strong>再跟 FMS 比對。一份沒有人回頭讀的量測檔，就是一份跟自己比對的宣告——那正是這一則在講的東西。</p>
+<pre><code class="language-text">    TIMESTAMP       flags=0  about the file&#39;s metadata
+                    reads source mtime, low 32 bits, source size
+    UNCHECKED_HASH  flags=1  about the file&#39;s bytes, as of whenever the cache was written
+                    reads nothing at import time
+    CHECKED_HASH    flags=3  about the file&#39;s bytes
+                    reads an 8-byte hash of the source bytes
+</code></pre>
+<p><strong>三種模式存的證據一樣多。差別是它是關於哪一次事件的證據。</strong> 答一個嚴格更難的問題的那個驗證器，比另一個<strong>少四行</strong>——成本不在比較，在於得有人去讀原始檔算出雜湊。</p>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>標頭配置、flag 意義，以及 <code>main.py</code> 會重新量的六個數字</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署寫哪一種模式，以及重切是否必須與上游一致</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>標頭、flags→驗證器的解析、驗證，以及跑真直譯器的探針</td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>一種驗證器一個檔——純資料進、布林出、不 import 任何東西</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td>那張表、比對結果，以及看不到的部分</td>
+</tr>
+</tbody></table>
+<p>唯一的結構改動是把驗證器從 1,562 行的模組裡拉出來，變成三個十幾行的檔案。<strong>這個宣稱值多少，由比對說了算</strong>，所以比對每次執行都跑：</p>
+<pre><code class="language-text">    12 of 12 cells agree - the lifted validator decides what the import system decided
+</code></pre>
+<p>孤島測試第 3b 節<strong>故意把重切弄壞</strong>，要求比對抓到——一個從來沒被看著失敗過的比對是主張不是檢查（<a href="/html/mssp/modules/development.html">改良點 6</a>）：</p>
+<pre><code class="language-text">  PASS  swapping timestamp&#39;s comparison for the hash one breaks cells - 2 of 4 timestamp cells disagree once the rule is wrong
+</code></pre>
+<p>第 4 節更強：這個重切寫出來的標頭跟 <code>py_compile</code> 寫的<strong>逐位元組相同</strong>，三種模式都是。同樣八個位元組的兩個獨立產生者。</p>
+<h2>什麼不適合拆</h2>
+<p><strong><code>UNCHECKED_HASH</code> 那個「永遠不會拒絕」不能修。</strong></p>
+<p>它四次編輯四次都讓過期的位元碼跑了，取一個值，不可能有別的結果。而<strong>它是對的</strong>：給建置系統已經保證 <code>.pyc</code> 一致的部署用，在那種環境裡每次 import 都去讀原始檔什麼都買不到。雜湊照樣寫進標頭，讓 import 系統之外的工具事後可以查。</p>
+<p>讓它合法的不是它會拒絕，是<strong>那個「我不檢查」寫在標頭自己的 flag bits 裡</strong>，任何東西都讀得到。</p>
+<p>這跟同日<a href="/html/mssp/010-evidence-about-which-event.html">範例 010</a> 從另一個方向到達的結論是同一個形狀——無條件的豁免是允許的，代價是具名擁有者與到期日。<strong>上游早了八年。</strong></p>
+<p><strong>預設模式也不適合改。</strong> 每次 import 都讀原始檔是真的成本，PEP 552 加了替代機制之後仍然把 timestamp 留成預設。這一則沒有秤過那個取捨。</p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>它改寫了我自己的判準，而不是印證它。</strong></p>
+<p><code>mssp-d-003</code> 開串時我寫的是取值的個數。這裡取兩個值的是 <code>TIMESTAMP</code>：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>取幾個值</th>
+<th>關於哪一次事件</th>
+<th>是不是缺陷</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TIMESTAMP</code></td>
+<td><strong>2</strong></td>
+<td>檔案的中繼資料</td>
+<td><strong>是</strong></td>
+</tr>
+<tr>
+<td><code>CHECKED_HASH</code></td>
+<td>1（這四列都拒絕）</td>
+<td>檔案的位元組</td>
+<td>否</td>
+</tr>
+<tr>
+<td><code>UNCHECKED_HASH</code></td>
+<td><strong>1</strong></td>
+<td>快取寫入當時的位元組</td>
+<td><strong>否</strong></td>
+</tr>
+</tbody></table>
+<p><strong>取一個值的那個是唯一沒問題的。</strong> 所以要改的不是精度是軸：不是「讀得到幾種取值」，是「它讀到的值是關於哪一次事件的」。</p>
+<p><strong>而我在寫這一則的時候犯了同一個缺陷。</strong> flags 探針第一版把 <code>flags=0b100</code> 寫進標頭、import、回報 <code>exit 0</code>，我差點把它當成 FMS 裡「上游會擋下 import」那句話的佐證。那個探針的來源檔跟快取內容一致，<strong>於是「用了快取」與「拒絕快取」印出同一個字串</strong>。加上對照組之後：</p>
+<pre><code class="language-text">    flags=0 (timestamp, stale cache)       exit 0  ran AAA   cache used, stale code ran
+    flags=0b100 (bits nothing defines)     exit 0  ran BBB   cache rejected, source recompiled
+</code></pre>
+<p>答案跟我宣告的不一樣：<strong>不擋，丟掉快取重編。</strong> 那句話在被量之前，已經在 FMS 裡當了半天的事實。現在那一欄寫的是量到的，而解釋為什麼的註解就放在探針自己裡面。</p>
+<p><strong>量得到但這次沒量：</strong> 一次真實的編輯在日常工作裡多常落在同一個 <code>mtime</code> 秒內；checked-hash 在大型 import 圖上的實際牆鐘成本。</p>
+<p><strong>這一則量不到：</strong> 上游的預設是不是錯的——它沒有秤過讀檔成本。以及野外的發生率——<strong>重現一次失敗，跟這件事多常發生，是兩回事。</strong></p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;010-cpython-pyc-invalidation&quot;,
+  &quot;upstream&quot;: &quot;CPython Lib/importlib/_bootstrap_external.py&quot;,
+  &quot;examined_version&quot;: &quot;3.14.5&quot;,
+  &quot;license&quot;: &quot;PSF-2.0&quot;,
+  &quot;what_it_is&quot;: &quot;The rule that decides whether a cached .pyc still describes its source file.&quot;,
+
+  &quot;why_this_one&quot;: &quot;mssp-d-003 lists one weakness above all others: every instance of the pattern so far is my own code. This is upstream, it is thirty years old, it is on the hot path of every Python import ever run, and CPython replaced the mechanism in PEP 552 for exactly the reason the thread is about.&quot;,
+
+  &quot;declared_and_then_remeasured&quot;: {
+    &quot;_note&quot;: &quot;Every number below is re-measured by main.py against the running interpreter. A disagreement is a failure, not a warning. A file of measurements nobody re-reads is a declaration compared to nothing, which is the pattern this whole entry is about.&quot;,
+    &quot;bootstrap_external_lines&quot;: 1562,
+    &quot;validate_timestamp_pyc_lines&quot;: 26,
+    &quot;validate_hash_pyc_lines&quot;: 22,
+    &quot;header_bytes&quot;: 16,
+    &quot;evidence_bytes&quot;: 8,
+    &quot;default_invalidation_mode&quot;: &quot;TIMESTAMP&quot;
+  },
+
+  &quot;header&quot;: {
+    &quot;layout&quot;: &quot;magic(4) flags(4) field2(4) field3(4)&quot;,
+    &quot;flags&quot;: {
+      &quot;0&quot;: {&quot;mode&quot;: &quot;TIMESTAMP&quot;, &quot;field2&quot;: &quot;source mtime, low 32 bits&quot;, &quot;field3&quot;: &quot;source size&quot;},
+      &quot;1&quot;: {&quot;mode&quot;: &quot;UNCHECKED_HASH&quot;, &quot;field2_field3&quot;: &quot;8-byte source hash, never compared&quot;},
+      &quot;3&quot;: {&quot;mode&quot;: &quot;CHECKED_HASH&quot;, &quot;field2_field3&quot;: &quot;8-byte source hash, compared on every import&quot;}
+    },
+    &quot;unsupported_bits&quot;: &quot;flags &amp; ~0b11 discards the cache and recompiles from source. It does NOT stop the import, which is what this field claimed until the probe was given a control that could tell the two apart - see the note in SMS/upstream.unsupported_flags.&quot;
+  },
+
+  &quot;the_finding&quot;: &quot;All three modes store eight bytes of evidence in the same two header fields. TIMESTAMP's eight bytes are about the file's metadata. The two hash modes' eight bytes are about the file's bytes. The size of the evidence is identical; what differs is which event it is evidence of.&quot;,
+
+  &quot;the_correction_this_forced&quot;: &quot;I expected to find a check stuck on one value. TIMESTAMP is not: across four edits that all changed the source, it answers stale twice and fresh twice. It discriminates. It discriminates on whether the file's metadata moved, which is a different event from the one the import cares about. UNCHECKED_HASH is the one that takes a single value - and it is deliberate, flagged, documented, and correct for the deployment it exists for.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the header layout, the flag meanings, and the numbers main.py re-measures&quot;,
+    &quot;SCL&quot;: &quot;which mode this deployment writes, and whether an unconditional validator must be declared&quot;,
+    &quot;SMS&quot;: &quot;the cache: writing a header, resolving flags to a validator, and running the validation&quot;,
+    &quot;TMS&quot;: &quot;one file per validator - timestamp, checked-hash, unchecked-hash - each takes plain data and imports nothing&quot;,
+    &quot;DMS&quot;: &quot;the discrimination table, the comparison against the real interpreter, and what none of it can see&quot;
+  },
+
+  &quot;non_goals&quot;: [
+    &quot;Saying timestamp invalidation is a bug. It is the default, it is fast, it avoids reading the source at all, and PEP 552 kept it as the default when it added the alternative.&quot;,
+    &quot;Reimplementing importlib. Three comparison functions and a header struct.&quot;,
+    &quot;Claiming the re-cut is better than upstream's arrangement. It is the same rule with the validator lifted out, which is worth exactly as much as the comparison against the real interpreter says it is.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;mode&quot;: &quot;timestamp&quot;,
+  &quot;model_must_match_upstream&quot;: true,
+  &quot;unconditional_validator_must_declare_itself&quot;: true,
+  &quot;_note&quot;: &quot;`mode` is what this deployment would write. The report runs all three regardless: a policy able to silence the comparison would make the comparison worthless.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;What this deployment writes, and what it refuses to let pass.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+mode = lambda: _C[&quot;mode&quot;]                                                       # noqa: E731
+model_must_match_upstream = lambda: bool(_C[&quot;model_must_match_upstream&quot;])        # noqa: E731
+unconditional_must_declare = lambda: bool(_C[&quot;unconditional_validator_must_declare_itself&quot;])  # noqa: E731
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/cache.py</summary><pre><code>&quot;&quot;&quot;The re-cut: a header, a flags-to-validator resolution, and the validation.
+
+Upstream all three live inside `_bootstrap_external.py` alongside path finders,
+loaders, and the zip importer. Lifting the validator out is the only structural
+change; the rule itself is copied, and DMS compares the result against the real
+interpreter on every run so that &quot;copied&quot; is a measurement rather than a claim.
+&quot;&quot;&quot;
+import importlib
+import struct
+
+MAGIC = b&quot;\x00\x00\x0d\x0a&quot;
+HEADER = &quot;&lt;4sIII&quot;
+HEADER_BYTES = struct.calcsize(HEADER)
+
+VALIDATORS = [&quot;timestamp&quot;, &quot;checked_hash&quot;, &quot;unchecked_hash&quot;]
+
+
+def load_validators():
+    &quot;&quot;&quot;Resolve each validator module and check it agrees about its own flags.&quot;&quot;&quot;
+    loaded, problems = {}, []
+    for name in VALIDATORS:
+        try:
+            module = importlib.import_module(f&quot;TMS.validators.{name}&quot;)
+        except ModuleNotFoundError:
+            problems.append(f'validator &quot;{name}&quot; has no module - fail closed')
+            continue
+        for attribute in (&quot;MODE&quot;, &quot;FLAGS&quot;, &quot;READS&quot;, &quot;ABOUT&quot;, &quot;UNCONDITIONAL&quot;):
+            if not hasattr(module, attribute):
+                problems.append(f&quot;{name} does not declare {attribute}&quot;)
+        loaded[module.FLAGS] = module
+    return loaded, problems
+
+
+def resolve(flags, loaded):
+    &quot;&quot;&quot;Upstream's rule: bit 0 says hash-based, bit 1 says check it.
+
+    Anything above those two bits stops the import - which main.py checks by
+    writing such a header rather than by reading the source and believing it.
+    &quot;&quot;&quot;
+    if flags &amp; ~0b11:
+        return None, f&quot;flags {flags} set bits outside 0b11 - fail closed&quot;
+    module = loaded.get(flags)
+    if module is None:
+        return None, f&quot;no validator for flags {flags} - fail closed&quot;
+    return module, None
+
+
+def write_header(flags, field2, field3):
+    return struct.pack(HEADER, MAGIC, flags, field2, field3)
+
+
+def read_header(blob):
+    magic, flags, field2, field3 = struct.unpack(HEADER, blob[:HEADER_BYTES])
+    return {&quot;magic&quot;: magic, &quot;flags&quot;: flags, &quot;field2&quot;: field2, &quot;field3&quot;: field3}
+
+
+def header_for(module, observed):
+    &quot;&quot;&quot;What each mode would store about a source in this state.&quot;&quot;&quot;
+    if module.MODE == &quot;TIMESTAMP&quot;:
+        return write_header(module.FLAGS, observed[&quot;mtime&quot;] &amp; 0xFFFFFFFF, observed[&quot;size&quot;])
+    return write_header(module.FLAGS, *observed[&quot;hash&quot;])
+
+
+def validate(blob, observed, loaded):
+    header = read_header(blob)
+    module, problem = resolve(header[&quot;flags&quot;], loaded)
+    if problem:
+        return None, problem
+    return module.is_fresh(header, observed), None
+</code></pre></details><details><summary>SMS/upstream.py</summary><pre><code>&quot;&quot;&quot;What the real interpreter does, measured — not what its source code says it does.
+
+Every row here is a subprocess that imports a module whose source changed after
+its .pyc was written, and prints the value that actually ran. The re-cut in
+cache.py is compared against these results cell by cell, so &quot;the re-cut copies
+upstream's rule&quot; is a measurement that can come out false.
+&quot;&quot;&quot;
+import importlib.util
+import os
+import py_compile
+import shutil
+import struct
+import subprocess
+import sys
+import tempfile
+
+FIRST = &quot;VALUE = 'AAA'\n&quot;
+SAME_SIZE = &quot;VALUE = 'BBB'\n&quot;       # same byte length as FIRST
+LONGER = &quot;VALUE = 'BBBB'\n&quot;         # one byte longer
+
+MODES = {
+    &quot;timestamp&quot;: py_compile.PycInvalidationMode.TIMESTAMP,
+    &quot;checked_hash&quot;: py_compile.PycInvalidationMode.CHECKED_HASH,
+    &quot;unchecked_hash&quot;: py_compile.PycInvalidationMode.UNCHECKED_HASH,
+}
+
+EDITS = [
+    {&quot;id&quot;: &quot;natural&quot;, &quot;label&quot;: &quot;two writes, whatever the clock did&quot;, &quot;to&quot;: SAME_SIZE, &quot;mtime&quot;: &quot;leave&quot;},
+    {&quot;id&quot;: &quot;restored&quot;, &quot;label&quot;: &quot;mtime put back, same size&quot;, &quot;to&quot;: SAME_SIZE, &quot;mtime&quot;: &quot;restore&quot;},
+    {&quot;id&quot;: &quot;resized&quot;, &quot;label&quot;: &quot;mtime put back, size changed&quot;, &quot;to&quot;: LONGER, &quot;mtime&quot;: &quot;restore&quot;},
+    {&quot;id&quot;: &quot;advanced&quot;, &quot;label&quot;: &quot;mtime forced +5s, same size&quot;, &quot;to&quot;: SAME_SIZE, &quot;mtime&quot;: &quot;forward&quot;},
+]
+
+
+def observe(path):
+    stat = os.stat(path)
+    fields = struct.unpack(&quot;&lt;II&quot;, importlib.util.source_hash(open(path, &quot;rb&quot;).read()))
+    return {&quot;mtime&quot;: int(stat.st_mtime), &quot;size&quot;: stat.st_size, &quot;hash&quot;: fields}
+
+
+def probe(edit, mode_name):
+    &quot;&quot;&quot;Compile, edit the source, import in a fresh interpreter, report what ran.&quot;&quot;&quot;
+    tmp = tempfile.mkdtemp()
+    try:
+        source = os.path.join(tmp, &quot;probe_mod.py&quot;)
+        with open(source, &quot;w&quot;, encoding=&quot;utf-8&quot;, newline=&quot;\n&quot;) as handle:
+            handle.write(FIRST)
+        cached = importlib.util.cache_from_source(source)
+        py_compile.compile(source, cfile=cached, invalidation_mode=MODES[mode_name], doraise=True)
+
+        before = observe(source)
+        header = open(cached, &quot;rb&quot;).read(16)
+        stat = os.stat(source)
+        with open(source, &quot;w&quot;, encoding=&quot;utf-8&quot;, newline=&quot;\n&quot;) as handle:
+            handle.write(edit[&quot;to&quot;])
+        if edit[&quot;mtime&quot;] == &quot;restore&quot;:
+            os.utime(source, (stat.st_atime, stat.st_mtime))
+        elif edit[&quot;mtime&quot;] == &quot;forward&quot;:
+            os.utime(source, (stat.st_atime, stat.st_mtime + 5))
+        after = observe(source)
+
+        result = subprocess.run([sys.executable, &quot;-c&quot;, &quot;import probe_mod; print(probe_mod.VALUE)&quot;],
+                                cwd=tmp, capture_output=True, text=True)
+        ran = result.stdout.strip()
+        wanted = edit[&quot;to&quot;].split(&quot;'&quot;)[1]
+        return {
+            &quot;ran&quot;: ran,
+            &quot;ran_stale&quot;: ran != wanted,
+            &quot;before&quot;: before,
+            &quot;after&quot;: after,
+            &quot;header&quot;: header,
+            &quot;metadata_moved&quot;: before[&quot;mtime&quot;] != after[&quot;mtime&quot;] or before[&quot;size&quot;] != after[&quot;size&quot;],
+            &quot;bytes_moved&quot;: before[&quot;hash&quot;] != after[&quot;hash&quot;],
+        }
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def measured_facts():
+    &quot;&quot;&quot;The numbers FMS declares, taken from the interpreter running right now.&quot;&quot;&quot;
+    import inspect
+
+    import importlib._bootstrap_external as bootstrap
+
+    return {
+        &quot;bootstrap_external_lines&quot;: sum(1 for _ in open(bootstrap.__file__, encoding=&quot;utf-8&quot;)),
+        &quot;validate_timestamp_pyc_lines&quot;: len(inspect.getsource(bootstrap._validate_timestamp_pyc).splitlines()),
+        &quot;validate_hash_pyc_lines&quot;: len(inspect.getsource(bootstrap._validate_hash_pyc).splitlines()),
+        &quot;header_bytes&quot;: 16,
+        &quot;evidence_bytes&quot;: 8,
+        &quot;default_invalidation_mode&quot;: py_compile._get_default_invalidation_mode().name,
+    }
+
+
+def unsupported_flags(flag_value):
+    &quot;&quot;&quot;What an unreadable flags field does to the cache.
+
+    The first version of this probe left the source matching the cache, so
+    &quot;cache used&quot; and &quot;cache rejected&quot; printed the same string and the
+    measurement could not tell them apart. It reported exit 0 and I nearly
+    filed that as confirmation of a claim in FMS. It is the same defect this
+    whole entry is about, committed while writing about it.
+
+    So: the source is edited to disagree with the cache first, and the mtime is
+    put back. Reading AAA now means the cache was used; reading BBB means it was
+    rejected and the source recompiled. Pass flag_value=0 for the control.
+    &quot;&quot;&quot;
+    tmp = tempfile.mkdtemp()
+    try:
+        source = os.path.join(tmp, &quot;probe_mod.py&quot;)
+        with open(source, &quot;w&quot;, encoding=&quot;utf-8&quot;, newline=&quot;\n&quot;) as handle:
+            handle.write(FIRST)
+        cached = importlib.util.cache_from_source(source)
+        py_compile.compile(source, cfile=cached, doraise=True)
+
+        stat = os.stat(source)
+        with open(source, &quot;w&quot;, encoding=&quot;utf-8&quot;, newline=&quot;\n&quot;) as handle:
+            handle.write(SAME_SIZE)
+        os.utime(source, (stat.st_atime, stat.st_mtime))
+
+        blob = bytearray(open(cached, &quot;rb&quot;).read())
+        blob[4:8] = struct.pack(&quot;&lt;I&quot;, flag_value)
+        with open(cached, &quot;wb&quot;) as handle:
+            handle.write(blob)
+
+        result = subprocess.run([sys.executable, &quot;-c&quot;, &quot;import probe_mod; print(probe_mod.VALUE)&quot;],
+                                cwd=tmp, capture_output=True, text=True)
+        ran = result.stdout.strip()
+        return {&quot;flags&quot;: flag_value, &quot;exit&quot;: result.returncode, &quot;ran&quot;: ran,
+                &quot;cache_used&quot;: ran == &quot;AAA&quot;, &quot;recompiled&quot;: ran == &quot;BBB&quot;,
+                &quot;stderr_tail&quot;: result.stderr.strip().splitlines()[-1] if result.stderr.strip() else &quot;&quot;}
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/validators/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/validators/checked_hash.py</summary><pre><code>&quot;&quot;&quot;PEP 552. The two header fields hold an eight-byte hash of the source bytes.
+
+Upstream this is `_validate_hash_pyc`, 22 lines, and it is four lines shorter
+than the timestamp validator while answering a strictly harder question. The
+cost is not in the comparison - it is that somebody had to read the source file
+to compute the hash to compare against.
+&quot;&quot;&quot;
+MODE = &quot;CHECKED_HASH&quot;
+FLAGS = 3
+READS = [&quot;an 8-byte hash of the source bytes&quot;]
+ABOUT = &quot;the file's bytes&quot;
+UNCONDITIONAL = False
+
+
+def is_fresh(header, observed):
+    return (header[&quot;field2&quot;], header[&quot;field3&quot;]) == observed[&quot;hash&quot;]
+</code></pre></details><details><summary>TMS/validators/timestamp.py</summary><pre><code>&quot;&quot;&quot;The default. Compares the header's two fields against the source file's metadata.
+
+Upstream this is `_validate_timestamp_pyc`, 26 lines, and it reads the source
+file's stat - never its contents. That is the whole point of it: it is fast
+because it does not open the source.
+&quot;&quot;&quot;
+MODE = &quot;TIMESTAMP&quot;
+FLAGS = 0
+READS = [&quot;source mtime, low 32 bits&quot;, &quot;source size&quot;]
+ABOUT = &quot;the file's metadata&quot;
+UNCONDITIONAL = False
+
+
+def is_fresh(header, observed):
+    if header[&quot;field2&quot;] != (observed[&quot;mtime&quot;] &amp; 0xFFFFFFFF):
+        return False
+    return header[&quot;field3&quot;] == observed[&quot;size&quot;]
+</code></pre></details><details><summary>TMS/validators/unchecked_hash.py</summary><pre><code>&quot;&quot;&quot;The header carries a hash and nothing ever compares it.
+
+This is not an oversight. It is for deployments where a build system already
+guarantees the .pyc matches, and paying to read every source file at import
+time buys nothing. The hash is still recorded so a tool outside the import
+system can check it later.
+
+A validator that can never refuse is allowed. What makes this one legitimate
+rather than broken is that the refusal to check is declared in the header's own
+flag bits, where anything can read it.
+&quot;&quot;&quot;
+MODE = &quot;UNCHECKED_HASH&quot;
+FLAGS = 1
+READS = []
+ABOUT = &quot;the file's bytes, as of whenever the cache was written&quot;
+UNCONDITIONAL = True
+
+
+def is_fresh(header, observed):
+    return True
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;The discrimination table, the comparison against the real interpreter, and the gaps.&quot;&quot;&quot;
+
+
+def table(rows, out):
+    out(f&quot;\n  {'the edit':&lt;34} {'metadata':&lt;10} {'bytes':&lt;7} {'timestamp':&lt;11} {'checked':&lt;9} unchecked&quot;)
+    for row in rows:
+        cells = [f&quot;{row['verdict'][mode]:&lt;11}&quot; for mode in (&quot;timestamp&quot;, &quot;checked_hash&quot;)]
+        out(f&quot;  {row['label']:&lt;34} {row['metadata']:&lt;10} {row['bytes']:&lt;7} &quot;
+            f&quot;{cells[0]}{cells[1][:9]:&lt;9} {row['verdict']['unchecked_hash']}&quot;)
+
+
+def distinct_values(rows, out):
+    out(&quot;\n  how many answers each validator gave across four edits that ALL changed the source:&quot;)
+    for mode in (&quot;timestamp&quot;, &quot;checked_hash&quot;, &quot;unchecked_hash&quot;):
+        values = sorted({row[&quot;verdict&quot;][mode] for row in rows})
+        out(f&quot;    {mode:&lt;15} {len(values)}  {', '.join(values)}&quot;)
+
+
+def evidence_about(validators, out):
+    out(&quot;\n  every mode stores eight bytes in the same two header fields:&quot;)
+    for module in validators:
+        reads = &quot;, &quot;.join(module.READS) or &quot;nothing at import time&quot;
+        out(f&quot;    {module.MODE:&lt;15} flags={module.FLAGS}  about {module.ABOUT}&quot;)
+        out(f&quot;    {'':&lt;15} reads {reads}&quot;)
+
+
+def gaps(out):
+    out(&quot;\n  measurable, not measured here:&quot;)
+    out(&quot;    - how often a real edit lands inside one mtime second in ordinary work&quot;)
+    out(&quot;    - what checked-hash costs on a large import graph, in wall clock&quot;)
+    out(&quot;\n  not measurable by this entry at all:&quot;)
+    out(&quot;    - whether upstream's default is wrong. It is the default because reading&quot;)
+    out(&quot;      every source file at import time is a real cost, and PEP 552 left it&quot;)
+    out(&quot;      the default when it added the alternative. Nothing here weighs that.&quot;)
+    out(&quot;    - whether anyone has ever been bitten by it in production. Reproducing a&quot;)
+    out(&quot;      failure is not evidence of its frequency.&quot;)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the drill that shows the comparison against upstream can fail.
+
+    python src/island_test.py
+
+Section 3 compares the re-cut validator against the interpreter that is running
+right now, twelve cells. Section 3b then breaks the re-cut on purpose and
+requires the comparison to notice - because a comparison that has never been
+seen to fail is a claim, not a check (改良點 6).
+&quot;&quot;&quot;
+import pathlib
+import re
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from SCL import policy  # noqa: E402
+from SMS import cache, upstream  # noqa: E402
+
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+LOADED, PROBLEMS = cache.load_validators()
+BY_NAME = {module.MODE.lower(): module for module in LOADED.values()}
+
+print(&quot;\n== 1. every validator is an island and declares what it reads&quot;)
+check(&quot;all three validators loaded with no problems&quot;, not PROBLEMS, &quot;; &quot;.join(PROBLEMS))
+validator_dir = HERE / &quot;TMS&quot; / &quot;validators&quot;
+files = sorted(f for f in validator_dir.iterdir() if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+check(&quot;there are three validator files&quot;, len(files) == 3, &quot;, &quot;.join(f.stem for f in files))
+for f in files:
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, f.read_text(encoding=&quot;utf-8&quot;), re.M)
+    check(f&quot;{f.stem} imports nothing&quot;, not reaches, &quot;, &quot;.join(reaches) or &quot;no imports at all&quot;)
+for module in LOADED.values():
+    check(f&quot;{module.MODE} says what its evidence is about&quot;, bool(module.ABOUT), module.ABOUT)
+unconditional = [m for m in LOADED.values() if m.UNCONDITIONAL]
+check(&quot;exactly one validator declares itself unconditional&quot;, len(unconditional) == 1,
+      &quot;, &quot;.join(m.MODE for m in unconditional))
+check(&quot;and it reads nothing at import time, which is why&quot;, unconditional[0].READS == [],
+      repr(unconditional[0].READS))
+
+print(&quot;\n== 2. flags select a validator, and unknown bits do not fall through&quot;)
+observed = {&quot;mtime&quot;: 1000, &quot;size&quot;: 10, &quot;hash&quot;: (1, 2)}
+header = cache.read_header(cache.write_header(0, 1000 &amp; 0xFFFFFFFF, 10))
+answers = {}
+for flags in (0, 1, 3):
+    module, problem = cache.resolve(flags, LOADED)
+    answers[flags] = module.is_fresh(header, observed)
+check(&quot;the same header and state give different answers under different flags&quot;,
+      len(set(answers.values())) &gt; 1, &quot;, &quot;.join(f&quot;flags {f}={v}&quot; for f, v in answers.items()))
+_, problem = cache.resolve(0b100, LOADED)
+check(&quot;flags outside 0b11 resolve to nothing&quot;, problem is not None, problem or &quot;resolved anyway&quot;)
+_, problem = cache.resolve(2, LOADED)
+check(&quot;flags=2 (check-source without hash-based) resolves to nothing&quot;,
+      problem is not None, problem or &quot;resolved anyway&quot;)
+
+print(&quot;\n== 3. the re-cut against the real interpreter, twelve cells&quot;)
+CELLS = []
+for edit in upstream.EDITS:
+    for mode_name in upstream.MODES:
+        measured = upstream.probe(edit, mode_name)
+        module = BY_NAME[mode_name]
+        head = cache.read_header(cache.header_for(module, measured[&quot;before&quot;]))
+        CELLS.append({&quot;edit&quot;: edit[&quot;id&quot;], &quot;mode&quot;: mode_name, &quot;module&quot;: module,
+                      &quot;header&quot;: head, &quot;before&quot;: measured[&quot;before&quot;], &quot;after&quot;: measured[&quot;after&quot;],
+                      &quot;upstream_used_cache&quot;: measured[&quot;ran_stale&quot;],
+                      &quot;model_fresh&quot;: module.is_fresh(head, measured[&quot;after&quot;])})
+agree = [c for c in CELLS if c[&quot;model_fresh&quot;] == c[&quot;upstream_used_cache&quot;]]
+check(f&quot;all {len(CELLS)} cells agree&quot;, len(agree) == len(CELLS),
+      f&quot;{len(agree)}/{len(CELLS)} agree&quot;)
+
+print(&quot;\n== 3b. the drill: can that comparison come out false?&quot;)
+
+
+def broken_is_fresh(header, observed):
+    &quot;&quot;&quot;timestamp, but comparing the source hash instead of the metadata.&quot;&quot;&quot;
+    return (header[&quot;field2&quot;], header[&quot;field3&quot;]) == observed[&quot;hash&quot;]
+
+
+broken = [c for c in CELLS if c[&quot;mode&quot;] == &quot;timestamp&quot;
+          and broken_is_fresh(c[&quot;header&quot;], c[&quot;after&quot;]) != c[&quot;upstream_used_cache&quot;]]
+check(&quot;swapping timestamp's comparison for the hash one breaks cells&quot;, bool(broken),
+      f&quot;{len(broken)} of 4 timestamp cells disagree once the rule is wrong&quot;)
+
+print(&quot;\n== 4. the header the re-cut writes is the header py_compile wrote&quot;)
+# Two independent producers of the same eight bytes. If these agree it is
+# because both read the same source, not because one copied the other.
+for mode_name in upstream.MODES:
+    measured = upstream.probe(upstream.EDITS[1], mode_name)
+    module = BY_NAME[mode_name]
+    mine = cache.header_for(module, measured[&quot;before&quot;])
+    theirs = measured[&quot;header&quot;]
+    check(f&quot;{mode_name}: bytes 4:16 match py_compile's&quot;, mine[4:16] == theirs[4:16],
+          f&quot;{mine[4:16].hex()} vs {theirs[4:16].hex()}&quot;)
+
+print(&quot;\n== 5. how many answers each validator gives, and about what&quot;)
+for mode_name in upstream.MODES:
+    values = sorted({(&quot;used&quot; if c[&quot;model_fresh&quot;] else &quot;rejected&quot;)
+                     for c in CELLS if c[&quot;mode&quot;] == mode_name})
+    module = BY_NAME[mode_name]
+    print(f&quot;        {mode_name:&lt;15} {len(values)} answer(s): {', '.join(values):&lt;16} about {module.ABOUT}&quot;)
+timestamp_values = {c[&quot;model_fresh&quot;] for c in CELLS if c[&quot;mode&quot;] == &quot;timestamp&quot;}
+check(&quot;timestamp is not stuck on one answer&quot;, len(timestamp_values) == 2,
+      &quot;it discriminates - on metadata, which is not the event the import cares about&quot;)
+unchecked_values = {c[&quot;model_fresh&quot;] for c in CELLS if c[&quot;mode&quot;] == &quot;unchecked_hash&quot;}
+check(&quot;unchecked-hash IS stuck on one answer, and declares it&quot;,
+      len(unchecked_values) == 1 and BY_NAME[&quot;unchecked_hash&quot;].UNCONDITIONAL,
+      &quot;flags=1 is that declaration, readable by anything&quot;)
+
+print(&quot;\n== 6. the probe that could not tell two things apart, and its control&quot;)
+control = upstream.unsupported_flags(0)
+unreadable = upstream.unsupported_flags(0b100)
+check(&quot;with flags=0 the stale cache is used&quot;, control[&quot;cache_used&quot;], f&quot;ran {control['ran']}&quot;)
+check(&quot;with flags=0b100 the cache is rejected and the source recompiled&quot;,
+      unreadable[&quot;recompiled&quot;], f&quot;ran {unreadable['ran']}&quot;)
+check(&quot;the two runs differ, which is the only reason either means anything&quot;,
+      control[&quot;ran&quot;] != unreadable[&quot;ran&quot;], f&quot;{control['ran']} vs {unreadable['ran']}&quot;)
+check(&quot;and neither stops the import - the first version of this probe claimed it did&quot;,
+      control[&quot;exit&quot;] == 0 and unreadable[&quot;exit&quot;] == 0,
+      f&quot;exits {control['exit']} and {unreadable['exit']}&quot;)
+
+print(&quot;\n== 7. what this entry cannot see&quot;)
+print(&quot;        MEASURABLE, NOT MEASURED&quot;)
+print(&quot;          - how often a real edit lands inside one mtime second in ordinary work&quot;)
+print(&quot;          - what checked-hash costs on a large import graph&quot;)
+print(&quot;        NOT MEASURABLE HERE&quot;)
+print(&quot;          - whether the default is wrong. Reading every source file at import&quot;)
+print(&quot;            time is a real cost and PEP 552 left timestamp the default. Nothing&quot;)
+print(&quot;            here weighs the two against each other.&quot;)
+print(&quot;          - frequency in the wild. Reproducing a failure says nothing about&quot;)
+print(&quot;            how often anyone meets it.&quot;)
+
+print(f&quot;\n{len(FAILURES)} failure(s)&quot; if FAILURES else &quot;\nall checks passed&quot;)
+for f in FAILURES:
+    print(f&quot;  - {f}&quot;)
+sys.exit(1 if FAILURES else 0)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;CPython's .pyc invalidation, re-cut into MSSP sets and checked against the real thing.
+
+    python src/main.py            the discrimination table and the comparison
+    python src/main.py --strict   exit 1 if the re-cut disagrees with the interpreter
+
+Twelve subprocesses run: four edits that all change the source, under three
+invalidation modes. Takes a couple of seconds.
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import cache, upstream  # noqa: E402
+
+ARCH = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def collect():
+    &quot;&quot;&quot;Measure upstream, run the re-cut over the same states, and pair them up.&quot;&quot;&quot;
+    loaded, problems = cache.load_validators()
+    by_name = {module.MODE.lower(): module for module in loaded.values()}
+    rows, disagreements = [], []
+
+    for edit in upstream.EDITS:
+        verdicts, model_verdicts = {}, {}
+        metadata = bytes_moved = None
+        for mode_name in upstream.MODES:
+            measured = upstream.probe(edit, mode_name)
+            metadata = &quot;moved&quot; if measured[&quot;metadata_moved&quot;] else &quot;unchanged&quot;
+            bytes_moved = &quot;changed&quot; if measured[&quot;bytes_moved&quot;] else &quot;same&quot;
+
+            module = by_name[mode_name]
+            header = cache.read_header(cache.header_for(module, measured[&quot;before&quot;]))
+            model_fresh = module.is_fresh(header, measured[&quot;after&quot;])
+
+            verdicts[mode_name] = &quot;STALE RAN&quot; if measured[&quot;ran_stale&quot;] else &quot;recompiled&quot;
+            model_verdicts[mode_name] = model_fresh
+            if model_fresh != measured[&quot;ran_stale&quot;]:
+                disagreements.append(
+                    f&quot;{edit['id']}/{mode_name}: re-cut says fresh={model_fresh}, &quot;
+                    f&quot;interpreter ran {'stale' if measured['ran_stale'] else 'fresh'} code&quot;)
+
+        rows.append({&quot;id&quot;: edit[&quot;id&quot;], &quot;label&quot;: edit[&quot;label&quot;], &quot;metadata&quot;: metadata,
+                     &quot;bytes&quot;: bytes_moved, &quot;verdict&quot;: verdicts, &quot;model&quot;: model_verdicts})
+    return rows, [module for _, module in sorted(loaded.items())], disagreements, problems
+
+
+def main(argv):
+    out = lambda line=&quot;&quot;: sys.stdout.write(line + &quot;\n&quot;)  # noqa: E731
+    rows, validators, disagreements, problems = collect()
+    if problems:
+        for problem in problems:
+            out(f&quot;  !! {problem}&quot;)
+        return 1
+
+    out(f&quot;\n== four edits, every one of them a change to the source  &quot;
+        f&quot;[{ARCH['upstream'].split('/')[-1]} {ARCH['examined_version']}]&quot;)
+    report.table(rows, out)
+    report.distinct_values(rows, out)
+    report.evidence_about(validators, out)
+
+    out(&quot;\n== the re-cut against the interpreter that is running right now&quot;)
+    if disagreements:
+        for line in disagreements:
+            out(f&quot;    DISAGREES  {line}&quot;)
+    else:
+        out(f&quot;    {len(rows) * 3} of {len(rows) * 3} cells agree - the lifted validator decides &quot;
+            f&quot;what the import system decided&quot;)
+
+    out(&quot;\n== the numbers FMS declares, re-measured&quot;)
+    declared = ARCH[&quot;declared_and_then_remeasured&quot;]
+    measured = upstream.measured_facts()
+    wrong = []
+    for key, value in measured.items():
+        agrees = declared.get(key) == value
+        if not agrees:
+            wrong.append(f&quot;{key}: declared {declared.get(key)!r}, measured {value!r}&quot;)
+        out(f&quot;    {'ok ' if agrees else 'NO '} {key:&lt;32} {value}&quot;)
+
+    out(&quot;\n== what an unreadable flags field does, against a control&quot;)
+    # The control is the point. Without a run where the cache IS used, &quot;it
+    # printed BBB&quot; means nothing - see the note in upstream.unsupported_flags.
+    control = upstream.unsupported_flags(0)
+    unreadable = upstream.unsupported_flags(0b100)
+    for probe, label in ((control, &quot;flags=0 (timestamp, stale cache)&quot;),
+                         (unreadable, &quot;flags=0b100 (bits nothing defines)&quot;)):
+        outcome = &quot;cache used, stale code ran&quot; if probe[&quot;cache_used&quot;] else (
+            &quot;cache rejected, source recompiled&quot; if probe[&quot;recompiled&quot;] else &quot;neither: &quot; + probe[&quot;ran&quot;])
+        out(f&quot;    {label:&lt;38} exit {probe['exit']}  ran {probe['ran']:&lt;5} {outcome}&quot;)
+    out(&quot;    so unsupported flags do not stop the import - they discard the cache&quot;)
+
+    report.gaps(out)
+
+    if &quot;--strict&quot; in argv and (wrong or (disagreements and policy.model_must_match_upstream())):
+        for line in wrong:
+            out(f&quot;\n  !! {line}&quot;)
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

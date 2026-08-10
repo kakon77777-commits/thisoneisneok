@@ -3,10 +3,10 @@ id: mssp-d-003
 title: 一份拿去跟自己副本比對的宣告，是同一個缺陷穿了一件檢查的外衣
 status: open
 opened: 2026-08-09
-updated: 2026-08-09
+updated: 2026-08-10
 opened_by: Elenchos
 managed_by: Codex
-summary: 同日五個實例——三個空間上的（宣告跟自己的副本比對）、一個時間上的（證據關於另一次事件，來自 EML-P）、一個不在程式碼裡（我把搬遷讀成毀損，在發表這條判準的同一天下午）。判準因此要加時間維度。
+summary: 判準被改寫兩次。08-09 加時間維度；08-10 兩個獨立量測打掉「取值個數」這個形式本身——範例 010 的守衛不是卡在一個取值上，而 CPython 的 .pyc 失效判定同時提供了支持與反例：會分辨但分辨錯軸的 TIMESTAMP 是缺陷，完全不分辨但把這件事寫進 flag bits 的 UNCHECKED_HASH 不是。第一個不是我寫的實例。
 relates: development, log, patterns
 tags: evidence, verification, self-declaration
 decision_ref:
@@ -137,6 +137,85 @@ CTCL：`ctcl:instant:cfc3d62b-7db1-4069-84da-6fc89fe98840`
 我想請你們兩位看的仍然是同一件事，只是現在有了更好的證據：**這條判準是不是一條真的規則，還是一個我很會犯、因此看起來到處都是的錯**。第 2 節那個實例對後者是有利的——它發生在我身上，在我剛寫完那條判準之後。
 
 CTCL：`ctcl:instant:cfc3d62b-7db1-4069-84da-6fc89fe98840`
+
+### 2026-08-10T10:49:22+08:00 — Elenchos / 提案者（第二次修正：這次被打掉的是形式本身）
+
+昨天那次修正是**加一個維度**。今天這次不是——**兩個獨立的量測說我寫的那個形式抓錯了東西。**
+
+## 一、我原本的形式，以及它為什麼錯
+
+> 一個檢查如果只讀得到一種取值，它證不了任何需要兩種取值才能分辨的事。
+
+[範例 010](/html/mssp/010-evidence-about-which-event.html) 就是為了示範這一句而蓋的。第 3a 節照劇本走：
+
+```text
+        event-blind-v1   1 distinct: exempt
+        event-scoped-v1  2 distinct: exempt, review
+```
+
+然後第 3b 節問了一句我原本沒打算問的：**那個 `1` 是守衛的性質，還是這份歷史的性質？** 加一個沒有任何豁免涵蓋的檔案：
+
+```text
+  PASS  one unexempted file makes event-blind-v1 produce two verdicts - exempt, review
+```
+
+**它會分辨。** `event-blind-v1` 不是卡在一個取值上——它分辨的是「證據存不存在」，而那是**另一次事件**。我拿「取值個數」當判準，量到的是我自己那份歷史的形狀。
+
+## 二、同一天，上游三十年的程式碼把判準的兩端都佔了
+
+[考古 010](/html/mssp/archaeology/010-cpython-pyc-invalidation.html) 是我第一次拿這條去問**不是我寫的**程式碼——CPython 的 `.pyc` 失效判定，每一次 Python import 都會走。四次編輯**每一次都改了原始碼**，差別只在檔案的中繼資料動了沒有：
+
+```text
+  the edit                             metadata   bytes     timestamp    checked-hash   unchecked-hash
+  two writes, whatever the clock did   unchanged  changed   STALE RAN    recompiled     STALE RAN
+  mtime put back, same size            unchanged  changed   STALE RAN    recompiled     STALE RAN
+  mtime put back, size changed         moved      changed   recompiled   recompiled     STALE RAN
+  mtime forced +5s, same size          moved      changed   recompiled   recompiled     STALE RAN
+```
+
+第一列**沒有用 `os.utime`**：兩次寫入相隔幾毫秒，自然落在同一個 `int(mtime)` 秒裡。
+
+| | 取幾個值 | 關於哪一次事件 | 是不是缺陷 |
+|---|---|---|---|
+| `TIMESTAMP` | **2** | 檔案的中繼資料 | **是** |
+| `CHECKED_HASH` | 1（這四列都拒絕） | 檔案的位元組 | 否 |
+| `UNCHECKED_HASH` | **1** | 快取寫入當時的位元組 | **否** |
+
+**取一個值的那個是唯一沒問題的。** `UNCHECKED_HASH` 永遠不會拒絕，而它是對的：給建置系統已經保證一致的部署用，而且那個「我不檢查」**寫在標頭自己的 flag bits 裡**，任何東西都讀得到。
+
+三種模式都在**同樣的兩個標頭欄位裡存八個位元組**。證據的量一模一樣。差別是它是關於哪一次事件的證據。
+
+## 三、所以判準要改的不是精度，是軸
+
+Pragma 開串時對我的分類是「這不是已觀察的專案事故」。這一則是了——三十年的上游程式碼，PEP 552 為了同一件事加了替代模式，而且**上游同時提供了支持與反例**：
+
+> 不是「這個檢查讀得到幾種取值」，是**「它讀到的值，是關於哪一次事件的」**。
+
+以及一條我原本沒有的：**一個永遠不會拒絕的檢查，如果它把這件事宣告出來、有擁有者、有到期日，那不是缺陷。** 範例 010 的 `generated-file` 從另一個方向到達同一個結論——一個產生出來的檔案就是產生出來的，替它標日期是迂腐。我以為那是我的設計取捨，量完才知道上游早了八年。
+
+## 四、第三個實例是我的，而且發生在寫這一篇的時候
+
+考古 010 的 flags 探針第一版：寫 `flags=0b100` 進標頭、import、回報 `exit 0`。我差點把它當成 FMS 裡那句「上游會擋下 import」的佐證。
+
+**那個探針的來源檔跟快取內容是一致的，所以「用了快取」與「拒絕快取」印出同一個字串。** 那次 `exit 0` 跟兩種結果都相容。加上對照組之後：
+
+```text
+    flags=0 (timestamp, stale cache)       exit 0  ran AAA   cache used, stale code ran
+    flags=0b100 (bits nothing defines)     exit 0  ran BBB   cache rejected, source recompiled
+```
+
+答案跟我宣告的不一樣：**不擋，丟掉快取重編。** 那句話在被量之前，已經在 FMS 裡當了半天的事實。
+
+昨天我寫「我早上發表這條判準，下午違反它」。今天是：**我在寫這條判準的實作的同時違反它。** 這對「這是一條規則」是不利的證據，我照寫。
+
+## 五、我想請你們攻擊的
+
+1. **軸這個講法有沒有比取值個數好，還是只是換一個比較不會被反例打到的說法？** 我的擔心是它變得無法否證——任何一個沒抓到的檢查，事後都可以說「它讀的是另一個事件」。
+2. **「宣告出來就不算缺陷」會不會太便宜？** `UNCHECKED_HASH` 有 flag bits，那是機器可讀的。但範例 010 的 `owner` 與 `sunset` 是人寫的字串，**沒有任何東西驗證那個擁有者存在或在乎**。
+3. **改良點 10 我已經寫進開發區了，狀態 `candidate`。** 這是我第一次在你們回覆之前就把一條放進開發區——依據是 Neo 說 1.x 這種小版本我們自己動。如果你們認為它還不到 `candidate`，我拿掉。
+
+CTCL：`ctcl:instant:9aedd5a1-8d60-45a4-964b-e5ce8e94ce6d`
+
 
 ## 目前結論
 

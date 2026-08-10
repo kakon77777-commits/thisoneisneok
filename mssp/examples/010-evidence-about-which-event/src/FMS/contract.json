@@ -1,0 +1,81 @@
+{
+  "name": "010-evidence-about-which-event",
+  "what_it_is": "A review gate that lets a drifting source file through when an exemption applies — and refuses the exemption when the evidence behind it is about a different change than the one being judged.",
+  "the_structural_decision": "Evidence must name the event it is about, and the guard must compare that name against the event under judgement. Freshness is not age. A perfectly current, perfectly true observation can still be about something else.",
+  "where_it_came_from": "mssp-d-003, 2026-08-09. The criterion I published that morning was: a check that can only read one value cannot prove anything that needs two values to distinguish. The EML-P line broke it the same day with a monitor whose exemption read an observation that took several values — and the value it took belonged to a change three rounds earlier. The criterion needed a second axis: not only how many values, but which event each value is about. This example is that amendment, made executable.",
+  "status": "candidate",
+  "note_on_status": "Nothing here is adopted method. mssp-d-003 is still open, and the archaeology filed the same day (010-cpython-pyc-invalidation) found a case upstream that argues against reading this as a defect detector.",
+
+  "guards": {
+    "event-blind-v1": {
+      "reads": ["whether an exemption produced evidence"],
+      "does_not_read": ["which event the evidence is about"],
+      "note": "The obvious implementation. It is not wrong about anything it looks at."
+    },
+    "event-scoped-v1": {
+      "reads": ["whether an exemption produced evidence", "evidence.about", "the round under judgement", "owner and sunset when the evidence declares itself unconditional"],
+      "note": "The same evidence, plus the question of what it is evidence OF."
+    }
+  },
+
+  "evidence_contract": {
+    "required_fields": ["rule", "about", "observed"],
+    "about": "the id of the event this observation is about, or \"*\" when the exemption is unconditional by design",
+    "unconditional_requires": ["owner", "sunset"],
+    "why_unconditional_is_allowed": "Some exemptions genuinely are not about an event. A file that is generated is generated; dating that fact would be pedantry. What such an exemption must carry instead is an owner and an expiry, so that 'this can never refuse' is a declared position with someone's name on it rather than an accident. Measured upstream the same day: CPython's UNCHECKED_HASH .pyc mode never revalidates, deliberately, and says so in its header flags."
+  },
+
+  "exemption_order": ["generated-file", "owner-waived", "tests-changed-too"],
+
+  "declarations": {
+    "generated": {
+      "build/schema_pb2.py": {"owner": "build-team", "sunset": "2026-12-01", "declared_in": "r1"}
+    },
+    "waivers": {
+      "core/emit.py": {"owner": "neo", "sunset": "2026-07-01", "reason": "emitter rewrite in flight"}
+    },
+    "test_for": {
+      "core/parser.py": "tests/test_parser.py",
+      "core/lexer.py": "tests/test_lexer.py",
+      "core/emit.py": "tests/test_emit.py"
+    }
+  },
+
+  "history": {
+    "rounds": [
+      {"id": "r1", "date": "2026-08-01", "changes": [
+        {"path": "core/parser.py", "kind": "source", "drift": true},
+        {"path": "tests/test_parser.py", "kind": "test", "drift": false}
+      ]},
+      {"id": "r2", "date": "2026-08-04", "changes": [
+        {"path": "core/parser.py", "kind": "source", "drift": true}
+      ]},
+      {"id": "r3", "date": "2026-08-06", "changes": [
+        {"path": "core/lexer.py", "kind": "source", "drift": true},
+        {"path": "tests/test_lexer.py", "kind": "test", "drift": false}
+      ]},
+      {"id": "r4", "date": "2026-08-08", "changes": [
+        {"path": "core/parser.py", "kind": "source", "drift": true},
+        {"path": "core/emit.py", "kind": "source", "drift": true}
+      ]},
+      {"id": "r5", "date": "2026-08-10", "changes": [
+        {"path": "build/schema_pb2.py", "kind": "generated", "drift": true},
+        {"path": "core/lexer.py", "kind": "source", "drift": true}
+      ]}
+    ]
+  },
+
+  "sets": {
+    "FMS": "this file: the guards and what each reads, the evidence contract, the declarations, and the history under review",
+    "SCL": "which guard this deployment runs, and whether evidence about another event is fatal or reported",
+    "SMS": "the guard implementations, resolution by id, and the review that walks the history",
+    "TMS": "one file per exemption rule — each takes plain data and returns evidence or nothing, and imports nothing",
+    "DMS": "the verdicts, what each was based on, and what nothing here is watching"
+  },
+
+  "non_goals": [
+    "Being a review tool. Five rounds and three exemption rules over a made-up file list.",
+    "Claiming the exemption set is complete. It is three rules someone wrote.",
+    "Claiming event-scoped-v1 is correct in general. It refuses evidence about another event; whether that is the right call depends on whether the exemption was ever meant to be about an event at all, which is why unconditional exemptions exist here as a first-class case rather than as a bug."
+  ]
+}

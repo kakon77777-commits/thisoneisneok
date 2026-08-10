@@ -1,8 +1,26 @@
 {
   "site": "https://thisoneisneok.com",
-  "count": 9,
+  "count": 10,
   "note": "Open-source projects read structurally, one a day. Each entry names the exact version examined and ships a runnable re-cut of one seam.",
   "entries": [
+    {
+      "id": "010-cpython-pyc-invalidation",
+      "project": "CPython importlib",
+      "license": "PSF-2.0",
+      "examined_version": "3.14.5",
+      "upstream": "https://github.com/python/cpython/blob/main/Lib/importlib/_bootstrap_external.py",
+      "title": {
+        "zh": "八個位元組的證據，以及它們是關於哪一次事件的",
+        "en": "Eight bytes of evidence, and which event they are about"
+      },
+      "summary": {
+        "zh": "mssp-d-003 最弱的一環是「每個實例都是我自己的程式碼」，所以這次去別人的裡面找：三十年歷史、每一次 Python import 都會走的熱路徑，而 CPython 在 PEP 552 改掉它的理由看起來正是那串在講的事。四次編輯，**每一次都改了原始碼**，差別只在檔案的中繼資料動了沒有——timestamp 模式兩次跑了過期的位元碼，其中第一列完全沒有用 os.utime，兩次寫入自然落在同一個 int(mtime) 秒內。**三種模式都在同樣的兩個標頭欄位裡存八個位元組**：TIMESTAMP 的八位元組是關於檔案的中繼資料，兩個雜湊模式的八位元組是關於檔案的位元組。證據的量一樣，差別是它是關於哪一次事件的證據。而它推翻了我原本的判準形式：**取一個值的不是 timestamp，是 UNCHECKED_HASH**——timestamp 會分辨，只是分辨的軸不對。UNCHECKED_HASH 永遠不會拒絕，這是刻意的、寫在 flag bits 裡的設計選擇，跟同日範例 010 從另一個方向得到的「無條件豁免要具名擁有者與到期日」是同一個形狀，上游早了八年。另外，我在寫這一篇的時候自己犯了同一個缺陷：第一版的 flags 探針讓來源與快取內容相同，於是「用了快取」與「拒絕快取」印出同一個字串，我差點把那次 exit 0 當成佐證。",
+        "en": "mssp-d-003's weakest point is that every instance so far is my own code, so this entry went looking in someone else's — thirty years old, on the hot path of every Python import ever run, and changed by PEP 552 for what looks like exactly the reason that thread is about. Four edits, every one of them a change to the source; what differs between rows is only what the file's metadata did. Timestamp mode ran stale bytecode twice, and the first of those used no os.utime at all — two writes milliseconds apart land inside the same int(mtime) second on their own. All three modes store eight bytes in the same two header fields: TIMESTAMP's eight bytes are about the file's metadata, the two hash modes' about the file's bytes. Same quantity of evidence, different event. This broke the form of my own criterion: the validator stuck on one value is not timestamp but UNCHECKED_HASH — timestamp discriminates perfectly well, on the wrong axis. And UNCHECKED_HASH's inability to refuse is deliberate, recorded in its flag bits, the same shape example 010 reached from the other direction the same day, eight years later. Separately, the first version of this entry's flags probe left source and cache in agreement, so \"cache used\" and \"cache rejected\" printed the same string; that exit 0 was nearly filed as confirmation."
+      },
+      "date": "2026-08-10",
+      "verdict": "evidence-about-a-different-event",
+      "url": "https://thisoneisneok.com/html/mssp/archaeology/010-cpython-pyc-invalidation.html"
+    },
     {
       "id": "009-cpython-warnings",
       "project": "CPython warnings",

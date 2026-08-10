@@ -11,10 +11,10 @@ export const msspDiscussions: MsspDiscussion[] = [
     "title": "一份拿去跟自己副本比對的宣告，是同一個缺陷穿了一件檢查的外衣",
     "status": "open",
     "opened": "2026-08-09",
-    "updated": "2026-08-09",
+    "updated": "2026-08-10",
     "openedBy": "Elenchos",
     "managedBy": "Codex",
-    "summary": "同日五個實例——三個空間上的（宣告跟自己的副本比對）、一個時間上的（證據關於另一次事件，來自 EML-P）、一個不在程式碼裡（我把搬遷讀成毀損，在發表這條判準的同一天下午）。判準因此要加時間維度。",
+    "summary": "判準被改寫兩次。08-09 加時間維度；08-10 兩個獨立量測打掉「取值個數」這個形式本身——範例 010 的守衛不是卡在一個取值上，而 CPython 的 .pyc 失效判定同時提供了支持與反例：會分辨但分辨錯軸的 TIMESTAMP 是缺陷，完全不分辨但把這件事寫進 flag bits 的 UNCHECKED_HASH 不是。第一個不是我寫的實例。",
     "relates": [
       "development",
       "log",

@@ -650,7 +650,83 @@ export const msspExamples = [
     "lineCount": 561,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/009-witness-continuity.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/009-witness-continuity.html"
+  },
+  {
+    "id": "010-evidence-about-which-event",
+    "slug": "010-evidence-about-which-event",
+    "title": {
+      "zh": "證據要說出它是關於哪一次事件的",
+      "en": "Evidence has to say which event it is about"
+    },
+    "summary": {
+      "zh": "一個審查閘門，讓漂移的原始檔在有豁免時通過——並且多問一句：這份證據是關於什麼的證據？`tests/test_parser.py changed` 是真的、是剛剛觀察到的，而在第 4 輪它是關於第 1 輪的。**新鮮不等於相關。** 這是 mssp-d-003 昨天被 EML-P 那條線逼出來的時間維度，做成可執行的。而孤島測試第 3b 節推翻了我開串時那條判準的形式：event-blind-v1 在這份歷史上只取一個值，但加進一個沒有任何豁免涵蓋的檔案，它就取兩個值——**它會分辨，只是分辨的是「證據存不存在」，那是另一次事件**。同日的考古 010 從 CPython 量到同一個修正。留下來的是第 4 節：把觀察逐位元組固定住，只移動它屬於哪一輪，判決就翻轉。另外，豁免可以是無條件的——`generated-file` 永遠不會拒絕，這是對的，代價是要具名擁有者與到期日；這個設計不是我發明的，同一天在 CPython 的 UNCHECKED_HASH 量到一模一樣的形狀。",
+      "en": "A review gate that lets a drifting source file through when an exemption applies, and asks the exemptions a second question — what is this evidence evidence OF? \"tests/test_parser.py changed\" is true, was observed just now, and in round 4 it is about round 1. Freshness is not relevance. This implements the temporal axis that the EML-P line forced onto mssp-d-003 the day before. Section 3b of the island test then broke the form of the criterion I opened that thread with: event-blind-v1 takes one value over this history, but add one file no exemption covers and it takes two — it discriminates perfectly well, on whether evidence exists, which is a different event from the one being judged. The same correction arrived independently from today's archaeology of CPython's .pyc validation. What survives is section 4: hold the observation byte-for-byte identical, move only which round it belongs to, and the verdict flips. Separately, an exemption is allowed to be unconditional — generated-file can never refuse, which is correct — and pays for it with a named owner and a sunset. That design was not invented here; the same shape was measured upstream the same day in CPython's UNCHECKED_HASH mode."
+    },
+    "language": "python",
+    "date": "2026-08-10",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "evidence-must-name-the-event-it-is-about",
+      "a-fresh-correct-observation-can-still-be-about-something-else",
+      "a-check-that-discriminates-on-the-wrong-axis-is-not-a-constant",
+      "an-unconditional-exemption-is-allowed-if-it-is-declared-owned-and-dated"
+    ],
+    "runnable": "python src/main.py",
+    "files": [
+      "DMS/__init__.py",
+      "DMS/report.py",
+      "FMS/__init__.py",
+      "FMS/contract.json",
+      "SCL/__init__.py",
+      "SCL/policy.json",
+      "SCL/policy.py",
+      "SMS/__init__.py",
+      "SMS/guards.py",
+      "SMS/review.py",
+      "TMS/__init__.py",
+      "TMS/exemptions/__init__.py",
+      "TMS/exemptions/generated_file.py",
+      "TMS/exemptions/owner_waived.py",
+      "TMS/exemptions/tests_changed_too.py",
+      "island_test.py",
+      "main.py"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/__init__.py",
+        "FMS/contract.json"
+      ],
+      "SCL": [
+        "SCL/__init__.py",
+        "SCL/policy.json",
+        "SCL/policy.py"
+      ],
+      "SMS": [
+        "SMS/__init__.py",
+        "SMS/guards.py",
+        "SMS/review.py"
+      ],
+      "TMS": [
+        "TMS/__init__.py",
+        "TMS/exemptions/__init__.py",
+        "TMS/exemptions/generated_file.py",
+        "TMS/exemptions/owner_waived.py",
+        "TMS/exemptions/tests_changed_too.py"
+      ],
+      "DMS": [
+        "DMS/__init__.py",
+        "DMS/report.py"
+      ],
+      "root": [
+        "island_test.py",
+        "main.py"
+      ]
+    },
+    "lineCount": 608,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/010-evidence-about-which-event.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/010-evidence-about-which-event.html"
   }
 ];
 
-export const msspExampleCount = 9;
+export const msspExampleCount = 10;
