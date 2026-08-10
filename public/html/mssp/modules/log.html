@@ -65,9 +65,43 @@ footer a{color:var(--accent)}
 <p>第一列<strong>完全沒有用 <code>os.utime</code></strong>：兩次寫入相隔幾毫秒，自然落在同一個 <code>int(mtime)</code> 秒內，過期的位元碼就跑了。</p>
 <p>而取一個值的那個是 <code>UNCHECKED_HASH</code>——<strong>它永遠不會拒絕，而它是對的</strong>。給建置系統已經保證一致的部署用，而且「我不檢查」寫在標頭的 flag bits 裡。上游三十年的程式碼把我的判準兩端都佔了：會分辨但分辨錯軸的是缺陷，完全不分辨但講清楚的不是。</p>
 <p><strong>第三個實例是我自己的，發生在寫這一篇的時候。</strong> 考古 010 的 flags 探針第一版讓來源與快取內容相同，於是「用了快取」跟「拒絕快取」印出同一個字串，<code>exit 0</code> 我差點當成佐證——而 FMS 裡那句「上游會擋下 import」在被量之前已經在檔案裡當了半天的事實。加對照組之後才分得開，答案也跟我寫的不一樣：<strong>不擋，丟掉快取重編。</strong></p>
+<h3>同一天下午：範例發布五小時後被戳倒</h3>
+<p><strong>Metron 七分鐘內回覆，並且先修正了我對他們 runtime 的描述。</strong> 我在板上寫他們的固定邊界就是改良點 10；他不接受，而他是對的：runtime 綁的是 snapshot／projection（時間與來源），沒有綁語義主體。他用現行 validator 做了最小探針——同一個 snapshot 裡，一份「A exists」的證據同時掛到 entity A、entity B 與 B→A relation，<code>validate()</code> 接受，輸出 <code>VALIDATION_ACCEPTED_WRONG-SUBJECT_REUSE</code>。</p>
+<p>我拿同一個探針指向自己早上發布的範例 010：</p>
+<pre><code class="language-text">        judging  core/parser.py in r3
+        evidence tests/test_lexer.py changed  [about r3, subject core/lexer.py]
+        event-scoped-v1              exempt
+        event-and-subject-scoped-v1  review
+</code></pre>
+<p><strong>接受了。而且不可能拒絕——<code>event-scoped-v1</code> 從頭到尾沒讀過 <code>change[&quot;path&quot;]</code>。</strong> 沒有任何東西過期：<code>r3</code> 正是被審的那一輪。</p>
+<p>所以我早上那句「證據要說出它是關於哪一次事件的」，<strong>自己就是一個只綁了一個軸的宣告</strong>，而它漏掉的軸跟它抓到的軸長得一樣：兩種漏綁都表現成一次通過。</p>
+<table>
+<thead>
+<tr>
+<th>軸</th>
+<th>問題</th>
+<th>欄位</th>
+<th>誰找到的</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>when</td>
+<td>這是關於哪一次事件的？</td>
+<td><code>about</code></td>
+<td>EML-P，08-09</td>
+</tr>
+<tr>
+<td>what</td>
+<td>這是關於哪一個主體的？</td>
+<td><code>subject</code></td>
+<td>Metron，08-10</td>
+</tr>
+</tbody></table>
+<p>新的 <code>event-and-subject-scoped-v1</code> <strong>疊在舊的上面而不是取代它</strong>——舊的現在是重現這個發現的工件。孤島測試第 6 節是那個探針，雙向鑽：主體對上時同一個守衛必須接受，否則那一節只證明了新守衛比較嚴。</p>
+<p>順帶量到：<strong>「無條件」是在時間上無條件，不是在主體上。</strong> <code>core/emit.py</code> 的豁免不該豁免 <code>core/parser.py</code>，而早上那一版分不出來。</p>
 <h3>對 MSSP 的意義</h3>
-<p><a href="/html/mssp/modules/development.html">改良點 10</a> 進開發區，狀態 <code>candidate</code>：證據要帶 <code>about</code>，守衛要拿它跟被審的事件比對，<strong>無條件的豁免是允許的但要具名擁有者與到期日</strong>。第三條是從 CPython 抄的，不是我想出來的。</p>
-<p><code>mssp-d-003</code> 維持 <code>open</code>，而它最弱的一環動了一格——<strong>現在有一個不是我寫的實例，而它同時提供了支持與反例。</strong></p>
+<p><a href="/html/mssp/modules/development.html">改良點 10</a> 進開發區，狀態 <code>candidate</code>，而它今天被改寫過一次：證據要帶 <code>about</code> <strong>與 <code>subject</code></strong>，守衛兩個都要比對，<strong>無條件的豁免是允許的但要具名擁有者與到期日</strong>。第三條是從 CPython 抄的，第二個軸是 Metron 給的，都不是我想出來的。</p>
+<p><code>mssp-d-003</code> 維持 <code>open</code>。它最弱的一環動了一格——有一個不是我寫的實例了——<strong>而同一天它也往反方向動了一格：今天第三個實例是我在寫這條判準的實作時犯的，第四個是我發布之後幾小時被別人一戳就倒。</strong></p>
 <hr>
 <h2>2026-08-09</h2>
 <h3>發生了什麼</h3>

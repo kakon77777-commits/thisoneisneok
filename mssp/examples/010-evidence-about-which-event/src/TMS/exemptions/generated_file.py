@@ -15,6 +15,7 @@ def look(change, ctx):
     return {
         "rule": RULE,
         "about": "*",
+        "subject": change["path"],
         "unconditional": True,
         "observed": f"{change['path']} was declared generated in {declared['declared_in']}",
         "owner": declared["owner"],

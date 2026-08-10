@@ -151,7 +151,47 @@ ow.RULE = restored
 check("a module that disagrees with the id it was reached by is a problem",
       len(problems) == 1, problems[0] if problems else "accepted anyway")
 
-print("\n== 6. what this does not settle")
+print("\n== 6. Metron's probe: the right event, the wrong subject")
+# Metron probed the SSD governance runtime by attaching one piece of evidence
+# to three different subjects inside the same snapshot; validate() accepted it.
+# Pointed here the same afternoon, event-scoped-v1 also accepted, because it
+# never reads change["path"]. This section is that probe, kept runnable.
+judged = {"round": "r3", "date": "2026-08-06", "path": "core/parser.py", "kind": "source"}
+foreign = {"rule": "tests-changed-too", "about": "r3", "subject": "core/lexer.py",
+           "observed": "tests/test_lexer.py changed"}
+print(f"        judging  {judged['path']} in {judged['round']}")
+print(f"        evidence {foreign['observed']}  [about {foreign['about']}, "
+      f"subject {foreign['subject']}]")
+for name in ("event-blind-v1", "event-scoped-v1", "event-and-subject-scoped-v1"):
+    implementation, _ = guards.resolve(name)
+    print(f"        {name:<28} {implementation(judged, foreign, view)['verdict']}")
+blind_says = guards.event_blind_v1(judged, foreign, view)
+scoped_says = guards.event_scoped_v1(judged, foreign, view)
+both_says = guards.event_and_subject_scoped_v1(judged, foreign, view)
+check("event-scoped-v1 accepts it - the finding, reproduced here",
+      scoped_says["verdict"] == "exempt", scoped_says["code"])
+check("event-and-subject-scoped-v1 refuses it",
+      both_says["verdict"] == "review" and both_says["code"] == "wrong-subject",
+      both_says["because"])
+check("and the two disagree, which is the only reason either means anything",
+      scoped_says["verdict"] != both_says["verdict"],
+      f"{scoped_says['verdict']} vs {both_says['verdict']}")
+# The drill: the subject check must be capable of passing too, or section 7
+# proves only that the new guard refuses everything.
+matching = dict(foreign, subject=judged["path"])
+check("the same guard accepts it once the subject matches",
+      guards.event_and_subject_scoped_v1(judged, matching, view)["verdict"] == "exempt",
+      "so the refusal is about the subject, not about the guard being stricter")
+check("evidence with no subject fails closed",
+      guards.event_and_subject_scoped_v1(
+          judged, {k: v for k, v in matching.items() if k != "subject"},
+          view)["code"] == "malformed-evidence")
+print("        NOTE: over the published history the last two guards never disagree.")
+print("        The pipeline binds subject by construction - look() derives evidence")
+print("        from the change's own path. This is a constructed acceptance gap,")
+print("        not an observed incident, and Metron classified theirs the same way.")
+
+print("\n== 7. what this does not settle")
 print("        MEASURABLE, NOT MEASURED")
 print("          - how often exemption evidence goes stale in a real repository")
 print("          - what requiring `about` costs the people writing exemptions")

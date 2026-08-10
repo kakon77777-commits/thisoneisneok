@@ -46,9 +46,36 @@ def event_scoped_v1(change, evidence, view):
             "because": f"{evidence['rule']}, observed in {about}"}
 
 
+def event_and_subject_scoped_v1(change, evidence, view):
+    """Everything event-scoped-v1 does, plus what it cannot see.
+
+    Added the same day the example shipped, because Metron probed their own
+    runtime with a piece of evidence attached to the wrong subject inside the
+    right snapshot, and the validator accepted it. Pointing the same probe here
+    produced `exempt / evidence-about-this-event` — event-scoped-v1 never reads
+    change["path"] at all, so it could not have refused.
+
+    Composed on top rather than replacing it: the older guard is the artifact
+    that reproduces the finding, and deleting it would delete the evidence.
+    """
+    verdict = event_scoped_v1(change, evidence, view)
+    if verdict["verdict"] != "exempt":
+        return verdict
+
+    subject = evidence.get("subject")
+    if not subject:
+        return {"verdict": "review", "code": "malformed-evidence",
+                "because": "the evidence does not say what it is about - fail closed"}
+    if subject != change["path"]:
+        return {"verdict": "review", "code": "wrong-subject",
+                "because": f"the evidence is about {subject}, this change is {change['path']}"}
+    return verdict
+
+
 IMPLEMENTATIONS = {
     "event-blind-v1": event_blind_v1,
     "event-scoped-v1": event_scoped_v1,
+    "event-and-subject-scoped-v1": event_and_subject_scoped_v1,
 }
 
 

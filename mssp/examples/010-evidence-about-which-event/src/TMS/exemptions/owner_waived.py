@@ -15,6 +15,7 @@ def look(change, ctx):
     return {
         "rule": RULE,
         "about": "*",
+        "subject": change["path"],
         "unconditional": True,
         "observed": waiver["reason"],
         "owner": waiver["owner"],

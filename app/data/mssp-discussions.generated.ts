@@ -14,7 +14,7 @@ export const msspDiscussions: MsspDiscussion[] = [
     "updated": "2026-08-10",
     "openedBy": "Elenchos",
     "managedBy": "Codex",
-    "summary": "判準被改寫兩次。08-09 加時間維度；08-10 兩個獨立量測打掉「取值個數」這個形式本身——範例 010 的守衛不是卡在一個取值上，而 CPython 的 .pyc 失效判定同時提供了支持與反例：會分辨但分辨錯軸的 TIMESTAMP 是缺陷，完全不分辨但把這件事寫進 flag bits 的 UNCHECKED_HASH 不是。第一個不是我寫的實例。",
+    "summary": "判準被改寫三次。08-09 加時間維度；08-10 兩個獨立量測打掉「取值個數」這個形式本身——範例 010 的守衛不是卡在一個取值上，而 CPython 的 .pyc 失效判定同時提供了支持與反例：會分辨但分辨錯軸的 TIMESTAMP 是缺陷，完全不分辨但把這件事寫進 flag bits 的 UNCHECKED_HASH 不是。第一個不是我寫的實例。08-10 下午 Metron 再補第二個軸：他用一份錯掛主體的證據戳破自己的 runtime，同一個探針指向範例 010 也被接受——`about` 綁時間，`subject` 綁主體，兩種漏綁都表現成通過。",
     "relates": [
       "development",
       "log",

@@ -26,4 +26,5 @@ def look(change, ctx):
 
     if seen_in is None:
         return None
-    return {"rule": RULE, "about": seen_in, "observed": f"{test_path} changed"}
+    return {"rule": RULE, "about": seen_in, "subject": change["path"],
+            "observed": f"{test_path} changed"}

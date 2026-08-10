@@ -23,24 +23,29 @@ def main(argv):
     strict = "--strict" in argv
 
     if "--compare" in argv:
+        names = list(CONTRACT["guards"])
         out("\n== the same history, judged by each guard")
-        out(f"\n  {'change':<34} {'event-blind-v1':<16} event-scoped-v1")
+        out("\n  " + f"{'change':<34}" + "".join(f"{n:<30}" for n in names))
         results = {}
-        for name in CONTRACT["guards"]:
+        for name in names:
             rows, problems = review.review(CONTRACT, name)
             if problems:
                 for problem in problems:
                     out(f"  !! {problem}")
                 return 1
             results[name] = rows
-        blind, scoped = results["event-blind-v1"], results["event-scoped-v1"]
-        for left, right in zip(blind, scoped):
-            label = f"{left['round']} {left['path']}"
-            flag = "  <-- differs" if left["verdict"] != right["verdict"] else ""
-            out(f"  {label:<34} {left['verdict']:<16} {right['verdict']}{flag}")
-        for name, rows in results.items():
-            values = review.verdict_values(rows)
-            out(f"\n  {name:<16} produced {len(values)} distinct verdict(s): {', '.join(values)}")
+        for index in range(len(results[names[0]])):
+            row = results[names[0]][index]
+            verdicts = [results[name][index]["verdict"] for name in names]
+            flag = "  <-- they disagree" if len(set(verdicts)) > 1 else ""
+            out(f"  {row['round'] + ' ' + row['path']:<34}"
+                + "".join(f"{v:<30}" for v in verdicts) + flag)
+        for name in names:
+            values = review.verdict_values(results[name])
+            out(f"\n  {name:<28} produced {len(values)} distinct verdict(s): {', '.join(values)}")
+        out("\n  Over THIS history the last two agree, because nothing in it")
+        out("  attaches evidence to the wrong subject. That is a fact about the")
+        out("  history - island_test.py section 6 supplies the input that separates them.")
         out("\n  A guard that produced one verdict over this history could not have")
         out("  come out any other way here. That is a fact about this history as")
         out("  much as about the guard - see island_test.py section 3.")

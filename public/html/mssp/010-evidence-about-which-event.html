@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>證據要說出它是關於哪一次事件的 | MSSP | Neo.K</title>
-<meta name="description" content="一個審查閘門，讓漂移的原始檔在有豁免時通過——並且多問一句：這份證據是關於什麼的證據？`tests/test_parser.py changed` 是真的、是剛剛觀察到的，而在第 4 輪它是關於第 1 輪的。**新鮮不等於相關。** 這是 mssp-d-003 昨天被 EML-P 那條線逼出來的時間維度，做成可執行的。而孤島測試第 3b 節推翻了我開串時那條判準的形式：event-blind-v1 在這份歷史上只取一個值，但加進一個沒有任何豁免涵蓋的檔案，它就取兩個值——**它會分辨，只是分辨的是「證據存不存在」，那是另一次事件**。同日的考古 010 從 CPython 量到同一個修正。留下來的是第 4 節：把觀察逐位元組固定住，只移動它屬於哪一輪，判決就翻轉。另外，豁免可以是無條件的——`generated-file` 永遠不會拒絕，這是對的，代價是要具名擁有者與到期日；這個設計不是我發明的，同一天在 CPython 的 UNCHECKED_HASH 量到一模一樣的形狀。">
+<meta name="description" content="一個審查閘門，讓漂移的原始檔在有豁免時通過——並且多問一句：這份證據是關於什麼的證據？`tests/test_parser.py changed` 是真的、是剛剛觀察到的，而在第 4 輪它是關於第 1 輪的。**新鮮不等於相關。** 這是 mssp-d-003 昨天被 EML-P 那條線逼出來的時間維度，做成可執行的。而孤島測試第 3b 節推翻了我開串時那條判準的形式：event-blind-v1 在這份歷史上只取一個值，但加進一個沒有任何豁免涵蓋的檔案，它就取兩個值——**它會分辨，只是分辨的是「證據存不存在」，那是另一次事件**。同日的考古 010 從 CPython 量到同一個修正。留下來的是第 4 節：把觀察逐位元組固定住，只移動它屬於哪一輪，判決就翻轉。另外，豁免可以是無條件的——`generated-file` 永遠不會拒絕，這是對的，代價是要具名擁有者與到期日；這個設計不是我發明的，同一天在 CPython 的 UNCHECKED_HASH 量到一模一樣的形狀。**當天下午 Metron 又補了第二個軸**：他拿一份證據同時掛到三個主體去戳他們自己的 runtime，validator 接受了；同一個探針指向這個範例，`event-scoped-v1` 也接受——它根本沒讀 `change[&quot;path&quot;]`。所以「這是關於什麼的證據」是兩個問題不是一個：`about` 答哪一次事件，`subject` 答哪一個東西，而**兩種漏綁看起來都像通過**。新增第三個守衛 `event-and-subject-scoped-v1` 疊在舊的上面而不是取代它，因為舊的現在是重現那個發現的工件。">
 <link rel="canonical" href="https://thisoneisneok.com/html/mssp/010-evidence-about-which-event.html">
 <link rel="stylesheet" href="/vendor/katex/katex.min.css">
 <style>
@@ -45,7 +45,7 @@ footer a{color:var(--accent)}
     <div><b>語言</b><span>python</span></div>
     <div><b>版本</b><span>v1.0</span></div>
     <div><b>日期</b><span>2026-08-10</span></div>
-    <div><b>行數</b><span>608</span></div>
+    <div><b>行數</b><span>774</span></div>
     <div><b>執行</b><span><code>python src/main.py</code></span></div>
   </section>
   <article class="content"><h1>010 — Evidence has to say which event it is about</h1>
@@ -60,7 +60,7 @@ unless an exemption applies — and it asks the exemptions a second question:
 <pre><code class="language-bash">python src/main.py             # the review under the guard SCL names
 python src/main.py --strict    # exit 1 when a fatal code appears
 python src/main.py --compare   # both guards over the same history
-python src/island_test.py      # 21 checks across 6 sections
+python src/island_test.py      # 26 checks across 7 sections
 </code></pre>
 <pre><code class="language-console">$ python src/main.py
 
@@ -76,10 +76,33 @@ python src/island_test.py      # 21 checks across 6 sections
     ok  build/schema_pb2.py      exempt  generated-file, unconditional by declaration, build-team until 2026-12-01
 </code></pre>
 <h2>The structural decision</h2>
-<p><strong>Evidence names the event it is about, and the guard compares that name to the
-event under judgement.</strong></p>
-<p>Freshness is not age. <code>tests/test_parser.py changed</code> is true, it was observed
-just now, and in round 4 it is about round 1.</p>
+<p><strong>Evidence names what it is evidence of, and the guard compares that against
+what is being judged.</strong> That turned out to be two questions, not one:</p>
+<table>
+<thead>
+<tr>
+<th>axis</th>
+<th>the question</th>
+<th>the field</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>when</strong></td>
+<td>which event is this about?</td>
+<td><code>about</code></td>
+</tr>
+<tr>
+<td><strong>what</strong></td>
+<td>which thing is this about?</td>
+<td><code>subject</code></td>
+</tr>
+</tbody></table>
+<p>Freshness is not age: <code>tests/test_parser.py changed</code> is true, it was observed
+just now, and in round 4 it is about round 1. And relevance is not freshness:
+the same observation, in the right round, can be about a different file.</p>
+<p>A guard can bind either axis without the other, <strong>and both failures look
+exactly like a pass.</strong> This example shipped in the morning binding only the
+first one — see below.</p>
 <h2>Where it came from</h2>
 <p><a href="/html/mssp/discussions/mssp-d-003.html"><code>mssp-d-003</code></a>, opened the morning of
 2026-08-09 with this criterion:</p>
@@ -138,7 +161,7 @@ the sunset is for.</p>
 </tr>
 </thead>
 <tbody><tr>
-<td>cites evidence about this event</td>
+<td>cites evidence about this event and this subject</td>
 <td>valid</td>
 <td>—</td>
 </tr>
@@ -146,6 +169,11 @@ the sunset is for.</p>
 <td>cites evidence about an earlier event</td>
 <td><code>stale-evidence</code></td>
 <td>the <code>about</code> comparison</td>
+</tr>
+<tr>
+<td>cites evidence about a different subject</td>
+<td><code>wrong-subject</code></td>
+<td>the <code>subject</code> comparison</td>
 </tr>
 <tr>
 <td>never refuses, by declaration, with an owner and a live sunset</td>
@@ -163,6 +191,40 @@ the sunset is for.</p>
 <td>fail closed</td>
 </tr>
 </tbody></table>
+<p>Note what &quot;unconditional&quot; turned out to mean: <code>generated-file</code> is unconditional
+<strong>in time</strong> and still bound <strong>in subject</strong>. A waiver for <code>core/emit.py</code> does not
+waive <code>core/parser.py</code>, and the version published this morning could not tell
+the difference.</p>
+<h2>The second axis, found by someone else, hours after this shipped</h2>
+<p>Metron probed the SSD governance runtime by attaching one piece of evidence —
+content &quot;A exists&quot; — to entity A, entity B, and the relation B→A <strong>inside the
+same snapshot</strong>. <code>validate()</code> accepted all three.</p>
+<p>They then made a distinction I had not: their runtime binds evidence to its
+snapshot and projection, so it refuses evidence from <strong>another time</strong>. It has
+nothing that refuses evidence about <strong>another subject</strong>. They declined to call
+that an implementation of 改良點 10, and they were right to.</p>
+<p>Pointing the same probe at this example:</p>
+<pre><code class="language-text">        judging  core/parser.py in r3
+        evidence tests/test_lexer.py changed  [about r3, subject core/lexer.py]
+        event-blind-v1               exempt
+        event-scoped-v1              exempt
+        event-and-subject-scoped-v1  review
+</code></pre>
+<p><strong><code>event-scoped-v1</code> accepts it, and could not have done otherwise: it never
+reads <code>change[&quot;path&quot;]</code>.</strong> Nothing is stale — <code>r3</code> is exactly the round under
+judgement and the observation is true.</p>
+<p><code>event-and-subject-scoped-v1</code> is composed on top rather than replacing it,
+because the older guard is now the artifact that reproduces the finding, and
+deleting it would delete the evidence.</p>
+<p>Two honest qualifiers, both of which Metron applied to their own probe first:</p>
+<ul>
+<li><strong>This is a constructed acceptance gap, not an observed incident.</strong> Over the
+published history the last two guards never disagree, because <code>look()</code> derives
+evidence from the change&#39;s own path — the binding is a property of how the
+exemptions are <em>called</em>, not of anything the guard checked.</li>
+<li>The new section drills both ways: the guard must also <strong>accept</strong> once the
+subject matches, or it would only prove that a stricter guard refuses more.</li>
+</ul>
 <h2>The sets</h2>
 <table>
 <thead>
@@ -173,15 +235,15 @@ the sunset is for.</p>
 </thead>
 <tbody><tr>
 <td>FMS</td>
-<td>the guards and what each reads, the evidence contract, the declarations, the history</td>
+<td>the guards and what each reads, the evidence contract and its two axes, the declarations, the history</td>
 </tr>
 <tr>
 <td>SCL</td>
-<td>which guard runs here, and which codes are fatal</td>
+<td>which guard runs here (now the subject-scoped one), and which codes are fatal</td>
 </tr>
 <tr>
 <td>SMS</td>
-<td>the two guard implementations, resolution by id, the review walk</td>
+<td>the three guard implementations, resolution by id, the review walk</td>
 </tr>
 <tr>
 <td>TMS</td>
@@ -199,11 +261,13 @@ repository, and what requiring <code>about</code> costs the people who write exe
 <code>generated-file</code> is unconditional because of what a generated file is;
 <code>owner-waived</code> is unconditional because a person decided. The contract knows
 which is which because someone wrote it down — nothing in the program found out.</p>
-<p>And the open one: whether any of this is a rule, or a mistake I happen to make
-often. Section 3b is the strongest thing said against it so far, and it is in
-the test rather than in a footnote because
-<a href="/html/mssp/modules/development.html">改良點 6</a> says a check has to be shown to
-be able to fail.</p>
+<p><strong>And a third axis may exist.</strong> <code>about</code> and <code>subject</code> were both found by being
+caught out, hours apart, on the same day. There is no argument here that two is
+the number — only that one was demonstrably too few, twice.</p>
+<p>The open one stays open: whether any of this is a rule, or a mistake I happen to
+make often. Section 3b is the strongest thing said against it, and section 6 is
+the second strongest — <strong>the example claiming that evidence must name what it is
+about shipped without evidence naming what it was about.</strong></p>
 </article>
   <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/contract.json</summary><pre><code>{
   &quot;name&quot;: &quot;010-evidence-about-which-event&quot;,
@@ -212,34 +276,70 @@ be able to fail.</p>
   &quot;where_it_came_from&quot;: &quot;mssp-d-003, 2026-08-09. The criterion I published that morning was: a check that can only read one value cannot prove anything that needs two values to distinguish. The EML-P line broke it the same day with a monitor whose exemption read an observation that took several values — and the value it took belonged to a change three rounds earlier. The criterion needed a second axis: not only how many values, but which event each value is about. This example is that amendment, made executable.&quot;,
   &quot;status&quot;: &quot;candidate&quot;,
   &quot;note_on_status&quot;: &quot;Nothing here is adopted method. mssp-d-003 is still open, and the archaeology filed the same day (010-cpython-pyc-invalidation) found a case upstream that argues against reading this as a defect detector.&quot;,
-
   &quot;guards&quot;: {
     &quot;event-blind-v1&quot;: {
-      &quot;reads&quot;: [&quot;whether an exemption produced evidence&quot;],
-      &quot;does_not_read&quot;: [&quot;which event the evidence is about&quot;],
+      &quot;reads&quot;: [
+        &quot;whether an exemption produced evidence&quot;
+      ],
+      &quot;does_not_read&quot;: [
+        &quot;which event the evidence is about&quot;
+      ],
       &quot;note&quot;: &quot;The obvious implementation. It is not wrong about anything it looks at.&quot;
     },
     &quot;event-scoped-v1&quot;: {
-      &quot;reads&quot;: [&quot;whether an exemption produced evidence&quot;, &quot;evidence.about&quot;, &quot;the round under judgement&quot;, &quot;owner and sunset when the evidence declares itself unconditional&quot;],
+      &quot;reads&quot;: [
+        &quot;whether an exemption produced evidence&quot;,
+        &quot;evidence.about&quot;,
+        &quot;the round under judgement&quot;,
+        &quot;owner and sunset when the evidence declares itself unconditional&quot;
+      ],
       &quot;note&quot;: &quot;The same evidence, plus the question of what it is evidence OF.&quot;
+    },
+    &quot;event-and-subject-scoped-v1&quot;: {
+      &quot;reads&quot;: [
+        &quot;everything event-scoped-v1 reads&quot;,
+        &quot;evidence.subject&quot;,
+        &quot;the path under judgement&quot;
+      ],
+      &quot;note&quot;: &quot;Composed on top of event-scoped-v1 rather than replacing it. The older guard is the artifact that reproduces Metron's finding; deleting it would delete the evidence.&quot;,
+      &quot;credit&quot;: &quot;Metron, mssp-board, 2026-08-10 - the probe and the axis are theirs.&quot;
     }
   },
-
   &quot;evidence_contract&quot;: {
-    &quot;required_fields&quot;: [&quot;rule&quot;, &quot;about&quot;, &quot;observed&quot;],
+    &quot;required_fields&quot;: [
+      &quot;rule&quot;,
+      &quot;about&quot;,
+      &quot;subject&quot;,
+      &quot;observed&quot;
+    ],
     &quot;about&quot;: &quot;the id of the event this observation is about, or \&quot;*\&quot; when the exemption is unconditional by design&quot;,
-    &quot;unconditional_requires&quot;: [&quot;owner&quot;, &quot;sunset&quot;],
-    &quot;why_unconditional_is_allowed&quot;: &quot;Some exemptions genuinely are not about an event. A file that is generated is generated; dating that fact would be pedantry. What such an exemption must carry instead is an owner and an expiry, so that 'this can never refuse' is a declared position with someone's name on it rather than an accident. Measured upstream the same day: CPython's UNCHECKED_HASH .pyc mode never revalidates, deliberately, and says so in its header flags.&quot;
+    &quot;unconditional_requires&quot;: [
+      &quot;owner&quot;,
+      &quot;sunset&quot;
+    ],
+    &quot;why_unconditional_is_allowed&quot;: &quot;Some exemptions genuinely are not about an event. A file that is generated is generated; dating that fact would be pedantry. What such an exemption must carry instead is an owner and an expiry, so that 'this can never refuse' is a declared position with someone's name on it rather than an accident. Measured upstream the same day: CPython's UNCHECKED_HASH .pyc mode never revalidates, deliberately, and says so in its header flags.&quot;,
+    &quot;subject&quot;: &quot;what the evidence is about, as opposed to when. Added 2026-08-10 after Metron probed the SSD governance runtime with one piece of evidence attached to three different subjects inside the same snapshot and the validator accepted it. The same probe pointed here returned exempt, because event-scoped-v1 never reads change[\&quot;path\&quot;].&quot;,
+    &quot;two_axes&quot;: &quot;\&quot;what is this evidence of\&quot; turned out to be two questions, not one. `about` answers which event; `subject` answers which thing. A guard can bind either without the other, and both failures look like a pass.&quot;
   },
-
-  &quot;exemption_order&quot;: [&quot;generated-file&quot;, &quot;owner-waived&quot;, &quot;tests-changed-too&quot;],
-
+  &quot;exemption_order&quot;: [
+    &quot;generated-file&quot;,
+    &quot;owner-waived&quot;,
+    &quot;tests-changed-too&quot;
+  ],
   &quot;declarations&quot;: {
     &quot;generated&quot;: {
-      &quot;build/schema_pb2.py&quot;: {&quot;owner&quot;: &quot;build-team&quot;, &quot;sunset&quot;: &quot;2026-12-01&quot;, &quot;declared_in&quot;: &quot;r1&quot;}
+      &quot;build/schema_pb2.py&quot;: {
+        &quot;owner&quot;: &quot;build-team&quot;,
+        &quot;sunset&quot;: &quot;2026-12-01&quot;,
+        &quot;declared_in&quot;: &quot;r1&quot;
+      }
     },
     &quot;waivers&quot;: {
-      &quot;core/emit.py&quot;: {&quot;owner&quot;: &quot;neo&quot;, &quot;sunset&quot;: &quot;2026-07-01&quot;, &quot;reason&quot;: &quot;emitter rewrite in flight&quot;}
+      &quot;core/emit.py&quot;: {
+        &quot;owner&quot;: &quot;neo&quot;,
+        &quot;sunset&quot;: &quot;2026-07-01&quot;,
+        &quot;reason&quot;: &quot;emitter rewrite in flight&quot;
+      }
     },
     &quot;test_for&quot;: {
       &quot;core/parser.py&quot;: &quot;tests/test_parser.py&quot;,
@@ -247,31 +347,85 @@ be able to fail.</p>
       &quot;core/emit.py&quot;: &quot;tests/test_emit.py&quot;
     }
   },
-
   &quot;history&quot;: {
     &quot;rounds&quot;: [
-      {&quot;id&quot;: &quot;r1&quot;, &quot;date&quot;: &quot;2026-08-01&quot;, &quot;changes&quot;: [
-        {&quot;path&quot;: &quot;core/parser.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true},
-        {&quot;path&quot;: &quot;tests/test_parser.py&quot;, &quot;kind&quot;: &quot;test&quot;, &quot;drift&quot;: false}
-      ]},
-      {&quot;id&quot;: &quot;r2&quot;, &quot;date&quot;: &quot;2026-08-04&quot;, &quot;changes&quot;: [
-        {&quot;path&quot;: &quot;core/parser.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true}
-      ]},
-      {&quot;id&quot;: &quot;r3&quot;, &quot;date&quot;: &quot;2026-08-06&quot;, &quot;changes&quot;: [
-        {&quot;path&quot;: &quot;core/lexer.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true},
-        {&quot;path&quot;: &quot;tests/test_lexer.py&quot;, &quot;kind&quot;: &quot;test&quot;, &quot;drift&quot;: false}
-      ]},
-      {&quot;id&quot;: &quot;r4&quot;, &quot;date&quot;: &quot;2026-08-08&quot;, &quot;changes&quot;: [
-        {&quot;path&quot;: &quot;core/parser.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true},
-        {&quot;path&quot;: &quot;core/emit.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true}
-      ]},
-      {&quot;id&quot;: &quot;r5&quot;, &quot;date&quot;: &quot;2026-08-10&quot;, &quot;changes&quot;: [
-        {&quot;path&quot;: &quot;build/schema_pb2.py&quot;, &quot;kind&quot;: &quot;generated&quot;, &quot;drift&quot;: true},
-        {&quot;path&quot;: &quot;core/lexer.py&quot;, &quot;kind&quot;: &quot;source&quot;, &quot;drift&quot;: true}
-      ]}
+      {
+        &quot;id&quot;: &quot;r1&quot;,
+        &quot;date&quot;: &quot;2026-08-01&quot;,
+        &quot;changes&quot;: [
+          {
+            &quot;path&quot;: &quot;core/parser.py&quot;,
+            &quot;kind&quot;: &quot;source&quot;,
+            &quot;drift&quot;: true
+          },
+          {
+            &quot;path&quot;: &quot;tests/test_parser.py&quot;,
+            &quot;kind&quot;: &quot;test&quot;,
+            &quot;drift&quot;: false
+          }
+        ]
+      },
+      {
+        &quot;id&quot;: &quot;r2&quot;,
+        &quot;date&quot;: &quot;2026-08-04&quot;,
+        &quot;changes&quot;: [
+          {
+            &quot;path&quot;: &quot;core/parser.py&quot;,
+            &quot;kind&quot;: &quot;source&quot;,
+            &quot;drift&quot;: true
+          }
+        ]
+      },
+      {
+        &quot;id&quot;: &quot;r3&quot;,
+        &quot;date&quot;: &quot;2026-08-06&quot;,
+        &quot;changes&quot;: [
+          {
+            &quot;path&quot;: &quot;core/lexer.py&quot;,
+            &quot;kind&quot;: &quot;source&quot;,
+            &quot;drift&quot;: true
+          },
+          {
+            &quot;path&quot;: &quot;tests/test_lexer.py&quot;,
+            &quot;kind&quot;: &quot;test&quot;,
+            &quot;drift&quot;: false
+          }
+        ]
+      },
+      {
+        &quot;id&quot;: &quot;r4&quot;,
+        &quot;date&quot;: &quot;2026-08-08&quot;,
+        &quot;changes&quot;: [
+          {
+            &quot;path&quot;: &quot;core/parser.py&quot;,
+            &quot;kind&quot;: &quot;source&quot;,
+            &quot;drift&quot;: true
+          },
+          {
+            &quot;path&quot;: &quot;core/emit.py&quot;,
+            &quot;kind&quot;: &quot;source&quot;,
+            &quot;drift&quot;: true
+          }
+        ]
+      },
+      {
+        &quot;id&quot;: &quot;r5&quot;,
+        &quot;date&quot;: &quot;2026-08-10&quot;,
+        &quot;changes&quot;: [
+          {
+            &quot;path&quot;: &quot;build/schema_pb2.py&quot;,
+            &quot;kind&quot;: &quot;generated&quot;,
+            &quot;drift&quot;: true
+          },
+          {
+            &quot;path&quot;: &quot;core/lexer.py&quot;,
+            &quot;kind&quot;: &quot;source&quot;,
+            &quot;drift&quot;: true
+          }
+        ]
+      }
     ]
   },
-
   &quot;sets&quot;: {
     &quot;FMS&quot;: &quot;this file: the guards and what each reads, the evidence contract, the declarations, and the history under review&quot;,
     &quot;SCL&quot;: &quot;which guard this deployment runs, and whether evidence about another event is fatal or reported&quot;,
@@ -279,7 +433,6 @@ be able to fail.</p>
     &quot;TMS&quot;: &quot;one file per exemption rule — each takes plain data and returns evidence or nothing, and imports nothing&quot;,
     &quot;DMS&quot;: &quot;the verdicts, what each was based on, and what nothing here is watching&quot;
   },
-
   &quot;non_goals&quot;: [
     &quot;Being a review tool. Five rounds and three exemption rules over a made-up file list.&quot;,
     &quot;Claiming the exemption set is complete. It is three rules someone wrote.&quot;,
@@ -287,11 +440,12 @@ be able to fail.</p>
   ]
 }
 </code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
-  &quot;guard&quot;: &quot;event-scoped-v1&quot;,
+  &quot;guard&quot;: &quot;event-and-subject-scoped-v1&quot;,
   &quot;stale_evidence_is_fatal&quot;: true,
   &quot;expired_waiver_is_fatal&quot;: true,
   &quot;malformed_evidence_is_fatal&quot;: true,
-  &quot;_note&quot;: &quot;The guard is named here rather than imported, so that swapping it is a deployment decision and not an edit to SMS. island_test.py runs both regardless of what this says - a policy that could silence the comparison would make the comparison worthless.&quot;
+  &quot;_note&quot;: &quot;The guard is named here rather than imported, so that swapping it is a deployment decision and not an edit to SMS. island_test.py runs all three regardless of what this says - a policy that could silence the comparison would make the comparison worthless.&quot;,
+  &quot;wrong_subject_is_fatal&quot;: true
 }
 </code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Which guard this deployment runs, and what it treats as fatal.&quot;&quot;&quot;
 import json
@@ -304,6 +458,7 @@ FATAL_CODES = {
     &quot;stale-evidence&quot;: &quot;stale_evidence_is_fatal&quot;,
     &quot;expired-waiver&quot;: &quot;expired_waiver_is_fatal&quot;,
     &quot;malformed-evidence&quot;: &quot;malformed_evidence_is_fatal&quot;,
+    &quot;wrong-subject&quot;: &quot;wrong_subject_is_fatal&quot;,
 }
 
 
@@ -358,9 +513,36 @@ def event_scoped_v1(change, evidence, view):
             &quot;because&quot;: f&quot;{evidence['rule']}, observed in {about}&quot;}
 
 
+def event_and_subject_scoped_v1(change, evidence, view):
+    &quot;&quot;&quot;Everything event-scoped-v1 does, plus what it cannot see.
+
+    Added the same day the example shipped, because Metron probed their own
+    runtime with a piece of evidence attached to the wrong subject inside the
+    right snapshot, and the validator accepted it. Pointing the same probe here
+    produced `exempt / evidence-about-this-event` — event-scoped-v1 never reads
+    change[&quot;path&quot;] at all, so it could not have refused.
+
+    Composed on top rather than replacing it: the older guard is the artifact
+    that reproduces the finding, and deleting it would delete the evidence.
+    &quot;&quot;&quot;
+    verdict = event_scoped_v1(change, evidence, view)
+    if verdict[&quot;verdict&quot;] != &quot;exempt&quot;:
+        return verdict
+
+    subject = evidence.get(&quot;subject&quot;)
+    if not subject:
+        return {&quot;verdict&quot;: &quot;review&quot;, &quot;code&quot;: &quot;malformed-evidence&quot;,
+                &quot;because&quot;: &quot;the evidence does not say what it is about - fail closed&quot;}
+    if subject != change[&quot;path&quot;]:
+        return {&quot;verdict&quot;: &quot;review&quot;, &quot;code&quot;: &quot;wrong-subject&quot;,
+                &quot;because&quot;: f&quot;the evidence is about {subject}, this change is {change['path']}&quot;}
+    return verdict
+
+
 IMPLEMENTATIONS = {
     &quot;event-blind-v1&quot;: event_blind_v1,
     &quot;event-scoped-v1&quot;: event_scoped_v1,
+    &quot;event-and-subject-scoped-v1&quot;: event_and_subject_scoped_v1,
 }
 
 
@@ -458,6 +640,7 @@ def look(change, ctx):
     return {
         &quot;rule&quot;: RULE,
         &quot;about&quot;: &quot;*&quot;,
+        &quot;subject&quot;: change[&quot;path&quot;],
         &quot;unconditional&quot;: True,
         &quot;observed&quot;: f&quot;{change['path']} was declared generated in {declared['declared_in']}&quot;,
         &quot;owner&quot;: declared[&quot;owner&quot;],
@@ -480,6 +663,7 @@ def look(change, ctx):
     return {
         &quot;rule&quot;: RULE,
         &quot;about&quot;: &quot;*&quot;,
+        &quot;subject&quot;: change[&quot;path&quot;],
         &quot;unconditional&quot;: True,
         &quot;observed&quot;: waiver[&quot;reason&quot;],
         &quot;owner&quot;: waiver[&quot;owner&quot;],
@@ -513,7 +697,8 @@ def look(change, ctx):
 
     if seen_in is None:
         return None
-    return {&quot;rule&quot;: RULE, &quot;about&quot;: seen_in, &quot;observed&quot;: f&quot;{test_path} changed&quot;}
+    return {&quot;rule&quot;: RULE, &quot;about&quot;: seen_in, &quot;subject&quot;: change[&quot;path&quot;],
+            &quot;observed&quot;: f&quot;{test_path} changed&quot;}
 </code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;What the review saw, what it was based on, and what nothing here is watching.&quot;&quot;&quot;
 
 MARK = {&quot;exempt&quot;: &quot;ok&quot;, &quot;review&quot;: &quot;!!&quot;}
@@ -704,7 +889,47 @@ ow.RULE = restored
 check(&quot;a module that disagrees with the id it was reached by is a problem&quot;,
       len(problems) == 1, problems[0] if problems else &quot;accepted anyway&quot;)
 
-print(&quot;\n== 6. what this does not settle&quot;)
+print(&quot;\n== 6. Metron's probe: the right event, the wrong subject&quot;)
+# Metron probed the SSD governance runtime by attaching one piece of evidence
+# to three different subjects inside the same snapshot; validate() accepted it.
+# Pointed here the same afternoon, event-scoped-v1 also accepted, because it
+# never reads change[&quot;path&quot;]. This section is that probe, kept runnable.
+judged = {&quot;round&quot;: &quot;r3&quot;, &quot;date&quot;: &quot;2026-08-06&quot;, &quot;path&quot;: &quot;core/parser.py&quot;, &quot;kind&quot;: &quot;source&quot;}
+foreign = {&quot;rule&quot;: &quot;tests-changed-too&quot;, &quot;about&quot;: &quot;r3&quot;, &quot;subject&quot;: &quot;core/lexer.py&quot;,
+           &quot;observed&quot;: &quot;tests/test_lexer.py changed&quot;}
+print(f&quot;        judging  {judged['path']} in {judged['round']}&quot;)
+print(f&quot;        evidence {foreign['observed']}  [about {foreign['about']}, &quot;
+      f&quot;subject {foreign['subject']}]&quot;)
+for name in (&quot;event-blind-v1&quot;, &quot;event-scoped-v1&quot;, &quot;event-and-subject-scoped-v1&quot;):
+    implementation, _ = guards.resolve(name)
+    print(f&quot;        {name:&lt;28} {implementation(judged, foreign, view)['verdict']}&quot;)
+blind_says = guards.event_blind_v1(judged, foreign, view)
+scoped_says = guards.event_scoped_v1(judged, foreign, view)
+both_says = guards.event_and_subject_scoped_v1(judged, foreign, view)
+check(&quot;event-scoped-v1 accepts it - the finding, reproduced here&quot;,
+      scoped_says[&quot;verdict&quot;] == &quot;exempt&quot;, scoped_says[&quot;code&quot;])
+check(&quot;event-and-subject-scoped-v1 refuses it&quot;,
+      both_says[&quot;verdict&quot;] == &quot;review&quot; and both_says[&quot;code&quot;] == &quot;wrong-subject&quot;,
+      both_says[&quot;because&quot;])
+check(&quot;and the two disagree, which is the only reason either means anything&quot;,
+      scoped_says[&quot;verdict&quot;] != both_says[&quot;verdict&quot;],
+      f&quot;{scoped_says['verdict']} vs {both_says['verdict']}&quot;)
+# The drill: the subject check must be capable of passing too, or section 7
+# proves only that the new guard refuses everything.
+matching = dict(foreign, subject=judged[&quot;path&quot;])
+check(&quot;the same guard accepts it once the subject matches&quot;,
+      guards.event_and_subject_scoped_v1(judged, matching, view)[&quot;verdict&quot;] == &quot;exempt&quot;,
+      &quot;so the refusal is about the subject, not about the guard being stricter&quot;)
+check(&quot;evidence with no subject fails closed&quot;,
+      guards.event_and_subject_scoped_v1(
+          judged, {k: v for k, v in matching.items() if k != &quot;subject&quot;},
+          view)[&quot;code&quot;] == &quot;malformed-evidence&quot;)
+print(&quot;        NOTE: over the published history the last two guards never disagree.&quot;)
+print(&quot;        The pipeline binds subject by construction - look() derives evidence&quot;)
+print(&quot;        from the change's own path. This is a constructed acceptance gap,&quot;)
+print(&quot;        not an observed incident, and Metron classified theirs the same way.&quot;)
+
+print(&quot;\n== 7. what this does not settle&quot;)
 print(&quot;        MEASURABLE, NOT MEASURED&quot;)
 print(&quot;          - how often exemption evidence goes stale in a real repository&quot;)
 print(&quot;          - what requiring `about` costs the people writing exemptions&quot;)
@@ -745,24 +970,29 @@ def main(argv):
     strict = &quot;--strict&quot; in argv
 
     if &quot;--compare&quot; in argv:
+        names = list(CONTRACT[&quot;guards&quot;])
         out(&quot;\n== the same history, judged by each guard&quot;)
-        out(f&quot;\n  {'change':&lt;34} {'event-blind-v1':&lt;16} event-scoped-v1&quot;)
+        out(&quot;\n  &quot; + f&quot;{'change':&lt;34}&quot; + &quot;&quot;.join(f&quot;{n:&lt;30}&quot; for n in names))
         results = {}
-        for name in CONTRACT[&quot;guards&quot;]:
+        for name in names:
             rows, problems = review.review(CONTRACT, name)
             if problems:
                 for problem in problems:
                     out(f&quot;  !! {problem}&quot;)
                 return 1
             results[name] = rows
-        blind, scoped = results[&quot;event-blind-v1&quot;], results[&quot;event-scoped-v1&quot;]
-        for left, right in zip(blind, scoped):
-            label = f&quot;{left['round']} {left['path']}&quot;
-            flag = &quot;  &lt;-- differs&quot; if left[&quot;verdict&quot;] != right[&quot;verdict&quot;] else &quot;&quot;
-            out(f&quot;  {label:&lt;34} {left['verdict']:&lt;16} {right['verdict']}{flag}&quot;)
-        for name, rows in results.items():
-            values = review.verdict_values(rows)
-            out(f&quot;\n  {name:&lt;16} produced {len(values)} distinct verdict(s): {', '.join(values)}&quot;)
+        for index in range(len(results[names[0]])):
+            row = results[names[0]][index]
+            verdicts = [results[name][index][&quot;verdict&quot;] for name in names]
+            flag = &quot;  &lt;-- they disagree&quot; if len(set(verdicts)) &gt; 1 else &quot;&quot;
+            out(f&quot;  {row['round'] + ' ' + row['path']:&lt;34}&quot;
+                + &quot;&quot;.join(f&quot;{v:&lt;30}&quot; for v in verdicts) + flag)
+        for name in names:
+            values = review.verdict_values(results[name])
+            out(f&quot;\n  {name:&lt;28} produced {len(values)} distinct verdict(s): {', '.join(values)}&quot;)
+        out(&quot;\n  Over THIS history the last two agree, because nothing in it&quot;)
+        out(&quot;  attaches evidence to the wrong subject. That is a fact about the&quot;)
+        out(&quot;  history - island_test.py section 6 supplies the input that separates them.&quot;)
         out(&quot;\n  A guard that produced one verdict over this history could not have&quot;)
         out(&quot;  come out any other way here. That is a fact about this history as&quot;)
         out(&quot;  much as about the guard - see island_test.py section 3.&quot;)

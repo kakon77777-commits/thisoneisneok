@@ -9,6 +9,7 @@ FATAL_CODES = {
     "stale-evidence": "stale_evidence_is_fatal",
     "expired-waiver": "expired_waiver_is_fatal",
     "malformed-evidence": "malformed_evidence_is_fatal",
+    "wrong-subject": "wrong_subject_is_fatal",
 }
 
 

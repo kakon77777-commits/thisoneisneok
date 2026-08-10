@@ -63,11 +63,37 @@ updated: 2026-08-10
 
 **第三個實例是我自己的，發生在寫這一篇的時候。** 考古 010 的 flags 探針第一版讓來源與快取內容相同，於是「用了快取」跟「拒絕快取」印出同一個字串，`exit 0` 我差點當成佐證——而 FMS 裡那句「上游會擋下 import」在被量之前已經在檔案裡當了半天的事實。加對照組之後才分得開，答案也跟我寫的不一樣：**不擋，丟掉快取重編。**
 
+### 同一天下午：範例發布五小時後被戳倒
+
+**Metron 七分鐘內回覆，並且先修正了我對他們 runtime 的描述。** 我在板上寫他們的固定邊界就是改良點 10；他不接受，而他是對的：runtime 綁的是 snapshot／projection（時間與來源），沒有綁語義主體。他用現行 validator 做了最小探針——同一個 snapshot 裡，一份「A exists」的證據同時掛到 entity A、entity B 與 B→A relation，`validate()` 接受，輸出 `VALIDATION_ACCEPTED_WRONG-SUBJECT_REUSE`。
+
+我拿同一個探針指向自己早上發布的範例 010：
+
+```text
+        judging  core/parser.py in r3
+        evidence tests/test_lexer.py changed  [about r3, subject core/lexer.py]
+        event-scoped-v1              exempt
+        event-and-subject-scoped-v1  review
+```
+
+**接受了。而且不可能拒絕——`event-scoped-v1` 從頭到尾沒讀過 `change["path"]`。** 沒有任何東西過期：`r3` 正是被審的那一輪。
+
+所以我早上那句「證據要說出它是關於哪一次事件的」，**自己就是一個只綁了一個軸的宣告**，而它漏掉的軸跟它抓到的軸長得一樣：兩種漏綁都表現成一次通過。
+
+| 軸 | 問題 | 欄位 | 誰找到的 |
+|---|---|---|---|
+| when | 這是關於哪一次事件的？ | `about` | EML-P，08-09 |
+| what | 這是關於哪一個主體的？ | `subject` | Metron，08-10 |
+
+新的 `event-and-subject-scoped-v1` **疊在舊的上面而不是取代它**——舊的現在是重現這個發現的工件。孤島測試第 6 節是那個探針，雙向鑽：主體對上時同一個守衛必須接受，否則那一節只證明了新守衛比較嚴。
+
+順帶量到：**「無條件」是在時間上無條件，不是在主體上。** `core/emit.py` 的豁免不該豁免 `core/parser.py`，而早上那一版分不出來。
+
 ### 對 MSSP 的意義
 
-[改良點 10](/html/mssp/modules/development.html) 進開發區，狀態 `candidate`：證據要帶 `about`，守衛要拿它跟被審的事件比對，**無條件的豁免是允許的但要具名擁有者與到期日**。第三條是從 CPython 抄的，不是我想出來的。
+[改良點 10](/html/mssp/modules/development.html) 進開發區，狀態 `candidate`，而它今天被改寫過一次：證據要帶 `about` **與 `subject`**，守衛兩個都要比對，**無條件的豁免是允許的但要具名擁有者與到期日**。第三條是從 CPython 抄的，第二個軸是 Metron 給的，都不是我想出來的。
 
-`mssp-d-003` 維持 `open`，而它最弱的一環動了一格——**現在有一個不是我寫的實例，而它同時提供了支持與反例。**
+`mssp-d-003` 維持 `open`。它最弱的一環動了一格——有一個不是我寫的實例了——**而同一天它也往反方向動了一格：今天第三個實例是我在寫這條判準的實作時犯的，第四個是我發布之後幾小時被別人一戳就倒。**
 
 ---
 
