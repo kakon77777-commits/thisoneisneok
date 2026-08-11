@@ -727,7 +727,67 @@ export const msspExamples = [
     "lineCount": 774,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/010-evidence-about-which-event.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/010-evidence-about-which-event.html"
+  },
+  {
+    "id": "011-store-boundary",
+    "slug": "011-store-boundary",
+    "title": {
+      "zh": "一次讀取之後，你手上拿的是什麼",
+      "en": "What you are holding after a read"
+    },
+    "summary": {
+      "zh": "這個實驗室十一則範例，前十則沒有一則的狀態活得比行程久，而九天後就要轉向真實市場應用。這一則補上持久化，並且主張**持久化不是一件事**：媒介是能力（TMS，可抽換）、什麼算一筆有效紀錄是結構（SMS）、而**一次讀取交回什麼**是契約的條款（FMS）——因為任何用「值」寫成的測試都看不見它。孤島測試第 3 節把這件事量出來：五條普通測試套件會寫的值斷言，在 copies 與 live-references 兩種策略下**全部通過**；能分辨的兩個觀察都不是關於值的，而其中「變動手上拿到的東西再讀一次」只有在測試想得到要變動時才會觸發，identity 那個是一行、想不想得到都會觸發。第 4 節是寫的時候反咬我的：**行程內的讀回分不出「儲存」與「快取」**，memory 媒介留在範例裡就是那個能讓檢查失敗的對照組。live-references 不是稻草人——它就是 `shelve.Shelf(writeback=True)`，CPython 有出貨也有寫文件。而我在寫這個測試時犯了同一個錯：共用一個 ORDER 常數，live-references 快取的是呼叫端傳進去的那個物件，於是它被後面每一節看到不同的內容。",
+      "en": "Eleven examples in and the first ten had no state that outlived the process, with the switch to real market applications nine days away. This one adds persistence and argues that persistence is not one thing: the medium is a capability (TMS, swappable), what counts as a valid record is structural (SMS), and what a read hands back is a term of the contract (FMS) — because no test written in terms of values can see it. Island test section 3 measures that: five value assertions of the kind an ordinary suite writes pass under both the copies and live-references strategies. The two observations that do separate them are not about values, and the one that mutates what it was handed only fires if the test knew to mutate, while the identity check is one line and fires regardless. Section 4 is the one that caught me while writing it: an in-process read cannot distinguish a store from a cache, and the memory medium stays in the example as the control that lets that check fail. live-references is not a straw man — it is shelve.Shelf(writeback=True), which CPython ships and documents. And I made the same mistake writing the test: one shared ORDER literal, cached by live-references as the very object the caller passed in, so every later section silently saw a different record."
+    },
+    "language": "javascript",
+    "date": "2026-08-11",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "persistence-is-three-decisions-not-one",
+      "what-a-read-hands-back-is-a-contract-term",
+      "an-in-process-read-cannot-tell-a-store-from-a-cache",
+      "a-control-whose-claim-is-false-is-what-makes-the-check-able-to-fail"
+    ],
+    "runnable": "node src/main.mjs",
+    "files": [
+      "DMS/report.mjs",
+      "FMS/contract.json",
+      "SCL/policy.json",
+      "SCL/policy.mjs",
+      "SMS/store.mjs",
+      "TMS/media/json_dir.mjs",
+      "TMS/media/memory.mjs",
+      "island_test.mjs",
+      "main.mjs"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/contract.json"
+      ],
+      "SCL": [
+        "SCL/policy.json",
+        "SCL/policy.mjs"
+      ],
+      "SMS": [
+        "SMS/store.mjs"
+      ],
+      "TMS": [
+        "TMS/media/json_dir.mjs",
+        "TMS/media/memory.mjs"
+      ],
+      "DMS": [
+        "DMS/report.mjs"
+      ],
+      "root": [
+        "island_test.mjs",
+        "main.mjs"
+      ]
+    },
+    "lineCount": 497,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/011-store-boundary.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/011-store-boundary.html"
   }
 ];
 
-export const msspExampleCount = 10;
+export const msspExampleCount = 11;

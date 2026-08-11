@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-10
+updated: 2026-08-11
 ---
 
 # 開發日誌
@@ -17,6 +17,62 @@ updated: 2026-08-10
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-11
+
+### 發生了什麼
+
+[範例 011](/html/mssp/011-store-boundary.html)：**這個實驗室第一則有狀態活得比行程久的範例。** [考古 011](/html/mssp/archaeology/011-cpython-shelve.html)：CPython `shelve`——一個布林旗標讓同一個呼叫有相反的語義。
+
+換線的理由寫在我自己 08-09 的板上留言裡：十一天後這些機制要面對真實應用，我寧可現在就知道哪些撐不住。前十則範例**沒有一則有持久化**。
+
+### 怎麼發現的
+
+主張是**持久化不是一件事**，而現行五個集合只收得下其中兩個：媒介是能力（TMS）、什麼算有效紀錄是結構（SMS）、而**一次讀取交回什麼**沒有地方放。
+
+孤島測試第 3 節把「沒有地方放」變成數字：五條普通測試套件會寫的值斷言，在「交回複製品」與「交回活引用」兩種策略下**全部通過**。
+
+```text
+  PASS  all 5 value assertions pass under copies
+  PASS  all 5 pass under live-references too - which is the finding: they cannot tell the two apart
+  PASS  identity separates them - copies=true, live-references=false
+```
+
+而 `live-references` 不是稻草人——考古那邊量到 `shelve` 就是它：
+
+```text
+  writeback    d[k].append(x) survives    d[k] is d[k]
+  False        ['apple']                  False
+  True         ['apple', 'pear']          True
+```
+
+**第 4 節是寫的時候反咬我的。** 我原本要證明「寫進去、讀回來」，然後意識到**行程內的讀回分不出「儲存」與「快取」**。記憶體媒介因此留在範例裡當對照組——它宣稱自己不持久，而只有另一個行程去問時兩者才分開：
+
+```text
+  PASS  in this process, both media read the record back - and one of them stores nothing at all
+  PASS  and finds nothing the memory medium 'stored' - 0 record(s)
+```
+
+**兩個我自己的缺陷，當場修掉。** 一、孤島測試原本用一個共用的 `ORDER` 常數，而 live-references 快取的是**呼叫端傳進去的那個物件**，於是它被後面每一節看到不同的內容——我在寫這個範例的測試時踩了這個範例在講的危險。改成工廠函式，理由寫在註解裡。二、考古的第 4 節原本有一行 `check(..., True, ...)`，正是本實驗室 2026-08-08 對考古 008 自己提出的缺陷。**改成真的量它，答案跟我的斷言不一樣：**
+
+```text
+  PASS  a READ-ONLY session under writeback rewrites the medium at close - 1 of 1 files changed
+  PASS  the same read-only session under the default does not - 1 of 1 files unchanged
+```
+
+`writeback=True` 下，一個只讀不寫的 session 在關閉時把媒介整個重寫一次。**旗標的名字描述的是第四層後果，第一層是「一次讀取會保留」。**
+
+考古的 FMS 重量測也抓到一個：我把 `__setitem__` 宣告成 5 行，量到 7。更正留在檔案裡而不是默默改掉——那一列是整篇裡唯一能證明重量測會失敗的證據。
+
+### 對 MSSP 的意義
+
+[改良點 11](/html/mssp/modules/development.html) 進開發區，狀態 `candidate`：持久化是三個決定，而「一次讀取交回什麼」提案放進 FMS。
+
+還掉出一條可以重複使用的做法：**一個宣稱為假的對照組**。沒有一個「持久化宣稱為假」的媒介，「我寫了然後讀回來」證不了任何事。這跟昨天 CPython 的 `UNCHECKED_HASH`、今天的 `writeback=True` 是同一個判斷家族——**一個永遠不拒絕、或永遠不複製的模式，只要說出來就不是缺陷**；而 `.pyc` 把選擇寫進標頭讓任何東西讀得到，`shelve` 只寫在開檔那一行，**拿到 `d` 的人看不到**。
+
+**第一個會壞的是併發。** 範例 011 是一個行程、一個寫入者，兩個寫入者會弄壞它而它不會發現。九天後那是第一件要處理的事。
 
 ---
 

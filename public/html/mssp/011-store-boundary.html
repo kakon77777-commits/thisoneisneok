@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一次讀取之後，你手上拿的是什麼 | MSSP | Neo.K</title>
+<meta name="description" content="這個實驗室十一則範例，前十則沒有一則的狀態活得比行程久，而九天後就要轉向真實市場應用。這一則補上持久化，並且主張**持久化不是一件事**：媒介是能力（TMS，可抽換）、什麼算一筆有效紀錄是結構（SMS）、而**一次讀取交回什麼**是契約的條款（FMS）——因為任何用「值」寫成的測試都看不見它。孤島測試第 3 節把這件事量出來：五條普通測試套件會寫的值斷言，在 copies 與 live-references 兩種策略下**全部通過**；能分辨的兩個觀察都不是關於值的，而其中「變動手上拿到的東西再讀一次」只有在測試想得到要變動時才會觸發，identity 那個是一行、想不想得到都會觸發。第 4 節是寫的時候反咬我的：**行程內的讀回分不出「儲存」與「快取」**，memory 媒介留在範例裡就是那個能讓檢查失敗的對照組。live-references 不是稻草人——它就是 `shelve.Shelf(writeback=True)`，CPython 有出貨也有寫文件。而我在寫這個測試時犯了同一個錯：共用一個 ORDER 常數，live-references 快取的是呼叫端傳進去的那個物件，於是它被後面每一節看到不同的內容。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/011-store-boundary.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>011-store-boundary</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>011-store-boundary</span></div>
+    <div><b>語言</b><span>javascript</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-11</span></div>
+    <div><b>行數</b><span>497</span></div>
+    <div><b>執行</b><span><code>node src/main.mjs</code></span></div>
+  </section>
+  <article class="content"><h1>011 — What you are holding after a read</h1>
+<blockquote>
+<p><code>candidate</code>. The first example in this lab with state that outlives the process.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>It stores orders, refuses invalid ones, and then asks the question a store is
+usually silent about: <strong>what did the caller just get handed?</strong></p>
+<pre><code class="language-bash">node src/main.mjs             # write, read back, mutate what came out
+node src/main.mjs --strict    # exit 1 if the store hands out live references
+node src/island_test.mjs      # 21 checks across 6 sections
+</code></pre>
+<pre><code class="language-console">$ node src/main.mjs
+
+== writing
+    ok  ord-1001     written
+    ok  ord-1002     written
+    !!  ord-1003     total 9 does not match the 4 item(s) listed
+
+== what happens to a mutation made through what the store handed over
+    a later read of the same key       before [&quot;widget&quot;,&quot;gasket&quot;]
+                                       after  [&quot;widget&quot;,&quot;gasket&quot;]
+
+    store.get(k) !== store.get(k):  true
+    the contract says this store hands back: a fresh object on every read
+    so the mutation went into a copy and the medium never saw it
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>Persistence is not one thing.</strong> Splitting it is the whole example:</p>
+<table>
+<thead>
+<tr>
+<th>the part</th>
+<th>which set</th>
+<th>why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>the medium — files, memory, a database</td>
+<td><strong>TMS</strong></td>
+<td>a capability. Swap it and the system is still itself.</td>
+</tr>
+<tr>
+<td>what counts as a valid record</td>
+<td><strong>SMS</strong></td>
+<td>remove it and the store is a filesystem with extra steps</td>
+</tr>
+<tr>
+<td><strong>what a read hands back</strong></td>
+<td><strong>FMS</strong></td>
+<td>it is a term of the contract, because no test written in terms of values can see it</td>
+</tr>
+</tbody></table>
+<p>The third row is the one that is usually nowhere. A store either copies or it
+does not, and the caller finds out by being wrong.</p>
+<h2>Why now</h2>
+<p>Ten examples in, <strong>not one of them had state that outlived the process.</strong> The
+roadmap turns to real market applications at 20/20 — e-commerce, reporting —
+and every mechanism in this lab currently assumes a single program under <code>src/</code>
+with no UI and no persistence. Metron and Pragma both published predictions on
+<code>mssp-board</code> about how that breaks. This is the first entry that goes and looks
+rather than predicting.</p>
+<h2>The island test</h2>
+<p><strong>Section 3 is what the example exists for.</strong> Five value assertions — the ones
+an ordinary suite writes about a store — run under both handout strategies:</p>
+<pre><code class="language-text">  PASS  all 5 value assertions pass under copies
+  PASS  all 5 pass under live-references too - which is the finding: they cannot tell the two apart
+  PASS  identity separates them - copies=true, live-references=false
+  PASS  so does mutating what you were handed and reading again - 1 item(s) vs 2
+</code></pre>
+<p>Two observations separate the strategies and <strong>neither is about values</strong>. The
+mutation one only fires if the test knew to mutate. The identity one is a single
+line and fires whether anyone thought of it or not.</p>
+<p><strong>Section 4 is the one that caught me while writing it.</strong></p>
+<pre><code class="language-text">  PASS  in this process, both media read the record back - and one of them stores nothing at all
+  PASS  a separate process finds the json-dir record - 1 record(s)
+  PASS  and finds nothing the memory medium &#39;stored&#39; - 0 record(s)
+  PASS  the two media disagree only once a second process asks - the in-process check above passed for both
+</code></pre>
+<p>An in-process read cannot distinguish <strong>a store</strong> from <strong>a cache</strong>. The memory
+medium is in the example as the control that makes that check able to fail —
+without a medium whose persistence claim is <em>false</em>, &quot;I wrote it and read it
+back&quot; proves nothing at all.</p>
+<p>Section 2 drills the same way: the two media agreeing is only evidence because a
+medium that drops writes makes the comparison fail.</p>
+<h2>live-references is not a straw man</h2>
+<p><code>shelve.Shelf(writeback=True)</code> is exactly this strategy, and CPython ships it,
+documents it, and defaults away from it. Measured in
+<a href="/html/mssp/archaeology/011-cpython-shelve.html">archaeology 011</a> the same day:</p>
+<table>
+<thead>
+<tr>
+<th><code>writeback</code></th>
+<th><code>d[k].append(x)</code> survives</th>
+<th><code>d[k] is d[k]</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>False</code> (default)</td>
+<td><strong>lost</strong></td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>True</code></td>
+<td>kept</td>
+<td><code>True</code></td>
+</tr>
+</tbody></table>
+<p>Same API, same call, opposite semantics, and the observable that separates them
+is object identity — which no caller checks.</p>
+<h2>The mistake I made writing the test</h2>
+<p>The island test originally held one shared <code>ORDER</code> literal. Under
+<code>live-references</code> the store caches <strong>the object the caller passed in</strong>, so
+mutating what came back mutated the literal, and every section after it silently
+received a different record.</p>
+<p>It is now a factory rather than a constant, with the reason in a comment. The
+hazard the example is about, met while writing the test for it.</p>
+<h2>What this example does not solve</h2>
+<p><strong>Measurable, not measured.</strong> What copying costs on a record large enough to
+care, and how often callers really mutate what a store handed them.</p>
+<p><strong>Not measurable here.</strong> Whether copies are the right default. A store that
+hands out live references is a correct design when its callers know — the defect
+is being silent about which one you are, which is why the strategy is named in
+FMS rather than chosen in SMS.</p>
+<p><strong>And concurrency, at all.</strong> One process, one writer. Two writers would break
+this store and nothing here would notice. That is a limitation of the example,
+not a finding about stores — and it is the first thing that will have to change
+when this meets a real application.</p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;011-store-boundary&quot;,
+  &quot;what_it_is&quot;: &quot;A record store with the boundary made explicit: which set owns the medium, which owns what a valid record is, and what the caller is holding after a read.&quot;,
+  &quot;the_structural_decision&quot;: &quot;Persistence is not one thing. The medium is a capability (TMS, swappable). What counts as a valid record is structural (SMS). And what a read hands back — a copy or a live reference — is a term of the contract (FMS), because it is the one thing no value-based test can see.&quot;,
+  &quot;why_now&quot;: &quot;Ten examples in, not one of them has state that outlives the process. Neo's roadmap turns to real market applications at 20/20 — e-commerce, reporting — and every mechanism in this lab currently assumes a single program under src/ with no UI and no persistence. Both Metron and Pragma published predictions on mssp-board about how that breaks. This is the first entry that goes and looks.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+
+  &quot;media&quot;: {
+    &quot;memory&quot;: {&quot;persists_across_processes&quot;: false, &quot;note&quot;: &quot;a control, so that section 4 has a case whose persistence claim is false&quot;},
+    &quot;json-dir&quot;: {&quot;persists_across_processes&quot;: true, &quot;note&quot;: &quot;one file per record&quot;}
+  },
+
+  &quot;handouts&quot;: {
+    &quot;copies&quot;: {
+      &quot;hands_back&quot;: &quot;a fresh object on every read&quot;,
+      &quot;consequence&quot;: &quot;a mutation through what you were handed is invisible to the store and to every later reader&quot;
+    },
+    &quot;live-references&quot;: {
+      &quot;hands_back&quot;: &quot;the same object every read, cached in this process&quot;,
+      &quot;consequence&quot;: &quot;a mutation through what you were handed is visible to later readers in this process and is never written to the medium&quot;,
+      &quot;not_a_straw_man&quot;: &quot;This is shelve.Shelf(writeback=True), which CPython ships, documents and defaults away from. Measured in archaeology 011 the same day: under the default, d[k].append(x) is silently lost; under writeback it survives, and 200 pure reads leave 200 entries cached.&quot;
+    }
+  },
+
+  &quot;the_observation_that_separates_them&quot;: &quot;store.get(k) !== store.get(k). Every assertion written in terms of VALUES passes under both strategies. Object identity is the only observable that differs, and no caller checks it.&quot;,
+
+  &quot;record&quot;: {
+    &quot;shape&quot;: {&quot;id&quot;: &quot;non-empty string&quot;, &quot;items&quot;: &quot;array of {sku: string, qty: positive integer}&quot;, &quot;total&quot;: &quot;must equal the sum of the quantities listed&quot;},
+    &quot;who_owns_it&quot;: &quot;SMS - a store that will accept anything is a filesystem with extra steps&quot;
+  },
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the media, the handout strategies and what each hands back, the record shape, and the observation that separates the strategies&quot;,
+    &quot;SCL&quot;: &quot;which medium and which handout this deployment uses, and whether a live reference is fatal&quot;,
+    &quot;SMS&quot;: &quot;what a valid record is, the read/write path, and the identity check&quot;,
+    &quot;TMS&quot;: &quot;one file per medium - each takes plain data and returns strings, and reaches no sibling set&quot;,
+    &quot;DMS&quot;: &quot;what was written, what was read back, and what nothing here is watching&quot;
+  },
+
+  &quot;non_goals&quot;: [
+    &quot;Being a database. Two media and a JSON round-trip.&quot;,
+    &quot;Concurrency. Nothing here is safe against two writers, and nothing here pretends to be - see what this example does not solve.&quot;,
+    &quot;Claiming copies are always right. A large record copied on every read is a real cost, and this example does not measure it.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;medium&quot;: &quot;json-dir&quot;,
+  &quot;handout&quot;: &quot;copies&quot;,
+  &quot;live_reference_is_fatal&quot;: true,
+  &quot;_note&quot;: &quot;island_test.mjs runs both handouts and both media regardless of what this says. A policy able to silence the comparison would make the comparison worthless.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.mjs</summary><pre><code>// Which medium and handout this deployment uses, and what it refuses to ship.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export const medium = () =&gt; config.medium;
+export const handout = () =&gt; config.handout;
+export const liveReferenceIsFatal = () =&gt; Boolean(config.live_reference_is_fatal);
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/store.mjs</summary><pre><code>// The store: what a valid record is, and what the caller gets back.
+//
+// The medium is injected. The handout strategy is resolved by id, because 008
+// cost a day to the difference between an id that is looked up and an id that
+// decides what runs.
+
+export function validate(record) {
+  const problems = [];
+  if (typeof record?.id !== &quot;string&quot; || !record.id) problems.push(&quot;id must be a non-empty string&quot;);
+  if (!Array.isArray(record?.items)) problems.push(&quot;items must be an array&quot;);
+  else {
+    for (const [index, item] of record.items.entries()) {
+      if (typeof item?.sku !== &quot;string&quot;) problems.push(`items[${index}].sku must be a string`);
+      if (!Number.isInteger(item?.qty) || item.qty &lt; 1) problems.push(`items[${index}].qty must be a positive integer`);
+    }
+    const counted = record.items.reduce((sum, item) =&gt; sum + (item?.qty ?? 0), 0);
+    if (record.total !== counted) problems.push(`total ${record.total} does not match the ${counted} item(s) listed`);
+  }
+  return problems;
+}
+
+// Two ways to answer a read. Both satisfy every assertion about VALUES.
+const HANDOUTS = {
+  // Deserialise on every read. What the caller gets is theirs; mutating it
+  // mutates a copy, and the store never sees it.
+  copies: {
+    hands_back: &quot;a fresh object on every read&quot;,
+    make() {
+      return {
+        remember() {},
+        answer: (serialised) =&gt; JSON.parse(serialised),
+      };
+    },
+  },
+  // Deserialise once and hand the same object back forever. Mutations through
+  // it are visible to later readers in this process and are never written.
+  // This is not a straw man: it is shelve.Shelf with writeback=True, which is
+  // an option CPython ships and documents.
+  &quot;live-references&quot;: {
+    hands_back: &quot;the same object every read, cached in this process&quot;,
+    make() {
+      const cache = new Map();
+      return {
+        // shelve.Shelf.__setitem__ does exactly this when writeback is on: the
+        // object the CALLER passed in becomes the cached one, so the store and
+        // the caller now share it.
+        remember(key, value) { cache.set(key, value); },
+        answer(serialised, key) {
+          if (cache.has(key)) return cache.get(key);
+          const value = JSON.parse(serialised);
+          cache.set(key, value);
+          return value;
+        },
+      };
+    },
+  },
+};
+
+export function resolveHandout(name) {
+  const strategy = HANDOUTS[name];
+  if (!strategy) {
+    return { problem: `handout &quot;${name}&quot; has no implementation - fail closed (known: ${Object.keys(HANDOUTS).sort().join(&quot;, &quot;)})` };
+  }
+  return { strategy };
+}
+
+export function openStore({ medium, handout }) {
+  const { strategy, problem } = resolveHandout(handout);
+  if (problem) return { problem };
+
+  const policy = strategy.make();
+  const store = {
+    handout,
+    put(record) {
+      const problems = validate(record);
+      if (problems.length) return { written: false, problems };
+      medium.write(record.id, JSON.stringify(record));
+      policy.remember(record.id, record);
+      return { written: true, problems: [] };
+    },
+    get(key) {
+      const serialised = medium.read(key);
+      if (serialised === null) return null;
+      return policy.answer(serialised, key);
+    },
+    keys: () =&gt; medium.keys(),
+  };
+  return { store };
+}
+
+// The observation that separates the two strategies, and the only one that can.
+// Every check written in terms of values passes under both.
+export function handsOutCopies(store, key) {
+  const first = store.get(key);
+  const second = store.get(key);
+  return first !== second;
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/media/json_dir.mjs</summary><pre><code>// A medium that is one file per record on disk.
+//
+// It imports node:fs, which is the whole point of it - the island rule this
+// lab enforces is that a TMS unit must not reach a SIBLING TMS, not that it
+// must be import-free. A medium with no way to touch its medium is not one.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+
+export const MEDIUM = &quot;json-dir&quot;;
+export const PERSISTS_ACROSS_PROCESSES = true;
+
+const fileFor = (dir, key) =&gt; path.join(dir, `${encodeURIComponent(key)}.json`);
+
+export function make({ dir }) {
+  fs.mkdirSync(dir, { recursive: true });
+  return {
+    read: (key) =&gt; {
+      const file = fileFor(dir, key);
+      return fs.existsSync(file) ? fs.readFileSync(file, &quot;utf8&quot;) : null;
+    },
+    write: (key, serialised) =&gt; { fs.writeFileSync(fileFor(dir, key), serialised, &quot;utf8&quot;); },
+    keys: () =&gt; fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.json&quot;))
+      .map((n) =&gt; decodeURIComponent(n.slice(0, -5))).sort(),
+  };
+}
+</code></pre></details><details><summary>TMS/media/memory.mjs</summary><pre><code>// A medium that keeps records in this process and nowhere else.
+//
+// It is here so the store can be tested without a filesystem, and so that
+// section 4 of the island test has something whose persistence claim is
+// FALSE - a control. A test that only ever runs against a medium that really
+// persists cannot tell &quot;written&quot; from &quot;still in memory&quot;.
+export const MEDIUM = &quot;memory&quot;;
+export const PERSISTS_ACROSS_PROCESSES = false;
+
+export function make() {
+  const cells = new Map();
+  return {
+    read: (key) =&gt; (cells.has(key) ? cells.get(key) : null),
+    write: (key, serialised) =&gt; { cells.set(key, serialised); },
+    keys: () =&gt; [...cells.keys()].sort(),
+  };
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.mjs</summary><pre><code>// What was written, what came back, and what nothing here is watching.
+
+export function written(results, out) {
+  for (const { record, outcome } of results) {
+    const mark = outcome.written ? &quot;ok&quot; : &quot;!!&quot;;
+    out(`    ${mark}  ${record.id.padEnd(12)} ${outcome.written ? &quot;written&quot; : outcome.problems.join(&quot;; &quot;)}`);
+  }
+}
+
+export function readBack(store, keys, out) {
+  for (const key of keys) {
+    const record = store.get(key);
+    out(`    ${key.padEnd(12)} ${record ? `${record.items.length} item(s), total ${record.total}` : &quot;not found&quot;}`);
+  }
+}
+
+export function boundary(label, before, after, out) {
+  out(`    ${label.padEnd(34)} before ${JSON.stringify(before)}`);
+  out(`    ${&quot;&quot;.padEnd(34)} after  ${JSON.stringify(after)}`);
+}
+
+export function gaps(out) {
+  out(&quot;\n  measurable, not measured here:&quot;);
+  out(&quot;    - what copying costs on a record large enough to care&quot;);
+  out(&quot;    - how often callers actually mutate what a store handed them&quot;);
+  out(&quot;\n  not measurable by this program at all:&quot;);
+  out(&quot;    - whether copies are the right default for a given system. A cache that&quot;);
+  out(&quot;      hands out live references is a correct design when the callers know it;&quot;);
+  out(&quot;      what makes it a defect is being silent about which one you are.&quot;);
+  out(&quot;    - anything about concurrency. One process, one writer. Two writers would&quot;);
+  out(&quot;      break this store and nothing here would notice, which is a limitation&quot;);
+  out(&quot;      of the example rather than a finding about stores.&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.mjs</summary><pre><code>// The island test.
+//
+//   node src/island_test.mjs
+//
+// Section 3 is the one this example exists for: the assertions an ordinary
+// suite writes about a store pass under BOTH handout strategies. Section 4 is
+// the one that caught me while writing it - an in-process read cannot tell a
+// store from a cache, and the memory medium is here as the control that proves
+// the check can come out false.
+import { execFileSync } from &quot;node:child_process&quot;;
+import fs from &quot;node:fs&quot;;
+import os from &quot;node:os&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as store from &quot;./SMS/store.mjs&quot;;
+import * as jsonDir from &quot;./TMS/media/json_dir.mjs&quot;;
+import * as memory from &quot;./TMS/media/memory.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;contract.json&quot;), &quot;utf8&quot;));
+const MEDIA = { memory, &quot;json-dir&quot;: jsonDir };
+const failures = [];
+
+const check = (label, ok, detail = &quot;&quot;) =&gt; {
+  process.stdout.write(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}\n`);
+  if (!ok) failures.push(label);
+};
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+const tempDir = () =&gt; fs.mkdtempSync(path.join(os.tmpdir(), &quot;mssp-011-&quot;));
+// A factory, not a constant. A shared literal would be mutated by the
+// live-references section and quietly break every section after it - which
+// is the hazard this example is about, met while writing the test for it.
+const order = () =&gt; ({ id: &quot;ord-1&quot;, items: [{ sku: &quot;widget&quot;, qty: 2 }], total: 2 });
+
+function opened(mediumName, handout, dir) {
+  const medium = MEDIA[mediumName].make({ dir });
+  return store.openStore({ medium, handout }).store;
+}
+
+say(&quot;\n== 1. every medium is an island and declares what it is&quot;);
+const mediaDir = path.join(here, &quot;TMS&quot;, &quot;media&quot;);
+const files = fs.readdirSync(mediaDir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+check(&quot;there are two medium files&quot;, files.length === 2, files.join(&quot;, &quot;));
+for (const file of files) {
+  const source = fs.readFileSync(path.join(mediaDir, file), &quot;utf8&quot;);
+  const reaches = [...source.matchAll(/^\s*import[^&quot;']*[&quot;']([^&quot;']+)[&quot;']/gm)].map((m) =&gt; m[1]);
+  const siblings = reaches.filter((spec) =&gt; /\.\.\/|FMS|SCL|SMS|DMS/.test(spec));
+  check(`${file} reaches no sibling set`, siblings.length === 0,
+    reaches.join(&quot;, &quot;) || &quot;no imports at all&quot;);
+}
+for (const [name, module] of Object.entries(MEDIA)) {
+  check(`${name} declares MEDIUM and whether it survives the process`,
+    module.MEDIUM === name &amp;&amp; typeof module.PERSISTS_ACROSS_PROCESSES === &quot;boolean&quot;,
+    `persists=${module.PERSISTS_ACROSS_PROCESSES}`);
+}
+
+say(&quot;\n== 2. the medium is swappable, and an unknown one stops the run&quot;);
+const results = {};
+for (const name of Object.keys(MEDIA)) {
+  const orders = opened(name, &quot;copies&quot;, tempDir());
+  orders.put(order());
+  results[name] = JSON.stringify({ keys: orders.keys(), record: orders.get(&quot;ord-1&quot;) });
+}
+check(&quot;both media give the store identical observable results&quot;,
+  new Set(Object.values(results)).size === 1, `${Object.keys(results).join(&quot; vs &quot;)}`);
+// The drill: if that comparison cannot come out false, it proves nothing.
+const brokenMedium = { read: () =&gt; null, write: () =&gt; {}, keys: () =&gt; [] };
+const broken = store.openStore({ medium: brokenMedium, handout: &quot;copies&quot; }).store;
+broken.put(order());
+check(&quot;a medium that drops writes makes that comparison fail&quot;,
+  JSON.stringify({ keys: broken.keys(), record: broken.get(&quot;ord-1&quot;) }) !== results.memory,
+  &quot;so section 2 is a measurement, not a formality&quot;);
+check(&quot;an unknown handout id stops the run&quot;,
+  Boolean(store.openStore({ medium: memory.make({}), handout: &quot;live-refs&quot; }).problem),
+  store.openStore({ medium: memory.make({}), handout: &quot;live-refs&quot; }).problem);
+
+say(&quot;\n== 3. the value assertions an ordinary suite writes pass under BOTH strategies&quot;);
+const observed = {};
+for (const handout of [&quot;copies&quot;, &quot;live-references&quot;]) {
+  const orders = opened(&quot;memory&quot;, handout, tempDir());
+  orders.put(order());
+  const record = orders.get(&quot;ord-1&quot;);
+  observed[handout] = {
+    values: [
+      record.id === &quot;ord-1&quot;,
+      record.total === 2,
+      record.items.length === 1,
+      record.items[0].sku === &quot;widget&quot;,
+      JSON.stringify(orders.keys()) === '[&quot;ord-1&quot;]',
+    ],
+    identity: store.handsOutCopies(orders, &quot;ord-1&quot;),
+  };
+  // the second observation: mutate what you were handed, then read again
+  const handed = orders.get(&quot;ord-1&quot;);
+  handed.items.push({ sku: &quot;smuggled&quot;, qty: 99 });
+  observed[handout].afterMutation = orders.get(&quot;ord-1&quot;).items.length;
+}
+const valueChecks = observed.copies.values.length;
+check(`all ${valueChecks} value assertions pass under copies`,
+  observed.copies.values.every(Boolean));
+check(`all ${valueChecks} pass under live-references too`,
+  observed[&quot;live-references&quot;].values.every(Boolean),
+  &quot;which is the finding: they cannot tell the two apart&quot;);
+check(&quot;identity separates them&quot;,
+  observed.copies.identity !== observed[&quot;live-references&quot;].identity,
+  `copies=${observed.copies.identity}, live-references=${observed[&quot;live-references&quot;].identity}`);
+check(&quot;so does mutating what you were handed and reading again&quot;,
+  observed.copies.afterMutation !== observed[&quot;live-references&quot;].afterMutation,
+  `${observed.copies.afterMutation} item(s) vs ${observed[&quot;live-references&quot;].afterMutation}`);
+say(&quot;        Two observations separate them and neither is about values. The&quot;);
+say(&quot;        mutation one only fires if the test knew to mutate; the identity&quot;);
+say(&quot;        one is one line and fires whether anyone thought of it or not.&quot;);
+
+say(&quot;\n== 4. an in-process read cannot tell a store from a cache&quot;);
+const diskDir = tempDir();
+opened(&quot;json-dir&quot;, &quot;copies&quot;, diskDir).put(order());
+const memoryDir = tempDir();
+const inMemory = opened(&quot;memory&quot;, &quot;copies&quot;, memoryDir);
+inMemory.put(order());
+check(&quot;in this process, both media read the record back&quot;,
+  Boolean(opened(&quot;json-dir&quot;, &quot;copies&quot;, diskDir).get(&quot;ord-1&quot;)) &amp;&amp; Boolean(inMemory.get(&quot;ord-1&quot;)),
+  &quot;and one of them stores nothing at all&quot;);
+const dumpOf = (dir) =&gt; {
+  try {
+    return JSON.parse(execFileSync(process.execPath,
+      [path.join(here, &quot;main.mjs&quot;), &quot;--dump&quot;, dir], { encoding: &quot;utf8&quot; }));
+  } catch { return {}; }
+};
+const fromDisk = dumpOf(diskDir);
+const fromMemory = dumpOf(memoryDir);
+check(&quot;a separate process finds the json-dir record&quot;, Boolean(fromDisk[&quot;ord-1&quot;]),
+  `${Object.keys(fromDisk).length} record(s)`);
+check(&quot;and finds nothing the memory medium 'stored'&quot;, Object.keys(fromMemory).length === 0,
+  `${Object.keys(fromMemory).length} record(s)`);
+check(&quot;the two media disagree only once a second process asks&quot;,
+  Boolean(fromDisk[&quot;ord-1&quot;]) !== Boolean(fromMemory[&quot;ord-1&quot;]),
+  &quot;the in-process check above passed for both&quot;);
+
+say(&quot;\n== 5. fail closed&quot;);
+const unknown = store.openStore({ medium: memory.make({}), handout: &quot;whatever&quot; });
+check(&quot;an unresolvable handout returns a problem and no store&quot;,
+  Boolean(unknown.problem) &amp;&amp; unknown.store === undefined);
+const strict = opened(&quot;memory&quot;, &quot;copies&quot;, tempDir());
+for (const [label, record] of [
+  [&quot;a record with no id&quot;, { items: [], total: 0 }],
+  [&quot;a total that disagrees with the items&quot;, { id: &quot;x&quot;, items: [{ sku: &quot;a&quot;, qty: 2 }], total: 5 }],
+  [&quot;a fractional quantity&quot;, { id: &quot;x&quot;, items: [{ sku: &quot;a&quot;, qty: 1.5 }], total: 1.5 }],
+]) {
+  const outcome = strict.put(record);
+  check(`${label} is refused`, !outcome.written, outcome.problems[0]);
+}
+check(&quot;and nothing was written by any of them&quot;, strict.keys().length === 0,
+  `${strict.keys().length} key(s)`);
+
+say(&quot;\n== 6. what this example does not solve&quot;);
+say(&quot;        MEASURABLE, NOT MEASURED&quot;);
+say(&quot;          - what copying costs on a record large enough to care&quot;);
+say(&quot;          - how often callers really mutate what a store handed them&quot;);
+say(&quot;        NOT MEASURABLE HERE&quot;);
+say(&quot;          - whether copies are the right default. A store handing out live&quot;);
+say(&quot;            references is a correct design when its callers know; the defect&quot;);
+say(&quot;            is being silent about which one you are. FMS is where that goes.&quot;);
+say(&quot;          - concurrency. One process, one writer. Two writers would break&quot;);
+say(&quot;            this store and nothing here would notice.&quot;);
+
+say(failures.length ? `\n${failures.length} failure(s)` : &quot;\nall checks passed&quot;);
+for (const f of failures) say(`  - ${f}`);
+process.exit(failures.length ? 1 : 0);
+</code></pre></details><details><summary>main.mjs</summary><pre><code>// A store whose boundary is a term of the contract rather than a surprise.
+//
+//   node src/main.mjs              write, read back, and mutate what was handed over
+//   node src/main.mjs --strict     exit 1 if the store hands out live references
+//   node src/main.mjs --dump DIR   reopen a json-dir store and print it (used by the island test)
+import fs from &quot;node:fs&quot;;
+import os from &quot;node:os&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as report from &quot;./DMS/report.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as store from &quot;./SMS/store.mjs&quot;;
+import * as jsonDir from &quot;./TMS/media/json_dir.mjs&quot;;
+import * as memory from &quot;./TMS/media/memory.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;contract.json&quot;), &quot;utf8&quot;));
+const MEDIA = { memory, &quot;json-dir&quot;: jsonDir };
+
+export function resolveMedium(name, config) {
+  const module = MEDIA[name];
+  if (!module) {
+    return { problem: `medium &quot;${name}&quot; has no implementation - fail closed (known: ${Object.keys(MEDIA).sort().join(&quot;, &quot;)})` };
+  }
+  return { module, medium: module.make(config) };
+}
+
+const ORDERS = [
+  { id: &quot;ord-1001&quot;, items: [{ sku: &quot;widget&quot;, qty: 2 }, { sku: &quot;gasket&quot;, qty: 1 }], total: 3 },
+  { id: &quot;ord-1002&quot;, items: [{ sku: &quot;widget&quot;, qty: 1 }], total: 1 },
+  { id: &quot;ord-1003&quot;, items: [{ sku: &quot;widget&quot;, qty: 4 }], total: 9 },
+];
+
+function dump(dir) {
+  const { medium } = resolveMedium(&quot;json-dir&quot;, { dir });
+  const opened = store.openStore({ medium, handout: &quot;copies&quot; });
+  const out = {};
+  for (const key of opened.store.keys()) out[key] = opened.store.get(key);
+  process.stdout.write(JSON.stringify(out));
+  return 0;
+}
+
+function main(argv) {
+  const out = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+  const dumpAt = argv.indexOf(&quot;--dump&quot;);
+  if (dumpAt !== -1) return dump(argv[dumpAt + 1]);
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), &quot;mssp-011-&quot;));
+  const { module, medium, problem } = resolveMedium(policy.medium(), { dir });
+  if (problem) { out(`  !! ${problem}`); return 1; }
+
+  const opened = store.openStore({ medium, handout: policy.handout() });
+  if (opened.problem) { out(`  !! ${opened.problem}`); return 1; }
+  const { store: orders } = opened;
+
+  out(`\n== medium ${module.MEDIUM}, handout ${policy.handout()}`);
+  out(`   persists across processes: ${module.PERSISTS_ACROSS_PROCESSES}`);
+
+  out(&quot;\n== writing&quot;);
+  report.written(ORDERS.map((record) =&gt; ({ record, outcome: orders.put(record) })), out);
+
+  out(&quot;\n== reading back&quot;);
+  report.readBack(orders, orders.keys(), out);
+
+  out(&quot;\n== what happens to a mutation made through what the store handed over&quot;);
+  const handed = orders.get(&quot;ord-1001&quot;);
+  const before = handed.items.map((item) =&gt; item.sku);
+  handed.items.push({ sku: &quot;smuggled&quot;, qty: 99 });
+  const after = orders.get(&quot;ord-1001&quot;).items.map((item) =&gt; item.sku);
+  report.boundary(&quot;a later read of the same key&quot;, before, after, out);
+  const separate = store.handsOutCopies(orders, &quot;ord-1001&quot;);
+  out(`\n    store.get(k) !== store.get(k):  ${separate}`);
+  out(`    the contract says this store hands back: ${CONTRACT.handouts[policy.handout()].hands_back}`);
+  out(`    ${separate
+    ? &quot;so the mutation went into a copy and the medium never saw it&quot;
+    : &quot;so the mutation is visible to later readers here and was never written&quot;}`);
+
+  report.gaps(out);
+
+  if (argv.includes(&quot;--strict&quot;) &amp;&amp; !separate &amp;&amp; policy.liveReferenceIsFatal()) return 1;
+  return 0;
+}
+
+process.exitCode = main(process.argv.slice(2));
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

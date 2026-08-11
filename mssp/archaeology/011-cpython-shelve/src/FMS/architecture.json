@@ -1,0 +1,47 @@
+{
+  "name": "011-cpython-shelve",
+  "upstream": "CPython Lib/shelve.py",
+  "examined_version": "3.14.5",
+  "license": "PSF-2.0",
+  "what_it_is": "A dict-like object backed by a dbm file, whose single boolean flag decides whether a mutation through what it handed you means anything.",
+  "why_this_one": "Example 011 the same day is the first in this lab with state that outlives the process, because the roadmap turns to real market applications at 20/20 and nothing here has been tested against persistence. shelve is the standard library's smallest persistent mapping, it is thirty years old, and its one flag changes the meaning of every read.",
+  "declared_and_then_remeasured": {
+    "_note": "Re-measured by main.py against the running interpreter. A disagreement is a failure. A file of measurements nobody re-reads is a declaration compared to nothing.",
+    "shelve_py_lines": 250,
+    "getitem_lines": 9,
+    "setitem_lines": 7,
+    "writeback_default": false,
+    "public_classes": [
+      "BsdDbShelf",
+      "DbfilenameShelf",
+      "Shelf"
+    ],
+    "_correction": "setitem_lines was declared 5 and measured 7 on the first run. Recorded rather than quietly overwritten: this row is the only evidence in the entry that the re-measurement can come out false."
+  },
+  "the_flag": {
+    "name": "writeback",
+    "what_it_is_called": "writeback",
+    "what_it_actually_changes": [
+      "whether a read RETAINS the object it just unpickled",
+      "and therefore whether d[k] is d[k]",
+      "and therefore whether a mutation through what you were handed reaches the medium at sync",
+      "and therefore how much memory a session of pure reads costs"
+    ],
+    "the_gap": "The name describes the fourth consequence. The first is what causes all of them, and nothing in the API surfaces it."
+  },
+  "the_finding": "Two modes of one interface with opposite semantics for the same call. Under the default, d[k].append(x) is silently lost. Under writeback it survives. The observation that separates them is object identity - d[k] is d[k] - which no caller checks, and which costs one line.",
+  "the_second_finding": "writeback turns a READ into a retention. 200 pure reads with no writes at all leave 200 objects held. The cache grows with what you have looked at, not with what you have changed, and nothing in the flag's name says so.",
+  "sets": {
+    "FMS": "this file: the flag, what it really changes, and the numbers main.py re-measures",
+    "SCL": "which handout this deployment uses, and whether a declaration must be proved against behaviour",
+    "SMS": "the re-cut Shelf, resolution by name, the identity probe, and the upstream probes",
+    "TMS": "one file per handout strategy - each declares what it hands back and whether a mutation survives, and reaches no sibling set",
+    "DMS": "the two modes side by side, the comparison against real shelve, and what none of it can see"
+  },
+  "non_goals": [
+    "Saying writeback is a bug. It is off by default, documented, and correct for callers who want it.",
+    "Reimplementing dbm. The re-cut takes the same backing mapping shelve.Shelf takes.",
+    "Claiming the re-cut is better than upstream's arrangement. It is the same semantics with the strategy lifted out, which is worth exactly what the comparison against the real module says."
+  ],
+  "the_third_finding": "A read-only session under writeback rewrites the medium at close. Measured: open with writeback, read all 200 keys, write nothing, close - the store file changes. Under the default it does not. This row exists because the first version of that check was a hardcoded check(..., True, ...) asserting the read loop wrote nothing, which is the defect this lab filed against archaeology 008 on 2026-08-08. Measuring it disagreed with the assertion."
+}

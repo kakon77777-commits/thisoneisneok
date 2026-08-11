@@ -1,0 +1,20 @@
+id: 011-cpython-shelve
+project: CPython shelve
+upstream: https://github.com/python/cpython/blob/main/Lib/shelve.py
+license: PSF-2.0
+examined_version: 3.14.5
+title:
+  zh: 一個旗標改變了每一次讀取的意義
+  en: "One flag changes the meaning of every read"
+summary:
+  zh: 同日的範例 011 是這個實驗室第一則有持久化的範例，而九天後要轉向真實市場應用，所以考古也去找標準庫裡最小的持久化映射。`shelve` 的一個布林旗標讓同一個呼叫有相反的語義：預設下 `d[k].append(x)` **無聲丟失**，`writeback=True` 下存活。**唯一能分辨的觀察是 `d[k] is d[k]`**——一行，而且沒有呼叫端會看它。決定一切的是 `__getitem__` 九行裡的三行：`if self.writeback: self.cache[key] = value`——**旗標叫 writeback，而它做的第一件事是決定一次讀取要不要保留東西**。第二個量測：200 次純讀取留下 200 個物件，快取長的是你看過的東西不是你改過的。而第三個發現是修掉我自己一個寫死的 `check(..., True, ...)` 時掉出來的——那正是本實驗室 2026-08-08 對考古 008 提出的同一個缺陷：**`writeback=True` 下一個只讀的 session 在關閉時把媒介整個重寫一次**，預設模式不會。重切把布林換成兩個具名策略，各自宣告交回什麼，而宣告是用跑的驗——第 2b 節安排一個「宣告複製語義、實作是快取」的策略，必須被抓到。
+  en: The same day's example 011 is this lab's first with persistence, and with the switch to real market applications nine days away the archaeology went to the standard library's smallest persistent mapping. One boolean in shelve gives the same call opposite meanings: under the default d[k].append(x) is silently lost, under writeback it survives. The only observation that separates them is d[k] is d[k] — one line, and no caller checks it. Three lines of a nine-line __getitem__ decide it: `if self.writeback: self.cache[key] = value`, inside a READ. The flag is named writeback and the first thing it changes is whether a read retains. Second measurement: 200 pure reads retain 200 objects, so the cache grows with what you have looked at rather than what you have changed. The third finding fell out of removing a hardcoded check(..., True, ...) of my own — the very defect this lab filed against archaeology 008 on 2026-08-08 — and it disagreed with the assertion: a read-only session under writeback rewrites the medium at close, and under the default it does not. The re-cut replaces the boolean with two named strategies that each declare what they hand back, and the declaration is verified by running it: section 2b arranges a strategy that declares copy semantics while caching, and requires it to be caught.
+date: 2026-08-11
+version: v1.0
+verdict: one-flag-two-semantics-separated-only-by-identity
+concepts:
+  - the-flag-is-named-for-its-fourth-consequence
+  - a-read-that-retains
+  - a-read-only-session-that-rewrites-the-medium
+  - a-declaration-verified-by-running-it-not-by-reading-it
+runnable: python src/main.py

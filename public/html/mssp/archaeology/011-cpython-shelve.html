@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一個旗標改變了每一次讀取的意義 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="同日的範例 011 是這個實驗室第一則有持久化的範例，而九天後要轉向真實市場應用，所以考古也去找標準庫裡最小的持久化映射。`shelve` 的一個布林旗標讓同一個呼叫有相反的語義：預設下 `d[k].append(x)` **無聲丟失**，`writeback=True` 下存活。**唯一能分辨的觀察是 `d[k] is d[k]`**——一行，而且沒有呼叫端會看它。決定一切的是 `__getitem__` 九行裡的三行：`if self.writeback: self.cache[key] = value`——**旗標叫 writeback，而它做的第一件事是決定一次讀取要不要保留東西**。第二個量測：200 次純讀取留下 200 個物件，快取長的是你看過的東西不是你改過的。而第三個發現是修掉我自己一個寫死的 `check(..., True, ...)` 時掉出來的——那正是本實驗室 2026-08-08 對考古 008 提出的同一個缺陷：**`writeback=True` 下一個只讀的 session 在關閉時把媒介整個重寫一次**，預設模式不會。重切把布林換成兩個具名策略，各自宣告交回什麼，而宣告是用跑的驗——第 2b 節安排一個「宣告複製語義、實作是快取」的策略，必須被抓到。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/011-cpython-shelve.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>011-cpython-shelve</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython shelve</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>3.14.5</span></div>
+    <div><b>日期</b><span>2026-08-11</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/blob/main/Lib/shelve.py">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>011 — CPython <code>shelve</code> 3.14.5：一個旗標改變了每一次讀取的意義</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/python/cpython/blob/main/Lib/shelve.py">CPython <code>Lib/shelve.py</code></a>，PSF-2.0。本篇考察 3.14.5，250 行。
+所有數字都是在這台機器上對這個直譯器量出來的。</p>
+</blockquote>
+<pre><code class="language-bash">python src/main.py            # 兩種模式、快取成長，以及重切與真 shelve 的逐格比對
+python src/main.py --strict   # 重切跟真 shelve 不一致就 exit 1
+python src/island_test.py     # 19 項檢查，其中 9 項直接跑 CPython 本體
+</code></pre>
+<h2>為什麼選它</h2>
+<p>同日的<a href="/html/mssp/011-store-boundary.html">範例 011</a> 是這個實驗室<strong>第一則有狀態活得比行程久</strong>的範例。九天後路線轉向真實市場應用——電商、報表——而目前每一個機制都假設 <code>src/</code> 底下一支沒有 UI、沒有持久化的程式。</p>
+<p><code>shelve</code> 是標準庫裡最小的持久化映射，三十年歷史，而<strong>它的一個旗標會改變每一次讀取的意義</strong>。</p>
+<pre><code class="language-text">  writeback    d[k].append(x) survives    d[k] is d[k]   objects held
+  False        [&#39;apple&#39;]                  False          0
+  True         [&#39;apple&#39;, &#39;pear&#39;]          True           1
+</code></pre>
+<p>同一個 API、同一個呼叫、相反的語義。<strong>唯一能分辨的觀察是 <code>d[k] is d[k]</code></strong>——一行，而且沒有任何呼叫端會去看它。</p>
+<h2>原專案的結構地圖</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>shelve.py</code></td>
+<td><strong>250 行</strong></td>
+</tr>
+<tr>
+<td><code>Shelf.__getitem__</code></td>
+<td>9 行</td>
+</tr>
+<tr>
+<td><code>Shelf.__setitem__</code></td>
+<td>7 行</td>
+</tr>
+<tr>
+<td>公開類別</td>
+<td><code>Shelf</code>、<code>BsdDbShelf</code>、<code>DbfilenameShelf</code></td>
+</tr>
+<tr>
+<td><code>writeback</code> 預設</td>
+<td><strong>False</strong></td>
+</tr>
+</tbody></table>
+<p>上面五個數字由 <code>main.py</code> 對正在跑的直譯器重新量一次再跟 FMS 比對。<strong>第一次跑就抓到一個</strong>：我把 <code>__setitem__</code> 宣告成 5 行，量到 7。那一列現在留著更正註記，因為它是整篇裡唯一能證明「重量測會失敗」的證據。</p>
+<p>決定一切的是 9 行裡的 3 行：</p>
+<pre><code class="language-python">def __getitem__(self, key):
+    try:
+        value = self.cache[key]
+    except KeyError:
+        f = BytesIO(self.dict[key.encode(self.keyencoding)])
+        value = Unpickler(f).load()
+        if self.writeback:
+            self.cache[key] = value
+    return value
+</code></pre>
+<p><strong><code>if self.writeback: self.cache[key] = value</code> 在一次讀取裡。</strong> 旗標叫做 writeback，而它做的第一件事是決定一次讀取要不要把東西留下來。</p>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>旗標、它實際改變的四件事，以及 <code>main.py</code> 會重新量的五個數字</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署用哪一種交付策略，以及宣告是否必須被行為證明</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>重切的 <code>Shelf</code>、依名字解析、identity 探針，以及跑真 shelve 的探針</td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>一種策略一個檔——各自宣告交回什麼、變動會不會存活，且不取用任何兄弟集合</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td>兩種模式並排、與真 shelve 的比對，以及看不到的部分</td>
+</tr>
+</tbody></table>
+<p>唯一的結構改動是把布林旗標換成兩個具名單元，各自<strong>宣告自己交回什麼</strong>——而那份宣告是用跑的驗，不是用讀的：</p>
+<pre><code class="language-text">  PASS  cached-reference: declared mutation_survives=True, measured True
+  PASS  copy-on-read: declared mutation_survives=False, measured False
+  PASS  a handout declaring copy semantics while caching is caught - declared False, measured True
+</code></pre>
+<p>第三列是鑽孔：一個宣告自己是複製語義、實作卻是快取的策略必須被抓到。沒有那一列，前兩列只是兩份互相同意的宣告——<a href="/html/mssp/discussions/mssp-d-003.html"><code>mssp-d-003</code></a> 整串在講的形狀。</p>
+<p>重切與真 shelve 每次執行都逐格比對，而第 3b 節故意用錯策略去證明那個比對會失敗：</p>
+<pre><code class="language-text">  PASS  all 4 cells agree - 4/4
+  PASS  using the wrong strategy for writeback=False breaks cells - so section 3 is a measurement, not a formality
+</code></pre>
+<h2>什麼不適合拆</h2>
+<p><strong><code>writeback=True</code> 本身不是缺陷，不要修掉它。</strong> 它預設關閉、有寫文件，而且對知道自己在做什麼的呼叫端是對的——你要就地變動大結構時，它省掉一整輪讀出、改、寫回。</p>
+<p>這跟昨天<a href="/html/mssp/archaeology/010-cpython-pyc-invalidation.html">考古 010</a> 的 <code>UNCHECKED_HASH</code> 是同一個判斷：<strong>一個永遠不拒絕、或永遠不複製的模式，只要它把這件事說出來，就不是缺陷。</strong> 兩則的差別在說出來的方式——CPython 把 <code>.pyc</code> 的選擇寫進標頭的 flag bits，任何東西都讀得到；<code>shelve</code> 的選擇只存在於<strong>開檔那一行的呼叫端</strong>，而拿到 <code>d</code> 的人看不到它。</p>
+<p><strong>pickle 的來回也不適合拆掉。</strong> 它就是「複製」之所以可能的原因。</p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>第三個發現是在修掉我自己一個寫死的檢查時掉出來的。</strong></p>
+<p>第 4 節原本有一行 <code>check(&quot;and nothing was written during them&quot;, True, ...)</code>——一個斷言「這個讀取迴圈沒有寫任何東西」。那正是這個實驗室 2026-08-08 對<a href="/html/mssp/archaeology/008-cpython-logging-warn.html">考古 008</a> 自己提出的缺陷：<strong>在量測漂移的那一節裡寫死 <code>True</code>。</strong></p>
+<p>改成真的量它，答案跟我的斷言不一樣：</p>
+<pre><code class="language-text">  PASS  a READ-ONLY session under writeback rewrites the medium at close - 1 of 1 files changed: store
+  PASS  the same read-only session under the default does not - 1 of 1 files unchanged
+  PASS  so the two differ, which is what makes either mean anything
+</code></pre>
+<p><strong><code>writeback=True</code> 下，一個只讀不寫的 session 在關閉時會把媒介整個重寫一次。</strong> 200 次純讀取留下 200 個物件，然後 <code>close()</code> 把它們全部寫回去。旗標的名字描述的是第四層後果，而第一層是「一次讀取會保留」。</p>
+<p><strong>量得到但這次沒量：</strong> 真實程式碼多常變動 shelf 交回來的東西；那些被保留的物件在一個 session 大小的工作量上實際佔多少。</p>
+<p><strong>這一則量不到：</strong> 預設是不是錯的——它是關的、有文件，而打開它要花的記憶體多數呼叫端不想付。以及野外的發生率——<strong>重現一次無聲的遺失，跟這件事多常發生，是兩回事。</strong></p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;011-cpython-shelve&quot;,
+  &quot;upstream&quot;: &quot;CPython Lib/shelve.py&quot;,
+  &quot;examined_version&quot;: &quot;3.14.5&quot;,
+  &quot;license&quot;: &quot;PSF-2.0&quot;,
+  &quot;what_it_is&quot;: &quot;A dict-like object backed by a dbm file, whose single boolean flag decides whether a mutation through what it handed you means anything.&quot;,
+  &quot;why_this_one&quot;: &quot;Example 011 the same day is the first in this lab with state that outlives the process, because the roadmap turns to real market applications at 20/20 and nothing here has been tested against persistence. shelve is the standard library's smallest persistent mapping, it is thirty years old, and its one flag changes the meaning of every read.&quot;,
+  &quot;declared_and_then_remeasured&quot;: {
+    &quot;_note&quot;: &quot;Re-measured by main.py against the running interpreter. A disagreement is a failure. A file of measurements nobody re-reads is a declaration compared to nothing.&quot;,
+    &quot;shelve_py_lines&quot;: 250,
+    &quot;getitem_lines&quot;: 9,
+    &quot;setitem_lines&quot;: 7,
+    &quot;writeback_default&quot;: false,
+    &quot;public_classes&quot;: [
+      &quot;BsdDbShelf&quot;,
+      &quot;DbfilenameShelf&quot;,
+      &quot;Shelf&quot;
+    ],
+    &quot;_correction&quot;: &quot;setitem_lines was declared 5 and measured 7 on the first run. Recorded rather than quietly overwritten: this row is the only evidence in the entry that the re-measurement can come out false.&quot;
+  },
+  &quot;the_flag&quot;: {
+    &quot;name&quot;: &quot;writeback&quot;,
+    &quot;what_it_is_called&quot;: &quot;writeback&quot;,
+    &quot;what_it_actually_changes&quot;: [
+      &quot;whether a read RETAINS the object it just unpickled&quot;,
+      &quot;and therefore whether d[k] is d[k]&quot;,
+      &quot;and therefore whether a mutation through what you were handed reaches the medium at sync&quot;,
+      &quot;and therefore how much memory a session of pure reads costs&quot;
+    ],
+    &quot;the_gap&quot;: &quot;The name describes the fourth consequence. The first is what causes all of them, and nothing in the API surfaces it.&quot;
+  },
+  &quot;the_finding&quot;: &quot;Two modes of one interface with opposite semantics for the same call. Under the default, d[k].append(x) is silently lost. Under writeback it survives. The observation that separates them is object identity - d[k] is d[k] - which no caller checks, and which costs one line.&quot;,
+  &quot;the_second_finding&quot;: &quot;writeback turns a READ into a retention. 200 pure reads with no writes at all leave 200 objects held. The cache grows with what you have looked at, not with what you have changed, and nothing in the flag's name says so.&quot;,
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the flag, what it really changes, and the numbers main.py re-measures&quot;,
+    &quot;SCL&quot;: &quot;which handout this deployment uses, and whether a declaration must be proved against behaviour&quot;,
+    &quot;SMS&quot;: &quot;the re-cut Shelf, resolution by name, the identity probe, and the upstream probes&quot;,
+    &quot;TMS&quot;: &quot;one file per handout strategy - each declares what it hands back and whether a mutation survives, and reaches no sibling set&quot;,
+    &quot;DMS&quot;: &quot;the two modes side by side, the comparison against real shelve, and what none of it can see&quot;
+  },
+  &quot;non_goals&quot;: [
+    &quot;Saying writeback is a bug. It is off by default, documented, and correct for callers who want it.&quot;,
+    &quot;Reimplementing dbm. The re-cut takes the same backing mapping shelve.Shelf takes.&quot;,
+    &quot;Claiming the re-cut is better than upstream's arrangement. It is the same semantics with the strategy lifted out, which is worth exactly what the comparison against the real module says.&quot;
+  ],
+  &quot;the_third_finding&quot;: &quot;A read-only session under writeback rewrites the medium at close. Measured: open with writeback, read all 200 keys, write nothing, close - the store file changes. Under the default it does not. This row exists because the first version of that check was a hardcoded check(..., True, ...) asserting the read loop wrote nothing, which is the defect this lab filed against archaeology 008 on 2026-08-08. Measuring it disagreed with the assertion.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;handout&quot;: &quot;copy-on-read&quot;,
+  &quot;declaration_must_match_behaviour&quot;: true,
+  &quot;recut_must_match_upstream&quot;: true,
+  &quot;_note&quot;: &quot;main.py runs both handouts regardless of what this says. A policy able to silence the comparison would make the comparison worthless.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Which handout this deployment uses, and what it refuses to let pass.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+handout = lambda: _C[&quot;handout&quot;]                                                  # noqa: E731
+declaration_must_match_behaviour = lambda: bool(_C[&quot;declaration_must_match_behaviour&quot;])  # noqa: E731
+recut_must_match_upstream = lambda: bool(_C[&quot;recut_must_match_upstream&quot;])        # noqa: E731
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/shelf.py</summary><pre><code>&quot;&quot;&quot;The re-cut: a shelf whose handout strategy is a named unit rather than a flag.
+
+Upstream the choice is a boolean threaded through `__getitem__`, `__setitem__`
+and `sync`. Lifting it out is the only structural change; the semantics are
+copied, and DMS compares the re-cut against real `shelve` on every run so that
+&quot;copied&quot; is a measurement rather than a claim.
+&quot;&quot;&quot;
+import importlib
+import pickle
+
+HANDOUTS = [&quot;copy_on_read&quot;, &quot;cached_reference&quot;]
+
+
+def load_handouts():
+    loaded, problems = {}, []
+    for module_name in HANDOUTS:
+        try:
+            module = importlib.import_module(f&quot;TMS.handouts.{module_name}&quot;)
+        except ModuleNotFoundError:
+            problems.append(f'handout &quot;{module_name}&quot; has no module - fail closed')
+            continue
+        for attribute in (&quot;NAME&quot;, &quot;HANDS_BACK&quot;, &quot;MUTATION_SURVIVES&quot;, &quot;make&quot;):
+            if not hasattr(module, attribute):
+                problems.append(f&quot;{module_name} does not declare {attribute}&quot;)
+        loaded[module.NAME] = module
+    return loaded, problems
+
+
+def resolve(name, loaded):
+    module = loaded.get(name)
+    if module is None:
+        known = &quot;, &quot;.join(sorted(loaded))
+        return None, f'handout &quot;{name}&quot; has no implementation - fail closed (known: {known})'
+    return module, None
+
+
+class Shelf:
+    &quot;&quot;&quot;Same backing mapping shelve.Shelf takes: keys to pickled bytes.&quot;&quot;&quot;
+
+    def __init__(self, backing, handout):
+        self.backing = backing
+        self.handout_name = handout.NAME
+        self.policy = handout.make(pickle.loads)
+
+    def __setitem__(self, key, value):
+        self.backing[key.encode()] = pickle.dumps(value)
+        self.policy[&quot;remember&quot;](key, value)
+
+    def __getitem__(self, key):
+        return self.policy[&quot;answer&quot;](key, self.backing[key.encode()])
+
+    def sync(self):
+        # Upstream writes the cache back here. The re-cut does the same, and
+        # this is the line that makes a mutation through a handed-out object
+        # reach the medium at all.
+        for key, value in self.policy[&quot;items&quot;]():
+            self.backing[key.encode()] = pickle.dumps(value)
+
+    def held(self):
+        return self.policy[&quot;held&quot;]()
+
+    def keys(self):
+        return sorted(k.decode() for k in self.backing)
+
+
+def hands_back_copies(shelf, key):
+    &quot;&quot;&quot;The observation that separates the strategies, and the only cheap one.&quot;&quot;&quot;
+    return shelf[key] is not shelf[key]
+
+
+def mutation_survives(shelf, key, mutate):
+    &quot;&quot;&quot;The other one. It only fires if the caller thought to mutate.&quot;&quot;&quot;
+    mutate(shelf[key])
+    return shelf[key]
+</code></pre></details><details><summary>SMS/upstream.py</summary><pre><code>&quot;&quot;&quot;What real shelve does, measured — not what its documentation says it does.
+
+The re-cut in shelf.py is compared against these results cell by cell, so
+&quot;the re-cut copies upstream's semantics&quot; is a measurement that can come out
+false.
+&quot;&quot;&quot;
+import hashlib
+import inspect
+import os
+import shelve
+import tempfile
+
+
+def _store():
+    return os.path.join(tempfile.mkdtemp(), &quot;store&quot;)
+
+
+def probe(writeback):
+    &quot;&quot;&quot;Write, mutate through what a read handed back, reopen, see what survived.&quot;&quot;&quot;
+    path = _store()
+    with shelve.open(path, writeback=writeback) as shelf:
+        shelf[&quot;cart&quot;] = [&quot;apple&quot;]
+
+    with shelve.open(path, writeback=writeback) as shelf:
+        shelf[&quot;cart&quot;].append(&quot;pear&quot;)
+        identity_separates = shelf[&quot;cart&quot;] is not shelf[&quot;cart&quot;]
+        held = len(getattr(shelf, &quot;cache&quot;, {}))
+
+    with shelve.open(path) as shelf:
+        survived = list(shelf[&quot;cart&quot;])
+
+    return {
+        &quot;survived&quot;: survived,
+        &quot;mutation_survives&quot;: survived == [&quot;apple&quot;, &quot;pear&quot;],
+        &quot;identity_separates&quot;: identity_separates,
+        &quot;held&quot;: held,
+    }
+
+
+def cache_after_pure_reads(count):
+    &quot;&quot;&quot;Reads only. Nothing is written, and the cache grows anyway.&quot;&quot;&quot;
+    path = _store()
+    with shelve.open(path, writeback=True) as shelf:
+        for index in range(count):
+            shelf[f&quot;k{index}&quot;] = [index]
+    with shelve.open(path, writeback=True) as shelf:
+        marks = {}
+        for index in range(count):
+            shelf[f&quot;k{index}&quot;]
+            if index + 1 in (1, count // 4, count):
+                marks[index + 1] = len(shelf.cache)
+    return marks
+
+
+def reads_cause_writes(count, writeback):
+    &quot;&quot;&quot;Open, read every key, close. Did the medium change?
+
+    This replaces a hardcoded `check(..., True, ...)` that asserted the read
+    loop wrote nothing. Asserting it was the same defect this lab filed against
+    itself on 2026-08-08, and measuring it gives a different answer.
+    &quot;&quot;&quot;
+    directory = tempfile.mkdtemp()
+    path = os.path.join(directory, &quot;store&quot;)
+    with shelve.open(path, writeback=True) as shelf:
+        for index in range(count):
+            shelf[f&quot;k{index}&quot;] = [index]
+
+    def fingerprint():
+        return {name: hashlib.sha256(
+            open(os.path.join(directory, name), &quot;rb&quot;).read()).hexdigest()[:12]
+            for name in sorted(os.listdir(directory))}
+
+    before = fingerprint()
+    with shelve.open(path, writeback=writeback) as shelf:
+        for index in range(count):
+            shelf[f&quot;k{index}&quot;]
+    after = fingerprint()
+
+    changed = sorted(name for name in before if before.get(name) != after.get(name))
+    return {&quot;files&quot;: len(before), &quot;changed&quot;: changed, &quot;unchanged&quot;: len(before) - len(changed)}
+
+
+def returns_nothing_discriminating():
+    &quot;&quot;&quot;The BP-0004 family: which operations answer the same thing however they went.&quot;&quot;&quot;
+    path = _store()
+    with shelve.open(path) as shelf:
+        return {
+            &quot;__setitem__ (wrote)&quot;: shelf.__setitem__(&quot;a&quot;, [1]),
+            &quot;sync() (nothing cached)&quot;: shelf.sync(),
+            &quot;get('missing')&quot;: shelf.get(&quot;missing&quot;),
+            &quot;get('a') is a live ref&quot;: shelf.get(&quot;a&quot;) is shelf.get(&quot;a&quot;),
+        }
+
+
+def structure():
+    source = inspect.getsource(shelve)
+    return {
+        &quot;shelve_py_lines&quot;: len(source.splitlines()),
+        &quot;getitem_lines&quot;: len(inspect.getsource(shelve.Shelf.__getitem__).splitlines()),
+        &quot;setitem_lines&quot;: len(inspect.getsource(shelve.Shelf.__setitem__).splitlines()),
+        &quot;writeback_default&quot;: inspect.signature(shelve.open).parameters[&quot;writeback&quot;].default,
+        &quot;public_classes&quot;: sorted(
+            name for name, value in vars(shelve).items()
+            if isinstance(value, type) and not name.startswith(&quot;_&quot;)
+            and value.__module__ == &quot;shelve&quot;),
+    }
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/handouts/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/handouts/cached_reference.py</summary><pre><code>&quot;&quot;&quot;Unpickle once, then hand the same object back forever.
+
+Upstream this is `writeback=True`. Two things follow that the flag's name does
+not say: a mutation through what you were handed is visible to later readers
+and is written out at sync; and a pure READ retains the object, so the cache
+grows with what you have looked at rather than with what you have changed.
+&quot;&quot;&quot;
+NAME = &quot;cached-reference&quot;
+HANDS_BACK = &quot;the same object every read, retained in this process&quot;
+MUTATION_SURVIVES = True
+
+
+def make(deserialise):
+    cache = {}
+
+    def answer(key, serialised):
+        if key not in cache:
+            cache[key] = deserialise(serialised)
+        return cache[key]
+
+    def remember(key, value):
+        cache[key] = value
+
+    def held():
+        return len(cache)
+
+    def items():
+        return list(cache.items())
+
+    return {&quot;answer&quot;: answer, &quot;remember&quot;: remember, &quot;held&quot;: held, &quot;items&quot;: items}
+</code></pre></details><details><summary>TMS/handouts/copy_on_read.py</summary><pre><code>&quot;&quot;&quot;Unpickle on every read. What the caller gets is theirs.
+
+Upstream this is `writeback=False`, the default, and it is three lines of
+`Shelf.__getitem__` that never touch the cache.
+&quot;&quot;&quot;
+NAME = &quot;copy-on-read&quot;
+HANDS_BACK = &quot;a fresh object on every read&quot;
+MUTATION_SURVIVES = False
+
+
+def make(deserialise):
+    def answer(key, serialised):
+        return deserialise(serialised)
+
+    def remember(key, value):
+        return None
+
+    def held():
+        return 0
+
+    def items():
+        # Nothing is retained, so a sync has nothing to write back. That is the
+        # whole reason a mutation through a handed-out object goes nowhere.
+        return []
+
+    return {&quot;answer&quot;: answer, &quot;remember&quot;: remember, &quot;held&quot;: held, &quot;items&quot;: items}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;The two modes side by side, the comparison, and the gaps.&quot;&quot;&quot;
+
+
+def modes(rows, out):
+    out(f&quot;\n  {'writeback':&lt;12} {'d[k].append(x) survives':&lt;26} {'d[k] is d[k]':&lt;14} objects held&quot;)
+    for row in rows:
+        out(f&quot;  {str(row['writeback']):&lt;12} {str(row['survived']):&lt;26} &quot;
+            f&quot;{str(not row['identity_separates']):&lt;14} {row['held']}&quot;)
+
+
+def growth(marks, out):
+    out(&quot;\n  reads only, nothing written:&quot;)
+    for read, held in sorted(marks.items()):
+        out(f&quot;    after reading {read:&gt;4} keys, the cache holds {held}&quot;)
+
+
+def nothing_discriminating(values, out):
+    out(&quot;\n  operations whose answer is the same however they went:&quot;)
+    for label, value in values.items():
+        out(f&quot;    {label:&lt;26} {value!r}&quot;)
+
+
+def comparison(disagreements, cells, out):
+    if disagreements:
+        for line in disagreements:
+            out(f&quot;    DISAGREES  {line}&quot;)
+    else:
+        out(f&quot;    {cells} of {cells} cells agree - the lifted strategy decides what &quot;
+            f&quot;the flag decided&quot;)
+
+
+def gaps(out):
+    out(&quot;\n  measurable, not measured here:&quot;)
+    out(&quot;    - how often real code mutates what a shelf handed it&quot;)
+    out(&quot;    - what the retained objects cost on a session-sized workload&quot;)
+    out(&quot;\n  not measurable by this entry at all:&quot;)
+    out(&quot;    - whether the default is wrong. It is off, it is documented, and&quot;)
+    out(&quot;      turning it on costs memory that most callers do not want to spend.&quot;)
+    out(&quot;    - whether anyone has been bitten in production. Reproducing a silent&quot;)
+    out(&quot;      loss says nothing about how often it happens.&quot;)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the drills that let each comparison come out false.
+
+    python src/island_test.py
+
+Section 3 compares the re-cut against the shelve running right now. Section 3b
+breaks the re-cut on purpose so that comparison is a measurement rather than a
+formality, and section 2b mislabels a handout so the declaration check is too.
+&quot;&quot;&quot;
+import pathlib
+import pickle
+import re
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from SCL import policy  # noqa: E402
+from SMS import shelf, upstream  # noqa: E402
+
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+LOADED, PROBLEMS = shelf.load_handouts()
+
+
+def through_recut(module):
+    backing = {}
+    store = shelf.Shelf(backing, module)
+    store[&quot;cart&quot;] = [&quot;apple&quot;]
+    reopened = shelf.Shelf(backing, module)
+    reopened[&quot;cart&quot;].append(&quot;pear&quot;)
+    separates = shelf.hands_back_copies(reopened, &quot;cart&quot;)
+    held = reopened.held()
+    reopened.sync()
+    survived = pickle.loads(backing[b&quot;cart&quot;])
+    return {&quot;mutation_survives&quot;: survived == [&quot;apple&quot;, &quot;pear&quot;],
+            &quot;identity_separates&quot;: separates, &quot;held&quot;: held}
+
+
+print(&quot;\n== 1. every handout is an island and declares what it hands back&quot;)
+check(&quot;both handouts loaded with no problems&quot;, not PROBLEMS, &quot;; &quot;.join(PROBLEMS))
+handout_dir = HERE / &quot;TMS&quot; / &quot;handouts&quot;
+files = sorted(f for f in handout_dir.iterdir() if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+check(&quot;there are two handout files&quot;, len(files) == 2, &quot;, &quot;.join(f.stem for f in files))
+for f in files:
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, f.read_text(encoding=&quot;utf-8&quot;), re.M)
+    siblings = [r for r in reaches if r.split(&quot;.&quot;)[0] in {&quot;TMS&quot;, &quot;SMS&quot;, &quot;SCL&quot;, &quot;DMS&quot;, &quot;FMS&quot;}]
+    check(f&quot;{f.stem} reaches no sibling set&quot;, not siblings,
+          &quot;, &quot;.join(reaches) or &quot;no imports at all&quot;)
+for name, module in sorted(LOADED.items()):
+    check(f&quot;{name} says what it hands back&quot;, bool(module.HANDS_BACK), module.HANDS_BACK)
+
+print(&quot;\n== 2. the declaration is checked by running it, not by reading it&quot;)
+for name, module in sorted(LOADED.items()):
+    measured = through_recut(module)
+    check(f&quot;{name}: declared mutation_survives={module.MUTATION_SURVIVES}, measured &quot;
+          f&quot;{measured['mutation_survives']}&quot;,
+          measured[&quot;mutation_survives&quot;] == module.MUTATION_SURVIVES)
+
+print(&quot;\n== 2b. the drill: a handout that lies about itself must be caught&quot;)
+
+
+class Mislabelled:
+    NAME = &quot;mislabelled&quot;
+    HANDS_BACK = &quot;a fresh object on every read&quot;
+    MUTATION_SURVIVES = False          # the lie
+    make = staticmethod(LOADED[&quot;cached-reference&quot;].make)   # the behaviour
+
+
+measured = through_recut(Mislabelled)
+check(&quot;a handout declaring copy semantics while caching is caught&quot;,
+      measured[&quot;mutation_survives&quot;] != Mislabelled.MUTATION_SURVIVES,
+      f&quot;declared {Mislabelled.MUTATION_SURVIVES}, measured {measured['mutation_survives']}&quot;)
+
+print(&quot;\n== 3. the re-cut against the shelve running right now&quot;)
+CELLS = []
+for writeback, handout_name in ((False, &quot;copy-on-read&quot;), (True, &quot;cached-reference&quot;)):
+    measured = upstream.probe(writeback)
+    modelled = through_recut(LOADED[handout_name])
+    for field in (&quot;mutation_survives&quot;, &quot;identity_separates&quot;):
+        CELLS.append({&quot;writeback&quot;: writeback, &quot;field&quot;: field,
+                      &quot;upstream&quot;: measured[field], &quot;recut&quot;: modelled[field]})
+agree = [c for c in CELLS if c[&quot;upstream&quot;] == c[&quot;recut&quot;]]
+check(f&quot;all {len(CELLS)} cells agree&quot;, len(agree) == len(CELLS),
+      f&quot;{len(agree)}/{len(CELLS)}&quot;)
+
+print(&quot;\n== 3b. the drill: can that comparison come out false?&quot;)
+
+
+class Swapped:
+    NAME = &quot;swapped&quot;
+    HANDS_BACK = &quot;wrong on purpose&quot;
+    MUTATION_SURVIVES = False
+    make = staticmethod(LOADED[&quot;cached-reference&quot;].make)
+
+
+broken = through_recut(Swapped)
+against_default = upstream.probe(False)
+check(&quot;using the wrong strategy for writeback=False breaks cells&quot;,
+      any(broken[f] != against_default[f] for f in (&quot;mutation_survives&quot;, &quot;identity_separates&quot;)),
+      &quot;so section 3 is a measurement, not a formality&quot;)
+
+print(&quot;\n== 4. the flag is named for its fourth consequence&quot;)
+marks = upstream.cache_after_pure_reads(200)
+check(&quot;200 pure reads retain 200 objects&quot;, marks.get(200) == 200,
+      &quot;, &quot;.join(f&quot;{k} reads -&gt; {v} held&quot; for k, v in sorted(marks.items())))
+# The previous version of this line was `check(..., True, ...)` - an assertion
+# that the read loop wrote nothing. That is the hardcoded-True defect this lab
+# filed against archaeology 008 on 2026-08-08, and measuring it disagrees.
+under_writeback = upstream.reads_cause_writes(200, writeback=True)
+under_default = upstream.reads_cause_writes(200, writeback=False)
+check(&quot;a READ-ONLY session under writeback rewrites the medium at close&quot;,
+      bool(under_writeback[&quot;changed&quot;]),
+      f&quot;{len(under_writeback['changed'])} of {under_writeback['files']} files changed: &quot;
+      f&quot;{', '.join(under_writeback['changed'])}&quot;)
+check(&quot;the same read-only session under the default does not&quot;,
+      not under_default[&quot;changed&quot;],
+      f&quot;{under_default['unchanged']} of {under_default['files']} files unchanged&quot;)
+check(&quot;so the two differ, which is what makes either mean anything&quot;,
+      bool(under_writeback[&quot;changed&quot;]) != bool(under_default[&quot;changed&quot;]))
+
+print(&quot;\n== 5. what answers the same however it went&quot;)
+values = upstream.returns_nothing_discriminating()
+same = [label for label, value in values.items() if value is None]
+check(&quot;three operations return None on every path&quot;, len(same) == 3, &quot;, &quot;.join(same))
+check(&quot;and the one observation that does discriminate is identity&quot;,
+      values[&quot;get('a') is a live ref&quot;] is False,
+      &quot;under the default, two reads of one key are two objects&quot;)
+
+print(&quot;\n== 6. fail closed&quot;)
+_, problem = shelf.resolve(&quot;write-through&quot;, LOADED)
+check(&quot;an unresolvable handout stops the run&quot;, problem is not None, problem or &quot;resolved anyway&quot;)
+check(&quot;SCL names a handout that exists&quot;, policy.handout() in LOADED, policy.handout())
+
+print(&quot;\n== 7. what this entry cannot see&quot;)
+print(&quot;        MEASURABLE, NOT MEASURED&quot;)
+print(&quot;          - how often real code mutates what a shelf handed it&quot;)
+print(&quot;          - what the retained objects cost on a session-sized workload&quot;)
+print(&quot;        NOT MEASURABLE HERE&quot;)
+print(&quot;          - whether the default is wrong. It is off, documented, and turning&quot;)
+print(&quot;            it on costs memory most callers do not want to spend.&quot;)
+print(&quot;          - frequency in the wild. Reproducing a silent loss says nothing&quot;)
+print(&quot;            about how often anyone meets it.&quot;)
+
+print(f&quot;\n{len(FAILURES)} failure(s)&quot; if FAILURES else &quot;\nall checks passed&quot;)
+for f in FAILURES:
+    print(f&quot;  - {f}&quot;)
+sys.exit(1 if FAILURES else 0)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;CPython's shelve, re-cut so the handout strategy is a unit rather than a flag.
+
+    python src/main.py            the two modes, the growth, and the comparison
+    python src/main.py --strict   exit 1 if the re-cut disagrees with real shelve
+&quot;&quot;&quot;
+import json
+import pathlib
+import pickle
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import shelf, upstream  # noqa: E402
+
+ARCH = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+BY_WRITEBACK = {False: &quot;copy-on-read&quot;, True: &quot;cached-reference&quot;}
+
+
+def recut(handout_name, loaded):
+    &quot;&quot;&quot;The same three operations the upstream probe performs, through the re-cut.&quot;&quot;&quot;
+    module, problem = shelf.resolve(handout_name, loaded)
+    if problem:
+        return None, problem
+    backing = {}
+    store = shelf.Shelf(backing, module)
+    store[&quot;cart&quot;] = [&quot;apple&quot;]
+
+    store2 = shelf.Shelf(backing, module)
+    store2[&quot;cart&quot;].append(&quot;pear&quot;)
+    identity_separates = shelf.hands_back_copies(store2, &quot;cart&quot;)
+    held = store2.held()
+    store2.sync()
+
+    survived = pickle.loads(backing[b&quot;cart&quot;])
+    return {&quot;survived&quot;: survived, &quot;mutation_survives&quot;: survived == [&quot;apple&quot;, &quot;pear&quot;],
+            &quot;identity_separates&quot;: identity_separates, &quot;held&quot;: held}, None
+
+
+def main(argv):
+    out = lambda line=&quot;&quot;: sys.stdout.write(line + &quot;\n&quot;)  # noqa: E731
+    loaded, problems = shelf.load_handouts()
+    if problems:
+        for problem in problems:
+            out(f&quot;  !! {problem}&quot;)
+        return 1
+
+    out(f&quot;\n== one interface, two meanings for the same call  &quot;
+        f&quot;[shelve.py {ARCH['examined_version']}]&quot;)
+    rows, disagreements = [], []
+    for writeback, handout_name in BY_WRITEBACK.items():
+        measured = upstream.probe(writeback)
+        rows.append({&quot;writeback&quot;: writeback, **measured})
+
+        modelled, problem = recut(handout_name, loaded)
+        if problem:
+            out(f&quot;  !! {problem}&quot;)
+            return 1
+        for field in (&quot;mutation_survives&quot;, &quot;identity_separates&quot;):
+            if modelled[field] != measured[field]:
+                disagreements.append(
+                    f&quot;writeback={writeback}/{field}: re-cut {modelled[field]}, &quot;
+                    f&quot;shelve {measured[field]}&quot;)
+    report.modes(rows, out)
+
+    out(&quot;\n== the flag is called writeback, and what it changes first is reads&quot;)
+    report.growth(upstream.cache_after_pure_reads(200), out)
+
+    report.nothing_discriminating(upstream.returns_nothing_discriminating(), out)
+
+    out(&quot;\n== the re-cut against the shelve that is running right now&quot;)
+    report.comparison(disagreements, len(BY_WRITEBACK) * 2, out)
+
+    out(&quot;\n== what each handout declares, and what it did&quot;)
+    for handout_name in sorted(loaded):
+        module = loaded[handout_name]
+        modelled, _ = recut(handout_name, loaded)
+        agrees = modelled[&quot;mutation_survives&quot;] == module.MUTATION_SURVIVES
+        out(f&quot;    {'ok ' if agrees else 'NO '} {module.NAME:&lt;18} says {module.HANDS_BACK}&quot;)
+        out(f&quot;    {'':4} {'':&lt;18} mutation survives: declared &quot;
+            f&quot;{module.MUTATION_SURVIVES}, measured {modelled['mutation_survives']}&quot;)
+
+    out(&quot;\n== the numbers FMS declares, re-measured&quot;)
+    declared, measured = ARCH[&quot;declared_and_then_remeasured&quot;], upstream.structure()
+    wrong = []
+    for key, value in measured.items():
+        agrees = declared.get(key) == value
+        if not agrees:
+            wrong.append(f&quot;{key}: declared {declared.get(key)!r}, measured {value!r}&quot;)
+        out(f&quot;    {'ok ' if agrees else 'NO '} {key:&lt;22} {value}&quot;)
+
+    report.gaps(out)
+
+    if &quot;--strict&quot; in argv and (wrong or (disagreements and policy.recut_must_match_upstream())):
+        for line in wrong:
+            out(f&quot;\n  !! {line}&quot;)
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

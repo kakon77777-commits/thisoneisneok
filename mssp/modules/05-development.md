@@ -414,6 +414,51 @@ Neo 2026-08-08 給的解法：**1.x 到 2.0 這種小版本三個 AI 自己改�
 
 ---
 
+### 改良點 11：持久化不是一件事，而其中一件目前沒有集合收留它
+
+**方法對持久化沒有說過任何話，而十一則範例裡前十則沒有一則的狀態活得比行程久。** 九天後路線轉向真實市場應用——電商、報表——那類系統每一支都有儲存。
+
+[範例 011](/html/mssp/011-store-boundary.html) 主張它是**三個決定**，而現行五個集合只收得下兩個：
+
+| 這一部分 | 屬於 | 理由 |
+|---|---|---|
+| 媒介——檔案、記憶體、資料庫 | **TMS** | 是能力。抽換它，系統還是它自己 |
+| 什麼算一筆有效紀錄 | **SMS** | 拿掉它，這個儲存就只是多繞幾步的檔案系統 |
+| **一次讀取交回什麼** | **FMS**（提案） | 它是契約條款，因為**任何用「值」寫成的測試都看不見它** |
+
+第三列是目前無處可放的那一個。
+
+**量到的：** 五條普通測試套件會寫的值斷言——id 對、total 對、item 數對、第一個 sku 對、keys() 對——在「交回複製品」與「交回活引用」兩種策略下**全部通過**。
+
+```text
+  PASS  all 5 value assertions pass under copies
+  PASS  all 5 pass under live-references too - which is the finding: they cannot tell the two apart
+  PASS  identity separates them - copies=true, live-references=false
+  PASS  so does mutating what you were handed and reading again - 1 item(s) vs 2
+```
+
+能分辨的兩個觀察**都不是關於值的**。而且兩者代價差很多：「變動手上拿到的再讀一次」只有在寫測試的人**想得到要變動**時才會觸發；`get(k) !== get(k)` 是一行，想不想得到都會觸發。
+
+**這不是我構造的危險。** 同日[考古 011](/html/mssp/archaeology/011-cpython-shelve.html) 量到 `shelve` 就是這個形狀：預設下 `d[k].append(x)` 無聲丟失，`writeback=True` 下存活，而 CPython 把選擇放在**開檔那一行的呼叫端**——拿到 `d` 的人看不到它。對照昨天的 `.pyc`：那裡的等價選擇寫在標頭的 flag bits 裡，任何東西都讀得到。**同一個公司的兩個模組，一個把模式說出來，一個沒有。**
+
+**還掉出一條可以重複使用的做法：一個宣稱為假的對照組。** 範例 011 的記憶體媒介留在裡面，不是為了給人用，是為了讓「我寫了然後讀回來」這個檢查**有可能失敗**：
+
+```text
+  PASS  in this process, both media read the record back - and one of them stores nothing at all
+  PASS  a separate process finds the json-dir record - 1 record(s)
+  PASS  and finds nothing the memory medium 'stored' - 0 record(s)
+```
+
+**行程內的讀回分不出「儲存」與「快取」。** 沒有一個持久化宣稱為假的媒介，那一節證不了任何事。
+
+**代價：** FMS 會變大，而且「交回複製品」在夠大的紀錄上是真的成本——範例 011 沒有量那個成本，並且在「沒有解決什麼」那一節寫明了。
+
+**驗證方式：** 之後每一則有儲存的範例都必須說出它交回什麼，而且用跑的驗不是用寫的。真正的考驗在 20/20 之後——一個有 UI 與持久化的應用裡，這條要嘛便宜到不用想，要嘛貴到得放棄，兩種結果都有資訊。
+
+**還沒答的、而且是第一個會壞的：** 併發。範例 011 是一個行程、一個寫入者，兩個寫入者會弄壞它而它不會發現。這是範例的限制，不是關於儲存的發現——但它是真實應用第一件要處理的事。
+
+---
+
 ## 開發路線：四個 MVP 與回饋迴圈
 
 [程式研究區](/research)的四份研究不會停在論文。每一份要先做出 MVP，而 MVP 本身用 MSSP 蓋——於是它同時是產品，也是這個方法在中等規模上的證據。

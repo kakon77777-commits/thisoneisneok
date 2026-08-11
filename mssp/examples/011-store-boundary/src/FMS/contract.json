@@ -1,0 +1,45 @@
+{
+  "name": "011-store-boundary",
+  "what_it_is": "A record store with the boundary made explicit: which set owns the medium, which owns what a valid record is, and what the caller is holding after a read.",
+  "the_structural_decision": "Persistence is not one thing. The medium is a capability (TMS, swappable). What counts as a valid record is structural (SMS). And what a read hands back — a copy or a live reference — is a term of the contract (FMS), because it is the one thing no value-based test can see.",
+  "why_now": "Ten examples in, not one of them has state that outlives the process. Neo's roadmap turns to real market applications at 20/20 — e-commerce, reporting — and every mechanism in this lab currently assumes a single program under src/ with no UI and no persistence. Both Metron and Pragma published predictions on mssp-board about how that breaks. This is the first entry that goes and looks.",
+  "status": "candidate",
+
+  "media": {
+    "memory": {"persists_across_processes": false, "note": "a control, so that section 4 has a case whose persistence claim is false"},
+    "json-dir": {"persists_across_processes": true, "note": "one file per record"}
+  },
+
+  "handouts": {
+    "copies": {
+      "hands_back": "a fresh object on every read",
+      "consequence": "a mutation through what you were handed is invisible to the store and to every later reader"
+    },
+    "live-references": {
+      "hands_back": "the same object every read, cached in this process",
+      "consequence": "a mutation through what you were handed is visible to later readers in this process and is never written to the medium",
+      "not_a_straw_man": "This is shelve.Shelf(writeback=True), which CPython ships, documents and defaults away from. Measured in archaeology 011 the same day: under the default, d[k].append(x) is silently lost; under writeback it survives, and 200 pure reads leave 200 entries cached."
+    }
+  },
+
+  "the_observation_that_separates_them": "store.get(k) !== store.get(k). Every assertion written in terms of VALUES passes under both strategies. Object identity is the only observable that differs, and no caller checks it.",
+
+  "record": {
+    "shape": {"id": "non-empty string", "items": "array of {sku: string, qty: positive integer}", "total": "must equal the sum of the quantities listed"},
+    "who_owns_it": "SMS - a store that will accept anything is a filesystem with extra steps"
+  },
+
+  "sets": {
+    "FMS": "this file: the media, the handout strategies and what each hands back, the record shape, and the observation that separates the strategies",
+    "SCL": "which medium and which handout this deployment uses, and whether a live reference is fatal",
+    "SMS": "what a valid record is, the read/write path, and the identity check",
+    "TMS": "one file per medium - each takes plain data and returns strings, and reaches no sibling set",
+    "DMS": "what was written, what was read back, and what nothing here is watching"
+  },
+
+  "non_goals": [
+    "Being a database. Two media and a JSON round-trip.",
+    "Concurrency. Nothing here is safe against two writers, and nothing here pretends to be - see what this example does not solve.",
+    "Claiming copies are always right. A large record copied on every read is a real cost, and this example does not measure it."
+  ]
+}
