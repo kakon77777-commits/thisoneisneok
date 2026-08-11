@@ -10,7 +10,7 @@ usually silent about: **what did the caller just get handed?**
 ```bash
 node src/main.mjs             # write, read back, mutate what came out
 node src/main.mjs --strict    # exit 1 if the store hands out live references
-node src/island_test.mjs      # 21 checks across 6 sections
+node src/island_test.mjs      # 27 checks across 7 sections
 ```
 
 ```console
@@ -36,12 +36,14 @@ $ node src/main.mjs
 
 | the part | which set | why |
 |---|---|---|
-| the medium — files, memory, a database | **TMS** | a capability. Swap it and the system is still itself. |
-| what counts as a valid record | **SMS** | remove it and the store is a filesystem with extra steps |
-| **what a read hands back** | **FMS** | it is a term of the contract, because no test written in terms of values can see it |
+| the medium — files, memory, a database | **TMS** | a capability; swap it and the system is still itself |
+| **the handout strategy** — copies or live references | **TMS** | a file that imports nothing and runs alone; the island test settles it |
+| which strategy this deployment runs | **SCL** | where a deployment decision belongs |
+| what counts as a valid record, and the read/write path | **SMS** | remove it and the store is a filesystem with extra steps |
+| **that the strategy is declared, and the declaration verified by running it** | **FMS** | the contract term is not *which* one — it is whether anyone said, and whether saying it means anything |
 
-The third row is the one that is usually nowhere. A store either copies or it
-does not, and the caller finds out by being wrong.
+A store either copies or it does not, and the caller usually finds out by being
+wrong. **This table changed on the day it shipped — see below.**
 
 ## Why now
 
@@ -99,6 +101,41 @@ documents it, and defaults away from it. Measured in
 Same API, same call, opposite semantics, and the observable that separates them
 is object identity — which no caller checks.
 
+## The correction, hours after publishing
+
+The first version of this example put the handout strategies in `SMS`, and the
+開發區 entry written the same morning said they belonged in `FMS`, and the
+archaeology filed the same day put them in `TMS/handouts/`. **Three sets, three
+documents, one day, all mine, and I did not notice.**
+
+The AI Board host asked the question that exposed it: *is this a fourth thing,
+or is your definition of SMS too narrow?*
+
+The method's own criteria answer it without an appeal to taste:
+
+- **The island test says TMS.** Each strategy is a file that imports nothing and
+  can be loaded and run alone. That is what a TMS unit is, and the archaeology
+  had already done it.
+- **[缺點 2](/html/mssp/modules/development.html) says not SMS.** If the strategy
+  lives in SMS, adding a third one is an edit to SMS — the accretion the method
+  names as its own most likely way to fail. So the host's "SMS is too narrow" is
+  half right: SMS should own the retrieval *path*, not the *strategy*.
+- **What FMS keeps is not the choice but the obligation** — that the strategy is
+  named, and that the naming is verified by execution rather than read.
+
+The strategies are `TMS/handouts/` now, and section 5 is the obligation made
+runnable:
+
+```text
+  PASS  copies: declared MUTATION_SURVIVES=false, measured false
+  PASS  live-references: declared MUTATION_SURVIVES=true, measured true
+  PASS  a handout declaring copy semantics while caching would be caught - declared false, measured true
+```
+
+The third line is the drill. Without it the first two are two declarations
+agreeing with each other, which is the whole subject of
+[`mssp-d-003`](/html/mssp/discussions/mssp-d-003.html).
+
 ## The mistake I made writing the test
 
 The island test originally held one shared `ORDER` literal. Under
@@ -116,8 +153,12 @@ care, and how often callers really mutate what a store handed them.
 
 **Not measurable here.** Whether copies are the right default. A store that
 hands out live references is a correct design when its callers know — the defect
-is being silent about which one you are, which is why the strategy is named in
-FMS rather than chosen in SMS.
+is being silent about which one you are, which is why FMS carries the obligation
+to declare rather than the choice itself.
+
+**And where the declaration lives is not settled by one example.** The placement
+above was wrong for half a day and was corrected by a question from outside, not
+by anything in the artifact catching it.
 
 **And concurrency, at all.** One process, one writer. Two writers would break
 this store and nothing here would notice. That is a limitation of the example,

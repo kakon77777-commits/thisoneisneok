@@ -45,7 +45,7 @@ footer a{color:var(--accent)}
     <div><b>語言</b><span>javascript</span></div>
     <div><b>版本</b><span>v1.0</span></div>
     <div><b>日期</b><span>2026-08-11</span></div>
-    <div><b>行數</b><span>497</span></div>
+    <div><b>行數</b><span>552</span></div>
     <div><b>執行</b><span><code>node src/main.mjs</code></span></div>
   </section>
   <article class="content"><h1>011 — What you are holding after a read</h1>
@@ -57,7 +57,7 @@ footer a{color:var(--accent)}
 usually silent about: <strong>what did the caller just get handed?</strong></p>
 <pre><code class="language-bash">node src/main.mjs             # write, read back, mutate what came out
 node src/main.mjs --strict    # exit 1 if the store hands out live references
-node src/island_test.mjs      # 21 checks across 6 sections
+node src/island_test.mjs      # 27 checks across 7 sections
 </code></pre>
 <pre><code class="language-console">$ node src/main.mjs
 
@@ -87,21 +87,31 @@ node src/island_test.mjs      # 21 checks across 6 sections
 <tbody><tr>
 <td>the medium — files, memory, a database</td>
 <td><strong>TMS</strong></td>
-<td>a capability. Swap it and the system is still itself.</td>
+<td>a capability; swap it and the system is still itself</td>
 </tr>
 <tr>
-<td>what counts as a valid record</td>
+<td><strong>the handout strategy</strong> — copies or live references</td>
+<td><strong>TMS</strong></td>
+<td>a file that imports nothing and runs alone; the island test settles it</td>
+</tr>
+<tr>
+<td>which strategy this deployment runs</td>
+<td><strong>SCL</strong></td>
+<td>where a deployment decision belongs</td>
+</tr>
+<tr>
+<td>what counts as a valid record, and the read/write path</td>
 <td><strong>SMS</strong></td>
 <td>remove it and the store is a filesystem with extra steps</td>
 </tr>
 <tr>
-<td><strong>what a read hands back</strong></td>
+<td><strong>that the strategy is declared, and the declaration verified by running it</strong></td>
 <td><strong>FMS</strong></td>
-<td>it is a term of the contract, because no test written in terms of values can see it</td>
+<td>the contract term is not <em>which</em> one — it is whether anyone said, and whether saying it means anything</td>
 </tr>
 </tbody></table>
-<p>The third row is the one that is usually nowhere. A store either copies or it
-does not, and the caller finds out by being wrong.</p>
+<p>A store either copies or it does not, and the caller usually finds out by being
+wrong. <strong>This table changed on the day it shipped — see below.</strong></p>
 <h2>Why now</h2>
 <p>Ten examples in, <strong>not one of them had state that outlived the process.</strong> The
 roadmap turns to real market applications at 20/20 — e-commerce, reporting —
@@ -157,6 +167,34 @@ documents it, and defaults away from it. Measured in
 </tbody></table>
 <p>Same API, same call, opposite semantics, and the observable that separates them
 is object identity — which no caller checks.</p>
+<h2>The correction, hours after publishing</h2>
+<p>The first version of this example put the handout strategies in <code>SMS</code>, and the
+開發區 entry written the same morning said they belonged in <code>FMS</code>, and the
+archaeology filed the same day put them in <code>TMS/handouts/</code>. <strong>Three sets, three
+documents, one day, all mine, and I did not notice.</strong></p>
+<p>The AI Board host asked the question that exposed it: <em>is this a fourth thing,
+or is your definition of SMS too narrow?</em></p>
+<p>The method&#39;s own criteria answer it without an appeal to taste:</p>
+<ul>
+<li><strong>The island test says TMS.</strong> Each strategy is a file that imports nothing and
+can be loaded and run alone. That is what a TMS unit is, and the archaeology
+had already done it.</li>
+<li><strong><a href="/html/mssp/modules/development.html">缺點 2</a> says not SMS.</strong> If the strategy
+lives in SMS, adding a third one is an edit to SMS — the accretion the method
+names as its own most likely way to fail. So the host&#39;s &quot;SMS is too narrow&quot; is
+half right: SMS should own the retrieval <em>path</em>, not the <em>strategy</em>.</li>
+<li><strong>What FMS keeps is not the choice but the obligation</strong> — that the strategy is
+named, and that the naming is verified by execution rather than read.</li>
+</ul>
+<p>The strategies are <code>TMS/handouts/</code> now, and section 5 is the obligation made
+runnable:</p>
+<pre><code class="language-text">  PASS  copies: declared MUTATION_SURVIVES=false, measured false
+  PASS  live-references: declared MUTATION_SURVIVES=true, measured true
+  PASS  a handout declaring copy semantics while caching would be caught - declared false, measured true
+</code></pre>
+<p>The third line is the drill. Without it the first two are two declarations
+agreeing with each other, which is the whole subject of
+<a href="/html/mssp/discussions/mssp-d-003.html"><code>mssp-d-003</code></a>.</p>
 <h2>The mistake I made writing the test</h2>
 <p>The island test originally held one shared <code>ORDER</code> literal. Under
 <code>live-references</code> the store caches <strong>the object the caller passed in</strong>, so
@@ -169,8 +207,11 @@ hazard the example is about, met while writing the test for it.</p>
 care, and how often callers really mutate what a store handed them.</p>
 <p><strong>Not measurable here.</strong> Whether copies are the right default. A store that
 hands out live references is a correct design when its callers know — the defect
-is being silent about which one you are, which is why the strategy is named in
-FMS rather than chosen in SMS.</p>
+is being silent about which one you are, which is why FMS carries the obligation
+to declare rather than the choice itself.</p>
+<p><strong>And where the declaration lives is not settled by one example.</strong> The placement
+above was wrong for half a day and was corrected by a question from outside, not
+by anything in the artifact catching it.</p>
 <p><strong>And concurrency, at all.</strong> One process, one writer. Two writers would break
 this store and nothing here would notice. That is a limitation of the example,
 not a finding about stores — and it is the first thing that will have to change
@@ -238,11 +279,17 @@ const config = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot
 export const medium = () =&gt; config.medium;
 export const handout = () =&gt; config.handout;
 export const liveReferenceIsFatal = () =&gt; Boolean(config.live_reference_is_fatal);
-</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/store.mjs</summary><pre><code>// The store: what a valid record is, and what the caller gets back.
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/store.mjs</summary><pre><code>// The store: what a valid record is, and the read/write path.
 //
-// The medium is injected. The handout strategy is resolved by id, because 008
-// cost a day to the difference between an id that is looked up and an id that
-// decides what runs.
+// What a read HANDS BACK is not decided here. The strategies are TMS units,
+// resolved by id — 008 cost a day to the difference between an id that is
+// looked up and an id that decides what runs, and 2026-08-11 cost an hour to
+// the difference between a strategy that lives in SMS and one that does not.
+import * as copies from &quot;../TMS/handouts/copies.mjs&quot;;
+import * as liveReferences from &quot;../TMS/handouts/live_references.mjs&quot;;
+
+const HANDOUTS = Object.fromEntries(
+  [copies, liveReferences].map((module) =&gt; [module.NAME, module]));
 
 export function validate(record) {
   const problems = [];
@@ -259,58 +306,24 @@ export function validate(record) {
   return problems;
 }
 
-// Two ways to answer a read. Both satisfy every assertion about VALUES.
-const HANDOUTS = {
-  // Deserialise on every read. What the caller gets is theirs; mutating it
-  // mutates a copy, and the store never sees it.
-  copies: {
-    hands_back: &quot;a fresh object on every read&quot;,
-    make() {
-      return {
-        remember() {},
-        answer: (serialised) =&gt; JSON.parse(serialised),
-      };
-    },
-  },
-  // Deserialise once and hand the same object back forever. Mutations through
-  // it are visible to later readers in this process and are never written.
-  // This is not a straw man: it is shelve.Shelf with writeback=True, which is
-  // an option CPython ships and documents.
-  &quot;live-references&quot;: {
-    hands_back: &quot;the same object every read, cached in this process&quot;,
-    make() {
-      const cache = new Map();
-      return {
-        // shelve.Shelf.__setitem__ does exactly this when writeback is on: the
-        // object the CALLER passed in becomes the cached one, so the store and
-        // the caller now share it.
-        remember(key, value) { cache.set(key, value); },
-        answer(serialised, key) {
-          if (cache.has(key)) return cache.get(key);
-          const value = JSON.parse(serialised);
-          cache.set(key, value);
-          return value;
-        },
-      };
-    },
-  },
-};
-
 export function resolveHandout(name) {
-  const strategy = HANDOUTS[name];
-  if (!strategy) {
+  const module = HANDOUTS[name];
+  if (!module) {
     return { problem: `handout &quot;${name}&quot; has no implementation - fail closed (known: ${Object.keys(HANDOUTS).sort().join(&quot;, &quot;)})` };
   }
-  return { strategy };
+  return { module };
 }
 
+export const handoutNames = () =&gt; Object.keys(HANDOUTS).sort();
+
 export function openStore({ medium, handout }) {
-  const { strategy, problem } = resolveHandout(handout);
+  const { module, problem } = resolveHandout(handout);
   if (problem) return { problem };
 
-  const policy = strategy.make();
+  const policy = module.make(JSON.parse);
   const store = {
     handout,
+    handsBack: module.HANDS_BACK,
     put(record) {
       const problems = validate(record);
       if (problems.length) return { written: false, problems };
@@ -328,14 +341,60 @@ export function openStore({ medium, handout }) {
   return { store };
 }
 
-// The observation that separates the two strategies, and the only one that can.
+// The observation that separates the strategies, and the only cheap one.
 // Every check written in terms of values passes under both.
 export function handsOutCopies(store, key) {
-  const first = store.get(key);
-  const second = store.get(key);
-  return first !== second;
+  return store.get(key) !== store.get(key);
 }
-</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/media/json_dir.mjs</summary><pre><code>// A medium that is one file per record on disk.
+
+// The declaration a handout makes about itself, checked by running it rather
+// than by reading it. Two labels agreeing is the mssp-d-003 shape.
+export function mutationSurvives(makeStore, key, mutate) {
+  const store = makeStore();
+  mutate(store.get(key));
+  return JSON.stringify(store.get(key));
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/handouts/copies.mjs</summary><pre><code>// Deserialise on every read. What the caller gets is theirs.
+//
+// Moved here from SMS on 2026-08-11, the day it shipped, after the Board host
+// asked whether this belonged in FMS at all. The island test answers: it is a
+// file that imports nothing and can be run alone, which is what a TMS unit is.
+// Leaving it in SMS would have meant a third strategy is an edit to SMS - the
+// accretion 缺點 2 names as the method's most likely way to fail.
+export const NAME = &quot;copies&quot;;
+export const HANDS_BACK = &quot;a fresh object on every read&quot;;
+export const MUTATION_SURVIVES = false;
+
+export function make(deserialise) {
+  return {
+    remember() {},
+    answer: (serialised) =&gt; deserialise(serialised),
+  };
+}
+</code></pre></details><details><summary>TMS/handouts/live_references.mjs</summary><pre><code>// Deserialise once and hand the same object back forever.
+//
+// Not a straw man: this is shelve.Shelf(writeback=True), which CPython ships
+// and documents. What makes it legitimate there is that a caller who opened the
+// file knows; what makes it a hazard is that whoever is handed the store does
+// not - see archaeology 011.
+export const NAME = &quot;live-references&quot;;
+export const HANDS_BACK = &quot;the same object every read, retained in this process&quot;;
+export const MUTATION_SURVIVES = true;
+
+export function make(deserialise) {
+  const cache = new Map();
+  return {
+    // shelve does exactly this on write when writeback is on: the object the
+    // CALLER passed in becomes the cached one, so the store and the caller now
+    // share it. That is what mutated a shared literal in this example's own test.
+    remember(key, value) { cache.set(key, value); },
+    answer(serialised, key) {
+      if (!cache.has(key)) cache.set(key, deserialise(serialised));
+      return cache.get(key);
+    },
+  };
+}
+</code></pre></details><details><summary>TMS/media/json_dir.mjs</summary><pre><code>// A medium that is one file per record on disk.
 //
 // It imports node:fs, which is the whole point of it - the island rule this
 // lab enforces is that a TMS unit must not reach a SIBLING TMS, not that it
@@ -428,6 +487,7 @@ import { fileURLToPath } from &quot;node:url&quot;;
 import * as store from &quot;./SMS/store.mjs&quot;;
 import * as jsonDir from &quot;./TMS/media/json_dir.mjs&quot;;
 import * as memory from &quot;./TMS/media/memory.mjs&quot;;
+import * as liveRefs from &quot;./TMS/handouts/live_references.mjs&quot;;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;contract.json&quot;), &quot;utf8&quot;));
@@ -450,7 +510,7 @@ function opened(mediumName, handout, dir) {
   return store.openStore({ medium, handout }).store;
 }
 
-say(&quot;\n== 1. every medium is an island and declares what it is&quot;);
+say(&quot;\n== 1. every TMS unit is an island and declares what it is&quot;);
 const mediaDir = path.join(here, &quot;TMS&quot;, &quot;media&quot;);
 const files = fs.readdirSync(mediaDir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
 check(&quot;there are two medium files&quot;, files.length === 2, files.join(&quot;, &quot;));
@@ -465,6 +525,19 @@ for (const [name, module] of Object.entries(MEDIA)) {
   check(`${name} declares MEDIUM and whether it survives the process`,
     module.MEDIUM === name &amp;&amp; typeof module.PERSISTS_ACROSS_PROCESSES === &quot;boolean&quot;,
     `persists=${module.PERSISTS_ACROSS_PROCESSES}`);
+}
+// The handout strategies became TMS units on the day this shipped, after the
+// Board host asked whether the decision belonged in FMS at all. It had been in
+// three sets in one day: FMS in 開發區, SMS here, TMS in archaeology 011.
+const handoutDir = path.join(here, &quot;TMS&quot;, &quot;handouts&quot;);
+const handoutFiles = fs.readdirSync(handoutDir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+check(&quot;there are two handout files, and they are TMS units&quot;, handoutFiles.length === 2,
+  handoutFiles.join(&quot;, &quot;));
+for (const file of handoutFiles) {
+  const source = fs.readFileSync(path.join(handoutDir, file), &quot;utf8&quot;);
+  const reaches = [...source.matchAll(/^\s*import[^&quot;']*[&quot;']([^&quot;']+)[&quot;']/gm)].map((m) =&gt; m[1]);
+  check(`${file} reaches no sibling set`, reaches.length === 0,
+    reaches.join(&quot;, &quot;) || &quot;no imports at all&quot;);
 }
 
 say(&quot;\n== 2. the medium is swappable, and an unknown one stops the run&quot;);
@@ -549,7 +622,28 @@ check(&quot;the two media disagree only once a second process asks&quot;,
   Boolean(fromDisk[&quot;ord-1&quot;]) !== Boolean(fromMemory[&quot;ord-1&quot;]),
   &quot;the in-process check above passed for both&quot;);
 
-say(&quot;\n== 5. fail closed&quot;);
+say(&quot;\n== 5. each handout's declaration is checked by running it&quot;);
+for (const handout of store.handoutNames()) {
+  const { module } = store.resolveHandout(handout);
+  const orders = opened(&quot;memory&quot;, handout, tempDir());
+  orders.put(order());
+  orders.get(&quot;ord-1&quot;).items.push({ sku: &quot;smuggled&quot;, qty: 99 });
+  const survived = orders.get(&quot;ord-1&quot;).items.length === 2;
+  check(`${handout}: declared MUTATION_SURVIVES=${module.MUTATION_SURVIVES}, measured ${survived}`,
+    survived === module.MUTATION_SURVIVES, module.HANDS_BACK);
+}
+// The drill: without it, the two lines above are two declarations agreeing
+// with each other - the mssp-d-003 shape. A unit whose label says copies while
+// its behaviour caches must come out as a disagreement.
+const mislabelled = { MUTATION_SURVIVES: false, make: liveRefs.make };
+const lying = opened(&quot;memory&quot;, &quot;live-references&quot;, tempDir());
+lying.put(order());
+lying.get(&quot;ord-1&quot;).items.push({ sku: &quot;smuggled&quot;, qty: 99 });
+check(&quot;a handout declaring copy semantics while caching would be caught&quot;,
+  (lying.get(&quot;ord-1&quot;).items.length === 2) !== mislabelled.MUTATION_SURVIVES,
+  `declared ${mislabelled.MUTATION_SURVIVES}, measured true`);
+
+say(&quot;\n== 6. fail closed&quot;);
 const unknown = store.openStore({ medium: memory.make({}), handout: &quot;whatever&quot; });
 check(&quot;an unresolvable handout returns a problem and no store&quot;,
   Boolean(unknown.problem) &amp;&amp; unknown.store === undefined);
@@ -565,7 +659,7 @@ for (const [label, record] of [
 check(&quot;and nothing was written by any of them&quot;, strict.keys().length === 0,
   `${strict.keys().length} key(s)`);
 
-say(&quot;\n== 6. what this example does not solve&quot;);
+say(&quot;\n== 7. what this example does not solve&quot;);
 say(&quot;        MEASURABLE, NOT MEASURED&quot;);
 say(&quot;          - what copying costs on a record large enough to care&quot;);
 say(&quot;          - how often callers really mutate what a store handed them&quot;);

@@ -1,8 +1,14 @@
-// The store: what a valid record is, and what the caller gets back.
+// The store: what a valid record is, and the read/write path.
 //
-// The medium is injected. The handout strategy is resolved by id, because 008
-// cost a day to the difference between an id that is looked up and an id that
-// decides what runs.
+// What a read HANDS BACK is not decided here. The strategies are TMS units,
+// resolved by id — 008 cost a day to the difference between an id that is
+// looked up and an id that decides what runs, and 2026-08-11 cost an hour to
+// the difference between a strategy that lives in SMS and one that does not.
+import * as copies from "../TMS/handouts/copies.mjs";
+import * as liveReferences from "../TMS/handouts/live_references.mjs";
+
+const HANDOUTS = Object.fromEntries(
+  [copies, liveReferences].map((module) => [module.NAME, module]));
 
 export function validate(record) {
   const problems = [];
@@ -19,58 +25,24 @@ export function validate(record) {
   return problems;
 }
 
-// Two ways to answer a read. Both satisfy every assertion about VALUES.
-const HANDOUTS = {
-  // Deserialise on every read. What the caller gets is theirs; mutating it
-  // mutates a copy, and the store never sees it.
-  copies: {
-    hands_back: "a fresh object on every read",
-    make() {
-      return {
-        remember() {},
-        answer: (serialised) => JSON.parse(serialised),
-      };
-    },
-  },
-  // Deserialise once and hand the same object back forever. Mutations through
-  // it are visible to later readers in this process and are never written.
-  // This is not a straw man: it is shelve.Shelf with writeback=True, which is
-  // an option CPython ships and documents.
-  "live-references": {
-    hands_back: "the same object every read, cached in this process",
-    make() {
-      const cache = new Map();
-      return {
-        // shelve.Shelf.__setitem__ does exactly this when writeback is on: the
-        // object the CALLER passed in becomes the cached one, so the store and
-        // the caller now share it.
-        remember(key, value) { cache.set(key, value); },
-        answer(serialised, key) {
-          if (cache.has(key)) return cache.get(key);
-          const value = JSON.parse(serialised);
-          cache.set(key, value);
-          return value;
-        },
-      };
-    },
-  },
-};
-
 export function resolveHandout(name) {
-  const strategy = HANDOUTS[name];
-  if (!strategy) {
+  const module = HANDOUTS[name];
+  if (!module) {
     return { problem: `handout "${name}" has no implementation - fail closed (known: ${Object.keys(HANDOUTS).sort().join(", ")})` };
   }
-  return { strategy };
+  return { module };
 }
 
+export const handoutNames = () => Object.keys(HANDOUTS).sort();
+
 export function openStore({ medium, handout }) {
-  const { strategy, problem } = resolveHandout(handout);
+  const { module, problem } = resolveHandout(handout);
   if (problem) return { problem };
 
-  const policy = strategy.make();
+  const policy = module.make(JSON.parse);
   const store = {
     handout,
+    handsBack: module.HANDS_BACK,
     put(record) {
       const problems = validate(record);
       if (problems.length) return { written: false, problems };
@@ -88,10 +60,16 @@ export function openStore({ medium, handout }) {
   return { store };
 }
 
-// The observation that separates the two strategies, and the only one that can.
+// The observation that separates the strategies, and the only cheap one.
 // Every check written in terms of values passes under both.
 export function handsOutCopies(store, key) {
-  const first = store.get(key);
-  const second = store.get(key);
-  return first !== second;
+  return store.get(key) !== store.get(key);
+}
+
+// The declaration a handout makes about itself, checked by running it rather
+// than by reading it. Two labels agreeing is the mssp-d-003 shape.
+export function mutationSurvives(makeStore, key, mutate) {
+  const store = makeStore();
+  mutate(store.get(key));
+  return JSON.stringify(store.get(key));
 }

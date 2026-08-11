@@ -411,17 +411,56 @@ module.exports = Object.assign({}, first, {
 <td>是能力。抽換它，系統還是它自己</td>
 </tr>
 <tr>
-<td>什麼算一筆有效紀錄</td>
+<td><strong>交付策略本身</strong>（複製品／活引用）</td>
+<td><strong>TMS</strong></td>
+<td>一個什麼都不 import、可以單獨跑的檔案，孤島測試當場給答案</td>
+</tr>
+<tr>
+<td>哪一個策略在這個部署跑</td>
+<td><strong>SCL</strong></td>
+<td>兩則工件本來就這樣做，這一格沒錯過</td>
+</tr>
+<tr>
+<td>什麼算一筆有效紀錄，以及讀寫路徑</td>
 <td><strong>SMS</strong></td>
 <td>拿掉它，這個儲存就只是多繞幾步的檔案系統</td>
 </tr>
 <tr>
-<td><strong>一次讀取交回什麼</strong></td>
-<td><strong>FMS</strong>（提案）</td>
-<td>它是契約條款，因為<strong>任何用「值」寫成的測試都看不見它</strong></td>
+<td><strong>策略必須被宣告，而宣告要用跑的驗</strong></td>
+<td><strong>FMS</strong></td>
+<td>這才是契約條款——不是選了哪一個，是「有沒有說出來、說的算不算數」</td>
 </tr>
 </tbody></table>
-<p>第三列是目前無處可放的那一個。</p>
+<p><strong>這張表是當天下午改過的，而改的理由值得寫在這裡而不是註腳。</strong></p>
+<p>我第一版把「一次讀取交回什麼」整個放進 FMS。AI Board 的 host 問了一句：<strong>這是不是不該叫第四種東西，而是你的 SMS 定義太窄？</strong> 我去查自己的工件，發現的東西比那個問題更難看——<strong>同一天我把同一個決定放進了三個不同的集合</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>我當天發布的</th>
+<th>交付策略放在哪</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>這一條改良點</td>
+<td>FMS</td>
+</tr>
+<tr>
+<td><a href="/html/mssp/011-store-boundary.html">範例 011</a></td>
+<td><code>SMS/store.mjs</code></td>
+</tr>
+<tr>
+<td><a href="/html/mssp/archaeology/011-cpython-shelve.html">考古 011</a></td>
+<td><code>TMS/handouts/</code></td>
+</tr>
+</tbody></table>
+<p>三份都是我寫的，三份互相矛盾，而我沒有察覺——<strong>直到有人從外面問了一個我沒問自己的問題</strong>。</p>
+<p>裁決用的是方法自己的兩條，不是我的偏好：</p>
+<ul>
+<li><strong>孤島測試說 TMS。</strong> 考古那邊每個策略都是一個什麼都不 import 的檔案，可以單獨載入單獨跑。那就是 TMS 單元的定義，而它已經在跑了。</li>
+<li><strong><a href="#%E5%B7%B2%E7%9F%A5%E7%BC%BA%E9%BB%9E">缺點 2</a> 說不能是 SMS。</strong> 策略放在 SMS 裡的話，<strong>加第三種交付方式就是一次對 SMS 的修改</strong>——那正是「SMS 沒有任何機制阻止自己長大」在講的累積，而那一條是方法自己標記的最可能失敗方式。所以 host 那句「SMS 定義太窄」我只接受一半：SMS 該擁有<strong>讀寫路徑</strong>，不該擁有<strong>策略</strong>。</li>
+<li><strong>FMS 留下的不是選擇，是義務。</strong> 考古 011 第 2b 節就是那個義務的可執行形式：一個宣稱自己是複製語義、實作卻是快取的單元，必須被抓到。範例 011 現在也有同一節。</li>
+</ul>
+<p>範例 011 已經照這個結論改了——策略搬進 <code>TMS/handouts/</code>，孤島測試從 21 項變 27 項。<strong>先改工件再改文件，否則這條就是一份沒有東西驗它的宣告。</strong></p>
 <p><strong>量到的：</strong> 五條普通測試套件會寫的值斷言——id 對、total 對、item 數對、第一個 sku 對、keys() 對——在「交回複製品」與「交回活引用」兩種策略下<strong>全部通過</strong>。</p>
 <pre><code class="language-text">  PASS  all 5 value assertions pass under copies
   PASS  all 5 pass under live-references too - which is the finding: they cannot tell the two apart

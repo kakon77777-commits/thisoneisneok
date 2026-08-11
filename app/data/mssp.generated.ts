@@ -756,6 +756,8 @@ export const msspExamples = [
       "SCL/policy.json",
       "SCL/policy.mjs",
       "SMS/store.mjs",
+      "TMS/handouts/copies.mjs",
+      "TMS/handouts/live_references.mjs",
       "TMS/media/json_dir.mjs",
       "TMS/media/memory.mjs",
       "island_test.mjs",
@@ -773,6 +775,8 @@ export const msspExamples = [
         "SMS/store.mjs"
       ],
       "TMS": [
+        "TMS/handouts/copies.mjs",
+        "TMS/handouts/live_references.mjs",
         "TMS/media/json_dir.mjs",
         "TMS/media/memory.mjs"
       ],
@@ -784,7 +788,7 @@ export const msspExamples = [
         "main.mjs"
       ]
     },
-    "lineCount": 497,
+    "lineCount": 552,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/011-store-boundary.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/011-store-boundary.html"
   }

@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import * as store from "./SMS/store.mjs";
 import * as jsonDir from "./TMS/media/json_dir.mjs";
 import * as memory from "./TMS/media/memory.mjs";
+import * as liveRefs from "./TMS/handouts/live_references.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, "FMS", "contract.json"), "utf8"));
@@ -38,7 +39,7 @@ function opened(mediumName, handout, dir) {
   return store.openStore({ medium, handout }).store;
 }
 
-say("\n== 1. every medium is an island and declares what it is");
+say("\n== 1. every TMS unit is an island and declares what it is");
 const mediaDir = path.join(here, "TMS", "media");
 const files = fs.readdirSync(mediaDir).filter((n) => n.endsWith(".mjs")).sort();
 check("there are two medium files", files.length === 2, files.join(", "));
@@ -53,6 +54,19 @@ for (const [name, module] of Object.entries(MEDIA)) {
   check(`${name} declares MEDIUM and whether it survives the process`,
     module.MEDIUM === name && typeof module.PERSISTS_ACROSS_PROCESSES === "boolean",
     `persists=${module.PERSISTS_ACROSS_PROCESSES}`);
+}
+// The handout strategies became TMS units on the day this shipped, after the
+// Board host asked whether the decision belonged in FMS at all. It had been in
+// three sets in one day: FMS in 開發區, SMS here, TMS in archaeology 011.
+const handoutDir = path.join(here, "TMS", "handouts");
+const handoutFiles = fs.readdirSync(handoutDir).filter((n) => n.endsWith(".mjs")).sort();
+check("there are two handout files, and they are TMS units", handoutFiles.length === 2,
+  handoutFiles.join(", "));
+for (const file of handoutFiles) {
+  const source = fs.readFileSync(path.join(handoutDir, file), "utf8");
+  const reaches = [...source.matchAll(/^\s*import[^"']*["']([^"']+)["']/gm)].map((m) => m[1]);
+  check(`${file} reaches no sibling set`, reaches.length === 0,
+    reaches.join(", ") || "no imports at all");
 }
 
 say("\n== 2. the medium is swappable, and an unknown one stops the run");
@@ -137,7 +151,28 @@ check("the two media disagree only once a second process asks",
   Boolean(fromDisk["ord-1"]) !== Boolean(fromMemory["ord-1"]),
   "the in-process check above passed for both");
 
-say("\n== 5. fail closed");
+say("\n== 5. each handout's declaration is checked by running it");
+for (const handout of store.handoutNames()) {
+  const { module } = store.resolveHandout(handout);
+  const orders = opened("memory", handout, tempDir());
+  orders.put(order());
+  orders.get("ord-1").items.push({ sku: "smuggled", qty: 99 });
+  const survived = orders.get("ord-1").items.length === 2;
+  check(`${handout}: declared MUTATION_SURVIVES=${module.MUTATION_SURVIVES}, measured ${survived}`,
+    survived === module.MUTATION_SURVIVES, module.HANDS_BACK);
+}
+// The drill: without it, the two lines above are two declarations agreeing
+// with each other - the mssp-d-003 shape. A unit whose label says copies while
+// its behaviour caches must come out as a disagreement.
+const mislabelled = { MUTATION_SURVIVES: false, make: liveRefs.make };
+const lying = opened("memory", "live-references", tempDir());
+lying.put(order());
+lying.get("ord-1").items.push({ sku: "smuggled", qty: 99 });
+check("a handout declaring copy semantics while caching would be caught",
+  (lying.get("ord-1").items.length === 2) !== mislabelled.MUTATION_SURVIVES,
+  `declared ${mislabelled.MUTATION_SURVIVES}, measured true`);
+
+say("\n== 6. fail closed");
 const unknown = store.openStore({ medium: memory.make({}), handout: "whatever" });
 check("an unresolvable handout returns a problem and no store",
   Boolean(unknown.problem) && unknown.store === undefined);
@@ -153,7 +188,7 @@ for (const [label, record] of [
 check("and nothing was written by any of them", strict.keys().length === 0,
   `${strict.keys().length} key(s)`);
 
-say("\n== 6. what this example does not solve");
+say("\n== 7. what this example does not solve");
 say("        MEASURABLE, NOT MEASURED");
 say("          - what copying costs on a record large enough to care");
 say("          - how often callers really mutate what a store handed them");
