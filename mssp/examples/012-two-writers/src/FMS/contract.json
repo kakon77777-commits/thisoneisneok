@@ -1,0 +1,40 @@
+{
+  "name": "012-two-writers",
+  "what_it_is": "The store from example 011 with a second writer, and the vocabulary that lets a mismatch be refused before an interleaving finds it.",
+  "the_structural_decision": "An operation declares what it REQUIRES of the medium; a medium declares what it GUARANTEES; the store compares them and fails closed. The consequence that matters: read-modify-write requires a serialised transaction, which is not a property any medium has — so the repair is the shape of the operation, not a better medium.",
+  "why_now": "Example 011 named this itself: one process, one writer, and two writers would break it while nothing noticed. That sentence was the limitation section of an entry published yesterday, and the switch to real market applications is eight days away.",
+  "status": "candidate",
+
+  "guarantees": {
+    "atomic-replace": "a write completes in one step; nothing can be scheduled inside it",
+    "serialised-transaction": "nothing else writes between a read and its write. NO MEDIUM HERE PROVIDES THIS, and that is the finding rather than an omission"
+  },
+
+  "media": {
+    "atomic-file": {"guarantees": ["atomic-replace"], "how": "write to a staging name, rename over the target"},
+    "torn-file": {"guarantees": [], "how": "write the record in two halves", "why_it_exists": "the control. Without a medium whose atomicity claim is false, the section checking atomicity cannot come out badly."}
+  },
+
+  "operations": {
+    "read-modify-write": {"requires": ["serialised-transaction"], "note": "the shape everyone writes"},
+    "compare-and-set": {"requires": ["atomic-replace"], "note": "the same intent with a requirement a medium can actually meet"}
+  },
+
+  "the_finding": "Locking and lost updates are two different guarantees, and both get called safe for concurrent use. Measured in archaeology 012 the same day: dbm.dumb and dbm.sqlite3 BOTH lose an update under the same written-down schedule; only dbm.dumb corrupts. Real locking buys integrity and buys nothing at all on lost updates.",
+
+  "the_methodological_finding": "A single-writer test cannot observe a lost update no matter how many assertions it makes. This is not about how many values a check can read or which event they are about — it is about which SCHEDULES the test is able to produce. Section 4 is that control.",
+
+  "sets": {
+    "FMS": "this file: the guarantee vocabulary, what each medium and operation declares, and the compatibility rule",
+    "SCL": "which medium and operation this deployment runs, and whether an unmet requirement is fatal",
+    "SMS": "resolution by id, the requirement comparison, and the schedule harness",
+    "TMS": "one file per medium and per operation - each declares what it guarantees or requires, and reaches no sibling set",
+    "DMS": "the traces, the final values, and what none of it can see"
+  },
+
+  "non_goals": [
+    "Being a database or a lock manager. Two media, two operation shapes, and a written-down schedule.",
+    "Racing. There are no threads here; a schedule is chosen so the result is a fact about the code rather than about this machine's timing. Archaeology 012 runs the same schedule against real CPython backends, which is what stops the model from agreeing with itself.",
+    "Claiming compare-and-set is the answer. It converts a lost update into a retry, and this example does not measure what retries cost under contention."
+  ]
+}

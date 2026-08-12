@@ -1,0 +1,17 @@
+id: 012-two-writers
+title:
+  zh: 兩個寫入者，以及測試產不出來的那個排程
+  en: "Two writers, and the schedule the test could not produce"
+summary:
+  zh: 範例 011 自己寫下的限制——一個行程、一個寫入者，兩個寫入者會弄壞它而它不會發現——隔天就去把它弄壞。結構決定是：**操作宣告它需要什麼、媒介宣告它保證什麼，儲存比對兩者並 fail closed**。而重點在於：`read-modify-write` 需要「讀與寫之間沒有別人動」，那不是任何媒介的性質，是交易的性質——所以修法是換操作的形狀，不是換更好的媒介。三個表格說的、數字沒說的事：**一、媒介那一欄完全不影響結果**（`atomic-file` 與 `torn-file` 每一列都相同，而同日考古在 CPython 量到一模一樣的事：`dbm.dumb` 與 `dbm.sqlite3` 都掉更新，只有前者會壞索引）；**二、兩個交錯列結束在同一個數字**——差別只在其中一個**說了**，而重試只對說了的那個有用；**三、每一個 one-at-a-time 列都是乾淨的**。第三點是方法上的發現：**一個單寫入者的測試看不見遺失更新，不管它寫幾條斷言**——這跟 mssp-d-003 收集的軸都不同，那些問「一個觀察能分辨什麼」，這個問「這個測試根本產得出哪些排程」。排程是寫死的不是搶出來的，所以結果是關於程式碼的事實。
+  en: Example 011 wrote its own limitation into its closing section — one process, one writer, and two writers would break it while nothing noticed — and this is that limitation, gone the next day. The structural decision: an operation declares what it REQUIRES, a medium declares what it GUARANTEES, and the store compares them and fails closed. The consequence is the point: read-modify-write requires that nothing writes between its read and its write, which is not a property any medium has — it is a property of a transaction — so the repair is the shape of the operation, not a better medium. Three things the table says that the numbers do not. First, the medium column changes nothing: atomic-file and torn-file agree on every row, and the same day's archaeology measured exactly that upstream, where dbm.dumb and dbm.sqlite3 both lose the update and only one corrupts. Second, the two interleaved rows end at the same number — what differs is that one of them said so, and a retry is worth only as much as being told. Third, every one-at-a-time row is clean, which is the methodological finding: a single-writer test cannot see a lost update however many assertions it makes. That is a different axis from the ones mssp-d-003 has collected; those ask what an observation can distinguish, this asks what the test is able to produce at all. The schedule is written down rather than raced for, so the result is a fact about the code.
+language: javascript
+date: 2026-08-12
+version: v1.0
+kind: example
+concepts:
+  - an-operation-declares-what-it-requires-of-its-medium
+  - a-requirement-no-medium-can-meet-is-a-finding-not-an-omission
+  - two-outcomes-that-end-at-the-same-number-and-only-one-reported
+  - a-single-writer-test-cannot-produce-the-schedule-that-fails
+runnable: node src/main.mjs

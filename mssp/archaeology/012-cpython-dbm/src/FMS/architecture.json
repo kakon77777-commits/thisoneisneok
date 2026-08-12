@@ -1,0 +1,29 @@
+{
+  "name": "012-cpython-dbm",
+  "upstream": "CPython Lib/dbm/",
+  "examined_version": "3.14.5",
+  "license": "PSF-2.0",
+  "what_it_is": "The interchangeable key-value backends behind shelve, and what each of them does when two writers overlap.",
+
+  "why_this_one": "Example 011 named concurrency as the first thing that would break it, and yesterday's archaeology measured shelve without ever asking what was underneath. This is what was underneath.",
+
+  "the_finding": "Lost updates and index corruption are two different guarantees, and both get called 'safe for concurrent use'. Under the same written-down schedule, dbm.dumb and dbm.sqlite3 BOTH lose an update; only dbm.dumb corrupts. Real locking buys integrity and buys nothing at all on lost updates, because a lost update happens between two operations that are each perfectly atomic.",
+
+  "the_second_finding": "The module that declares its gap is the one with the smaller gap on the axis anyone thinks about. dbm.dumb says 'support concurrent access (currently, if two processes take turns making updates, they can mess up the index)' - in a TO DO list, inside a docstring. dbm.sqlite3, which holds index integrity, says nothing about concurrency at all.",
+
+  "the_scale_this_completes": "Three consecutive entries, one organisation's standard library, three places a mode or a gap is written down: archaeology 010 put the .pyc invalidation mode in HEADER FLAG BITS, machine-readable by anything; archaeology 011 put shelve's writeback mode in the open() CALL, readable only by whoever opened the file; archaeology 012 puts dbm.dumb's concurrency gap in a TO DO ITEM IN A DOCSTRING, readable by whoever reads the source, and dbm.sqlite3 does not write it anywhere.",
+
+  "sets": {
+    "FMS": "this file: the guarantee vocabulary, the two failures, and the scale the three entries make together",
+    "SCL": "which schedule this deployment runs, and whether a declaration must match behaviour",
+    "SMS": "the guarantee/requirement tables, schedule resolution, and the upstream probes",
+    "TMS": "one file per schedule - each declares which failures it is capable of revealing, and reaches no sibling set",
+    "DMS": "the two failures side by side, where each module declares its gap, and what none of it can see"
+  },
+
+  "non_goals": [
+    "Saying dbm is broken. Every backend here does what it says; the problem is that dbm.open() gives the caller no way to ask what that is.",
+    "Racing. The schedule is written down, so a lost update here is a fact about the code rather than about this machine's timing.",
+    "Claiming anything about backends this machine does not have. dbm.gnu and dbm.ndbm are unavailable here and are printed as unavailable rather than assumed."
+  ]
+}

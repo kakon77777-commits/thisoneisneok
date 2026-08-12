@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>兩個寫入者，以及測試產不出來的那個排程 | MSSP | Neo.K</title>
+<meta name="description" content="範例 011 自己寫下的限制——一個行程、一個寫入者，兩個寫入者會弄壞它而它不會發現——隔天就去把它弄壞。結構決定是：**操作宣告它需要什麼、媒介宣告它保證什麼，儲存比對兩者並 fail closed**。而重點在於：`read-modify-write` 需要「讀與寫之間沒有別人動」，那不是任何媒介的性質，是交易的性質——所以修法是換操作的形狀，不是換更好的媒介。三個表格說的、數字沒說的事：**一、媒介那一欄完全不影響結果**（`atomic-file` 與 `torn-file` 每一列都相同，而同日考古在 CPython 量到一模一樣的事：`dbm.dumb` 與 `dbm.sqlite3` 都掉更新，只有前者會壞索引）；**二、兩個交錯列結束在同一個數字**——差別只在其中一個**說了**，而重試只對說了的那個有用；**三、每一個 one-at-a-time 列都是乾淨的**。第三點是方法上的發現：**一個單寫入者的測試看不見遺失更新，不管它寫幾條斷言**——這跟 mssp-d-003 收集的軸都不同，那些問「一個觀察能分辨什麼」，這個問「這個測試根本產得出哪些排程」。排程是寫死的不是搶出來的，所以結果是關於程式碼的事實。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/012-two-writers.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>012-two-writers</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>012-two-writers</span></div>
+    <div><b>語言</b><span>javascript</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-12</span></div>
+    <div><b>行數</b><span>577</span></div>
+    <div><b>執行</b><span><code>node src/main.mjs</code></span></div>
+  </section>
+  <article class="content"><h1>012 — Two writers, and the schedule the test could not produce</h1>
+<blockquote>
+<p><code>candidate</code>. This is the limitation example 011 named for itself, gone after
+the next day.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>Two writers increment the same counter. A schedule decides who moves next — and
+it is written down rather than raced for, so what happens is a fact about the
+code and not about this machine this morning.</p>
+<pre><code class="language-bash">node src/main.mjs             # what SCL runs, plus the combination it refuses
+node src/main.mjs --all       # every medium x operation x schedule
+node src/main.mjs --strict    # exit 1 when a requirement is unmet
+node src/island_test.mjs      # 28 checks across 7 sections
+</code></pre>
+<pre><code class="language-console">$ node src/main.mjs --all
+
+  medium        operation           schedule                ends at   lost   was anybody told?
+  atomic-file   compare-and-set     interleaved             1         1      yes, refused
+  atomic-file   compare-and-set     one-at-a-time           2         -      -
+  atomic-file   compare-and-set     interleaved + retry     2         -      -
+  atomic-file   read-modify-write   interleaved             1         1      NO, silently
+  atomic-file   read-modify-write   one-at-a-time           2         -      -
+  atomic-file   read-modify-write   interleaved + retry     1         1      NO, silently
+  torn-file     compare-and-set     interleaved             1         1      yes, refused
+  torn-file     read-modify-write   interleaved             1         1      NO, silently
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>An operation declares what it REQUIRES; a medium declares what it GUARANTEES;
+the store compares them and fails closed.</strong></p>
+<pre><code class="language-console">  !! read-modify-write requires serialised-transaction; atomic-file guarantees atomic-replace - fail closed
+</code></pre>
+<p>The consequence is the point: <strong>no medium here provides <code>serialised-transaction</code>,
+and none can.</strong> A read-modify-write needs nothing to happen between its read and
+its write, and that is not a property of a medium — it is a property of a
+transaction. So the repair is the shape of the operation, not a better medium.</p>
+<h2>Three things the table says that the numbers alone do not</h2>
+<p><strong>1. The medium column changes nothing.</strong> <code>atomic-file</code> and <code>torn-file</code> agree on
+every row. Atomicity of a write is a real guarantee and it is not the one a
+read-modify-write needs — measured, not argued:</p>
+<pre><code class="language-text">  PASS  atomic-file and torn-file give identical outcomes under the same schedule
+</code></pre>
+<p>The archaeology filed the same day found exactly this upstream: <code>dbm.dumb</code> and
+<code>dbm.sqlite3</code> <strong>both</strong> lose the update; only <code>dbm.dumb</code> corrupts.</p>
+<p><strong>2. The two interleaved rows end at the same number.</strong> <code>read-modify-write</code> and
+<code>compare-and-set</code> both leave the counter at 1. What differs is that one of them
+<strong>said so</strong>:</p>
+<pre><code class="language-text">  PASS  read-modify-write and compare-and-set end at the same value - both 1
+  PASS  and only one of them reported anything
+  PASS  retrying fixes the one that reported - ends at 2
+  PASS  and does nothing for the one that did not - there was nothing to retry, because nobody was told
+</code></pre>
+<p>Compare-and-set does not make the second increment happen. It <strong>refuses</strong>, and a
+refusal is worth exactly as much as somebody&#39;s willingness to retry.</p>
+<p><strong>3. Every one-at-a-time row is clean.</strong> That is the control, and it is the
+methodological finding.</p>
+<h2>The island test — section 4 is a control, not an assertion</h2>
+<pre><code class="language-text">  PASS  all 4 one-at-a-time runs end at 2 with nothing lost - 2, 2, 2, 2
+  PASS  all 4 interleaved runs lose one - 1, 1, 1, 1
+  PASS  so the schedule, not the assertion, is what decides whether this is visible
+</code></pre>
+<p><strong>A single-writer test cannot see a lost update, however many assertions it
+makes.</strong> This is a different axis from the ones
+<a href="/html/mssp/discussions/mssp-d-003.html"><code>mssp-d-003</code></a> has collected. Those ask
+what an observation can distinguish and which event it is about. This one asks
+what the test is <strong>able to produce at all</strong> — and no assertion can rescue a
+schedule that never happens.</p>
+<p>Section 6 checks the atomicity claim by running it rather than reading it: a
+medium claiming <code>atomic-replace</code> must complete a write in <strong>one step</strong>, and the
+island test interleaves inside a write to find there is no inside. <code>torn-file</code>
+is the control, and it is observably torn:</p>
+<pre><code class="language-text">  PASS  and torn-file is observably torn halfway through a write - halfway: &quot;{\&quot;n\&quot;:1&quot;
+</code></pre>
+<h2>What this example does not solve</h2>
+<p><strong>Measurable, not measured.</strong> What retries cost under real contention, and how
+often a real application&#39;s writes actually overlap.</p>
+<p><strong>Not measurable here.</strong> Whether these two schedules cover what a real scheduler
+produces. Two are written down; a system with more steps has more of them, and
+nothing here enumerates that space. <strong>This is the honest limit of the whole
+approach in this entry</strong> — a written-down schedule proves a failure exists, and
+proves nothing about the ones nobody wrote down.</p>
+<p><strong>And whether compare-and-set is the right repair.</strong> It converts a lost update
+into a retry, which is a different problem rather than no problem.</p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;012-two-writers&quot;,
+  &quot;what_it_is&quot;: &quot;The store from example 011 with a second writer, and the vocabulary that lets a mismatch be refused before an interleaving finds it.&quot;,
+  &quot;the_structural_decision&quot;: &quot;An operation declares what it REQUIRES of the medium; a medium declares what it GUARANTEES; the store compares them and fails closed. The consequence that matters: read-modify-write requires a serialised transaction, which is not a property any medium has — so the repair is the shape of the operation, not a better medium.&quot;,
+  &quot;why_now&quot;: &quot;Example 011 named this itself: one process, one writer, and two writers would break it while nothing noticed. That sentence was the limitation section of an entry published yesterday, and the switch to real market applications is eight days away.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+
+  &quot;guarantees&quot;: {
+    &quot;atomic-replace&quot;: &quot;a write completes in one step; nothing can be scheduled inside it&quot;,
+    &quot;serialised-transaction&quot;: &quot;nothing else writes between a read and its write. NO MEDIUM HERE PROVIDES THIS, and that is the finding rather than an omission&quot;
+  },
+
+  &quot;media&quot;: {
+    &quot;atomic-file&quot;: {&quot;guarantees&quot;: [&quot;atomic-replace&quot;], &quot;how&quot;: &quot;write to a staging name, rename over the target&quot;},
+    &quot;torn-file&quot;: {&quot;guarantees&quot;: [], &quot;how&quot;: &quot;write the record in two halves&quot;, &quot;why_it_exists&quot;: &quot;the control. Without a medium whose atomicity claim is false, the section checking atomicity cannot come out badly.&quot;}
+  },
+
+  &quot;operations&quot;: {
+    &quot;read-modify-write&quot;: {&quot;requires&quot;: [&quot;serialised-transaction&quot;], &quot;note&quot;: &quot;the shape everyone writes&quot;},
+    &quot;compare-and-set&quot;: {&quot;requires&quot;: [&quot;atomic-replace&quot;], &quot;note&quot;: &quot;the same intent with a requirement a medium can actually meet&quot;}
+  },
+
+  &quot;the_finding&quot;: &quot;Locking and lost updates are two different guarantees, and both get called safe for concurrent use. Measured in archaeology 012 the same day: dbm.dumb and dbm.sqlite3 BOTH lose an update under the same written-down schedule; only dbm.dumb corrupts. Real locking buys integrity and buys nothing at all on lost updates.&quot;,
+
+  &quot;the_methodological_finding&quot;: &quot;A single-writer test cannot observe a lost update no matter how many assertions it makes. This is not about how many values a check can read or which event they are about — it is about which SCHEDULES the test is able to produce. Section 4 is that control.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the guarantee vocabulary, what each medium and operation declares, and the compatibility rule&quot;,
+    &quot;SCL&quot;: &quot;which medium and operation this deployment runs, and whether an unmet requirement is fatal&quot;,
+    &quot;SMS&quot;: &quot;resolution by id, the requirement comparison, and the schedule harness&quot;,
+    &quot;TMS&quot;: &quot;one file per medium and per operation - each declares what it guarantees or requires, and reaches no sibling set&quot;,
+    &quot;DMS&quot;: &quot;the traces, the final values, and what none of it can see&quot;
+  },
+
+  &quot;non_goals&quot;: [
+    &quot;Being a database or a lock manager. Two media, two operation shapes, and a written-down schedule.&quot;,
+    &quot;Racing. There are no threads here; a schedule is chosen so the result is a fact about the code rather than about this machine's timing. Archaeology 012 runs the same schedule against real CPython backends, which is what stops the model from agreeing with itself.&quot;,
+    &quot;Claiming compare-and-set is the answer. It converts a lost update into a retry, and this example does not measure what retries cost under contention.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;medium&quot;: &quot;atomic-file&quot;,
+  &quot;operation&quot;: &quot;compare-and-set&quot;,
+  &quot;unmet_requirement_is_fatal&quot;: true,
+  &quot;_note&quot;: &quot;island_test.mjs runs every medium and operation regardless of what this says, including the combinations this policy refuses. A policy able to silence the comparison would make the comparison worthless.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.mjs</summary><pre><code>// Which medium and operation this deployment runs, and what it refuses to ship.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export const medium = () =&gt; config.medium;
+export const operation = () =&gt; config.operation;
+export const unmetIsFatal = () =&gt; Boolean(config.unmet_requirement_is_fatal);
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/schedule.mjs</summary><pre><code>// The interleaving is written down, not raced for.
+//
+// No threads and no timing. A schedule is a list of which writer moves next, so
+// a lost update here is a fact about the code rather than about this machine on
+// this morning. Archaeology 012 runs the same schedule against real CPython dbm
+// backends, which is what stops this from being a model agreeing with itself.
+
+export function run(writers, order) {
+  const cursors = writers.map(() =&gt; 0);
+  const trace = [];
+  for (const who of order) {
+    const step = writers[who]?.[cursors[who]];
+    if (!step) continue;
+    cursors[who] += 1;
+    trace.push({ who, ...step() });
+  }
+  // Anything the schedule did not reach still has to finish, in writer order.
+  for (const [who, steps] of writers.entries()) {
+    while (cursors[who] &lt; steps.length) {
+      trace.push({ who, ...steps[cursors[who]++]() });
+    }
+  }
+  return trace;
+}
+
+// Re-run whoever was refused, one at a time, until nobody is.
+//
+// The first version of this looped on the WHOLE accumulated trace, so the
+// original refusals never stopped satisfying the condition and it retried until
+// the budget ran out - two increments ended at five. Only the newest round can
+// answer &quot;is anyone still being refused&quot;.
+export function runWithRetries(makeWriters, order, budget = 5) {
+  let round = run(makeWriters(), order);
+  const trace = [...round];
+  let rounds = 1;
+  while (round.some((step) =&gt; step.retry) &amp;&amp; rounds &lt; budget) {
+    const refused = [...new Set(round.filter((step) =&gt; step.retry).map((step) =&gt; step.who))];
+    const writers = makeWriters();
+    // An empty order means the drain runs each of them to completion in turn,
+    // which is what a retry after a conflict actually is.
+    round = run(refused.map((who) =&gt; writers[who]), []);
+    trace.push(...round);
+    rounds += 1;
+  }
+  return { trace, rounds };
+}
+
+// Two named schedules. The second is the control: it is what a test with a
+// single writer produces, and it is why such a test cannot see any of this.
+export const INTERLEAVED = [0, 1, 0, 1, 0, 1];
+export const ONE_AT_A_TIME = [0, 0, 0, 1, 1, 1];
+</code></pre></details><details><summary>SMS/store.mjs</summary><pre><code>// The store: resolve a medium and an operation by id, and refuse a mismatch.
+//
+// The one rule this example adds: an operation declares what it REQUIRES, a
+// medium declares what it GUARANTEES, and the store compares them before
+// anything runs. A requirement nothing provides is refused rather than
+// discovered by an interleaving in production.
+import * as atomicFile from &quot;../TMS/media/atomic_file.mjs&quot;;
+import * as tornFile from &quot;../TMS/media/torn_file.mjs&quot;;
+import * as compareAndSet from &quot;../TMS/operations/compare_and_set.mjs&quot;;
+import * as readModifyWrite from &quot;../TMS/operations/read_modify_write.mjs&quot;;
+
+const MEDIA = Object.fromEntries(
+  [atomicFile, tornFile].map((module) =&gt; [module.MEDIUM, module]));
+const OPERATIONS = Object.fromEntries(
+  [readModifyWrite, compareAndSet].map((module) =&gt; [module.OPERATION, module]));
+
+export const mediaNames = () =&gt; Object.keys(MEDIA).sort();
+export const operationNames = () =&gt; Object.keys(OPERATIONS).sort();
+
+export function resolveMedium(name) {
+  const module = MEDIA[name];
+  if (!module) return { problem: `medium &quot;${name}&quot; has no implementation - fail closed (known: ${mediaNames().join(&quot;, &quot;)})` };
+  return { module };
+}
+
+export function resolveOperation(name) {
+  const module = OPERATIONS[name];
+  if (!module) return { problem: `operation &quot;${name}&quot; has no implementation - fail closed (known: ${operationNames().join(&quot;, &quot;)})` };
+  return { module };
+}
+
+// The comparison. Two declarations, and the one thing that makes it more than
+// two labels agreeing is that section 5 of the island test proves each of them
+// against behaviour before this is consulted.
+export function unmetRequirements(operation, medium) {
+  return operation.REQUIRES.filter((need) =&gt; !medium.GUARANTEES.includes(need));
+}
+
+export function open({ mediumName, operationName, dir, allowUnmet = false }) {
+  const medium = resolveMedium(mediumName);
+  if (medium.problem) return { problem: medium.problem };
+  const operation = resolveOperation(operationName);
+  if (operation.problem) return { problem: operation.problem };
+
+  const unmet = unmetRequirements(operation.module, medium.module);
+  if (unmet.length &amp;&amp; !allowUnmet) {
+    return {
+      problem: `${operationName} requires ${unmet.join(&quot;, &quot;)}; ${mediumName} guarantees `
+        + `${medium.module.GUARANTEES.join(&quot;, &quot;) || &quot;nothing&quot;} - fail closed`,
+      unmet,
+    };
+  }
+
+  const handle = medium.module.make({ dir });
+  return {
+    unmet,
+    store: {
+      medium: mediumName,
+      operation: operationName,
+      seed(key, record) { for (const write of handle.writeSteps(key, JSON.stringify(record))) write(); },
+      read(key) { const raw = handle.read(key); return raw === null ? null : JSON.parse(raw); },
+      raw: (key) =&gt; handle.read(key),
+      // A writer is not run here. It is a list of steps, so a schedule decides
+      // when each one happens.
+      writer: (key, change) =&gt; operation.module.steps(handle, key, change),
+    },
+  };
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/media/atomic_file.mjs</summary><pre><code>// A medium whose write is one step, because it writes elsewhere and renames.
+//
+// &quot;Atomic&quot; here is not a label: a write() returns the steps it takes, and this
+// one returns exactly one. The island test interleaves INSIDE a write and finds
+// there is no inside. A medium that claimed this and returned two steps would
+// be caught by that, not by anyone reading this comment.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+
+export const MEDIUM = &quot;atomic-file&quot;;
+export const GUARANTEES = [&quot;atomic-replace&quot;];
+
+export function make({ dir }) {
+  fs.mkdirSync(dir, { recursive: true });
+  const file = (key) =&gt; path.join(dir, `${encodeURIComponent(key)}.json`);
+  return {
+    read: (key) =&gt; (fs.existsSync(file(key)) ? fs.readFileSync(file(key), &quot;utf8&quot;) : null),
+    // One step. The temporary file and the rename happen together or not at all.
+    writeSteps: (key, value) =&gt; [() =&gt; {
+      const staging = `${file(key)}.${process.pid}.tmp`;
+      fs.writeFileSync(staging, value, &quot;utf8&quot;);
+      fs.renameSync(staging, file(key));
+    }],
+  };
+}
+</code></pre></details><details><summary>TMS/media/torn_file.mjs</summary><pre><code>// A medium that writes in two steps, and says so.
+//
+// It is here as the control. Without a medium whose atomicity claim is FALSE,
+// the section that checks atomicity cannot come out badly - the same reason
+// example 011 keeps a medium whose persistence claim is false.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+
+export const MEDIUM = &quot;torn-file&quot;;
+export const GUARANTEES = [];
+
+export function make({ dir }) {
+  fs.mkdirSync(dir, { recursive: true });
+  const file = (key) =&gt; path.join(dir, `${encodeURIComponent(key)}.json`);
+  return {
+    read: (key) =&gt; (fs.existsSync(file(key)) ? fs.readFileSync(file(key), &quot;utf8&quot;) : null),
+    // Two steps. Anything scheduled between them sees half a record.
+    writeSteps: (key, value) =&gt; {
+      const half = Math.ceil(value.length / 2);
+      return [
+        () =&gt; fs.writeFileSync(file(key), value.slice(0, half), &quot;utf8&quot;),
+        () =&gt; fs.appendFileSync(file(key), value.slice(half), &quot;utf8&quot;),
+      ];
+    },
+  };
+}
+</code></pre></details><details><summary>TMS/operations/compare_and_set.mjs</summary><pre><code>// Read, change, and write back only if nothing moved underneath.
+//
+// It needs one thing from the medium - that a replace is a single step - and
+// nothing from a transaction. That is the whole difference: the requirement
+// shrank to something a medium can actually provide.
+//
+// What it does NOT do is make the second writer's increment happen. It refuses,
+// and a refusal is only worth something if somebody retries. The final value
+// under one interleaving is the same as read-modify-write's; what differs is
+// that here someone was told.
+export const OPERATION = &quot;compare-and-set&quot;;
+export const REQUIRES = [&quot;atomic-replace&quot;];
+
+export function steps(medium, key, change) {
+  let seen = null;
+  let next = null;
+  return [
+    () =&gt; { seen = medium.read(key); return { step: &quot;read&quot; }; },
+    () =&gt; { next = JSON.stringify(change(JSON.parse(seen))); return { step: &quot;modify&quot; }; },
+    () =&gt; {
+      // The comparison and the write are one step, which is what atomic-replace
+      // buys. If the medium moved, this attempt is abandoned and reported.
+      if (medium.read(key) !== seen) return { step: &quot;compare+write&quot;, retry: true };
+      for (const write of medium.writeSteps(key, next)) write();
+      return { step: &quot;compare+write&quot;, retry: false };
+    },
+  ];
+}
+</code></pre></details><details><summary>TMS/operations/read_modify_write.mjs</summary><pre><code>// Read the record, change it, write it back.
+//
+// The shape everyone writes. It requires that nothing else writes between the
+// read and the write, which is not a property any medium has - it is a property
+// of a transaction. Declaring the requirement is what makes the mismatch
+// visible before an interleaving does.
+export const OPERATION = &quot;read-modify-write&quot;;
+export const REQUIRES = [&quot;serialised-transaction&quot;];
+
+export function steps(medium, key, change) {
+  let held = null;
+  return [
+    () =&gt; { held = JSON.parse(medium.read(key)); return { step: &quot;read&quot; }; },
+    () =&gt; { held = change(held); return { step: &quot;modify&quot; }; },
+    () =&gt; {
+      for (const write of medium.writeSteps(key, JSON.stringify(held))) write();
+      return { step: &quot;write&quot;, retry: false };
+    },
+  ];
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.mjs</summary><pre><code>// The traces, the final values, and what nothing here is watching.
+
+export function outcome(rows, out) {
+  out(`\n  ${&quot;medium&quot;.padEnd(13)} ${&quot;operation&quot;.padEnd(19)} ${&quot;schedule&quot;.padEnd(23)} `
+    + `${&quot;ends at&quot;.padEnd(9)} ${&quot;lost&quot;.padEnd(6)} was anybody told?`);
+  for (const row of rows) {
+    const lost = row.expected - row.final;
+    out(`  ${row.medium.padEnd(13)} ${row.operation.padEnd(19)} ${row.schedule.padEnd(23)} `
+      + `${String(row.final).padEnd(9)} ${(lost === 0 ? &quot;-&quot; : String(lost)).padEnd(6)} `
+      + `${lost === 0 ? &quot;-&quot; : (row.reported ? &quot;yes, refused&quot; : &quot;NO, silently&quot;)}`);
+  }
+}
+
+export function trace(steps, out) {
+  out(&quot;\n  what actually happened, step by step:&quot;);
+  for (const step of steps) out(`    writer ${step.who}  ${step.step}${step.retry ? &quot;  -&gt; refused, retry&quot; : &quot;&quot;}`);
+}
+
+export function gaps(out) {
+  out(&quot;\n  measurable, not measured here:&quot;);
+  out(&quot;    - what retries cost under real contention&quot;);
+  out(&quot;    - how often a real application's writes actually overlap&quot;);
+  out(&quot;\n  not measurable by this program at all:&quot;);
+  out(&quot;    - whether any schedule a real scheduler produces is covered. The two&quot;);
+  out(&quot;      here are written down; a system with more steps has more of them,&quot;);
+  out(&quot;      and nothing in this example enumerates that space.&quot;);
+  out(&quot;    - whether compare-and-set is the right repair. It converts a lost&quot;);
+  out(&quot;      update into a retry, which is a different problem, not no problem.&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.mjs</summary><pre><code>// The island test.
+//
+//   node src/island_test.mjs
+//
+// Section 4 is the one this example exists for, and it is a control rather than
+// an assertion: the same operations under a single-writer schedule are clean
+// everywhere in the table. A test that can only produce one schedule cannot see
+// a lost update, however many assertions it makes.
+import fs from &quot;node:fs&quot;;
+import os from &quot;node:os&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as schedule from &quot;./SMS/schedule.mjs&quot;;
+import * as store from &quot;./SMS/store.mjs&quot;;
+import { runOnce } from &quot;./main.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;contract.json&quot;), &quot;utf8&quot;));
+const failures = [];
+
+const check = (label, ok, detail = &quot;&quot;) =&gt; {
+  process.stdout.write(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}\n`);
+  if (!ok) failures.push(label);
+};
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+const tempDir = () =&gt; fs.mkdtempSync(path.join(os.tmpdir(), &quot;mssp-012-&quot;));
+
+say(&quot;\n== 1. every TMS unit is an island and declares its side of the contract&quot;);
+for (const kind of [&quot;media&quot;, &quot;operations&quot;]) {
+  const dir = path.join(here, &quot;TMS&quot;, kind);
+  const files = fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+  check(`there are two ${kind} files`, files.length === 2, files.join(&quot;, &quot;));
+  for (const file of files) {
+    const source = fs.readFileSync(path.join(dir, file), &quot;utf8&quot;);
+    const reaches = [...source.matchAll(/^\s*import[^&quot;']*[&quot;']([^&quot;']+)[&quot;']/gm)].map((m) =&gt; m[1]);
+    const siblings = reaches.filter((spec) =&gt; /\.\.\/|FMS|SCL|SMS|DMS/.test(spec));
+    check(`${file} reaches no sibling set`, siblings.length === 0,
+      reaches.join(&quot;, &quot;) || &quot;no imports at all&quot;);
+  }
+}
+for (const name of store.mediaNames()) {
+  const { module } = store.resolveMedium(name);
+  check(`${name} declares what it guarantees`, Array.isArray(module.GUARANTEES),
+    JSON.stringify(module.GUARANTEES));
+}
+for (const name of store.operationNames()) {
+  const { module } = store.resolveOperation(name);
+  check(`${name} declares what it requires`, module.REQUIRES.length &gt; 0,
+    JSON.stringify(module.REQUIRES));
+}
+
+say(&quot;\n== 2. a requirement nothing provides is refused before anything runs&quot;);
+const refused = store.open({
+  mediumName: &quot;atomic-file&quot;, operationName: &quot;read-modify-write&quot;, dir: tempDir() });
+check(&quot;read-modify-write on any medium is refused&quot;, Boolean(refused.problem), refused.problem);
+check(&quot;and no store is handed back&quot;, refused.store === undefined);
+const allowed = store.open({
+  mediumName: &quot;atomic-file&quot;, operationName: &quot;compare-and-set&quot;, dir: tempDir() });
+check(&quot;compare-and-set on atomic-file is allowed&quot;, Boolean(allowed.store),
+  `unmet: ${JSON.stringify(allowed.unmet)}`);
+const mismatched = store.open({
+  mediumName: &quot;torn-file&quot;, operationName: &quot;compare-and-set&quot;, dir: tempDir() });
+check(&quot;compare-and-set on torn-file is refused - it needs atomic-replace&quot;,
+  Boolean(mismatched.problem), mismatched.problem);
+for (const [label, args] of [
+  [&quot;an unknown medium&quot;, { mediumName: &quot;redis&quot;, operationName: &quot;compare-and-set&quot;, dir: tempDir() }],
+  [&quot;an unknown operation&quot;, { mediumName: &quot;atomic-file&quot;, operationName: &quot;upsert&quot;, dir: tempDir() }],
+]) {
+  check(`${label} stops the run`, Boolean(store.open(args).problem), store.open(args).problem);
+}
+
+say(&quot;\n== 3. the medium column changes nothing, which is the point&quot;);
+const byMedium = {};
+for (const mediumName of store.mediaNames()) {
+  byMedium[mediumName] = store.operationNames().map((operationName) =&gt; {
+    const row = runOnce(mediumName, operationName, &quot;interleaved&quot;);
+    return `${operationName}:${row.final}:${row.reported}`;
+  }).join(&quot; | &quot;);
+}
+check(&quot;atomic-file and torn-file give identical outcomes under the same schedule&quot;,
+  new Set(Object.values(byMedium)).size === 1, Object.values(byMedium)[0]);
+say(&quot;        Atomicity of a write is a real guarantee. It is not the guarantee a&quot;);
+say(&quot;        read-modify-write needs, and no amount of it will be.&quot;);
+
+say(&quot;\n== 4. THE CONTROL: a single-writer schedule sees none of this&quot;);
+const oneAtATime = [];
+const interleaved = [];
+for (const mediumName of store.mediaNames()) {
+  for (const operationName of store.operationNames()) {
+    oneAtATime.push(runOnce(mediumName, operationName, &quot;one-at-a-time&quot;));
+    interleaved.push(runOnce(mediumName, operationName, &quot;interleaved&quot;));
+  }
+}
+check(`all ${oneAtATime.length} one-at-a-time runs end at 2 with nothing lost`,
+  oneAtATime.every((row) =&gt; row.final === 2),
+  oneAtATime.map((row) =&gt; row.final).join(&quot;, &quot;));
+check(`all ${interleaved.length} interleaved runs lose one`,
+  interleaved.every((row) =&gt; row.final === 1),
+  interleaved.map((row) =&gt; row.final).join(&quot;, &quot;));
+check(&quot;so the schedule, not the assertion, is what decides whether this is visible&quot;,
+  oneAtATime.every((row) =&gt; row.final === 2) &amp;&amp; interleaved.every((row) =&gt; row.final === 1));
+
+say(&quot;\n== 5. two outcomes that end at the same number&quot;);
+const silent = runOnce(&quot;atomic-file&quot;, &quot;read-modify-write&quot;, &quot;interleaved&quot;);
+const told = runOnce(&quot;atomic-file&quot;, &quot;compare-and-set&quot;, &quot;interleaved&quot;);
+check(&quot;read-modify-write and compare-and-set end at the same value&quot;,
+  silent.final === told.final, `both ${silent.final}`);
+check(&quot;and only one of them reported anything&quot;,
+  silent.reported !== told.reported,
+  `read-modify-write reported=${silent.reported}, compare-and-set reported=${told.reported}`);
+const retried = runOnce(&quot;atomic-file&quot;, &quot;compare-and-set&quot;, &quot;interleaved&quot;, { retry: true });
+const retriedSilently = runOnce(&quot;atomic-file&quot;, &quot;read-modify-write&quot;, &quot;interleaved&quot;, { retry: true });
+check(&quot;retrying fixes the one that reported&quot;, retried.final === 2, `ends at ${retried.final}`);
+check(&quot;and does nothing for the one that did not&quot;, retriedSilently.final === 1,
+  `ends at ${retriedSilently.final} - there was nothing to retry, because nobody was told`);
+
+say(&quot;\n== 6. the atomicity claim is checked by running it, not by reading it&quot;);
+for (const name of store.mediaNames()) {
+  const { module } = store.resolveMedium(name);
+  const handle = module.make({ dir: tempDir() });
+  const steps = handle.writeSteps(&quot;k&quot;, '{&quot;n&quot;:1}');
+  const claimsAtomic = module.GUARANTEES.includes(&quot;atomic-replace&quot;);
+  check(`${name}: declared atomic-replace=${claimsAtomic}, write takes ${steps.length} step(s)`,
+    claimsAtomic === (steps.length === 1),
+    claimsAtomic ? &quot;one step means nothing can be scheduled inside it&quot; : &quot;two steps, and it says so&quot;);
+}
+// The drill: a medium that claimed atomicity and wrote in two steps must be
+// caught by the line above, or that line is a label agreeing with a label.
+const liar = { GUARANTEES: [&quot;atomic-replace&quot;], writeSteps: () =&gt; [() =&gt; {}, () =&gt; {}] };
+check(&quot;a medium claiming atomic-replace with a two-step write would be caught&quot;,
+  liar.GUARANTEES.includes(&quot;atomic-replace&quot;) !== (liar.writeSteps().length === 1),
+  &quot;declared true, measured two steps&quot;);
+// And the torn medium is observably torn: schedule something between its steps.
+const torn = store.resolveMedium(&quot;torn-file&quot;).module.make({ dir: tempDir() });
+const tornSteps = torn.writeSteps(&quot;k&quot;, '{&quot;n&quot;:123456}');
+tornSteps[0]();
+const halfway = torn.read(&quot;k&quot;);
+tornSteps[1]();
+check(&quot;and torn-file is observably torn halfway through a write&quot;,
+  halfway !== torn.read(&quot;k&quot;) &amp;&amp; halfway.length &lt; torn.read(&quot;k&quot;).length,
+  `halfway: ${JSON.stringify(halfway)}`);
+
+say(&quot;\n== 7. what this example does not solve&quot;);
+say(&quot;        MEASURABLE, NOT MEASURED&quot;);
+say(&quot;          - what retries cost under real contention&quot;);
+say(&quot;          - how often a real application's writes actually overlap&quot;);
+say(&quot;        NOT MEASURABLE HERE&quot;);
+say(&quot;          - whether the schedules here cover what a real scheduler produces.&quot;);
+say(&quot;            Two are written down. A system with more steps has more of them,&quot;);
+say(&quot;            and nothing in this example enumerates that space.&quot;);
+say(&quot;          - whether compare-and-set is the right repair. It converts a lost&quot;);
+say(&quot;            update into a retry, which is a different problem, not none.&quot;);
+
+say(failures.length ? `\n${failures.length} failure(s)` : &quot;\nall checks passed&quot;);
+for (const f of failures) say(`  - ${f}`);
+process.exit(failures.length ? 1 : 0);
+</code></pre></details><details><summary>main.mjs</summary><pre><code>// Two writers, a written-down schedule, and a requirement that is refused.
+//
+//   node src/main.mjs            what SCL runs, plus the combination it refuses
+//   node src/main.mjs --strict   exit 1 when a requirement is unmet
+//   node src/main.mjs --all      every medium x operation x schedule
+import fs from &quot;node:fs&quot;;
+import os from &quot;node:os&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as report from &quot;./DMS/report.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as schedule from &quot;./SMS/schedule.mjs&quot;;
+import * as store from &quot;./SMS/store.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;contract.json&quot;), &quot;utf8&quot;));
+const tempDir = () =&gt; fs.mkdtempSync(path.join(os.tmpdir(), &quot;mssp-012-&quot;));
+
+const SCHEDULES = { interleaved: schedule.INTERLEAVED, &quot;one-at-a-time&quot;: schedule.ONE_AT_A_TIME };
+const increment = (record) =&gt; ({ ...record, n: record.n + 1 });
+
+export function runOnce(mediumName, operationName, scheduleName, { retry = false } = {}) {
+  const opened = store.open({ mediumName, operationName, dir: tempDir(), allowUnmet: true });
+  if (opened.problem) return { problem: opened.problem };
+  const { store: orders } = opened;
+  orders.seed(&quot;counter&quot;, { n: 0 });
+
+  const makeWriters = () =&gt; [orders.writer(&quot;counter&quot;, increment), orders.writer(&quot;counter&quot;, increment)];
+  const { trace } = retry
+    ? schedule.runWithRetries(makeWriters, SCHEDULES[scheduleName])
+    : { trace: schedule.run(makeWriters(), SCHEDULES[scheduleName]) };
+  return {
+    medium: mediumName,
+    operation: operationName,
+    schedule: scheduleName + (retry ? &quot; + retry&quot; : &quot;&quot;),
+    expected: 2,
+    final: orders.read(&quot;counter&quot;)?.n ?? null,
+    // The measure that separates a refusal from a silent loss. They can end at
+    // the same number; only one of them told anybody.
+    reported: trace.some((step) =&gt; step.retry),
+    unmet: opened.unmet,
+    trace,
+  };
+}
+
+function main(argv) {
+  const out = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+  if (argv.includes(&quot;--all&quot;)) {
+    const rows = [];
+    for (const mediumName of store.mediaNames()) {
+      for (const operationName of store.operationNames()) {
+        for (const scheduleName of Object.keys(SCHEDULES)) {
+          rows.push(runOnce(mediumName, operationName, scheduleName));
+        }
+        rows.push(runOnce(mediumName, operationName, &quot;interleaved&quot;, { retry: true }));
+      }
+    }
+    out(&quot;\n== every combination, both schedules&quot;);
+    report.outcome(rows, out);
+    out(&quot;\n  Three things this table says that the numbers alone do not:&quot;);
+    out(&quot;    - the medium column changes nothing. atomic-file and torn-file agree&quot;);
+    out(&quot;      on every row, because atomicity of a write is not the guarantee a&quot;);
+    out(&quot;      read-modify-write needs.&quot;);
+    out(&quot;    - the two interleaved rows for one medium END AT THE SAME NUMBER.&quot;);
+    out(&quot;      What differs is whether anybody was told, and a retry is only&quot;);
+    out(&quot;      worth anything to the one that reported.&quot;);
+    out(&quot;    - every one-at-a-time row is clean. A test with a single writer sees&quot;);
+    out(&quot;      nothing here at all, however many assertions it makes.&quot;);
+    return 0;
+  }
+
+  const configured = store.open({
+    mediumName: policy.medium(), operationName: policy.operation(), dir: tempDir(),
+  });
+  out(`\n== what this deployment runs: ${policy.medium()} + ${policy.operation()}`);
+  if (configured.problem) {
+    out(`  !! ${configured.problem}`);
+    return 1;
+  }
+  const rows = [
+    ...Object.keys(SCHEDULES).map((name) =&gt; runOnce(policy.medium(), policy.operation(), name)),
+    runOnce(policy.medium(), policy.operation(), &quot;interleaved&quot;, { retry: true }),
+  ];
+  report.outcome(rows, out);
+  report.trace(rows[0].trace, out);
+
+  out(&quot;\n== the combination this deployment refuses, and why&quot;);
+  const refused = store.open({
+    mediumName: policy.medium(), operationName: &quot;read-modify-write&quot;, dir: tempDir(),
+  });
+  out(`  !! ${refused.problem}`);
+  const anyway = runOnce(policy.medium(), &quot;read-modify-write&quot;, &quot;interleaved&quot;);
+  out(`     run anyway, interleaved: two increments from 0 end at ${anyway.final}`);
+  out(`     ${CONTRACT.guarantees[&quot;serialised-transaction&quot;].split(&quot;. &quot;)[1]}`);
+
+  report.gaps(out);
+
+  if (argv.includes(&quot;--strict&quot;) &amp;&amp; refused.unmet?.length &amp;&amp; policy.unmetIsFatal()) return 1;
+  return 0;
+}
+
+process.exitCode = main(process.argv.slice(2));
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

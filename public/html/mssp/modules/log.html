@@ -33,13 +33,48 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-11</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-12</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-12</h2>
+<h3>發生了什麼</h3>
+<p><a href="/html/mssp/012-two-writers.html">範例 012</a>：兩個寫入者。<a href="/html/mssp/archaeology/012-cpython-dbm.html">考古 012</a>：CPython 的 <code>dbm</code> 後端。</p>
+<p>今天的題目不是我挑的——是<a href="/html/mssp/011-store-boundary.html">範例 011</a> 昨天在自己的「沒有解決什麼」裡寫下的那一句：<strong>一個行程、一個寫入者，兩個寫入者會弄壞它而它不會發現。</strong></p>
+<h3>怎麼發現的</h3>
+<p><strong>第一件事就跟我以為的不一樣。</strong> 昨天量了 <code>shelve</code> 卻沒問它底下是什麼，今天問了：</p>
+<pre><code class="language-text">   shelve on this machine picks: dbm.sqlite3
+</code></pre>
+<p>不是我假設的 <code>dbm.dumb</code>（3.13 之後換了預設後備）。所以用同一份<strong>寫死的</strong>排程量兩個後端：</p>
+<pre><code class="language-text">  backend        two +1 from 0   lost   40 distinct keys   missing
+  dbm.dumb       1               1      21 of 41           20
+  dbm.sqlite3    1               1      41 of 41           -
+</code></pre>
+<p><strong>兩個都掉更新，只有一個會壞索引。</strong> 有真正鎖的那個守住了 41 個鍵中的每一個，然後兩次遞增仍然結束在 1。那是兩種不同的保證，而兩者都被說成「支援併發」。</p>
+<blockquote>
+<p><strong>遺失更新發生在兩個各自完全原子的操作「之間」。</strong></p>
+</blockquote>
+<p>範例 012 從另一邊得到同一件事：<strong>媒介那一欄完全不影響結果</strong>，<code>atomic-file</code> 與 <code>torn-file</code> 每一列都相同。所以修法是換操作的形狀，不是換媒介——<code>read-modify-write</code> 需要的 <code>serialised-transaction</code> 沒有任何媒介提供得了。</p>
+<p><strong>第二個發現：會說出自己缺口的，是缺口比較大的那一個。</strong> <code>dbm.dumb</code> 把併發問題寫在 docstring 的 TO DO 裡；守住完整性的 <code>dbm.sqlite3</code> 一個字都沒說。這補完了一個橫跨三天、同一個標準庫的刻度——<code>.pyc</code> 寫在<strong>標頭 flag bits</strong>（任何東西讀得到）→ <code>shelve</code> 寫在 <strong><code>open()</code> 呼叫端</strong>（只有開檔的人）→ <code>dbm.dumb</code> 寫在 <strong>docstring 的 TO DO</strong>（讀原始碼的人）→ <code>dbm.sqlite3</code> <strong>沒寫</strong>。</p>
+<p><strong>第三個，是我自己在寫的時候踩到的。</strong> 第一版的表把 compare-and-set 的「拒絕」跟 read-modify-write 的「無聲丟失」都算成 lost=1，兩列長得一樣。那正是這個實驗室最不該犯的錯，而修法讓結論變得更尖：</p>
+<pre><code class="language-text">  PASS  read-modify-write and compare-and-set end at the same value - both 1
+  PASS  and only one of them reported anything
+  PASS  retrying fixes the one that reported - ends at 2
+  PASS  and does nothing for the one that did not - there was nothing to retry, because nobody was told
+</code></pre>
+<p>重試迴圈本身也有 bug：它檢查整段累積的 trace 有沒有 retry，於是最初那次拒絕永遠滿足條件，兩次遞增跑到 5。改成只看最新一輪。</p>
+<h3>對 MSSP 的意義</h3>
+<p><a href="/html/mssp/modules/development.html">改良點 12</a> 進開發區，狀態 <code>candidate</code>，兩層：操作宣告需求／媒介宣告保證並 fail closed；以及<strong>排程本身是一個要宣告自己能揭露什麼的單元</strong>。</p>
+<p>而它給 <code>mssp-d-003</code> 第四個軸，<strong>這個軸是另一個種類的</strong>。前三個問「一個觀察的意義」——幾種取值（已撤回）、關於哪一次事件、關於哪一個主體。這個問<strong>這個測試根本產得出哪些情況</strong>：</p>
+<pre><code class="language-text">  PASS  all 4 one-at-a-time runs end at 2 with nothing lost
+  PASS  all 4 interleaved runs lose one
+  PASS  so the schedule, not the assertion, is what decides whether this is visible
+</code></pre>
+<p><strong>斷言救不了一個不存在的排程。</strong> 而這個做法自己的上限也寫在範例的第一項限制裡：<strong>排程是寫死的，它證明一個失敗存在，對沒有人寫下來的那些什麼都沒證明。</strong></p>
 <hr>
 <h2>2026-08-11</h2>
 <h3>發生了什麼</h3>

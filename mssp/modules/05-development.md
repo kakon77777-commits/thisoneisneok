@@ -479,6 +479,64 @@ Neo 2026-08-08 給的解法：**1.x 到 2.0 這種小版本三個 AI 自己改�
 
 ---
 
+### 改良點 12：操作要說出它需要什麼，而排程本身是一個會宣告的單元
+
+[範例 011](/html/mssp/011-store-boundary.html) 在自己的「沒有解決什麼」裡寫下：一個行程、一個寫入者，兩個寫入者會弄壞它而它不會發現。[範例 012](/html/mssp/012-two-writers.html) 隔天就去弄壞它。
+
+**結構主張分兩層。**
+
+**第一層：操作宣告它需要什麼，媒介宣告它保證什麼，儲存比對兩者並 fail closed。**
+
+```text
+  !! read-modify-write requires serialised-transaction; atomic-file guarantees atomic-replace - fail closed
+```
+
+而真正有內容的是那個比對的結果：**沒有任何媒介提供 `serialised-transaction`，也不可能有。** 「讀與寫之間沒有別人動」不是媒介的性質，是交易的性質。所以修法是換操作的形狀，不是換更好的媒介——這一句被同日的[考古 012](/html/mssp/archaeology/012-cpython-dbm.html) 在上游證實：
+
+```text
+  backend        two +1 from 0   lost   40 distinct keys   missing
+  dbm.dumb       1               1      21 of 41           20
+  dbm.sqlite3    1               1      41 of 41           -
+```
+
+**兩個都掉更新，只有一個會壞索引。** 有真正鎖的那個守住了每一個鍵，然後兩次遞增仍然結束在 1。**遺失更新發生在兩個各自完全原子的操作「之間」**，任何份量的鎖都不處理它。範例 012 的媒介欄同樣完全不影響結果——`atomic-file` 與 `torn-file` 每一列都一樣。
+
+**第二層，而且它是今天真正新的東西：排程是一個單元，要宣告自己能揭露什麼。**
+
+```text
+    ok  interleaved     declares ['lost-update', 'torn-index'], revealed ['lost-update']
+    ok  one-at-a-time   declares [], revealed nothing
+```
+
+考古 012 的 TMS 一個排程一個檔，而那份宣告用跑的驗——第 2b 節安排一個實際上循序、卻宣告自己能揭露遺失更新的排程，必須被抓到。
+
+### 這一條在方法上的位置：`mssp-d-003` 的第四個軸，而它是另一個種類
+
+前三個軸問的都是**一個觀察的意義**：能取到幾種值（已撤回）、關於哪一次事件、關於哪一個主體。今天這個問的是**這個測試根本產得出哪些情況**。
+
+```text
+  PASS  all 4 one-at-a-time runs end at 2 with nothing lost - 2, 2, 2, 2
+  PASS  all 4 interleaved runs lose one - 1, 1, 1, 1
+  PASS  so the schedule, not the assertion, is what decides whether this is visible
+```
+
+**一個單寫入者的測試看不見遺失更新，寫幾條斷言都一樣。** 這不是「檢查讀到的值不夠分辨」，是那個情況從來沒有發生過。斷言救不了一個不存在的排程。
+
+**還有一件同樣形狀、而且更難處理的事被量到：兩個交錯列結束在同一個數字。** `read-modify-write` 與 `compare-and-set` 都讓計數器停在 1——差別只在其中一個**說了**，而重試只對說了的那個有用：
+
+```text
+  PASS  read-modify-write and compare-and-set end at the same value - both 1
+  PASS  and only one of them reported anything
+  PASS  retrying fixes the one that reported - ends at 2
+  PASS  and does nothing for the one that did not - there was nothing to retry, because nobody was told
+```
+
+**代價與限制，寫在前面而不是註腳：** 排程是寫死的。它證明一個失敗存在，**對沒有人寫下來的那些排程什麼都沒證明**。範例 012 自己把這句放在「沒有解決什麼」的第一項，因為它是這個做法的誠實上限，不是這一則的疏漏。
+
+**驗證方式：** 20/20 之後的真實應用一定有多個寫入者。到時候要問的是這一條的成本——每個操作多一個 `REQUIRES` 是小事，而**把排程當單元維護**可能不是。兩種結果都有資訊。
+
+---
+
 ## 開發路線：四個 MVP 與回饋迴圈
 
 [程式研究區](/research)的四份研究不會停在論文。每一份要先做出 MVP，而 MVP 本身用 MSSP 蓋——於是它同時是產品，也是這個方法在中等規模上的證據。

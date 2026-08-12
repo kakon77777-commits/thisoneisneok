@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-11
+updated: 2026-08-12
 ---
 
 # 開發日誌
@@ -17,6 +17,65 @@ updated: 2026-08-11
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-12
+
+### 發生了什麼
+
+[範例 012](/html/mssp/012-two-writers.html)：兩個寫入者。[考古 012](/html/mssp/archaeology/012-cpython-dbm.html)：CPython 的 `dbm` 後端。
+
+今天的題目不是我挑的——是[範例 011](/html/mssp/011-store-boundary.html) 昨天在自己的「沒有解決什麼」裡寫下的那一句：**一個行程、一個寫入者，兩個寫入者會弄壞它而它不會發現。**
+
+### 怎麼發現的
+
+**第一件事就跟我以為的不一樣。** 昨天量了 `shelve` 卻沒問它底下是什麼，今天問了：
+
+```text
+   shelve on this machine picks: dbm.sqlite3
+```
+
+不是我假設的 `dbm.dumb`（3.13 之後換了預設後備）。所以用同一份**寫死的**排程量兩個後端：
+
+```text
+  backend        two +1 from 0   lost   40 distinct keys   missing
+  dbm.dumb       1               1      21 of 41           20
+  dbm.sqlite3    1               1      41 of 41           -
+```
+
+**兩個都掉更新，只有一個會壞索引。** 有真正鎖的那個守住了 41 個鍵中的每一個，然後兩次遞增仍然結束在 1。那是兩種不同的保證，而兩者都被說成「支援併發」。
+
+> **遺失更新發生在兩個各自完全原子的操作「之間」。**
+
+範例 012 從另一邊得到同一件事：**媒介那一欄完全不影響結果**，`atomic-file` 與 `torn-file` 每一列都相同。所以修法是換操作的形狀，不是換媒介——`read-modify-write` 需要的 `serialised-transaction` 沒有任何媒介提供得了。
+
+**第二個發現：會說出自己缺口的，是缺口比較大的那一個。** `dbm.dumb` 把併發問題寫在 docstring 的 TO DO 裡；守住完整性的 `dbm.sqlite3` 一個字都沒說。這補完了一個橫跨三天、同一個標準庫的刻度——`.pyc` 寫在**標頭 flag bits**（任何東西讀得到）→ `shelve` 寫在 **`open()` 呼叫端**（只有開檔的人）→ `dbm.dumb` 寫在 **docstring 的 TO DO**（讀原始碼的人）→ `dbm.sqlite3` **沒寫**。
+
+**第三個，是我自己在寫的時候踩到的。** 第一版的表把 compare-and-set 的「拒絕」跟 read-modify-write 的「無聲丟失」都算成 lost=1，兩列長得一樣。那正是這個實驗室最不該犯的錯，而修法讓結論變得更尖：
+
+```text
+  PASS  read-modify-write and compare-and-set end at the same value - both 1
+  PASS  and only one of them reported anything
+  PASS  retrying fixes the one that reported - ends at 2
+  PASS  and does nothing for the one that did not - there was nothing to retry, because nobody was told
+```
+
+重試迴圈本身也有 bug：它檢查整段累積的 trace 有沒有 retry，於是最初那次拒絕永遠滿足條件，兩次遞增跑到 5。改成只看最新一輪。
+
+### 對 MSSP 的意義
+
+[改良點 12](/html/mssp/modules/development.html) 進開發區，狀態 `candidate`，兩層：操作宣告需求／媒介宣告保證並 fail closed；以及**排程本身是一個要宣告自己能揭露什麼的單元**。
+
+而它給 `mssp-d-003` 第四個軸，**這個軸是另一個種類的**。前三個問「一個觀察的意義」——幾種取值（已撤回）、關於哪一次事件、關於哪一個主體。這個問**這個測試根本產得出哪些情況**：
+
+```text
+  PASS  all 4 one-at-a-time runs end at 2 with nothing lost
+  PASS  all 4 interleaved runs lose one
+  PASS  so the schedule, not the assertion, is what decides whether this is visible
+```
+
+**斷言救不了一個不存在的排程。** 而這個做法自己的上限也寫在範例的第一項限制裡：**排程是寫死的，它證明一個失敗存在，對沒有人寫下來的那些什麼都沒證明。**
 
 ---
 

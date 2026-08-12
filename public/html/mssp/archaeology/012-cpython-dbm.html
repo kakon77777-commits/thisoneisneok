@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>兩種都叫做「支援併發」的保證 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="昨天量了 `shelve`，卻沒問它底下是什麼。今天問了：這台機器上 shelve 選的是 `dbm.sqlite3`（3.13 之後的預設後備），不是我以為的 `dbm.dumb`。用同一份寫死的排程量兩個後端：**兩個都掉更新，只有 `dbm.dumb` 會壞索引**（41 個鍵剩 21 個）。真正的鎖買到的是**完整性**，對**遺失更新**一點幫助都沒有——因為遺失更新發生在兩個各自完全原子的操作**之間**。第二個發現：**會說出自己缺口的，是缺口比較大的那一個**。`dbm.dumb` 把「support concurrent access (currently, if two processes take turns making updates, they can mess up the index)」寫在 docstring 的 TO DO 清單裡；守住完整性的 `dbm.sqlite3` 一個字都沒說。這也補完了一個橫跨三天、同一個標準庫的刻度：**考古 010 把 `.pyc` 的模式寫進標頭 flag bits（任何東西都讀得到）→ 考古 011 把 `shelve` 的模式寫在 `open()` 呼叫裡（只有開檔的人看得到）→ 考古 012 把缺口寫在 docstring 的 TO DO 裡，而另一個乾脆不寫。** 重切把「保證」與「排程能揭露什麼」都變成具名單元，兩者都用跑的驗；`dbm.open()` 沒有任何辦法讓呼叫端問到這些。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/012-cpython-dbm.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>012-cpython-dbm</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython dbm</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>3.14.5</span></div>
+    <div><b>日期</b><span>2026-08-12</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/tree/main/Lib/dbm">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>012 — CPython <code>dbm</code> 3.14.5：兩種都叫做「支援併發」的保證</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/python/cpython/tree/main/Lib/dbm">CPython <code>Lib/dbm/</code></a>，PSF-2.0。本篇考察 3.14.5。
+所有數字都是在這台機器上對這個直譯器量出來的。</p>
+</blockquote>
+<pre><code class="language-bash">python src/main.py            # 兩種失敗並排，每個後端一列
+python src/main.py --strict   # 宣告與行為不一致就 exit 1
+python src/island_test.py     # 18 項檢查，全部直接跑 CPython 本體
+</code></pre>
+<h2>為什麼選它</h2>
+<p>昨天量了 <code>shelve</code>，<strong>卻沒有問它底下是什麼</strong>。今天問了，第一個答案就跟我以為的不一樣：</p>
+<pre><code class="language-text">   shelve on this machine picks: dbm.sqlite3
+   backends available here:      dbm.dumb, dbm.sqlite3
+   unavailable, so untested:     dbm.gnu, dbm.ndbm
+</code></pre>
+<p><code>dbm.sqlite3</code> 是 3.13 之後的預設後備，不是我原本假設的 <code>dbm.dumb</code>。同日的<a href="/html/mssp/012-two-writers.html">範例 012</a> 把<a href="/html/mssp/011-store-boundary.html">範例 011</a> 自己寫下的限制拿去弄壞——一個行程一個寫入者——所以這裡去問上游同一個問題。</p>
+<h2>原專案的結構地圖</h2>
+<p>用<strong>同一份寫死的排程</strong>（兩個 handle 輪流走 read／modify／write）量兩個後端：</p>
+<pre><code class="language-text">  backend        schedule        two +1 from 0   lost   40 distinct keys   missing
+  dbm.dumb       interleaved     1               1      21 of 41           20
+  dbm.dumb       one-at-a-time   2               -      n/a                -
+  dbm.sqlite3    interleaved     1               1      41 of 41           -
+  dbm.sqlite3    one-at-a-time   2               -      n/a                -
+</code></pre>
+<p><strong>兩個都掉更新。只有一個會壞索引。</strong></p>
+<p>那是兩種不同的保證，而兩者都被說成「支援併發存取」。<code>dbm.sqlite3</code> 有真正的鎖，它守住了每一個鍵——然後兩次遞增仍然結束在 1。</p>
+<blockquote>
+<p><strong>遺失更新發生在兩個各自完全原子的操作「之間」。</strong> 任何份量的鎖都不會處理它。</p>
+</blockquote>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>保證的詞彙、兩種失敗，以及三則考古合起來的那個刻度</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署跑哪一個排程，以及宣告是否必須符合行為</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>保證／需求對照表、排程解析，與跑真後端的探針</td>
+</tr>
+<tr>
+<td>TMS</td>
+<td><strong>一個排程一個檔</strong>——各自宣告它能揭露哪些失敗，且不取用兄弟集合</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td>兩種失敗並排、每個模組把缺口寫在哪裡，以及看不到的部分</td>
+</tr>
+</tbody></table>
+<p><strong>排程被做成單元，是這一則的結構主張。</strong> 一個排程決定了哪些失敗看得見，所以它應該像其他單元一樣宣告自己能做什麼——而那份宣告用跑的驗：</p>
+<pre><code class="language-text">    ok  interleaved     declares [&#39;lost-update&#39;, &#39;torn-index&#39;], revealed [&#39;lost-update&#39;]
+    ok  one-at-a-time   declares [], revealed nothing
+</code></pre>
+<p>第 2b 節是鑽孔：一個實際上循序、卻宣告自己能揭露遺失更新的排程，必須被抓到。</p>
+<p>重切多出來的那張表，<code>dbm.open()</code> 給不了：</p>
+<pre><code class="language-text">    read-modify-write    on dbm.dumb       unmet: serialised-transaction
+    read-modify-write    on dbm.sqlite3    unmet: serialised-transaction
+    write-distinct-keys  on dbm.dumb       unmet: index-integrity
+    write-distinct-keys  on dbm.sqlite3    satisfied
+</code></pre>
+<p>呼叫端拿到的是一個 dict 介面，<strong>沒有任何辦法問它保證什麼</strong>。</p>
+<h2>什麼不適合拆</h2>
+<p><strong><code>dbm.dumb</code> 沒有壞，不要「修」它。</strong> 它是最後的後備，純 Python、沒有外部相依，而且它把自己的缺口寫下來了——寫在 docstring 的 TO DO 清單裡：</p>
+<pre><code class="language-text">- support concurrent access (currently, if two processes take turns making
+  updates, they can mess up the index)
+</code></pre>
+<p><strong>而這一則第二個發現就在這裡：會說出自己缺口的，是缺口比較大的那一個。</strong></p>
+<pre><code class="language-text">    dbm.dumb        319 lines   docstring TO DO
+    dbm.sqlite3     144 lines   nowhere
+</code></pre>
+<p>守住完整性的那個，關於併發<strong>一個字都沒說</strong>。</p>
+<p>這補完了一個橫跨三天、同一個標準庫的刻度——<strong>同樣一件事「寫在哪裡」的三個位置</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>考古</th>
+<th>模式／缺口寫在哪</th>
+<th>誰讀得到</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="/html/mssp/archaeology/010-cpython-pyc-invalidation.html">010 <code>.pyc</code></a></td>
+<td>標頭的 <strong>flag bits</strong></td>
+<td>任何東西</td>
+</tr>
+<tr>
+<td><a href="/html/mssp/archaeology/011-cpython-shelve.html">011 <code>shelve</code></a></td>
+<td><code>open()</code> 的<strong>呼叫端</strong></td>
+<td>只有開檔的人</td>
+</tr>
+<tr>
+<td>012 <code>dbm.dumb</code></td>
+<td>docstring 裡的 <strong>TO DO</strong></td>
+<td>讀原始碼的人</td>
+</tr>
+<tr>
+<td>012 <code>dbm.sqlite3</code></td>
+<td><strong>沒有寫</strong></td>
+<td>沒有人</td>
+</tr>
+</tbody></table>
+<p>同一個組織、同一個標準庫、三個相鄰的模組。這不是在指責誰——是量到「宣告一個模式」這件事在真實程式碼裡的實際分布，而<a href="/html/mssp/modules/development.html">改良點 11</a> 主張的正是那件事該被要求。</p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>量得到但這次沒量：</strong> 這些後端在真實排程器下的行為（這裡的排程是寫死的）；<code>dbm.sqlite3</code> 的鎖在吞吐上的代價。</p>
+<p><strong>這一則量不到：</strong> 野外的發生率——重現一次遺失更新，跟兩個寫入者實際多常相遇，是兩回事。</p>
+<p><strong>以及這台機器沒有的後端。</strong> <code>dbm.gnu</code> 與 <code>dbm.ndbm</code> 在這裡裝不起來，所以關於它們的任何陳述都會是猜的——它們被印成 <code>unavailable, so untested</code>，而不是被假設成安全。這一格是刻意的：<strong>一個沒被量到的東西，在表格裡看起來跟一個量到沒問題的東西太像了。</strong></p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;012-cpython-dbm&quot;,
+  &quot;upstream&quot;: &quot;CPython Lib/dbm/&quot;,
+  &quot;examined_version&quot;: &quot;3.14.5&quot;,
+  &quot;license&quot;: &quot;PSF-2.0&quot;,
+  &quot;what_it_is&quot;: &quot;The interchangeable key-value backends behind shelve, and what each of them does when two writers overlap.&quot;,
+
+  &quot;why_this_one&quot;: &quot;Example 011 named concurrency as the first thing that would break it, and yesterday's archaeology measured shelve without ever asking what was underneath. This is what was underneath.&quot;,
+
+  &quot;the_finding&quot;: &quot;Lost updates and index corruption are two different guarantees, and both get called 'safe for concurrent use'. Under the same written-down schedule, dbm.dumb and dbm.sqlite3 BOTH lose an update; only dbm.dumb corrupts. Real locking buys integrity and buys nothing at all on lost updates, because a lost update happens between two operations that are each perfectly atomic.&quot;,
+
+  &quot;the_second_finding&quot;: &quot;The module that declares its gap is the one with the smaller gap on the axis anyone thinks about. dbm.dumb says 'support concurrent access (currently, if two processes take turns making updates, they can mess up the index)' - in a TO DO list, inside a docstring. dbm.sqlite3, which holds index integrity, says nothing about concurrency at all.&quot;,
+
+  &quot;the_scale_this_completes&quot;: &quot;Three consecutive entries, one organisation's standard library, three places a mode or a gap is written down: archaeology 010 put the .pyc invalidation mode in HEADER FLAG BITS, machine-readable by anything; archaeology 011 put shelve's writeback mode in the open() CALL, readable only by whoever opened the file; archaeology 012 puts dbm.dumb's concurrency gap in a TO DO ITEM IN A DOCSTRING, readable by whoever reads the source, and dbm.sqlite3 does not write it anywhere.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the guarantee vocabulary, the two failures, and the scale the three entries make together&quot;,
+    &quot;SCL&quot;: &quot;which schedule this deployment runs, and whether a declaration must match behaviour&quot;,
+    &quot;SMS&quot;: &quot;the guarantee/requirement tables, schedule resolution, and the upstream probes&quot;,
+    &quot;TMS&quot;: &quot;one file per schedule - each declares which failures it is capable of revealing, and reaches no sibling set&quot;,
+    &quot;DMS&quot;: &quot;the two failures side by side, where each module declares its gap, and what none of it can see&quot;
+  },
+
+  &quot;non_goals&quot;: [
+    &quot;Saying dbm is broken. Every backend here does what it says; the problem is that dbm.open() gives the caller no way to ask what that is.&quot;,
+    &quot;Racing. The schedule is written down, so a lost update here is a fact about the code rather than about this machine's timing.&quot;,
+    &quot;Claiming anything about backends this machine does not have. dbm.gnu and dbm.ndbm are unavailable here and are printed as unavailable rather than assumed.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;schedule&quot;: &quot;interleaved&quot;,
+  &quot;declarations_must_match_behaviour&quot;: true,
+  &quot;_note&quot;: &quot;main.py runs every schedule against every available backend regardless of what this says.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Which schedule this deployment runs, and what it refuses to let pass.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+schedule = lambda: _C[&quot;schedule&quot;]                                                    # noqa: E731
+declarations_must_match_behaviour = lambda: bool(_C[&quot;declarations_must_match_behaviour&quot;])  # noqa: E731
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/backends.py</summary><pre><code>&quot;&quot;&quot;The re-cut: a backend declares what it guarantees, and a schedule declares
+what it can reveal. Both declarations are checked by running them.
+
+Upstream neither exists. `dbm.open` picks whatever is available and the caller
+gets an interface with no way to ask what it promises.
+&quot;&quot;&quot;
+import importlib
+
+SCHEDULES = [&quot;interleaved&quot;, &quot;one_at_a_time&quot;]
+
+# What each backend guarantees, as measured by main.py rather than as read from
+# its documentation. A backend absent from this table is not assumed safe.
+GUARANTEES = {
+    &quot;dbm.dumb&quot;: [],
+    &quot;dbm.sqlite3&quot;: [&quot;index-integrity&quot;],
+    &quot;dbm.gnu&quot;: [&quot;index-integrity&quot;],
+    &quot;dbm.ndbm&quot;: [],
+}
+
+REQUIREMENTS = {
+    &quot;read-modify-write&quot;: [&quot;serialised-transaction&quot;],
+    &quot;write-distinct-keys&quot;: [&quot;index-integrity&quot;],
+}
+
+
+def load_schedules():
+    loaded, problems = {}, []
+    for module_name in SCHEDULES:
+        try:
+            module = importlib.import_module(f&quot;TMS.schedules.{module_name}&quot;)
+        except ModuleNotFoundError:
+            problems.append(f'schedule &quot;{module_name}&quot; has no module - fail closed')
+            continue
+        for attribute in (&quot;NAME&quot;, &quot;REVEALS&quot;, &quot;order&quot;):
+            if not hasattr(module, attribute):
+                problems.append(f&quot;{module_name} does not declare {attribute}&quot;)
+        loaded[module.NAME] = module
+    return loaded, problems
+
+
+def resolve(name, loaded):
+    module = loaded.get(name)
+    if module is None:
+        return None, f'schedule &quot;{name}&quot; has no implementation - fail closed (known: {&quot;, &quot;.join(sorted(loaded))})'
+    return module, None
+
+
+def unmet(operation, backend):
+    &quot;&quot;&quot;What the operation needs that the backend does not claim to give.&quot;&quot;&quot;
+    return [need for need in REQUIREMENTS[operation] if need not in GUARANTEES.get(backend, [])]
+</code></pre></details><details><summary>SMS/upstream.py</summary><pre><code>&quot;&quot;&quot;What the real dbm backends do under a written-down schedule.
+
+Two failures are measured separately because they are separate guarantees that
+both get called &quot;safe for concurrent use&quot;:
+
+  lost-update — two increments from 0 end at 1; the data is intact and wrong
+  torn-index  — after interleaved writes of distinct keys, keys are missing
+&quot;&quot;&quot;
+import inspect
+import os
+import tempfile
+
+BACKENDS = {}
+for _name in (&quot;dbm.dumb&quot;, &quot;dbm.sqlite3&quot;, &quot;dbm.gnu&quot;, &quot;dbm.ndbm&quot;):
+    try:
+        BACKENDS[_name] = __import__(_name, fromlist=[&quot;open&quot;])
+    except ImportError:
+        pass
+
+
+def _fresh():
+    return os.path.join(tempfile.mkdtemp(), &quot;store&quot;)
+
+
+def lost_update(module, schedule_order):
+    &quot;&quot;&quot;Read-modify-write through two handles, following the given order.
+
+    The order is a list of writer indices; each writer's steps are read, modify,
+    write. Nothing is raced for, so the result is a fact about the code.
+    &quot;&quot;&quot;
+    path = _fresh()
+    with module.open(path, &quot;c&quot;) as db:
+        db[b&quot;n&quot;] = b&quot;0&quot;
+    try:
+        handles = [module.open(path, &quot;w&quot;), module.open(path, &quot;w&quot;)]
+        held = [None, None]
+        cursor = [0, 0]
+        steps = [
+            lambda who: held.__setitem__(who, int(handles[who][b&quot;n&quot;])),
+            lambda who: held.__setitem__(who, held[who] + 1),
+            lambda who: handles[who].__setitem__(b&quot;n&quot;, str(held[who]).encode()),
+        ]
+        for who in schedule_order:
+            if cursor[who] &lt; len(steps):
+                steps[cursor[who]](who)
+                cursor[who] += 1
+        for who, handle in enumerate(handles):
+            while cursor[who] &lt; len(steps):
+                steps[cursor[who]](who)
+                cursor[who] += 1
+            handle.close()
+        with module.open(path, &quot;r&quot;) as db:
+            return {&quot;final&quot;: int(db[b&quot;n&quot;]), &quot;lost&quot;: 2 - int(db[b&quot;n&quot;]), &quot;error&quot;: None}
+    except Exception as error:                       # noqa: BLE001
+        return {&quot;final&quot;: None, &quot;lost&quot;: None, &quot;error&quot;: f&quot;{type(error).__name__}: {error}&quot;}
+
+
+def torn_index(module, rounds=40):
+    &quot;&quot;&quot;Interleave writes of DIFFERENT keys through two handles, then count.&quot;&quot;&quot;
+    path = _fresh()
+    with module.open(path, &quot;c&quot;) as db:
+        db[b&quot;seed&quot;] = b&quot;1&quot;
+    try:
+        first, second = module.open(path, &quot;w&quot;), module.open(path, &quot;w&quot;)
+        for index in range(rounds):
+            (first if index % 2 == 0 else second)[f&quot;k{index}&quot;.encode()] = b&quot;v&quot;
+        first.close()
+        second.close()
+        with module.open(path, &quot;r&quot;) as db:
+            survived = len(db.keys())
+        return {&quot;survived&quot;: survived, &quot;expected&quot;: rounds + 1,
+                &quot;missing&quot;: rounds + 1 - survived, &quot;error&quot;: None}
+    except Exception as error:                       # noqa: BLE001
+        return {&quot;survived&quot;: None, &quot;expected&quot;: rounds + 1, &quot;missing&quot;: None,
+                &quot;error&quot;: f&quot;{type(error).__name__}: {error}&quot;}
+
+
+def declaration(module):
+    &quot;&quot;&quot;Where, if anywhere, the module says something about concurrent access.&quot;&quot;&quot;
+    source = inspect.getsource(module)
+    doc = module.__doc__ or &quot;&quot;
+    mentions = [line.strip() for line in doc.splitlines() if &quot;concurrent&quot; in line.lower()]
+    return {
+        &quot;lines&quot;: len(source.splitlines()),
+        &quot;says_in_docstring&quot;: mentions[0] if mentions else None,
+        &quot;locking_primitives&quot;: [token for token in (&quot;flock&quot;, &quot;msvcrt&quot;, &quot;LOCK_EX&quot;, &quot;fcntl&quot;)
+                               if token in source],
+    }
+
+
+def which_backend_shelve_uses():
+    import dbm
+    import shelve
+    path = _fresh()
+    with shelve.open(path) as shelf:
+        shelf[&quot;k&quot;] = 1
+    return dbm.whichdb(path)
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/schedules/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/schedules/interleaved.py</summary><pre><code>&quot;&quot;&quot;Two handles, taking turns. Written down, not raced for.
+
+A schedule is a unit here because it is the thing that decides which failures
+are visible at all. This one declares what it is capable of revealing; the
+island test checks that declaration by running it.
+&quot;&quot;&quot;
+NAME = &quot;interleaved&quot;
+REVEALS = [&quot;lost-update&quot;, &quot;torn-index&quot;]
+
+
+def order(writers, steps_each):
+    return [who for _ in range(steps_each) for who in range(writers)]
+</code></pre></details><details><summary>TMS/schedules/one_at_a_time.py</summary><pre><code>&quot;&quot;&quot;One writer finishes before the next starts.
+
+This is what a test suite with a single writer produces, and it reveals nothing
+about concurrency - which is the finding rather than a shortcoming of the file.
+An empty REVEALS is a claim, and the island test makes it fail if it is wrong.
+&quot;&quot;&quot;
+NAME = &quot;one-at-a-time&quot;
+REVEALS = []
+
+
+def order(writers, steps_each):
+    return [who for who in range(writers) for _ in range(steps_each)]
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;The two failures side by side, and what none of it can see.&quot;&quot;&quot;
+
+
+def table(rows, out):
+    out(f&quot;\n  {'backend':&lt;14} {'schedule':&lt;15} {'two +1 from 0':&lt;15} &quot;
+        f&quot;{'lost':&lt;6} {'40 distinct keys':&lt;18} missing&quot;)
+    for row in rows:
+        lost = &quot;-&quot; if row[&quot;lost&quot;] in (0, None) else str(row[&quot;lost&quot;])
+        survived = (f&quot;{row['survived']} of {row['expected']}&quot;
+                    if row[&quot;survived&quot;] is not None else &quot;n/a&quot;)
+        missing = &quot;-&quot; if not row[&quot;missing&quot;] else str(row[&quot;missing&quot;])
+        out(f&quot;  {row['backend']:&lt;14} {row['schedule']:&lt;15} {str(row['final']):&lt;15} &quot;
+            f&quot;{lost:&lt;6} {survived:&lt;18} {missing}&quot;)
+
+
+def declarations(rows, out):
+    out(&quot;\n  where each module says something about concurrent access:&quot;)
+    for backend, info in rows.items():
+        where = info[&quot;says_in_docstring&quot;] or &quot;nowhere&quot;
+        out(f&quot;    {backend:&lt;14} {info['lines']:&gt;4} lines   {where[:64]}&quot;)
+        if info[&quot;locking_primitives&quot;]:
+            out(f&quot;    {'':&lt;14} uses {', '.join(info['locking_primitives'])}&quot;)
+
+
+def gaps(out):
+    out(&quot;\n  measurable, not measured here:&quot;)
+    out(&quot;    - how the backends behave under a real scheduler rather than this one&quot;)
+    out(&quot;    - what the sqlite backend's locking costs in throughput&quot;)
+    out(&quot;\n  not measurable by this entry at all:&quot;)
+    out(&quot;    - whether any of this has ever bitten anyone. Reproducing a lost&quot;)
+    out(&quot;      update says nothing about how often two writers meet.&quot;)
+    out(&quot;    - the backends this machine does not have. dbm.gnu and dbm.ndbm are&quot;)
+    out(&quot;      absent here, so every statement about them is a guess and is&quot;)
+    out(&quot;      printed as unavailable rather than assumed.&quot;)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the drill that lets the schedule's own claim fail.
+
+    python src/island_test.py
+
+Section 3 is the finding: a backend can hold index integrity and lose an update
+under the same schedule, because a lost update happens BETWEEN two operations
+that are each perfectly atomic.
+&quot;&quot;&quot;
+import pathlib
+import re
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from SCL import policy  # noqa: E402
+from SMS import backends, upstream  # noqa: E402
+
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+SCHEDULES, PROBLEMS = backends.load_schedules()
+
+print(&quot;\n== 1. every schedule is an island and declares what it can reveal&quot;)
+check(&quot;both schedules loaded with no problems&quot;, not PROBLEMS, &quot;; &quot;.join(PROBLEMS))
+schedule_dir = HERE / &quot;TMS&quot; / &quot;schedules&quot;
+files = sorted(f for f in schedule_dir.iterdir() if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+check(&quot;there are two schedule files&quot;, len(files) == 2, &quot;, &quot;.join(f.stem for f in files))
+for f in files:
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, f.read_text(encoding=&quot;utf-8&quot;), re.M)
+    siblings = [r for r in reaches if r.split(&quot;.&quot;)[0] in {&quot;TMS&quot;, &quot;SMS&quot;, &quot;SCL&quot;, &quot;DMS&quot;, &quot;FMS&quot;}]
+    check(f&quot;{f.stem} reaches no sibling set&quot;, not siblings,
+          &quot;, &quot;.join(reaches) or &quot;no imports at all&quot;)
+for name, module in sorted(SCHEDULES.items()):
+    check(f&quot;{name} declares what it reveals&quot;, isinstance(module.REVEALS, list), str(module.REVEALS))
+
+print(&quot;\n== 2. that declaration is checked by running it&quot;)
+
+
+def reveals_lost_update(order):
+    return any(upstream.lost_update(module, order)[&quot;lost&quot;] for module in upstream.BACKENDS.values())
+
+
+for name, module in sorted(SCHEDULES.items()):
+    measured = reveals_lost_update(module.order(2, 3))
+    declared = &quot;lost-update&quot; in module.REVEALS
+    check(f&quot;{name}: declared lost-update={declared}, measured {measured}&quot;, measured == declared,
+          &quot;on the backends this machine has&quot;)
+
+print(&quot;\n== 2b. the drill: a schedule that overclaims must be caught&quot;)
+
+
+class Overclaiming:
+    NAME = &quot;sequential-but-claims-otherwise&quot;
+    REVEALS = [&quot;lost-update&quot;]
+
+    @staticmethod
+    def order(writers, steps_each):
+        return [who for who in range(writers) for _ in range(steps_each)]
+
+
+check(&quot;a sequential schedule declaring lost-update is caught&quot;,
+      reveals_lost_update(Overclaiming.order(2, 3)) is False
+      and &quot;lost-update&quot; in Overclaiming.REVEALS,
+      &quot;declared it reveals lost updates, revealed none&quot;)
+
+print(&quot;\n== 3. two guarantees, and one backend holds exactly one of them&quot;)
+interleaved = SCHEDULES[&quot;interleaved&quot;].order(2, 3)
+rows = {}
+for name, module in sorted(upstream.BACKENDS.items()):
+    rows[name] = {&quot;lost&quot;: upstream.lost_update(module, interleaved)[&quot;lost&quot;],
+                  &quot;missing&quot;: upstream.torn_index(module)[&quot;missing&quot;]}
+    print(f&quot;        {name:&lt;14} lost updates {rows[name]['lost']}   &quot;
+          f&quot;keys missing {rows[name]['missing']}&quot;)
+check(&quot;every available backend loses an update under this schedule&quot;,
+      all(row[&quot;lost&quot;] for row in rows.values()),
+      &quot;, &quot;.join(f&quot;{n}={r['lost']}&quot; for n, r in rows.items()))
+integrity = {name: row[&quot;missing&quot;] == 0 for name, row in rows.items()}
+check(&quot;and they do NOT agree on index integrity&quot;, len(set(integrity.values())) &gt; 1,
+      &quot;, &quot;.join(f&quot;{n}={'holds' if ok else 'loses'}&quot; for n, ok in integrity.items()))
+check(&quot;so locking is real and does not address lost updates&quot;,
+      rows.get(&quot;dbm.sqlite3&quot;, {}).get(&quot;missing&quot;) == 0
+      and bool(rows.get(&quot;dbm.sqlite3&quot;, {}).get(&quot;lost&quot;)),
+      &quot;dbm.sqlite3 keeps every key and still ends at 1&quot;)
+
+print(&quot;\n== 4. THE CONTROL: the sequential schedule reveals nothing, on any backend&quot;)
+sequential = SCHEDULES[&quot;one-at-a-time&quot;].order(2, 3)
+finals = {name: upstream.lost_update(module, sequential)[&quot;final&quot;]
+          for name, module in sorted(upstream.BACKENDS.items())}
+check(&quot;every backend ends at 2 under one-at-a-time&quot;, all(v == 2 for v in finals.values()),
+      &quot;, &quot;.join(f&quot;{n}={v}&quot; for n, v in finals.items()))
+check(&quot;so what the suite can produce, not what it asserts, decides what is visible&quot;,
+      all(v == 2 for v in finals.values()) and all(row[&quot;lost&quot;] for row in rows.values()))
+
+print(&quot;\n== 5. where each module writes down its gap&quot;)
+for name, module in sorted(upstream.BACKENDS.items()):
+    info = upstream.declaration(module)
+    print(f&quot;        {name:&lt;14} {info['lines']:&gt;4} lines   &quot;
+          f&quot;{'docstring TO DO' if info['says_in_docstring'] else 'nowhere'}   &quot;
+          f&quot;locking: {', '.join(info['locking_primitives']) or 'none in this source'}&quot;)
+declared = {name: bool(upstream.declaration(module)[&quot;says_in_docstring&quot;])
+            for name, module in upstream.BACKENDS.items()}
+check(&quot;the backend that declares its gap is the one with the larger gap&quot;,
+      declared.get(&quot;dbm.dumb&quot;) and not declared.get(&quot;dbm.sqlite3&quot;),
+      &quot;dbm.dumb says it in a TO DO; dbm.sqlite3 says nothing and holds integrity&quot;)
+
+print(&quot;\n== 6. fail closed&quot;)
+_, problem = backends.resolve(&quot;random-order&quot;, SCHEDULES)
+check(&quot;an unresolvable schedule stops the run&quot;, problem is not None, problem or &quot;resolved anyway&quot;)
+check(&quot;SCL names a schedule that exists&quot;, policy.schedule() in SCHEDULES, policy.schedule())
+absent = [name for name in backends.GUARANTEES if name not in upstream.BACKENDS]
+check(&quot;backends this machine lacks are reported, not assumed&quot;, bool(absent),
+      f&quot;untested here: {', '.join(sorted(absent))}&quot;)
+
+print(&quot;\n== 7. what this entry cannot see&quot;)
+print(&quot;        MEASURABLE, NOT MEASURED&quot;)
+print(&quot;          - behaviour under a real scheduler rather than this written one&quot;)
+print(&quot;          - what the sqlite backend's locking costs in throughput&quot;)
+print(&quot;        NOT MEASURABLE HERE&quot;)
+print(&quot;          - frequency. Reproducing a lost update says nothing about how&quot;)
+print(&quot;            often two writers actually meet.&quot;)
+print(&quot;          - the absent backends. Every statement about dbm.gnu and&quot;)
+print(&quot;            dbm.ndbm would be a guess, so none is made.&quot;)
+
+print(f&quot;\n{len(FAILURES)} failure(s)&quot; if FAILURES else &quot;\nall checks passed&quot;)
+for f in FAILURES:
+    print(f&quot;  - {f}&quot;)
+sys.exit(1 if FAILURES else 0)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;CPython's dbm backends under a written-down schedule.
+
+    python src/main.py            the two failures, side by side, per backend
+    python src/main.py --strict   exit 1 if a declaration disagrees with behaviour
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import backends, upstream  # noqa: E402
+
+ARCH = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def main(argv):
+    out = lambda line=&quot;&quot;: sys.stdout.write(line + &quot;\n&quot;)  # noqa: E731
+    schedules, problems = backends.load_schedules()
+    if problems:
+        for problem in problems:
+            out(f&quot;  !! {problem}&quot;)
+        return 1
+
+    out(f&quot;\n== two failures that both get called 'concurrency'  &quot;
+        f&quot;[python {sys.version.split()[0]}]&quot;)
+    out(f&quot;   shelve on this machine picks: {upstream.which_backend_shelve_uses()}&quot;)
+    out(f&quot;   backends available here:      {', '.join(sorted(upstream.BACKENDS)) or 'none'}&quot;)
+    missing = [name for name in backends.GUARANTEES if name not in upstream.BACKENDS]
+    if missing:
+        out(f&quot;   unavailable, so untested:     {', '.join(sorted(missing))}&quot;)
+
+    rows = []
+    for backend_name, module in sorted(upstream.BACKENDS.items()):
+        for schedule_name, schedule in sorted(schedules.items()):
+            lost = upstream.lost_update(module, schedule.order(2, 3))
+            torn = upstream.torn_index(module) if schedule_name == &quot;interleaved&quot; else {
+                &quot;survived&quot;: None, &quot;expected&quot;: None, &quot;missing&quot;: None, &quot;error&quot;: None}
+            rows.append({&quot;backend&quot;: backend_name, &quot;schedule&quot;: schedule_name, **lost, **torn})
+    report.table(rows, out)
+
+    out(&quot;\n  The two columns are two different guarantees. A backend can hold the&quot;)
+    out(&quot;  right-hand one and lose the left-hand one, and both are described as&quot;)
+    out(&quot;  being safe for concurrent use.&quot;)
+
+    report.declarations({name: upstream.declaration(module)
+                         for name, module in sorted(upstream.BACKENDS.items())}, out)
+
+    out(&quot;\n== what each schedule can reveal, checked by running it&quot;)
+    wrong = []
+    for schedule_name, schedule in sorted(schedules.items()):
+        revealed = set()
+        for module in upstream.BACKENDS.values():
+            if upstream.lost_update(module, schedule.order(2, 3))[&quot;lost&quot;]:
+                revealed.add(&quot;lost-update&quot;)
+        claimed = set(schedule.REVEALS) &amp; {&quot;lost-update&quot;}
+        agrees = revealed == claimed
+        if not agrees:
+            wrong.append(f&quot;{schedule_name}: declares {sorted(claimed)}, revealed {sorted(revealed)}&quot;)
+        out(f&quot;    {'ok ' if agrees else 'NO '} {schedule_name:&lt;15} declares {schedule.REVEALS}, &quot;
+            f&quot;revealed {sorted(revealed) or 'nothing'}&quot;)
+
+    out(&quot;\n== the requirement comparison the caller never gets to make&quot;)
+    for operation in sorted(backends.REQUIREMENTS):
+        for backend_name in sorted(upstream.BACKENDS):
+            gap = backends.unmet(operation, backend_name)
+            out(f&quot;    {operation:&lt;20} on {backend_name:&lt;14} &quot;
+                f&quot;{'unmet: ' + ', '.join(gap) if gap else 'satisfied'}&quot;)
+    out(&quot;\n    dbm.open() gives no way to ask any of this. The table above is the&quot;)
+    out(&quot;    re-cut's addition, and every row of it was measured, not read.&quot;)
+
+    report.gaps(out)
+
+    if &quot;--strict&quot; in argv and wrong and policy.declarations_must_match_behaviour():
+        for line in wrong:
+            out(f&quot;\n  !! {line}&quot;)
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

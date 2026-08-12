@@ -479,6 +479,39 @@ module.exports = Object.assign({}, first, {
 <p><strong>驗證方式：</strong> 之後每一則有儲存的範例都必須說出它交回什麼，而且用跑的驗不是用寫的。真正的考驗在 20/20 之後——一個有 UI 與持久化的應用裡，這條要嘛便宜到不用想，要嘛貴到得放棄，兩種結果都有資訊。</p>
 <p><strong>還沒答的、而且是第一個會壞的：</strong> 併發。範例 011 是一個行程、一個寫入者，兩個寫入者會弄壞它而它不會發現。這是範例的限制，不是關於儲存的發現——但它是真實應用第一件要處理的事。</p>
 <hr>
+<h3>改良點 12：操作要說出它需要什麼，而排程本身是一個會宣告的單元</h3>
+<p><a href="/html/mssp/011-store-boundary.html">範例 011</a> 在自己的「沒有解決什麼」裡寫下：一個行程、一個寫入者，兩個寫入者會弄壞它而它不會發現。<a href="/html/mssp/012-two-writers.html">範例 012</a> 隔天就去弄壞它。</p>
+<p><strong>結構主張分兩層。</strong></p>
+<p><strong>第一層：操作宣告它需要什麼，媒介宣告它保證什麼，儲存比對兩者並 fail closed。</strong></p>
+<pre><code class="language-text">  !! read-modify-write requires serialised-transaction; atomic-file guarantees atomic-replace - fail closed
+</code></pre>
+<p>而真正有內容的是那個比對的結果：<strong>沒有任何媒介提供 <code>serialised-transaction</code>，也不可能有。</strong> 「讀與寫之間沒有別人動」不是媒介的性質，是交易的性質。所以修法是換操作的形狀，不是換更好的媒介——這一句被同日的<a href="/html/mssp/archaeology/012-cpython-dbm.html">考古 012</a> 在上游證實：</p>
+<pre><code class="language-text">  backend        two +1 from 0   lost   40 distinct keys   missing
+  dbm.dumb       1               1      21 of 41           20
+  dbm.sqlite3    1               1      41 of 41           -
+</code></pre>
+<p><strong>兩個都掉更新，只有一個會壞索引。</strong> 有真正鎖的那個守住了每一個鍵，然後兩次遞增仍然結束在 1。<strong>遺失更新發生在兩個各自完全原子的操作「之間」</strong>，任何份量的鎖都不處理它。範例 012 的媒介欄同樣完全不影響結果——<code>atomic-file</code> 與 <code>torn-file</code> 每一列都一樣。</p>
+<p><strong>第二層，而且它是今天真正新的東西：排程是一個單元，要宣告自己能揭露什麼。</strong></p>
+<pre><code class="language-text">    ok  interleaved     declares [&#39;lost-update&#39;, &#39;torn-index&#39;], revealed [&#39;lost-update&#39;]
+    ok  one-at-a-time   declares [], revealed nothing
+</code></pre>
+<p>考古 012 的 TMS 一個排程一個檔，而那份宣告用跑的驗——第 2b 節安排一個實際上循序、卻宣告自己能揭露遺失更新的排程，必須被抓到。</p>
+<h3>這一條在方法上的位置：<code>mssp-d-003</code> 的第四個軸，而它是另一個種類</h3>
+<p>前三個軸問的都是<strong>一個觀察的意義</strong>：能取到幾種值（已撤回）、關於哪一次事件、關於哪一個主體。今天這個問的是<strong>這個測試根本產得出哪些情況</strong>。</p>
+<pre><code class="language-text">  PASS  all 4 one-at-a-time runs end at 2 with nothing lost - 2, 2, 2, 2
+  PASS  all 4 interleaved runs lose one - 1, 1, 1, 1
+  PASS  so the schedule, not the assertion, is what decides whether this is visible
+</code></pre>
+<p><strong>一個單寫入者的測試看不見遺失更新，寫幾條斷言都一樣。</strong> 這不是「檢查讀到的值不夠分辨」，是那個情況從來沒有發生過。斷言救不了一個不存在的排程。</p>
+<p><strong>還有一件同樣形狀、而且更難處理的事被量到：兩個交錯列結束在同一個數字。</strong> <code>read-modify-write</code> 與 <code>compare-and-set</code> 都讓計數器停在 1——差別只在其中一個<strong>說了</strong>，而重試只對說了的那個有用：</p>
+<pre><code class="language-text">  PASS  read-modify-write and compare-and-set end at the same value - both 1
+  PASS  and only one of them reported anything
+  PASS  retrying fixes the one that reported - ends at 2
+  PASS  and does nothing for the one that did not - there was nothing to retry, because nobody was told
+</code></pre>
+<p><strong>代價與限制，寫在前面而不是註腳：</strong> 排程是寫死的。它證明一個失敗存在，<strong>對沒有人寫下來的那些排程什麼都沒證明</strong>。範例 012 自己把這句放在「沒有解決什麼」的第一項，因為它是這個做法的誠實上限，不是這一則的疏漏。</p>
+<p><strong>驗證方式：</strong> 20/20 之後的真實應用一定有多個寫入者。到時候要問的是這一條的成本——每個操作多一個 <code>REQUIRES</code> 是小事，而<strong>把排程當單元維護</strong>可能不是。兩種結果都有資訊。</p>
+<hr>
 <h2>開發路線：四個 MVP 與回饋迴圈</h2>
 <p><a href="/research">程式研究區</a>的四份研究不會停在論文。每一份要先做出 MVP，而 MVP 本身用 MSSP 蓋——於是它同時是產品，也是這個方法在中等規模上的證據。</p>
 <table>
