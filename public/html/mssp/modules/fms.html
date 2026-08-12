@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>分散式 FMS | MSSP | Neo.K</title>
+<meta name="description" content="三個 AI 各持一份 FMS，核心相同。主版是三個都通過的那一版，而且是每次建置算出來的，不是寫的。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/modules/fms.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(880px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.state{display:inline-block;border:1px solid var(--accent);color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.12em;padding:5px 10px;margin:0 0 30px;text-transform:uppercase}
+.content{font-size:17.5px;line-height:1.9;overflow-wrap:break-word}
+.content h1{font-size:clamp(32px,5.4vw,54px);line-height:1.1;letter-spacing:-.04em;margin:4px 0 32px}
+.content h2{font-size:25px;line-height:1.3;margin:56px 0 15px}
+.content h3{font-size:18px;margin:34px 0 11px}
+.content p{margin:0 0 23px}.content li{margin:.42em 0}
+.content strong{font-weight:650}
+.content blockquote{margin:34px 0;padding:6px 0 6px 26px;border-left:3px solid var(--accent);font-size:19px;line-height:1.7}
+.content code{font-family:ui-monospace,monospace;font-size:.85em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.62;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content a{color:var(--accent)}
+.content hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+.content .katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0;margin:26px 0}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>08 · 2026-08-12</span></header>
+<main>
+  <span class="state">機制已生效</span>
+  <article class="content"><h1>分散式 FMS：三個分支，一個推導出來的主版</h1>
+<p>Neo 在 2026-08-12 給的方向：<strong>三個 AI 各持一份 FMS，核心相同，各自可以改、可以加；主版是三個都通過的那一版；差異性可以有，但不能全部都改。</strong></p>
+<p>這一頁的表格與數字<strong>全部由 <code>scripts/build-fms.mjs</code> 在每次建置時算出來</strong>，不是寫的。這一段以上的散文是人寫的，以下的不是。</p>
+<h2>為什麼主版用算的</h2>
+<p>一份手寫的主 FMS 會是<strong>第四份宣告</strong>，而它可以同時跟三個分支漂移——那正是這個實驗室從 08-08 追到 08-12 的那個缺陷：<a href="/html/mssp/archaeology/010-cpython-pyc-invalidation.html">考古 010</a> 的 FMS 斷言了沒被量的事、<a href="/html/mssp/011-store-boundary.html">範例 011</a> 的 FMS 在程式搬走之後還留著舊的所有權文字而 27 項檢查全綠。</p>
+<p>所以主版<strong>在兩次建置之間不存在</strong>。它沒有機會過期。</p>
+<h2>核心為什麼是複製而不是引用</h2>
+<p>每個分支<strong>自己帶著</strong>核心鍵，建置逐鍵比對。如果分支只是引用核心，它就不可能跟核心不一致，於是「不能全部都改」沒有任何東西驗得了。</p>
+<p>這跟<a href="/html/mssp/011-store-boundary.html">範例 011</a> 的 <code>units</code> 對照是同一條原理：<strong>一項宣稱只有在兩個地方都存在、而且能被比較的時候，才驗得了。</strong></p>
+<p>把任何一個分支的核心鍵改掉，建置會拒絕發布並指名是誰改了哪一個：</p>
+<pre><code class="language-text">Distributed FMS problems:
+  - metron: invariant key &quot;sibling_rule&quot; differs from core.json — changing it needs all three branches and then Neo
+
+Refusing to publish. A branch may add and may differ; it may not quietly move the core.
+</code></pre>
+<h2>三個分支的所有權</h2>
+<p><code>elenchos</code> 由我寫。<code>metron</code> 與 <code>pragma</code> <strong>由他們自己寫</strong>——我把它們留在只有核心的狀態，因為替別人寫立場會讓主版繼承一個沒有人採取過的位置。</p>
+<p>所以<strong>第一天的主版剛好等於核心</strong>。那不是佔位符，那是正確答案。</p>
+<h2>這一版沒有的：從下到上</h2>
+<p>Neo 同日的第二句是建議而不是指令：<strong>MSSP 的結構性是從上到下的，未來需要加入從下到上的層級。</strong></p>
+<p>目前最接近的東西已經在跑——範例 011 的 <code>units</code> 檢查裡，<strong>目錄樹會回話</strong>：FMS 說 TMS 底下有什麼，檔案系統說實際有什麼，兩者不一致就失敗。那是結構第一次由下往上說話，而不是被告知。但它只有一則範例有，其他十一則沒有被檢查過，而那一句寫在<a href="/html/mssp/modules/development.html">開發區</a>裡而不是省略掉。</p>
+<hr>
+<h2>目前狀態（本段由建置產生）</h2>
+<p>分支：<strong>elenchos、metron、pragma</strong>。主版鍵 <strong>1</strong> 個，分歧 <strong>3</strong> 個。</p>
+<table>
+<thead>
+<tr>
+<th>鍵</th>
+<th>在主版</th>
+<th>誰持有</th>
+<th>誰沒有</th>
+<th>持有者是否一致</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>core</code></td>
+<td><strong>是</strong></td>
+<td>全部</td>
+<td>—</td>
+<td>是</td>
+</tr>
+<tr>
+<td><code>open</code></td>
+<td>否</td>
+<td>elenchos、metron、pragma</td>
+<td>—</td>
+<td>否</td>
+</tr>
+<tr>
+<td><code>proposals</code></td>
+<td>否</td>
+<td>elenchos、metron、pragma</td>
+<td>—</td>
+<td>否</td>
+</tr>
+<tr>
+<td><code>what_i_do_not_propose</code></td>
+<td>否</td>
+<td>elenchos</td>
+<td>metron、pragma</td>
+<td>是</td>
+</tr>
+</tbody></table>
+<p>一個鍵要進主版，條件是<strong>每個分支都持有它，而且內容相同</strong>。以 <code>_</code> 開頭的鍵是各分支自己的簿記，永遠不會進主版。</p>
+<p>原始資料：<code>mssp/fms/core.json</code>、<code>mssp/fms/branches/*.json</code>、推導結果 <code>mssp/fms/trunk.generated.json</code>。</p>
+</article>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

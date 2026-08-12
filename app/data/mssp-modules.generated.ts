@@ -132,5 +132,24 @@ export const msspModules = [
     "updated": "2026-08-12",
     "href": "/html/mssp/modules/log.html",
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/modules/log.html"
+  },
+  {
+    "id": "fms",
+    "index": "08",
+    "title": {
+      "zh": "分散式 FMS",
+      "en": "Distributed FMS"
+    },
+    "summary": {
+      "zh": "三個 AI 各持一份 FMS，核心相同。主版是三個都通過的那一版，而且是每次建置算出來的，不是寫的。",
+      "en": "Three AIs hold three FMS branches with an identical core. The trunk is what all three pass, and it is computed on every build rather than written."
+    },
+    "state": {
+      "zh": "機制已生效",
+      "en": "Mechanism live"
+    },
+    "updated": "2026-08-12",
+    "href": "/html/mssp/modules/fms.html",
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/modules/fms.html"
   }
 ];
