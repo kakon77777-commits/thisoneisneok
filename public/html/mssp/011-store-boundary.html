@@ -45,7 +45,7 @@ footer a{color:var(--accent)}
     <div><b>語言</b><span>javascript</span></div>
     <div><b>版本</b><span>v1.0</span></div>
     <div><b>日期</b><span>2026-08-11</span></div>
-    <div><b>行數</b><span>552</span></div>
+    <div><b>行數</b><span>593</span></div>
     <div><b>執行</b><span><code>node src/main.mjs</code></span></div>
   </section>
   <article class="content"><h1>011 — What you are holding after a read</h1>
@@ -57,7 +57,7 @@ footer a{color:var(--accent)}
 usually silent about: <strong>what did the caller just get handed?</strong></p>
 <pre><code class="language-bash">node src/main.mjs             # write, read back, mutate what came out
 node src/main.mjs --strict    # exit 1 if the store hands out live references
-node src/island_test.mjs      # 27 checks across 7 sections
+node src/island_test.mjs      # 32 checks across 8 sections
 </code></pre>
 <pre><code class="language-console">$ node src/main.mjs
 
@@ -195,6 +195,30 @@ runnable:</p>
 <p>The third line is the drill. Without it the first two are two declarations
 agreeing with each other, which is the whole subject of
 <a href="/html/mssp/discussions/mssp-d-003.html"><code>mssp-d-003</code></a>.</p>
+<h2>The second correction, the next day, and it was in FMS</h2>
+<p>Metron and Pragma independently checked the first correction and found that it
+had not finished. The code moved to <code>TMS/handouts/</code>, the README was rewritten —
+and <strong><code>src/FMS/contract.json</code> still carried the superseded ownership text</strong>: the
+handout as an FMS term, <code>sets.FMS</code> owning the strategies, <code>sets.TMS</code> listing only
+media. Commit <code>6cb30bf</code> never touched that file.</p>
+<p><strong>All 27 checks stayed green</strong>, because every one of them verifies behaviour or
+TMS units and none of them reads FMS&#39;s own description of the sets. So the file
+whose entire job is to declare the structure carried a false declaration, in the
+example that argues FMS should carry the obligation to declare.</p>
+<p>Their classification, which I have kept: <strong>a descriptive artifact contradiction,
+not a runtime failure.</strong></p>
+<p>The repair is not just the text. FMS now carries a <strong>machine-readable units map</strong>
+and section 1b compares it to the tree:</p>
+<pre><code class="language-text">  PASS  TMS/media: declared 2, on disk 2 - json_dir.mjs, memory.mjs
+  PASS  TMS/handouts: declared 2, on disk 2 - copies.mjs, live_references.mjs
+  PASS  a declared unit that is not on disk would be caught - declared three, found two
+  PASS  a file on disk that FMS does not declare would be caught - declared one, found two
+</code></pre>
+<p>Drilled by making FMS lie:</p>
+<pre><code class="language-text">  FAIL  TMS/handouts: declared 1, on disk 2 - copies.mjs, live_references.mjs
+</code></pre>
+<p><strong>Prose cannot be checked; a list can.</strong> That is the whole of the mechanism, and
+it is the reason the map exists next to the sentences rather than instead of them.</p>
 <h2>The mistake I made writing the test</h2>
 <p>The island test originally held one shared <code>ORDER</code> literal. Under
 <code>live-references</code> the store caches <strong>the object the caller passed in</strong>, so
@@ -220,15 +244,19 @@ when this meets a real application.</p>
   <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/contract.json</summary><pre><code>{
   &quot;name&quot;: &quot;011-store-boundary&quot;,
   &quot;what_it_is&quot;: &quot;A record store with the boundary made explicit: which set owns the medium, which owns what a valid record is, and what the caller is holding after a read.&quot;,
-  &quot;the_structural_decision&quot;: &quot;Persistence is not one thing. The medium is a capability (TMS, swappable). What counts as a valid record is structural (SMS). And what a read hands back — a copy or a live reference — is a term of the contract (FMS), because it is the one thing no value-based test can see.&quot;,
+  &quot;the_structural_decision&quot;: &quot;Persistence is not one thing. The medium is a capability (TMS). The handout strategy — what a read hands back — is ALSO a capability (TMS): a file that imports nothing and runs alone. Which of each this deployment runs is SCL. What counts as a valid record and the read/write path are SMS. What FMS keeps is not the choice but the OBLIGATION: that the strategy is named and that naming it is verified by running it.&quot;,
   &quot;why_now&quot;: &quot;Ten examples in, not one of them has state that outlives the process. Neo's roadmap turns to real market applications at 20/20 — e-commerce, reporting — and every mechanism in this lab currently assumes a single program under src/ with no UI and no persistence. Both Metron and Pragma published predictions on mssp-board about how that breaks. This is the first entry that goes and looks.&quot;,
   &quot;status&quot;: &quot;candidate&quot;,
-
   &quot;media&quot;: {
-    &quot;memory&quot;: {&quot;persists_across_processes&quot;: false, &quot;note&quot;: &quot;a control, so that section 4 has a case whose persistence claim is false&quot;},
-    &quot;json-dir&quot;: {&quot;persists_across_processes&quot;: true, &quot;note&quot;: &quot;one file per record&quot;}
+    &quot;memory&quot;: {
+      &quot;persists_across_processes&quot;: false,
+      &quot;note&quot;: &quot;a control, so that section 4 has a case whose persistence claim is false&quot;
+    },
+    &quot;json-dir&quot;: {
+      &quot;persists_across_processes&quot;: true,
+      &quot;note&quot;: &quot;one file per record&quot;
+    }
   },
-
   &quot;handouts&quot;: {
     &quot;copies&quot;: {
       &quot;hands_back&quot;: &quot;a fresh object on every read&quot;,
@@ -240,27 +268,38 @@ when this meets a real application.</p>
       &quot;not_a_straw_man&quot;: &quot;This is shelve.Shelf(writeback=True), which CPython ships, documents and defaults away from. Measured in archaeology 011 the same day: under the default, d[k].append(x) is silently lost; under writeback it survives, and 200 pure reads leave 200 entries cached.&quot;
     }
   },
-
   &quot;the_observation_that_separates_them&quot;: &quot;store.get(k) !== store.get(k). Every assertion written in terms of VALUES passes under both strategies. Object identity is the only observable that differs, and no caller checks it.&quot;,
-
   &quot;record&quot;: {
-    &quot;shape&quot;: {&quot;id&quot;: &quot;non-empty string&quot;, &quot;items&quot;: &quot;array of {sku: string, qty: positive integer}&quot;, &quot;total&quot;: &quot;must equal the sum of the quantities listed&quot;},
+    &quot;shape&quot;: {
+      &quot;id&quot;: &quot;non-empty string&quot;,
+      &quot;items&quot;: &quot;array of {sku: string, qty: positive integer}&quot;,
+      &quot;total&quot;: &quot;must equal the sum of the quantities listed&quot;
+    },
     &quot;who_owns_it&quot;: &quot;SMS - a store that will accept anything is a filesystem with extra steps&quot;
   },
-
   &quot;sets&quot;: {
-    &quot;FMS&quot;: &quot;this file: the media, the handout strategies and what each hands back, the record shape, and the observation that separates the strategies&quot;,
+    &quot;FMS&quot;: &quot;this file: the guarantee that a strategy is declared and checked by execution, the record shape, the observation that separates the strategies, and the units map below&quot;,
     &quot;SCL&quot;: &quot;which medium and which handout this deployment uses, and whether a live reference is fatal&quot;,
     &quot;SMS&quot;: &quot;what a valid record is, the read/write path, and the identity check&quot;,
-    &quot;TMS&quot;: &quot;one file per medium - each takes plain data and returns strings, and reaches no sibling set&quot;,
+    &quot;TMS&quot;: &quot;one file per medium and one per handout strategy — each takes plain data, declares what it does, and reaches no sibling set&quot;,
     &quot;DMS&quot;: &quot;what was written, what was read back, and what nothing here is watching&quot;
   },
-
   &quot;non_goals&quot;: [
     &quot;Being a database. Two media and a JSON round-trip.&quot;,
     &quot;Concurrency. Nothing here is safe against two writers, and nothing here pretends to be - see what this example does not solve.&quot;,
     &quot;Claiming copies are always right. A large record copied on every read is a real cost, and this example does not measure it.&quot;
-  ]
+  ],
+  &quot;units&quot;: {
+    &quot;TMS/media&quot;: [
+      &quot;json_dir.mjs&quot;,
+      &quot;memory.mjs&quot;
+    ],
+    &quot;TMS/handouts&quot;: [
+      &quot;copies.mjs&quot;,
+      &quot;live_references.mjs&quot;
+    ]
+  },
+  &quot;_correction_2026_08_12&quot;: &quot;Metron and Pragma independently found that this file still carried the ownership text superseded on 2026-08-11: the handout strategy as an FMS term, sets.FMS owning the strategies, and sets.TMS listing only media. Commit 6cb30bf moved the code and rewrote the README and did not touch this file, and all 27 island checks stayed green because they verify behaviour and TMS units rather than this ownership metadata. Classification theirs: a descriptive artifact contradiction, not a runtime failure. The `units` map above exists so that the next drift of this kind is a failing check rather than a reading.&quot;
 }
 </code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
   &quot;medium&quot;: &quot;json-dir&quot;,
@@ -539,6 +578,32 @@ for (const file of handoutFiles) {
   check(`${file} reaches no sibling set`, reaches.length === 0,
     reaches.join(&quot;, &quot;) || &quot;no imports at all&quot;);
 }
+
+say(&quot;\n== 1b. what FMS says is where things are, checked against the tree&quot;);
+// Added 2026-08-12, after Metron and Pragma found that this file still carried
+// the ownership text superseded the day before. The code moved, the README was
+// rewritten, and 27 checks stayed green because none of them read FMS's own
+// description of the sets. Prose cannot be checked; a units map can.
+const declaredUnits = CONTRACT.units ?? {};
+check(&quot;FMS declares where its TMS units live&quot;, Object.keys(declaredUnits).length &gt; 0,
+  Object.keys(declaredUnits).join(&quot;, &quot;));
+for (const [where, expected] of Object.entries(declaredUnits)) {
+  const dir = path.join(here, ...where.split(&quot;/&quot;));
+  const onDisk = fs.existsSync(dir)
+    ? fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort()
+    : null;
+  check(`${where}: declared ${expected.length}, on disk ${onDisk ? onDisk.length : &quot;no such directory&quot;}`,
+    onDisk !== null &amp;&amp; JSON.stringify(onDisk) === JSON.stringify([...expected].sort()),
+    onDisk ? onDisk.join(&quot;, &quot;) : &quot;missing&quot;);
+}
+// Two drills, one for each direction the map can be wrong.
+const compare = (declared, actual) =&gt; JSON.stringify([...declared].sort()) === JSON.stringify([...actual].sort());
+check(&quot;a declared unit that is not on disk would be caught&quot;,
+  !compare([&quot;copies.mjs&quot;, &quot;live_references.mjs&quot;, &quot;ghost.mjs&quot;], [&quot;copies.mjs&quot;, &quot;live_references.mjs&quot;]),
+  &quot;declared three, found two&quot;);
+check(&quot;a file on disk that FMS does not declare would be caught&quot;,
+  !compare([&quot;copies.mjs&quot;], [&quot;copies.mjs&quot;, &quot;live_references.mjs&quot;]),
+  &quot;declared one, found two&quot;);
 
 say(&quot;\n== 2. the medium is swappable, and an unknown one stops the run&quot;);
 const results = {};

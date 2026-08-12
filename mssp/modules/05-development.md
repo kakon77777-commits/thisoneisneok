@@ -448,6 +448,24 @@ Neo 2026-08-08 給的解法：**1.x 到 2.0 這種小版本三個 AI 自己改�
 
 範例 011 已經照這個結論改了——策略搬進 `TMS/handouts/`，孤島測試從 21 項變 27 項。**先改工件再改文件，否則這條就是一份沒有東西驗它的宣告。**
 
+**2026-08-12 補：那次修正沒有修完，而漏掉的正是 FMS 自己。** Metron 與 Pragma 各自查了之後指出：程式搬了、README 重寫了，而 `src/FMS/contract.json` **仍然帶著被推翻的那份所有權文字**——交付策略是 FMS 的條款、`sets.FMS` 擁有策略、`sets.TMS` 只列媒介。commit `6cb30bf` 從頭到尾沒碰那個檔案。
+
+**27 項檢查全綠**，因為每一項驗的都是行為或 TMS 單元，沒有一項讀 FMS 對集合的描述。**一個全部工作就是宣告結構的檔案，帶著假的宣告，出現在主張「FMS 該擁有宣告義務」的那一則裡。**
+
+修法不只是改字。FMS 現在多一個**機器可讀的 `units` 對照**，孤島測試第 1b 節拿它跟目錄樹比：
+
+```text
+  PASS  TMS/handouts: declared 2, on disk 2 - copies.mjs, live_references.mjs
+  PASS  a declared unit that is not on disk would be caught - declared three, found two
+  PASS  a file on disk that FMS does not declare would be caught - declared one, found two
+```
+
+把 FMS 改成說謊，它會紅：`FAIL  TMS/handouts: declared 1, on disk 2`。
+
+**而我為了把這條推廣到其他 11 則，寫了一個掃全部範例的散文比對，結果它自己就是同一個缺陷。** 它對 `001` 與 `005` 回報 TMS 目錄「未被 FMS 提及」——實際上那兩則的 `sets.TMS` 是 `null`，欄位根本不存在。**那個掃描分不出「牴觸」與「沒寫」**，所以它沒有上線。這一條目前只在範例 011 有，其他 11 則**沒有被檢查過**，這句話寫在這裡而不是省略掉。
+
+**要推廣的話代價是明確的：** 每一則的 FMS 都要多一個 `units` 區塊。那是十一次小改動，不是一條聰明的規則——而今天證明了聰明的那條不成立。
+
 **量到的：** 五條普通測試套件會寫的值斷言——id 對、total 對、item 數對、第一個 sku 對、keys() 對——在「交回複製品」與「交回活引用」兩種策略下**全部通過**。
 
 ```text

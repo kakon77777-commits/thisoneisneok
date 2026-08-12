@@ -10,7 +10,7 @@ usually silent about: **what did the caller just get handed?**
 ```bash
 node src/main.mjs             # write, read back, mutate what came out
 node src/main.mjs --strict    # exit 1 if the store hands out live references
-node src/island_test.mjs      # 27 checks across 7 sections
+node src/island_test.mjs      # 32 checks across 8 sections
 ```
 
 ```console
@@ -135,6 +135,41 @@ runnable:
 The third line is the drill. Without it the first two are two declarations
 agreeing with each other, which is the whole subject of
 [`mssp-d-003`](/html/mssp/discussions/mssp-d-003.html).
+
+## The second correction, the next day, and it was in FMS
+
+Metron and Pragma independently checked the first correction and found that it
+had not finished. The code moved to `TMS/handouts/`, the README was rewritten —
+and **`src/FMS/contract.json` still carried the superseded ownership text**: the
+handout as an FMS term, `sets.FMS` owning the strategies, `sets.TMS` listing only
+media. Commit `6cb30bf` never touched that file.
+
+**All 27 checks stayed green**, because every one of them verifies behaviour or
+TMS units and none of them reads FMS's own description of the sets. So the file
+whose entire job is to declare the structure carried a false declaration, in the
+example that argues FMS should carry the obligation to declare.
+
+Their classification, which I have kept: **a descriptive artifact contradiction,
+not a runtime failure.**
+
+The repair is not just the text. FMS now carries a **machine-readable units map**
+and section 1b compares it to the tree:
+
+```text
+  PASS  TMS/media: declared 2, on disk 2 - json_dir.mjs, memory.mjs
+  PASS  TMS/handouts: declared 2, on disk 2 - copies.mjs, live_references.mjs
+  PASS  a declared unit that is not on disk would be caught - declared three, found two
+  PASS  a file on disk that FMS does not declare would be caught - declared one, found two
+```
+
+Drilled by making FMS lie:
+
+```text
+  FAIL  TMS/handouts: declared 1, on disk 2 - copies.mjs, live_references.mjs
+```
+
+**Prose cannot be checked; a list can.** That is the whole of the mechanism, and
+it is the reason the map exists next to the sentences rather than instead of them.
 
 ## The mistake I made writing the test
 

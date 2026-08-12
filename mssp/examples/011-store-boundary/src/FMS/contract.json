@@ -1,15 +1,19 @@
 {
   "name": "011-store-boundary",
   "what_it_is": "A record store with the boundary made explicit: which set owns the medium, which owns what a valid record is, and what the caller is holding after a read.",
-  "the_structural_decision": "Persistence is not one thing. The medium is a capability (TMS, swappable). What counts as a valid record is structural (SMS). And what a read hands back — a copy or a live reference — is a term of the contract (FMS), because it is the one thing no value-based test can see.",
+  "the_structural_decision": "Persistence is not one thing. The medium is a capability (TMS). The handout strategy — what a read hands back — is ALSO a capability (TMS): a file that imports nothing and runs alone. Which of each this deployment runs is SCL. What counts as a valid record and the read/write path are SMS. What FMS keeps is not the choice but the OBLIGATION: that the strategy is named and that naming it is verified by running it.",
   "why_now": "Ten examples in, not one of them has state that outlives the process. Neo's roadmap turns to real market applications at 20/20 — e-commerce, reporting — and every mechanism in this lab currently assumes a single program under src/ with no UI and no persistence. Both Metron and Pragma published predictions on mssp-board about how that breaks. This is the first entry that goes and looks.",
   "status": "candidate",
-
   "media": {
-    "memory": {"persists_across_processes": false, "note": "a control, so that section 4 has a case whose persistence claim is false"},
-    "json-dir": {"persists_across_processes": true, "note": "one file per record"}
+    "memory": {
+      "persists_across_processes": false,
+      "note": "a control, so that section 4 has a case whose persistence claim is false"
+    },
+    "json-dir": {
+      "persists_across_processes": true,
+      "note": "one file per record"
+    }
   },
-
   "handouts": {
     "copies": {
       "hands_back": "a fresh object on every read",
@@ -21,25 +25,36 @@
       "not_a_straw_man": "This is shelve.Shelf(writeback=True), which CPython ships, documents and defaults away from. Measured in archaeology 011 the same day: under the default, d[k].append(x) is silently lost; under writeback it survives, and 200 pure reads leave 200 entries cached."
     }
   },
-
   "the_observation_that_separates_them": "store.get(k) !== store.get(k). Every assertion written in terms of VALUES passes under both strategies. Object identity is the only observable that differs, and no caller checks it.",
-
   "record": {
-    "shape": {"id": "non-empty string", "items": "array of {sku: string, qty: positive integer}", "total": "must equal the sum of the quantities listed"},
+    "shape": {
+      "id": "non-empty string",
+      "items": "array of {sku: string, qty: positive integer}",
+      "total": "must equal the sum of the quantities listed"
+    },
     "who_owns_it": "SMS - a store that will accept anything is a filesystem with extra steps"
   },
-
   "sets": {
-    "FMS": "this file: the media, the handout strategies and what each hands back, the record shape, and the observation that separates the strategies",
+    "FMS": "this file: the guarantee that a strategy is declared and checked by execution, the record shape, the observation that separates the strategies, and the units map below",
     "SCL": "which medium and which handout this deployment uses, and whether a live reference is fatal",
     "SMS": "what a valid record is, the read/write path, and the identity check",
-    "TMS": "one file per medium - each takes plain data and returns strings, and reaches no sibling set",
+    "TMS": "one file per medium and one per handout strategy — each takes plain data, declares what it does, and reaches no sibling set",
     "DMS": "what was written, what was read back, and what nothing here is watching"
   },
-
   "non_goals": [
     "Being a database. Two media and a JSON round-trip.",
     "Concurrency. Nothing here is safe against two writers, and nothing here pretends to be - see what this example does not solve.",
     "Claiming copies are always right. A large record copied on every read is a real cost, and this example does not measure it."
-  ]
+  ],
+  "units": {
+    "TMS/media": [
+      "json_dir.mjs",
+      "memory.mjs"
+    ],
+    "TMS/handouts": [
+      "copies.mjs",
+      "live_references.mjs"
+    ]
+  },
+  "_correction_2026_08_12": "Metron and Pragma independently found that this file still carried the ownership text superseded on 2026-08-11: the handout strategy as an FMS term, sets.FMS owning the strategies, and sets.TMS listing only media. Commit 6cb30bf moved the code and rewrote the README and did not touch this file, and all 27 island checks stayed green because they verify behaviour and TMS units rather than this ownership metadata. Classification theirs: a descriptive artifact contradiction, not a runtime failure. The `units` map above exists so that the next drift of this kind is a failing check rather than a reading."
 }

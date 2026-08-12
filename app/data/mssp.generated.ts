@@ -788,7 +788,7 @@ export const msspExamples = [
         "main.mjs"
       ]
     },
-    "lineCount": 552,
+    "lineCount": 593,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/011-store-boundary.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/011-store-boundary.html"
   },

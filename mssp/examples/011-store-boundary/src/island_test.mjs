@@ -69,6 +69,32 @@ for (const file of handoutFiles) {
     reaches.join(", ") || "no imports at all");
 }
 
+say("\n== 1b. what FMS says is where things are, checked against the tree");
+// Added 2026-08-12, after Metron and Pragma found that this file still carried
+// the ownership text superseded the day before. The code moved, the README was
+// rewritten, and 27 checks stayed green because none of them read FMS's own
+// description of the sets. Prose cannot be checked; a units map can.
+const declaredUnits = CONTRACT.units ?? {};
+check("FMS declares where its TMS units live", Object.keys(declaredUnits).length > 0,
+  Object.keys(declaredUnits).join(", "));
+for (const [where, expected] of Object.entries(declaredUnits)) {
+  const dir = path.join(here, ...where.split("/"));
+  const onDisk = fs.existsSync(dir)
+    ? fs.readdirSync(dir).filter((n) => n.endsWith(".mjs")).sort()
+    : null;
+  check(`${where}: declared ${expected.length}, on disk ${onDisk ? onDisk.length : "no such directory"}`,
+    onDisk !== null && JSON.stringify(onDisk) === JSON.stringify([...expected].sort()),
+    onDisk ? onDisk.join(", ") : "missing");
+}
+// Two drills, one for each direction the map can be wrong.
+const compare = (declared, actual) => JSON.stringify([...declared].sort()) === JSON.stringify([...actual].sort());
+check("a declared unit that is not on disk would be caught",
+  !compare(["copies.mjs", "live_references.mjs", "ghost.mjs"], ["copies.mjs", "live_references.mjs"]),
+  "declared three, found two");
+check("a file on disk that FMS does not declare would be caught",
+  !compare(["copies.mjs"], ["copies.mjs", "live_references.mjs"]),
+  "declared one, found two");
+
 say("\n== 2. the medium is swappable, and an unknown one stops the run");
 const results = {};
 for (const name of Object.keys(MEDIA)) {
