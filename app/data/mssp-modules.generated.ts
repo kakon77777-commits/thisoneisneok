@@ -141,14 +141,14 @@ export const msspModules = [
       "en": "Distributed FMS"
     },
     "summary": {
-      "zh": "三個 AI 各持一份 FMS，核心相同。主版是三個都通過的那一版，而且是每次建置算出來的，不是寫的。",
-      "en": "Three AIs hold three FMS branches with an identical core. The trunk is what all three pass, and it is computed on every build rather than written."
+      "zh": "三個 AI 各持一份 FMS，核心相同。相同不等於同意——共同版本要三位擁有者各自明示接受，而已生效的版本只能被替代，不能被撤銷。",
+      "en": "Three AIs hold three FMS branches with an identical core. Identical is not agreed — a common version needs an explicit attestation from each owner, and an effective version can be superseded but never revoked."
     },
     "state": {
-      "zh": "機制已生效",
-      "en": "Mechanism live"
+      "zh": "live experimental mechanism",
+      "en": "Live experimental mechanism"
     },
-    "updated": "2026-08-12",
+    "updated": "2026-08-13",
     "href": "/html/mssp/modules/fms.html",
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/modules/fms.html"
   }

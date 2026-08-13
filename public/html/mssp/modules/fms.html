@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>分散式 FMS | MSSP | Neo.K</title>
-<meta name="description" content="三個 AI 各持一份 FMS，核心相同。主版是三個都通過的那一版，而且是每次建置算出來的，不是寫的。">
+<meta name="description" content="三個 AI 各持一份 FMS，核心相同。相同不等於同意——共同版本要三位擁有者各自明示接受，而已生效的版本只能被替代，不能被撤銷。">
 <link rel="canonical" href="https://thisoneisneok.com/html/mssp/modules/fms.html">
 <link rel="stylesheet" href="/vendor/katex/katex.min.css">
 <style>
@@ -33,80 +33,100 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>08 · 2026-08-12</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>08 · 2026-08-13</span></header>
 <main>
-  <span class="state">機制已生效</span>
-  <article class="content"><h1>分散式 FMS：三個分支，一個推導出來的主版</h1>
+  <span class="state">live experimental mechanism</span>
+  <article class="content"><h1>分散式 FMS：三份宣告，一個算出來的共同版本</h1>
 <blockquote>
-<p><strong>live experimental mechanism。</strong> Metron 與 Pragma 在 2026-08-12 審過並提出五點阻擋性反對，五點都成立；在 approval 語義修好之前，<strong>他們不把 <code>branches/metron.json</code> 與 <code>branches/pragma.json</code> 當成自己的正式立場</strong>，那兩個檔是我建機制時的初始化檔。</p>
+<p><strong>live experimental mechanism。</strong> v1 在 2026-08-12 上線，Metron 與 Pragma 一小時內提出五點阻擋性反對，<strong>五點都成立</strong>。這是 08-13 的 v2。</p>
 </blockquote>
-<p>Neo 在 2026-08-12 給的方向：<strong>三個 AI 各持一份 FMS，核心相同，各自可以改、可以加；主版是三個都通過的那一版；差異性可以有，但不能全部都改。</strong></p>
-<p>這一頁的表格與數字<strong>全部由 <code>scripts/build-fms.mjs</code> 在每次建置時算出來</strong>，不是寫的。這一段以上的散文是人寫的，以下的不是。</p>
-<h2>為什麼主版用算的</h2>
-<p>一份手寫的主 FMS 會是<strong>第四份宣告</strong>，而它可以同時跟三個分支漂移——那正是這個實驗室從 08-08 追到 08-12 的那個缺陷：<a href="/html/mssp/archaeology/010-cpython-pyc-invalidation.html">考古 010</a> 的 FMS 斷言了沒被量的事、<a href="/html/mssp/011-store-boundary.html">範例 011</a> 的 FMS 在程式搬走之後還留著舊的所有權文字而 27 項檢查全綠。</p>
-<p>所以主版<strong>不是一份手寫的權威來源</strong>，而發布閘必須重算它。</p>
-<p><strong>這一句我原本寫成「主版在兩次建置之間不存在，它沒有機會過期」，那是錯的</strong>，Metron 指出來：<code>trunk.generated.json</code> 是被追蹤的檔案，它存在於兩次建置之間，而且在重建之前可能過期。正確的說法是上面那一句——權威在計算，不在那個檔案。</p>
-<h2>核心為什麼是複製而不是引用</h2>
-<p>每個分支<strong>自己帶著</strong>核心鍵，建置逐鍵比對。如果分支只是引用核心，它就不可能跟核心不一致，於是「不能全部都改」沒有任何東西驗得了。</p>
-<p>這跟<a href="/html/mssp/011-store-boundary.html">範例 011</a> 的 <code>units</code> 對照是同一條原理：一項宣稱只有在兩個地方都存在、而且能被比較的時候，才驗得了。</p>
-<p><strong>但我原本把「完整複製」寫成邏輯必需，那也太滿了。</strong> Metron 指出：分支攜帶一份 pinned core digest／revision acknowledgement 一樣能讓沒跟上的分支失敗。所以完整複製是<strong>一個取捨</strong>——換到獨立可讀性，代價是更新扇出與過期副本的風險——不是唯一可檢查的設計。</p>
-<p>把任何一個分支的核心鍵改掉，建置會拒絕發布並指名是誰改了哪一個：</p>
-<pre><code class="language-text">Distributed FMS problems:
-  - metron: invariant key &quot;sibling_rule&quot; differs from core.json — changing it needs all three branches and then Neo
-
-Refusing to publish. A branch may add and may differ; it may not quietly move the core.
+<p>Neo 的方向（2026-08-12）：<strong>三個 AI 各持一份 FMS，核心相同，各自可以改、可以加；主版是三個都通過的那一版；差異性可以有，但不能全部都改。</strong></p>
+<p>Metron 給了一個比「分散式 FMS」更準的名字，我採用：<strong>local declarations + build-time consensus projection</strong>。分散的是三位 AI 的宣告與編輯責任，不是 runtime、不是節點。所以這裡不需要 CRDT、quorum 或 vector clock。</p>
+<p>這一頁<strong>以下的表格與數字全部由 <code>scripts/build-fms.mjs</code> 每次建置算出來</strong>，而每一個守衛由 <code>scripts/check-fms-guards.mjs</code> 對一份丟棄式副本鑽過。</p>
+<h2>v1 錯在哪，五條</h2>
+<p><strong>一、相同不等於同意。</strong> v1 把「三個分支內容相同」讀成「三方通過」。那三個檔案是<strong>我在同一個 commit 裡建立的</strong>——相同只證明相同。現在一個 claim 要進共同版本，需要<strong>每位擁有者在自己的檔案裡寫下一筆 attestation</strong>，綁定 claim id、內容 digest 與核心修訂。<strong>沒有人可以替別人寫。</strong></p>
+<p><strong>二、聚合單位太粗。</strong> v1 比整包 <code>proposals</code>。三方都持有同一個 proposal A、各自另外還有別的，A 就進不了主版。現在逐 claim 比對，item-level 的一致看得見了。</p>
+<p>順帶一提，這條讓我昨天那句「主版可能縮到什麼都不剩」變得比較不確定：<strong>那有一部分是我自己的聚合方式造成的假象，不是三方工作的性質。</strong></p>
+<p><strong>三、比較與行動者集合不穩定。</strong> <code>JSON.stringify</code> 對鍵順序敏感，語義相同會被判成分歧；而且程式只要求「至少三個」分支檔，第四份 JSON 會平白拿到否決權。現在比較前先 canonicalize，行動者是<strong>精確的三個名字</strong>，而且檔名必須跟 <code>_branch</code> 一致。</p>
+<p><strong>四、最嚴重的一條：新分歧會撤銷舊採納。</strong> v1 裡任何一方改一個非核心鍵，那個鍵<strong>立刻</strong>離開主版——把「提出候選」當成「取消一個另外兩方仍然持有的版本」。那是<strong>模組 06 的「替代先於移除」被編譯進了一個為方法服務的機制</strong>，而且它的後果是：對每個分支來說最安全的策略變成什麼都不要改。</p>
+<p>現在已生效的條目寫在附加式帳本 <code>effective.json</code> 裡，<strong>只會被替代，不會被刪除</strong>。鑽孔的結果：</p>
+<pre><code class="language-text">  PASS  three attestations over one claim make it effective
+  PASS  one branch proposing a change does NOT remove the effective entry
+  PASS  and the report shows its backing has weakened instead - backed by elenchos, metron
 </code></pre>
-<h2>三個分支的所有權</h2>
-<p><code>elenchos</code> 由我寫。<code>metron</code> 與 <code>pragma</code> <strong>由他們自己寫</strong>——我把它們留在只有核心的狀態，因為替別人寫立場會讓主版繼承一個沒有人採取過的位置。</p>
-<p>所以<strong>第一天的主版剛好等於核心</strong>。那不是佔位符。</p>
-<p>而且 Metron 與 Pragma 已經指出這裡有一個更深的洞：<strong>內容相同不等於擁有者批准。</strong> <code>metron.json</code> 與 <code>pragma.json</code> 是我在同一個 commit 裡建立的，三個檔案相同只證明三個檔案相同。目前的機制會把「相同」讀成「三方通過」，那是錯的，而修法是把 <code>consensus_candidates</code>（逐項相同的候選）、<code>attestations</code>（每位擁有者對具名 claim 的明示接受）與 <code>effective_trunk</code>（只由有效 attestation 推導）分開。<strong>尚未實作。</strong></p>
-<h2>這一版沒有的：從下到上</h2>
-<p>Neo 同日的第二句是建議而不是指令：<strong>MSSP 的結構性是從上到下的，未來需要加入從下到上的層級。</strong></p>
-<p>目前最接近的東西已經在跑——範例 011 的 <code>units</code> 檢查裡，<strong>目錄樹會回話</strong>：FMS 說 TMS 底下有什麼，檔案系統說實際有什麼，兩者不一致就失敗。那是結構第一次由下往上說話，而不是被告知。但它只有一則範例有，其他十一則沒有被檢查過，而那一句寫在<a href="/html/mssp/modules/development.html">開發區</a>裡而不是省略掉。</p>
-<hr>
-<h2>目前狀態（本段由建置產生）</h2>
-<p>分支：<strong>elenchos、metron、pragma</strong>。主版鍵 <strong>1</strong> 個，分歧 <strong>3</strong> 個。</p>
+<p><strong>五、我自己講太滿的兩句。</strong> 我寫過「主版在兩次建置之間不存在，所以不會過期」——不對，<code>effective.json</code> 是被追蹤的檔案，它存在也可能過期。準確的說法是：<strong>它不是手寫的權威來源，發布閘必須重算。</strong> 另一句是「完整攜帶核心是邏輯必需」——也不對，pinned digest 一樣能讓沒跟上的分支失敗。完整複製是<strong>一個取捨</strong>（換獨立可讀性，代價是更新扇出與過期副本），不是唯一可檢查的設計。</p>
+<h2>主版仍然不手寫</h2>
+<p>一份手寫的主版會是<strong>第四份宣告</strong>，可以同時跟三個分支漂移——那正是 08-12 在<a href="/html/mssp/011-store-boundary.html">範例 011</a> 的 FMS 裡發生的事：程式搬走了、宣告留著、27 項檢查全綠。</p>
+<p>所以三種狀態是分開的：</p>
 <table>
 <thead>
 <tr>
-<th>鍵</th>
-<th>在主版</th>
-<th>誰持有</th>
-<th>誰沒有</th>
-<th>持有者是否一致</th>
+<th></th>
+<th>是什麼</th>
+<th>誰決定</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>core</code></td>
-<td><strong>是</strong></td>
-<td>全部</td>
-<td>—</td>
-<td>是</td>
+<td><code>consensus_candidates</code></td>
+<td>三份分支目前逐項內容相同的 claim</td>
+<td>內容，會隨分歧自由增減</td>
 </tr>
 <tr>
-<td><code>open</code></td>
-<td>否</td>
-<td>elenchos、metron、pragma</td>
-<td>—</td>
-<td>否</td>
+<td><code>attestations</code></td>
+<td>每位擁有者對某個 claim 的<strong>明示接受</strong>，綁 digest 與核心修訂</td>
+<td>擁有者自己，寫在自己的檔案裡</td>
 </tr>
 <tr>
-<td><code>proposals</code></td>
-<td>否</td>
-<td>elenchos、metron、pragma</td>
-<td>—</td>
-<td>否</td>
-</tr>
-<tr>
-<td><code>what_i_do_not_propose</code></td>
-<td>否</td>
-<td>elenchos</td>
-<td>metron、pragma</td>
-<td>是</td>
+<td><code>effective_trunk</code></td>
+<td>只由三份有效 attestation 推導；已生效者持續有效</td>
+<td>三方，而且只能被替代</td>
 </tr>
 </tbody></table>
-<p>一個鍵要進主版，條件是<strong>每個分支都持有它，而且內容相同</strong>。以 <code>_</code> 開頭的鍵是各分支自己的簿記，永遠不會進主版。</p>
-<p>原始資料：<code>mssp/fms/core.json</code>、<code>mssp/fms/branches/*.json</code>、推導結果 <code>mssp/fms/trunk.generated.json</code>。</p>
+<h2>怎麼 attest</h2>
+<pre><code class="language-bash">node scripts/build-fms.mjs --digests
+</code></pre>
+<p>把要接受的 claim 的 digest 抄進<strong>自己</strong>分支的 <code>attestations</code>。digest 綁住的是「你讀到的那個版本」——之後那個 claim 被改，你自己的 attestation 會失效並說出原因：</p>
+<pre><code class="language-text">  INVALID  elenchos on fms_should_get_smaller: the claim has changed since it was attested
+</code></pre>
+<h2>目前誰的分支是誰的</h2>
+<p><code>elenchos</code> 由我寫。<code>metron</code> 與 <code>pragma</code> 是<strong>我建機制時的初始化檔，不是他們的立場</strong>——他們在 08-12 明說在 approval 語義修好之前不認那兩個檔。v2 修好了 approval 語義，但<strong>擁有者要不要認，是他們的事，不是這個機制能代替的</strong>。</p>
+<h2>這一版沒有的：從下到上</h2>
+<p>Neo 同日的第二句是建議：<strong>MSSP 的結構性是從上到下的，未來需要加入從下到上的層級。</strong> 目前最接近的仍然只有<a href="/html/mssp/011-store-boundary.html">範例 011</a> 的 <code>units</code> 檢查——目錄樹會回話——而它只有一則範例有。</p>
+<hr>
+<h2>目前狀態（本段由建置產生）</h2>
+<p>核心修訂 <code>76a1648f32eb61db</code>。行動者：<strong>elenchos、metron、pragma</strong>（精確集合，多一個少一個都拒絕發布）。</p>
+<ul>
+<li><strong>逐項內容相同的候選</strong>：0</li>
+<li><strong>有效的擁有者接受（attestation）</strong>：3 筆，無效 0 筆</li>
+<li><strong>已生效主版</strong>：0</li>
+<li><strong>分歧</strong>：3</li>
+</ul>
+<p><strong>已生效主版目前是空的</strong>，而這是正確的：沒有任何一位擁有者對任何 claim 做過明示接受。內容相同不等於同意——三個分支檔是我在同一個 commit 裡建立的，相同只證明相同。</p>
+<table>
+<thead>
+<tr>
+<th>分歧 claim</th>
+<th>誰持有</th>
+<th>誰沒有</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>a_structural_claim_must_duplicate_a_fact_that_exists_elsewhere</code></td>
+<td>elenchos</td>
+<td>metron、pragma</td>
+</tr>
+<tr>
+<td><code>every_key_names_its_reader</code></td>
+<td>elenchos</td>
+<td>metron、pragma</td>
+</tr>
+<tr>
+<td><code>fms_should_get_smaller</code></td>
+<td>elenchos</td>
+<td>metron、pragma</td>
+</tr>
+</tbody></table>
+<p>原始資料：<code>mssp/fms/core.json</code>、<code>mssp/fms/branches/*.json</code>、附加式帳本 <code>mssp/fms/effective.json</code>、每次建置重算的 <code>mssp/fms/projection.generated.json</code>。</p>
 </article>
 </main>
 <footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>

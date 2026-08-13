@@ -1,0 +1,146 @@
+// Every guard in build-fms.mjs, drilled against a throwaway copy.
+//
+// Written the same day the guards were, because yesterday's version of this
+// mechanism shipped with a governance violation inside it and the way that was
+// found was somebody else running it. A guard nobody has watched fail is a
+// claim.
+//
+//   node scripts/check-fms-guards.mjs
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const source = path.join(root, "mssp", "fms");
+const builder = path.join(root, "scripts", "build-fms.mjs");
+const failures = [];
+
+const check = (label, ok, detail = "") => {
+  process.stdout.write(`  ${ok ? "PASS" : "FAIL"}  ${label}${detail ? ` - ${detail}` : ""}\n`);
+  if (!ok) failures.push(label);
+};
+
+function sandbox(mutate) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fms-guard-"));
+  fs.cpSync(source, dir, { recursive: true });
+  const branch = (name) => path.join(dir, "branches", `${name}.json`);
+  const load = (name) => JSON.parse(fs.readFileSync(branch(name), "utf8"));
+  const save = (name, value) => fs.writeFileSync(branch(name), `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  mutate({ dir, branch, load, save });
+  try {
+    const stdout = execFileSync(process.execPath, [builder],
+      { env: { ...process.env, FMS_DIR: dir }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    return { code: 0, out: stdout, dir };
+  } catch (error) {
+    return { code: error.status ?? 1, out: `${error.stdout ?? ""}${error.stderr ?? ""}`, dir };
+  }
+}
+
+process.stdout.write("\n== the actor set is exact, not a floor\n");
+let run = sandbox(({ dir }) =>
+  fs.writeFileSync(path.join(dir, "branches", "someone-else.json"),
+    JSON.stringify({ _branch: "someone-else", core: {} }), "utf8"));
+check("a fourth branch file is refused", run.code !== 0 && /not one of the three actors/.test(run.out),
+  run.out.trim().split("\n").find((l) => l.includes("actors"))?.trim());
+run = sandbox(({ dir }) => fs.rmSync(path.join(dir, "branches", "pragma.json")));
+check("a missing branch is refused", run.code !== 0 && /is missing/.test(run.out),
+  run.out.trim().split("\n").find((l) => l.includes("missing"))?.trim());
+run = sandbox(({ load, save }) => { const b = load("metron"); b._branch = "elenchos"; save("metron", b); });
+check("a filename that disagrees with _branch is refused",
+  run.code !== 0 && /identity is not bound/.test(run.out),
+  run.out.trim().split("\n").find((l) => l.includes("identity"))?.trim());
+
+process.stdout.write("\n== the core may be added to, not moved\n");
+run = sandbox(({ load, save }) => {
+  const b = load("metron"); b.core.sibling_rule = "siblings are fine actually"; save("metron", b);
+});
+check("a branch that edits an invariant key is refused",
+  run.code !== 0 && /differs from core\.json/.test(run.out),
+  run.out.trim().split("\n").find((l) => l.includes("differs"))?.trim());
+
+process.stdout.write("\n== key order is not disagreement\n");
+const claim = { title: "a test claim", status: "candidate", why: "to drill canonicalisation" };
+const reordered = { why: claim.why, title: claim.title, status: claim.status };
+run = sandbox(({ load, save }) => {
+  for (const [name, body] of [["elenchos", claim], ["metron", claim], ["pragma", reordered]]) {
+    const b = load(name); b.proposals = { ...(b.proposals ?? {}), drill_claim: body }; save(name, b);
+  }
+});
+check("three branches holding the same claim in different key order agree",
+  run.code === 0 && /1 identical candidate/.test(run.out),
+  run.out.trim().split("\n")[0]);
+
+process.stdout.write("\n== identical content is NOT approval\n");
+check("and three identical claims with no attestation stay out of the effective trunk",
+  run.code === 0 && /0 effective/.test(run.out), run.out.trim().split("\n")[0]);
+
+process.stdout.write("\n== an attestation is bound to what was read\n");
+run = sandbox(({ load, save }) => {
+  const b = load("elenchos");
+  b.proposals.fms_should_get_smaller.why = "edited after the attestation was written";
+  save("elenchos", b);
+});
+check("editing a claim invalidates its own author's attestation",
+  /INVALID .*fms_should_get_smaller.*changed since it was attested/.test(run.out),
+  run.out.trim().split("\n").find((l) => l.includes("INVALID"))?.trim());
+run = sandbox(({ load, save }) => {
+  const b = load("elenchos");
+  b.attestations[0].core_revision = "0000000000000000";
+  save("elenchos", b);
+});
+check("an attestation against another core revision is invalid",
+  /INVALID .*different core revision/.test(run.out),
+  run.out.trim().split("\n").find((l) => l.includes("INVALID"))?.trim());
+
+process.stdout.write("\n== the one that matters: an effective entry is superseded, never revoked\n");
+// Objection 4. In v1, one branch editing a key removed it from the trunk, which
+// treated proposing a candidate as cancelling a version the other two held.
+const attestAll = ({ load, save }) => {
+  for (const name of ["elenchos", "metron", "pragma"]) {
+    const b = load(name);
+    b.proposals = { ...(b.proposals ?? {}), drill_claim: claim };
+    save(name, b);
+  }
+};
+const dirWithClaim = sandbox(attestAll).dir;
+const digestOf = execFileSync(process.execPath, [builder, "--digests"],
+  { env: { ...process.env, FMS_DIR: dirWithClaim }, encoding: "utf8" })
+  .split("\n").find((line) => line.includes("drill_claim"))?.trim().split(/\s+/)[0];
+const coreRevision = execFileSync(process.execPath, [builder, "--digests"],
+  { env: { ...process.env, FMS_DIR: dirWithClaim }, encoding: "utf8" })
+  .split("\n")[0].trim().split(/\s+/).at(-1);
+
+const withThreeAttestations = ({ load, save }) => {
+  attestAll({ load, save });
+  for (const name of ["elenchos", "metron", "pragma"]) {
+    const b = load(name);
+    b.attestations = [...(b.attestations ?? []),
+      { claim: "drill_claim", digest: digestOf, core_revision: coreRevision, accepted: "drill" }];
+    save(name, b);
+  }
+};
+run = sandbox(withThreeAttestations);
+check("three attestations over one claim make it effective",
+  run.code === 0 && /1 effective/.test(run.out), run.out.trim().split("\n")[0]);
+
+// Now edit one branch's copy. Under v1 the key left the trunk immediately.
+const effectiveDir = sandbox(withThreeAttestations).dir;
+const b = JSON.parse(fs.readFileSync(path.join(effectiveDir, "branches", "pragma.json"), "utf8"));
+b.proposals.drill_claim = { ...claim, why: "pragma is now proposing something else" };
+fs.writeFileSync(path.join(effectiveDir, "branches", "pragma.json"), JSON.stringify(b, null, 2), "utf8");
+const after = execFileSync(process.execPath, [builder],
+  { env: { ...process.env, FMS_DIR: effectiveDir }, encoding: "utf8" });
+const ledger = JSON.parse(fs.readFileSync(path.join(effectiveDir, "effective.json"), "utf8"));
+const entry = ledger.entries.find((e) => e.claim === "drill_claim");
+check("one branch proposing a change does NOT remove the effective entry",
+  Boolean(entry) && !entry.superseded_by && /1 effective/.test(after),
+  after.trim().split("\n")[0]);
+check("and the report shows its backing has weakened instead",
+  entry.currently_backed_by.length === 2,
+  `backed by ${entry.currently_backed_by.join(", ")}`);
+
+process.stdout.write(failures.length ? `\n${failures.length} failure(s)\n` : "\nall guards drilled\n");
+for (const f of failures) process.stdout.write(`  - ${f}\n`);
+process.exit(failures.length ? 1 : 0);
