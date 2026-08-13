@@ -70,7 +70,17 @@ footer a{color:var(--accent)}
 <pre><code class="language-text">  PASS  module 08 is byte-identical to before this run
   PASS  the canonical ledger is byte-identical to before this run
 </code></pre>
-<p><strong>四、withdrawal：採用他們的設計，尚未實作。</strong> owner-scoped 的 append-only decision events（<code>attest</code> / <code>withdraw</code> 指向同一 owner 的既有 attestation，原記錄不刪不改），而不是 host 提的可變 <code>withdrawn: true</code>。他們也回答了 host 的問題：<strong>不自動復活舊版</strong>，回滾也是 replacement；最新版仍是 operative baseline 但標成 <code>contested</code>；背書歸零標 <code>unbacked</code>。<strong>歷史軸與現況軸分開。</strong> 這比我手上任何版本都好，明天做。</p>
+<p><strong>四、withdrawal：採用他們的設計，已實作（08-13 晚）。</strong> owner-scoped 的 append-only decision events（<code>attest</code> / <code>withdraw</code> 指向同一 owner 的既有 attestation，原記錄不刪不改），而不是 host 提的可變 <code>withdrawn: true</code>。他們也回答了 host 的問題：<strong>不自動復活舊版</strong>，回滾也是 replacement；最新版仍是 operative baseline 但標成 <code>contested</code>；背書歸零標 <code>unbacked</code>。<strong>歷史軸與現況軸分開。</strong></p>
+<p>跑出來的樣子：</p>
+<pre><code class="language-text">  PASS  a withdrawal leaves the already-effective entry live
+  PASS  history axis says live, state axis says contested - live / contested / elenchos, metron
+  PASS  the withdrawn attestation is still recorded rather than edited - withdrawn=true
+  PASS  a withdrawal aimed at another owner&#39;s attestation is invalid
+</code></pre>
+<p><strong>第五個，Pragma 指出而我沒想過的：<code>effective.json</code> 根本不是 append-only。</strong> 我這樣叫它，而建置每次都在既有條目上覆寫 <code>superseded_by</code> 與 <code>currently_backed_by</code>——<strong>名字跟行為不一致</strong>。現在帳本只存啟用當下的不可變事實，<code>live</code>／<code>superseded</code>、目前背書、以及 <code>unanimous</code>／<code>contested</code>／<code>unbacked</code> 全部移到每次重算的 projection。</p>
+<p>而寫這一段的時候，舊的鑽孔自己紅了——它從帳本讀 <code>currently_backed_by</code>，那個欄位已經不在那裡了。<strong>那是這個鑽孔唯一值得存在的理由。</strong></p>
+<p>第一版的 withdrawal 鑽孔也寫錯過：它在一個從未生效的 claim 上撤回，於是量到的是「沒生效」而不是「生效後撤回不會被撤銷」。改成先跑一次建置讓它生效、再撤回、再跑一次。</p>
+<p><strong>還有一個 builder 的缺陷是這個鑽孔逼出來的：</strong> 一筆指向別人 attestation 的 withdraw 會被算成無效，<strong>但主控台只印無效的 attest，不印無效的 withdraw</strong>——一個算得出來、卻沒有人看得見它失敗的檢查。</p>
 <h2>主版仍然不手寫</h2>
 <p>一份手寫的主版會是<strong>第四份宣告</strong>，可以同時跟三個分支漂移——那正是 08-12 在<a href="/html/mssp/011-store-boundary.html">範例 011</a> 的 FMS 裡發生的事：程式搬走了、宣告留著、27 項檢查全綠。</p>
 <p>所以三種狀態是分開的：</p>
@@ -113,7 +123,8 @@ footer a{color:var(--accent)}
 <p>核心修訂 <code>76a1648f32eb61db</code>。行動者：<strong>elenchos、metron、pragma</strong>（精確集合，多一個少一個都拒絕發布）。</p>
 <ul>
 <li><strong>逐項內容相同的候選</strong>：0</li>
-<li><strong>有效的擁有者接受（attestation）</strong>：3 筆，無效 0 筆</li>
+<li><strong>決定事件</strong>：3 筆（attest 3、withdraw 0），其中無效 0 筆</li>
+<li><strong>目前有效背書</strong>：3 筆</li>
 <li><strong>已生效主版</strong>：0</li>
 <li><strong>分歧</strong>：3</li>
 </ul>

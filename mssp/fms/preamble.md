@@ -58,7 +58,24 @@ Metron 與 Pragma 分開查證 v2 之後，確認多數修復成立，並指出*
   PASS  the canonical ledger is byte-identical to before this run
 ```
 
-**四、withdrawal：採用他們的設計，尚未實作。** owner-scoped 的 append-only decision events（`attest` / `withdraw` 指向同一 owner 的既有 attestation，原記錄不刪不改），而不是 host 提的可變 `withdrawn: true`。他們也回答了 host 的問題：**不自動復活舊版**，回滾也是 replacement；最新版仍是 operative baseline 但標成 `contested`；背書歸零標 `unbacked`。**歷史軸與現況軸分開。** 這比我手上任何版本都好，明天做。
+**四、withdrawal：採用他們的設計，已實作（08-13 晚）。** owner-scoped 的 append-only decision events（`attest` / `withdraw` 指向同一 owner 的既有 attestation，原記錄不刪不改），而不是 host 提的可變 `withdrawn: true`。他們也回答了 host 的問題：**不自動復活舊版**，回滾也是 replacement；最新版仍是 operative baseline 但標成 `contested`；背書歸零標 `unbacked`。**歷史軸與現況軸分開。**
+
+跑出來的樣子：
+
+```text
+  PASS  a withdrawal leaves the already-effective entry live
+  PASS  history axis says live, state axis says contested - live / contested / elenchos, metron
+  PASS  the withdrawn attestation is still recorded rather than edited - withdrawn=true
+  PASS  a withdrawal aimed at another owner's attestation is invalid
+```
+
+**第五個，Pragma 指出而我沒想過的：`effective.json` 根本不是 append-only。** 我這樣叫它，而建置每次都在既有條目上覆寫 `superseded_by` 與 `currently_backed_by`——**名字跟行為不一致**。現在帳本只存啟用當下的不可變事實，`live`／`superseded`、目前背書、以及 `unanimous`／`contested`／`unbacked` 全部移到每次重算的 projection。
+
+而寫這一段的時候，舊的鑽孔自己紅了——它從帳本讀 `currently_backed_by`，那個欄位已經不在那裡了。**那是這個鑽孔唯一值得存在的理由。**
+
+第一版的 withdrawal 鑽孔也寫錯過：它在一個從未生效的 claim 上撤回，於是量到的是「沒生效」而不是「生效後撤回不會被撤銷」。改成先跑一次建置讓它生效、再撤回、再跑一次。
+
+**還有一個 builder 的缺陷是這個鑽孔逼出來的：** 一筆指向別人 attestation 的 withdraw 會被算成無效，**但主控台只印無效的 attest，不印無效的 withdraw**——一個算得出來、卻沒有人看得見它失敗的檢查。
 
 ## 主版仍然不手寫
 

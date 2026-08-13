@@ -125,36 +125,64 @@ if (process.argv.includes("--digests")) {
   process.exit(problems.length ? 1 : 0);
 }
 
-// --- attestations: the explicit act that equality is not -------------------
-const attestations = [];
+// --- decisions: owner-scoped, append-only, withdrawable --------------------
+//
+// Metron and Pragma specified this independently and identically, which is the
+// only reason it is here rather than the Board host's mutable `withdrawn: true`.
+// A withdrawal is its own event pointing at an earlier one; the original is
+// never edited, and re-accepting adds a third event rather than flipping a flag.
+const decisions = [];
 for (const name of ACTORS.filter((n) => branches[n])) {
-  for (const record of branches[name].attestations ?? []) {
-    const held = branches[name].proposals?.[record.claim];
+  const seen = new Set();
+  for (const record of branches[name].decisions ?? []) {
     const reasons = [];
-    if (!held) reasons.push("this branch does not hold that claim");
-    else if (digest(held) !== record.digest) reasons.push("the claim has changed since it was attested");
-    if (record.core_revision !== coreRevision) reasons.push("attested against a different core revision");
-    attestations.push({ by: name, ...record, valid: reasons.length === 0, reasons });
+    if (!record.id) reasons.push("a decision needs an id");
+    else if (seen.has(record.id)) reasons.push(`duplicate decision id "${record.id}" in this owner's scope`);
+    seen.add(record.id);
+
+    if (record.kind === "attest") {
+      const held = branches[name].proposals?.[record.claim];
+      if (!held) reasons.push("this branch does not hold that claim");
+      else if (digest(held) !== record.digest) reasons.push("the claim has changed since it was attested");
+      if (record.core_revision !== coreRevision) reasons.push("attested against a different core revision");
+    } else if (record.kind === "withdraw") {
+      const target = (branches[name].decisions ?? [])
+        .find((other) => other.id === record.target && other.kind === "attest");
+      if (!target) reasons.push(`withdraw targets "${record.target}", which is not an attestation in this owner's own file`);
+    } else {
+      reasons.push(`unknown decision kind "${record.kind}"`);
+    }
+    decisions.push({ by: name, ...record, valid: reasons.length === 0, reasons });
   }
 }
 
+const withdrawn = new Set(decisions
+  .filter((d) => d.kind === "withdraw" && d.valid).map((d) => `${d.by}:${d.target}`));
+const attestations = decisions.filter((d) => d.kind === "attest");
+
+// An owner backs a claim when they hold a valid attestation for that exact
+// digest which they have not withdrawn.
 const backing = (id, expected) => ACTORS.filter((name) =>
   attestations.some((a) => a.by === name && a.claim === id && a.valid
-    && (!expected || a.digest === expected)));
+    && !withdrawn.has(`${name}:${a.id}`) && (!expected || a.digest === expected)));
 
 // --- the effective trunk: append-only, superseded rather than deleted -------
 const ledgerPath = path.join(fmsDir, "effective.json");
 const ledger = fs.existsSync(ledgerPath) ? read(ledgerPath) : { _note: "", entries: [] };
-ledger._note = "Append-only. The build adds an entry when a claim first carries three valid "
-  + "attestations, and NEVER removes one: an effective version stands until three owners attest a "
-  + "replacement. That is 模組 06 替代先於移除 written as data, and it is the repair for the v1 rule "
-  + "where one branch editing a key silently revoked a version the other two still held.";
+ledger._note = "Genuinely append-only as of 2026-08-13: entries carry ONLY the immutable facts of an "
+  + "activation. Everything derived — whether an entry is still live, and who currently backs it — "
+  + "lives in projection.generated.json and is recomputed. Pragma pointed out that calling this "
+  + "append-only while the build rewrote `superseded_by` and `currently_backed_by` on existing "
+  + "entries was a name disagreeing with the behaviour. 模組 06 替代先於移除 is what the append-only "
+  + "part is for: an activation is never removed, only followed by another.";
 
 for (const claim of consensusCandidates) {
   const attesters = backing(claim.id, claim.digest);
   if (attesters.length !== ACTORS.length) continue;
-  const live = ledger.entries.find((e) => e.claim === claim.id && !e.superseded_by);
-  if (live && live.digest === claim.digest) continue;
+  // The live entry for a claim is derived from order, not from a flag written
+  // back into earlier entries.
+  const previous = ledger.entries.filter((e) => e.claim === claim.id).at(-1);
+  if (previous && previous.digest === claim.digest) continue;
   // The adopted body is stored, not just its digest. Pragma injected an entry
   // that was never proposed and carried no attestations, and the builder called
   // it effective — so an entry must now carry what was adopted and hash to it.
@@ -163,7 +191,6 @@ for (const claim of consensusCandidates) {
   const entry = { claim: claim.id, digest: claim.digest, core_revision: coreRevision,
                   attested_by: attesters, body: branches[attesters[0]].proposals[claim.id],
                   first_effective_build: process.env.FMS_BUILD || "unstamped" };
-  if (live) live.superseded_by = claim.digest;
   ledger.entries.push(entry);
 }
 
@@ -172,9 +199,22 @@ for (const claim of consensusCandidates) {
 // "the publish gate is the authority" turned out to be false for the third
 // time: Pragma injected an entry that was never proposed, had no attestations,
 // and was published as effective with exit 0.
-const liveByClaim = {};
-for (const entry of ledger.entries) {
-  entry.currently_backed_by = backing(entry.claim, entry.digest);
+// Nothing in this loop writes to an entry. Derived state goes to the projection.
+const derived = [];
+for (const [index, entry] of ledger.entries.entries()) {
+  const later = ledger.entries.some((other, otherIndex) =>
+    otherIndex > index && other.claim === entry.claim);
+  const backers = backing(entry.claim, entry.digest);
+  derived.push({
+    claim: entry.claim, digest: entry.digest,
+    status: later ? "superseded" : "live",
+    currently_backed_by: backers,
+    // Metron and Pragma's second axis: history (live/superseded) is not the same
+    // question as current support. A withdrawal does not roll anything back —
+    // a rollback would itself be a replacement needing three acceptances.
+    backing_state: backers.length === ACTORS.length ? "unanimous"
+      : backers.length === 0 ? "unbacked" : "contested",
+  });
   if (!entry.body) {
     fail("effective.json", `entry "${entry.claim}" carries no adopted body — it can be neither checked nor recovered`);
   } else if (digest(entry.body) !== entry.digest) {
@@ -182,10 +222,6 @@ for (const entry of ledger.entries) {
   }
   if (!Array.isArray(entry.attested_by) || entry.attested_by.length !== ACTORS.length) {
     fail("effective.json", `entry "${entry.claim}" was activated by ${entry.attested_by?.length ?? 0} owner(s), not ${ACTORS.length}`);
-  }
-  if (!entry.superseded_by) {
-    if (liveByClaim[entry.claim]) fail("effective.json", `"${entry.claim}" has two live entries`);
-    liveByClaim[entry.claim] = entry;
   }
 }
 
@@ -199,16 +235,18 @@ if (problems.length) {
 
 fs.writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`, "utf8");
 
-const effective = ledger.entries.filter((e) => !e.superseded_by);
+const effective = derived.filter((row) => row.status === "live");
 const projection = {
   _generated: "by scripts/build-fms.mjs, recomputed every build. effective.json is tracked and can be "
     + "stale between builds; the publish gate is the authority, not the file.",
   core_revision: coreRevision,
   actors: ACTORS,
   consensus_candidates: consensusCandidates.map((c) => ({ id: c.id, digest: c.digest })),
-  attestations: attestations.map(({ by, claim, valid, reasons }) => ({ by, claim, valid, reasons })),
-  effective_trunk: effective.map((e) => ({ claim: e.claim, digest: e.digest,
-                                           currently_backed_by: e.currently_backed_by })),
+  decisions: decisions.map(({ by, id, kind, claim, target, valid, reasons }) =>
+    ({ by, id, kind, claim, target, valid, reasons,
+       withdrawn: kind === "attest" && withdrawn.has(`${by}:${id}`) })),
+  history: derived,
+  effective_trunk: effective,
   divergent: claims.filter((c) => !c.identical),
 };
 fs.writeFileSync(path.join(fmsDir, "projection.generated.json"),
@@ -234,7 +272,8 @@ const page = [
   `核心修訂 \`${coreRevision}\`。行動者：**${ACTORS.join("、")}**（精確集合，多一個少一個都拒絕發布）。`,
   "",
   `- **逐項內容相同的候選**：${consensusCandidates.length}`,
-  `- **有效的擁有者接受（attestation）**：${attestations.filter((a) => a.valid).length} 筆，無效 ${attestations.filter((a) => !a.valid).length} 筆`,
+  `- **決定事件**：${decisions.length} 筆（attest ${attestations.length}、withdraw ${decisions.length - attestations.length}），其中無效 ${decisions.filter((d) => !d.valid).length} 筆`,
+  `- **目前有效背書**：${attestations.filter((a) => a.valid && !withdrawn.has(`${a.by}:${a.id}`)).length} 筆`,
   `- **已生效主版**：${effective.length}`,
   `- **分歧**：${projection.divergent.length}`,
   "",
@@ -269,6 +308,9 @@ for (const claim of projection.divergent) {
   console.log(`  divergent  ${claim.id}  held by ${claim.held_by.join(", ") || "nobody"}`
     + (claim.absent_from.length ? `; absent from ${claim.absent_from.join(", ")}` : ""));
 }
-for (const record of attestations.filter((a) => !a.valid)) {
+// Every invalid decision, not only invalid attestations. A withdrawal aimed at
+// another owner's record was computed as invalid and never printed, which is a
+// check that can fail and that nobody can watch fail.
+for (const record of decisions.filter((d) => !d.valid)) {
   console.log(`  INVALID    ${record.by} on ${record.claim}: ${record.reasons.join("; ")}`);
 }

@@ -91,7 +91,7 @@ check("editing a claim invalidates its own author's attestation",
   run.out.trim().split("\n").find((l) => l.includes("INVALID"))?.trim());
 run = sandbox(({ load, save }) => {
   const b = load("elenchos");
-  b.attestations[0].core_revision = "0000000000000000";
+  b.decisions[0].core_revision = "0000000000000000";
   save("elenchos", b);
 });
 check("an attestation against another core revision is invalid",
@@ -120,8 +120,9 @@ const withThreeAttestations = ({ load, save }) => {
   attestAll({ load, save });
   for (const name of ["elenchos", "metron", "pragma"]) {
     const b = load(name);
-    b.attestations = [...(b.attestations ?? []),
-      { claim: "drill_claim", digest: digestOf, core_revision: coreRevision, accepted: "drill" }];
+    b.decisions = [...(b.decisions ?? []),
+      { id: `${name}-drill-a1`, kind: "attest", claim: "drill_claim",
+        digest: digestOf, core_revision: coreRevision }];
     save(name, b);
   }
 };
@@ -138,12 +139,57 @@ const after = execFileSync(process.execPath, [builder],
   { env: { ...process.env, FMS_DIR: effectiveDir }, encoding: "utf8" });
 const ledger = JSON.parse(fs.readFileSync(path.join(effectiveDir, "effective.json"), "utf8"));
 const entry = ledger.entries.find((e) => e.claim === "drill_claim");
+// Derived state moved out of the ledger on 2026-08-13, because calling the file
+// append-only while rewriting `superseded_by` and `currently_backed_by` into
+// existing entries was a name disagreeing with the behaviour — Pragma's point.
+// This drill caught the move itself, which is the only reason it is worth having.
+const projectionAfter = JSON.parse(
+  fs.readFileSync(path.join(effectiveDir, "projection.generated.json"), "utf8"));
+const row = projectionAfter.effective_trunk.find((e) => e.claim === "drill_claim");
 check("one branch proposing a change does NOT remove the effective entry",
-  Boolean(entry) && !entry.superseded_by && /1 effective/.test(after),
+  Boolean(entry) && row?.status === "live" && /1 effective/.test(after),
   after.trim().split("\n")[0]);
+check("the ledger entry itself carries no derived state",
+  entry.currently_backed_by === undefined && entry.superseded_by === undefined,
+  Object.keys(entry).join(", "));
 check("and the report shows its backing has weakened instead",
-  entry.currently_backed_by.length === 2,
-  `backed by ${entry.currently_backed_by.join(", ")}`);
+  row.currently_backed_by.length === 2 && row.backing_state === "contested",
+  `${row.backing_state}, backed by ${row.currently_backed_by.join(", ")}`);
+
+process.stdout.write("\n== withdrawal is an event, not a flag on the old one\n");
+// Metron and Pragma specified this independently and identically, which is why
+// it is here rather than the Board host's mutable `withdrawn: true`.
+// The entry has to be effective BEFORE the withdrawal, or this measures nothing:
+// a claim that never reached three attestations was never activated, and its
+// absence afterwards says nothing about whether a withdrawal revokes anything.
+// The first drill of this was written that way and correctly came out red.
+{
+  const dir = sandbox(withThreeAttestations).dir;
+  const branch = JSON.parse(fs.readFileSync(path.join(dir, "branches", "pragma.json"), "utf8"));
+  branch.decisions.push({ id: "pragma-drill-w1", kind: "withdraw", target: "pragma-drill-a1" });
+  fs.writeFileSync(path.join(dir, "branches", "pragma.json"), JSON.stringify(branch, null, 2), "utf8");
+  const out = execFileSync(process.execPath, [builder],
+    { env: { ...process.env, FMS_DIR: dir }, encoding: "utf8" });
+  check("a withdrawal leaves the already-effective entry live",
+    /1 effective/.test(out), out.trim().split("\n")[0]);
+  const projection = JSON.parse(fs.readFileSync(path.join(dir, "projection.generated.json"), "utf8"));
+  const withdrawnRow = projection.effective_trunk.find((e) => e.claim === "drill_claim");
+  check("history axis says live, state axis says contested",
+    withdrawnRow?.status === "live" && withdrawnRow?.backing_state === "contested",
+    `${withdrawnRow?.status} / ${withdrawnRow?.backing_state} / ${withdrawnRow?.currently_backed_by.join(", ")}`);
+  const original = projection.decisions.find((d) => d.id === "pragma-drill-a1");
+  check("the withdrawn attestation is still recorded rather than edited",
+    original?.kind === "attest" && original?.withdrawn === true,
+    original ? `withdrawn=${original.withdrawn}` : "gone");
+}
+run = sandbox(({ load, save }) => {
+  const branch = load("pragma");
+  branch.decisions = [{ id: "pragma-w0", kind: "withdraw", target: "elenchos-a1" }];
+  save("pragma", branch);
+});
+check("a withdrawal aimed at another owner's attestation is invalid",
+  /not an attestation in this owner/.test(run.out),
+  run.out.split("\n").find((l) => l.includes("withdraw"))?.trim() || "(not reported)");
 
 process.stdout.write("\n== the ledger is not self-authorising\n");
 // Pragma injected an entry that was never proposed and had no attestations, and
