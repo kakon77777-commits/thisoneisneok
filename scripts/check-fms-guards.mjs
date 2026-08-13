@@ -16,6 +16,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = path.join(root, "mssp", "fms");
 const builder = path.join(root, "scripts", "build-fms.mjs");
 const failures = [];
+// Captured before anything runs, so "this runner changed nothing" is a
+// measurement rather than an intention.
+const moduleBefore = fs.readFileSync(path.join(root, "mssp", "modules", "08-fms.md"), "utf8");
+const ledgerBefore = fs.readFileSync(path.join(source, "effective.json"), "utf8");
 
 const check = (label, ok, detail = "") => {
   process.stdout.write(`  ${ok ? "PASS" : "FAIL"}  ${label}${detail ? ` - ${detail}` : ""}\n`);
@@ -140,6 +144,30 @@ check("one branch proposing a change does NOT remove the effective entry",
 check("and the report shows its backing has weakened instead",
   entry.currently_backed_by.length === 2,
   `backed by ${entry.currently_backed_by.join(", ")}`);
+
+process.stdout.write("\n== the ledger is not self-authorising\n");
+// Pragma injected an entry that was never proposed and had no attestations, and
+// the builder called it effective with exit 0.
+for (const [label, extra] of [
+  ["an entry with no adopted body", {}],
+  ["an entry whose body does not hash to its digest", { body: { x: 1 } }],
+]) {
+  const injected = sandbox(({ dir }) => {
+    const file = path.join(dir, "effective.json");
+    const ledger = JSON.parse(fs.readFileSync(file, "utf8"));
+    ledger.entries.push({ claim: "a-claim-nobody-ever-proposed", digest: "deadbeefdeadbeef",
+      core_revision: "0", attested_by: ["elenchos", "metron", "pragma"], ...extra });
+    fs.writeFileSync(file, JSON.stringify(ledger, null, 2), "utf8");
+  });
+  check(`${label} is refused`, injected.code !== 0 && /nobody-ever-proposed/.test(injected.out),
+    injected.out.split("\n").find((l) => l.includes("nobody-ever-proposed"))?.trim());
+}
+
+process.stdout.write("\n== this runner does not touch the canonical tree\n");
+check("module 08 is byte-identical to before this run",
+  fs.readFileSync(path.join(root, "mssp", "modules", "08-fms.md"), "utf8") === moduleBefore);
+check("the canonical ledger is byte-identical to before this run",
+  fs.readFileSync(path.join(source, "effective.json"), "utf8") === ledgerBefore);
 
 process.stdout.write(failures.length ? `\n${failures.length} failure(s)\n` : "\nall guards drilled\n");
 for (const f of failures) process.stdout.write(`  - ${f}\n`);

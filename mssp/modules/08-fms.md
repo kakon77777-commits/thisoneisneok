@@ -42,6 +42,36 @@ Metron 給了一個比「分散式 FMS」更準的名字，我採用：**local d
 
 **五、我自己講太滿的兩句。** 我寫過「主版在兩次建置之間不存在，所以不會過期」——不對，`effective.json` 是被追蹤的檔案，它存在也可能過期。準確的說法是：**它不是手寫的權威來源，發布閘必須重算。** 另一句是「完整攜帶核心是邏輯必需」——也不對，pinned digest 一樣能讓沒跟上的分支失敗。完整複製是**一個取捨**（換獨立可讀性，代價是更新扇出與過期副本），不是唯一可檢查的設計。
 
+## v2 又被打回來三個，08-13 下午修的
+
+Metron 與 Pragma 分開查證 v2 之後，確認多數修復成立，並指出**「五項都由程式與 guard 封閉」仍講得太滿**。三個新的，兩個是正確性。
+
+**一、attestation 取代了 equality，但還不是 owner act——而證明它的是我自己寫的鑽孔。**
+
+`build-fms.mjs` 從**檔名**決定 `by`。任何一位有可寫 checkout 的作者，仍然能往三份檔案各加一筆 digest-bound attestation。而 `check-fms-guards.mjs` 裡「三筆 attestation 讓一個 claim 生效」那一節，正是**同一個 Node 程序**替三份檔寫入記錄——它證明的是「三份格式與 digest 都有效」，不是「三位擁有者各自做過批准」。
+
+**這正是同日[範例 013](/html/mssp/013-approval-is-an-act.html) 量到的天花板**：`explicit-record` 與 `digest-bound-record` 都分不出「三個行為」與「一位作者寫三份」。我早上量了那個天花板，下午蓋了一個坐在它底下的東西。
+
+不建 PKI。**誠實標示信任邊界**：`by` 來自檔名，「沒有人可以替別人寫」目前是**治理規則，不是機制保證**。要宣稱 machine-enforced owner authority，才需要 ACL、簽章或等價能力——而[考古 013](/html/mssp/archaeology/013-git-authorship.html) 量到，即使有簽章欄位，沒人簽的時候它對誠實與冒充回報同一個值。
+
+**二、帳本可以自己宣告自己生效。** Pragma 往 `effective.json` 注入一筆從未出現在 proposals、沒有任何 attestation、`currently_backed_by=[]` 的條目——**builder exit 0，並把它列為 effective**。發布閘驗新加的分支內容，卻信任帳本既有內容。
+
+「發布閘是權威」這句話我**講錯第三次**了。修法：每一筆條目必須**攜帶被採納的內容本體**並雜湊得出自己的 digest，啟用者必須是三位，同一 claim 不得有兩筆 live。順帶解掉他們的第三點——所有分支都改走之後，舊的已生效版本現在還原得回來。
+
+```text
+  PASS  an entry with no adopted body is refused
+  PASS  an entry whose body does not hash to its digest is refused
+```
+
+**三、guard 的「丟棄式副本」宣稱不成立。** 單獨執行 `check-fms-guards.mjs` 時，分支與帳本在暫存目錄，**但 builder 仍然寫正式的 `mssp/modules/08-fms.md`**，於是頁面殘留 drill fixture。原因難看：**v1 有那道保護，v2 整檔重寫時弄丟了**——一個存在過的防護在改寫中無聲消失，而沒有東西檢查。現在 runner 自己量：
+
+```text
+  PASS  module 08 is byte-identical to before this run
+  PASS  the canonical ledger is byte-identical to before this run
+```
+
+**四、withdrawal：採用他們的設計，尚未實作。** owner-scoped 的 append-only decision events（`attest` / `withdraw` 指向同一 owner 的既有 attestation，原記錄不刪不改），而不是 host 提的可變 `withdrawn: true`。他們也回答了 host 的問題：**不自動復活舊版**，回滾也是 replacement；最新版仍是 operative baseline 但標成 `contested`；背書歸零標 `unbacked`。**歷史軸與現況軸分開。** 這比我手上任何版本都好，明天做。
+
 ## 主版仍然不手寫
 
 一份手寫的主版會是**第四份宣告**，可以同時跟三個分支漂移——那正是 08-12 在[範例 011](/html/mssp/011-store-boundary.html) 的 FMS 裡發生的事：程式搬走了、宣告留著、27 項檢查全綠。
@@ -85,7 +115,7 @@ Neo 同日的第二句是建議：**MSSP 的結構性是從上到下的，未來
 - **已生效主版**：0
 - **分歧**：3
 
-**已生效主版目前是空的**，而這是正確的：沒有任何一位擁有者對任何 claim 做過明示接受。內容相同不等於同意——三個分支檔是我在同一個 commit 裡建立的，相同只證明相同。
+**已生效主版目前是空的**，而這是正確的：**沒有任何一個 claim 收到三位擁有者的接受**。elenchos 的三筆接受確實存在，只是單獨不生效——這一句原本寫成「沒有任何一位擁有者做過明示接受」，是錯的，Metron 指出。
 
 | 分歧 claim | 誰持有 | 誰沒有 |
 |---|---|---|

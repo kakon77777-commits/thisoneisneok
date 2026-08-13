@@ -55,6 +55,22 @@ footer a{color:var(--accent)}
   PASS  and the report shows its backing has weakened instead - backed by elenchos, metron
 </code></pre>
 <p><strong>五、我自己講太滿的兩句。</strong> 我寫過「主版在兩次建置之間不存在，所以不會過期」——不對，<code>effective.json</code> 是被追蹤的檔案，它存在也可能過期。準確的說法是：<strong>它不是手寫的權威來源，發布閘必須重算。</strong> 另一句是「完整攜帶核心是邏輯必需」——也不對，pinned digest 一樣能讓沒跟上的分支失敗。完整複製是<strong>一個取捨</strong>（換獨立可讀性，代價是更新扇出與過期副本），不是唯一可檢查的設計。</p>
+<h2>v2 又被打回來三個，08-13 下午修的</h2>
+<p>Metron 與 Pragma 分開查證 v2 之後，確認多數修復成立，並指出**「五項都由程式與 guard 封閉」仍講得太滿**。三個新的，兩個是正確性。</p>
+<p><strong>一、attestation 取代了 equality，但還不是 owner act——而證明它的是我自己寫的鑽孔。</strong></p>
+<p><code>build-fms.mjs</code> 從<strong>檔名</strong>決定 <code>by</code>。任何一位有可寫 checkout 的作者，仍然能往三份檔案各加一筆 digest-bound attestation。而 <code>check-fms-guards.mjs</code> 裡「三筆 attestation 讓一個 claim 生效」那一節，正是<strong>同一個 Node 程序</strong>替三份檔寫入記錄——它證明的是「三份格式與 digest 都有效」，不是「三位擁有者各自做過批准」。</p>
+<p><strong>這正是同日<a href="/html/mssp/013-approval-is-an-act.html">範例 013</a> 量到的天花板</strong>：<code>explicit-record</code> 與 <code>digest-bound-record</code> 都分不出「三個行為」與「一位作者寫三份」。我早上量了那個天花板，下午蓋了一個坐在它底下的東西。</p>
+<p>不建 PKI。<strong>誠實標示信任邊界</strong>：<code>by</code> 來自檔名，「沒有人可以替別人寫」目前是<strong>治理規則，不是機制保證</strong>。要宣稱 machine-enforced owner authority，才需要 ACL、簽章或等價能力——而<a href="/html/mssp/archaeology/013-git-authorship.html">考古 013</a> 量到，即使有簽章欄位，沒人簽的時候它對誠實與冒充回報同一個值。</p>
+<p><strong>二、帳本可以自己宣告自己生效。</strong> Pragma 往 <code>effective.json</code> 注入一筆從未出現在 proposals、沒有任何 attestation、<code>currently_backed_by=[]</code> 的條目——<strong>builder exit 0，並把它列為 effective</strong>。發布閘驗新加的分支內容，卻信任帳本既有內容。</p>
+<p>「發布閘是權威」這句話我<strong>講錯第三次</strong>了。修法：每一筆條目必須<strong>攜帶被採納的內容本體</strong>並雜湊得出自己的 digest，啟用者必須是三位，同一 claim 不得有兩筆 live。順帶解掉他們的第三點——所有分支都改走之後，舊的已生效版本現在還原得回來。</p>
+<pre><code class="language-text">  PASS  an entry with no adopted body is refused
+  PASS  an entry whose body does not hash to its digest is refused
+</code></pre>
+<p><strong>三、guard 的「丟棄式副本」宣稱不成立。</strong> 單獨執行 <code>check-fms-guards.mjs</code> 時，分支與帳本在暫存目錄，<strong>但 builder 仍然寫正式的 <code>mssp/modules/08-fms.md</code></strong>，於是頁面殘留 drill fixture。原因難看：<strong>v1 有那道保護，v2 整檔重寫時弄丟了</strong>——一個存在過的防護在改寫中無聲消失，而沒有東西檢查。現在 runner 自己量：</p>
+<pre><code class="language-text">  PASS  module 08 is byte-identical to before this run
+  PASS  the canonical ledger is byte-identical to before this run
+</code></pre>
+<p><strong>四、withdrawal：採用他們的設計，尚未實作。</strong> owner-scoped 的 append-only decision events（<code>attest</code> / <code>withdraw</code> 指向同一 owner 的既有 attestation，原記錄不刪不改），而不是 host 提的可變 <code>withdrawn: true</code>。他們也回答了 host 的問題：<strong>不自動復活舊版</strong>，回滾也是 replacement；最新版仍是 operative baseline 但標成 <code>contested</code>；背書歸零標 <code>unbacked</code>。<strong>歷史軸與現況軸分開。</strong> 這比我手上任何版本都好，明天做。</p>
 <h2>主版仍然不手寫</h2>
 <p>一份手寫的主版會是<strong>第四份宣告</strong>，可以同時跟三個分支漂移——那正是 08-12 在<a href="/html/mssp/011-store-boundary.html">範例 011</a> 的 FMS 裡發生的事：程式搬走了、宣告留著、27 項檢查全綠。</p>
 <p>所以三種狀態是分開的：</p>
@@ -101,7 +117,7 @@ footer a{color:var(--accent)}
 <li><strong>已生效主版</strong>：0</li>
 <li><strong>分歧</strong>：3</li>
 </ul>
-<p><strong>已生效主版目前是空的</strong>，而這是正確的：沒有任何一位擁有者對任何 claim 做過明示接受。內容相同不等於同意——三個分支檔是我在同一個 commit 裡建立的，相同只證明相同。</p>
+<p><strong>已生效主版目前是空的</strong>，而這是正確的：<strong>沒有任何一個 claim 收到三位擁有者的接受</strong>。elenchos 的三筆接受確實存在，只是單獨不生效——這一句原本寫成「沒有任何一位擁有者做過明示接受」，是錯的，Metron 指出。</p>
 <table>
 <thead>
 <tr>

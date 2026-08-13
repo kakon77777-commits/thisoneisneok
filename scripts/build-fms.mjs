@@ -155,15 +155,38 @@ for (const claim of consensusCandidates) {
   if (attesters.length !== ACTORS.length) continue;
   const live = ledger.entries.find((e) => e.claim === claim.id && !e.superseded_by);
   if (live && live.digest === claim.digest) continue;
+  // The adopted body is stored, not just its digest. Pragma injected an entry
+  // that was never proposed and carried no attestations, and the builder called
+  // it effective — so an entry must now carry what was adopted and hash to it.
+  // It also makes the adopted version recoverable after every branch has moved
+  // on, which a digest alone could not do.
   const entry = { claim: claim.id, digest: claim.digest, core_revision: coreRevision,
-                  attested_by: attesters, first_effective_build: process.env.FMS_BUILD || "unstamped" };
+                  attested_by: attesters, body: branches[attesters[0]].proposals[claim.id],
+                  first_effective_build: process.env.FMS_BUILD || "unstamped" };
   if (live) live.superseded_by = claim.digest;
   ledger.entries.push(entry);
 }
 
-// Report current backing without touching history.
+// Report current backing without touching history, and re-derive every entry.
+// The gate validated new branch content and TRUSTED the ledger, which is how
+// "the publish gate is the authority" turned out to be false for the third
+// time: Pragma injected an entry that was never proposed, had no attestations,
+// and was published as effective with exit 0.
+const liveByClaim = {};
 for (const entry of ledger.entries) {
   entry.currently_backed_by = backing(entry.claim, entry.digest);
+  if (!entry.body) {
+    fail("effective.json", `entry "${entry.claim}" carries no adopted body — it can be neither checked nor recovered`);
+  } else if (digest(entry.body) !== entry.digest) {
+    fail("effective.json", `entry "${entry.claim}" does not hash to its own digest — injected or corrupted`);
+  }
+  if (!Array.isArray(entry.attested_by) || entry.attested_by.length !== ACTORS.length) {
+    fail("effective.json", `entry "${entry.claim}" was activated by ${entry.attested_by?.length ?? 0} owner(s), not ${ACTORS.length}`);
+  }
+  if (!entry.superseded_by) {
+    if (liveByClaim[entry.claim]) fail("effective.json", `"${entry.claim}" has two live entries`);
+    liveByClaim[entry.claim] = entry;
+  }
 }
 
 if (problems.length) {
@@ -217,7 +240,7 @@ const page = [
   "",
   effective.length ? "| 已生效 claim | digest | 目前背書 |\n|---|---|---|\n"
     + effective.map((e) => `| \`${e.claim}\` | \`${e.digest}\` | ${e.currently_backed_by.join("、") || "**無**"} |`).join("\n")
-    : "**已生效主版目前是空的**，而這是正確的：沒有任何一位擁有者對任何 claim 做過明示接受。內容相同不等於同意——三個分支檔是我在同一個 commit 裡建立的，相同只證明相同。",
+    : "**已生效主版目前是空的**，而這是正確的：**沒有任何一個 claim 收到三位擁有者的接受**。elenchos 的三筆接受確實存在，只是單獨不生效——這一句原本寫成「沒有任何一位擁有者做過明示接受」，是錯的，Metron 指出。",
   "",
   projection.divergent.length ? "| 分歧 claim | 誰持有 | 誰沒有 |\n|---|---|---|\n"
     + projection.divergent.map((c) => `| \`${c.id}\` | ${c.held_by.join("、") || "—"} | ${c.absent_from.join("、") || "—"} |`).join("\n")
@@ -226,7 +249,14 @@ const page = [
   "原始資料：`mssp/fms/core.json`、`mssp/fms/branches/*.json`、附加式帳本 `mssp/fms/effective.json`、每次建置重算的 `mssp/fms/projection.generated.json`。",
   "",
 ].join("\n");
-fs.writeFileSync(path.join(root, "mssp", "modules", "08-fms.md"), `${page}\n`, "utf8");
+// Only the canonical run writes the published page. v1 had this guard and the
+// v2 rewrite lost it, so a standalone guard run left module 08 dirty carrying a
+// drill fixture — a protection that existed, stopped existing during a rewrite,
+// and nothing checked. check-fms-guards.mjs now measures that the tree is
+// untouched instead of intending it.
+if (!process.env.FMS_DIR) {
+  fs.writeFileSync(path.join(root, "mssp", "modules", "08-fms.md"), `${page}\n`, "utf8");
+}
 
 console.log(`Distributed FMS: core ${coreRevision}, ${ACTORS.length} actors, `
   + `${consensusCandidates.length} identical candidate(s), `
