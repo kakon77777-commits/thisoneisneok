@@ -129,7 +129,7 @@ export const msspModules = [
       "zh": "每日進行",
       "en": "Daily"
     },
-    "updated": "2026-08-12",
+    "updated": "2026-08-13",
     "href": "/html/mssp/modules/log.html",
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/modules/log.html"
   },

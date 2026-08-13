@@ -1,0 +1,20 @@
+id: 013-git-authorship
+project: git
+upstream: https://git-scm.com/
+license: GPL-2.0-only
+examined_version: measured at run time
+title:
+  zh: 一個宣稱自己是任何人的 commit，跟真的是同一種物件
+  en: "A commit claiming to be anyone is the same kind of object as an honest one"
+summary:
+  zh: 範例 013 主張「一個行為必須在工件之外留下痕跡」，所以來問：軟體業最廣泛使用的來源存放處有沒有這個區分？三個 commit——誠實、冒充、帶著沒人檢查的 trailer——`git log` 把前兩個印得一模一樣，冒充那個**不需要任何漏洞**（`GIT_AUTHOR_NAME` 是有文件的環境變數），原始物件裡也沒有多任何東西。四個欄位裡三個記錄的是**宣稱**（author、committer、trailer），唯一記錄**行為**的是簽章——**而在沒有人簽的儲存庫裡，`%G?` 對誠實的與冒充的都回報 `N`**。所以：**一個「可以」是行為的欄位，在有人真的執行它之前，並不是行為**——跟考古 011 的 `d[k] is d[k]` 同一個形狀，一個存在而沒有人行使的判別器。git 沒有做錯：分散式系統不可能有發放身分的權威，簽章存在正是因為 author 不是身分。自我牽連的一項：這個儲存庫每個 commit 都帶著 `Co-Authored-By: Claude Opus 5`，而量到的是 git 不讀它回來——那是內容裡的一句宣稱，跟我 08-12 寫下然後讀成同意的三個檔案形狀相同。另外，這是六則連續 CPython 之後刻意換的上游。
+  en: Example 013 argues that an act must leave a trace outside the artifact, so this asks whether the most widely used provenance store in software has that distinction. Three commits — honest, impersonating, and one carrying an unchecked trailer — and git log prints the first two identically. The impersonation needs no exploit: GIT_AUTHOR_NAME is a documented environment variable, and the raw object contains nothing extra. Three of the four fields record a claim (author, committer, trailer); the only one recording an act is the signature, and in a repository where nobody signs, %G? reports N for the honest commit and the impersonation alike. So a field that CAN be an act is not one until someone performs it — the same shape as archaeology 011's d[k] is d[k], a discriminator that exists and that nobody exercises. git is not wrong: a distributed VCS has no authority to issue identities, and signing exists precisely because the author field is not one. One self-implicating measurement: every commit in this repository carries Co-Authored-By: Claude Opus 5, and nothing in git reads that line back — a claim in content, the same shape as the three files I wrote and then read as agreement. Also a deliberate change of upstream after six consecutive CPython entries.
+date: 2026-08-13
+version: v1.0
+verdict: a-field-that-can-be-an-act-is-not-one-until-performed
+concepts:
+  - impersonation-without-an-exploit
+  - a-discriminator-that-exists-and-nobody-exercises
+  - a-trailer-is-a-line-of-the-message
+  - the-upstream-was-changed-because-six-in-a-row-is-a-sampling-habit
+runnable: python src/main.py

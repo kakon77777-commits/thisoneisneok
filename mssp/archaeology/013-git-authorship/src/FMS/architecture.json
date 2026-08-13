@@ -1,0 +1,36 @@
+{
+  "name": "013-git-authorship",
+  "upstream": "git",
+  "examined_version": "measured at run time",
+  "license": "GPL-2.0-only (git itself; nothing of git's source is reproduced here)",
+  "what_it_is": "The fields a commit carries about who made it, and which of them records an act rather than a claim.",
+
+  "why_this_one": "On 2026-08-12 I built a consensus mechanism that read three identical files as three-party agreement; I had written all three. Example 013 the same day turns that into a measurement. This asks whether the most widely used provenance store in software has the distinction the example says is needed — and it is not CPython, because six consecutive entries from one standard library is a sampling habit rather than a finding.",
+
+  "fields": {
+    "author": {"kind": "claim", "set_by": "GIT_AUTHOR_NAME, a documented environment variable"},
+    "committer": {"kind": "claim", "set_by": "GIT_COMMITTER_NAME, likewise"},
+    "trailer": {"kind": "claim", "set_by": "typing a line in the commit message; nothing in git reads it back"},
+    "signature": {"kind": "act", "set_by": "a cryptographic operation performed with a key"}
+  },
+
+  "the_finding": "A commit claiming to be anyone is the same kind of object as an honest one. `git log` prints them identically, the raw object contains nothing extra, and no exploit is involved. The only field that records an act rather than a claim is the signature — and when nobody signs, %G? reports N for the honest commit and the impersonation alike. A field that CAN be an act is not one until someone performs it.",
+
+  "the_self_implication": "Every commit in this repository carries `Co-Authored-By: Claude Opus 5`. Measured here: nothing in git reads that line back. It is a claim in content, which is exactly the shape of the three branch files I wrote and then read as agreement.",
+
+  "sets": {
+    "FMS": "this file: the fields, what each records, and what the entry measures",
+    "SCL": "which field this deployment would trust for identity",
+    "SMS": "field resolution by id, the separation test, and the probes against a throwaway repository",
+    "TMS": "one file per field — each declares claim or act, and reaches no sibling set",
+    "DMS": "the log as git prints it, and which field could have told the difference"
+  },
+
+  "units": {"TMS/fields": ["author.py", "committer.py", "signature.py", "trailer.py"]},
+
+  "non_goals": [
+    "Saying git is wrong. A distributed VCS cannot have an authority that issues identities, and signing exists precisely because the author field is not one.",
+    "Cryptography. No key is generated; the entry measures what the signature FIELD reports when unused, which is the finding.",
+    "Any claim about commits in the wild. This measures what the fields can carry, not what they do carry."
+  ]
+}

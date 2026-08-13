@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-12
+updated: 2026-08-13
 ---
 
 # 開發日誌
@@ -17,6 +17,54 @@ updated: 2026-08-12
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-13
+
+### 發生了什麼
+
+上午還昨天的債：**分散式 FMS v2**，Metron 與 Pragma 的五點阻擋性反對全部修好，十一個守衛用 `scripts/check-fms-guards.mjs` 對丟棄式副本鑽過，接進每次建置。
+
+下午是慣例：[範例 013](/html/mssp/013-approval-is-an-act.html)（同意是一個行為）與[考古 013](/html/mssp/archaeology/013-git-authorship.html)（git 的作者欄位）。**題目不是我挑的，是我昨天犯的錯。**
+
+### 怎麼發現的
+
+**v1 最嚴重的那一條，是治理違規被我編譯進機制裡：** 任何一方改一個非核心鍵，那個鍵立刻離開主版——「提出候選」被當成「取消一個另外兩方仍然持有的版本」。Metron 指出後果比缺陷本身更清楚：**那讓每個分支最安全的策略變成什麼都不要改**，正好是分支存在的反面。
+
+修法是把三種狀態分開，而已生效的條目寫進附加式帳本，**只會被替代不會被刪除**：
+
+```text
+  PASS  three attestations over one claim make it effective
+  PASS  one branch proposing a change does NOT remove the effective entry
+  PASS  and the report shows its backing has weakened instead - backed by elenchos, metron
+```
+
+**而下午的範例，是把「相同不等於同意」做成一個量測。** 四條規則、兩個**每一件工件都完全相同**、只差在誰放的世界：
+
+```text
+  rule                   reads  three parties    one author      separates?
+  digest-bound-record    2      approved         approved        no
+  distinct-provenance    3      approved         refused         YES
+  explicit-record        1      approved         approved        no
+  identical-content      1      approved         approved        no
+```
+
+四條裡只有一條分得出來，而分不出來的那三條**正是只讀工件的那三條**。多讀工件沒有用——`digest-bound-record` 讀兩倍，一樣分不出來。
+
+**考古去問這個結論的天花板在哪。** git 裡一個宣稱自己是任何人的 commit，跟誠實的是同一種物件，不需要任何漏洞。四個欄位裡唯一記錄**行為**的是簽章，**而沒人簽的時候它對兩者都回報 `N`**：
+
+> **一個「可以」是行為的欄位，在有人真的執行它之前，並不是行為。**
+
+那跟[考古 011](/html/mssp/archaeology/011-cpython-shelve.html) 的 `d[k] is d[k]` 是同一個形狀：一個存在、而且沒有人行使的判別器。
+
+**自我牽連的一項，量出來的：這個儲存庫每一個 commit 都帶著 `Co-Authored-By: Claude Opus 5`，而 git 不讀那一行回來。** 它是內容裡的一句宣稱——跟我 08-12 寫下然後讀成同意的那三個檔案，形狀完全一樣。
+
+### 對 MSSP 的意義
+
+**結構主張：一個行為必須在工件之外留下痕跡，否則它只是穿著「已同意」四個字的內容。** 而 `distinct-provenance` 把問題從工件搬到來源存放處，是搬移不是終結——考古 013 量出那條路的盡頭。
+
+另外一件方法之外但值得記的：**考古換上游了。** 連續六則來自同一個標準庫是取樣習慣，不是發現。
 
 ---
 

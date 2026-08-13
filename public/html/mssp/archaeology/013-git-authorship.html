@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一個宣稱自己是任何人的 commit，跟真的是同一種物件 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="範例 013 主張「一個行為必須在工件之外留下痕跡」，所以來問：軟體業最廣泛使用的來源存放處有沒有這個區分？三個 commit——誠實、冒充、帶著沒人檢查的 trailer——`git log` 把前兩個印得一模一樣，冒充那個**不需要任何漏洞**（`GIT_AUTHOR_NAME` 是有文件的環境變數），原始物件裡也沒有多任何東西。四個欄位裡三個記錄的是**宣稱**（author、committer、trailer），唯一記錄**行為**的是簽章——**而在沒有人簽的儲存庫裡，`%G?` 對誠實的與冒充的都回報 `N`**。所以：**一個「可以」是行為的欄位，在有人真的執行它之前，並不是行為**——跟考古 011 的 `d[k] is d[k]` 同一個形狀，一個存在而沒有人行使的判別器。git 沒有做錯：分散式系統不可能有發放身分的權威，簽章存在正是因為 author 不是身分。自我牽連的一項：這個儲存庫每個 commit 都帶著 `Co-Authored-By: Claude Opus 5`，而量到的是 git 不讀它回來——那是內容裡的一句宣稱，跟我 08-12 寫下然後讀成同意的三個檔案形狀相同。另外，這是六則連續 CPython 之後刻意換的上游。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/013-git-authorship.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>013-git-authorship</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>git</span></div>
+    <div><b>授權</b><span>GPL-2.0-only</span></div>
+    <div><b>檢視版本</b><span>measured at run time</span></div>
+    <div><b>日期</b><span>2026-08-13</span></div>
+    <div><b>來源</b><span><a href="https://git-scm.com/">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>013 — git 3.x：一個宣稱自己是任何人的 commit，跟真的是同一種物件</h1>
+<blockquote>
+<p>原專案 <a href="https://git-scm.com/">git</a>（GPL-2.0-only）。本篇沒有重製 git 的任何原始碼，只在一個丟棄式儲存庫上量它的行為。
+版本由執行時量出來。</p>
+</blockquote>
+<pre><code class="language-bash">python src/main.py            # 三個 commit、四個欄位、哪一個分得出來
+python src/main.py --strict   # 被信任的欄位如果只是宣稱就 exit 1
+python src/island_test.py     # 16 項檢查，全部直接跑 git
+</code></pre>
+<h2>為什麼選它</h2>
+<p>2026-08-12 我做的共識機制把三份我自己寫的檔案讀成三方同意。<a href="/html/mssp/013-approval-is-an-act.html">範例 013</a> 把那個缺陷做成量測，結論是<strong>一個行為必須在工件之外留下痕跡</strong>。</p>
+<p>那就要問：<strong>軟體業最廣泛使用的來源存放處，有沒有這個區分？</strong></p>
+<p>順帶一提，這是<strong>六則連續 CPython 之後換的上游</strong>。連續六則來自同一個標準庫是取樣習慣，不是發現。</p>
+<h2>原專案的結構地圖</h2>
+<p>三個 commit：一個誠實的、一個冒充的、一個帶著沒人檢查的 trailer。</p>
+<pre><code class="language-text">  commit    author           committer        %G?   subject
+  81f34c5   Real Person      Real Person      N     an ordinary commit
+  0a52707   Linus Torvalds   Linus Torvalds   N     a commit by someone who was not there
+  d9bd66c   Real Person      Real Person      N     work
+</code></pre>
+<p>冒充那一個<strong>不需要任何漏洞</strong>——<code>GIT_AUTHOR_NAME</code> 與 <code>GIT_COMMITTER_NAME</code> 是有文件的環境變數。原始物件裡也沒有多任何東西：</p>
+<pre><code class="language-text">    tree 6640fb01ffae1cdd778a3fe65b469f62a5230def
+    parent 81f34c5c647570cac07e593351d0caba2134605f
+    author Linus Torvalds &lt;torvalds@linux-foundation.org&gt; 1786590221 +0800
+    committer Linus Torvalds &lt;torvalds@linux-foundation.org&gt; 1786590221 +0800
+    contains a signature block: False
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>欄位</th>
+<th>記錄的是</th>
+<th>分得出誠實與冒充嗎</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>author</code></td>
+<td><strong>宣稱</strong></td>
+<td>值不同——而那個不同就是對方打進去的字</td>
+</tr>
+<tr>
+<td><code>committer</code></td>
+<td><strong>宣稱</strong></td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>trailer</code></td>
+<td><strong>宣稱</strong></td>
+<td>git 不讀它回來</td>
+</tr>
+<tr>
+<td><code>signature</code></td>
+<td><strong>行為</strong></td>
+<td><strong>不能——兩個都回報 <code>N</code></strong></td>
+</tr>
+</tbody></table>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>四個欄位、各自記錄宣稱還是行為，以及 <code>units</code> 對照</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署會信任哪一個欄位當身分</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>依 id 解析欄位、分辨測試，以及跑真 git 的探針</td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>一個欄位一個檔——各自宣告 <code>claim</code> 或 <code>act</code>，且不 import 任何東西</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td>git 印出來的 log，以及哪一個欄位本來可以分辨</td>
+</tr>
+</tbody></table>
+<p>重切加的只有一件事：<strong>每個欄位宣告自己記錄的是宣稱還是行為。</strong> git 沒有這個區分——呼叫端讀 <code>%an</code> 拿到的是一個字串，而那個字串在「有人寫了這個 commit」與「有人打了那個人的名字」兩種情況下形狀完全一樣，介面沒有任何地方可以問是哪一種。</p>
+<h2>什麼不適合拆</h2>
+<p><strong>git 沒有做錯，不要「修」這個。</strong> 一個分散式版本控制系統<strong>不可能有一個發放身分的權威</strong>——沒有中央，就沒有人能替 <code>author</code> 背書。簽章存在，正是因為 <code>author</code> 不是身分。</p>
+<p><strong>而這一則的發現就在那個「正是因為」的後面：</strong></p>
+<blockquote>
+<p><strong>一個「可以」是行為的欄位，在有人真的執行它之前，並不是行為。</strong></p>
+</blockquote>
+<p><code>%G?</code> 有八種取值（G/B/U/X/Y/R/E/N），而在沒有人簽的儲存庫裡它對每一個 commit 回報 <code>N</code>。<strong>一個存在、而且沒有人行使的判別器</strong>——跟<a href="/html/mssp/archaeology/011-cpython-shelve.html">考古 011</a> 的 <code>d[k] is d[k]</code> 是同一個形狀。</p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>先講一個自我牽連的：這個儲存庫的每一個 commit 都帶著 <code>Co-Authored-By: Claude Opus 5</code>。</strong> 量到的結果是：<strong>git 不會讀那一行回來。</strong> 它是內容裡的一句宣稱——跟我 08-12 寫下然後讀成同意的那三個檔案，是完全相同的形狀。</p>
+<p><strong>量得到但這次沒量：</strong> 真實儲存庫裡有多少 commit 帶著有效簽章；<code>Co-Authored-By</code> 裡有多少比例指的是真的碰過那個分支的人。</p>
+<p><strong>這一則量不到：</strong> 任何一個 commit 是不是誠實的。<strong>它量的是欄位「能」承載什麼，不是它們實際承載了什麼。</strong> 而 <code>distinct-provenance</code> 那條路的盡頭也在這裡——把問題從工件搬到來源存放處，是搬移，不是終結。</p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;013-git-authorship&quot;,
+  &quot;upstream&quot;: &quot;git&quot;,
+  &quot;examined_version&quot;: &quot;measured at run time&quot;,
+  &quot;license&quot;: &quot;GPL-2.0-only (git itself; nothing of git's source is reproduced here)&quot;,
+  &quot;what_it_is&quot;: &quot;The fields a commit carries about who made it, and which of them records an act rather than a claim.&quot;,
+
+  &quot;why_this_one&quot;: &quot;On 2026-08-12 I built a consensus mechanism that read three identical files as three-party agreement; I had written all three. Example 013 the same day turns that into a measurement. This asks whether the most widely used provenance store in software has the distinction the example says is needed — and it is not CPython, because six consecutive entries from one standard library is a sampling habit rather than a finding.&quot;,
+
+  &quot;fields&quot;: {
+    &quot;author&quot;: {&quot;kind&quot;: &quot;claim&quot;, &quot;set_by&quot;: &quot;GIT_AUTHOR_NAME, a documented environment variable&quot;},
+    &quot;committer&quot;: {&quot;kind&quot;: &quot;claim&quot;, &quot;set_by&quot;: &quot;GIT_COMMITTER_NAME, likewise&quot;},
+    &quot;trailer&quot;: {&quot;kind&quot;: &quot;claim&quot;, &quot;set_by&quot;: &quot;typing a line in the commit message; nothing in git reads it back&quot;},
+    &quot;signature&quot;: {&quot;kind&quot;: &quot;act&quot;, &quot;set_by&quot;: &quot;a cryptographic operation performed with a key&quot;}
+  },
+
+  &quot;the_finding&quot;: &quot;A commit claiming to be anyone is the same kind of object as an honest one. `git log` prints them identically, the raw object contains nothing extra, and no exploit is involved. The only field that records an act rather than a claim is the signature — and when nobody signs, %G? reports N for the honest commit and the impersonation alike. A field that CAN be an act is not one until someone performs it.&quot;,
+
+  &quot;the_self_implication&quot;: &quot;Every commit in this repository carries `Co-Authored-By: Claude Opus 5`. Measured here: nothing in git reads that line back. It is a claim in content, which is exactly the shape of the three branch files I wrote and then read as agreement.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the fields, what each records, and what the entry measures&quot;,
+    &quot;SCL&quot;: &quot;which field this deployment would trust for identity&quot;,
+    &quot;SMS&quot;: &quot;field resolution by id, the separation test, and the probes against a throwaway repository&quot;,
+    &quot;TMS&quot;: &quot;one file per field — each declares claim or act, and reaches no sibling set&quot;,
+    &quot;DMS&quot;: &quot;the log as git prints it, and which field could have told the difference&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/fields&quot;: [&quot;author.py&quot;, &quot;committer.py&quot;, &quot;signature.py&quot;, &quot;trailer.py&quot;]},
+
+  &quot;non_goals&quot;: [
+    &quot;Saying git is wrong. A distributed VCS cannot have an authority that issues identities, and signing exists precisely because the author field is not one.&quot;,
+    &quot;Cryptography. No key is generated; the entry measures what the signature FIELD reports when unused, which is the finding.&quot;,
+    &quot;Any claim about commits in the wild. This measures what the fields can carry, not what they do carry.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;field_trusted_for_identity&quot;: &quot;signature&quot;,
+  &quot;a_claim_field_used_as_identity_is_fatal&quot;: true,
+  &quot;_note&quot;: &quot;main.py measures every field regardless of what this says.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Which field this deployment would trust for identity.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+trusted = lambda: _C[&quot;field_trusted_for_identity&quot;]                                # noqa: E731
+claim_as_identity_is_fatal = lambda: bool(_C[&quot;a_claim_field_used_as_identity_is_fatal&quot;])  # noqa: E731
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/fields.py</summary><pre><code>&quot;&quot;&quot;The re-cut: every field declares whether it records a CLAIM or an ACT.
+
+git has no such distinction. A caller reading `%an` gets a string with the same
+shape whether a person authored the commit or typed someone's name, and nothing
+in the interface offers to say which.
+&quot;&quot;&quot;
+import importlib
+
+FIELDS = [&quot;author&quot;, &quot;committer&quot;, &quot;trailer&quot;, &quot;signature&quot;]
+
+
+def load():
+    loaded, problems = {}, []
+    for name in FIELDS:
+        try:
+            module = importlib.import_module(f&quot;TMS.fields.{name}&quot;)
+        except ModuleNotFoundError:
+            problems.append(f'field &quot;{name}&quot; has no module - fail closed')
+            continue
+        for attribute in (&quot;NAME&quot;, &quot;KIND&quot;, &quot;WHAT_IT_RECORDS&quot;):
+            if not hasattr(module, attribute):
+                problems.append(f&quot;{name} does not declare {attribute}&quot;)
+        if getattr(module, &quot;KIND&quot;, None) not in {&quot;claim&quot;, &quot;act&quot;}:
+            problems.append(f&quot;{name}: KIND must be claim or act, not {getattr(module, 'KIND', None)!r}&quot;)
+        loaded[module.NAME] = module
+    return loaded, problems
+
+
+def resolve(name, loaded):
+    module = loaded.get(name)
+    if module is None:
+        return None, f'field &quot;{name}&quot; has no implementation - fail closed (known: {&quot;, &quot;.join(sorted(loaded))})'
+    return module, None
+
+
+def separates(rows, field):
+    &quot;&quot;&quot;Does this field take different values for the honest and the impersonating commit?&quot;&quot;&quot;
+    honest, impersonating = rows[0], rows[1]
+    return honest[field] != impersonating[field]
+</code></pre></details><details><summary>SMS/upstream.py</summary><pre><code>&quot;&quot;&quot;What real git records, measured in a throwaway repository.
+
+Nothing here is an exploit. GIT_AUTHOR_NAME and GIT_COMMITTER_NAME are
+documented environment variables, and a Co-Authored-By trailer is a line of the
+commit message.
+&quot;&quot;&quot;
+import os
+import subprocess
+import tempfile
+
+IMPERSONATED = (&quot;Linus Torvalds&quot;, &quot;torvalds@linux-foundation.org&quot;)
+
+
+def _git(cwd, *args, env=None):
+    return subprocess.run((&quot;git&quot;,) + args, cwd=cwd, env=env,
+                          capture_output=True, text=True).stdout
+
+
+def build_repository():
+    &quot;&quot;&quot;Three commits: honest, impersonating, and one with an unchecked trailer.&quot;&quot;&quot;
+    directory = tempfile.mkdtemp()
+    _git(directory, &quot;init&quot;, &quot;-q&quot;)
+    _git(directory, &quot;config&quot;, &quot;user.name&quot;, &quot;Real Person&quot;)
+    _git(directory, &quot;config&quot;, &quot;user.email&quot;, &quot;real@example.com&quot;)
+    _git(directory, &quot;config&quot;, &quot;commit.gpgsign&quot;, &quot;false&quot;)
+
+    open(os.path.join(directory, &quot;a.txt&quot;), &quot;w&quot;).write(&quot;one\n&quot;)
+    _git(directory, &quot;add&quot;, &quot;-A&quot;)
+    _git(directory, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;an ordinary commit&quot;)
+
+    open(os.path.join(directory, &quot;b.txt&quot;), &quot;w&quot;).write(&quot;two\n&quot;)
+    _git(directory, &quot;add&quot;, &quot;-A&quot;)
+    env = dict(os.environ, GIT_AUTHOR_NAME=IMPERSONATED[0], GIT_AUTHOR_EMAIL=IMPERSONATED[1],
+               GIT_COMMITTER_NAME=IMPERSONATED[0], GIT_COMMITTER_EMAIL=IMPERSONATED[1])
+    _git(directory, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;a commit by someone who was not there&quot;, env=env)
+
+    open(os.path.join(directory, &quot;c.txt&quot;), &quot;w&quot;).write(&quot;three\n&quot;)
+    _git(directory, &quot;add&quot;, &quot;-A&quot;)
+    _git(directory, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;,
+         &quot;work\n\nCo-Authored-By: Someone Who Never Saw This &lt;nobody@example.com&gt;&quot;)
+    return directory
+
+
+def commits(directory):
+    rows = []
+    for line in _git(directory, &quot;log&quot;, &quot;--reverse&quot;,
+                     &quot;--format=%h\t%an\t%cn\t%G?\t%s&quot;).strip().splitlines():
+        short, author, committer, sig, subject = (line.split(&quot;\t&quot;) + [&quot;&quot;] * 5)[:5]
+        rows.append({&quot;commit&quot;: short, &quot;author&quot;: author, &quot;committer&quot;: committer,
+                     &quot;signature_status&quot;: sig, &quot;subject&quot;: subject})
+    return rows
+
+
+def raw_object(directory, index=1):
+    sha = _git(directory, &quot;log&quot;, &quot;--reverse&quot;, &quot;--format=%H&quot;).split()[index]
+    return _git(directory, &quot;cat-file&quot;, &quot;-p&quot;, sha)
+
+
+def trailer(directory):
+    return _git(directory, &quot;log&quot;, &quot;-1&quot;, &quot;--format=%(trailers)&quot;).strip()
+
+
+def version():
+    return _git(tempfile.mkdtemp(), &quot;--version&quot;).strip().split()[-1]
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/fields/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/fields/author.py</summary><pre><code>&quot;&quot;&quot;git's `author` field.
+
+whoever ran the command, or whatever GIT_AUTHOR_NAME said
+&quot;&quot;&quot;
+NAME = &quot;author&quot;
+KIND = &quot;claim&quot;
+WHAT_IT_RECORDS = &quot;whoever ran the command, or whatever GIT_AUTHOR_NAME said&quot;
+</code></pre></details><details><summary>TMS/fields/committer.py</summary><pre><code>&quot;&quot;&quot;git's `committer` field.
+
+whoever ran the command, or whatever GIT_COMMITTER_NAME said
+&quot;&quot;&quot;
+NAME = &quot;committer&quot;
+KIND = &quot;claim&quot;
+WHAT_IT_RECORDS = &quot;whoever ran the command, or whatever GIT_COMMITTER_NAME said&quot;
+</code></pre></details><details><summary>TMS/fields/signature.py</summary><pre><code>&quot;&quot;&quot;git's `signature` field.
+
+a cryptographic operation someone had to perform with a key
+&quot;&quot;&quot;
+NAME = &quot;signature&quot;
+KIND = &quot;act&quot;
+WHAT_IT_RECORDS = &quot;a cryptographic operation someone had to perform with a key&quot;
+
+# The ceiling, and it is the finding of the entry: when nobody signs, %G? reports
+# N for an honest commit and for an impersonation alike. A field that CAN be an
+# act is not one until someone performs it.
+UNIFORM_WHEN_UNUSED = &quot;N&quot;
+</code></pre></details><details><summary>TMS/fields/trailer.py</summary><pre><code>&quot;&quot;&quot;git's `trailer` field.
+
+a line of the commit message; nothing in git reads it back
+&quot;&quot;&quot;
+NAME = &quot;trailer&quot;
+KIND = &quot;claim&quot;
+WHAT_IT_RECORDS = &quot;a line of the commit message; nothing in git reads it back&quot;
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;The log as git prints it, and which field could have told the difference.&quot;&quot;&quot;
+
+
+def log(rows, out):
+    out(f&quot;\n  {'commit':&lt;9} {'author':&lt;16} {'committer':&lt;16} {'%G?':&lt;5} subject&quot;)
+    for row in rows:
+        out(f&quot;  {row['commit']:&lt;9} {row['author']:&lt;16} {row['committer']:&lt;16} &quot;
+            f&quot;{row['signature_status']:&lt;5} {row['subject']}&quot;)
+
+
+def fields(loaded, rows, separates, out):
+    out(f&quot;\n  {'field':&lt;11} {'records':&lt;7} {'separates honest from impersonating?':&lt;38} value on both&quot;)
+    for name, module in sorted(loaded.items()):
+        if name in (&quot;author&quot;, &quot;committer&quot;):
+            # It differs, of course - but the difference is whatever the
+            # impersonator typed. A field that varies is not a field that tells.
+            answer = &quot;it differs, and the difference is what was typed&quot; if separates(rows, name) else &quot;no&quot;
+            value = f&quot;{rows[0][name]} vs {rows[1][name]}&quot;
+        elif name == &quot;signature&quot;:
+            answer = &quot;no - both report N&quot; if not separates(rows, &quot;signature_status&quot;) else &quot;yes&quot;
+            value = rows[0][&quot;signature_status&quot;]
+        else:
+            answer = &quot;nothing in git reads it back&quot;
+            value = &quot;-&quot;
+        out(f&quot;  {module.NAME:&lt;11} {module.KIND:&lt;7} {answer:&lt;38} {value}&quot;)
+
+
+def gaps(out):
+    out(&quot;\n  measurable, not measured here:&quot;)
+    out(&quot;    - how many commits in a real repository carry a good signature&quot;)
+    out(&quot;    - what fraction of Co-Authored-By trailers name someone who touched the branch&quot;)
+    out(&quot;\n  not measurable by this entry at all:&quot;)
+    out(&quot;    - whether git is wrong to work this way. A distributed VCS cannot&quot;)
+    out(&quot;      have an authority that issues identities, and signing is offered&quot;)
+    out(&quot;      precisely because the author field cannot be one.&quot;)
+    out(&quot;    - whether any particular commit anywhere is honest. This measures&quot;)
+    out(&quot;      what the fields CAN carry, not what they do carry.&quot;)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test.
+
+    python src/island_test.py
+
+Section 2 is the finding: the field that CAN record an act reports the same
+value for the honest commit and the impersonation, because nobody signed.
+&quot;&quot;&quot;
+import json
+import pathlib
+import re
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from SCL import policy  # noqa: E402
+from SMS import fields, upstream  # noqa: E402
+
+ARCH = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+LOADED, PROBLEMS = fields.load()
+DIRECTORY = upstream.build_repository()
+ROWS = upstream.commits(DIRECTORY)
+
+print(&quot;\n== 1. every field is an island, declares claim or act, and FMS matches the tree&quot;)
+check(&quot;all four fields loaded with no problems&quot;, not PROBLEMS, &quot;; &quot;.join(PROBLEMS))
+field_dir = HERE / &quot;TMS&quot; / &quot;fields&quot;
+files = sorted(f.name for f in field_dir.iterdir() if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+for name in files:
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, (field_dir / name).read_text(encoding=&quot;utf-8&quot;), re.M)
+    check(f&quot;{name} reaches no sibling set&quot;, not reaches, &quot;, &quot;.join(reaches) or &quot;no imports at all&quot;)
+for where, expected in ARCH[&quot;units&quot;].items():
+    on_disk = sorted(f.name for f in (HERE / where).iterdir()
+                     if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+    check(f&quot;{where}: FMS declares {len(expected)}, on disk {len(on_disk)}&quot;,
+          on_disk == sorted(expected), &quot;, &quot;.join(on_disk))
+check(&quot;exactly one field declares itself an act&quot;,
+      sum(1 for m in LOADED.values() if m.KIND == &quot;act&quot;) == 1,
+      &quot;, &quot;.join(f&quot;{m.NAME}={m.KIND}&quot; for m in sorted(LOADED.values(), key=lambda m: m.NAME)))
+
+print(&quot;\n== 2. the impersonating commit is the same kind of object&quot;)
+honest, impersonating = ROWS[0], ROWS[1]
+check(&quot;git reports a different author for it&quot;, honest[&quot;author&quot;] != impersonating[&quot;author&quot;],
+      f&quot;{honest['author']} vs {impersonating['author']}&quot;)
+check(&quot;and that is the whole of what git knows - the raw object carries no signature&quot;,
+      &quot;gpgsig&quot; not in upstream.raw_object(DIRECTORY))
+check(&quot;the one field that could tell them apart reports the SAME value&quot;,
+      honest[&quot;signature_status&quot;] == impersonating[&quot;signature_status&quot;],
+      f&quot;%G? = {honest['signature_status']} for both&quot;)
+check(&quot;so a field that CAN be an act is not one until someone performs it&quot;,
+      LOADED[&quot;signature&quot;].KIND == &quot;act&quot;
+      and honest[&quot;signature_status&quot;] == LOADED[&quot;signature&quot;].UNIFORM_WHEN_UNUSED)
+
+print(&quot;\n== 3. the trailer is a line of the message&quot;)
+check(&quot;a Co-Authored-By naming someone who never saw the branch is stored verbatim&quot;,
+      &quot;Someone Who Never Saw This&quot; in upstream.trailer(DIRECTORY), upstream.trailer(DIRECTORY))
+check(&quot;and it is declared a claim, not an act&quot;, LOADED[&quot;trailer&quot;].KIND == &quot;claim&quot;)
+
+print(&quot;\n== 4. fail closed&quot;)
+_, problem = fields.resolve(&quot;gpg-web-of-trust&quot;, LOADED)
+check(&quot;an unresolvable field stops the run&quot;, problem is not None, problem or &quot;resolved anyway&quot;)
+check(&quot;SCL names a field that exists&quot;, policy.trusted() in LOADED, policy.trusted())
+check(&quot;and the field it trusts is the one declared an act&quot;,
+      LOADED[policy.trusted()].KIND == &quot;act&quot;, f&quot;{policy.trusted()} = {LOADED[policy.trusted()].KIND}&quot;)
+
+print(&quot;\n== 5. what this entry cannot see&quot;)
+print(&quot;        MEASURABLE, NOT MEASURED&quot;)
+print(&quot;          - how many commits in a real repository carry a good signature&quot;)
+print(&quot;          - what fraction of Co-Authored-By trailers name someone who was there&quot;)
+print(&quot;        NOT MEASURABLE HERE&quot;)
+print(&quot;          - whether git is wrong to work this way. A distributed VCS has no&quot;)
+print(&quot;            authority to issue identities, and signing exists because the&quot;)
+print(&quot;            author field is not one.&quot;)
+print(&quot;          - whether any commit anywhere is honest. This measures what the&quot;)
+print(&quot;            fields CAN carry, not what they do.&quot;)
+
+print(f&quot;\n{len(FAILURES)} failure(s)&quot; if FAILURES else &quot;\nall checks passed&quot;)
+for f in FAILURES:
+    print(f&quot;  - {f}&quot;)
+sys.exit(1 if FAILURES else 0)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;git's fields about who made a commit, measured against a throwaway repository.
+
+    python src/main.py            the log, the fields, and which one separates
+    python src/main.py --strict   exit 1 if the trusted field is a claim
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import fields, upstream  # noqa: E402
+
+ARCH = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def main(argv):
+    out = lambda line=&quot;&quot;: sys.stdout.write(line + &quot;\n&quot;)  # noqa: E731
+    loaded, problems = fields.load()
+    if problems:
+        for problem in problems:
+            out(f&quot;  !! {problem}&quot;)
+        return 1
+
+    directory = upstream.build_repository()
+    rows = upstream.commits(directory)
+
+    out(f&quot;\n== three commits, one of which was not made by who it says  [git {upstream.version()}]&quot;)
+    report.log(rows, out)
+    report.fields(loaded, rows, fields.separates, out)
+
+    out(&quot;\n== the raw object of the impersonating commit&quot;)
+    for line in upstream.raw_object(directory).splitlines()[:5]:
+        out(f&quot;    {line}&quot;)
+    out(f&quot;    contains a signature block: {'gpgsig' in upstream.raw_object(directory)}&quot;)
+
+    out(&quot;\n== the trailer, and what reads it&quot;)
+    out(f&quot;    stored:  {upstream.trailer(directory)}&quot;)
+    out(&quot;    read by: nothing in git. It is a line of the message.&quot;)
+    out(f&quot;    note:    {ARCH['self_implication'] if 'self_implication' in ARCH else ARCH['the_self_implication']}&quot;)
+
+    trusted, problem = fields.resolve(policy.trusted(), loaded)
+    if problem:
+        out(f&quot;\n  !! {problem}&quot;)
+        return 1
+    out(f&quot;\n== this deployment would trust `{trusted.NAME}` for identity, which records {&quot;an act&quot; if trusted.KIND == &quot;act&quot; else &quot;a claim&quot;}&quot;)
+
+    report.gaps(out)
+
+    if &quot;--strict&quot; in argv and trusted.KIND == &quot;claim&quot; and policy.claim_as_identity_is_fatal():
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

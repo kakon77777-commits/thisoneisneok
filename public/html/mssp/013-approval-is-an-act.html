@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>同意是一個行為，不是內容的性質 | MSSP | Neo.K</title>
+<meta name="description" content="08-12 我做的共識機制把「三個分支檔內容相同」讀成「三方同意」——而那三個檔案是我在同一個 commit 裡寫的。Metron 與 Pragma 一小時內找到。這一則把那個缺陷做成量測：四條規則、兩個**每一件工件都完全相同**、只差在「誰放的」的世界。結果是四條裡只有一條分得出來，而那三條分不出來的，正是**只讀工件**的那三條。**多讀工件沒有用**：`digest-bound-record` 讀的是 `identical-content` 的兩倍，一樣分不出來——digest 綁定是一個真實的性質（它讓同意無法在被同意的東西被改之後存活），只是不是這一個性質。分得出來的那條讀的是**檔案裡沒有的東西**：誰放的。而它的天花板由同日考古 013 量出來——它把問題從工件搬到來源存放處，沒有終結它。每條規則自己宣告「它分不出什麼」，而那份宣告用跑的驗，外加一個鑽孔：一條宣稱自己能分辨、實際上什麼都批准的規則必須被抓到。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/013-approval-is-an-act.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>013-approval-is-an-act</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>013-approval-is-an-act</span></div>
+    <div><b>語言</b><span>python</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-13</span></div>
+    <div><b>行數</b><span>384</span></div>
+    <div><b>執行</b><span><code>python src/main.py</code></span></div>
+  </section>
+  <article class="content"><h1>013 — Approval is an act, not a property of content</h1>
+<blockquote>
+<p><code>candidate</code>. This is yesterday&#39;s defect, made into a measurement.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>Four rules decide whether three parties approved a claim, run over <strong>two worlds
+whose every artifact is identical</strong> and which differ only in who placed them.</p>
+<pre><code class="language-bash">python src/main.py            # every rule over both worlds
+python src/main.py --strict   # exit 1 if the configured rule cannot separate them
+python src/island_test.py     # 18 checks across 5 sections
+</code></pre>
+<pre><code class="language-console">  rule                   reads  three parties    one author      separates?
+  digest-bound-record    2      approved         approved        no
+  distinct-provenance    3      approved         refused         YES
+  explicit-record        1      approved         approved        no
+  identical-content      1      approved         approved        no
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>Approval is not a property of content. It is an act, and an act must leave a
+trace outside the artifact it is about — otherwise it is content wearing the
+word &quot;approved&quot;.</strong></p>
+<p>Three of the four rules cannot tell the worlds apart, and they are exactly the
+three that read only the artifacts. <strong>Reading more of the artifacts does not
+help</strong>: <code>digest-bound-record</code> reads twice as much as <code>identical-content</code> and
+fails the same way. Digest binding is a real property — it stops an approval
+surviving an edit to the thing approved — and it is not this one.</p>
+<h2>Where it came from</h2>
+<p>On 2026-08-12 I shipped a consensus mechanism that read three identical branch
+files as three-way agreement. <strong>I had written all three in one commit.</strong> Metron
+and Pragma found it within the hour, and their sentence is the title of this
+example: 相同內容不等於 owner 批准.</p>
+<p><code>identical-content</code> is in <code>TMS/rules/</code> rather than deleted, because it is the
+thing being measured.</p>
+<h2>The island test</h2>
+<p>Each rule declares what it <strong>cannot</strong> distinguish, and section 2 checks that
+declaration by running it over both worlds rather than reading it:</p>
+<pre><code class="language-text">  PASS  identical-content: declares blind to a single author = True, measured True
+  PASS  distinct-provenance: declares blind to a single author = False, measured False
+</code></pre>
+<p>Section 2b is the drill: a rule that approves everything while claiming to
+separate must be caught, or section 2 is two labels agreeing.</p>
+<p>Section 1 carries the check that <a href="/html/mssp/011-store-boundary.html">example 011</a>
+needed the hard way — FMS&#39;s units map compared against the tree.</p>
+<h2>The ceiling, measured next door</h2>
+<p><code>distinct-provenance</code> moves the question from the artifacts to the provenance
+store. It does not end it, and
+<a href="/html/mssp/archaeology/013-git-authorship.html">archaeology 013</a> measures
+exactly where it stops: in git, a commit claiming to be anyone is the same kind
+of object as an honest one, and the only field that records an act rather than a
+claim reports the <strong>same value</strong> for both when nobody signs.</p>
+<h2>What this example does not solve</h2>
+<p><strong>Measurable, not measured.</strong> What requiring distinct provenance costs a party
+legitimately acting on another&#39;s behalf.</p>
+<p><strong>Not measurable here.</strong> Whether the provenance store is honest — and whether
+anyone who approved meant it. Nothing here, and nothing anywhere, reads intent.</p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;013-approval-is-an-act&quot;,
+  &quot;what_it_is&quot;: &quot;Four rules for deciding whether three parties approved a claim, run over two worlds that are identical in every artifact and differ only in who placed them.&quot;,
+  &quot;the_structural_decision&quot;: &quot;Approval is not a property of content. It is an ACT, and an act must leave a trace outside the artifact it is about — otherwise it is content wearing the word 'approved'.&quot;,
+  &quot;why_this_one&quot;: &quot;On 2026-08-12 I built a consensus mechanism that read three identical branch files as three-way agreement. I had written all three in one commit. Metron and Pragma found it within the hour. This example is that defect made into a measurement, and the rule that shipped is in TMS rather than deleted.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+
+  &quot;rules&quot;: {
+    &quot;identical-content&quot;: {&quot;reads&quot;: 1, &quot;note&quot;: &quot;what shipped on 08-12&quot;},
+    &quot;explicit-record&quot;: {&quot;reads&quot;: 1, &quot;note&quot;: &quot;an act is at least named&quot;},
+    &quot;digest-bound-record&quot;: {&quot;reads&quot;: 2, &quot;note&quot;: &quot;the approval cannot survive an edit to what was approved&quot;},
+    &quot;distinct-provenance&quot;: {&quot;reads&quot;: 3, &quot;note&quot;: &quot;the only one reading something the artifacts do not contain&quot;}
+  },
+
+  &quot;the_two_worlds&quot;: {
+    &quot;three_parties&quot;: &quot;three actors each hold the claim and each placed their own record&quot;,
+    &quot;one_author&quot;: &quot;one actor wrote all three files. EVERY ARTIFACT IS IDENTICAL to the world above; only who placed them differs&quot;
+  },
+
+  &quot;the_finding&quot;: &quot;Three of the four rules cannot tell the two worlds apart, and they are the three that read only the artifacts. Adding fields does not help: digest binding is a real property and it is not this one. What separates the worlds is provenance, which is not in the files.&quot;,
+
+  &quot;the_ceiling&quot;: &quot;distinct-provenance cannot verify that the provenance is honest. Archaeology 013 measures where that ends: git's author field is set with a documented environment variable, a commit claiming to be anyone is the same kind of object as a real one, and the only field that is an act rather than a claim — the signature status — reports N for an honest commit and for an impersonation alike when nobody signs.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the rules, the two worlds, and what each rule declares it cannot distinguish&quot;,
+    &quot;SCL&quot;: &quot;which rule this deployment trusts, and whether a rule that cannot distinguish the worlds is fatal&quot;,
+    &quot;SMS&quot;: &quot;rule resolution by id, and the comparison across both worlds&quot;,
+    &quot;TMS&quot;: &quot;one file per rule — each declares what it reads and what it cannot distinguish, and reaches no sibling set&quot;,
+    &quot;DMS&quot;: &quot;which rules said approved in which world, and which of them could not have said otherwise&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/rules&quot;: [&quot;digest_bound_record.py&quot;, &quot;distinct_provenance.py&quot;, &quot;explicit_record.py&quot;, &quot;identical_content.py&quot;]},
+
+  &quot;non_goals&quot;: [
+    &quot;Cryptography. No signatures are implemented; archaeology 013 measures what a real signature field does and does not settle.&quot;,
+    &quot;Claiming distinct-provenance is sufficient. It moves the question from the artifacts to the provenance store and says so.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;rule&quot;: &quot;distinct-provenance&quot;,
+  &quot;a_rule_that_cannot_separate_the_worlds_is_fatal&quot;: true,
+  &quot;_note&quot;: &quot;island_test.py runs every rule over both worlds regardless of what this says.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Which rule this deployment trusts, and what it refuses to ship.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+rule = lambda: _C[&quot;rule&quot;]                                                              # noqa: E731
+indistinguishable_is_fatal = lambda: bool(_C[&quot;a_rule_that_cannot_separate_the_worlds_is_fatal&quot;])  # noqa: E731
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/approval.py</summary><pre><code>&quot;&quot;&quot;Rule resolution by id, and the two worlds the rules are run over.&quot;&quot;&quot;
+import hashlib
+import importlib
+import json
+
+RULES = [&quot;identical_content&quot;, &quot;explicit_record&quot;, &quot;digest_bound_record&quot;, &quot;distinct_provenance&quot;]
+
+CLAIM = {&quot;id&quot;: &quot;fms-units-map&quot;, &quot;body&quot;: {&quot;title&quot;: &quot;FMS declares its units and the tree is compared to it&quot;}}
+DIGEST = hashlib.sha256(json.dumps(CLAIM[&quot;body&quot;], sort_keys=True).encode()).hexdigest()[:16]
+
+
+def load_rules():
+    loaded, problems = {}, []
+    for module_name in RULES:
+        try:
+            module = importlib.import_module(f&quot;TMS.rules.{module_name}&quot;)
+        except ModuleNotFoundError:
+            problems.append(f'rule &quot;{module_name}&quot; has no module - fail closed')
+            continue
+        for attribute in (&quot;NAME&quot;, &quot;READS&quot;, &quot;CANNOT_DISTINGUISH&quot;, &quot;approved&quot;):
+            if not hasattr(module, attribute):
+                problems.append(f&quot;{module_name} does not declare {attribute}&quot;)
+        loaded[module.NAME] = module
+    return loaded, problems
+
+
+def resolve(name, loaded):
+    module = loaded.get(name)
+    if module is None:
+        return None, f'rule &quot;{name}&quot; has no implementation - fail closed (known: {&quot;, &quot;.join(sorted(loaded))})'
+    return module, None
+
+
+def _party(name):
+    return {&quot;name&quot;: name,
+            &quot;holds&quot;: {CLAIM[&quot;id&quot;]: {&quot;body&quot;: CLAIM[&quot;body&quot;], &quot;digest&quot;: DIGEST}},
+            &quot;approvals&quot;: [{&quot;claim&quot;: CLAIM[&quot;id&quot;], &quot;digest&quot;: DIGEST}]}
+
+
+PARTIES = [_party(&quot;elenchos&quot;), _party(&quot;metron&quot;), _party(&quot;pragma&quot;)]
+
+# The two worlds. Every artifact is identical; only who placed them differs.
+WORLDS = {
+    &quot;three parties&quot;: {&quot;parties&quot;: PARTIES,
+                      &quot;provenance&quot;: {&quot;elenchos&quot;: &quot;elenchos&quot;, &quot;metron&quot;: &quot;metron&quot;, &quot;pragma&quot;: &quot;pragma&quot;}},
+    &quot;one author&quot;:    {&quot;parties&quot;: PARTIES,
+                      &quot;provenance&quot;: {&quot;elenchos&quot;: &quot;elenchos&quot;, &quot;metron&quot;: &quot;elenchos&quot;, &quot;pragma&quot;: &quot;elenchos&quot;}},
+}
+
+
+def run(loaded):
+    &quot;&quot;&quot;Every rule over every world.&quot;&quot;&quot;
+    return [{&quot;rule&quot;: name,
+             &quot;verdicts&quot;: {world: module.approved(CLAIM[&quot;id&quot;], data[&quot;parties&quot;], data[&quot;provenance&quot;])
+                          for world, data in WORLDS.items()},
+             &quot;reads&quot;: len(module.READS),
+             &quot;declared_blind_to&quot;: module.CANNOT_DISTINGUISH}
+            for name, module in sorted(loaded.items())]
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/rules/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/rules/digest_bound_record.py</summary><pre><code>&quot;&quot;&quot;Approved when every party's record binds the exact content they read.
+
+The digest stops an approval surviving an edit to the thing approved, which is a
+real property and not the one under test here. One author can still write three
+digest-bound records.
+&quot;&quot;&quot;
+NAME = &quot;digest-bound-record&quot;
+READS = [&quot;an approval record&quot;, &quot;the digest of the claim it names&quot;]
+CANNOT_DISTINGUISH = [&quot;three parties approving&quot;, &quot;one party writing three records&quot;]
+
+
+def approved(claim, parties, provenance):
+    for party in parties:
+        record = next((r for r in party[&quot;approvals&quot;] if r[&quot;claim&quot;] == claim), None)
+        if record is None or record[&quot;digest&quot;] != party[&quot;holds&quot;].get(claim, {}).get(&quot;digest&quot;):
+            return False
+    return True
+</code></pre></details><details><summary>TMS/rules/distinct_provenance.py</summary><pre><code>&quot;&quot;&quot;Approved when the records were also PLACED by different parties.
+
+The only rule here that reads something the artifacts do not contain. Provenance
+is who committed each file, and it lives outside the file — which is the whole
+point: an act leaves a trace outside the thing it is about, or it is content.
+
+What it cannot do is verify that the provenance itself is honest. Archaeology
+013 measures the ceiling: git's author field is settable with a documented
+environment variable, and the only field that is an act rather than a claim is a
+signature — which reports the same value for an honest commit and an
+impersonation when nobody signs.
+&quot;&quot;&quot;
+NAME = &quot;distinct-provenance&quot;
+READS = [&quot;an approval record&quot;, &quot;its digest&quot;, &quot;who placed the record, from outside the record&quot;]
+CANNOT_DISTINGUISH = [&quot;an honest actor&quot;, &quot;an actor whose provenance is itself forged&quot;]
+
+
+def approved(claim, parties, provenance):
+    placers = set()
+    for party in parties:
+        record = next((r for r in party[&quot;approvals&quot;] if r[&quot;claim&quot;] == claim), None)
+        if record is None or record[&quot;digest&quot;] != party[&quot;holds&quot;].get(claim, {}).get(&quot;digest&quot;):
+            return False
+        placers.add(provenance.get(party[&quot;name&quot;]))
+    return len(placers) == len(parties) and None not in placers
+</code></pre></details><details><summary>TMS/rules/explicit_record.py</summary><pre><code>&quot;&quot;&quot;Approved when every party has written an approval record.
+
+Better than reading content — an act is at least named. It still reads only the
+artifacts, so one author writing three records satisfies it exactly as three
+authors do.
+&quot;&quot;&quot;
+NAME = &quot;explicit-record&quot;
+READS = [&quot;an approval record in each party's own file&quot;]
+CANNOT_DISTINGUISH = [&quot;three parties approving&quot;, &quot;one party writing three records&quot;]
+
+
+def approved(claim, parties, provenance):
+    return all(any(record[&quot;claim&quot;] == claim for record in party[&quot;approvals&quot;]) for party in parties)
+</code></pre></details><details><summary>TMS/rules/identical_content.py</summary><pre><code>&quot;&quot;&quot;Approved when every party holds the same content.
+
+This is what I shipped on 2026-08-12 and it was wrong within the hour: the three
+files were identical because I wrote all three in one commit. Kept here as a
+unit rather than deleted, because it is the thing the example is measuring.
+&quot;&quot;&quot;
+NAME = &quot;identical-content&quot;
+READS = [&quot;the content each party holds&quot;]
+CANNOT_DISTINGUISH = [&quot;three parties agreeing&quot;, &quot;one party writing three files&quot;]
+
+
+def approved(claim, parties, provenance):
+    held = [party[&quot;holds&quot;].get(claim) for party in parties]
+    return all(h is not None for h in held) and len({str(h) for h in held}) == 1
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;Which rules said approved where, and which of them could not have said otherwise.&quot;&quot;&quot;
+
+
+def table(rows, out):
+    worlds = list(rows[0][&quot;verdicts&quot;])
+    out(f&quot;\n  {'rule':&lt;22} {'reads':&lt;6} &quot; + &quot;  &quot;.join(f&quot;{w:&lt;15}&quot; for w in worlds) + &quot; separates?&quot;)
+    for row in rows:
+        cells = &quot;  &quot;.join(f&quot;{('approved' if row['verdicts'][w] else 'refused'):&lt;15}&quot; for w in worlds)
+        separates = len(set(row[&quot;verdicts&quot;].values())) &gt; 1
+        out(f&quot;  {row['rule']:&lt;22} {row['reads']:&lt;6} {cells} {'YES' if separates else 'no'}&quot;)
+
+
+def blindness(rows, out):
+    out(&quot;\n  what each rule declares it cannot distinguish:&quot;)
+    for row in rows:
+        out(f&quot;    {row['rule']:&lt;22} {row['declared_blind_to'][1]}&quot;)
+
+
+def gaps(out):
+    out(&quot;\n  measurable, not measured here:&quot;)
+    out(&quot;    - what requiring distinct provenance costs a party that legitimately&quot;)
+    out(&quot;      acts on another's behalf&quot;)
+    out(&quot;\n  not measurable by this program at all:&quot;)
+    out(&quot;    - whether the provenance store is honest. This moves the question&quot;)
+    out(&quot;      from the artifacts to who placed them; it does not end it, and&quot;)
+    out(&quot;      archaeology 013 measures exactly where that ends.&quot;)
+    out(&quot;    - whether a party who wrote an approval meant it. Nothing here, and&quot;)
+    out(&quot;      nothing anywhere, reads intent.&quot;)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test.
+
+    python src/island_test.py
+
+Section 2 is the one this example exists for: each rule declares what it cannot
+distinguish, and that declaration is checked by running it over both worlds
+rather than read.
+&quot;&quot;&quot;
+import json
+import pathlib
+import re
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from SCL import policy  # noqa: E402
+from SMS import approval  # noqa: E402
+
+CONTRACT = json.loads((HERE / &quot;FMS&quot; / &quot;contract.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+LOADED, PROBLEMS = approval.load_rules()
+ROWS = {row[&quot;rule&quot;]: row for row in approval.run(LOADED)}
+separates = lambda name: len(set(ROWS[name][&quot;verdicts&quot;].values())) &gt; 1  # noqa: E731
+
+print(&quot;\n== 1. every rule is an island, and FMS's units map matches the tree&quot;)
+check(&quot;all four rules loaded with no problems&quot;, not PROBLEMS, &quot;; &quot;.join(PROBLEMS))
+rule_dir = HERE / &quot;TMS&quot; / &quot;rules&quot;
+files = sorted(f.name for f in rule_dir.iterdir() if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+check(&quot;there are four rule files&quot;, len(files) == 4, &quot;, &quot;.join(files))
+for name in files:
+    source = (rule_dir / name).read_text(encoding=&quot;utf-8&quot;)
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, source, re.M)
+    siblings = [r for r in reaches if r.split(&quot;.&quot;)[0] in {&quot;TMS&quot;, &quot;SMS&quot;, &quot;SCL&quot;, &quot;DMS&quot;, &quot;FMS&quot;}]
+    check(f&quot;{name} reaches no sibling set&quot;, not siblings, &quot;, &quot;.join(reaches) or &quot;no imports at all&quot;)
+# 011 shipped an FMS that outlived the code it described. This is that check.
+for where, expected in CONTRACT[&quot;units&quot;].items():
+    on_disk = sorted(f.name for f in (HERE / where).iterdir()
+                     if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+    check(f&quot;{where}: FMS declares {len(expected)}, on disk {len(on_disk)}&quot;,
+          on_disk == sorted(expected), &quot;, &quot;.join(on_disk))
+
+print(&quot;\n== 2. each rule's declared blindness, checked by running it&quot;)
+for name, row in sorted(ROWS.items()):
+    blind_to_one_author = &quot;one party writing three&quot; in row[&quot;declared_blind_to&quot;][1]
+    measured_blind = not separates(name)
+    check(f&quot;{name}: declares blind to a single author = {blind_to_one_author}, measured {measured_blind}&quot;,
+          blind_to_one_author == measured_blind,
+          f&quot;{row['verdicts']['three parties']} / {row['verdicts']['one author']}&quot;)
+
+print(&quot;\n== 2b. the drill: a rule that claims to separate and does not must be caught&quot;)
+
+
+class Overclaiming:
+    NAME = &quot;reads-everything-decides-nothing&quot;
+    READS = [&quot;all of it&quot;]
+    CANNOT_DISTINGUISH = [&quot;nothing at all&quot;, &quot;an actor whose provenance is itself forged&quot;]
+
+    @staticmethod
+    def approved(claim, parties, provenance):
+        return True
+
+
+measured = {world: Overclaiming.approved(None, data[&quot;parties&quot;], data[&quot;provenance&quot;])
+            for world, data in approval.WORLDS.items()}
+check(&quot;a rule that approves everything while claiming to separate is caught&quot;,
+      len(set(measured.values())) == 1 and &quot;one party writing three&quot; not in Overclaiming.CANNOT_DISTINGUISH[1],
+      f&quot;declared it separates, measured {measured}&quot;)
+
+print(&quot;\n== 3. how many rules separate the worlds, and what adding fields buys&quot;)
+separating = [name for name in ROWS if separates(name)]
+check(&quot;exactly one of four rules separates them&quot;, len(separating) == 1, &quot;, &quot;.join(separating))
+check(&quot;and it is the only one reading something outside the artifacts&quot;,
+      ROWS[separating[0]][&quot;reads&quot;] == max(row[&quot;reads&quot;] for row in ROWS.values()),
+      f&quot;{separating[0]} reads {ROWS[separating[0]]['reads']} things&quot;)
+check(&quot;reading MORE of the artifacts does not help - digest-bound reads two and still cannot&quot;,
+      ROWS[&quot;digest-bound-record&quot;][&quot;reads&quot;] &gt; ROWS[&quot;identical-content&quot;][&quot;reads&quot;]
+      and not separates(&quot;digest-bound-record&quot;),
+      &quot;the digest binds the approval to the content, which is a real property and not this one&quot;)
+
+print(&quot;\n== 4. fail closed&quot;)
+_, problem = approval.resolve(&quot;majority-vote&quot;, LOADED)
+check(&quot;an unresolvable rule stops the run&quot;, problem is not None, problem or &quot;resolved anyway&quot;)
+check(&quot;SCL names a rule that exists&quot;, policy.rule() in LOADED, policy.rule())
+check(&quot;and the rule it names is one that separates&quot;, separates(policy.rule()), policy.rule())
+
+print(&quot;\n== 5. what this example does not solve&quot;)
+print(&quot;        MEASURABLE, NOT MEASURED&quot;)
+print(&quot;          - what requiring distinct provenance costs a party legitimately&quot;)
+print(&quot;            acting on another's behalf&quot;)
+print(&quot;        NOT MEASURABLE HERE&quot;)
+print(&quot;          - whether the provenance store is honest. This moves the question&quot;)
+print(&quot;            from the artifacts to who placed them and does not end it;&quot;)
+print(&quot;            archaeology 013 measures where it ends.&quot;)
+print(&quot;          - whether anyone who approved meant it. Nothing reads intent.&quot;)
+
+print(f&quot;\n{len(FAILURES)} failure(s)&quot; if FAILURES else &quot;\nall checks passed&quot;)
+for f in FAILURES:
+    print(f&quot;  - {f}&quot;)
+sys.exit(1 if FAILURES else 0)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Four rules, two worlds identical in every artifact.
+
+    python src/main.py            every rule over both worlds
+    python src/main.py --strict   exit 1 if the configured rule cannot separate them
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import approval  # noqa: E402
+
+ARCH = json.loads((HERE / &quot;FMS&quot; / &quot;contract.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def main(argv):
+    out = lambda line=&quot;&quot;: sys.stdout.write(line + &quot;\n&quot;)  # noqa: E731
+    loaded, problems = approval.load_rules()
+    if problems:
+        for problem in problems:
+            out(f&quot;  !! {problem}&quot;)
+        return 1
+
+    out(&quot;\n== two worlds, and every artifact in them is identical&quot;)
+    for name, description in ARCH[&quot;the_two_worlds&quot;].items():
+        out(f&quot;    {name:&lt;15} {description}&quot;)
+
+    rows = approval.run(loaded)
+    report.table(rows, out)
+    report.blindness(rows, out)
+
+    configured, problem = approval.resolve(policy.rule(), loaded)
+    if problem:
+        out(f&quot;\n  !! {problem}&quot;)
+        return 1
+    row = next(r for r in rows if r[&quot;rule&quot;] == policy.rule())
+    separates = len(set(row[&quot;verdicts&quot;].values())) &gt; 1
+    out(f&quot;\n== this deployment trusts {policy.rule()}&quot;)
+    out(f&quot;    it {'separates' if separates else 'CANNOT separate'} the two worlds&quot;)
+
+    report.gaps(out)
+
+    if &quot;--strict&quot; in argv and not separates and policy.indistinguishable_is_fatal():
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

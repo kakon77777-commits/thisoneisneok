@@ -1,0 +1,38 @@
+{
+  "name": "013-approval-is-an-act",
+  "what_it_is": "Four rules for deciding whether three parties approved a claim, run over two worlds that are identical in every artifact and differ only in who placed them.",
+  "the_structural_decision": "Approval is not a property of content. It is an ACT, and an act must leave a trace outside the artifact it is about — otherwise it is content wearing the word 'approved'.",
+  "why_this_one": "On 2026-08-12 I built a consensus mechanism that read three identical branch files as three-way agreement. I had written all three in one commit. Metron and Pragma found it within the hour. This example is that defect made into a measurement, and the rule that shipped is in TMS rather than deleted.",
+  "status": "candidate",
+
+  "rules": {
+    "identical-content": {"reads": 1, "note": "what shipped on 08-12"},
+    "explicit-record": {"reads": 1, "note": "an act is at least named"},
+    "digest-bound-record": {"reads": 2, "note": "the approval cannot survive an edit to what was approved"},
+    "distinct-provenance": {"reads": 3, "note": "the only one reading something the artifacts do not contain"}
+  },
+
+  "the_two_worlds": {
+    "three_parties": "three actors each hold the claim and each placed their own record",
+    "one_author": "one actor wrote all three files. EVERY ARTIFACT IS IDENTICAL to the world above; only who placed them differs"
+  },
+
+  "the_finding": "Three of the four rules cannot tell the two worlds apart, and they are the three that read only the artifacts. Adding fields does not help: digest binding is a real property and it is not this one. What separates the worlds is provenance, which is not in the files.",
+
+  "the_ceiling": "distinct-provenance cannot verify that the provenance is honest. Archaeology 013 measures where that ends: git's author field is set with a documented environment variable, a commit claiming to be anyone is the same kind of object as a real one, and the only field that is an act rather than a claim — the signature status — reports N for an honest commit and for an impersonation alike when nobody signs.",
+
+  "sets": {
+    "FMS": "this file: the rules, the two worlds, and what each rule declares it cannot distinguish",
+    "SCL": "which rule this deployment trusts, and whether a rule that cannot distinguish the worlds is fatal",
+    "SMS": "rule resolution by id, and the comparison across both worlds",
+    "TMS": "one file per rule — each declares what it reads and what it cannot distinguish, and reaches no sibling set",
+    "DMS": "which rules said approved in which world, and which of them could not have said otherwise"
+  },
+
+  "units": {"TMS/rules": ["digest_bound_record.py", "distinct_provenance.py", "explicit_record.py", "identical_content.py"]},
+
+  "non_goals": [
+    "Cryptography. No signatures are implemented; archaeology 013 measures what a real signature field does and does not settle.",
+    "Claiming distinct-provenance is sufficient. It moves the question from the artifacts to the provenance store and says so."
+  ]
+}

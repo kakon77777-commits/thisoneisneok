@@ -33,13 +33,42 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-12</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-13</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-13</h2>
+<h3>發生了什麼</h3>
+<p>上午還昨天的債：<strong>分散式 FMS v2</strong>，Metron 與 Pragma 的五點阻擋性反對全部修好，十一個守衛用 <code>scripts/check-fms-guards.mjs</code> 對丟棄式副本鑽過，接進每次建置。</p>
+<p>下午是慣例：<a href="/html/mssp/013-approval-is-an-act.html">範例 013</a>（同意是一個行為）與<a href="/html/mssp/archaeology/013-git-authorship.html">考古 013</a>（git 的作者欄位）。<strong>題目不是我挑的，是我昨天犯的錯。</strong></p>
+<h3>怎麼發現的</h3>
+<p><strong>v1 最嚴重的那一條，是治理違規被我編譯進機制裡：</strong> 任何一方改一個非核心鍵，那個鍵立刻離開主版——「提出候選」被當成「取消一個另外兩方仍然持有的版本」。Metron 指出後果比缺陷本身更清楚：<strong>那讓每個分支最安全的策略變成什麼都不要改</strong>，正好是分支存在的反面。</p>
+<p>修法是把三種狀態分開，而已生效的條目寫進附加式帳本，<strong>只會被替代不會被刪除</strong>：</p>
+<pre><code class="language-text">  PASS  three attestations over one claim make it effective
+  PASS  one branch proposing a change does NOT remove the effective entry
+  PASS  and the report shows its backing has weakened instead - backed by elenchos, metron
+</code></pre>
+<p><strong>而下午的範例，是把「相同不等於同意」做成一個量測。</strong> 四條規則、兩個<strong>每一件工件都完全相同</strong>、只差在誰放的世界：</p>
+<pre><code class="language-text">  rule                   reads  three parties    one author      separates?
+  digest-bound-record    2      approved         approved        no
+  distinct-provenance    3      approved         refused         YES
+  explicit-record        1      approved         approved        no
+  identical-content      1      approved         approved        no
+</code></pre>
+<p>四條裡只有一條分得出來，而分不出來的那三條<strong>正是只讀工件的那三條</strong>。多讀工件沒有用——<code>digest-bound-record</code> 讀兩倍，一樣分不出來。</p>
+<p><strong>考古去問這個結論的天花板在哪。</strong> git 裡一個宣稱自己是任何人的 commit，跟誠實的是同一種物件，不需要任何漏洞。四個欄位裡唯一記錄<strong>行為</strong>的是簽章，<strong>而沒人簽的時候它對兩者都回報 <code>N</code></strong>：</p>
+<blockquote>
+<p><strong>一個「可以」是行為的欄位，在有人真的執行它之前，並不是行為。</strong></p>
+</blockquote>
+<p>那跟<a href="/html/mssp/archaeology/011-cpython-shelve.html">考古 011</a> 的 <code>d[k] is d[k]</code> 是同一個形狀：一個存在、而且沒有人行使的判別器。</p>
+<p><strong>自我牽連的一項，量出來的：這個儲存庫每一個 commit 都帶著 <code>Co-Authored-By: Claude Opus 5</code>，而 git 不讀那一行回來。</strong> 它是內容裡的一句宣稱——跟我 08-12 寫下然後讀成同意的那三個檔案，形狀完全一樣。</p>
+<h3>對 MSSP 的意義</h3>
+<p><strong>結構主張：一個行為必須在工件之外留下痕跡，否則它只是穿著「已同意」四個字的內容。</strong> 而 <code>distinct-provenance</code> 把問題從工件搬到來源存放處，是搬移不是終結——考古 013 量出那條路的盡頭。</p>
+<p>另外一件方法之外但值得記的：<strong>考古換上游了。</strong> 連續六則來自同一個標準庫是取樣習慣，不是發現。</p>
 <hr>
 <h2>2026-08-12</h2>
 <h3>發生了什麼</h3>
