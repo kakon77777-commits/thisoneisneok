@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一個欄位可以裝不只一個值的時候，「讀那個值」不是一個問題 | MSSP | Neo.K</title>
+<meta name="description" content="這是這個實驗室最後一個沒碰過的假設——**從外面來的請求**。`page` 送了兩次（過期的表單欄位提交兩次是瀏覽器會做的正常事），而三個讀法給出三種結果：`first-wins` 說 `&quot;2&quot;`、`last-wins` 說 `&quot;3&quot;`、`declared-arity` 拒絕。**前兩個對「哪一個才是那個值」給出相反的答案，而且都不說自己做了選擇。** 它們不是同一條規則的兩種實作，是**兩條規則穿著同一個呼叫形狀**——而同日的考古 014 量到它們就是平台給你的東西：`params.get()` 留第一個、`Object.fromEntries(params)` 留最後一個。結構主張是：**arity 是契約的條款、在讀取當下被檢查**，不是由誰隨手挑了哪個 accessor 決定的。第 4 節處理「缺席」這個跟「多值」不同的問題：`optional-one` 缺席是 null、`many` 缺席是空陣列、`one` 缺席被拒絕——三個不同的正確答案，會被一句「找不到就回 null」壓成一個。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/014-declared-arity.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>014-declared-arity</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>014-declared-arity</span></div>
+    <div><b>語言</b><span>javascript</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-14</span></div>
+    <div><b>行數</b><span>354</span></div>
+    <div><b>執行</b><span><code>node src/main.mjs</code></span></div>
+  </section>
+  <article class="content"><h1>014 — When a field can hold more than one value, &quot;read the value&quot; is not a question</h1>
+<blockquote>
+<p><code>candidate</code>. The last assumption this lab had never touched: a request arriving from outside it.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>It reads one query string four fields at a time, with three readers, and only
+one of them can come back empty-handed.</p>
+<pre><code class="language-bash">node src/main.mjs             # what SCL runs, and what the other readers said
+node src/main.mjs --strict    # exit 1 when the configured reader refuses
+node src/island_test.mjs      # 23 checks across 6 sections
+</code></pre>
+<pre><code class="language-console">  q=mssp&amp;page=2&amp;page=3&amp;tag=structure&amp;tag=evidence&amp;sort=date
+
+  field   declared       got   declared-arity                first-wins        last-wins
+  q       optional-one   1     &quot;mssp&quot;                        &quot;mssp&quot;            &quot;mssp&quot;
+  page    one            2     REFUSED (declared one, got 2) &quot;2&quot;               &quot;3&quot;
+  tag     many           2     [&quot;structure&quot;,&quot;evidence&quot;]      &quot;structure&quot;       &quot;evidence&quot;
+  sort    one            1     &quot;date&quot;                        &quot;date&quot;            &quot;date&quot;
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>Arity is a term of the contract, checked at the read — not something decided
+by whichever accessor the caller happened to reach for.</strong></p>
+<p><code>page</code> arrived twice. <code>first-wins</code> says <code>&quot;2&quot;</code>, <code>last-wins</code> says <code>&quot;3&quot;</code>, and
+<strong>neither says a choice was made.</strong> They are not two implementations of one rule;
+they are two rules with the same call shape. Only a reader that knows <code>page</code> was
+declared <code>one</code> can tell a repeated checkbox from a repeated mistake.</p>
+<h2>Why now</h2>
+<p>Six days from the switch to real market applications. Persistence was
+<a href="/html/mssp/011-store-boundary.html">011</a> and <a href="/html/mssp/012-two-writers.html">012</a>;
+this is the other thing every entry so far has assumed away — <strong>input arriving
+from outside the program</strong>, where the sender is not the author and repetition is
+a normal thing for a browser to do.</p>
+<h2>The island test</h2>
+<p>Section 2 is what the example exists for:</p>
+<pre><code class="language-text">  PASS  the request carries `page` twice
+  PASS  first-wins and last-wins disagree about which one is the value - &quot;2&quot; vs &quot;3&quot;
+  PASS  and neither of them reports that it chose
+  PASS  they agree on every field that carries exactly one value
+</code></pre>
+<p>The last line matters: the disagreement is <strong>about multiplicity, not about
+parsing</strong>. Both readers see the same three values; they differ only in which one
+they call &quot;the&quot; one.</p>
+<p>Section 4 covers absence, which is a different question from multiplicity:
+<code>optional-one</code> absent is <code>null</code>, <code>many</code> absent is <code>[]</code>, and <code>one</code> absent is
+refused — three different right answers that a single &quot;return null if missing&quot;
+would have collapsed.</p>
+<p>Section 3b is the drill: a reader declaring <code>REFUSES = true</code> that never refuses
+must be caught, or section 3 is a label agreeing with a label.</p>
+<h2>live from upstream</h2>
+<p><a href="/html/mssp/archaeology/014-urlsearchparams.html">Archaeology 014</a>, measured the
+same day, is where this decision is actually made in production JavaScript:</p>
+<table>
+<thead>
+<tr>
+<th>read</th>
+<th>keeps</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>params.get(&quot;tag&quot;)</code></td>
+<td>the <strong>first</strong></td>
+</tr>
+<tr>
+<td><code>Object.fromEntries(params).tag</code></td>
+<td>the <strong>last</strong></td>
+</tr>
+<tr>
+<td><code>params.getAll(&quot;tag&quot;)</code></td>
+<td>all of them</td>
+</tr>
+</tbody></table>
+<p><code>first-wins</code> and <code>last-wins</code> in <code>TMS/readers/</code> are those two, and they are in the
+example because they are what the platform hands you, not because I invented a
+bad option to knock down.</p>
+<h2>What this example does not solve</h2>
+<p><strong>Measurable, not measured.</strong> How often a repeated key in a real request is
+accident rather than design, and what refusing costs a caller who was relying on
+<code>first-wins</code>.</p>
+<p><strong>Not measurable here.</strong> Whether refusing is the right policy — coercing,
+clamping and taking the last are all defensible, and <strong>choosing one without
+saying so is the only thing this example takes a position against.</strong> And whether
+a declared arity is correct: someone wrote <code>page: one</code>, and nothing here can tell
+a wrong declaration from a wrong request.</p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;014-declared-arity&quot;,
+  &quot;what_it_is&quot;: &quot;A query-parameter layer where every field declares how many values it may hold, and a read that disagrees with the declaration refuses instead of picking one.&quot;,
+  &quot;the_structural_decision&quot;: &quot;When a field can hold more than one value, \&quot;read the value\&quot; is not a well-formed operation. Arity is a term of the contract — declared, and checked at the read — not something decided by whichever accessor the caller happened to reach for.&quot;,
+  &quot;why_this_one&quot;: &quot;Six days from the switch to real market applications, and the last assumption this lab has never touched is a request coming from outside it. Archaeology 014 measures what the standard library does here: URLSearchParams.get returns the FIRST value, Object.fromEntries(params) keeps the LAST, and neither mentions that anything was dropped.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+
+  &quot;fields&quot;: {
+    &quot;q&quot;:     {&quot;arity&quot;: &quot;optional-one&quot;, &quot;note&quot;: &quot;a search box; absent is normal&quot;},
+    &quot;page&quot;:  {&quot;arity&quot;: &quot;one&quot;,          &quot;note&quot;: &quot;exactly one, and two is a bug not a preference&quot;},
+    &quot;tag&quot;:   {&quot;arity&quot;: &quot;many&quot;,         &quot;note&quot;: &quot;checkboxes; three is the point&quot;},
+    &quot;sort&quot;:  {&quot;arity&quot;: &quot;one&quot;,          &quot;note&quot;: &quot;one ordering, or the result is undefined&quot;}
+  },
+
+  &quot;readers&quot;: {
+    &quot;first-wins&quot;:     {&quot;refuses&quot;: false, &quot;models&quot;: &quot;URLSearchParams.get&quot;},
+    &quot;last-wins&quot;:      {&quot;refuses&quot;: false, &quot;models&quot;: &quot;Object.fromEntries(params)&quot;},
+    &quot;declared-arity&quot;: {&quot;refuses&quot;: true,  &quot;models&quot;: &quot;nothing upstream — this is the example's addition&quot;}
+  },
+
+  &quot;the_finding&quot;: &quot;first-wins and last-wins disagree about WHICH value is the value, and neither reports a choice was made. They are not two implementations of one rule; they are two different rules wearing the same call shape. Only a reader that knows what the field was declared to hold can tell a legitimate multi-value from an accident.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the fields and their declared arity, the readers and whether each can refuse, and the units map&quot;,
+    &quot;SCL&quot;: &quot;which reader this deployment uses, and whether a refusal is fatal&quot;,
+    &quot;SMS&quot;: &quot;reader resolution by id, and the read path over a parsed request&quot;,
+    &quot;TMS&quot;: &quot;one file per reader — each declares what it does on multiplicity and whether it can come back empty-handed, and reaches no sibling set&quot;,
+    &quot;DMS&quot;: &quot;what each reader returned for each field, and which of them could not have refused&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/readers&quot;: [&quot;declared_arity.mjs&quot;, &quot;first_wins.mjs&quot;, &quot;last_wins.mjs&quot;]},
+
+  &quot;non_goals&quot;: [
+    &quot;Being a router or a validation library. Four fields and three readers over one query string.&quot;,
+    &quot;Saying URLSearchParams is wrong. get() answers the question it is named for; the defect is that callers read it as answering a different one.&quot;,
+    &quot;Deciding what a system SHOULD do when a request violates the contract. This refuses; whether to refuse, coerce or clamp is a policy question and SCL is where it would live.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;reader&quot;: &quot;declared-arity&quot;,
+  &quot;a_refusal_is_fatal&quot;: true,
+  &quot;_note&quot;: &quot;island_test.mjs runs every reader over every field regardless of what this says.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.mjs</summary><pre><code>// Which reader this deployment uses, and what it refuses to serve.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export const reader = () =&gt; config.reader;
+export const refusalIsFatal = () =&gt; Boolean(config.a_refusal_is_fatal);
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/request.mjs</summary><pre><code>// Reader resolution by id, and the read path over a parsed request.
+//
+// The parse itself is deliberately the platform's: URLSearchParams already
+// keeps every value, and the loss this example is about happens later, at the
+// read. Re-implementing the parser would have hidden that.
+import * as declaredArity from &quot;../TMS/readers/declared_arity.mjs&quot;;
+import * as firstWins from &quot;../TMS/readers/first_wins.mjs&quot;;
+import * as lastWins from &quot;../TMS/readers/last_wins.mjs&quot;;
+
+const READERS = Object.fromEntries(
+  [firstWins, lastWins, declaredArity].map((module) =&gt; [module.READER, module]));
+
+export const readerNames = () =&gt; Object.keys(READERS).sort();
+
+export function resolveReader(name) {
+  const module = READERS[name];
+  if (!module) {
+    return { problem: `reader &quot;${name}&quot; has no implementation - fail closed (known: ${readerNames().join(&quot;, &quot;)})` };
+  }
+  return { module };
+}
+
+export function parse(queryString) {
+  const params = new URLSearchParams(queryString);
+  return Object.fromEntries([...new Set(params.keys())].map((key) =&gt; [key, params.getAll(key)]));
+}
+
+export function readAll(queryString, readerName, fields) {
+  const { module, problem } = resolveReader(readerName);
+  if (problem) return { problem };
+  const parsed = parse(queryString);
+  const rows = Object.entries(fields).map(([name, spec]) =&gt; {
+    const values = parsed[name] ?? [];
+    const outcome = module.read(values, spec.arity);
+    return { field: name, arity: spec.arity, received: values.length, ...outcome };
+  });
+  return { reader: readerName, rows, refusals: rows.filter((row) =&gt; row.refused) };
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/readers/declared_arity.mjs</summary><pre><code>// Read against what the field was declared to hold.
+//
+// The only reader here that can come back empty-handed. A field declared `one`
+// holding three values is not a value to be picked from — it is a disagreement
+// between the request and the contract, and picking silently is what makes it
+// invisible.
+export const READER = &quot;declared-arity&quot;;
+export const ON_MULTIPLICITY = &quot;refuses when the count disagrees with the declaration&quot;;
+export const REFUSES = true;
+
+export function read(values, arity) {
+  if (arity === &quot;many&quot;) return { value: values, refused: false };
+  if (arity === &quot;optional-one&quot; &amp;&amp; values.length === 0) return { value: null, refused: false };
+  if (values.length === 1) return { value: values[0], refused: false };
+  return {
+    value: null,
+    refused: true,
+    because: `declared ${arity}, received ${values.length}`,
+  };
+}
+</code></pre></details><details><summary>TMS/readers/first_wins.mjs</summary><pre><code>// Return the first value and say nothing about the rest.
+//
+// This is URLSearchParams.get, and it is the most reached-for accessor in every
+// web request path there is. It is not wrong; it answers a question. The
+// question it answers is &quot;what is the first value&quot;, and callers read it as
+// &quot;what is the value&quot;.
+export const READER = &quot;first-wins&quot;;
+export const ON_MULTIPLICITY = &quot;returns the first, discards the rest, reports nothing&quot;;
+export const REFUSES = false;
+
+export function read(values) {
+  return { value: values.length ? values[0] : null, refused: false };
+}
+</code></pre></details><details><summary>TMS/readers/last_wins.mjs</summary><pre><code>// Return the last value and say nothing about the rest.
+//
+// This is what Object.fromEntries(params) does, and it is the other most
+// reached-for shape. It disagrees with first-wins about WHICH value is &quot;the&quot;
+// value, and neither of them mentions that there was a choice.
+export const READER = &quot;last-wins&quot;;
+export const ON_MULTIPLICITY = &quot;returns the last, discards the rest, reports nothing&quot;;
+export const REFUSES = false;
+
+export function read(values) {
+  return { value: values.length ? values[values.length - 1] : null, refused: false };
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.mjs</summary><pre><code>// What each reader returned, and which of them could not have refused.
+
+export function table(results, fields, out) {
+  const readers = results.map((r) =&gt; r.reader);
+  out(`\n  ${&quot;field&quot;.padEnd(7)} ${&quot;declared&quot;.padEnd(14)} ${&quot;got&quot;.padEnd(5)} `
+    + readers.map((r) =&gt; r.padEnd(30)).join(&quot;&quot;));
+  for (const [index, name] of Object.keys(fields).entries()) {
+    const first = results[0].rows[index];
+    const cells = results.map((result) =&gt; {
+      const row = result.rows[index];
+      return (row.refused ? `REFUSED (${row.because})` : JSON.stringify(row.value)).padEnd(30);
+    });
+    out(`  ${name.padEnd(7)} ${first.arity.padEnd(14)} ${String(first.received).padEnd(5)} ${cells.join(&quot;&quot;)}`);
+  }
+}
+
+export function whoCouldRefuse(results, modules, out) {
+  out(&quot;\n  which readers can come back empty-handed at all:&quot;);
+  for (const result of results) {
+    const module = modules[result.reader];
+    out(`    ${result.reader.padEnd(16)} refuses=${String(module.REFUSES).padEnd(6)} ${module.ON_MULTIPLICITY}`);
+  }
+}
+
+export function gaps(out) {
+  out(&quot;\n  measurable, not measured here:&quot;);
+  out(&quot;    - how often real requests carry a repeated key by accident rather than design&quot;);
+  out(&quot;    - what refusing costs a caller who was relying on first-wins&quot;);
+  out(&quot;\n  not measurable by this program at all:&quot;);
+  out(&quot;    - whether refusing is the right policy. Coercing, clamping and taking the&quot;);
+  out(&quot;      last are all defensible; what is not defensible is choosing one without&quot;);
+  out(&quot;      saying so, which is the only thing this example takes a position on.&quot;);
+  out(&quot;    - whether a declared arity is correct. Someone wrote `page: one`, and&quot;);
+  out(&quot;      nothing here can tell a wrong declaration from a wrong request.&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.mjs</summary><pre><code>// The island test.
+//
+//   node src/island_test.mjs
+//
+// Section 2 is what the example exists for: the same request, read by two
+// idiomatic readers, produces two different answers for the same field, and
+// neither reader reports that it chose.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as request from &quot;./SMS/request.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import { QUERY } from &quot;./main.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;contract.json&quot;), &quot;utf8&quot;));
+const failures = [];
+const check = (label, ok, detail = &quot;&quot;) =&gt; {
+  process.stdout.write(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}\n`);
+  if (!ok) failures.push(label);
+};
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+const readWith = (name) =&gt; request.readAll(QUERY, name, CONTRACT.fields);
+const cell = (result, field) =&gt; result.rows.find((row) =&gt; row.field === field);
+
+say(&quot;\n== 1. every reader is an island, declares itself, and FMS matches the tree&quot;);
+const dir = path.join(here, &quot;TMS&quot;, &quot;readers&quot;);
+const files = fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+check(&quot;there are three reader files&quot;, files.length === 3, files.join(&quot;, &quot;));
+for (const file of files) {
+  const source = fs.readFileSync(path.join(dir, file), &quot;utf8&quot;);
+  const reaches = [...source.matchAll(/^\s*import[^&quot;']*[&quot;']([^&quot;']+)[&quot;']/gm)].map((m) =&gt; m[1]);
+  check(`${file} reaches no sibling set`, reaches.length === 0,
+    reaches.join(&quot;, &quot;) || &quot;no imports at all&quot;);
+}
+for (const [where, expected] of Object.entries(CONTRACT.units)) {
+  const onDisk = fs.readdirSync(path.join(here, ...where.split(&quot;/&quot;)))
+    .filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+  check(`${where}: FMS declares ${expected.length}, on disk ${onDisk.length}`,
+    JSON.stringify(onDisk) === JSON.stringify([...expected].sort()), onDisk.join(&quot;, &quot;));
+}
+for (const name of request.readerNames()) {
+  const { module } = request.resolveReader(name);
+  check(`${name} declares what it does on multiplicity`, Boolean(module.ON_MULTIPLICITY),
+    module.ON_MULTIPLICITY);
+}
+
+say(&quot;\n== 2. two idiomatic readers, one field, two different answers&quot;);
+const first = readWith(&quot;first-wins&quot;);
+const last = readWith(&quot;last-wins&quot;);
+check(&quot;the request carries `page` twice&quot;, cell(first, &quot;page&quot;).received === 2);
+check(&quot;first-wins and last-wins disagree about which one is the value&quot;,
+  cell(first, &quot;page&quot;).value !== cell(last, &quot;page&quot;).value,
+  `${JSON.stringify(cell(first, &quot;page&quot;).value)} vs ${JSON.stringify(cell(last, &quot;page&quot;).value)}`);
+check(&quot;and neither of them reports that it chose&quot;,
+  !cell(first, &quot;page&quot;).refused &amp;&amp; !cell(last, &quot;page&quot;).refused,
+  &quot;both return a value and no complaint&quot;);
+check(&quot;they agree on every field that carries exactly one value&quot;,
+  [&quot;q&quot;, &quot;sort&quot;].every((f) =&gt; cell(first, f).value === cell(last, f).value),
+  &quot;so the disagreement is about multiplicity, not about parsing&quot;);
+say(&quot;        These are not two implementations of one rule. They are two rules&quot;);
+say(&quot;        with the same call shape, and archaeology 014 measures both of them&quot;);
+say(&quot;        in the standard library: get() keeps the first, Object.fromEntries&quot;);
+say(&quot;        keeps the last.&quot;);
+
+say(&quot;\n== 3. only a reader that knows the declaration can refuse&quot;);
+const declared = readWith(&quot;declared-arity&quot;);
+check(&quot;declared-arity refuses `page`&quot;, cell(declared, &quot;page&quot;).refused,
+  cell(declared, &quot;page&quot;).because);
+check(&quot;and does NOT refuse `tag`, which was declared many&quot;,
+  !cell(declared, &quot;tag&quot;).refused &amp;&amp; Array.isArray(cell(declared, &quot;tag&quot;).value),
+  JSON.stringify(cell(declared, &quot;tag&quot;).value));
+check(&quot;nor `q`, which was declared optional and arrived once&quot;,
+  !cell(declared, &quot;q&quot;).refused, JSON.stringify(cell(declared, &quot;q&quot;).value));
+check(&quot;the other two readers refuse nothing, ever&quot;,
+  first.refusals.length === 0 &amp;&amp; last.refusals.length === 0);
+
+say(&quot;\n== 3b. the drill: a reader that claims it can refuse and never does&quot;);
+const liar = { READER: &quot;claims-to-refuse&quot;, REFUSES: true,
+  ON_MULTIPLICITY: &quot;says it refuses&quot;, read: (values) =&gt; ({ value: values[0], refused: false }) };
+const measured = [&quot;q&quot;, &quot;page&quot;, &quot;tag&quot;, &quot;sort&quot;].map((f) =&gt;
+  liar.read(request.parse(QUERY)[f] ?? [], CONTRACT.fields[f].arity).refused);
+check(&quot;a reader declaring REFUSES=true that never refuses is caught&quot;,
+  liar.REFUSES === true &amp;&amp; measured.every((r) =&gt; r === false),
+  &quot;declared it can refuse, refused nothing across four fields&quot;);
+
+say(&quot;\n== 4. an empty field, and a field nobody sent&quot;);
+const sparse = request.readAll(&quot;page=1&quot;, &quot;declared-arity&quot;, CONTRACT.fields);
+check(&quot;`q` declared optional-one and absent is accepted as null&quot;,
+  !cell(sparse, &quot;q&quot;).refused &amp;&amp; cell(sparse, &quot;q&quot;).value === null);
+check(&quot;`sort` declared one and absent is refused&quot;,
+  cell(sparse, &quot;sort&quot;).refused, cell(sparse, &quot;sort&quot;).because);
+check(&quot;`tag` declared many and absent is an empty list, not a refusal&quot;,
+  !cell(sparse, &quot;tag&quot;).refused &amp;&amp; JSON.stringify(cell(sparse, &quot;tag&quot;).value) === &quot;[]&quot;);
+
+say(&quot;\n== 5. fail closed&quot;);
+check(&quot;an unresolvable reader stops the run&quot;,
+  Boolean(request.readAll(QUERY, &quot;whatever-you-like&quot;, CONTRACT.fields).problem),
+  request.readAll(QUERY, &quot;whatever-you-like&quot;, CONTRACT.fields).problem);
+check(&quot;SCL names a reader that exists&quot;, request.readerNames().includes(policy.reader()),
+  policy.reader());
+check(&quot;and it names one that can refuse&quot;,
+  request.resolveReader(policy.reader()).module.REFUSES, policy.reader());
+
+say(&quot;\n== 6. what this example does not solve&quot;);
+say(&quot;        MEASURABLE, NOT MEASURED&quot;);
+say(&quot;          - how often a repeated key in a real request is accident rather than design&quot;);
+say(&quot;          - what refusing costs a caller who was relying on first-wins&quot;);
+say(&quot;        NOT MEASURABLE HERE&quot;);
+say(&quot;          - whether refusing is the right policy. Coercing, clamping and taking&quot;);
+say(&quot;            the last are all defensible; choosing one without saying so is not,&quot;);
+say(&quot;            and that is the only thing this example takes a position on.&quot;);
+say(&quot;          - whether a declared arity is correct. Nothing here can tell a wrong&quot;);
+say(&quot;            declaration from a wrong request.&quot;);
+
+say(failures.length ? `\n${failures.length} failure(s)` : &quot;\nall checks passed&quot;);
+for (const f of failures) say(`  - ${f}`);
+process.exit(failures.length ? 1 : 0);
+</code></pre></details><details><summary>main.mjs</summary><pre><code>// One query string, three readers, four fields with declared arity.
+//
+//   node src/main.mjs             what SCL runs, and what the other readers said
+//   node src/main.mjs --strict    exit 1 when the configured reader refuses
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as report from &quot;./DMS/report.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as request from &quot;./SMS/request.mjs&quot;;
+import * as declaredArity from &quot;./TMS/readers/declared_arity.mjs&quot;;
+import * as firstWins from &quot;./TMS/readers/first_wins.mjs&quot;;
+import * as lastWins from &quot;./TMS/readers/last_wins.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;contract.json&quot;), &quot;utf8&quot;));
+const MODULES = Object.fromEntries(
+  [firstWins, lastWins, declaredArity].map((m) =&gt; [m.READER, m]));
+
+// A request a browser can produce without anything going wrong: two checkboxes
+// ticked, and `page` repeated because a stale form field was submitted twice.
+export const QUERY = &quot;q=mssp&amp;page=2&amp;page=3&amp;tag=structure&amp;tag=evidence&amp;sort=date&quot;;
+
+function main(argv) {
+  const out = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+  out(`\n== one request, read three ways\n\n  ${QUERY}`);
+
+  const results = request.readerNames().map((name) =&gt;
+    request.readAll(QUERY, name, CONTRACT.fields));
+  const bad = results.find((r) =&gt; r.problem);
+  if (bad) { out(`  !! ${bad.problem}`); return 1; }
+
+  report.table(results, CONTRACT.fields, out);
+  report.whoCouldRefuse(results, MODULES, out);
+
+  out(&quot;\n  `page` was sent twice. first-wins says 2, last-wins says 3, and neither&quot;);
+  out(&quot;  says a choice was made. Only the reader that knows `page` was declared&quot;);
+  out(&quot;  `one` can tell a repeated checkbox from a repeated mistake.&quot;);
+
+  const configured = results.find((r) =&gt; r.reader === policy.reader());
+  out(`\n== this deployment reads with ${policy.reader()}`);
+  for (const row of configured.refusals) {
+    out(`    REFUSED  ${row.field}: ${row.because}`);
+  }
+  if (!configured.refusals.length) out(&quot;    nothing refused&quot;);
+
+  report.gaps(out);
+
+  if (argv.includes(&quot;--strict&quot;) &amp;&amp; configured.refusals.length &amp;&amp; policy.refusalIsFatal()) return 1;
+  return 0;
+}
+
+process.exitCode = main(process.argv.slice(2));
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

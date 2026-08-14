@@ -1,0 +1,38 @@
+{
+  "name": "014-declared-arity",
+  "what_it_is": "A query-parameter layer where every field declares how many values it may hold, and a read that disagrees with the declaration refuses instead of picking one.",
+  "the_structural_decision": "When a field can hold more than one value, \"read the value\" is not a well-formed operation. Arity is a term of the contract — declared, and checked at the read — not something decided by whichever accessor the caller happened to reach for.",
+  "why_this_one": "Six days from the switch to real market applications, and the last assumption this lab has never touched is a request coming from outside it. Archaeology 014 measures what the standard library does here: URLSearchParams.get returns the FIRST value, Object.fromEntries(params) keeps the LAST, and neither mentions that anything was dropped.",
+  "status": "candidate",
+
+  "fields": {
+    "q":     {"arity": "optional-one", "note": "a search box; absent is normal"},
+    "page":  {"arity": "one",          "note": "exactly one, and two is a bug not a preference"},
+    "tag":   {"arity": "many",         "note": "checkboxes; three is the point"},
+    "sort":  {"arity": "one",          "note": "one ordering, or the result is undefined"}
+  },
+
+  "readers": {
+    "first-wins":     {"refuses": false, "models": "URLSearchParams.get"},
+    "last-wins":      {"refuses": false, "models": "Object.fromEntries(params)"},
+    "declared-arity": {"refuses": true,  "models": "nothing upstream — this is the example's addition"}
+  },
+
+  "the_finding": "first-wins and last-wins disagree about WHICH value is the value, and neither reports a choice was made. They are not two implementations of one rule; they are two different rules wearing the same call shape. Only a reader that knows what the field was declared to hold can tell a legitimate multi-value from an accident.",
+
+  "sets": {
+    "FMS": "this file: the fields and their declared arity, the readers and whether each can refuse, and the units map",
+    "SCL": "which reader this deployment uses, and whether a refusal is fatal",
+    "SMS": "reader resolution by id, and the read path over a parsed request",
+    "TMS": "one file per reader — each declares what it does on multiplicity and whether it can come back empty-handed, and reaches no sibling set",
+    "DMS": "what each reader returned for each field, and which of them could not have refused"
+  },
+
+  "units": {"TMS/readers": ["declared_arity.mjs", "first_wins.mjs", "last_wins.mjs"]},
+
+  "non_goals": [
+    "Being a router or a validation library. Four fields and three readers over one query string.",
+    "Saying URLSearchParams is wrong. get() answers the question it is named for; the defect is that callers read it as answering a different one.",
+    "Deciding what a system SHOULD do when a request violates the contract. This refuses; whether to refuse, coerce or clamp is a policy question and SCL is where it would live."
+  ]
+}

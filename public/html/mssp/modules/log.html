@@ -33,13 +33,37 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-13</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-14</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-14</h2>
+<h3>發生了什麼</h3>
+<p><a href="/html/mssp/014-declared-arity.html">範例 014</a> 與<a href="/html/mssp/archaeology/014-urlsearchparams.html">考古 014</a>：<strong>這個實驗室最後一個沒碰過的假設——從外面來的請求。</strong></p>
+<p>持久化是 011 與 012 補的。剩下的那個是<strong>輸入</strong>：送出的人不是作者，而重複對瀏覽器來說是正常的事。</p>
+<h3>怎麼發現的</h3>
+<p>一個 query string，<code>page</code> 送了兩次（過期的表單欄位提交兩次），三個讀法：</p>
+<pre><code class="language-text">  field   declared       got   declared-arity                first-wins        last-wins
+  page    one            2     REFUSED (declared one, got 2) &quot;2&quot;               &quot;3&quot;
+  tag     many           2     [&quot;structure&quot;,&quot;evidence&quot;]      &quot;structure&quot;       &quot;evidence&quot;
+</code></pre>
+<p><strong><code>first-wins</code> 說 <code>&quot;2&quot;</code>、<code>last-wins</code> 說 <code>&quot;3&quot;</code>，而兩個都不說自己做了選擇。</strong></p>
+<p>而它們不是我發明來打的稻草人——<strong>它們就是平台給你的東西</strong>。考古量到：</p>
+<pre><code class="language-text">    get(&quot;tag&quot;)             &quot;a&quot;      ← 第一個
+    Object.fromEntries     &quot;c&quot;      ← 最後一個
+    getAll(&quot;tag&quot;)          [&quot;a&quot;,&quot;b&quot;,&quot;c&quot;]
+</code></pre>
+<p>同一個物件的兩個單值讀法，<strong>留的那一端相反</strong>。介面沒有任何地方可以問「你剛剛丟了什麼」——<code>has()</code> 說有、<code>size</code> 數的是 pair 不是 key。</p>
+<p>第二個發現：<strong><code>set</code> 與 <code>append</code> 在呼叫端長得一模一樣</strong>、arity 相同，而在已有兩個值的鍵上 <code>set</code> 留一個、<code>append</code> 留三個。而 <code>set</code>／<code>append</code>／<code>delete</code> 全部回傳 <code>undefined</code>。</p>
+<p><strong>還有一件事：範例的第 4 節分開了兩個我原本會混在一起的問題。</strong> 缺席不是多值：<code>optional-one</code> 缺席是 <code>null</code>、<code>many</code> 缺席是 <code>[]</code>、<code>one</code> 缺席被拒絕——三個不同的正確答案，會被一句「找不到就回 null」壓成一個。</p>
+<h3>對 MSSP 的意義</h3>
+<p>結構主張：<strong>arity 是契約的條款，在讀取當下被檢查</strong>，不是由誰隨手挑了哪個 accessor 決定的。</p>
+<p>而這一則明確不主張的是：拒絕是不是對的政策。強制轉換、截斷、取最後一個都站得住——<strong>站不住的是選了一個而不說</strong>，那是這一則唯一表態的地方。</p>
+<p><strong>我自己的檢查先錯了一次，而且是老族。</strong> 考古那邊我把「all」的期望值<strong>寫死成 3</strong>，於是 <code>append</code> 被標成不一致——它保留了全部三個然後又加一個，是 4。<strong>錯的是檢查，不是 accessor。</strong> 改成從樣本量基線之後五個都過，而故意把 <code>get</code> 標成 <code>all</code> 仍然會紅——修法沒有把檢查弄鬆。</p>
 <hr>
 <h2>2026-08-13</h2>
 <h3>發生了什麼</h3>

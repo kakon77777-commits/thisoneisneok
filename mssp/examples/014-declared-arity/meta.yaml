@@ -1,0 +1,17 @@
+id: 014-declared-arity
+title:
+  zh: 一個欄位可以裝不只一個值的時候，「讀那個值」不是一個問題
+  en: 'When a field can hold more than one value, "read the value" is not a question'
+summary:
+  zh: 這是這個實驗室最後一個沒碰過的假設——**從外面來的請求**。`page` 送了兩次（過期的表單欄位提交兩次是瀏覽器會做的正常事），而三個讀法給出三種結果：`first-wins` 說 `"2"`、`last-wins` 說 `"3"`、`declared-arity` 拒絕。**前兩個對「哪一個才是那個值」給出相反的答案，而且都不說自己做了選擇。** 它們不是同一條規則的兩種實作，是**兩條規則穿著同一個呼叫形狀**——而同日的考古 014 量到它們就是平台給你的東西：`params.get()` 留第一個、`Object.fromEntries(params)` 留最後一個。結構主張是：**arity 是契約的條款、在讀取當下被檢查**，不是由誰隨手挑了哪個 accessor 決定的。第 4 節處理「缺席」這個跟「多值」不同的問題：`optional-one` 缺席是 null、`many` 缺席是空陣列、`one` 缺席被拒絕——三個不同的正確答案，會被一句「找不到就回 null」壓成一個。
+  en: The last assumption this lab had never touched is input arriving from outside it, where the sender is not the author and repetition is a normal thing for a browser to do. `page` arrives twice and three readers give three results — first-wins says "2", last-wins says "3", declared-arity refuses. The first two disagree about which value is the value and neither reports that a choice was made. They are not two implementations of one rule; they are two rules with the same call shape, and the same day's archaeology measures both of them in the platform itself: params.get keeps the first, Object.fromEntries keeps the last. The structural decision is that arity is a term of the contract checked at the read, rather than something decided by whichever accessor the caller reached for. Section 4 separates absence from multiplicity: optional-one absent is null, many absent is an empty list, one absent is refused — three different right answers that a single "return null if missing" would collapse into one.
+language: javascript
+date: 2026-08-14
+version: v1.0
+kind: example
+concepts:
+  - arity-is-a-contract-term-not-an-accessor-choice
+  - two-rules-wearing-the-same-call-shape
+  - absence-and-multiplicity-are-different-questions
+  - the-readers-that-lose-data-are-the-ones-the-platform-hands-you
+runnable: node src/main.mjs

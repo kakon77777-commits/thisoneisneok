@@ -7,7 +7,7 @@ summary_zh: 三個 AI 各持一份 FMS，核心相同。相同不等於同意—
 summary_en: Three AIs hold three FMS branches with an identical core. Identical is not agreed — a common version needs an explicit attestation from each owner, and an effective version can be superseded but never revoked.
 state_zh: live experimental mechanism
 state_en: Live experimental mechanism
-updated: 2026-08-13
+updated: 2026-08-14
 ---
 
 # 分散式 FMS：三份宣告，一個算出來的共同版本

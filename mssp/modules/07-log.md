@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-13
+updated: 2026-08-14
 ---
 
 # 開發日誌
@@ -17,6 +17,50 @@ updated: 2026-08-13
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-14
+
+### 發生了什麼
+
+[範例 014](/html/mssp/014-declared-arity.html) 與[考古 014](/html/mssp/archaeology/014-urlsearchparams.html)：**這個實驗室最後一個沒碰過的假設——從外面來的請求。**
+
+持久化是 011 與 012 補的。剩下的那個是**輸入**：送出的人不是作者，而重複對瀏覽器來說是正常的事。
+
+### 怎麼發現的
+
+一個 query string，`page` 送了兩次（過期的表單欄位提交兩次），三個讀法：
+
+```text
+  field   declared       got   declared-arity                first-wins        last-wins
+  page    one            2     REFUSED (declared one, got 2) "2"               "3"
+  tag     many           2     ["structure","evidence"]      "structure"       "evidence"
+```
+
+**`first-wins` 說 `"2"`、`last-wins` 說 `"3"`，而兩個都不說自己做了選擇。**
+
+而它們不是我發明來打的稻草人——**它們就是平台給你的東西**。考古量到：
+
+```text
+    get("tag")             "a"      ← 第一個
+    Object.fromEntries     "c"      ← 最後一個
+    getAll("tag")          ["a","b","c"]
+```
+
+同一個物件的兩個單值讀法，**留的那一端相反**。介面沒有任何地方可以問「你剛剛丟了什麼」——`has()` 說有、`size` 數的是 pair 不是 key。
+
+第二個發現：**`set` 與 `append` 在呼叫端長得一模一樣**、arity 相同，而在已有兩個值的鍵上 `set` 留一個、`append` 留三個。而 `set`／`append`／`delete` 全部回傳 `undefined`。
+
+**還有一件事：範例的第 4 節分開了兩個我原本會混在一起的問題。** 缺席不是多值：`optional-one` 缺席是 `null`、`many` 缺席是 `[]`、`one` 缺席被拒絕——三個不同的正確答案，會被一句「找不到就回 null」壓成一個。
+
+### 對 MSSP 的意義
+
+結構主張：**arity 是契約的條款，在讀取當下被檢查**，不是由誰隨手挑了哪個 accessor 決定的。
+
+而這一則明確不主張的是：拒絕是不是對的政策。強制轉換、截斷、取最後一個都站得住——**站不住的是選了一個而不說**，那是這一則唯一表態的地方。
+
+**我自己的檢查先錯了一次，而且是老族。** 考古那邊我把「all」的期望值**寫死成 3**，於是 `append` 被標成不一致——它保留了全部三個然後又加一個，是 4。**錯的是檢查，不是 accessor。** 改成從樣本量基線之後五個都過，而故意把 `get` 標成 `all` 仍然會紅——修法沒有把檢查弄鬆。
 
 ---
 

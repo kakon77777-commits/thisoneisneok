@@ -1,0 +1,37 @@
+{
+  "name": "014-urlsearchparams",
+  "upstream": "WHATWG URL Standard, as implemented in Node",
+  "examined_version": "measured at run time",
+  "license": "MIT (Node); the standard itself is CC-BY",
+  "what_it_is": "The object every web request passes through, and what each of its accessors does when one key carries more than one value.",
+
+  "why_this_one": "Example 014 the same day argues that arity is a term of the contract rather than something an accessor decides. This is where that decision is actually made in practice, in the request path of essentially every JavaScript web application.",
+
+  "accessors": {
+    "get": {"survives": "one", "keeps": "the first value"},
+    "get_all": {"survives": "all", "keeps": "every value"},
+    "from_entries": {"survives": "one", "keeps": "the last value"},
+    "set": {"survives": "one", "keeps": "collapses every value to one"},
+    "append": {"survives": "all", "keeps": "adds without disturbing the others"}
+  },
+
+  "the_finding": "get and Object.fromEntries are both one-value reads of the same object and they keep OPPOSITE ends — get the first, fromEntries the last. Neither reports that anything was discarded, and the interface offers no way to ask. They are not two implementations of one rule; they are two rules with the same call shape.",
+
+  "the_second_finding": "set and append look like siblings and are not. On a key already holding two values, set leaves one and append leaves three. Both return undefined, as do delete and a get for a key that is not there — so no operation here answers differently depending on how it went.",
+
+  "sets": {
+    "FMS": "this file: the accessors and how many values each lets through",
+    "SCL": "which accessor this deployment uses for a field it treats as single-valued",
+    "SMS": "accessor resolution by id, the survivor count measured by running it, and the upstream probes",
+    "TMS": "one file per accessor — each declares what it keeps and how many survive, and imports nothing",
+    "DMS": "the readings, the declaration checked against behaviour, and the gaps"
+  },
+
+  "units": {"TMS/accessors": ["append.mjs", "from_entries.mjs", "get.mjs", "get_all.mjs", "set.mjs"]},
+
+  "non_goals": [
+    "Saying the WHATWG design is wrong. A query string genuinely permits repetition, so a one-value accessor must choose, and `get` is named honestly for what it returns.",
+    "Reimplementing URL parsing. Every number here comes from the platform's own URLSearchParams.",
+    "Any claim about how often this bites anyone in production."
+  ]
+}

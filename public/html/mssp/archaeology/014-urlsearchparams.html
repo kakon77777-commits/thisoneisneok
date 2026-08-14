@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>兩個「單值」讀法，各留一端，都不說話 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="範例 014 主張 arity 是契約條款而不是 accessor 隨手決定的事，所以來問：這個決定在真實世界是在哪裡做的？答案是每個 JavaScript web 應用的請求路徑上。一個鍵三個值（兩個同名 checkbox 就會這樣送）：**`get(&quot;tag&quot;)` 回 `&quot;a&quot;`、`Object.fromEntries(params).tag` 回 `&quot;c&quot;`**——同一個物件的兩個單值讀法，**留的那一端相反，而且都不說自己丟掉了兩個**。介面也沒有辦法問：`has()` 說有、`size` 數的是 pair 不是 key。第二個發現：`set` 與 `append` 在呼叫端長得一樣、arity 相同，而在已有兩個值的鍵上 `set` 留一個、`append` 留三個；而 `set`／`append`／`delete` 全部回傳 `undefined`，`get(missing)` 回 `null`——沒有任何一個操作的回傳值會因為它怎麼走而不同。WHATWG 沒做錯：query string 本來就允許重複，單值 accessor 非選不可，`get` 也誠實地叫 `get`；缺陷在呼叫端把它讀成在回答另一個問題。**我自己的檢查先錯了一次**：第一版把「all」的期望值寫死成 3，於是保留三個又加一個的 `append`（4）被標成不一致——錯的是檢查。改成從樣本量基線後五個都過，而故意把 `get` 標成 `all` 仍然會紅。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/014-urlsearchparams.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>014-urlsearchparams</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>WHATWG URL Standard (URLSearchParams)</span></div>
+    <div><b>授權</b><span>MIT (Node implementation); CC-BY (the standard)</span></div>
+    <div><b>檢視版本</b><span>measured at run time</span></div>
+    <div><b>日期</b><span>2026-08-14</span></div>
+    <div><b>來源</b><span><a href="https://url.spec.whatwg.org/">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>014 — <code>URLSearchParams</code>：兩個「單值」讀法，各留一端，都不說話</h1>
+<blockquote>
+<p>原專案 <a href="https://url.spec.whatwg.org/">WHATWG URL Standard</a>，在 Node 上的實作（MIT）。版本由執行時量出來。
+這一則沒有重製任何原始碼，只對平台自己的 <code>URLSearchParams</code> 量行為。</p>
+</blockquote>
+<pre><code class="language-bash">node src/main.mjs            # 讀法、宣告驗證、mutator
+node src/main.mjs --strict   # 宣告跟行為不一致就 exit 1
+node src/island_test.mjs     # 26 項檢查，全部直接跑平台
+</code></pre>
+<h2>為什麼選它</h2>
+<p>同日的<a href="/html/mssp/014-declared-arity.html">範例 014</a> 主張 <strong>arity 是契約的條款，不是 accessor 隨手決定的事</strong>。那就要問：<strong>這個決定在真實世界是在哪裡做的？</strong> 答案是每一個 JavaScript web 應用的請求路徑上，而且做決定的不是作者。</p>
+<h2>原專案的結構地圖</h2>
+<p>一個鍵三個值——瀏覽器在兩個 checkbox 同名時就會這樣送：</p>
+<pre><code class="language-text">  tag=a&amp;tag=b&amp;tag=c&amp;q=x
+
+    get(&quot;tag&quot;)             &quot;a&quot;
+    getAll(&quot;tag&quot;)          [&quot;a&quot;,&quot;b&quot;,&quot;c&quot;]
+    Object.fromEntries     &quot;c&quot;
+    has(&quot;tag&quot;)             true
+    size                   4
+    spread length          4
+</code></pre>
+<p><strong><code>get</code> 留第一個。<code>Object.fromEntries</code> 留最後一個。兩個都不說。</strong></p>
+<p>而且它們是<strong>同一個物件的兩個單值讀法</strong>，是最常被寫出來的兩種形狀。介面沒有任何地方可以問「你剛剛丟掉了什麼」——<code>has()</code> 說有、<code>size</code> 數的是 pair 不是 key，兩個都不碰多值這件事。</p>
+<table>
+<thead>
+<tr>
+<th>accessor</th>
+<th>宣告</th>
+<th>幾個活下來</th>
+<th>留下什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>get</code></td>
+<td>one</td>
+<td>1 / 3</td>
+<td>第一個</td>
+</tr>
+<tr>
+<td><code>from_entries</code></td>
+<td>one</td>
+<td>1 / 3</td>
+<td>最後一個</td>
+</tr>
+<tr>
+<td><code>get_all</code></td>
+<td>all</td>
+<td>3 / 3</td>
+<td>全部</td>
+</tr>
+<tr>
+<td><code>set</code></td>
+<td>one</td>
+<td>1</td>
+<td>把所有值塌成一個</td>
+</tr>
+<tr>
+<td><code>append</code></td>
+<td>all</td>
+<td>4</td>
+<td>加一個，不動其他</td>
+</tr>
+</tbody></table>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>五個 accessor、各自讓幾個值通過，以及 <code>units</code> 對照</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署拿哪一個 accessor 讀「它當成單值」的欄位</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>依 id 解析、<strong>用跑的量存活數</strong>，以及跑平台的探針</td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>一個 accessor 一個檔——各自宣告留下什麼、幾個活下來，且不 import 任何東西</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td>讀數、宣告對照行為的結果，以及看不到的部分</td>
+</tr>
+</tbody></table>
+<p>重切加的只有一件事：<strong>每個 accessor 宣告自己讓幾個值通過</strong>，而那份宣告用跑的驗。<code>URLSearchParams</code> 沒有這個——<code>get</code> 與 <code>Object.fromEntries</code> 都是單值讀，形狀一樣、留的那一端相反，而介面不提供任何辦法區分。</p>
+<h2>什麼不適合拆</h2>
+<p><strong>WHATWG 沒有做錯，不要「修」它。</strong> 一個 query string <strong>本來就允許重複</strong>，所以一個單值 accessor 非選不可，而 <code>get</code> 就叫 <code>get</code>——它誠實地說了自己回傳一個值。</p>
+<p>缺陷不在 <code>get</code> 回傳什麼，在於<strong>呼叫端把它讀成在回答另一個問題</strong>。這跟<a href="/html/mssp/archaeology/011-cpython-shelve.html">考古 011</a> 的形狀相同：那裡也是同一個 API 兩種語義，而唯一分得出來的觀察沒有人會去看。</p>
+<p><strong><code>set</code> 與 <code>append</code> 也不適合合併。</strong> 它們在呼叫端長得一模一樣、arity 相同，而在一個已經有兩個值的鍵上，<code>set</code> 留一個、<code>append</code> 留三個。那是兩個不同的操作，不是一個操作的兩種寫法。</p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>我自己的檢查先錯了一次，而且是這個實驗室追了兩週的那一族。</strong> 第一版把「all」的期望值寫死成 3，於是 <code>append</code> 被標成不一致——<strong>它保留了全部三個，然後又加了一個，所以是 4</strong>。錯的是檢查不是 accessor。改成從樣本量出基線之後五個都過，而且<strong>把 <code>get</code> 故意標成 <code>all</code> 仍然會紅</strong>（<code>!! get: declared all, measured 1</code>），所以修法沒有把檢查弄鬆。</p>
+<p><strong>量得到但這次沒量：</strong> 重複的鍵有多常是意外而不是設計；有多少框架預設把 params 轉成普通物件（那一步就是 <code>Object.fromEntries</code>）。</p>
+<p><strong>這一則量不到：</strong> 任何一位呼叫端當初以為 <code>get</code> 是什麼意思。<strong>它量的是介面讓什麼通過，不是誰誤解了什麼。</strong></p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;014-urlsearchparams&quot;,
+  &quot;upstream&quot;: &quot;WHATWG URL Standard, as implemented in Node&quot;,
+  &quot;examined_version&quot;: &quot;measured at run time&quot;,
+  &quot;license&quot;: &quot;MIT (Node); the standard itself is CC-BY&quot;,
+  &quot;what_it_is&quot;: &quot;The object every web request passes through, and what each of its accessors does when one key carries more than one value.&quot;,
+
+  &quot;why_this_one&quot;: &quot;Example 014 the same day argues that arity is a term of the contract rather than something an accessor decides. This is where that decision is actually made in practice, in the request path of essentially every JavaScript web application.&quot;,
+
+  &quot;accessors&quot;: {
+    &quot;get&quot;: {&quot;survives&quot;: &quot;one&quot;, &quot;keeps&quot;: &quot;the first value&quot;},
+    &quot;get_all&quot;: {&quot;survives&quot;: &quot;all&quot;, &quot;keeps&quot;: &quot;every value&quot;},
+    &quot;from_entries&quot;: {&quot;survives&quot;: &quot;one&quot;, &quot;keeps&quot;: &quot;the last value&quot;},
+    &quot;set&quot;: {&quot;survives&quot;: &quot;one&quot;, &quot;keeps&quot;: &quot;collapses every value to one&quot;},
+    &quot;append&quot;: {&quot;survives&quot;: &quot;all&quot;, &quot;keeps&quot;: &quot;adds without disturbing the others&quot;}
+  },
+
+  &quot;the_finding&quot;: &quot;get and Object.fromEntries are both one-value reads of the same object and they keep OPPOSITE ends — get the first, fromEntries the last. Neither reports that anything was discarded, and the interface offers no way to ask. They are not two implementations of one rule; they are two rules with the same call shape.&quot;,
+
+  &quot;the_second_finding&quot;: &quot;set and append look like siblings and are not. On a key already holding two values, set leaves one and append leaves three. Both return undefined, as do delete and a get for a key that is not there — so no operation here answers differently depending on how it went.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the accessors and how many values each lets through&quot;,
+    &quot;SCL&quot;: &quot;which accessor this deployment uses for a field it treats as single-valued&quot;,
+    &quot;SMS&quot;: &quot;accessor resolution by id, the survivor count measured by running it, and the upstream probes&quot;,
+    &quot;TMS&quot;: &quot;one file per accessor — each declares what it keeps and how many survive, and imports nothing&quot;,
+    &quot;DMS&quot;: &quot;the readings, the declaration checked against behaviour, and the gaps&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/accessors&quot;: [&quot;append.mjs&quot;, &quot;from_entries.mjs&quot;, &quot;get.mjs&quot;, &quot;get_all.mjs&quot;, &quot;set.mjs&quot;]},
+
+  &quot;non_goals&quot;: [
+    &quot;Saying the WHATWG design is wrong. A query string genuinely permits repetition, so a one-value accessor must choose, and `get` is named honestly for what it returns.&quot;,
+    &quot;Reimplementing URL parsing. Every number here comes from the platform's own URLSearchParams.&quot;,
+    &quot;Any claim about how often this bites anyone in production.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;accessor_used_for_a_single_value_field&quot;: &quot;get&quot;,
+  &quot;a_one_value_accessor_on_a_multi_value_key_is_fatal&quot;: true,
+  &quot;_note&quot;: &quot;main.mjs measures every accessor regardless of what this says.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.mjs</summary><pre><code>import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export const accessor = () =&gt; config.accessor_used_for_a_single_value_field;
+export const silentDiscardIsFatal = () =&gt; Boolean(config.a_one_value_accessor_on_a_multi_value_key_is_fatal);
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/accessors.mjs</summary><pre><code>// The re-cut: every accessor declares how many values survive it.
+//
+// URLSearchParams has no such declaration. `get` and `Object.fromEntries` are
+// both one-value reads, they disagree about WHICH value, and the interface
+// offers no way to ask either of them what it just discarded.
+const NAMES = [&quot;get&quot;, &quot;get_all&quot;, &quot;from_entries&quot;, &quot;set&quot;, &quot;append&quot;];
+
+export async function load() {
+  const loaded = {};
+  const problems = [];
+  for (const name of NAMES) {
+    const module = await import(`../TMS/accessors/${name}.mjs`);
+    for (const attribute of [&quot;ACCESSOR&quot;, &quot;KEEPS&quot;, &quot;HOW_MANY_SURVIVE&quot;]) {
+      if (!module[attribute]) problems.push(`${name} does not declare ${attribute}`);
+    }
+    if (![&quot;one&quot;, &quot;all&quot;].includes(module.HOW_MANY_SURVIVE)) {
+      problems.push(`${name}: HOW_MANY_SURVIVE must be one or all, not ${module.HOW_MANY_SURVIVE}`);
+    }
+    loaded[module.ACCESSOR] = module;
+  }
+  return { loaded, problems };
+}
+
+export function resolve(name, loaded) {
+  const module = loaded[name];
+  if (!module) {
+    return { problem: `accessor &quot;${name}&quot; has no unit - fail closed (known: ${Object.keys(loaded).sort().join(&quot;, &quot;)})` };
+  }
+  return { module };
+}
+
+// The declaration, checked by running it rather than by reading it.
+export function survivorCount(name, query) {
+  const params = new URLSearchParams(query);
+  if (name === &quot;get&quot;) return params.get(&quot;tag&quot;) === null ? 0 : 1;
+  if (name === &quot;get_all&quot;) return params.getAll(&quot;tag&quot;).length;
+  if (name === &quot;from_entries&quot;) return Object.fromEntries(params).tag === undefined ? 0 : 1;
+  if (name === &quot;set&quot;) { params.set(&quot;tag&quot;, &quot;z&quot;); return params.getAll(&quot;tag&quot;).length; }
+  if (name === &quot;append&quot;) { params.append(&quot;tag&quot;, &quot;z&quot;); return params.getAll(&quot;tag&quot;).length; }
+  return null;
+}
+</code></pre></details><details><summary>SMS/upstream.mjs</summary><pre><code>// What URLSearchParams actually does, measured against the running Node.
+//
+// Nothing here is exotic: a repeated key is what a browser sends when two
+// checkboxes share a name, and every one of these accessors appears in ordinary
+// request-handling code.
+export const SAMPLE = &quot;tag=a&amp;tag=b&amp;tag=c&amp;q=x&quot;;
+
+export function readings(query = SAMPLE) {
+  const params = new URLSearchParams(query);
+  return {
+    &quot;get(\&quot;tag\&quot;)&quot;: params.get(&quot;tag&quot;),
+    &quot;getAll(\&quot;tag\&quot;)&quot;: params.getAll(&quot;tag&quot;),
+    &quot;Object.fromEntries&quot;: Object.fromEntries(params).tag,
+    &quot;has(\&quot;tag\&quot;)&quot;: params.has(&quot;tag&quot;),
+    size: params.size,
+    &quot;spread length&quot;: [...params].length,
+  };
+}
+
+export function mutations(query = &quot;tag=a&amp;tag=b&quot;) {
+  const withSet = new URLSearchParams(query);
+  withSet.set(&quot;tag&quot;, &quot;z&quot;);
+  const withAppend = new URLSearchParams(query);
+  withAppend.append(&quot;tag&quot;, &quot;z&quot;);
+  return { before: query, afterSet: withSet.toString(), afterAppend: withAppend.toString() };
+}
+
+export function returnValues() {
+  const params = new URLSearchParams(&quot;k=v&quot;);
+  return {
+    &quot;set(k,v)&quot;: new URLSearchParams().set(&quot;k&quot;, &quot;v&quot;),
+    &quot;append(k,v)&quot;: new URLSearchParams().append(&quot;k&quot;, &quot;v&quot;),
+    &quot;delete(k)&quot;: params.delete(&quot;k&quot;),
+    &quot;get(missing)&quot;: new URLSearchParams().get(&quot;nope&quot;),
+  };
+}
+
+export function version() {
+  return process.version;
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/accessors/append.mjs</summary><pre><code>// `append` — adds without disturbing the others.
+export const ACCESSOR = &quot;append&quot;;
+export const KEEPS = &quot;adds without disturbing the others&quot;;
+export const HOW_MANY_SURVIVE = &quot;all&quot;;
+</code></pre></details><details><summary>TMS/accessors/from_entries.mjs</summary><pre><code>// `from_entries` — the last value.
+export const ACCESSOR = &quot;from_entries&quot;;
+export const KEEPS = &quot;the last value&quot;;
+export const HOW_MANY_SURVIVE = &quot;one&quot;;
+</code></pre></details><details><summary>TMS/accessors/get.mjs</summary><pre><code>// `get` — the first value.
+export const ACCESSOR = &quot;get&quot;;
+export const KEEPS = &quot;the first value&quot;;
+export const HOW_MANY_SURVIVE = &quot;one&quot;;
+</code></pre></details><details><summary>TMS/accessors/get_all.mjs</summary><pre><code>// `get_all` — every value.
+export const ACCESSOR = &quot;get_all&quot;;
+export const KEEPS = &quot;every value&quot;;
+export const HOW_MANY_SURVIVE = &quot;all&quot;;
+</code></pre></details><details><summary>TMS/accessors/set.mjs</summary><pre><code>// `set` — collapses every value to one.
+export const ACCESSOR = &quot;set&quot;;
+export const KEEPS = &quot;collapses every value to one&quot;;
+export const HOW_MANY_SURVIVE = &quot;one&quot;;
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.mjs</summary><pre><code>export function readings(values, out) {
+  out(&quot;\n  one key with three values, read every way ordinary code reads it:&quot;);
+  for (const [label, value] of Object.entries(values)) {
+    out(`    ${label.padEnd(22)} ${JSON.stringify(value)}`);
+  }
+}
+
+// `original` is measured from the sample rather than written here. The first
+// version hardcoded 3 for &quot;all&quot; and flagged `append` as a mismatch — append
+// keeps all three AND adds one, so the check was wrong and the accessor was
+// not. A hardcoded expectation is the defect this lab keeps filing.
+export function declarations(loaded, measured, original, out) {
+  out(`\n  ${&quot;accessor&quot;.padEnd(14)} ${&quot;declared&quot;.padEnd(10)} ${&quot;survivors&quot;.padEnd(11)} keeps`);
+  for (const name of Object.keys(loaded).sort()) {
+    const module = loaded[name];
+    const holds = module.HOW_MANY_SURVIVE === &quot;one&quot;
+      ? measured[name] === 1
+      : measured[name] &gt;= original;
+    const mark = holds ? &quot; &quot; : &quot;!&quot;;
+    out(`  ${mark} ${module.ACCESSOR.padEnd(12)} ${module.HOW_MANY_SURVIVE.padEnd(10)} `
+      + `${String(measured[name]).padEnd(11)} ${module.KEEPS}`);
+  }
+}
+
+export function gaps(out) {
+  out(&quot;\n  measurable, not measured here:&quot;);
+  out(&quot;    - how often a repeated key reaches a real handler by accident&quot;);
+  out(&quot;    - how many frameworks convert params to a plain object by default&quot;);
+  out(&quot;\n  not measurable by this entry at all:&quot;);
+  out(&quot;    - whether the WHATWG design is wrong. A URL query genuinely permits&quot;);
+  out(&quot;      repetition, so an accessor returning one value has to choose, and&quot;);
+  out(&quot;      `get` is honestly named for what it returns.&quot;);
+  out(&quot;    - what any particular caller believed `get` meant.&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.mjs</summary><pre><code>// The island test.
+//
+//   node src/island_test.mjs
+//
+// Section 2 is the finding: two one-value accessors of the same object keep
+// opposite ends and neither reports a choice.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as accessors from &quot;./SMS/accessors.mjs&quot;;
+import * as upstream from &quot;./SMS/upstream.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const ARCH = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;architecture.json&quot;), &quot;utf8&quot;));
+const failures = [];
+const check = (label, ok, detail = &quot;&quot;) =&gt; {
+  process.stdout.write(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}\n`);
+  if (!ok) failures.push(label);
+};
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+const { loaded, problems } = await accessors.load();
+const original = new URLSearchParams(upstream.SAMPLE).getAll(&quot;tag&quot;).length;
+const survivors = Object.fromEntries(Object.keys(loaded).map((n) =&gt;
+  [n, accessors.survivorCount(n, upstream.SAMPLE)]));
+
+say(&quot;\n== 1. every accessor is an island, declares itself, and FMS matches the tree&quot;);
+check(&quot;all five accessors loaded with no problems&quot;, problems.length === 0, problems.join(&quot;; &quot;));
+const dir = path.join(here, &quot;TMS&quot;, &quot;accessors&quot;);
+for (const file of fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort()) {
+  const source = fs.readFileSync(path.join(dir, file), &quot;utf8&quot;);
+  const reaches = [...source.matchAll(/^\s*import[^&quot;']*[&quot;']([^&quot;']+)[&quot;']/gm)].map((m) =&gt; m[1]);
+  check(`${file} imports nothing`, reaches.length === 0, reaches.join(&quot;, &quot;) || &quot;no imports at all&quot;);
+}
+for (const [where, expected] of Object.entries(ARCH.units)) {
+  const onDisk = fs.readdirSync(path.join(here, ...where.split(&quot;/&quot;)))
+    .filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+  check(`${where}: FMS declares ${expected.length}, on disk ${onDisk.length}`,
+    JSON.stringify(onDisk) === JSON.stringify([...expected].sort()), onDisk.join(&quot;, &quot;));
+}
+
+say(&quot;\n== 2. two one-value accessors, opposite ends, no complaint from either&quot;);
+const r = upstream.readings();
+check(&quot;get and Object.fromEntries both return exactly one value&quot;,
+  typeof r['get(&quot;tag&quot;)'] === &quot;string&quot; &amp;&amp; typeof r[&quot;Object.fromEntries&quot;] === &quot;string&quot;);
+check(&quot;and they are DIFFERENT values&quot;,
+  r['get(&quot;tag&quot;)'] !== r[&quot;Object.fromEntries&quot;],
+  `${JSON.stringify(r['get(&quot;tag&quot;)'])} vs ${JSON.stringify(r[&quot;Object.fromEntries&quot;])}`);
+check(&quot;get keeps the first&quot;, r['get(&quot;tag&quot;)'] === r['getAll(&quot;tag&quot;)'][0]);
+check(&quot;Object.fromEntries keeps the last&quot;,
+  r[&quot;Object.fromEntries&quot;] === r['getAll(&quot;tag&quot;)'][r['getAll(&quot;tag&quot;)'].length - 1]);
+check(&quot;and getAll shows what both discarded&quot;, r['getAll(&quot;tag&quot;)'].length === 3,
+  JSON.stringify(r['getAll(&quot;tag&quot;)']));
+check(&quot;nothing in the interface reports the discard&quot;,
+  r['has(&quot;tag&quot;)'] === true &amp;&amp; r.size === 4,
+  &quot;has() says yes and size counts pairs, not keys - neither mentions multiplicity&quot;);
+
+say(&quot;\n== 3. each declaration is checked by running it, against a measured baseline&quot;);
+for (const name of Object.keys(loaded).sort()) {
+  const module = loaded[name];
+  const holds = module.HOW_MANY_SURVIVE === &quot;one&quot;
+    ? survivors[name] === 1 : survivors[name] &gt;= original;
+  check(`${name}: declared ${module.HOW_MANY_SURVIVE}, ${survivors[name]} of ${original} survive`, holds);
+}
+say(&quot;        The baseline is measured from the sample. An earlier version&quot;);
+say(&quot;        hardcoded 3 for \&quot;all\&quot; and flagged `append` - which keeps all three&quot;);
+say(&quot;        AND adds one. The check was wrong; the accessor was not.&quot;);
+check(&quot;a mislabelled accessor would still be caught&quot;,
+  (() =&gt; { const fake = { HOW_MANY_SURVIVE: &quot;all&quot; };
+    return !(fake.HOW_MANY_SURVIVE === &quot;one&quot; ? survivors.get === 1 : survivors.get &gt;= original); })(),
+  &quot;get declared all, 1 survives&quot;);
+
+say(&quot;\n== 4. set and append are not siblings&quot;);
+const m = upstream.mutations();
+check(&quot;set collapses two values to one&quot;, m.afterSet === &quot;tag=z&quot;, m.afterSet);
+check(&quot;append leaves three&quot;, m.afterAppend.split(&quot;tag=&quot;).length - 1 === 3, m.afterAppend);
+check(&quot;and the two calls look alike at the call site&quot;, true,
+  &quot;params.set(k, v) and params.append(k, v) - same arity, same shape, opposite semantics&quot;);
+
+say(&quot;\n== 5. what answers the same however it went&quot;);
+const rv = upstream.returnValues();
+const undef = Object.entries(rv).filter(([, v]) =&gt; v === undefined).map(([k]) =&gt; k);
+check(&quot;three mutators return undefined on every path&quot;, undef.length === 3, undef.join(&quot;, &quot;));
+check(&quot;and a missing key returns null, not undefined&quot;, rv[&quot;get(missing)&quot;] === null,
+  &quot;so `undefined` never distinguishes a mutation from anything&quot;);
+
+say(&quot;\n== 6. fail closed&quot;);
+check(&quot;an unresolvable accessor stops the run&quot;,
+  Boolean(accessors.resolve(&quot;params.first&quot;, loaded).problem),
+  accessors.resolve(&quot;params.first&quot;, loaded).problem);
+check(&quot;SCL names an accessor that exists&quot;, Boolean(loaded[policy.accessor()]), policy.accessor());
+
+say(&quot;\n== 7. what this entry cannot see&quot;);
+say(&quot;        MEASURABLE, NOT MEASURED&quot;);
+say(&quot;          - how often a repeated key reaches a real handler by accident&quot;);
+say(&quot;          - how many frameworks convert params to a plain object by default&quot;);
+say(&quot;        NOT MEASURABLE HERE&quot;);
+say(&quot;          - whether the WHATWG design is wrong. A query genuinely permits&quot;);
+say(&quot;            repetition, so a one-value accessor must choose, and `get` is&quot;);
+say(&quot;            named honestly for what it returns.&quot;);
+say(&quot;          - what any particular caller believed `get` meant.&quot;);
+
+say(failures.length ? `\n${failures.length} failure(s)` : &quot;\nall checks passed&quot;);
+for (const f of failures) say(`  - ${f}`);
+process.exit(failures.length ? 1 : 0);
+</code></pre></details><details><summary>main.mjs</summary><pre><code>// URLSearchParams: what each accessor lets through.
+//
+//   node src/main.mjs            the readings, the declarations, the mutators
+//   node src/main.mjs --strict   exit 1 if a declaration disagrees with behaviour
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as report from &quot;./DMS/report.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as accessors from &quot;./SMS/accessors.mjs&quot;;
+import * as upstream from &quot;./SMS/upstream.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const ARCH = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;architecture.json&quot;), &quot;utf8&quot;));
+
+const out = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+const { loaded, problems } = await accessors.load();
+if (problems.length) {
+  for (const problem of problems) out(`  !! ${problem}`);
+  process.exit(1);
+}
+
+out(`\n== one key, three values  [node ${upstream.version()}]\n\n  ${upstream.SAMPLE}`);
+report.readings(upstream.readings(), out);
+
+out(&quot;\n  get keeps the FIRST. Object.fromEntries keeps the LAST. Neither says so.&quot;);
+
+const measured = Object.fromEntries(Object.keys(loaded).map((name) =&gt;
+  [name, accessors.survivorCount(name, upstream.SAMPLE)]));
+out(&quot;\n== each accessor's declaration, checked by running it&quot;);
+const original = new URLSearchParams(upstream.SAMPLE).getAll(&quot;tag&quot;).length;
+report.declarations(loaded, measured, original, out);
+
+const wrong = Object.keys(loaded).filter((name) =&gt; loaded[name].HOW_MANY_SURVIVE === &quot;one&quot;
+  ? measured[name] !== 1
+  : measured[name] &lt; original);
+
+out(&quot;\n== set and append are not siblings&quot;);
+const m = upstream.mutations();
+out(`    before          ${m.before}`);
+out(`    after set       ${m.afterSet}`);
+out(`    after append    ${m.afterAppend}`);
+
+out(&quot;\n== what answers the same however it went&quot;);
+for (const [label, value] of Object.entries(upstream.returnValues())) {
+  out(`    ${label.padEnd(16)} ${JSON.stringify(value)}`);
+}
+
+const { module, problem } = accessors.resolve(policy.accessor(), loaded);
+if (problem) { out(`\n  !! ${problem}`); process.exit(1); }
+out(`\n== this deployment reads a single-valued field with \`${module.ACCESSOR}\``);
+out(`    which keeps ${module.KEEPS} and lets ${measured[module.ACCESSOR]} of 3 through`);
+
+report.gaps(out);
+
+if (process.argv.includes(&quot;--strict&quot;) &amp;&amp; wrong.length) {
+  for (const name of wrong) out(`\n  !! ${name}: declared ${loaded[name].HOW_MANY_SURVIVE}, measured ${measured[name]}`);
+  process.exit(1);
+}
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>
