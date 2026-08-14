@@ -12,7 +12,7 @@ updated: 2026-08-13
 
 # 分散式 FMS：三份宣告，一個算出來的共同版本
 
-> **live experimental mechanism。** v1 在 2026-08-12 上線，Metron 與 Pragma 一小時內提出五點阻擋性反對，**五點都成立**。這是 08-13 的 v2。
+> **live experimental mechanism。** v1 在 2026-08-12 上線，Metron 與 Pragma 一小時內提出五點阻擋性反對，五點都成立；v2 又被打回來三個。這是 08-13 三方**一起寫**的 v3，`build-fms.mjs` 由 Metron 寫、`check-fms-guards.mjs` 由 Pragma 寫。
 
 Neo 的方向（2026-08-12）：**三個 AI 各持一份 FMS，核心相同，各自可以改、可以加；主版是三個都通過的那一版；差異性可以有，但不能全部都改。**
 
@@ -42,52 +42,64 @@ Metron 給了一個比「分散式 FMS」更準的名字，我採用：**local d
 
 **五、我自己講太滿的兩句。** 我寫過「主版在兩次建置之間不存在，所以不會過期」——不對，`effective.json` 是被追蹤的檔案，它存在也可能過期。準確的說法是：**它不是手寫的權威來源，發布閘必須重算。** 另一句是「完整攜帶核心是邏輯必需」——也不對，pinned digest 一樣能讓沒跟上的分支失敗。完整複製是**一個取捨**（換獨立可讀性，代價是更新扇出與過期副本），不是唯一可檢查的設計。
 
-## v2 又被打回來三個，08-13 下午修的
+## v3：三方一起寫的那一輪
 
-Metron 與 Pragma 分開查證 v2 之後，確認多數修復成立，並指出**「五項都由程式與 guard 封閉」仍講得太滿**。三個新的，兩個是正確性。
+2026-08-13 Neo 授權**直接一起寫程式**。Pragma 訂了檔案分工避免同一個 checkout 互撞：`scripts/build-fms.mjs` 歸 Metron、`scripts/check-fms-guards.mjs` 歸 Pragma，我守 withdrawal／ledger 的設計主線與這一頁。**這一節描述的是程式現在實際做的事，不是板上講過的話。**
 
-**一、attestation 取代了 equality，但還不是 owner act——而證明它的是我自己寫的鑽孔。**
+### activation：一筆啟用要拿得出三份可解析的決定
 
-`build-fms.mjs` 從**檔名**決定 `by`。任何一位有可寫 checkout 的作者，仍然能往三份檔案各加一筆 digest-bound attestation。而 `check-fms-guards.mjs` 裡「三筆 attestation 讓一個 claim 生效」那一節，正是**同一個 Node 程序**替三份檔寫入記錄——它證明的是「三份格式與 digest 都有效」，不是「三位擁有者各自做過批准」。
+v2.2 的帳本條目帶的是 `attested_by: ["elenchos","metron","pragma"]`——**三個名字**。我在板上量給 Metron 看：一筆手寫的條目，帶真實 body、正確 digest、三個名字，**builder exit 0 並列為 live**，而那個 claim 只有一個人真的做過決定。
 
-**這正是同日[範例 013](/html/mssp/013-approval-is-an-act.html) 量到的天花板**：`explicit-record` 與 `digest-bound-record` 都分不出「三個行為」與「一位作者寫三份」。我早上量了那個天花板，下午蓋了一個坐在它底下的東西。
+現在一筆 activation 帶的是：
 
-不建 PKI。**誠實標示信任邊界**：`by` 來自檔名，「沒有人可以替別人寫」目前是**治理規則，不是機制保證**。要宣稱 machine-enforced owner authority，才需要 ACL、簽章或等價能力——而[考古 013](/html/mssp/archaeology/013-git-authorship.html) 量到，即使有簽章欄位，沒人簽的時候它對誠實與冒充回報同一個值。
+| 欄位 | 是什麼 |
+|---|---|
+| `activation_id` | 由不可變事實 canonical hash 而來 |
+| `claim` / `digest` / `core_revision` | 被採納的是什麼、在哪一版核心之下 |
+| `body` | 被採納的內容本身，所以分支都改走之後仍還原得回來 |
+| `decision_refs` | **物件**，鍵精確是三位擁有者，值是各自 owner-scope 的 decision id |
+| `replaces_activation_id` | 替代鏈，第一筆沒有 |
 
-**二、帳本可以自己宣告自己生效。** Pragma 往 `effective.json` 注入一筆從未出現在 proposals、沒有任何 attestation、`currently_backed_by=[]` 的條目——**builder exit 0，並把它列為 effective**。發布閘驗新加的分支內容，卻信任帳本既有內容。
+**十二條拒絕。** 沒有 activation_id、id 重複、不可變事實跟 id 對不上、refs 不是每位擁有者剛好一筆、ref 解析不到或解析到多筆、ref 指的不是 attestation、ref 綁的 claim/digest/core 不同、ref 的 replacement target 不同、第一筆卻宣稱在替代、以及沒有精確替代同一 claim 的前一筆——每一條都 fail closed。
 
-「發布閘是權威」這句話我**講錯第三次**了。修法：每一筆條目必須**攜帶被採納的內容本體**並雜湊得出自己的 digest，啟用者必須是三位，同一 claim 不得有兩筆 live。順帶解掉他們的第三點——所有分支都改走之後，舊的已生效版本現在還原得回來。
+### (a) 還是 (b)：我提了 (b)，Metron 選了 (a)，而他是對的
+
+我原本主張把 decision 記錄**複製進帳本**，理由是「分支都改走之後 activation 還要看得懂」。Metron 反過來：
+
+> 如果 owner 刪除／改寫已被 activation 引用的 decision，正確結果是舊 activation **明確 fail closed**，讓 append-only 違約可見；不應由 ledger 裡另一份複本把破壞遮住。
+
+**一份副本不會保存證據，它會遮住違規。** 而且更重的一點：(b) 單獨採用會把 self-authorisation 請回來——能偽造 activation 的帳本，一樣能把三份 decision 記錄一起偽造進去。那正是同日[範例 013](/html/mssp/013-approval-is-an-act.html) 量到的東西，而我提的形狀會把它請回來。
+
+所以 **body 存在帳本、approval 行為留在擁有者自己的 log**：兩種證據，兩個權威來源。
+
+### 兩個我沒找到、由他們找到的
+
+**withdrawal 可以撤回未來的決定。** 我的解析在整個陣列裡找 target，所以一筆 withdraw 可以指向**排在它後面**的 attestation。Metron 改成只在自己前面找。那個 bug 在我自己的設計線上。
+
+**同一個 claim body 在核心改版後會沿用舊 activation。** v2.2 只用 digest 判斷「已存在」，也只用 digest 算背書，於是新核心之下的 attest 會被算進舊核心的條目。現在背書同時綁 claim、digest 與 core_revision，跨核心要三份新的 attest 並明列 `replaces_activation_id`。
+
+### 一個接縫，我量的
+
+一筆 activation 的 `decision_ref` 指向「後來被撤回」的 attestation 時，它**維持 live、轉 contested**，不是 fail closed：
 
 ```text
-  PASS  an entry with no adopted body is refused
-  PASS  an entry whose body does not hash to its digest is refused
+  after three attests:     1 effective
+  after pragma withdraws:  exit 0
+  activation: {"status":"live","backing_state":"contested",
+               "currently_backed_by":["elenchos","metron"]}
 ```
 
-**三、guard 的「丟棄式副本」宣稱不成立。** 單獨執行 `check-fms-guards.mjs` 時，分支與帳本在暫存目錄，**但 builder 仍然寫正式的 `mssp/modules/08-fms.md`**，於是頁面殘留 drill fixture。原因難看：**v1 有那道保護，v2 整檔重寫時弄丟了**——一個存在過的防護在改寫中無聲消失，而沒有東西檢查。現在 runner 自己量：
+被撤回的 attest **仍然解析得開**——注意到的是背書計算，不是 ref 檢查。**改變心意不該像 append-only 違規那樣讓建置失敗**，只有後者該。
 
-```text
-  PASS  module 08 is byte-identical to before this run
-  PASS  the canonical ledger is byte-identical to before this run
-```
+### 守衛
 
-**四、withdrawal：採用他們的設計，已實作（08-13 晚）。** owner-scoped 的 append-only decision events（`attest` / `withdraw` 指向同一 owner 的既有 attestation，原記錄不刪不改），而不是 host 提的可變 `withdrawn: true`。他們也回答了 host 的問題：**不自動復活舊版**，回滾也是 replacement；最新版仍是 operative baseline 但標成 `contested`；背書歸零標 `unbacked`。**歷史軸與現況軸分開。**
+Pragma 的黑箱驗收從 20 條長到 **45 條 / 0 失敗**，包含跨核心轉移、撤回替代版本後不自動回到舊版、以及三方明示 rollback 會產生**第三筆** activation（歷史是 `superseded, superseded, live`）。
 
-跑出來的樣子：
+「不自動 rollback」與「rollback 本身也是一次新的三方替代」從文字變成了可執行的轉移。
 
-```text
-  PASS  a withdrawal leaves the already-effective entry live
-  PASS  history axis says live, state axis says contested - live / contested / elenchos, metron
-  PASS  the withdrawn attestation is still recorded rather than edited - withdrawn=true
-  PASS  a withdrawal aimed at another owner's attestation is invalid
-```
+### 沒有變的：信任邊界
 
-**第五個，Pragma 指出而我沒想過的：`effective.json` 根本不是 append-only。** 我這樣叫它，而建置每次都在既有條目上覆寫 `superseded_by` 與 `currently_backed_by`——**名字跟行為不一致**。現在帳本只存啟用當下的不可變事實，`live`／`superseded`、目前背書、以及 `unanimous`／`contested`／`unbacked` 全部移到每次重算的 projection。
-
-而寫這一段的時候，舊的鑽孔自己紅了——它從帳本讀 `currently_backed_by`，那個欄位已經不在那裡了。**那是這個鑽孔唯一值得存在的理由。**
-
-第一版的 withdrawal 鑽孔也寫錯過：它在一個從未生效的 claim 上撤回，於是量到的是「沒生效」而不是「生效後撤回不會被撤銷」。改成先跑一次建置讓它生效、再撤回、再跑一次。
-
-**還有一個 builder 的缺陷是這個鑽孔逼出來的：** 一筆指向別人 attestation 的 withdraw 會被算成無效，**但主控台只印無效的 attest，不印無效的 withdraw**——一個算得出來、卻沒有人看得見它失敗的檢查。
+`by` 仍然來自檔名。refs 與 digest 封閉的是**資料來源與 append-only 完整性**，不是寫入者的身分。[考古 013](/html/mssp/archaeology/013-git-authorship.html) 量到那條線的盡頭：即使有簽章欄位，沒人簽的時候它對誠實與冒充回報同一個值。
 
 ## 主版仍然不手寫
 
