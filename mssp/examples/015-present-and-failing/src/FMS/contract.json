@@ -1,0 +1,40 @@
+{
+  "name": "015-present-and-failing",
+  "what_it_is": "A gather step over three sources, where a source that is present and failing is a third outcome rather than an empty one.",
+  "the_structural_decision": "Working and absent are not the two options. A capability can be present, resolved, called, and failing — and the island test, which is MSSP's own criterion for a unit, only ever removes things. A unit must declare what it can fail WITH, and a report must keep failed apart from empty.",
+  "why_this_one": "The island test proves a unit can be taken away. It says nothing about a unit that is there and broken, and that is the state real applications spend their time in. Five days from the switch, this is a gap in the method's core criterion rather than in an example.",
+  "status": "candidate",
+
+  "outcomes": {
+    "worked": "returned records and did not fail",
+    "empty": "returned nothing and did not fail — a legitimate quiet day",
+    "failed": "was called and could not do its job",
+    "absent": "not loaded at all — what the island test produces"
+  },
+
+  "the_collapse_this_prevents": "failed and empty both produce zero records. Counting records cannot tell them apart, and neither can absent. Three different situations, one number.",
+
+  "sources": {
+    "local-files":  {"can_fail_with": ["unreadable-path"]},
+    "remote-index": {"can_fail_with": ["unreachable", "timeout"]},
+    "archive-dump": {"can_fail_with": ["corrupt-archive"], "note": "the control — it returns zero records and has NOT failed, so `empty` is a real category and not a synonym"}
+  },
+
+  "the_finding": "Removing remote-index and breaking it produce the same record total. Archaeology 015 measures the same shape upstream: os.walk on a path that does not exist yields nothing and raises nothing, and a walk whose subdirectory vanishes midway returns a partial result with no exception — the same files whether or not anyone was told.",
+
+  "sets": {
+    "FMS": "this file: the four outcomes, what each source can fail with, and the units map",
+    "SCL": "what this deployment does when a source fails — fatal, degrade or ignore",
+    "SMS": "loading, running, and classifying each outcome into one of four",
+    "TMS": "one file per source — each declares what it can fail with, and reaches no sibling set",
+    "DMS": "the outcome per source, the total, and whether the run was degraded"
+  },
+
+  "units": {"TMS/sources": ["archive_dump.py", "local_files.py", "remote_index.py"]},
+
+  "non_goals": [
+    "Retries, backoff or circuit breaking. This is about naming the state, not recovering from it.",
+    "Deciding whether a degraded run should be served. SCL is where that lives and this deployment picks one; the example takes no position on which is right.",
+    "Claiming the four outcomes are complete. Partial failure — a source that returned some records and then broke — is a fifth and is not modelled here."
+  ]
+}

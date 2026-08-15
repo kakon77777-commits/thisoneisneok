@@ -522,6 +522,26 @@ module.exports = Object.assign({}, first, {
 <p><strong>代價與限制，寫在前面而不是註腳：</strong> 排程是寫死的。它證明一個失敗存在，<strong>對沒有人寫下來的那些排程什麼都沒證明</strong>。範例 012 自己把這句放在「沒有解決什麼」的第一項，因為它是這個做法的誠實上限，不是這一則的疏漏。</p>
 <p><strong>驗證方式：</strong> 20/20 之後的真實應用一定有多個寫入者。到時候要問的是這一條的成本——每個操作多一個 <code>REQUIRES</code> 是小事，而<strong>把排程當單元維護</strong>可能不是。兩種結果都有資訊。</p>
 <hr>
+<h3>改良點 13：孤島測試只會移除，它不會弄壞</h3>
+<p><a href="#%E8%A8%AD%E8%A8%88%E5%84%AA%E9%BB%9E">設計優點 4</a> 說孤島測試「把模組獨立變成會失敗的斷言」。那句話成立，而它成立的範圍比我寫的窄：<strong>它拿走一個單元，看系統還剩什麼。它從來沒有讓一個單元「在那裡而且壞掉」。</strong></p>
+<p><a href="/html/mssp/015-present-and-failing.html">範例 015</a> 把這件事量出來：</p>
+<pre><code class="language-text">                           records   outcome for remote-index
+  removed (island test)    2         absent
+  present and failing      2         failed
+</code></pre>
+<p><strong>總數一樣。</strong> 上面那一列是孤島測試做得出來的，下面那一列不是——而下面那一列才是運行中的系統在壞日子裡待的地方。</p>
+<p><strong>能用與不存在不是兩個選項。</strong> 至少四個：<code>worked</code>／<code>empty</code>／<code>failed</code>／<code>absent</code>，而且<strong>後三個的紀錄數都是零</strong>。用計數去看，三種情況是同一個數字。</p>
+<p>具體提案兩條：</p>
+<ol>
+<li><strong>每個 TMS 單元要宣告「它會用什麼方式失敗」</strong>（<code>CAN_FAIL_WITH</code>），不只是「它可能失敗」。宣告不出來的單元，沒有辦法被回報成 degraded——它只會被回報成空的。</li>
+<li><strong>孤島測試要多一節：把單元留在原地弄壞。</strong> 目前的第一節證明「拿掉會怎樣」，新的一節證明「壞掉會怎樣」，而<strong>兩者的差別必須看得見</strong>，否則報告分不出來。</li>
+</ol>
+<p><strong>還要一個對照組，這是範例 015 學到的：</strong> 一個<strong>回傳零筆而且沒有失敗</strong>的單元。沒有它，「零筆」與「失敗」就是同一個觀察，而那一節不可能失敗。範例 015 的 <code>archive-dump</code> 只為了這個存在。</p>
+<p><strong>上游確認：</strong> 同日的<a href="/html/mssp/archaeology/015-cpython-os-walk.html">考古 015</a> 量到 <code>os.walk</code> 的預設吞掉走訪途中的錯誤——一個子目錄在被走訪前消失，<strong>預設模式與 <code>onerror</code> 模式回傳同一份檔案清單</strong>，差別只在有沒有人被告知。而「走訪什麼都沒找到」的兩個原因<strong>確實不同</strong>（1 列 vs 0 列），只是慣用的 <code>for _, _, files in os.walk(top)</code> 把那個判別器銷毀。</p>
+<p><strong>代價：</strong> 每個單元多一個欄位，每個孤島測試多一節。而且弄壞一個單元比拿掉它難寫——你得先知道它會怎麼壞，那正是<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 6</a> 對檢查說過的同一句話。</p>
+<p><strong>已知沒有解決的：</strong> <strong>部分失敗</strong>。一個回了一些紀錄然後才壞掉的單元是第五種結果，範例 015 的分類器會叫它 <code>worked</code>。那一則自己把這個洞寫在孤島測試裡，而不是留給別人發現。</p>
+<p><strong>驗證方式：</strong> 20/20 之後的真實應用會一直處在這個狀態。到時候要問的是這一條的成本——如果每個單元都得宣告失敗模式而多數宣告從來沒被用到，那它就是又一個沒人讀的欄位；如果報告因此第一次能說出「這次跑是降級的」，那就值得。</p>
+<hr>
 <h2>開發路線：四個 MVP 與回饋迴圈</h2>
 <p><a href="/research">程式研究區</a>的四份研究不會停在論文。每一份要先做出 MVP，而 MVP 本身用 MSSP 蓋——於是它同時是產品，也是這個方法在中等規模上的證據。</p>
 <table>

@@ -1,8 +1,26 @@
 {
   "site": "https://thisoneisneok.com",
-  "count": 14,
+  "count": 15,
   "note": "Open-source projects read structurally, one a day. Each entry names the exact version examined and ships a runnable re-cut of one seam.",
   "entries": [
+    {
+      "id": "015-cpython-os-walk",
+      "project": "CPython os.walk",
+      "license": "PSF-2.0",
+      "examined_version": "measured at run time",
+      "upstream": "https://github.com/python/cpython/blob/main/Lib/os.py",
+      "title": {
+        "zh": "一次半途壞掉的走訪，跟一次完整的走訪，是同一個值",
+        "en": "A traversal that broke partway and one that did not are the same value"
+      },
+      "summary": {
+        "zh": "範例 015 主張「能用與不存在不是兩個選項」，而 `os.walk` 是那個第三狀態被大量製造卻沒有名字的地方：**預設吞掉錯誤、繼續走、交回一份看起來完整的結果**。一個子目錄在頂層列出之後、走訪之前消失（刪除、權限變更、另一個行程移走它都會這樣），預設模式與 `onerror` 模式**回傳同一份檔案清單**，差別只在有沒有人被告知——跟範例 012 在遺失更新上量到的是同一個形狀。原始碼裡處理這件事的只有一個分支 `if onerror is not None:`。第二個發現更刁：「走訪什麼都沒找到」的兩個原因**確實不同**（空目錄 yield 一列、不存在的路徑 yield 零列），但沒有人那樣用——大家寫 `for _, _, files in os.walk(top)` 收集 files，兩邊都是 0。**判別器在產生器裡，在被正常使用的那一刻消失**，跟考古 011 的 `d[k] is d[k]` 同一族。預設不適合改：一個對每個讀不到的目錄都拋例外的走訪在真實檔案系統上沒辦法用，`onerror` 存在正是因為沒有一個預設適合所有人；缺陷在於吞掉之後的結果跟沒有錯誤的結果長得一模一樣，而呼叫端沒有辦法事後問。",
+        "en": "Example 015 argues that working and absent are not the two options, and os.walk is where that third state is manufactured constantly and named nowhere - the default swallows errors, keeps going, and returns a result that looks complete. A subdirectory that disappears between the top-level listing and its visit, whether by deletion, a permission change or another process moving it, produces the same file list under both the default and an onerror callback, and the only difference is whether anybody was told - the same shape example 012 found in a lost update. One branch in the source decides it - if onerror is not None. The second finding is sharper: the two causes of \"the walk found nothing\" do differ, since an empty directory yields one row and a missing path yields none, but nobody uses it that way. The idiomatic loop collects files and both give zero, so the discriminator lives in the generator and vanishes the moment it is used normally - the same family as archaeology 011's identity check. The default should not be changed: a traversal raising on every unreadable directory would be unusable on a real filesystem, and onerror exists precisely because no single default suits everyone. The defect is that the swallowed result is indistinguishable from a clean one, with no way to ask afterwards."
+      },
+      "date": "2026-08-15",
+      "verdict": "a-partial-traversal-and-a-complete-one-are-the-same-value",
+      "url": "https://thisoneisneok.com/html/mssp/archaeology/015-cpython-os-walk.html"
+    },
     {
       "id": "014-urlsearchparams",
       "project": "WHATWG URL Standard (URLSearchParams)",

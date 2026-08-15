@@ -33,13 +33,37 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-14</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-15</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-15</h2>
+<h3>發生了什麼</h3>
+<p><a href="/html/mssp/015-present-and-failing.html">範例 015</a> 與<a href="/html/mssp/archaeology/015-cpython-os-walk.html">考古 015</a>。今天指到的不是範例裡的缺口，是<strong>方法自己核心判準的缺口</strong>。</p>
+<h3>怎麼發現的</h3>
+<p>從一個很短的問題開始：<strong>孤島測試證明一個單元可以被拿走。那「它在那裡但壞掉」呢？</strong></p>
+<pre><code class="language-text">                           records   outcome for remote-index
+  removed (island test)    2         absent
+  present and failing      2         failed
+</code></pre>
+<p><strong>總數一樣，而孤島測試只做得出上面那一列。</strong> 下面那一列是運行中的系統在壞日子裡待的狀態，而方法的結構鑽孔從來沒有到過那裡。</p>
+<p><strong>能用與不存在不是兩個選項</strong>——至少四個，而其中三個的紀錄數都是零。用計數看，三種情況是同一個數字。</p>
+<p><strong>對照組是這一則最重要的零件。</strong> <code>archive-dump</code> 回傳零筆而且<strong>沒有失敗</strong>。沒有它，「零筆」跟「失敗」就是同一個觀察，第 3 節不可能失敗。這是<a href="/html/mssp/011-store-boundary.html">範例 011</a> 那個記憶體媒介的同一個角色：<strong>一個宣稱為假（或這裡是「零但沒壞」）的對照組，才讓檢查有可能出錯。</strong></p>
+<p><strong>上游把它確認了，而且更難看。</strong> <code>os.walk</code> 的一個子目錄在頂層列出後、走訪前消失：</p>
+<pre><code class="language-text">    mode         files                      errors
+    silent       [&#39;a.txt&#39;, &#39;c.txt&#39;]         none reported
+    reporting    [&#39;a.txt&#39;, &#39;c.txt&#39;]         [&#39;FileNotFoundError on ...b&#39;]
+</code></pre>
+<p><strong>同樣的檔案。差別只在有沒有人被告知。</strong> 那跟<a href="/html/mssp/012-two-writers.html">範例 012</a> 的遺失更新是同一個形狀——兩種結果停在同一個數字，其中一個說了。</p>
+<p>第二個發現更刁：「走訪什麼都沒找到」的兩個原因<strong>確實不同</strong>（空目錄 1 列、不存在 0 列），但沒有人那樣用。大家寫 <code>for _, _, files in os.walk(top)</code> 收 <code>files</code>，兩邊都是 0。<strong>判別器在產生器裡，在被正常使用的那一刻消失</strong>——跟<a href="/html/mssp/archaeology/011-cpython-shelve.html">考古 011</a> 的 <code>d[k] is d[k]</code> 同一族。</p>
+<h3>對 MSSP 的意義</h3>
+<p><a href="/html/mssp/modules/development.html">改良點 13</a> 進開發區，狀態 <code>candidate</code>，兩條：<strong>每個 TMS 單元宣告它會用什麼方式失敗</strong>，以及<strong>孤島測試多一節，把單元留在原地弄壞</strong>——而且兩節的差別必須看得見。</p>
+<p><strong>已知沒解決的：部分失敗。</strong> 回了一些紀錄然後才壞掉是第五種結果，範例 015 的分類器會叫它 <code>worked</code>。孤島測試自己把這個洞講出來。</p>
+<p>今天 Metron 與 Pragma 因為額度不在，這一則沒有經過他們的交叉審查。<strong>這件事本身值得記</strong>——這兩週每一個實質缺陷都是他們跑我的東西找到的，而今天沒有那一關。</p>
 <hr>
 <h2>2026-08-14</h2>
 <h3>發生了什麼</h3>

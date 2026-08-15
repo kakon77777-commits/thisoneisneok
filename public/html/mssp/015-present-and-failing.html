@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>能用與不存在，不是兩個選項 | MSSP | Neo.K</title>
+<meta name="description" content="這一則指的是 **MSSP 自己核心判準的缺口**：孤島測試證明一個單元可以被**移除**，它對「單元在那裡、被解析了、被呼叫了、而且失敗」一個字都沒說——而那正是運行中的系統在壞日子裡待的狀態。`--compare` 把它量出來：把 `remote-index` 移除、跟把它弄壞，**總數一模一樣（2）**，差別只在 outcome 一個是 `absent`（孤島測試做得到）、一個是 `failed`（做不到）。所以一個單元要宣告**它會用什麼方式失敗**，而報告要把 `failed` 跟 `empty` 分開——因為兩個都是零。`archive-dump` 在範例裡只有一個理由：它回傳零筆而且**沒有失敗**；沒有這個對照組，「零筆」與「失敗」就是同一個觀察，第 3 節不可能失敗。同日的考古 015 量到這個狀態在上游被大量製造卻沒有名字：`os.walk` 的子目錄在走到一半消失，預設模式與 `onerror` 模式**回傳同一份檔案清單**，差別只在有沒有人被告知。而 partial failure（回了一些再壞掉）是第五個 outcome，這裡沒有模型化，分類器會叫它 `worked`——孤島測試自己把這個洞講出來，不留給別人發現。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/015-present-and-failing.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>015-present-and-failing</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>015-present-and-failing</span></div>
+    <div><b>語言</b><span>python</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-15</span></div>
+    <div><b>行數</b><span>384</span></div>
+    <div><b>執行</b><span><code>python src/main.py</code></span></div>
+  </section>
+  <article class="content"><h1>015 — Working and absent are not the two options</h1>
+<blockquote>
+<p><code>candidate</code>. This one names a gap in MSSP&#39;s own core criterion, not in an example.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>It gathers records from three sources and keeps four outcomes apart instead of
+counting them.</p>
+<pre><code class="language-bash">python src/main.py             # the run under the policy SCL names
+python src/main.py --compare   # remote-index removed, and remote-index broken
+python src/main.py --strict    # exit 1 when a source failed and the policy is fatal
+python src/island_test.py      # 24 checks across 7 sections
+</code></pre>
+<pre><code class="language-console">  source          outcome   records   failed with
+  -- archive-dump empty     0
+  ok local-files  worked    2
+  !! remote-index failed    0         unreachable
+
+  2 record(s) — DEGRADED: remote-index failed
+
+  what a count alone would have said:
+    archive-dump    0 records — and this is empty
+    remote-index    0 records — and this is failed
+    three different situations, one number
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>A capability can be present, resolved, called, and failing.</strong> That is a third
+state, and the method has no drill that produces it.</p>
+<pre><code class="language-console">$ python src/main.py --compare
+
+                           records   outcome for remote-index
+  removed (island test)    2         absent
+  present and failing      2         failed
+</code></pre>
+<p><strong>Same total.</strong> The island test — MSSP&#39;s own structural criterion — takes a unit
+away and sees what survives. It cannot produce the row underneath, and that row
+is where a running system spends its bad days.</p>
+<p>So a unit must declare <strong>what it can fail with</strong>, not merely that it might; and
+a report must keep <code>failed</code> apart from <code>empty</code>, because both are zero.</p>
+<h2>The island test — and <code>empty</code> as a category, not a synonym</h2>
+<p><code>archive-dump</code> is in the example for one reason: it returns zero records and has
+<strong>not</strong> failed. Without it, &quot;zero records&quot; and &quot;failure&quot; would be one observation
+and section 3 could not come out badly.</p>
+<pre><code class="language-text">  PASS  archive-dump returned zero records
+  PASS  and it did NOT fail - the control
+  PASS  remote-index also returned zero records
+  PASS  and it DID fail
+  PASS  so a count cannot separate them, and the outcome field can - 0 == 0, empty != failed
+</code></pre>
+<h2>Upstream, the same day</h2>
+<p><a href="/html/mssp/archaeology/015-cpython-os-walk.html">Archaeology 015</a> measures where
+this state is produced constantly and named nowhere. A subdirectory that
+disappears between <code>os.walk</code>&#39;s top-level listing and its visit:</p>
+<table>
+<thead>
+<tr>
+<th>mode</th>
+<th>files</th>
+<th>errors</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>default (<code>onerror=None</code>)</td>
+<td><code>[&#39;a.txt&#39;, &#39;c.txt&#39;]</code></td>
+<td>none reported</td>
+</tr>
+<tr>
+<td>with <code>onerror</code></td>
+<td><code>[&#39;a.txt&#39;, &#39;c.txt&#39;]</code></td>
+<td><code>FileNotFoundError on b</code></td>
+</tr>
+</tbody></table>
+<p><strong>Same files. The only difference is whether anybody was told</strong> — the same shape
+<a href="/html/mssp/012-two-writers.html">example 012</a> found in a lost update.</p>
+<h2>What this example does not solve</h2>
+<p><strong>Measurable, not measured.</strong> How often a real source is present-and-failing
+rather than absent, and what a degraded run costs a caller who served it as
+complete.</p>
+<p><strong>Not measurable here.</strong> Whether a degraded run should be served at all —
+<code>fatal</code>, <code>degrade</code> and <code>ignore</code> are all defensible, and SCL picks one.</p>
+<p><strong>And a known hole rather than an oversight: partial failure.</strong> A source that
+returned some records and <em>then</em> broke is a fifth outcome, and the classifier
+here would call it <code>worked</code>. The island test says so out loud rather than
+leaving it for someone to find.</p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;015-present-and-failing&quot;,
+  &quot;what_it_is&quot;: &quot;A gather step over three sources, where a source that is present and failing is a third outcome rather than an empty one.&quot;,
+  &quot;the_structural_decision&quot;: &quot;Working and absent are not the two options. A capability can be present, resolved, called, and failing — and the island test, which is MSSP's own criterion for a unit, only ever removes things. A unit must declare what it can fail WITH, and a report must keep failed apart from empty.&quot;,
+  &quot;why_this_one&quot;: &quot;The island test proves a unit can be taken away. It says nothing about a unit that is there and broken, and that is the state real applications spend their time in. Five days from the switch, this is a gap in the method's core criterion rather than in an example.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+
+  &quot;outcomes&quot;: {
+    &quot;worked&quot;: &quot;returned records and did not fail&quot;,
+    &quot;empty&quot;: &quot;returned nothing and did not fail — a legitimate quiet day&quot;,
+    &quot;failed&quot;: &quot;was called and could not do its job&quot;,
+    &quot;absent&quot;: &quot;not loaded at all — what the island test produces&quot;
+  },
+
+  &quot;the_collapse_this_prevents&quot;: &quot;failed and empty both produce zero records. Counting records cannot tell them apart, and neither can absent. Three different situations, one number.&quot;,
+
+  &quot;sources&quot;: {
+    &quot;local-files&quot;:  {&quot;can_fail_with&quot;: [&quot;unreadable-path&quot;]},
+    &quot;remote-index&quot;: {&quot;can_fail_with&quot;: [&quot;unreachable&quot;, &quot;timeout&quot;]},
+    &quot;archive-dump&quot;: {&quot;can_fail_with&quot;: [&quot;corrupt-archive&quot;], &quot;note&quot;: &quot;the control — it returns zero records and has NOT failed, so `empty` is a real category and not a synonym&quot;}
+  },
+
+  &quot;the_finding&quot;: &quot;Removing remote-index and breaking it produce the same record total. Archaeology 015 measures the same shape upstream: os.walk on a path that does not exist yields nothing and raises nothing, and a walk whose subdirectory vanishes midway returns a partial result with no exception — the same files whether or not anyone was told.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the four outcomes, what each source can fail with, and the units map&quot;,
+    &quot;SCL&quot;: &quot;what this deployment does when a source fails — fatal, degrade or ignore&quot;,
+    &quot;SMS&quot;: &quot;loading, running, and classifying each outcome into one of four&quot;,
+    &quot;TMS&quot;: &quot;one file per source — each declares what it can fail with, and reaches no sibling set&quot;,
+    &quot;DMS&quot;: &quot;the outcome per source, the total, and whether the run was degraded&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/sources&quot;: [&quot;archive_dump.py&quot;, &quot;local_files.py&quot;, &quot;remote_index.py&quot;]},
+
+  &quot;non_goals&quot;: [
+    &quot;Retries, backoff or circuit breaking. This is about naming the state, not recovering from it.&quot;,
+    &quot;Deciding whether a degraded run should be served. SCL is where that lives and this deployment picks one; the example takes no position on which is right.&quot;,
+    &quot;Claiming the four outcomes are complete. Partial failure — a source that returned some records and then broke — is a fifth and is not modelled here.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;on_source_failure&quot;: &quot;degrade&quot;,
+  &quot;a_degraded_run_must_say_so&quot;: true,
+  &quot;_note&quot;: &quot;island_test.py runs every policy regardless of what this says. Options: fatal, degrade, ignore.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;What this deployment does when a source fails.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+on_failure = lambda: _C[&quot;on_source_failure&quot;]                          # noqa: E731
+must_say_so = lambda: bool(_C[&quot;a_degraded_run_must_say_so&quot;])          # noqa: E731
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/gather.py</summary><pre><code>&quot;&quot;&quot;Load the sources, run them, and keep the three outcomes apart.
+
+The one rule this example adds: a run has three outcomes per unit, not two.
+worked / empty / failed. Collapsing `failed` into `empty` is what makes a
+degraded run report as a successful one.
+&quot;&quot;&quot;
+import importlib
+
+SOURCES = [&quot;local_files&quot;, &quot;remote_index&quot;, &quot;archive_dump&quot;]
+
+
+def load():
+    loaded, problems = {}, []
+    for module_name in SOURCES:
+        try:
+            module = importlib.import_module(f&quot;TMS.sources.{module_name}&quot;)
+        except ModuleNotFoundError:
+            problems.append(f'source &quot;{module_name}&quot; has no module - fail closed')
+            continue
+        for attribute in (&quot;NAME&quot;, &quot;CAN_FAIL_WITH&quot;, &quot;collect&quot;):
+            if not hasattr(module, attribute):
+                problems.append(f&quot;{module_name} does not declare {attribute}&quot;)
+        if not getattr(module, &quot;CAN_FAIL_WITH&quot;, None):
+            problems.append(f&quot;{module_name}: CAN_FAIL_WITH is empty - a unit that cannot say &quot;
+                            f&quot;what a bad day looks like cannot be reported as degraded&quot;)
+        loaded[module.NAME] = module
+    return loaded, problems
+
+
+def resolve(name, loaded):
+    module = loaded.get(name)
+    if module is None:
+        return None, f'source &quot;{name}&quot; has no implementation - fail closed (known: {&quot;, &quot;.join(sorted(loaded))})'
+    return module, None
+
+
+def gather(loaded, absent=()):
+    &quot;&quot;&quot;Run every source that has not been removed, and classify each outcome.&quot;&quot;&quot;
+    rows = []
+    for name in sorted(loaded):
+        if name in absent:
+            rows.append({&quot;source&quot;: name, &quot;outcome&quot;: &quot;absent&quot;, &quot;records&quot;: 0, &quot;failed&quot;: None})
+            continue
+        result = loaded[name].collect()
+        outcome = &quot;failed&quot; if result[&quot;failed&quot;] else (&quot;worked&quot; if result[&quot;records&quot;] else &quot;empty&quot;)
+        rows.append({&quot;source&quot;: name, &quot;outcome&quot;: outcome,
+                     &quot;records&quot;: len(result[&quot;records&quot;]), &quot;failed&quot;: result[&quot;failed&quot;]})
+    return rows
+
+
+def total(rows):
+    return sum(row[&quot;records&quot;] for row in rows)
+
+
+def degraded(rows):
+    return [row for row in rows if row[&quot;outcome&quot;] == &quot;failed&quot;]
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/sources/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/sources/archive_dump.py</summary><pre><code>&quot;&quot;&quot;A source that legitimately has nothing today.
+
+The control. Without a unit that returns zero records and has NOT failed, an
+empty result and a failure are the same observation, and the report cannot be
+shown to distinguish them.
+&quot;&quot;&quot;
+NAME = &quot;archive-dump&quot;
+CAN_FAIL_WITH = [&quot;corrupt-archive&quot;]
+
+
+def collect():
+    return {&quot;records&quot;: [], &quot;failed&quot;: None}
+</code></pre></details><details><summary>TMS/sources/local_files.py</summary><pre><code>&quot;&quot;&quot;A source that works.
+
+Every unit here declares what it can fail WITH, not merely that it might. The
+island test removes units; nothing in the method until now asked a unit what a
+bad day looks like.
+&quot;&quot;&quot;
+NAME = &quot;local-files&quot;
+CAN_FAIL_WITH = [&quot;unreadable-path&quot;]
+
+
+def collect():
+    return {&quot;records&quot;: [{&quot;id&quot;: &quot;L-1&quot;}, {&quot;id&quot;: &quot;L-2&quot;}], &quot;failed&quot;: None}
+</code></pre></details><details><summary>TMS/sources/remote_index.py</summary><pre><code>&quot;&quot;&quot;A source that is present and failing.
+
+Not absent — loaded, resolved, called, and returning nothing because the thing
+it depends on is unavailable. This is the state the island test cannot produce:
+removing this unit and breaking it give the same record count.
+&quot;&quot;&quot;
+NAME = &quot;remote-index&quot;
+CAN_FAIL_WITH = [&quot;unreachable&quot;, &quot;timeout&quot;]
+
+
+def collect():
+    return {&quot;records&quot;: [], &quot;failed&quot;: &quot;unreachable&quot;}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;The outcome per source, and whether the run was degraded.&quot;&quot;&quot;
+
+MARK = {&quot;worked&quot;: &quot;ok &quot;, &quot;empty&quot;: &quot;-- &quot;, &quot;failed&quot;: &quot;!! &quot;, &quot;absent&quot;: &quot;   &quot;}
+
+
+def outcomes(rows, out):
+    out(f&quot;\n  {'source':&lt;15} {'outcome':&lt;9} {'records':&lt;9} failed with&quot;)
+    for row in rows:
+        out(f&quot;  {MARK[row['outcome']]}{row['source']:&lt;12} {row['outcome']:&lt;9} &quot;
+            f&quot;{row['records']:&lt;9} {row['failed'] or ''}&quot;)
+
+
+def headline(rows, total, degraded, out, must_say_so):
+    &quot;&quot;&quot;The line a caller reads. It is the whole point that it cannot be just a number.&quot;&quot;&quot;
+    if degraded and must_say_so:
+        out(f&quot;\n  {total} record(s) — DEGRADED: {', '.join(r['source'] for r in degraded)} failed&quot;)
+    else:
+        out(f&quot;\n  {total} record(s)&quot;)
+
+
+def collapse(rows, out):
+    out(&quot;\n  what a count alone would have said:&quot;)
+    for row in rows:
+        if row[&quot;records&quot;] == 0:
+            out(f&quot;    {row['source']:&lt;15} 0 records — and this is {row['outcome']}&quot;)
+    out(&quot;    three different situations, one number&quot;)
+
+
+def gaps(out):
+    out(&quot;\n  measurable, not measured here:&quot;)
+    out(&quot;    - how often a real source is present-and-failing rather than absent&quot;)
+    out(&quot;    - what a degraded run costs a caller who served it as complete&quot;)
+    out(&quot;\n  not measurable by this program at all:&quot;)
+    out(&quot;    - whether a degraded run should be served. fatal, degrade and ignore&quot;)
+    out(&quot;      are all defensible; this deployment picks one and says which.&quot;)
+    out(&quot;    - partial failure. A source that returned some records and THEN broke&quot;)
+    out(&quot;      is a fifth outcome and is not modelled — the classifier here would&quot;)
+    out(&quot;      call it `worked`.&quot;)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, and the state the island test cannot produce.
+
+    python src/island_test.py
+
+Section 2 is the point: the drill this method has always used — remove the unit
+and see what happens — and the state next to it that the drill cannot reach.
+&quot;&quot;&quot;
+import json
+import pathlib
+import re
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import gather  # noqa: E402
+
+CONTRACT = json.loads((HERE / &quot;FMS&quot; / &quot;contract.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+LOADED, PROBLEMS = gather.load()
+ROWS = gather.gather(LOADED)
+row = lambda name: next(r for r in ROWS if r[&quot;source&quot;] == name)  # noqa: E731
+
+print(&quot;\n== 1. every source is an island, says what a bad day looks like, and FMS matches the tree&quot;)
+check(&quot;all three sources loaded with no problems&quot;, not PROBLEMS, &quot;; &quot;.join(PROBLEMS))
+source_dir = HERE / &quot;TMS&quot; / &quot;sources&quot;
+files = sorted(f.name for f in source_dir.iterdir()
+               if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+for name in files:
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, (source_dir / name).read_text(encoding=&quot;utf-8&quot;), re.M)
+    check(f&quot;{name} reaches no sibling set&quot;, not reaches, &quot;, &quot;.join(reaches) or &quot;no imports at all&quot;)
+for where, expected in CONTRACT[&quot;units&quot;].items():
+    on_disk = sorted(f.name for f in (HERE / where).iterdir()
+                     if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+    check(f&quot;{where}: FMS declares {len(expected)}, on disk {len(on_disk)}&quot;,
+          on_disk == sorted(expected), &quot;, &quot;.join(on_disk))
+for name, module in sorted(LOADED.items()):
+    check(f&quot;{name} declares what it can fail with&quot;, bool(module.CAN_FAIL_WITH),
+          &quot;, &quot;.join(module.CAN_FAIL_WITH))
+
+print(&quot;\n== 2. the drill this method has, and the state it cannot produce&quot;)
+removed = gather.gather(LOADED, absent={&quot;remote-index&quot;})
+broken = ROWS
+check(&quot;removing remote-index and breaking it give the same total&quot;,
+      gather.total(removed) == gather.total(broken),
+      f&quot;{gather.total(removed)} both ways&quot;)
+check(&quot;and the record count is the only thing they agree on&quot;,
+      next(r for r in removed if r[&quot;source&quot;] == &quot;remote-index&quot;)[&quot;outcome&quot;]
+      != row(&quot;remote-index&quot;)[&quot;outcome&quot;],
+      f&quot;absent vs {row('remote-index')['outcome']}&quot;)
+check(&quot;the island test can produce `absent`&quot;,
+      next(r for r in removed if r[&quot;source&quot;] == &quot;remote-index&quot;)[&quot;outcome&quot;] == &quot;absent&quot;)
+check(&quot;it cannot produce `failed` - removal is not breakage&quot;,
+      all(r[&quot;outcome&quot;] != &quot;failed&quot; for r in removed if r[&quot;source&quot;] == &quot;remote-index&quot;),
+      &quot;so MSSP's own structural drill has never seen this state&quot;)
+
+print(&quot;\n== 3. `empty` is a category, not a synonym for `failed`&quot;)
+check(&quot;archive-dump returned zero records&quot;, row(&quot;archive-dump&quot;)[&quot;records&quot;] == 0)
+check(&quot;and it did NOT fail&quot;, row(&quot;archive-dump&quot;)[&quot;failed&quot;] is None,
+      &quot;the control - without it, zero records and failure are one observation&quot;)
+check(&quot;remote-index also returned zero records&quot;, row(&quot;remote-index&quot;)[&quot;records&quot;] == 0)
+check(&quot;and it DID fail&quot;, row(&quot;remote-index&quot;)[&quot;failed&quot;] == &quot;unreachable&quot;)
+check(&quot;so a count cannot separate them, and the outcome field can&quot;,
+      row(&quot;archive-dump&quot;)[&quot;records&quot;] == row(&quot;remote-index&quot;)[&quot;records&quot;]
+      and row(&quot;archive-dump&quot;)[&quot;outcome&quot;] != row(&quot;remote-index&quot;)[&quot;outcome&quot;],
+      &quot;0 == 0, empty != failed&quot;)
+
+print(&quot;\n== 4. a unit that cannot say what a bad day looks like is refused&quot;)
+
+
+class Silent:
+    NAME = &quot;silent-source&quot;
+    CAN_FAIL_WITH = []
+
+    @staticmethod
+    def collect():
+        return {&quot;records&quot;: [], &quot;failed&quot;: None}
+
+
+problems = []
+if not Silent.CAN_FAIL_WITH:
+    problems.append(&quot;CAN_FAIL_WITH is empty&quot;)
+check(&quot;a source declaring no failure modes is a problem, not a default&quot;,
+      bool(problems), problems[0])
+
+print(&quot;\n== 5. the report says degraded, and it can be made not to&quot;)
+lines = []
+report.headline(ROWS, gather.total(ROWS), gather.degraded(ROWS), lines.append, True)
+check(&quot;with must_say_so, the headline names the failure&quot;,
+      &quot;DEGRADED&quot; in lines[-1], lines[-1].strip())
+quiet = []
+report.headline(ROWS, gather.total(ROWS), gather.degraded(ROWS), quiet.append, False)
+check(&quot;without it, the same run reports as a plain count&quot;,
+      &quot;DEGRADED&quot; not in quiet[-1], quiet[-1].strip())
+check(&quot;and the two differ, which is what makes the first one evidence&quot;,
+      lines[-1] != quiet[-1])
+check(&quot;SCL currently requires it&quot;, policy.must_say_so(), str(policy.must_say_so()))
+
+print(&quot;\n== 6. fail closed&quot;)
+_, problem = gather.resolve(&quot;s3-bucket&quot;, LOADED)
+check(&quot;an unresolvable source stops the run&quot;, problem is not None, problem or &quot;resolved anyway&quot;)
+check(&quot;SCL names a policy the report understands&quot;,
+      policy.on_failure() in {&quot;fatal&quot;, &quot;degrade&quot;, &quot;ignore&quot;}, policy.on_failure())
+
+print(&quot;\n== 7. what this example does not solve&quot;)
+print(&quot;        MEASURABLE, NOT MEASURED&quot;)
+print(&quot;          - how often a real source is present-and-failing rather than absent&quot;)
+print(&quot;          - what a degraded run costs a caller who served it as complete&quot;)
+print(&quot;        NOT MEASURABLE HERE&quot;)
+print(&quot;          - whether a degraded run should be served. fatal, degrade and ignore&quot;)
+print(&quot;            are all defensible; this takes no position on which.&quot;)
+print(&quot;          - PARTIAL failure. A source that returned some records and then broke&quot;)
+print(&quot;            is a fifth outcome, and the classifier here would call it `worked`.&quot;)
+print(&quot;            That is a known hole, not an omission I noticed afterwards.&quot;)
+
+print(f&quot;\n{len(FAILURES)} failure(s)&quot; if FAILURES else &quot;\nall checks passed&quot;)
+for f in FAILURES:
+    print(f&quot;  - {f}&quot;)
+sys.exit(1 if FAILURES else 0)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Three sources, four outcomes, and one number that cannot tell them apart.
+
+    python src/main.py            the run under the policy SCL names
+    python src/main.py --strict   exit 1 when a source failed and the policy is fatal
+    python src/main.py --compare  the same task with remote-index absent, and broken
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import gather  # noqa: E402
+
+CONTRACT = json.loads((HERE / &quot;FMS&quot; / &quot;contract.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def main(argv):
+    out = lambda line=&quot;&quot;: sys.stdout.write(line + &quot;\n&quot;)  # noqa: E731
+    loaded, problems = gather.load()
+    if problems:
+        for problem in problems:
+            out(f&quot;  !! {problem}&quot;)
+        return 1
+
+    if &quot;--compare&quot; in argv:
+        out(&quot;\n== the same task, twice: remote-index removed, and remote-index broken&quot;)
+        removed = gather.gather(loaded, absent={&quot;remote-index&quot;})
+        broken = gather.gather(loaded)
+        out(f&quot;\n  {'':&lt;24} {'records':&lt;9} outcome for remote-index&quot;)
+        for label, rows in ((&quot;removed (island test)&quot;, removed), (&quot;present and failing&quot;, broken)):
+            row = next(r for r in rows if r[&quot;source&quot;] == &quot;remote-index&quot;)
+            out(f&quot;  {label:&lt;24} {gather.total(rows):&lt;9} {row['outcome']}&quot;)
+        out(&quot;\n  Same total. The island test can produce the first row and not the second,&quot;)
+        out(&quot;  so a method whose only structural drill is removal has never seen the&quot;)
+        out(&quot;  state a running system spends its bad days in.&quot;)
+        return 0
+
+    rows = gather.gather(loaded)
+    degraded = gather.degraded(rows)
+    out(f&quot;\n== gather, policy on failure: {policy.on_failure()}&quot;)
+    report.outcomes(rows, out)
+    report.headline(rows, gather.total(rows), degraded, out, policy.must_say_so())
+    report.collapse(rows, out)
+    report.gaps(out)
+
+    if &quot;--strict&quot; in argv and degraded and policy.on_failure() == &quot;fatal&quot;:
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

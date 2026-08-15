@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一次半途壞掉的走訪，跟一次完整的走訪，是同一個值 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="範例 015 主張「能用與不存在不是兩個選項」，而 `os.walk` 是那個第三狀態被大量製造卻沒有名字的地方：**預設吞掉錯誤、繼續走、交回一份看起來完整的結果**。一個子目錄在頂層列出之後、走訪之前消失（刪除、權限變更、另一個行程移走它都會這樣），預設模式與 `onerror` 模式**回傳同一份檔案清單**，差別只在有沒有人被告知——跟範例 012 在遺失更新上量到的是同一個形狀。原始碼裡處理這件事的只有一個分支 `if onerror is not None:`。第二個發現更刁：「走訪什麼都沒找到」的兩個原因**確實不同**（空目錄 yield 一列、不存在的路徑 yield 零列），但沒有人那樣用——大家寫 `for _, _, files in os.walk(top)` 收集 files，兩邊都是 0。**判別器在產生器裡，在被正常使用的那一刻消失**，跟考古 011 的 `d[k] is d[k]` 同一族。預設不適合改：一個對每個讀不到的目錄都拋例外的走訪在真實檔案系統上沒辦法用，`onerror` 存在正是因為沒有一個預設適合所有人；缺陷在於吞掉之後的結果跟沒有錯誤的結果長得一模一樣，而呼叫端沒有辦法事後問。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/015-cpython-os-walk.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>015-cpython-os-walk</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython os.walk</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>measured at run time</span></div>
+    <div><b>日期</b><span>2026-08-15</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/blob/main/Lib/os.py">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>015 — CPython <code>os.walk</code> 3.14.5：一次半途壞掉的走訪，跟一次完整的走訪，是同一個值</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/python/cpython/blob/main/Lib/os.py">CPython <code>Lib/os.py</code></a>，PSF-2.0。版本由執行時量出來。
+這一則不需要任何權限操作：一個不存在的路徑，以及一個在走訪途中消失的子目錄——兩個在運行中的系統裡都是日常。</p>
+</blockquote>
+<pre><code class="language-bash">python src/main.py            # 兩個原因、兩種模式
+python src/main.py --strict   # 這個部署如果安靜地走就 exit 1
+python src/island_test.py     # 17 項檢查，全部直接跑 CPython
+</code></pre>
+<h2>為什麼選它</h2>
+<p>同日的<a href="/html/mssp/015-present-and-failing.html">範例 015</a> 主張<strong>能用與不存在不是兩個選項</strong>——一個能力可以在那裡、被呼叫、而且失敗。</p>
+<p><code>os.walk</code> 是那個第三狀態被大量製造、卻沒有任何名字的地方：<strong>它的預設吞掉錯誤、繼續走，然後交回一份看起來完整的結果。</strong></p>
+<h2>原專案的結構地圖</h2>
+<p><code>os.walk(top, topdown=True, onerror=None, followlinks=False)</code></p>
+<p>一個子目錄在頂層列出之後、被走訪之前消失——刪除、權限變更、另一個行程移走它，都會這樣：</p>
+<pre><code class="language-text">    mode         files                      errors
+    silent       [&#39;a.txt&#39;, &#39;c.txt&#39;]         none reported
+    reporting    [&#39;a.txt&#39;, &#39;c.txt&#39;]         [&#39;FileNotFoundError on ...b&#39;]
+</code></pre>
+<p><strong>同樣的檔案。差別只在有沒有人被告知。</strong></p>
+<p>那跟<a href="/html/mssp/012-two-writers.html">範例 012</a> 在遺失更新上量到的是同一個形狀：兩種結果停在同一個數字，其中一個說了。</p>
+<p>而原始碼裡處理這件事的只有一個分支：</p>
+<pre><code class="language-python">    if onerror is not None:
+</code></pre>
+<p>沒有它，錯誤被丟掉，走訪繼續。</p>
+<h2>第二個發現：判別器存在，而慣用寫法把它銷毀</h2>
+<p>「走訪什麼都沒找到」有兩個原因，而它們<strong>確實不同</strong>：</p>
+<pre><code class="language-text">                           rows yielded   files collected
+    empty                  1              0
+    missing                0              0
+</code></pre>
+<p>空目錄 yield 一列，不存在的路徑 yield 零列。<strong>但沒有人是這樣用的</strong>——大家寫的是 <code>for _, _, files in os.walk(top)</code> 然後收集 <code>files</code>，而那個數字兩邊都是 0。</p>
+<p><strong>判別器在產生器裡，而它在被正常使用的那一刻消失。</strong> 這跟<a href="/html/mssp/archaeology/011-cpython-shelve.html">考古 011</a> 的 <code>d[k] is d[k]</code> 是同一族：一個存在、而沒有人行使的判別器。</p>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>兩種模式、各自回報什麼，以及 <code>units</code> 對照</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署用哪一種，以及安靜地走是不是致命的</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>依 id 解析模式，與跑真 <code>os.walk</code> 的探針</td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>一種模式一個檔——各自宣告<strong>有沒有人被告知</strong>，且不 import 任何東西</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td>兩個原因、兩種模式，以及看不到的部分</td>
+</tr>
+</tbody></table>
+<p>重切加的只有一件事：<strong>模式要宣告有沒有人被告知</strong>，而那份宣告用跑的驗。第 3b 節是鑽孔——一個宣稱會回報、實際上沒裝 callback 的模式，必須被抓到。</p>
+<h2>什麼不適合拆</h2>
+<p><strong>預設不適合改。</strong> 一個對每個讀不到的目錄都拋例外的走訪，在真實檔案系統上沒辦法用——掃一棵大樹一定會遇到權限、競態與符號連結。<code>onerror</code> 存在，正是因為<strong>沒有一個預設適合所有人</strong>。</p>
+<p>缺陷不在預設吞掉錯誤，在於<strong>吞掉之後的結果，跟沒有錯誤的結果長得一模一樣</strong>，而呼叫端沒有任何辦法事後問。</p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>量得到但這次沒量：</strong> 真實的走訪多常因為權限錯誤掉一個目錄；有多少呼叫端真的傳了 <code>onerror</code>。</p>
+<p><strong>這一則量不到：</strong> 任何一位呼叫端當初以為「空結果」是什麼意思。<strong>它量的是介面讓什麼通過，不是誰誤解了什麼。</strong></p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;015-cpython-os-walk&quot;,
+  &quot;upstream&quot;: &quot;CPython Lib/os.py — os.walk&quot;,
+  &quot;examined_version&quot;: &quot;measured at run time&quot;,
+  &quot;license&quot;: &quot;PSF-2.0&quot;,
+  &quot;what_it_is&quot;: &quot;The traversal every Python tool reaches for, and what it does with an error it meets on the way.&quot;,
+
+  &quot;why_this_one&quot;: &quot;Example 015 the same day argues that working and absent are not the two options — a capability can be present and failing. os.walk is where that state is produced constantly and named nowhere: its default swallows errors, continues, and returns a result that looks complete.&quot;,
+
+  &quot;modes&quot;: {
+    &quot;silent&quot;: {&quot;onerror&quot;: null, &quot;reports&quot;: false, &quot;note&quot;: &quot;the default&quot;},
+    &quot;reporting&quot;: {&quot;onerror&quot;: &quot;a callback&quot;, &quot;reports&quot;: true}
+  },
+
+  &quot;the_finding&quot;: &quot;A subdirectory that disappears between the top-level listing and its visit produces the SAME file list under both modes. The only difference is whether anyone was told. A partial traversal and a complete one are the same value.&quot;,
+
+  &quot;the_second_finding&quot;: &quot;'The walk found nothing' has two causes — an empty directory and a path that does not exist — and they DO differ: one yields a row, the other yields none. But the idiomatic `for _, _, files in os.walk(top)` collects files, and both give zero files. The discriminator exists and the ordinary way of using it destroys it.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the two modes, what each reports, and the units map&quot;,
+    &quot;SCL&quot;: &quot;which mode this deployment uses, and whether a silent traversal is fatal&quot;,
+    &quot;SMS&quot;: &quot;mode resolution by id and the probes against the real os.walk&quot;,
+    &quot;TMS&quot;: &quot;one file per mode — each declares whether anyone is told, and reaches no sibling set&quot;,
+    &quot;DMS&quot;: &quot;the two causes, the two modes, and the gaps&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/modes&quot;: [&quot;reporting.py&quot;, &quot;silent.py&quot;]},
+
+  &quot;non_goals&quot;: [
+    &quot;Saying the default is wrong. A traversal that raised on every unreadable directory would be unusable on a real filesystem, and onerror exists because no single default suits everyone.&quot;,
+    &quot;Reimplementing traversal. Every number comes from the platform's own os.walk.&quot;,
+    &quot;Any claim about how often this loses data in the wild.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;mode&quot;: &quot;reporting&quot;,
+  &quot;a_silent_traversal_is_fatal&quot;: true,
+  &quot;_note&quot;: &quot;main.py runs both modes regardless of what this says.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Which traversal mode this deployment uses.&quot;&quot;&quot;
+import json
+import pathlib
+
+_C = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+mode = lambda: _C[&quot;mode&quot;]                                              # noqa: E731
+silent_is_fatal = lambda: bool(_C[&quot;a_silent_traversal_is_fatal&quot;])      # noqa: E731
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/upstream.py</summary><pre><code>&quot;&quot;&quot;What os.walk actually does, measured on this interpreter.
+
+Nothing here needs special permissions: a directory that does not exist, and a
+directory that disappears between the top-level listing and the visit. Both are
+ordinary in a running system.
+&quot;&quot;&quot;
+import inspect
+import os
+import shutil
+import tempfile
+
+
+def build_tree(names=(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;)):
+    root = tempfile.mkdtemp()
+    for name in names:
+        os.makedirs(os.path.join(root, name))
+        open(os.path.join(root, name, f&quot;{name}.txt&quot;), &quot;w&quot;).close()
+    return root
+
+
+def empty_versus_missing():
+    &quot;&quot;&quot;Two causes of 'the walk found nothing', and what survives the idiomatic loop.&quot;&quot;&quot;
+    root = tempfile.mkdtemp()
+    empty = os.path.join(root, &quot;empty_dir&quot;)
+    os.makedirs(empty)
+    missing = os.path.join(root, &quot;does-not-exist&quot;)
+
+    def collected(top):
+        found = []
+        for _, _, files in os.walk(top):
+            found.extend(files)
+        return found
+
+    return {
+        &quot;empty&quot;: {&quot;rows&quot;: len(list(os.walk(empty))), &quot;files&quot;: len(collected(empty))},
+        &quot;missing&quot;: {&quot;rows&quot;: len(list(os.walk(missing))), &quot;files&quot;: len(collected(missing))},
+        &quot;raised&quot;: None,
+    }
+
+
+def vanishing_subdirectory(onerror=None):
+    &quot;&quot;&quot;Start the walk, delete a subdirectory before it is visited, keep walking.&quot;&quot;&quot;
+    root = build_tree()
+    errors = []
+    walker = os.walk(root, onerror=onerror(errors) if onerror else None)
+    next(walker)                                     # the top level lists a, b, c
+    shutil.rmtree(os.path.join(root, &quot;b&quot;))           # b is gone before its turn
+    found = []
+    for _, _, files in walker:
+        found.extend(files)
+    return {&quot;files&quot;: sorted(found), &quot;errors&quot;: errors, &quot;raised&quot;: None}
+
+
+def signature():
+    return str(inspect.signature(os.walk))
+
+
+def onerror_lines():
+    source = inspect.getsource(os.walk)
+    return [line.strip() for line in source.splitlines()
+            if &quot;onerror&quot; in line and line.strip().startswith((&quot;if&quot;, &quot;return&quot;))]
+</code></pre></details><details><summary>SMS/walks.py</summary><pre><code>&quot;&quot;&quot;The re-cut: a traversal mode declares whether anyone is told.&quot;&quot;&quot;
+import importlib
+
+MODES = [&quot;silent&quot;, &quot;reporting&quot;]
+
+
+def load():
+    loaded, problems = {}, []
+    for module_name in MODES:
+        try:
+            module = importlib.import_module(f&quot;TMS.modes.{module_name}&quot;)
+        except ModuleNotFoundError:
+            problems.append(f'mode &quot;{module_name}&quot; has no module - fail closed')
+            continue
+        for attribute in (&quot;NAME&quot;, &quot;REPORTS_ERRORS&quot;, &quot;WHAT_THE_CALLER_SEES&quot;):
+            if not hasattr(module, attribute):
+                problems.append(f&quot;{module_name} does not declare {attribute}&quot;)
+        loaded[module.NAME] = module
+    return loaded, problems
+
+
+def resolve(name, loaded):
+    module = loaded.get(name)
+    if module is None:
+        return None, f'mode &quot;{name}&quot; has no implementation - fail closed (known: {&quot;, &quot;.join(sorted(loaded))})'
+    return module, None
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/modes/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/modes/reporting.py</summary><pre><code>&quot;&quot;&quot;os.walk with an onerror callback.
+
+The same traversal, the same files, and one difference: somebody is told. The
+files that come back are identical either way, which is the whole finding.
+&quot;&quot;&quot;
+NAME = &quot;reporting&quot;
+REPORTS_ERRORS = True
+WHAT_THE_CALLER_SEES = &quot;the same list, plus the errors that shortened it&quot;
+
+
+def make_collector(into):
+    return lambda error: into.append(f&quot;{type(error).__name__} on {error.filename}&quot;)
+</code></pre></details><details><summary>TMS/modes/silent.py</summary><pre><code>&quot;&quot;&quot;os.walk's default: onerror=None.
+
+An error during the traversal is discarded. The walk continues, the caller gets
+a result that looks complete, and nothing anywhere says a directory was skipped.
+&quot;&quot;&quot;
+NAME = &quot;silent&quot;
+ONERROR = None
+REPORTS_ERRORS = False
+WHAT_THE_CALLER_SEES = &quot;a shorter list, indistinguishable from a smaller tree&quot;
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;The two causes, the two modes, and what none of it can see.&quot;&quot;&quot;
+
+
+def causes(measured, out):
+    out(&quot;\n  'the walk found nothing' — two causes:&quot;)
+    out(f&quot;    {'':&lt;22} {'rows yielded':&lt;14} files collected&quot;)
+    for label in (&quot;empty&quot;, &quot;missing&quot;):
+        row = measured[label]
+        out(f&quot;    {label:&lt;22} {row['rows']:&lt;14} {row['files']}&quot;)
+    out(&quot;\n    The rows differ. The files do not — and files is what the idiomatic&quot;)
+    out(&quot;    `for _, _, files in os.walk(top)` collects. The discriminator exists&quot;)
+    out(&quot;    and the ordinary way of using it destroys it.&quot;)
+
+
+def modes(silent, reporting, out):
+    out(&quot;\n  a subdirectory that disappears mid-walk:&quot;)
+    out(f&quot;    {'mode':&lt;12} {'files':&lt;26} errors&quot;)
+    out(f&quot;    {'silent':&lt;12} {str(silent['files']):&lt;26} {silent['errors'] or 'none reported'}&quot;)
+    out(f&quot;    {'reporting':&lt;12} {str(reporting['files']):&lt;26} {reporting['errors']}&quot;)
+    out(&quot;\n    Same files. The only difference is whether anybody was told.&quot;)
+
+
+def gaps(out):
+    out(&quot;\n  measurable, not measured here:&quot;)
+    out(&quot;    - how often a real traversal loses a directory to a permission error&quot;)
+    out(&quot;    - how many callers pass onerror at all&quot;)
+    out(&quot;\n  not measurable by this entry at all:&quot;)
+    out(&quot;    - whether the default is wrong. A traversal that raised on every&quot;)
+    out(&quot;      unreadable directory would be unusable on a real filesystem, and&quot;)
+    out(&quot;      onerror exists precisely because the default cannot suit everyone.&quot;)
+    out(&quot;    - what any caller believed an empty result meant.&quot;)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test.
+
+    python src/island_test.py
+
+Section 2 is the finding: a partial traversal and a complete one are the same
+value, and the only thing that differs is whether anyone was told.
+&quot;&quot;&quot;
+import json
+import pathlib
+import re
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from SCL import policy  # noqa: E402
+from SMS import upstream, walks  # noqa: E402
+from TMS.modes import reporting as reporting_mode  # noqa: E402
+
+ARCH = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+FAILURES = []
+
+
+def check(label, ok, detail=&quot;&quot;):
+    print(f&quot;  {'PASS' if ok else 'FAIL'}  {label}{' - ' + detail if detail else ''}&quot;)
+    if not ok:
+        FAILURES.append(label)
+
+
+LOADED, PROBLEMS = walks.load()
+
+print(&quot;\n== 1. every mode is an island, declares whether anyone is told, and FMS matches the tree&quot;)
+check(&quot;both modes loaded with no problems&quot;, not PROBLEMS, &quot;; &quot;.join(PROBLEMS))
+mode_dir = HERE / &quot;TMS&quot; / &quot;modes&quot;
+for name in sorted(f.name for f in mode_dir.iterdir()
+                   if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;):
+    reaches = re.findall(r&quot;^\s*(?:from|import)\s+(\S+)&quot;, (mode_dir / name).read_text(encoding=&quot;utf-8&quot;), re.M)
+    check(f&quot;{name} imports nothing&quot;, not reaches, &quot;, &quot;.join(reaches) or &quot;no imports at all&quot;)
+for where, expected in ARCH[&quot;units&quot;].items():
+    on_disk = sorted(f.name for f in (HERE / where).iterdir()
+                     if f.suffix == &quot;.py&quot; and f.name != &quot;__init__.py&quot;)
+    check(f&quot;{where}: FMS declares {len(expected)}, on disk {len(on_disk)}&quot;,
+          on_disk == sorted(expected), &quot;, &quot;.join(on_disk))
+check(&quot;exactly one mode reports errors&quot;,
+      sum(1 for m in LOADED.values() if m.REPORTS_ERRORS) == 1,
+      &quot;, &quot;.join(f&quot;{m.NAME}={m.REPORTS_ERRORS}&quot; for m in sorted(LOADED.values(), key=lambda m: m.NAME)))
+
+print(&quot;\n== 2. a partial traversal and a complete one are the same value&quot;)
+silent = upstream.vanishing_subdirectory()
+loud = upstream.vanishing_subdirectory(onerror=reporting_mode.make_collector)
+check(&quot;the same files come back either way&quot;, silent[&quot;files&quot;] == loud[&quot;files&quot;],
+      str(silent[&quot;files&quot;]))
+check(&quot;neither run raised&quot;, silent[&quot;raised&quot;] is None and loud[&quot;raised&quot;] is None)
+check(&quot;the silent run reports nothing&quot;, silent[&quot;errors&quot;] == [], str(silent[&quot;errors&quot;]))
+check(&quot;the reporting run names the directory that vanished&quot;,
+      len(loud[&quot;errors&quot;]) == 1 and &quot;FileNotFoundError&quot; in loud[&quot;errors&quot;][0],
+      loud[&quot;errors&quot;][0])
+check(&quot;so the only difference is whether anybody was told&quot;,
+      silent[&quot;files&quot;] == loud[&quot;files&quot;] and bool(loud[&quot;errors&quot;]) != bool(silent[&quot;errors&quot;]))
+
+print(&quot;\n== 3. the discriminator exists and the idiomatic loop destroys it&quot;)
+measured = upstream.empty_versus_missing()
+check(&quot;an empty directory and a missing one yield different row counts&quot;,
+      measured[&quot;empty&quot;][&quot;rows&quot;] != measured[&quot;missing&quot;][&quot;rows&quot;],
+      f&quot;{measured['empty']['rows']} vs {measured['missing']['rows']}&quot;)
+check(&quot;and the same number of files - which is what the usual loop collects&quot;,
+      measured[&quot;empty&quot;][&quot;files&quot;] == measured[&quot;missing&quot;][&quot;files&quot;],
+      f&quot;{measured['empty']['files']} both&quot;)
+check(&quot;neither raised&quot;, measured[&quot;raised&quot;] is None,
+      &quot;os.walk on a path that does not exist is not an error, it is an empty walk&quot;)
+
+print(&quot;\n== 3b. the drill: a mode that claims to report and does not&quot;)
+
+
+class Overclaiming:
+    NAME = &quot;claims-to-report&quot;
+    REPORTS_ERRORS = True
+    WHAT_THE_CALLER_SEES = &quot;nothing extra, despite the declaration&quot;
+
+    @staticmethod
+    def make_collector(into):
+        return None                        # the lie: no callback is installed
+
+
+probe = upstream.vanishing_subdirectory(onerror=Overclaiming.make_collector)
+check(&quot;a mode declaring REPORTS_ERRORS=True that reports nothing is caught&quot;,
+      Overclaiming.REPORTS_ERRORS and probe[&quot;errors&quot;] == [],
+      &quot;declared it reports, reported nothing&quot;)
+
+print(&quot;\n== 4. fail closed&quot;)
+_, problem = walks.resolve(&quot;raise-on-anything&quot;, LOADED)
+check(&quot;an unresolvable mode stops the run&quot;, problem is not None, problem or &quot;resolved anyway&quot;)
+check(&quot;SCL names a mode that exists&quot;, policy.mode() in LOADED, policy.mode())
+check(&quot;and this deployment picked the one that reports&quot;,
+      LOADED[policy.mode()].REPORTS_ERRORS, policy.mode())
+
+print(&quot;\n== 5. what this entry cannot see&quot;)
+print(&quot;        MEASURABLE, NOT MEASURED&quot;)
+print(&quot;          - how often a real traversal loses a directory to a permission error&quot;)
+print(&quot;          - how many callers pass onerror at all&quot;)
+print(&quot;        NOT MEASURABLE HERE&quot;)
+print(&quot;          - whether the default is wrong. A walk that raised on every&quot;)
+print(&quot;            unreadable directory would be unusable on a real filesystem,&quot;)
+print(&quot;            and onerror exists because no default suits everyone.&quot;)
+print(&quot;          - what any caller believed an empty result meant.&quot;)
+
+print(f&quot;\n{len(FAILURES)} failure(s)&quot; if FAILURES else &quot;\nall checks passed&quot;)
+for f in FAILURES:
+    print(f&quot;  - {f}&quot;)
+sys.exit(1 if FAILURES else 0)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;os.walk: what it does with an error it meets on the way.
+
+    python src/main.py            the two causes, the two modes
+    python src/main.py --strict   exit 1 if this deployment walks silently
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+
+from DMS import report  # noqa: E402
+from SCL import policy  # noqa: E402
+from SMS import upstream, walks  # noqa: E402
+from TMS.modes import reporting as reporting_mode  # noqa: E402
+
+ARCH = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def main(argv):
+    out = lambda line=&quot;&quot;: sys.stdout.write(line + &quot;\n&quot;)  # noqa: E731
+    loaded, problems = walks.load()
+    if problems:
+        for problem in problems:
+            out(f&quot;  !! {problem}&quot;)
+        return 1
+
+    out(f&quot;\n== os.walk{upstream.signature()}  [python {sys.version.split()[0]}]&quot;)
+    report.causes(upstream.empty_versus_missing(), out)
+    report.modes(upstream.vanishing_subdirectory(),
+                 upstream.vanishing_subdirectory(onerror=reporting_mode.make_collector), out)
+
+    out(&quot;\n== what the source says about onerror&quot;)
+    for line in upstream.onerror_lines():
+        out(f&quot;    {line}&quot;)
+    out(&quot;    one branch. Absent it, the error is discarded and the walk continues.&quot;)
+
+    module, problem = walks.resolve(policy.mode(), loaded)
+    if problem:
+        out(f&quot;\n  !! {problem}&quot;)
+        return 1
+    out(f&quot;\n== this deployment walks in `{module.NAME}` mode&quot;)
+    out(f&quot;    reports errors: {module.REPORTS_ERRORS}&quot;)
+    out(f&quot;    the caller sees: {module.WHAT_THE_CALLER_SEES}&quot;)
+
+    report.gaps(out)
+
+    if &quot;--strict&quot; in argv and not module.REPORTS_ERRORS and policy.silent_is_fatal():
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

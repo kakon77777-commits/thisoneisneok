@@ -1,0 +1,34 @@
+{
+  "name": "015-cpython-os-walk",
+  "upstream": "CPython Lib/os.py — os.walk",
+  "examined_version": "measured at run time",
+  "license": "PSF-2.0",
+  "what_it_is": "The traversal every Python tool reaches for, and what it does with an error it meets on the way.",
+
+  "why_this_one": "Example 015 the same day argues that working and absent are not the two options — a capability can be present and failing. os.walk is where that state is produced constantly and named nowhere: its default swallows errors, continues, and returns a result that looks complete.",
+
+  "modes": {
+    "silent": {"onerror": null, "reports": false, "note": "the default"},
+    "reporting": {"onerror": "a callback", "reports": true}
+  },
+
+  "the_finding": "A subdirectory that disappears between the top-level listing and its visit produces the SAME file list under both modes. The only difference is whether anyone was told. A partial traversal and a complete one are the same value.",
+
+  "the_second_finding": "'The walk found nothing' has two causes — an empty directory and a path that does not exist — and they DO differ: one yields a row, the other yields none. But the idiomatic `for _, _, files in os.walk(top)` collects files, and both give zero files. The discriminator exists and the ordinary way of using it destroys it.",
+
+  "sets": {
+    "FMS": "this file: the two modes, what each reports, and the units map",
+    "SCL": "which mode this deployment uses, and whether a silent traversal is fatal",
+    "SMS": "mode resolution by id and the probes against the real os.walk",
+    "TMS": "one file per mode — each declares whether anyone is told, and reaches no sibling set",
+    "DMS": "the two causes, the two modes, and the gaps"
+  },
+
+  "units": {"TMS/modes": ["reporting.py", "silent.py"]},
+
+  "non_goals": [
+    "Saying the default is wrong. A traversal that raised on every unreadable directory would be unusable on a real filesystem, and onerror exists because no single default suits everyone.",
+    "Reimplementing traversal. Every number comes from the platform's own os.walk.",
+    "Any claim about how often this loses data in the wild."
+  ]
+}

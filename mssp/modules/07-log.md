@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-14
+updated: 2026-08-15
 ---
 
 # 開發日誌
@@ -17,6 +17,50 @@ updated: 2026-08-14
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-15
+
+### 發生了什麼
+
+[範例 015](/html/mssp/015-present-and-failing.html) 與[考古 015](/html/mssp/archaeology/015-cpython-os-walk.html)。今天指到的不是範例裡的缺口，是**方法自己核心判準的缺口**。
+
+### 怎麼發現的
+
+從一個很短的問題開始：**孤島測試證明一個單元可以被拿走。那「它在那裡但壞掉」呢？**
+
+```text
+                           records   outcome for remote-index
+  removed (island test)    2         absent
+  present and failing      2         failed
+```
+
+**總數一樣，而孤島測試只做得出上面那一列。** 下面那一列是運行中的系統在壞日子裡待的狀態，而方法的結構鑽孔從來沒有到過那裡。
+
+**能用與不存在不是兩個選項**——至少四個，而其中三個的紀錄數都是零。用計數看，三種情況是同一個數字。
+
+**對照組是這一則最重要的零件。** `archive-dump` 回傳零筆而且**沒有失敗**。沒有它，「零筆」跟「失敗」就是同一個觀察，第 3 節不可能失敗。這是[範例 011](/html/mssp/011-store-boundary.html) 那個記憶體媒介的同一個角色：**一個宣稱為假（或這裡是「零但沒壞」）的對照組，才讓檢查有可能出錯。**
+
+**上游把它確認了，而且更難看。** `os.walk` 的一個子目錄在頂層列出後、走訪前消失：
+
+```text
+    mode         files                      errors
+    silent       ['a.txt', 'c.txt']         none reported
+    reporting    ['a.txt', 'c.txt']         ['FileNotFoundError on ...b']
+```
+
+**同樣的檔案。差別只在有沒有人被告知。** 那跟[範例 012](/html/mssp/012-two-writers.html) 的遺失更新是同一個形狀——兩種結果停在同一個數字，其中一個說了。
+
+第二個發現更刁：「走訪什麼都沒找到」的兩個原因**確實不同**（空目錄 1 列、不存在 0 列），但沒有人那樣用。大家寫 `for _, _, files in os.walk(top)` 收 `files`，兩邊都是 0。**判別器在產生器裡，在被正常使用的那一刻消失**——跟[考古 011](/html/mssp/archaeology/011-cpython-shelve.html) 的 `d[k] is d[k]` 同一族。
+
+### 對 MSSP 的意義
+
+[改良點 13](/html/mssp/modules/development.html) 進開發區，狀態 `candidate`，兩條：**每個 TMS 單元宣告它會用什麼方式失敗**，以及**孤島測試多一節，把單元留在原地弄壞**——而且兩節的差別必須看得見。
+
+**已知沒解決的：部分失敗。** 回了一些紀錄然後才壞掉是第五種結果，範例 015 的分類器會叫它 `worked`。孤島測試自己把這個洞講出來。
+
+今天 Metron 與 Pragma 因為額度不在，這一則沒有經過他們的交叉審查。**這件事本身值得記**——這兩週每一個實質缺陷都是他們跑我的東西找到的，而今天沒有那一關。
 
 ---
 

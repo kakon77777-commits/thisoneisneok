@@ -995,7 +995,81 @@ export const msspExamples = [
     "lineCount": 354,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/014-declared-arity.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/014-declared-arity.html"
+  },
+  {
+    "id": "015-present-and-failing",
+    "slug": "015-present-and-failing",
+    "title": {
+      "zh": "能用與不存在，不是兩個選項",
+      "en": "Working and absent are not the two options"
+    },
+    "summary": {
+      "zh": "這一則指的是 **MSSP 自己核心判準的缺口**：孤島測試證明一個單元可以被**移除**，它對「單元在那裡、被解析了、被呼叫了、而且失敗」一個字都沒說——而那正是運行中的系統在壞日子裡待的狀態。`--compare` 把它量出來：把 `remote-index` 移除、跟把它弄壞，**總數一模一樣（2）**，差別只在 outcome 一個是 `absent`（孤島測試做得到）、一個是 `failed`（做不到）。所以一個單元要宣告**它會用什麼方式失敗**，而報告要把 `failed` 跟 `empty` 分開——因為兩個都是零。`archive-dump` 在範例裡只有一個理由：它回傳零筆而且**沒有失敗**；沒有這個對照組，「零筆」與「失敗」就是同一個觀察，第 3 節不可能失敗。同日的考古 015 量到這個狀態在上游被大量製造卻沒有名字：`os.walk` 的子目錄在走到一半消失，預設模式與 `onerror` 模式**回傳同一份檔案清單**，差別只在有沒有人被告知。而 partial failure（回了一些再壞掉）是第五個 outcome，這裡沒有模型化，分類器會叫它 `worked`——孤島測試自己把這個洞講出來，不留給別人發現。",
+      "en": "This entry names a gap in MSSP's own core criterion. The island test proves a unit can be removed; it says nothing about a unit that is present, resolved, called and failing — which is where a running system spends its bad days. --compare measures it: removing remote-index and breaking it give the same total, and the only thing that differs is the outcome, absent versus failed. The island test can produce the first and not the second. So a unit must declare what it can fail WITH, and a report must keep failed apart from empty, because both are zero. archive-dump exists for one reason: it returns zero records and has not failed, and without that control \"zero records\" and \"failure\" would be a single observation. The same day's archaeology measures where this state is manufactured constantly and named nowhere: a subdirectory vanishing mid-walk gives os.walk the same file list under both modes, and the only difference is whether anybody was told. Partial failure — some records and then a break — is a fifth outcome that is not modelled, and the classifier would call it worked; the island test says so rather than leaving it to be found."
+    },
+    "language": "python",
+    "date": "2026-08-15",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "present-and-failing-is-a-third-state",
+      "the-island-test-removes-and-cannot-break",
+      "empty-is-a-category-not-a-synonym-for-failed",
+      "a-unit-declares-what-it-can-fail-with"
+    ],
+    "runnable": "python src/main.py",
+    "files": [
+      "DMS/__init__.py",
+      "DMS/report.py",
+      "FMS/__init__.py",
+      "FMS/contract.json",
+      "SCL/__init__.py",
+      "SCL/policy.json",
+      "SCL/policy.py",
+      "SMS/__init__.py",
+      "SMS/gather.py",
+      "TMS/__init__.py",
+      "TMS/sources/__init__.py",
+      "TMS/sources/archive_dump.py",
+      "TMS/sources/local_files.py",
+      "TMS/sources/remote_index.py",
+      "island_test.py",
+      "main.py"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/__init__.py",
+        "FMS/contract.json"
+      ],
+      "SCL": [
+        "SCL/__init__.py",
+        "SCL/policy.json",
+        "SCL/policy.py"
+      ],
+      "SMS": [
+        "SMS/__init__.py",
+        "SMS/gather.py"
+      ],
+      "TMS": [
+        "TMS/__init__.py",
+        "TMS/sources/__init__.py",
+        "TMS/sources/archive_dump.py",
+        "TMS/sources/local_files.py",
+        "TMS/sources/remote_index.py"
+      ],
+      "DMS": [
+        "DMS/__init__.py",
+        "DMS/report.py"
+      ],
+      "root": [
+        "island_test.py",
+        "main.py"
+      ]
+    },
+    "lineCount": 384,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/015-present-and-failing.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/015-present-and-failing.html"
   }
 ];
 
-export const msspExampleCount = 14;
+export const msspExampleCount = 15;
