@@ -1,0 +1,21 @@
+id: 016-promise-all
+project: ECMAScript Promise.all / Promise.allSettled
+upstream: https://tc39.es/ecma262/#sec-promise.all
+license: BSD-3-Clause (V8, the implementation measured); MIT (Node.js)
+examined_version: measured at run time
+title:
+  zh: 做完的工作被丟掉，而且沒有人被告知丟了多少
+  en: "Work that finished is discarded, and nothing says how much"
+summary:
+  zh: 同日的範例 016 主張**合併方式本身是一個宣告單元**，而 `Promise.all` 是那個宣告在上游最普遍、卻沒有地方寫得下來的地方。四個成員其中一個 reject：`Promise.all` 保留 **0** 個值，`Promise.allSettled` 保留 **3** 個，而**兩邊四個成員都跑完了**——三個 fulfilled 的值真的存在過，從那個 rejection 一個都拿不回來。對照組是這一則能不能說話的關鍵：同樣四個成員沒有人 reject 時，兩者**一模一樣**，所以上面那個落差是一句關於失敗的話，不是關於這兩個函式的話。第二個量測**跟昨天的考古 015 相反**：把 reject 的成員**移除**拿到 3 個值，**留著讓它壞**拿到 0 個——移除比留著多，而且輸入沒有變小。第三、兩個成員 reject 只浮出 **1 個理由**，第二個失敗不是延後回報而是沒有回報。第四、rejection 什麼都不取消，慢的成員照樣 settle 在一個已經走掉的呼叫端旁邊。行為不適合改：全有或全無的交易要的正是它，`allSettled` 在 ES2020 進語言就是因為沒有一個語義適合所有人；缺陷在於**它拋棄的量沒有出現在任何地方**。這跟 `os.walk` 是同一句話的兩面——那邊吞掉錯誤讓結果看起來完整，這邊保住錯誤把結果整個丟掉，兩邊都只留下一個說不出發生過什麼的數字。
+  en: The same day's example 016 argues that the way results are combined is itself a declaring unit, and Promise.all is where that declaration is most widespread upstream and has nowhere to be written down. With one of four members rejecting, Promise.all keeps zero values and Promise.allSettled keeps three, while all four members ran to completion under both - three fulfilled values existed and none is reachable from the rejection. The control is what lets the entry say anything specific: with nothing rejecting, the two are identical, so the gap is a statement about failure rather than about the two functions. The second measurement inverts the previous day's archaeology - removing the rejecting member returns three values and leaving it in returns none, so removing gives more, and the input did not get smaller. Third, two rejections surface exactly one reason; the second failure is not delayed, it is not reported. Fourth, a rejection cancels nothing, and the slow member settles beside a caller that has already moved on. The behaviour should not be changed - an all-or-nothing transaction wants exactly this, and allSettled entered the language in ES2020 precisely because no single semantics suits everyone. The defect is that the amount discarded appears nowhere. It is the same sentence as os.walk from the other side: there the errors are swallowed and the result looks complete, here the errors are kept and the result is thrown away, and both leave one number that cannot say what happened.
+date: 2026-08-16
+version: v1.0
+verdict: work-that-finished-is-discarded-and-nothing-counts-it
+concepts:
+  - the-values-existed-and-are-unreachable
+  - removing-a-broken-member-gives-more-than-keeping-it
+  - two-rejections-one-reason
+  - a-rejection-cancels-nothing
+  - a-discriminator-that-is-not-the-default
+runnable: node src/main.mjs

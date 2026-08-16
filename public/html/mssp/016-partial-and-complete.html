@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>半途壞掉的結果，跟完整的結果，是同一個值 | MSSP | Neo.K</title>
+<meta name="description" content="昨天的[範例 015](/html/mssp/015-present-and-failing.html) 把 partial failure 寫進自己的限制裡——回了一些再壞掉是第五種結果，分類器會叫它 `worked`。今天是那個洞，而它**不是第五個標籤**。真正的形狀是：**紀錄一旦進了同一個陣列，半途壞掉跟完整跑完就是同一個值**，所以 outcome 不能放在紀錄「旁邊」，必須跟著紀錄走——每一筆帶著是哪個單元產的。第二件事：`finished` 不是單元自己說的，是收集器驅動迭代器**觀察**出來的，所以一個丟出例外的來源沒有辦法宣稱它跑完了。第三件事：**怎麼合併本身就是一個宣告單元**，它宣告的是「已經成功的工作要怎麼辦」。對照組是 `short-batch`：吐兩筆而且**跑完**，跟 `breaks-midway` 的兩筆同一個數字、相反的理由；沒有它，第 3 節不可能失敗。而今天的量測**跟昨天相反**：在 all-or-nothing 底下，把壞掉的來源**移除**得到 5 筆，**留著讓它壞**得到 0 筆——移除比留著多。昨天兩者是同一個數字。兩則加起來說的是：孤島測試的結果相對於真實失敗不是固定的，兩邊都可能。同日的考古 016 在 `Promise.all` 量到同一個反轉。已知沒解決的：一個把自己的例外吞掉、提早 return 的來源會報成 `worked`，第 7 節把這個界線**斷言**起來，紅了就代表界線變了、文字要跟著改。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/016-partial-and-complete.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>016-partial-and-complete</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>016-partial-and-complete</span></div>
+    <div><b>語言</b><span>javascript</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-16</span></div>
+    <div><b>行數</b><span>479</span></div>
+    <div><b>執行</b><span><code>node src/main.mjs</code></span></div>
+  </section>
+  <article class="content"><h1>016 — A partial result and a complete one are the same value</h1>
+<blockquote>
+<p><code>candidate</code>. Example 015 wrote partial failure into its own limitations as a
+fifth outcome it did not model. This is that limitation gone, and it turned
+out not to be a fifth label.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>Three sources hand over records. One of them hands over real records and then
+breaks. Two combiners disagree about what to do with the ones that arrived.</p>
+<pre><code class="language-bash">node src/main.mjs             # the run under the combiner SCL names
+node src/main.mjs --compare   # removing the broken source, against keeping it
+node src/main.mjs --strict    # exit 1 when a run did not finish and the policy is fatal
+node src/island_test.mjs      # 41 checks across 7 sections, and it prints the count itself
+</code></pre>
+<pre><code class="language-console">  source          outcome   records   finished   error
+  ~~ breaks-midway partial   2         false      connection-reset
+  ok full-batch    worked    3         true
+  ok short-batch   worked    2         true
+
+  all-or-nothing: REFUSED - breaks-midway (partial): connection-reset
+  7 record(s) already in hand were discarded, and the work that produced them ran to completion anyway.
+
+  what a count alone would have said:
+    breaks-midway   2 records - and this is partial
+    short-batch     2 records - and this is worked
+    2 sources, one number, 2 outcomes
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>Once records are in one array, a partial batch and a complete batch are the
+same value.</strong> So the outcome cannot travel <em>beside</em> the records. It has to
+travel <strong>with</strong> them, which means a record carries which unit produced it.</p>
+<p>Two things follow, and neither is a fifth label bolted onto example 015&#39;s four:</p>
+<ol>
+<li><strong><code>finished</code> is not the unit&#39;s to declare.</strong> The collector drives the
+iterator and observes where it stopped. A source that throws after yielding
+cannot report that it finished, because it never reports it. What a unit
+still declares is what it can fail <em>with</em> — <a href="/html/mssp/modules/development.html">改良點 13</a>, kept.</li>
+<li><strong>How the results are combined is itself a declaring unit</strong>, and what it
+declares is what it does with work that already succeeded.</li>
+</ol>
+<pre><code class="language-console">$ node src/main.mjs --compare
+
+                                          kept   what the reader ends up holding
+  removed (island test)   all-or-nothing  5      2 complete sources
+  present and failing     all-or-nothing  0      nothing - 7 records discarded
+  present and failing     settle-each     7      2 of them from a source that did not finish
+</code></pre>
+<p><strong>Removing the broken source gives more than keeping it.</strong> <a href="/html/mssp/015-present-and-failing.html">Example 015</a>
+measured the opposite — there, removed and broken produced the same number.
+Between them the two entries say: the island test&#39;s result relative to a real
+failure is not fixed, and can point either way.</p>
+<h2>The island test — and the control that lets section 3 go badly</h2>
+<p><code>short-batch</code> yields <strong>two</strong> records and finishes. <code>breaks-midway</code> yields
+<strong>two</strong> records and throws. Without the control, &quot;two records&quot; and &quot;broke after
+two records&quot; would be a single observation.</p>
+<pre><code class="language-text">  PASS  short-batch yielded two records
+  PASS  and it DID finish - the control
+  PASS  breaks-midway yielded two records as well
+  PASS  and it did NOT finish
+  PASS  so a count cannot separate them, and the outcome can - 2 == 2, worked != partial
+</code></pre>
+<p>Four mutations were run against the suite and each one turns it red: making the
+control break too (7 checks), letting <code>all-or-nothing</code> keep the partial work
+(3), removing the origin check from the collector (1), and classifying <code>partial</code>
+as <code>worked</code> (8).</p>
+<h2>Upstream, the same day</h2>
+<p><a href="/html/mssp/archaeology/016-promise-all.html">Archaeology 016</a> measures the two
+combiners as built-ins. Four promises, one rejects:</p>
+<table>
+<thead>
+<tr>
+<th>combinator</th>
+<th>kept</th>
+<th>ran</th>
+<th>reasons</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Promise.all</code></td>
+<td>0</td>
+<td><code>a,b,c,d</code></td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>Promise.allSettled</code></td>
+<td>3</td>
+<td><code>a,b,c,d</code></td>
+<td>1</td>
+</tr>
+</tbody></table>
+<p><strong>Every member ran under both.</strong> Three fulfilled values existed and none of them
+is reachable from the rejection. And with two rejecting members, exactly one
+reason surfaces.</p>
+<h2>What this example does not solve</h2>
+<p><strong>Measurable, not measured.</strong> How often a real source breaks after yielding
+rather than before, and what a discarded batch costs when the work behind it was
+paid for.</p>
+<p><strong>Not measurable here.</strong> Whether keeping partial work is right. <code>all-or-nothing</code>
+is correct for a nightly index that must not publish a half crawl, and wrong for
+a dashboard; SCL picks one and this example takes no position.</p>
+<p><strong>And a limit that is asserted rather than assumed:</strong> a source that catches its
+own failure internally and returns early reports as <code>worked</code>, and is
+indistinguishable from <code>short-batch</code> by every field this collector reads.
+Section 7 asserts exactly that — <strong>if it ever goes red, the limit has changed
+and this paragraph is wrong.</strong></p>
+<p><strong>Not attempted:</strong> retries, resumption, cursors. Restarting a source that broke
+at record two is a different problem, and it has to be nameable first.</p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;016-partial-and-complete&quot;,
+  &quot;what_it_is&quot;: &quot;A gather step over three sources where one of them hands over real records and then breaks, and where the way the results are combined is itself a declared unit.&quot;,
+  &quot;the_structural_decision&quot;: &quot;A partial result and a complete one are the same value once the records are in one array. So the outcome cannot travel beside the records — it has to travel WITH them, which means a record carries which unit produced it. And the combination policy is a declaring unit: it says what it does with work that already succeeded.&quot;,
+  &quot;why_this_one&quot;: &quot;Example 015 named four outcomes and wrote partial failure into its own limitations as a fifth it did not model. This is that limitation gone, and it turned out not to be a fifth label but a different axis.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+
+  &quot;outcomes&quot;: {
+    &quot;worked&quot;: &quot;yielded records and finished&quot;,
+    &quot;empty&quot;: &quot;yielded nothing and finished — a legitimate quiet day&quot;,
+    &quot;partial&quot;: &quot;yielded records and then stopped early — the fifth, and the one that survives aggregation unmarked&quot;,
+    &quot;failed&quot;: &quot;was called and yielded nothing before stopping&quot;,
+    &quot;absent&quot;: &quot;not loaded at all — what the island test produces&quot;
+  },
+
+  &quot;who_says_it_finished&quot;: &quot;Not the source. The collector drives the iterator and observes where it stopped, so `finished` is not a field a unit can get wrong. What a unit still declares is what it can fail WITH (改良點 13).&quot;,
+
+  &quot;sources&quot;: {
+    &quot;full-batch&quot;:    {&quot;yields&quot;: 3, &quot;can_fail_with&quot;: [&quot;unreadable-page&quot;]},
+    &quot;short-batch&quot;:   {&quot;yields&quot;: 2, &quot;can_fail_with&quot;: [&quot;stale-cursor&quot;], &quot;note&quot;: &quot;the control — it yields the SAME number of records as breaks-midway and finishes, so a count cannot separate them and the outcome field can&quot;},
+    &quot;breaks-midway&quot;: {&quot;yields&quot;: 2, &quot;can_fail_with&quot;: [&quot;connection-reset&quot;, &quot;timeout&quot;], &quot;note&quot;: &quot;then throws&quot;}
+  },
+
+  &quot;combiners&quot;: {
+    &quot;all-or-nothing&quot;: {&quot;keeps_partial_work&quot;: false, &quot;upstream&quot;: &quot;Promise.all&quot;},
+    &quot;settle-each&quot;:    {&quot;keeps_partial_work&quot;: true,  &quot;upstream&quot;: &quot;Promise.allSettled&quot;}
+  },
+
+  &quot;the_finding&quot;: &quot;Under all-or-nothing, REMOVING the broken source gives more than keeping it: 5 records against 0. That inverts example 015, where removing a source and breaking it produced the same total. Archaeology 016 measures the same inversion in Promise.all — three of four members fulfilled, every one of them ran to completion, and none of their values is reachable from the rejection.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the five outcomes, what each source can fail with, what each combiner does with partial work, and the units map&quot;,
+    &quot;SCL&quot;: &quot;which combiner this deployment runs and whether a partial run is fatal here&quot;,
+    &quot;SMS&quot;: &quot;loading, driving each source, observing where it stopped, and refusing a record with no origin&quot;,
+    &quot;TMS&quot;: &quot;one file per source and one per combiner — each declares itself and reaches no sibling&quot;,
+    &quot;DMS&quot;: &quot;the per-source outcome, what the combiner kept or discarded, and how many kept records came from a source that did not finish&quot;
+  },
+
+  &quot;units&quot;: {
+    &quot;TMS/sources&quot;: [&quot;breaks_midway.mjs&quot;, &quot;full_batch.mjs&quot;, &quot;short_batch.mjs&quot;],
+    &quot;TMS/combiners&quot;: [&quot;all_or_nothing.mjs&quot;, &quot;settle_each.mjs&quot;]
+  },
+
+  &quot;non_goals&quot;: [
+    &quot;Retries, resumption or cursors. Restarting a source that broke at record two is a different problem and this one has to be nameable first.&quot;,
+    &quot;Deciding which combiner is right. all-or-nothing is correct for a nightly index and wrong for a dashboard; SCL picks one and the example takes no position.&quot;,
+    &quot;Detecting a source that swallows its own failure internally and returns early. Section 7 of the island test asserts that such a source is indistinguishable from short-batch, so the limit stays measured rather than assumed.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;deployment&quot;: &quot;nightly-index-build&quot;,
+  &quot;combiner&quot;: &quot;all-or-nothing&quot;,
+  &quot;on_partial&quot;: &quot;fatal&quot;,
+  &quot;why&quot;: &quot;A nightly search index that publishes a partial crawl serves an index that looks complete and is not. Refusing the whole batch is defensible HERE and is not a general rule — a dashboard would pick settle-each and mark the rows. The example takes no position on which is right; SCL is where the position lives.&quot;,
+  &quot;what_this_costs&quot;: &quot;Every record from every source that did finish is discarded, and the work that produced them ran to completion regardless. --compare prints the number.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.mjs</summary><pre><code>// Deployment policy. Which combiner this deployment runs, and what a run that
+// did not finish means here.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+export const POLICY = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export const combinerName = () =&gt; POLICY.combiner;
+export const isFatal = () =&gt; POLICY.on_partial === &quot;fatal&quot;;
+export const describe = () =&gt;
+  `${POLICY.deployment}: combine with ${POLICY.combiner}, a partial run is ${POLICY.on_partial}`;
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/collect.mjs</summary><pre><code>// Load the sources and the combiners, drive each source, and classify.
+//
+// The rule this example adds to example 015's four outcomes: `partial` is not
+// a fifth label a unit hands in. A source that throws after yielding cannot
+// report that it finished, because it is not the one that says so — the
+// collector drives the iterator and observes where it stopped.
+//
+// The second rule: every record carries `from`. A record that does not is
+// refused, because once records are in one array a partial batch and a
+// complete batch are the same value.
+import * as breaksMidway from &quot;../TMS/sources/breaks_midway.mjs&quot;;
+import * as fullBatch from &quot;../TMS/sources/full_batch.mjs&quot;;
+import * as shortBatch from &quot;../TMS/sources/short_batch.mjs&quot;;
+import * as allOrNothing from &quot;../TMS/combiners/all_or_nothing.mjs&quot;;
+import * as settleEach from &quot;../TMS/combiners/settle_each.mjs&quot;;
+
+export const OUTCOMES = [&quot;worked&quot;, &quot;empty&quot;, &quot;partial&quot;, &quot;failed&quot;, &quot;absent&quot;];
+
+export function load(extraSources = [], extraCombiners = []) {
+  const sources = {};
+  const combiners = {};
+  const problems = [];
+
+  for (const module of [fullBatch, shortBatch, breaksMidway, ...extraSources]) {
+    for (const attribute of [&quot;NAME&quot;, &quot;CAN_FAIL_WITH&quot;, &quot;records&quot;]) {
+      if (module[attribute] === undefined) problems.push(`a source does not declare ${attribute}`);
+    }
+    if (!module.CAN_FAIL_WITH?.length) {
+      problems.push(`${module.NAME}: CAN_FAIL_WITH is empty - a unit that cannot say what a bad ` +
+        `day looks like cannot be reported as degraded`);
+    }
+    sources[module.NAME] = module;
+  }
+
+  for (const module of [allOrNothing, settleEach, ...extraCombiners]) {
+    if (typeof module.KEEPS_PARTIAL_WORK !== &quot;boolean&quot;) {
+      problems.push(`${module.COMBINER}: KEEPS_PARTIAL_WORK is not declared - a combiner that ` +
+        `does not say what it does with work already done is not a declaring unit`);
+    }
+    combiners[module.COMBINER] = module;
+  }
+
+  return { sources, combiners, problems };
+}
+
+export function resolveCombiner(name, combiners) {
+  const module = combiners[name];
+  if (module) return [module, null];
+  return [null, `combiner &quot;${name}&quot; has no implementation - fail closed ` +
+    `(known: ${Object.keys(combiners).sort().join(&quot;, &quot;)})`];
+}
+
+// Drive one source. `finished` is observed here, never claimed by the source.
+export function run(module, { absent = false } = {}) {
+  if (absent) return { source: module.NAME, outcome: &quot;absent&quot;, records: [], error: null, finished: null };
+
+  const records = [];
+  let error = null;
+  try {
+    for (const record of module.records()) {
+      if (!record || record.from !== module.NAME) {
+        throw new Error(`a record without a usable &quot;from&quot; reached the collector ` +
+          `(got ${JSON.stringify(record?.from)}, expected ${JSON.stringify(module.NAME)})`);
+      }
+      records.push(record);
+    }
+  } catch (raised) {
+    error = raised.message;
+  }
+
+  const finished = error === null;
+  let outcome;
+  if (!finished &amp;&amp; records.length &gt; 0) outcome = &quot;partial&quot;;
+  else if (!finished) outcome = &quot;failed&quot;;
+  else if (records.length &gt; 0) outcome = &quot;worked&quot;;
+  else outcome = &quot;empty&quot;;
+
+  return { source: module.NAME, outcome, records, error, finished };
+}
+
+export function runAll(sources, { absent = [] } = {}) {
+  return Object.keys(sources).sort()
+    .map((name) =&gt; run(sources[name], { absent: absent.includes(name) }));
+}
+
+// How many of the records the reader ends up holding came from a source that
+// did not finish. This is the number a count of records cannot produce.
+export function fromUnfinished(runs, kept) {
+  const unfinished = new Set(runs.filter((r) =&gt; r.outcome === &quot;partial&quot;).map((r) =&gt; r.source));
+  return kept.filter((record) =&gt; unfinished.has(record.from)).length;
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/combiners/all_or_nothing.mjs</summary><pre><code>// Combine by refusing the whole batch if any source did not finish.
+//
+// This is what `Promise.all` does, and archaeology 016 measures its cost:
+// the records that already arrived are discarded, and the work that produced
+// them ran to completion anyway.
+export const COMBINER = &quot;all-or-nothing&quot;;
+export const KEEPS_PARTIAL_WORK = false;
+
+export function combine(runs) {
+  const broken = runs.find((run) =&gt; run.outcome === &quot;partial&quot; || run.outcome === &quot;failed&quot;);
+  if (!broken) return { records: runs.flatMap((run) =&gt; run.records), discarded: 0, refused: null };
+  return {
+    records: [],
+    discarded: runs.reduce((n, run) =&gt; n + run.records.length, 0),
+    refused: `${broken.source} (${broken.outcome}): ${broken.error}`,
+  };
+}
+</code></pre></details><details><summary>TMS/combiners/settle_each.mjs</summary><pre><code>// Combine by keeping every record and keeping each source's outcome beside it.
+//
+// This is what `Promise.allSettled` does. It keeps the partial work, which is
+// only safe because every record carries `from` — without that, the two
+// records from a source that did not finish are anonymous in the pile.
+export const COMBINER = &quot;settle-each&quot;;
+export const KEEPS_PARTIAL_WORK = true;
+
+export function combine(runs) {
+  return { records: runs.flatMap((run) =&gt; run.records), discarded: 0, refused: null };
+}
+</code></pre></details><details><summary>TMS/sources/breaks_midway.mjs</summary><pre><code>// A source that hands over real records and then breaks.
+//
+// The two records it yielded are not hypothetical and not wrong. They are in
+// the caller's hands before anything goes wrong, and once they are in the pile
+// they are indistinguishable from `short-batch`'s two.
+export const NAME = &quot;breaks-midway&quot;;
+export const CAN_FAIL_WITH = [&quot;connection-reset&quot;, &quot;timeout&quot;];
+
+export function* records() {
+  yield { from: NAME, id: &quot;b-1&quot; };
+  yield { from: NAME, id: &quot;b-2&quot; };
+  throw new Error(&quot;connection-reset&quot;);
+}
+</code></pre></details><details><summary>TMS/sources/full_batch.mjs</summary><pre><code>// A source that yields everything it has and finishes.
+//
+// It reaches no sibling set and no sibling source. It knows nothing about
+// how its records will be combined with anyone else's.
+export const NAME = &quot;full-batch&quot;;
+export const CAN_FAIL_WITH = [&quot;unreadable-page&quot;];
+
+export function* records() {
+  yield { from: NAME, id: &quot;f-1&quot; };
+  yield { from: NAME, id: &quot;f-2&quot; };
+  yield { from: NAME, id: &quot;f-3&quot; };
+}
+</code></pre></details><details><summary>TMS/sources/short_batch.mjs</summary><pre><code>// The control.
+//
+// It yields TWO records and finishes. `breaks-midway` also yields two records
+// and then throws. Without this file, &quot;two records&quot; and &quot;broke after two
+// records&quot; would be a single observation, and section 3 of the island test
+// could not come out badly.
+//
+// Same role as the in-memory medium in example 011 and `archive-dump` in
+// example 015: a case that produces the same number for the opposite reason.
+export const NAME = &quot;short-batch&quot;;
+export const CAN_FAIL_WITH = [&quot;stale-cursor&quot;];
+
+export function* records() {
+  yield { from: NAME, id: &quot;s-1&quot; };
+  yield { from: NAME, id: &quot;s-2&quot; };
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.mjs</summary><pre><code>// What a person is shown.
+//
+// The one thing this report may never do is print a record count on its own,
+// because that is the number three different situations share.
+const pad = (value, width) =&gt; String(value).padEnd(width);
+
+export function runs(rows) {
+  const lines = [&quot;  source          outcome   records   finished   error&quot;];
+  for (const row of rows) {
+    const mark = { worked: &quot;ok&quot;, empty: &quot;--&quot;, partial: &quot;~~&quot;, failed: &quot;!!&quot;, absent: &quot;  &quot; }[row.outcome];
+    lines.push(`  ${mark} ${pad(row.source, 13)} ${pad(row.outcome, 9)} ${pad(row.records.length, 9)} ` +
+      `${pad(row.finished === null ? &quot;-&quot; : row.finished, 10)} ${row.error ?? &quot;&quot;}`.trimEnd());
+  }
+  return lines.join(&quot;\n&quot;);
+}
+
+export function combined(name, result, unfinished) {
+  const lines = [];
+  if (result.refused) {
+    lines.push(`  ${name}: REFUSED - ${result.refused}`);
+    lines.push(`  ${result.discarded} record(s) already in hand were discarded, and the work that ` +
+      `produced them ran to completion anyway.`);
+    return lines.join(&quot;\n&quot;);
+  }
+  lines.push(`  ${name}: ${result.records.length} record(s) kept`);
+  if (unfinished &gt; 0) {
+    lines.push(`  ${unfinished} of them came from a source that did NOT finish - which is a fact ` +
+      `about the records, not about the run.`);
+  }
+  return lines.join(&quot;\n&quot;);
+}
+
+export function whatACountWouldHaveSaid(rows) {
+  const twos = rows.filter((row) =&gt; row.records.length === 2);
+  const lines = [&quot;  what a count alone would have said:&quot;];
+  for (const row of twos) {
+    lines.push(`    ${pad(row.source, 15)} 2 records - and this is ${row.outcome}`);
+  }
+  lines.push(`    ${twos.length} sources, one number, ${new Set(twos.map((r) =&gt; r.outcome)).size} outcomes`);
+  return lines.join(&quot;\n&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.mjs</summary><pre><code>// The island test.
+//
+//   node src/island_test.mjs
+//
+// Section 3 is the one the example exists for: two sources produce two records
+// each, and only one of them finished. Section 5 is the finding — removing the
+// broken source gives more than keeping it, which is the opposite of what
+// example 015 measured.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as collect from &quot;./SMS/collect.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as allOrNothing from &quot;./TMS/combiners/all_or_nothing.mjs&quot;;
+import * as settleEach from &quot;./TMS/combiners/settle_each.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;contract.json&quot;), &quot;utf8&quot;));
+const failures = [];
+let ran = 0;
+const check = (label, ok, detail = &quot;&quot;) =&gt; {
+  ran += 1;
+  process.stdout.write(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}\n`);
+  if (!ok) failures.push(label);
+};
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+const { sources, combiners, problems } = collect.load();
+const rows = collect.runAll(sources);
+const row = (name) =&gt; rows.find((r) =&gt; r.source === name);
+
+say(&quot;\n== 1. every source and combiner is an island, and FMS matches the tree&quot;);
+check(&quot;loading raised no problems&quot;, problems.length === 0, problems.join(&quot;; &quot;));
+for (const [unit, declared] of Object.entries(CONTRACT.units)) {
+  const dir = path.join(here, ...unit.split(&quot;/&quot;));
+  const onDisk = fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+  check(`${unit}: FMS declares what is on disk`,
+    JSON.stringify(onDisk) === JSON.stringify([...declared].sort()),
+    `disk ${onDisk.join(&quot;, &quot;)} | FMS ${[...declared].sort().join(&quot;, &quot;)}`);
+  for (const file of onDisk) {
+    const body = fs.readFileSync(path.join(dir, file), &quot;utf8&quot;);
+    const siblings = onDisk.filter((n) =&gt; n !== file).map((n) =&gt; n.replace(/\.mjs$/, &quot;&quot;));
+    const reached = siblings.filter((s) =&gt; new RegExp(`from\\s+[&quot;'][^&quot;']*${s}`).test(body));
+    check(`${unit}/${file} reaches no sibling`, reached.length === 0, reached.join(&quot;, &quot;));
+    check(`${unit}/${file} reaches no other set`, !/from\s+[&quot;'][^&quot;']*\/(SMS|DMS|SCL|FMS)\//.test(body));
+  }
+}
+
+say(&quot;\n== 2. five outcomes, and `partial` is one of them&quot;);
+check(&quot;SMS names five outcomes&quot;, collect.OUTCOMES.length === 5, collect.OUTCOMES.join(&quot;, &quot;));
+check(&quot;breaks-midway is partial&quot;, row(&quot;breaks-midway&quot;).outcome === &quot;partial&quot;);
+check(&quot;  not `worked` - it did not finish&quot;, row(&quot;breaks-midway&quot;).finished === false);
+check(&quot;  not `failed` - it produced real records&quot;, row(&quot;breaks-midway&quot;).records.length === 2);
+check(&quot;full-batch worked&quot;, row(&quot;full-batch&quot;).outcome === &quot;worked&quot; &amp;&amp; row(&quot;full-batch&quot;).finished === true);
+const absentRow = collect.run(sources[&quot;breaks-midway&quot;], { absent: true });
+check(&quot;removed, it is absent and nothing ran&quot;, absentRow.outcome === &quot;absent&quot; &amp;&amp; absentRow.records.length === 0);
+
+say(&quot;\n== 3. the control - the same number for the opposite reason&quot;);
+const short = row(&quot;short-batch&quot;);
+const broke = row(&quot;breaks-midway&quot;);
+check(&quot;short-batch yielded two records&quot;, short.records.length === 2);
+check(&quot;and it DID finish - the control&quot;, short.finished === true);
+check(&quot;breaks-midway yielded two records as well&quot;, broke.records.length === 2);
+check(&quot;and it did NOT finish&quot;, broke.finished === false);
+check(&quot;so a count cannot separate them, and the outcome can - 2 == 2, worked != partial&quot;,
+  short.records.length === broke.records.length &amp;&amp; short.outcome !== broke.outcome);
+
+say(&quot;\n== 4. the outcome has to travel WITH the records&quot;);
+const pile = [...short.records, ...broke.records];
+check(&quot;in one array the four records are indistinguishable by shape&quot;,
+  new Set(pile.map((r) =&gt; Object.keys(r).sort().join(&quot;,&quot;))).size === 1);
+check(&quot;every record names the unit that produced it&quot;, pile.every((r) =&gt; typeof r.from === &quot;string&quot;));
+check(&quot;so the pile can still be asked how many came from an unfinished source&quot;,
+  collect.fromUnfinished(rows, pile) === 2, `${collect.fromUnfinished(rows, pile)} of ${pile.length}`);
+const unlabelled = {
+  NAME: &quot;drill-unlabelled&quot;, CAN_FAIL_WITH: [&quot;x&quot;],
+  *records() { yield { id: &quot;u-1&quot; }; },
+};
+const drill4 = collect.run(unlabelled);
+check(&quot;DRILL: a record with no origin is refused, not counted&quot;,
+  drill4.outcome === &quot;failed&quot; &amp;&amp; /without a usable &quot;from&quot;/.test(drill4.error ?? &quot;&quot;), drill4.error ?? &quot;&quot;);
+
+say(&quot;\n== 5. removing it gives more than keeping it&quot;);
+const removed = allOrNothing.combine(collect.runAll(sources, { absent: [&quot;breaks-midway&quot;] }));
+const kept = allOrNothing.combine(rows);
+const settled = settleEach.combine(rows);
+check(&quot;removed (island test): 5 records&quot;, removed.records.length === 5);
+check(&quot;present and failing: 0 records&quot;, kept.records.length === 0);
+check(&quot;and 7 already in hand were discarded&quot;, kept.discarded === 7);
+check(&quot;removing the broken source yields MORE than keeping it&quot;,
+  removed.records.length &gt; kept.records.length, `${removed.records.length} &gt; ${kept.records.length}`);
+check(&quot;settle-each keeps all 7, 2 of them from a source that did not finish&quot;,
+  settled.records.length === 7 &amp;&amp; collect.fromUnfinished(rows, settled.records) === 2);
+check(&quot;the two combiners disagree by 7 records on the same runs&quot;,
+  settled.records.length - kept.records.length === 7);
+
+say(&quot;\n== 6. a unit that does not declare itself is refused&quot;);
+const mute = { COMBINER: &quot;drill-mute&quot;, combine: (runs) =&gt; ({ records: [], discarded: 0, refused: null }) };
+check(&quot;DRILL: a combiner with no KEEPS_PARTIAL_WORK is refused&quot;,
+  collect.load([], [mute]).problems.some((p) =&gt; /drill-mute: KEEPS_PARTIAL_WORK/.test(p)));
+const silent = { NAME: &quot;drill-silent&quot;, CAN_FAIL_WITH: [], *records() {} };
+check(&quot;DRILL: a source with an empty CAN_FAIL_WITH is refused (改良點 13)&quot;,
+  collect.load([silent]).problems.some((p) =&gt; /drill-silent: CAN_FAIL_WITH is empty/.test(p)));
+check(&quot;and the honest units raise nothing&quot;, collect.load().problems.length === 0);
+check(&quot;an unknown combiner fails closed&quot;,
+  collect.resolveCombiner(&quot;no-such-combiner&quot;, combiners)[1]?.startsWith(&quot;combiner \&quot;no-such-combiner\&quot;&quot;));
+check(&quot;SCL's combiner does resolve&quot;, collect.resolveCombiner(policy.combinerName(), combiners)[0] !== null);
+
+say(&quot;\n== 7. what this cannot see, asserted so it stays measured&quot;);
+const swallows = {
+  NAME: &quot;drill-swallows&quot;, CAN_FAIL_WITH: [&quot;connection-reset&quot;],
+  *records() {
+    yield { from: &quot;drill-swallows&quot;, id: &quot;w-1&quot; };
+    yield { from: &quot;drill-swallows&quot;, id: &quot;w-2&quot; };
+    try { throw new Error(&quot;connection-reset&quot;); } catch { return; }
+  },
+};
+const swallowed = collect.run(swallows);
+check(&quot;a source that catches its own failure reports as `worked`&quot;, swallowed.outcome === &quot;worked&quot;);
+check(&quot;and is indistinguishable from short-batch by every field this collector reads&quot;,
+  swallowed.outcome === short.outcome &amp;&amp; swallowed.finished === short.finished
+    &amp;&amp; swallowed.records.length === short.records.length,
+  &quot;the limit named in FMS non_goals - if this ever goes red, the limit changed and the text must too&quot;);
+
+say(&quot;&quot;);
+if (failures.length &gt; 0) {
+  say(`  ${failures.length} FAILED: ${failures.join(&quot; | &quot;)}`);
+  process.exitCode = 1;
+} else {
+  say(`  ${ran} checks passed - ${rows.length} sources, ${Object.keys(combiners).length} combiners`);
+}
+</code></pre></details><details><summary>main.mjs</summary><pre><code>// Three sources, one of which hands over real records and then breaks.
+//
+//   node src/main.mjs             the run under the combiner SCL names
+//   node src/main.mjs --compare   removing the broken source, against keeping it
+//   node src/main.mjs --strict    exit 1 when a run did not finish and the policy is fatal
+import * as report from &quot;./DMS/report.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as collect from &quot;./SMS/collect.mjs&quot;;
+
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+function combineWith(name, sources, options = {}) {
+  const { combiners } = collect.load();
+  const [combiner, problem] = collect.resolveCombiner(name, combiners);
+  if (problem) throw new Error(problem);
+  const rows = collect.runAll(sources, options);
+  const result = combiner.combine(rows);
+  return { rows, result, unfinished: collect.fromUnfinished(rows, result.records) };
+}
+
+function compare(sources) {
+  const removed = combineWith(&quot;all-or-nothing&quot;, sources, { absent: [&quot;breaks-midway&quot;] });
+  const kept = combineWith(&quot;all-or-nothing&quot;, sources);
+  const settled = combineWith(&quot;settle-each&quot;, sources);
+
+  say(&quot;\n                                          kept   what the reader ends up holding&quot;);
+  say(`  removed (island test)   all-or-nothing  ${String(removed.result.records.length).padEnd(6)} ` +
+    `${removed.rows.filter((r) =&gt; r.outcome === &quot;worked&quot;).length} complete sources`);
+  say(`  present and failing     all-or-nothing  ${String(kept.result.records.length).padEnd(6)} ` +
+    `nothing - ${kept.result.discarded} records discarded`);
+  say(`  present and failing     settle-each     ${String(settled.result.records.length).padEnd(6)} ` +
+    `${settled.unfinished} of them from a source that did not finish`);
+  say(&quot;\n  Removing the broken source gives MORE than keeping it.&quot;);
+  say(&quot;  Example 015 measured the opposite: there, removed and broken were the same number.&quot;);
+}
+
+function main(argv) {
+  const { sources, problems } = collect.load();
+  if (problems.length &gt; 0) {
+    for (const problem of problems) say(`  REFUSED: ${problem}`);
+    return 1;
+  }
+
+  if (argv.includes(&quot;--compare&quot;)) {
+    compare(sources);
+    return 0;
+  }
+
+  const { rows, result, unfinished } = combineWith(policy.combinerName(), sources);
+  say(`\n  ${policy.describe()}\n`);
+  say(report.runs(rows));
+  say(&quot;&quot;);
+  say(report.combined(policy.combinerName(), result, unfinished));
+  say(&quot;&quot;);
+  say(report.whatACountWouldHaveSaid(rows));
+
+  const partial = rows.filter((row) =&gt; row.outcome === &quot;partial&quot;);
+  if (argv.includes(&quot;--strict&quot;) &amp;&amp; partial.length &gt; 0 &amp;&amp; policy.isFatal()) {
+    say(`\n  --strict: ${partial.length} source(s) did not finish and this deployment calls that fatal`);
+    return 1;
+  }
+  return 0;
+}
+
+process.exitCode = main(process.argv.slice(2));
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

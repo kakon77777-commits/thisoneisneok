@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>做完的工作被丟掉，而且沒有人被告知丟了多少 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="同日的範例 016 主張**合併方式本身是一個宣告單元**，而 `Promise.all` 是那個宣告在上游最普遍、卻沒有地方寫得下來的地方。四個成員其中一個 reject：`Promise.all` 保留 **0** 個值，`Promise.allSettled` 保留 **3** 個，而**兩邊四個成員都跑完了**——三個 fulfilled 的值真的存在過，從那個 rejection 一個都拿不回來。對照組是這一則能不能說話的關鍵：同樣四個成員沒有人 reject 時，兩者**一模一樣**，所以上面那個落差是一句關於失敗的話，不是關於這兩個函式的話。第二個量測**跟昨天的考古 015 相反**：把 reject 的成員**移除**拿到 3 個值，**留著讓它壞**拿到 0 個——移除比留著多，而且輸入沒有變小。第三、兩個成員 reject 只浮出 **1 個理由**，第二個失敗不是延後回報而是沒有回報。第四、rejection 什麼都不取消，慢的成員照樣 settle 在一個已經走掉的呼叫端旁邊。行為不適合改：全有或全無的交易要的正是它，`allSettled` 在 ES2020 進語言就是因為沒有一個語義適合所有人；缺陷在於**它拋棄的量沒有出現在任何地方**。這跟 `os.walk` 是同一句話的兩面——那邊吞掉錯誤讓結果看起來完整，這邊保住錯誤把結果整個丟掉，兩邊都只留下一個說不出發生過什麼的數字。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/016-promise-all.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>016-promise-all</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>ECMAScript Promise.all / Promise.allSettled</span></div>
+    <div><b>授權</b><span>BSD-3-Clause (V8, the implementation measured); MIT (Node.js)</span></div>
+    <div><b>檢視版本</b><span>measured at run time</span></div>
+    <div><b>日期</b><span>2026-08-16</span></div>
+    <div><b>來源</b><span><a href="https://tc39.es/ecma262/#sec-promise.all">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>016 — <code>Promise.all</code> / <code>Promise.allSettled</code>：做完的工作被丟掉，而且沒有人被告知丟了多少</h1>
+<blockquote>
+<p>上游是 ECMAScript 內建的兩個 combinator（<a href="https://tc39.es/ecma262/#sec-promise.all">Promise.all</a>），
+實作為 V8（BSD-3-Clause），跑在 Node.js（MIT）。版本由執行時量出來。
+這一則沒有任何檔案系統或網路操作——四個 <code>setTimeout</code>，全部在本機重現。</p>
+</blockquote>
+<pre><code class="language-bash">node src/main.mjs            # 兩個 combinator，同樣四個 promise
+node src/main.mjs --strict   # 這個部署丟掉了付過錢的工作就 exit 1
+node src/island_test.mjs     # 34 項檢查，全部直接跑真的內建函式，數字由它自己印
+</code></pre>
+<h2>為什麼選它</h2>
+<p>同日的<a href="/html/mssp/016-partial-and-complete.html">範例 016</a> 主張<strong>合併方式本身是一個宣告單元</strong>——它宣告的是「已經成功的工作要怎麼辦」。</p>
+<p><code>Promise.all</code> 是那個宣告在上游最普遍、而且<strong>沒有地方可以寫下來</strong>的地方。它是每個人手指第一個打出來的東西，而它對已經回來的答案做的事，簽名上一個字都沒有。</p>
+<h2>原專案的結構地圖</h2>
+<p>四個成員，其中一個 reject：</p>
+<pre><code class="language-text">    combinator            kept   ran        reasons
+    Promise.all           0      a,b,c,d    1
+    Promise.allSettled    3      a,b,c,d    1
+</code></pre>
+<p><strong>兩邊四個成員都跑完了。</strong> 三個 fulfilled 的值真的存在過，而從那個 rejection <strong>一個都拿不回來</strong>。</p>
+<p>而<strong>對照組</strong>是這一則能不能說話的關鍵——同樣四個成員，沒有人 reject：</p>
+<pre><code class="language-text">    Promise.all           4      a,b,c,d    0
+    Promise.allSettled    4      a,b,c,d    0
+</code></pre>
+<p><strong>一模一樣。</strong> 所以上面那個落差是一句關於<strong>失敗</strong>的話，不是關於這兩個函式的話。沒有這個對照組，「allSettled 不一樣」不構成任何具體主張。</p>
+<p>第二個量測，跟昨天的<a href="/html/mssp/archaeology/015-cpython-os-walk.html">考古 015</a> 相反：</p>
+<pre><code class="language-text">                             values the caller receives
+    rejecting member removed  3   [&quot;a:ok&quot;,&quot;c:ok&quot;,&quot;d:ok&quot;]
+    rejecting member present  0   rejected: b broke
+</code></pre>
+<p><strong>把壞掉的成員移除，比留著讓它壞，拿到的還多。</strong> 而且輸入沒有變小——留著的那次四個成員都跑了，移除的那次三個。</p>
+<p>第三、<strong>兩個成員 reject，抵達呼叫端的理由是 1 個</strong>。第二個失敗不是延後回報、不是報去別的地方，是<strong>沒有回報</strong>。</p>
+<p>第四、<strong>rejection 什麼都不取消</strong>。快的那個炸掉之後，慢的那個照樣 settle：</p>
+<pre><code class="language-text">  after the rejection, members settled so far: b
+  ...and 100ms later:                          b,slow - nothing was cancelled
+</code></pre>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>每個 combinator 保留什麼、浮出幾個理由，以及 <code>units</code> 對照</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署用哪一個，以及「丟掉做完的工作」在這裡是不是致命的</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>直接跑真內建函式的探針，每一個都記錄<strong>哪些成員真的執行了</strong></td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>一個 combinator 一個檔——各自宣告<strong>保留什麼</strong>，而且 import 任何東西都沒有</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td>呼叫端最後拿到什麼、什麼照樣跑了，以及它已經問不到什麼</td>
+</tr>
+</tbody></table>
+<p>重切加的只有一件事：<strong>combinator 要宣告它保留什麼，而那份宣告用跑的驗。</strong></p>
+<p>第 3b 節是鑽孔——一個<strong>宣稱</strong> <code>KEEPS_WHAT_SUCCEEDED: true</code>、實作卻是 <code>Promise.all</code> 的單元必須被抓到，而且誠實的兩個單元在同一支探針下宣告要成立。四個變異跑過，每一個都讓套件變紅（包括探針自己忘記記錄哪些成員跑過）。</p>
+<h2>什麼不適合拆</h2>
+<p><strong><code>Promise.all</code> 的行為不適合改。</strong> 一個必須全有或全無的交易要的正是它——三個寫入成功、一個失敗，這時候留下三個才是災難。<code>allSettled</code> 在 ES2020 進語言，正是因為<strong>沒有一個語義適合所有人</strong>。</p>
+<p>缺陷不在它拋棄成功的值，在於<strong>它拋棄的量沒有出現在任何地方</strong>。呼叫端拿到一個 reason，而「有三個值曾經存在」這件事沒有通道可以講。這跟昨天 <code>os.walk</code> 是同一句話的兩面：那邊是吞掉錯誤、結果看起來完整；這邊是保住錯誤、把結果整個丟掉。<strong>兩邊都只留下一個數字，而那個數字說不出發生過什麼。</strong></p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>量得到但這次沒量：</strong> 真實程式裡 <code>Promise.all</code> 的 rejection 有多少比例伴隨著至少一個 fulfilled 成員；有多少呼叫端在 catch 之後真的重跑了整批。</p>
+<p><strong>這一則量不到：</strong> 任何一位呼叫端當初以為 <code>Promise.all</code> 會怎麼處理已經回來的答案。<strong>它量的是介面讓什麼通過，不是誰誤解了什麼</strong>——跟考古 015 同一句話。</p>
+<p><strong>還有一個沒做的：</strong> <code>Promise.any</code> 與 <code>Promise.race</code> 是同一族的另外兩個點，這一則沒有把它們納入比較。加進來需要新的探針，不是重讀既有輸出。</p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;016-promise-all&quot;,
+  &quot;upstream&quot;: &quot;ECMAScript Promise.all / Promise.allSettled, measured on the local V8&quot;,
+  &quot;what_is_being_examined&quot;: &quot;Two built-in combinators over the same four promises, where one member rejects. What reaches the caller, and what the caller can no longer ask.&quot;,
+
+  &quot;the_finding&quot;: &quot;Promise.all rejects with one reason and the fulfilled values are unreachable — while every member ran to completion. Removing the rejecting member returns three values; leaving it in returns none. Removing a broken member gives MORE than keeping it, which inverts what example 015 measured about os.walk and about its own sources.&quot;,
+
+  &quot;second_finding&quot;: &quot;Two rejections produce exactly one reason. The second failure is not delayed or reported elsewhere; it is not reported.&quot;,
+
+  &quot;third_finding&quot;: &quot;A rejection cancels nothing. The slow member settles afterwards, off to the side of a caller that has already moved on.&quot;,
+
+  &quot;the_discriminator_that_exists&quot;: &quot;Promise.allSettled has been in the language since ES2020 and returns one entry per input, always, with the outcome attached to the item. It is not the default anybody reaches for — the same family as archaeology 011's `d[k] is d[k]` and archaeology 015's empty-versus-missing row count.&quot;,
+
+  &quot;combinators&quot;: {
+    &quot;Promise.all&quot;:        {&quot;keeps_what_succeeded&quot;: false, &quot;reasons_surfaced&quot;: 1},
+    &quot;Promise.allSettled&quot;: {&quot;keeps_what_succeeded&quot;: true,  &quot;reasons_surfaced&quot;: &quot;all&quot;}
+  },
+
+  &quot;the_control&quot;: &quot;The same four members with nothing rejecting. Both combinators then carry the same information, so the difference is a statement about failure and not about the two functions.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: what each combinator keeps, what it surfaces, and the units map&quot;,
+    &quot;SCL&quot;: &quot;which combinator this deployment runs, and whether discarding completed work is fatal here&quot;,
+    &quot;SMS&quot;: &quot;the probes that run the real built-ins, each recording which members actually executed&quot;,
+    &quot;TMS&quot;: &quot;one file per combinator — each declares what it keeps, and imports nothing&quot;,
+    &quot;DMS&quot;: &quot;what the caller ends up holding, what ran anyway, and what it can no longer ask&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/combinators&quot;: [&quot;all.mjs&quot;, &quot;all_settled.mjs&quot;]},
+
+  &quot;the_recut_adds&quot;: &quot;A combinator declares what it keeps, and the declaration is verified by running it. Section 3b is the drill: a unit claiming to keep what succeeded while implemented with Promise.all must be caught.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;deployment&quot;: &quot;fan-out-fetch&quot;,
+  &quot;combinator&quot;: &quot;Promise.all&quot;,
+  &quot;discarding_completed_work_is&quot;: &quot;fatal&quot;,
+  &quot;why&quot;: &quot;This deployment fans out to several backends and each one costs a request that already went out. Silently dropping the answers that came back is the thing it must not do, so it names that and exits non-zero rather than treating the rejection as the whole story.&quot;,
+  &quot;not_a_general_rule&quot;: &quot;A transaction that must be all-or-nothing wants exactly Promise.all's behaviour. The policy is a deployment's, not the combinator's.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/upstream.mjs</summary><pre><code>// Probes that run the real V8 built-ins. Nothing here is simulated.
+//
+// Every probe records which members actually executed, because the whole
+// finding is that work runs and is then thrown away.
+
+// A member that resolves or rejects after `ms`, appending its name to `ran`
+// the moment it settles. `ran` is how we know the work happened.
+export function member(ran, name, ms, { rejects = false } = {}) {
+  return new Promise((resolve, reject) =&gt; {
+    setTimeout(() =&gt; {
+      ran.push(name);
+      if (rejects) reject(new Error(`${name} broke`));
+      else resolve(`${name}:ok`);
+    }, ms);
+  });
+}
+
+export async function withAll(build) {
+  const ran = [];
+  try {
+    const values = await Promise.all(build(ran));
+    return { ran, settled: true, values, reason: null };
+  } catch (raised) {
+    return { ran, settled: false, values: null, reason: raised.message };
+  }
+}
+
+export async function withAllSettled(build) {
+  const ran = [];
+  const results = await Promise.allSettled(build(ran));
+  return { ran, results };
+}
+
+// One rejecting member among three that fulfil.
+export const oneRejects = (ran) =&gt; [
+  member(ran, &quot;a&quot;, 10), member(ran, &quot;b&quot;, 20, { rejects: true }),
+  member(ran, &quot;c&quot;, 30), member(ran, &quot;d&quot;, 40),
+];
+
+// The same input with the rejecting member taken out — the island test.
+export const rejectingMemberRemoved = (ran) =&gt; [
+  member(ran, &quot;a&quot;, 10), member(ran, &quot;c&quot;, 30), member(ran, &quot;d&quot;, 40),
+];
+
+// The control: the same shape and the same count, and nothing rejects. Without
+// it, &quot;all and allSettled differ&quot; is not a statement about failure.
+export const noneReject = (ran) =&gt; [
+  member(ran, &quot;a&quot;, 10), member(ran, &quot;b&quot;, 20),
+  member(ran, &quot;c&quot;, 30), member(ran, &quot;d&quot;, 40),
+];
+
+// Two rejecting members. How many reasons reach the caller?
+export const twoReject = (ran) =&gt; [
+  member(ran, &quot;b&quot;, 10, { rejects: true }), member(ran, &quot;e&quot;, 20, { rejects: true }),
+];
+
+// A fast rejection alongside a slow fulfilment: does the rejection stop it?
+export const fastRejectSlowMember = (ran) =&gt; [
+  member(ran, &quot;b&quot;, 5, { rejects: true }), member(ran, &quot;slow&quot;, 60),
+];
+
+export const wait = (ms) =&gt; new Promise((resolve) =&gt; setTimeout(resolve, ms));
+export const runtime = () =&gt; `${process.release?.name ?? &quot;node&quot;} ${process.version} (V8 ${process.versions.v8})`;
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/combinators/all.mjs</summary><pre><code>// Promise.all, wrapped as a declaring unit.
+//
+// It declares that it does NOT keep what succeeded. The declaration is checked
+// by running it (island test section 3b), not by reading this line.
+export const COMBINATOR = &quot;Promise.all&quot;;
+export const KEEPS_WHAT_SUCCEEDED = false;
+export const REASONS_SURFACED = 1;
+
+export async function combine(promises) {
+  try {
+    return { kept: await Promise.all(promises), reasons: [] };
+  } catch (raised) {
+    return { kept: [], reasons: [raised.message] };
+  }
+}
+</code></pre></details><details><summary>TMS/combinators/all_settled.mjs</summary><pre><code>// Promise.allSettled, wrapped as a declaring unit.
+//
+// The outcome travels with each item — `{status, value}` or `{status, reason}` —
+// which is why it can keep the fulfilled values without them going anonymous.
+export const COMBINATOR = &quot;Promise.allSettled&quot;;
+export const KEEPS_WHAT_SUCCEEDED = true;
+export const REASONS_SURFACED = Infinity;
+
+export async function combine(promises) {
+  const results = await Promise.allSettled(promises);
+  return {
+    kept: results.filter((r) =&gt; r.status === &quot;fulfilled&quot;).map((r) =&gt; r.value),
+    reasons: results.filter((r) =&gt; r.status === &quot;rejected&quot;).map((r) =&gt; r.reason.message),
+  };
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.mjs</summary><pre><code>// What a person is shown. The columns exist so that &quot;what the caller holds&quot;
+// and &quot;what actually ran&quot; can never be read as the same number.
+const pad = (value, width) =&gt; String(value).padEnd(width);
+
+export function comparison(rows) {
+  const lines = [&quot;    combinator            kept   ran        reasons&quot;];
+  for (const row of rows) {
+    lines.push(`    ${pad(row.name, 21)} ${pad(row.kept, 6)} ${pad(row.ran, 10)} ${row.reasons}`);
+  }
+  return lines.join(&quot;\n&quot;);
+}
+
+export function removalTable(removed, kept) {
+  return [
+    &quot;                             values the caller receives&quot;,
+    `    rejecting member removed  ${removed}`,
+    `    rejecting member present  ${kept}`,
+  ].join(&quot;\n&quot;);
+}
+
+export function settled(results) {
+  const lines = [&quot;    status     value or reason&quot;];
+  for (const result of results) {
+    lines.push(`    ${pad(result.status, 10)} ${result.status === &quot;fulfilled&quot; ? result.value : result.reason.message}`);
+  }
+  return lines.join(&quot;\n&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.mjs</summary><pre><code>// The island test, run against the real built-ins.
+//
+//   node src/island_test.mjs
+//
+// Section 3b is the drill: a combinator that DECLARES it keeps what succeeded
+// while being implemented with Promise.all must be caught by running it.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as upstream from &quot;./SMS/upstream.mjs&quot;;
+import * as all from &quot;./TMS/combinators/all.mjs&quot;;
+import * as allSettled from &quot;./TMS/combinators/all_settled.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const FMS = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;architecture.json&quot;), &quot;utf8&quot;));
+const failures = [];
+let ran = 0;
+const check = (label, ok, detail = &quot;&quot;) =&gt; {
+  ran += 1;
+  process.stdout.write(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}\n`);
+  if (!ok) failures.push(label);
+};
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+say(`\n  ${upstream.runtime()}`);
+
+say(&quot;\n== 1. each combinator is an island, and FMS matches the tree&quot;);
+for (const [unit, declared] of Object.entries(FMS.units)) {
+  const dir = path.join(here, ...unit.split(&quot;/&quot;));
+  const onDisk = fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+  check(`${unit}: FMS declares what is on disk`,
+    JSON.stringify(onDisk) === JSON.stringify([...declared].sort()),
+    `disk ${onDisk.join(&quot;, &quot;)} | FMS ${[...declared].sort().join(&quot;, &quot;)}`);
+  for (const file of onDisk) {
+    const body = fs.readFileSync(path.join(dir, file), &quot;utf8&quot;);
+    check(`${unit}/${file} imports nothing at all`, !/^\s*import\s/m.test(body));
+  }
+}
+check(&quot;both combinators declare what they keep&quot;,
+  [all, allSettled].every((m) =&gt; typeof m.KEEPS_WHAT_SUCCEEDED === &quot;boolean&quot;));
+
+say(&quot;\n== 2. one member of four rejects&quot;);
+const ranAll = [];
+const viaAll = await all.combine(upstream.oneRejects(ranAll));
+await upstream.wait(80);
+check(&quot;Promise.all kept nothing&quot;, viaAll.kept.length === 0);
+check(&quot;but all four members ran to completion&quot;, ranAll.length === 4, ranAll.join(&quot;,&quot;));
+check(&quot;so three fulfilled values existed and none is reachable&quot;,
+  ranAll.filter((n) =&gt; n !== &quot;b&quot;).length === 3 &amp;&amp; viaAll.kept.length === 0);
+check(&quot;exactly one reason surfaced&quot;, viaAll.reasons.length === 1, viaAll.reasons.join(&quot; | &quot;));
+
+const ranSettled = [];
+const viaSettled = await allSettled.combine(upstream.oneRejects(ranSettled));
+check(&quot;Promise.allSettled kept three values&quot;, viaSettled.kept.length === 3, viaSettled.kept.join(&quot;, &quot;));
+check(&quot;and surfaced the failure as well&quot;, viaSettled.reasons.length === 1, viaSettled.reasons.join(&quot; | &quot;));
+check(&quot;the two disagree by three values on identical input&quot;,
+  viaSettled.kept.length - viaAll.kept.length === 3);
+
+say(&quot;\n== 3. the control - the same four members, nothing rejecting&quot;);
+const cleanAll = await all.combine(upstream.noneReject([]));
+const cleanSettled = await allSettled.combine(upstream.noneReject([]));
+check(&quot;Promise.all keeps four&quot;, cleanAll.kept.length === 4);
+check(&quot;Promise.allSettled keeps four - the control&quot;, cleanSettled.kept.length === 4);
+check(&quot;with nothing rejecting they carry the same information&quot;,
+  cleanAll.kept.length === cleanSettled.kept.length &amp;&amp; cleanAll.reasons.length === cleanSettled.reasons.length);
+check(&quot;so section 2's gap is about failure, not about the two functions&quot;,
+  cleanSettled.kept.length - cleanAll.kept.length === 0 &amp;&amp; viaSettled.kept.length - viaAll.kept.length === 3);
+
+say(&quot;\n== 3b. DRILL - a combinator that overclaims must be caught by running it&quot;);
+const liar = {
+  COMBINATOR: &quot;drill-liar&quot;,
+  KEEPS_WHAT_SUCCEEDED: true, // the declaration
+  async combine(promises) {   // the implementation, which does not
+    try { return { kept: await Promise.all(promises), reasons: [] }; }
+    catch (raised) { return { kept: [], reasons: [raised.message] }; }
+  },
+};
+async function keepsWhatSucceeded(unit) {
+  const ran = [];
+  const result = await unit.combine(upstream.oneRejects(ran));
+  await upstream.wait(80);
+  return result.kept.length &gt; 0 &amp;&amp; ran.length &gt; result.kept.length;
+}
+check(&quot;the drill unit declares it keeps what succeeded&quot;, liar.KEEPS_WHAT_SUCCEEDED === true);
+check(&quot;running it says otherwise&quot;, (await keepsWhatSucceeded(liar)) === false);
+check(&quot;so the declaration is refused&quot;, (await keepsWhatSucceeded(liar)) !== liar.KEEPS_WHAT_SUCCEEDED);
+check(&quot;and the honest unit's declaration holds under the same probe&quot;,
+  (await keepsWhatSucceeded(allSettled)) === allSettled.KEEPS_WHAT_SUCCEEDED);
+check(&quot;as does Promise.all's&quot;, (await keepsWhatSucceeded(all)) === all.KEEPS_WHAT_SUCCEEDED);
+
+say(&quot;\n== 4. removing the rejecting member gives more than keeping it&quot;);
+const removed = await upstream.withAll(upstream.rejectingMemberRemoved);
+const present = await upstream.withAll(upstream.oneRejects);
+await upstream.wait(80);
+check(&quot;removed (island test): three values&quot;, removed.values?.length === 3, JSON.stringify(removed.values));
+check(&quot;present and rejecting: none&quot;, present.values === null &amp;&amp; present.reason !== null, present.reason ?? &quot;&quot;);
+check(&quot;removing it yields MORE than keeping it&quot;, (removed.values?.length ?? 0) &gt; 0);
+check(&quot;and it is not a smaller input - four members ran either way&quot;,
+  present.ran.length === 4 &amp;&amp; removed.ran.length === 3, `${present.ran.join(&quot;,&quot;)} | ${removed.ran.join(&quot;,&quot;)}`);
+
+say(&quot;\n== 5. two rejections, one reason&quot;);
+const two = await upstream.withAll(upstream.twoReject);
+await upstream.wait(60);
+check(&quot;both rejecting members ran&quot;, two.ran.length === 2, two.ran.join(&quot;,&quot;));
+check(&quot;reasons that reached the caller: 1&quot;, two.settled === false &amp;&amp; typeof two.reason === &quot;string&quot;);
+check(&quot;the second failure is not reported anywhere&quot;, two.ran.length - 1 === 1);
+
+say(&quot;\n== 6. a rejection cancels nothing&quot;);
+const fast = await upstream.withAll(upstream.fastRejectSlowMember);
+const atRejection = [...fast.ran];
+await upstream.wait(120);
+check(&quot;at the moment of rejection, the slow member had not settled&quot;, atRejection.length === 1, atRejection.join(&quot;,&quot;));
+check(&quot;it settled afterwards regardless&quot;, fast.ran.length === 2, fast.ran.join(&quot;,&quot;));
+check(&quot;nobody was waiting for it&quot;, fast.values === null);
+
+say(&quot;\n== 7. the discriminator exists and is not the default&quot;);
+check(&quot;Promise.allSettled is present in this runtime&quot;, typeof Promise.allSettled === &quot;function&quot;);
+const per = await upstream.withAllSettled(upstream.oneRejects);
+check(&quot;it returns one entry per input, always&quot;, per.results.length === 4);
+check(&quot;and the outcome is attached to the item, not beside the batch&quot;,
+  per.results.every((r) =&gt; r.status === &quot;fulfilled&quot; ? &quot;value&quot; in r : &quot;reason&quot; in r));
+check(&quot;which is what makes the kept values safe to keep&quot;,
+  per.results.filter((r) =&gt; r.status === &quot;fulfilled&quot;).length === 3
+    &amp;&amp; per.results.filter((r) =&gt; r.status === &quot;rejected&quot;).length === 1);
+
+say(&quot;&quot;);
+if (failures.length &gt; 0) {
+  say(`  ${failures.length} FAILED: ${failures.join(&quot; | &quot;)}`);
+  process.exitCode = 1;
+} else {
+  say(`  ${ran} checks passed - every probe ran the real built-ins`);
+}
+</code></pre></details><details><summary>main.mjs</summary><pre><code>// Two built-in combinators over the same four promises, one of which rejects.
+//
+//   node src/main.mjs            what each one keeps, and what ran anyway
+//   node src/main.mjs --strict   exit 1 if this deployment discarded completed work
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as report from &quot;./DMS/report.mjs&quot;;
+import * as upstream from &quot;./SMS/upstream.mjs&quot;;
+import * as all from &quot;./TMS/combinators/all.mjs&quot;;
+import * as allSettled from &quot;./TMS/combinators/all_settled.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const POLICY = JSON.parse(fs.readFileSync(path.join(here, &quot;SCL&quot;, &quot;policy.json&quot;), &quot;utf8&quot;));
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+const UNITS = Object.fromEntries([all, allSettled].map((m) =&gt; [m.COMBINATOR, m]));
+
+async function through(unit, build) {
+  const ran = [];
+  const result = await unit.combine(build(ran));
+  await upstream.wait(80); // let every member settle, including the ones nobody waited for
+  return { name: unit.COMBINATOR, kept: result.kept.length, ran: ran.join(&quot;,&quot;), reasons: result.reasons.length };
+}
+
+async function main(argv) {
+  say(`\n  ${upstream.runtime()}`);
+  say(`  ${POLICY.deployment}: combine with ${POLICY.combinator}\n`);
+
+  say(&quot;  one member of four rejects:&quot;);
+  const rows = [await through(all, upstream.oneRejects), await through(allSettled, upstream.oneRejects)];
+  say(report.comparison(rows));
+  say(&quot;\n  Four members ran under both. One keeps three values, the other keeps none.\n&quot;);
+
+  say(&quot;  the control - the same four members, none rejecting:&quot;);
+  const clean = [await through(all, upstream.noneReject), await through(allSettled, upstream.noneReject)];
+  say(report.comparison(clean));
+  say(&quot;\n  Identical. The difference is a statement about failure, not about the two functions.\n&quot;);
+
+  const removed = await upstream.withAll(upstream.rejectingMemberRemoved);
+  const present = await upstream.withAll(upstream.oneRejects);
+  say(report.removalTable(
+    `${removed.values?.length ?? 0}   ${JSON.stringify(removed.values ?? [])}`,
+    `${present.values?.length ?? 0}   rejected: ${present.reason}`));
+  say(&quot;\n  Removing the broken member gives MORE than keeping it.\n&quot;);
+
+  const two = await upstream.withAll(upstream.twoReject);
+  await upstream.wait(60);
+  say(`  two members reject, reasons that reach the caller: 1 - ${two.reason}`);
+
+  const fast = await upstream.withAll(upstream.fastRejectSlowMember);
+  say(`  after the rejection, members settled so far: ${fast.ran.join(&quot;,&quot;)}`);
+  await upstream.wait(100);
+  say(`  ...and 100ms later:                          ${fast.ran.join(&quot;,&quot;)} - nothing was cancelled\n`);
+
+  const details = await upstream.withAllSettled(upstream.oneRejects);
+  say(&quot;  what allSettled hands back instead:&quot;);
+  say(report.settled(details.results));
+  say(`    ${details.results.length} entries for ${details.results.length} inputs, always\n`);
+
+  const unit = UNITS[POLICY.combinator];
+  const discarded = !unit.KEEPS_WHAT_SUCCEEDED;
+  if (argv.includes(&quot;--strict&quot;) &amp;&amp; discarded &amp;&amp; POLICY.discarding_completed_work_is === &quot;fatal&quot;) {
+    say(`  --strict: ${POLICY.combinator} discarded work this deployment paid for, and that is fatal here`);
+    return 1;
+  }
+  return 0;
+}
+
+process.exitCode = await main(process.argv.slice(2));
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

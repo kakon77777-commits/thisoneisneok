@@ -1,0 +1,32 @@
+{
+  "name": "016-promise-all",
+  "upstream": "ECMAScript Promise.all / Promise.allSettled, measured on the local V8",
+  "what_is_being_examined": "Two built-in combinators over the same four promises, where one member rejects. What reaches the caller, and what the caller can no longer ask.",
+
+  "the_finding": "Promise.all rejects with one reason and the fulfilled values are unreachable — while every member ran to completion. Removing the rejecting member returns three values; leaving it in returns none. Removing a broken member gives MORE than keeping it, which inverts what example 015 measured about os.walk and about its own sources.",
+
+  "second_finding": "Two rejections produce exactly one reason. The second failure is not delayed or reported elsewhere; it is not reported.",
+
+  "third_finding": "A rejection cancels nothing. The slow member settles afterwards, off to the side of a caller that has already moved on.",
+
+  "the_discriminator_that_exists": "Promise.allSettled has been in the language since ES2020 and returns one entry per input, always, with the outcome attached to the item. It is not the default anybody reaches for — the same family as archaeology 011's `d[k] is d[k]` and archaeology 015's empty-versus-missing row count.",
+
+  "combinators": {
+    "Promise.all":        {"keeps_what_succeeded": false, "reasons_surfaced": 1},
+    "Promise.allSettled": {"keeps_what_succeeded": true,  "reasons_surfaced": "all"}
+  },
+
+  "the_control": "The same four members with nothing rejecting. Both combinators then carry the same information, so the difference is a statement about failure and not about the two functions.",
+
+  "sets": {
+    "FMS": "this file: what each combinator keeps, what it surfaces, and the units map",
+    "SCL": "which combinator this deployment runs, and whether discarding completed work is fatal here",
+    "SMS": "the probes that run the real built-ins, each recording which members actually executed",
+    "TMS": "one file per combinator — each declares what it keeps, and imports nothing",
+    "DMS": "what the caller ends up holding, what ran anyway, and what it can no longer ask"
+  },
+
+  "units": {"TMS/combinators": ["all.mjs", "all_settled.mjs"]},
+
+  "the_recut_adds": "A combinator declares what it keeps, and the declaration is verified by running it. Section 3b is the drill: a unit claiming to keep what succeeded while implemented with Promise.all must be caught."
+}

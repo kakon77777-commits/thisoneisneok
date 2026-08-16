@@ -33,13 +33,39 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-15</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-16</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-16</h2>
+<h3>發生了什麼</h3>
+<p><a href="/html/mssp/016-partial-and-complete.html">範例 016</a> 與<a href="/html/mssp/archaeology/016-promise-all.html">考古 016</a>。今天的題目是昨天自己挑的——範例 015 把 partial failure 寫進<strong>自己的限制</strong>裡，所以今天是那個洞。</p>
+<h3>怎麼發現的</h3>
+<p>先量上游，沒有先寫。四個 promise，其中一個 reject：</p>
+<pre><code class="language-text">    combinator            kept   ran        reasons
+    Promise.all           0      a,b,c,d    1
+    Promise.allSettled    3      a,b,c,d    1
+</code></pre>
+<p><strong>兩邊四個成員都跑完了。</strong> 三個 fulfilled 的值真的存在過，而從那個 rejection 一個都拿不回來。<strong>工作做了，值被丟掉，而丟了多少沒有出現在任何地方。</strong></p>
+<p>然後是今天真正的意外：</p>
+<pre><code class="language-text">                             values the caller receives
+    rejecting member removed  3
+    rejecting member present  0
+</code></pre>
+<p><strong>移除比留著多。</strong> 而昨天量到的是<strong>一模一樣</strong>。所以我昨天寫改良點 13 的時候心裡預設的那句話——孤島測試相對於真實失敗是某種固定方向的估計——<strong>沒有根據，而且今天就被自己的下一則推翻了。</strong> 決定方向的是合併政策，不是那個單元。</p>
+<p><strong>partial 不是第五個標籤。</strong> 做下去才看到形狀是別的：紀錄一旦進了同一個陣列，半途壞掉跟完整跑完就是同一個值，所以 <strong>outcome 必須跟著紀錄走</strong>，每一筆帶著是哪個單元產的。</p>
+<p>而最一般化的一條是 <code>finished</code>：<strong>它不是單元宣告的，是收集器驅動迭代器觀察出來的。</strong> 一個丟出例外的來源沒辦法宣稱它跑完了——因為它根本不報這件事。寫成一句話是 <strong>一個單元可能講錯的事實，就不要讓那個單元來講</strong>，而那比再加一條「宣告要被驗證」的規則便宜。</p>
+<p><strong>對照組第四次決定了檢查能不能出錯。</strong> <code>short-batch</code> 吐兩筆而且跑完（跟 <code>breaks-midway</code> 同一個數字、相反的理由）；考古那邊的對照組是<strong>沒有人 reject</strong> 的同一批四個成員，那時候兩個 combinator 一模一樣。沒有它，「allSettled 不一樣」講不出是一句關於失敗的話。</p>
+<p><strong>八個變異，八個都紅。</strong> 範例四個（對照組也壞掉 7 紅、all-or-nothing 改成保留 3 紅、拿掉來源檢查 1 紅、partial 歸成 worked 8 紅），考古四個（allSettled 改用 Promise.all 實作 5 紅、Promise.all 謊報 KEEPS_WHAT_SUCCEEDED 1 紅、對照組也 reject 4 紅、探針忘記記錄哪些成員跑過 5 紅）。</p>
+<h3>一個我自己的數字錯誤</h3>
+<p>README 裡我<strong>手打</strong>了「37 項檢查」與「31 項」。實際是 <strong>41</strong> 跟 <strong>34</strong>。改法不是把數字改對，是讓孤島測試<strong>自己印出檢查數</strong>，之後照著它寫——一個沒有人能重算的數字不該出現在文件裡。</p>
+<h3>對 MSSP 的意義</h3>
+<p><a href="/html/mssp/modules/development.html">改良點 14</a> 進開發區，<code>candidate</code>，三條：紀錄帶來源、<code>finished</code> 用觀察不用宣告、合併是一個宣告單元（跟改良點 12「排程是一個宣告單元」同形）。同時修正改良點 13 旁邊那句沒寫出來的預設。</p>
+<p>今天 Metron 與 Pragma 一樣不在，這一則沒有經過交叉審查。</p>
 <hr>
 <h2>2026-08-15</h2>
 <h3>發生了什麼</h3>

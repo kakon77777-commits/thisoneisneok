@@ -1,6 +1,6 @@
 {
   "site": "https://thisoneisneok.com",
-  "count": 15,
+  "count": 16,
   "note": "MSSP architecture examples. Each entry runs, and each is checked for TMS-to-TMS coupling at build time.",
   "examples": [
     {
@@ -360,6 +360,31 @@
       "runnable": "python src/main.py",
       "html": "https://thisoneisneok.com/html/mssp/015-present-and-failing.html",
       "lines": 384
+    },
+    {
+      "id": "016-partial-and-complete",
+      "title": {
+        "zh": "半途壞掉的結果，跟完整的結果，是同一個值",
+        "en": "A partial result and a complete one are the same value"
+      },
+      "summary": {
+        "zh": "昨天的[範例 015](/html/mssp/015-present-and-failing.html) 把 partial failure 寫進自己的限制裡——回了一些再壞掉是第五種結果，分類器會叫它 `worked`。今天是那個洞，而它**不是第五個標籤**。真正的形狀是：**紀錄一旦進了同一個陣列，半途壞掉跟完整跑完就是同一個值**，所以 outcome 不能放在紀錄「旁邊」，必須跟著紀錄走——每一筆帶著是哪個單元產的。第二件事：`finished` 不是單元自己說的，是收集器驅動迭代器**觀察**出來的，所以一個丟出例外的來源沒有辦法宣稱它跑完了。第三件事：**怎麼合併本身就是一個宣告單元**，它宣告的是「已經成功的工作要怎麼辦」。對照組是 `short-batch`：吐兩筆而且**跑完**，跟 `breaks-midway` 的兩筆同一個數字、相反的理由；沒有它，第 3 節不可能失敗。而今天的量測**跟昨天相反**：在 all-or-nothing 底下，把壞掉的來源**移除**得到 5 筆，**留著讓它壞**得到 0 筆——移除比留著多。昨天兩者是同一個數字。兩則加起來說的是：孤島測試的結果相對於真實失敗不是固定的，兩邊都可能。同日的考古 016 在 `Promise.all` 量到同一個反轉。已知沒解決的：一個把自己的例外吞掉、提早 return 的來源會報成 `worked`，第 7 節把這個界線**斷言**起來，紅了就代表界線變了、文字要跟著改。",
+        "en": "Example 015 wrote partial failure into its own limitations as a fifth outcome it did not model. This is that limitation gone, and it is not a fifth label. Once records are in one array, a partial batch and a complete batch are the same value, so the outcome cannot travel beside the records — it has to travel with them, and each record carries which unit produced it. Second, `finished` is not the unit's to declare: the collector drives the iterator and observes where it stopped, so a source that throws cannot claim it finished. Third, how results are combined is itself a declaring unit, and what it declares is what it does with work that already succeeded. The control is short-batch, which yields two records and finishes — the same number as breaks-midway for the opposite reason, and without it section 3 could not come out badly. The measurement inverts yesterday's: under all-or-nothing, removing the broken source gives 5 records and keeping it gives 0, so removing gives MORE, where example 015 measured the two as equal. Together they say the island test's result relative to a real failure is not fixed and can point either way. The same day's archaeology measures the same inversion in Promise.all. Known limit, asserted rather than assumed: a source that catches its own failure and returns early reports as worked, and section 7 asserts that indistinguishability so that a change in it goes red."
+      },
+      "language": "javascript",
+      "date": "2026-08-16",
+      "version": "v1.0",
+      "kind": "example",
+      "concepts": [
+        "a-partial-batch-and-a-complete-one-are-one-value",
+        "the-outcome-travels-with-the-records",
+        "finished-is-observed-not-declared",
+        "combination-is-a-declaring-unit",
+        "removing-it-can-give-more-than-keeping-it"
+      ],
+      "runnable": "node src/main.mjs",
+      "html": "https://thisoneisneok.com/html/mssp/016-partial-and-complete.html",
+      "lines": 479
     }
   ]
 }

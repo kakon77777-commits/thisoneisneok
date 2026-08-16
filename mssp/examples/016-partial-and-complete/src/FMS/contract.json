@@ -1,0 +1,49 @@
+{
+  "name": "016-partial-and-complete",
+  "what_it_is": "A gather step over three sources where one of them hands over real records and then breaks, and where the way the results are combined is itself a declared unit.",
+  "the_structural_decision": "A partial result and a complete one are the same value once the records are in one array. So the outcome cannot travel beside the records — it has to travel WITH them, which means a record carries which unit produced it. And the combination policy is a declaring unit: it says what it does with work that already succeeded.",
+  "why_this_one": "Example 015 named four outcomes and wrote partial failure into its own limitations as a fifth it did not model. This is that limitation gone, and it turned out not to be a fifth label but a different axis.",
+  "status": "candidate",
+
+  "outcomes": {
+    "worked": "yielded records and finished",
+    "empty": "yielded nothing and finished — a legitimate quiet day",
+    "partial": "yielded records and then stopped early — the fifth, and the one that survives aggregation unmarked",
+    "failed": "was called and yielded nothing before stopping",
+    "absent": "not loaded at all — what the island test produces"
+  },
+
+  "who_says_it_finished": "Not the source. The collector drives the iterator and observes where it stopped, so `finished` is not a field a unit can get wrong. What a unit still declares is what it can fail WITH (改良點 13).",
+
+  "sources": {
+    "full-batch":    {"yields": 3, "can_fail_with": ["unreadable-page"]},
+    "short-batch":   {"yields": 2, "can_fail_with": ["stale-cursor"], "note": "the control — it yields the SAME number of records as breaks-midway and finishes, so a count cannot separate them and the outcome field can"},
+    "breaks-midway": {"yields": 2, "can_fail_with": ["connection-reset", "timeout"], "note": "then throws"}
+  },
+
+  "combiners": {
+    "all-or-nothing": {"keeps_partial_work": false, "upstream": "Promise.all"},
+    "settle-each":    {"keeps_partial_work": true,  "upstream": "Promise.allSettled"}
+  },
+
+  "the_finding": "Under all-or-nothing, REMOVING the broken source gives more than keeping it: 5 records against 0. That inverts example 015, where removing a source and breaking it produced the same total. Archaeology 016 measures the same inversion in Promise.all — three of four members fulfilled, every one of them ran to completion, and none of their values is reachable from the rejection.",
+
+  "sets": {
+    "FMS": "this file: the five outcomes, what each source can fail with, what each combiner does with partial work, and the units map",
+    "SCL": "which combiner this deployment runs and whether a partial run is fatal here",
+    "SMS": "loading, driving each source, observing where it stopped, and refusing a record with no origin",
+    "TMS": "one file per source and one per combiner — each declares itself and reaches no sibling",
+    "DMS": "the per-source outcome, what the combiner kept or discarded, and how many kept records came from a source that did not finish"
+  },
+
+  "units": {
+    "TMS/sources": ["breaks_midway.mjs", "full_batch.mjs", "short_batch.mjs"],
+    "TMS/combiners": ["all_or_nothing.mjs", "settle_each.mjs"]
+  },
+
+  "non_goals": [
+    "Retries, resumption or cursors. Restarting a source that broke at record two is a different problem and this one has to be nameable first.",
+    "Deciding which combiner is right. all-or-nothing is correct for a nightly index and wrong for a dashboard; SCL picks one and the example takes no position.",
+    "Detecting a source that swallows its own failure internally and returns early. Section 7 of the island test asserts that such a source is indistinguishable from short-batch, so the limit stays measured rather than assumed."
+  ]
+}

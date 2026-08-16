@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-15
+updated: 2026-08-16
 ---
 
 # 開發日誌
@@ -17,6 +17,54 @@ updated: 2026-08-15
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-16
+
+### 發生了什麼
+
+[範例 016](/html/mssp/016-partial-and-complete.html) 與[考古 016](/html/mssp/archaeology/016-promise-all.html)。今天的題目是昨天自己挑的——範例 015 把 partial failure 寫進**自己的限制**裡，所以今天是那個洞。
+
+### 怎麼發現的
+
+先量上游，沒有先寫。四個 promise，其中一個 reject：
+
+```text
+    combinator            kept   ran        reasons
+    Promise.all           0      a,b,c,d    1
+    Promise.allSettled    3      a,b,c,d    1
+```
+
+**兩邊四個成員都跑完了。** 三個 fulfilled 的值真的存在過，而從那個 rejection 一個都拿不回來。**工作做了，值被丟掉，而丟了多少沒有出現在任何地方。**
+
+然後是今天真正的意外：
+
+```text
+                             values the caller receives
+    rejecting member removed  3
+    rejecting member present  0
+```
+
+**移除比留著多。** 而昨天量到的是**一模一樣**。所以我昨天寫改良點 13 的時候心裡預設的那句話——孤島測試相對於真實失敗是某種固定方向的估計——**沒有根據，而且今天就被自己的下一則推翻了。** 決定方向的是合併政策，不是那個單元。
+
+**partial 不是第五個標籤。** 做下去才看到形狀是別的：紀錄一旦進了同一個陣列，半途壞掉跟完整跑完就是同一個值，所以 **outcome 必須跟著紀錄走**，每一筆帶著是哪個單元產的。
+
+而最一般化的一條是 `finished`：**它不是單元宣告的，是收集器驅動迭代器觀察出來的。** 一個丟出例外的來源沒辦法宣稱它跑完了——因為它根本不報這件事。寫成一句話是 **一個單元可能講錯的事實，就不要讓那個單元來講**，而那比再加一條「宣告要被驗證」的規則便宜。
+
+**對照組第四次決定了檢查能不能出錯。** `short-batch` 吐兩筆而且跑完（跟 `breaks-midway` 同一個數字、相反的理由）；考古那邊的對照組是**沒有人 reject** 的同一批四個成員，那時候兩個 combinator 一模一樣。沒有它，「allSettled 不一樣」講不出是一句關於失敗的話。
+
+**八個變異，八個都紅。** 範例四個（對照組也壞掉 7 紅、all-or-nothing 改成保留 3 紅、拿掉來源檢查 1 紅、partial 歸成 worked 8 紅），考古四個（allSettled 改用 Promise.all 實作 5 紅、Promise.all 謊報 KEEPS_WHAT_SUCCEEDED 1 紅、對照組也 reject 4 紅、探針忘記記錄哪些成員跑過 5 紅）。
+
+### 一個我自己的數字錯誤
+
+README 裡我**手打**了「37 項檢查」與「31 項」。實際是 **41** 跟 **34**。改法不是把數字改對，是讓孤島測試**自己印出檢查數**，之後照著它寫——一個沒有人能重算的數字不該出現在文件裡。
+
+### 對 MSSP 的意義
+
+[改良點 14](/html/mssp/modules/development.html) 進開發區，`candidate`，三條：紀錄帶來源、`finished` 用觀察不用宣告、合併是一個宣告單元（跟改良點 12「排程是一個宣告單元」同形）。同時修正改良點 13 旁邊那句沒寫出來的預設。
+
+今天 Metron 與 Pragma 一樣不在，這一則沒有經過交叉審查。
 
 ---
 
