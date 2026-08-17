@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>半個串流跟一個完整串流，解出來是同一串位元組 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="同日的範例 017 主張**跑完了跟拿到全部了是兩件事**，而 `zlib` 把兩種答案放在同一個模組裡、而且兩種都是對的。同一份截斷輸入：`zlib.decompress` **拋例外**（Error -5, incomplete or truncated stream），`decompressobj().decompress` **不拋**，交回 218 bytes 並把 `eof` 設成 `False`。對照組是這一則能不能說話的關鍵——一個**完整**串流，payload 恰好是那 218 bytes：兩次解壓縮**位元組完全相同**，沒有任何回傳值分得開，唯一分得開的是 `.eof`。第二個發現更難修：**`.eof` 在 decompressor 物件上，bytes 是回傳值**，所以一個「解壓縮然後回傳 bytes」的函式在呼叫端看到東西之前就把判別器丟掉了——那正是範例 016「outcome 必須跟著紀錄走」在標準庫裡的樣子。第三、截斷切在紀錄中間：呼叫端 `split(b&quot;\\n&quot;)` 拿到 19 筆完整加一個 `b'record-01'` 的碎片，而碎片以 `record-` 開頭、像極了一筆。第四、`max_length` 的**刻意**部分讀取跟**意外**截斷落在同一個狀態，`eof` 只說「還沒完」，不說為什麼。兩邊的行為都不適合改：串流解壓器不能對「還沒讀完」拋例外，那是它兩次呼叫之間的正常狀態；一次收完的函式把不完整當錯誤也是對的。缺陷在於**兩邊的結果沒有共同的形狀**，而那個旗標沒有跟著資料走。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/017-cpython-zlib.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>017-cpython-zlib</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython zlib</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>measured at run time</span></div>
+    <div><b>日期</b><span>2026-08-17</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/blob/main/Modules/zlibmodule.c">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>017 — CPython <code>zlib</code>：半個串流跟一個完整串流，解出來是同一串位元組</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/python/cpython/blob/main/Modules/zlibmodule.c">CPython <code>Modules/zlibmodule.c</code></a>，PSF-2.0。版本由執行時量出來。
+這一則不需要網路：把一個合法串流切一半就是了——連線中斷產生的正是這個。</p>
+</blockquote>
+<pre><code class="language-bash">python src/main.py            # 兩個 reader，同一份截斷串流
+python src/main.py --strict   # 這個部署讀到沒到 eof 的串流就 exit 1
+python src/island_test.py     # 37 項檢查，全部直接跑真的 zlib，數字由它自己印
+</code></pre>
+<h2>為什麼選它</h2>
+<p>同日的<a href="/html/mssp/017-finished-is-not-complete.html">範例 017</a> 主張<strong>跑完了跟拿到全部了是兩件事</strong>，而且第二件從單元外面看不到。</p>
+<p><code>zlib</code> 是這句話在標準庫裡最利的一個實例——因為它把<strong>兩種答案放在同一個模組裡</strong>，而且兩種都是對的。</p>
+<h2>原專案的結構地圖</h2>
+<p>同一份截斷輸入，兩個 reader：</p>
+<pre><code class="language-text">    stream        reader           bytes   eof     raised
+    truncated     zlib.decompress  -       -       Error -5 while decompressing data: incomplete or truncated stream
+    truncated     decompressobj    218     False
+    complete      zlib.decompress  660     -
+    complete      decompressobj    660     True
+</code></pre>
+<p><strong>一個拒絕，一個交回一段前綴然後什麼都不說。</strong></p>
+<p>而<strong>對照組</strong>才是這一則能不能說話的關鍵——一個<strong>完整</strong>的串流，它的 payload 恰好就是上面那 218 bytes：</p>
+<pre><code class="language-text">    truncated stream -&gt; 218 bytes  eof = False
+    complete  stream -&gt; 218 bytes  eof = True
+    byte-identical   : True
+    told apart by any returned value: False
+    told apart by .eof              : True
+</code></pre>
+<p><strong>位元組完全相同。</strong> 沒有任何回傳值分得開它們，唯一分得開的是 <code>.eof</code>。</p>
+<p>沒有這個對照組，「截斷讀回來 218 bytes」不構成任何主張——它可能只是比較短而已。</p>
+<h2>第二個發現：判別器在物件上，資料在回傳值上</h2>
+<p><code>.eof</code> 是 decompressor 的屬性，bytes 是回傳值。所以<strong>一個「解壓縮然後回傳 bytes」的函式，在它的呼叫端看到東西之前就已經把判別器丟掉了</strong>：</p>
+<pre><code class="language-python">def load(blob):
+    return zlib.decompressobj().decompress(blob)   # eof 隨著這個物件一起消失
+</code></pre>
+<p>這正是<a href="/html/mssp/016-partial-and-complete.html">範例 016</a> 說「<strong>outcome 必須跟著紀錄走</strong>」的那句話，在上游的樣子。那一則是自己造的例子，這一則是標準庫。</p>
+<h2>第三個發現：截斷切在紀錄中間</h2>
+<pre><code class="language-text">    whole records the caller collects: 19
+    and one trailing fragment:         b&#39;record-01&#39;
+    the fragment is well formed enough to be mistaken for a record
+</code></pre>
+<p><code>record-01</code> 以 <code>record-</code> 開頭、看起來像一筆、而且比一筆短。呼叫端寫 <code>data.split(b&quot;\n&quot;)</code> 的時候，它就在那裡。</p>
+<p>第四、<code>max_length</code> 的<strong>刻意</strong>部分讀取，跟<strong>意外</strong>截斷落在同一個狀態：兩邊 <code>eof</code> 都是 <code>False</code>。<code>eof</code> 說的是「還沒完」，不說「為什麼還沒完」。</p>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>每個 reader 會不會拋、會不會回報完整性，以及 <code>units</code> 對照</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署用哪一個，以及「沒到 eof」在這裡是不是致命的</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>直接跑真 zlib 的探針，包含那個對照串流</td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>一個 reader 一個檔——各自宣告<strong>會拋什麼</strong>與<strong>回報什麼</strong>，而且 import 任何東西都沒有</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td>呼叫端拿到什麼、還能問什麼，以及答案住在哪裡</td>
+</tr>
+</tbody></table>
+<p>重切加的只有一件事：<strong>reader 要宣告它回不回報完整性，而那份宣告用跑的驗。</strong> 第 3b 節是鑽孔——一個宣稱回報完整性、實際只回傳 bytes 的 reader 必須被抓到。五個變異跑過，每一個都讓套件變紅，包含「對照組自己也是截斷的」。</p>
+<h2>什麼不適合拆</h2>
+<p><strong><code>decompressobj</code> 不拋是對的。</strong> 「還沒讀完」是它兩次呼叫之間的<strong>正常狀態</strong>——一個對每個尚未結束的串流都拋例外的串流解壓器沒有辦法用。第 6 節把這件事量出來：餵四分之一進去照樣不拋，之後餵完照樣結束。</p>
+<p><strong><code>zlib.decompress</code> 拋也是對的。</strong> 它一次收完整份，「不完整」對它就是錯誤。</p>
+<p>缺陷不在任何一邊的行為，在於<strong>兩邊的結果沒有共同的形狀</strong>：一邊是例外、一邊是 bytes 加一個留在物件上的旗標，而那個旗標<strong>沒有跟著資料走</strong>。呼叫端要正確，得知道自己走的是哪一條路——而那正是 MSSP 說契約應該講的事。</p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>量得到但這次沒量：</strong> 真實程式碼裡用 <code>decompressobj</code> 之後真的去讀 <code>.eof</code> 的比例；<code>gzip</code>／<code>tarfile</code>／<code>http.client</code> 這些上層包裝有沒有把這個判別器往上傳。</p>
+<p><strong>這一則量不到：</strong> 任何一位呼叫端當初以為短結果代表什麼。<strong>它量的是介面讓什麼通過，不是誰誤解了什麼</strong>——跟考古 015、016 同一句話。</p>
+<p><strong>沒有做的：</strong> <code>gzip.GzipFile</code> 與 <code>zlib.decompressobj</code> 的對照。gzip 帶著長度與 CRC 的 trailer，所以它<strong>有能力</strong>在截斷時抱怨，而那是不同的一則——需要新的探針，不是重讀既有輸出。</p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;017-cpython-zlib&quot;,
+  &quot;upstream&quot;: &quot;CPython zlib, measured at run time&quot;,
+  &quot;what_is_being_examined&quot;: &quot;Two ways of decompressing the same truncated stream, and what each one lets a caller ask afterwards.&quot;,
+
+  &quot;the_finding&quot;: &quot;A truncated stream and a complete one decompress to BYTE-IDENTICAL output through decompressobj, and the only field that separates them is `.eof`. The one-shot zlib.decompress raises on the same input. Same data, two APIs in one module, one refuses and one returns a prefix in silence.&quot;,
+
+  &quot;second_finding&quot;: &quot;`.eof` lives on the decompressor object and the bytes are the return value. The flag does not travel with the data, so a function that decompresses and returns bytes has destroyed the distinction by the time its caller sees it — the same shape example 016 named when it made the outcome travel WITH the records.&quot;,
+
+  &quot;third_finding&quot;: &quot;The truncation cuts mid-record. A caller doing the idiomatic split on a newline gets a run of whole records and one fragment, and the fragment is well-formed enough to be mistaken for a record.&quot;,
+
+  &quot;readers&quot;: {
+    &quot;zlib.decompress&quot;: {&quot;raises_on_truncation&quot;: true,  &quot;reports_completeness&quot;: false},
+    &quot;decompressobj&quot;:   {&quot;raises_on_truncation&quot;: false, &quot;reports_completeness&quot;: true}
+  },
+
+  &quot;the_control&quot;: &quot;A COMPLETE stream whose payload is exactly what the truncated read produced. Without it, 'the truncated read returned 218 bytes' is not evidence of anything; with it, the two reads are byte-identical and only `.eof` differs.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: what each reader raises and reports, and the units map&quot;,
+    &quot;SCL&quot;: &quot;which reader this deployment uses, and whether not reaching eof is fatal here&quot;,
+    &quot;SMS&quot;: &quot;the probes that run the real zlib, including the control stream&quot;,
+    &quot;TMS&quot;: &quot;one file per reader — each declares what it raises and what it reports, and imports nothing&quot;,
+    &quot;DMS&quot;: &quot;what the caller holds, what it can still ask, and where the answer lives&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/readers&quot;: [&quot;incremental.py&quot;, &quot;one_shot.py&quot;]},
+
+  &quot;the_recut_adds&quot;: &quot;A reader declares whether it reports completeness, and the declaration is checked by running it. Section 3b is the drill: a reader claiming to report completeness while returning only bytes must be caught.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;deployment&quot;: &quot;log-shipper&quot;,
+  &quot;reader&quot;: &quot;decompressobj&quot;,
+  &quot;a_stream_that_did_not_reach_eof_is&quot;: &quot;fatal&quot;,
+  &quot;why&quot;: &quot;A log shipper streams batches too large to hold whole, so it needs the incremental reader — and a truncated batch that ships as a short batch is a silent gap in an audit trail. It reads `.eof` after the final call and refuses when it is False.&quot;,
+  &quot;what_this_costs&quot;: &quot;One attribute read that nothing in the API requires and no exception forces. Every caller that does not perform it gets a prefix that looks like a complete short message.&quot;,
+  &quot;not_a_general_rule&quot;: &quot;A best-effort preview pane is right to render whatever decompressed. SCL is where that position lives.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/upstream.py</summary><pre><code>&quot;&quot;&quot;Probes that run the real zlib. Nothing here is simulated.
+
+The payload is deliberately line-oriented, because the thing a caller does with
+a decompressed blob is split it, and the split is where the evidence dies.
+&quot;&quot;&quot;
+import zlib
+
+PAYLOAD = b&quot;&quot;.join(b&quot;record-%03d\n&quot; % n for n in range(60))
+
+
+def versions():
+    return f&quot;zlib {zlib.ZLIB_VERSION} (runtime {zlib.ZLIB_RUNTIME_VERSION})&quot;
+
+
+def compressed():
+    return zlib.compress(PAYLOAD, 9)
+
+
+def truncated_stream():
+    &quot;&quot;&quot;Half a valid stream. A dropped connection produces exactly this.&quot;&quot;&quot;
+    whole = compressed()
+    return whole[: len(whole) // 2]
+
+
+def one_shot(data):
+    &quot;&quot;&quot;zlib.decompress — the function everybody reaches for.&quot;&quot;&quot;
+    try:
+        return {&quot;bytes&quot;: zlib.decompress(data), &quot;raised&quot;: None, &quot;eof&quot;: None}
+    except zlib.error as raised:
+        return {&quot;bytes&quot;: None, &quot;raised&quot;: str(raised), &quot;eof&quot;: None}
+
+
+def incremental(data, max_length=None):
+    &quot;&quot;&quot;decompressobj — the streaming path, and the one with a completeness flag.&quot;&quot;&quot;
+    decompressor = zlib.decompressobj()
+    try:
+        out = (decompressor.decompress(data) if max_length is None
+               else decompressor.decompress(data, max_length))
+    except zlib.error as raised:
+        return {&quot;bytes&quot;: None, &quot;raised&quot;: str(raised), &quot;eof&quot;: None, &quot;unconsumed&quot;: None}
+    return {&quot;bytes&quot;: out, &quot;raised&quot;: None, &quot;eof&quot;: decompressor.eof,
+            &quot;unconsumed&quot;: len(decompressor.unconsumed_tail)}
+
+
+def control_for(output):
+    &quot;&quot;&quot;A COMPLETE stream whose payload is exactly `output`.
+
+    This is what makes the entry able to say anything: without it, &quot;the
+    truncated read returned 218 bytes&quot; is not evidence that a truncated read is
+    indistinguishable from an honest short one.
+    &quot;&quot;&quot;
+    return zlib.compress(output, 9)
+
+
+def whole_records(data):
+    &quot;&quot;&quot;What a caller gets after the idiomatic split.&quot;&quot;&quot;
+    lines = data.split(b&quot;\n&quot;)
+    complete = [line for line in lines[:-1]]
+    trailing = lines[-1]
+    return complete, trailing
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/readers/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/readers/incremental.py</summary><pre><code>&quot;&quot;&quot;decompressobj().decompress, wrapped as a declaring unit.
+
+It does not raise on a truncated stream — it cannot, because &quot;not finished yet&quot;
+is its normal state between calls. It reports completeness instead, on `.eof`.
+
+The catch, which is the whole entry: `.eof` is on the OBJECT and the bytes are
+the VALUE. The moment the bytes leave the decompressor the flag does not go
+with them.
+&quot;&quot;&quot;
+READER = &quot;decompressobj&quot;
+RAISES_ON_TRUNCATION = False
+REPORTS_COMPLETENESS = True
+COMPLETENESS_LIVES_ON = &quot;the decompressor object, not the returned bytes&quot;
+</code></pre></details><details><summary>TMS/readers/one_shot.py</summary><pre><code>&quot;&quot;&quot;zlib.decompress, wrapped as a declaring unit.
+
+It cannot report completeness because it has nowhere to report it from — it
+returns bytes and nothing else. What it does instead is refuse: a truncated
+stream raises. The declaration is verified by running it, not by reading here.
+&quot;&quot;&quot;
+READER = &quot;zlib.decompress&quot;
+RAISES_ON_TRUNCATION = True
+REPORTS_COMPLETENESS = False
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;What a person is shown.
+
+The byte counts are never printed without the `eof` column beside them, because
+the byte count is the number the two situations share.
+&quot;&quot;&quot;
+
+
+def reads(rows):
+    lines = [&quot;    stream        reader           bytes   eof     raised&quot;]
+    for row in rows:
+        lines.append(
+            f'    {row[&quot;stream&quot;]:&lt;13} {row[&quot;reader&quot;]:&lt;16} '
+            f'{(&quot;-&quot; if row[&quot;bytes&quot;] is None else len(row[&quot;bytes&quot;])):&lt;7} '
+            f'{str(row[&quot;eof&quot;]) if row[&quot;eof&quot;] is not None else &quot;-&quot;:&lt;7} {row[&quot;raised&quot;] or &quot;&quot;}'.rstrip())
+    return &quot;\n&quot;.join(lines)
+
+
+def identity(truncated, control):
+    return &quot;\n&quot;.join([
+        f'    truncated stream -&gt; {len(truncated[&quot;bytes&quot;])} bytes  eof = {truncated[&quot;eof&quot;]}',
+        f'    complete  stream -&gt; {len(control[&quot;bytes&quot;])} bytes  eof = {control[&quot;eof&quot;]}',
+        f'    byte-identical   : {truncated[&quot;bytes&quot;] == control[&quot;bytes&quot;]}',
+        f'    told apart by any returned value: {truncated[&quot;bytes&quot;] != control[&quot;bytes&quot;]}',
+        f'    told apart by .eof              : {truncated[&quot;eof&quot;] != control[&quot;eof&quot;]}',
+    ])
+
+
+def after_the_split(complete, trailing):
+    return &quot;\n&quot;.join([
+        f&quot;    whole records the caller collects: {len(complete)}&quot;,
+        f&quot;    and one trailing fragment:         {trailing!r}&quot;,
+        &quot;    the fragment is well formed enough to be mistaken for a record&quot;,
+    ])
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, run against the real zlib.
+
+    python src/island_test.py
+
+Section 3 is the control. Section 3b is the drill: a reader that DECLARES it
+reports completeness while returning only bytes must be caught by running it.
+&quot;&quot;&quot;
+import json
+import pathlib
+import re
+import sys
+import zlib
+
+from SMS import upstream
+from TMS.readers import incremental, one_shot
+
+HERE = pathlib.Path(__file__).parent
+FMS = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+POLICY = json.loads((HERE / &quot;SCL&quot; / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+FAILURES = []
+RAN = [0]
+
+
+def check(label, ok, detail=&quot;&quot;):
+    RAN[0] += 1
+    print(f'  {&quot;PASS&quot; if ok else &quot;FAIL&quot;}  {label}{f&quot; - {detail}&quot; if detail else &quot;&quot;}')
+    if not ok:
+        FAILURES.append(label)
+
+
+print(f&quot;\n  {upstream.versions()}&quot;)
+whole, trunc = upstream.compressed(), upstream.truncated_stream()
+
+print(&quot;\n== 1. each reader is an island, and FMS matches the tree&quot;)
+for unit, declared in FMS[&quot;units&quot;].items():
+    directory = HERE.joinpath(*unit.split(&quot;/&quot;))
+    on_disk = sorted(p.name for p in directory.glob(&quot;*.py&quot;) if p.name != &quot;__init__.py&quot;)
+    check(f&quot;{unit}: FMS declares what is on disk&quot;, on_disk == sorted(declared),
+          f'disk {&quot;, &quot;.join(on_disk)} | FMS {&quot;, &quot;.join(sorted(declared))}')
+    for name in on_disk:
+        body = directory.joinpath(name).read_text(encoding=&quot;utf-8&quot;)
+        check(f&quot;{unit}/{name} imports nothing at all&quot;,
+              not re.search(r&quot;^\s*(import|from)\s&quot;, body, re.M))
+check(&quot;both readers declare what they raise and what they report&quot;,
+      all(isinstance(m.RAISES_ON_TRUNCATION, bool) and isinstance(m.REPORTS_COMPLETENESS, bool)
+          for m in (one_shot, incremental)))
+
+print(&quot;\n== 2. the same truncated stream, two readers from one module&quot;)
+shot = upstream.one_shot(trunc)
+step = upstream.incremental(trunc)
+check(&quot;zlib.decompress raises&quot;, shot[&quot;raised&quot;] is not None, shot[&quot;raised&quot;])
+check(&quot;  and the message names truncation&quot;, &quot;truncated&quot; in (shot[&quot;raised&quot;] or &quot;&quot;))
+check(&quot;  and it returns no bytes at all&quot;, shot[&quot;bytes&quot;] is None)
+check(&quot;decompressobj does NOT raise&quot;, step[&quot;raised&quot;] is None)
+check(&quot;  and returns real bytes&quot;, step[&quot;bytes&quot;] is not None and len(step[&quot;bytes&quot;]) &gt; 0,
+      f'{len(step[&quot;bytes&quot;] or b&quot;&quot;)} bytes')
+check(&quot;  and reports eof = False&quot;, step[&quot;eof&quot;] is False)
+check(&quot;on a complete stream both succeed&quot;,
+      upstream.one_shot(whole)[&quot;raised&quot;] is None and upstream.incremental(whole)[&quot;raised&quot;] is None)
+check(&quot;and only then is eof True&quot;, upstream.incremental(whole)[&quot;eof&quot;] is True)
+
+print(&quot;\n== 3. the control - a complete stream carrying exactly those bytes&quot;)
+control = upstream.incremental(upstream.control_for(step[&quot;bytes&quot;]))
+check(&quot;the control stream is complete&quot;, control[&quot;eof&quot;] is True)
+check(&quot;it decompresses to the same number of bytes&quot;, len(control[&quot;bytes&quot;]) == len(step[&quot;bytes&quot;]),
+      f'{len(control[&quot;bytes&quot;])} vs {len(step[&quot;bytes&quot;])}')
+check(&quot;BYTE-IDENTICAL to the truncated read&quot;, control[&quot;bytes&quot;] == step[&quot;bytes&quot;])
+check(&quot;so no returned value can tell them apart&quot;, not (control[&quot;bytes&quot;] != step[&quot;bytes&quot;]))
+check(&quot;and .eof can&quot;, control[&quot;eof&quot;] != step[&quot;eof&quot;], f'{control[&quot;eof&quot;]} vs {step[&quot;eof&quot;]}')
+check(&quot;which means the discriminator is on the object, not on the value&quot;,
+      incremental.COMPLETENESS_LIVES_ON.startswith(&quot;the decompressor object&quot;))
+
+print(&quot;\n== 3b. DRILL - a reader that overclaims must be caught by running it&quot;)
+
+
+def reports_completeness(read):
+    &quot;&quot;&quot;Run the reader on a truncated stream and see whether the result carries
+    a completeness answer at all.&quot;&quot;&quot;
+    return read(trunc)[&quot;eof&quot;] is not None
+
+
+liar_declares = True  # a unit claiming decompressobj's flag while returning only bytes
+check(&quot;the drill unit declares it reports completeness&quot;, liar_declares is True)
+check(&quot;running it says otherwise&quot;, reports_completeness(upstream.one_shot) is False)
+check(&quot;so the declaration is refused&quot;, reports_completeness(upstream.one_shot) != liar_declares)
+check(&quot;and the honest declarations hold under the same probe&quot;,
+      reports_completeness(upstream.incremental) is incremental.REPORTS_COMPLETENESS
+      and reports_completeness(upstream.one_shot) is one_shot.REPORTS_COMPLETENESS)
+check(&quot;the raise-on-truncation declarations hold too&quot;,
+      (upstream.one_shot(trunc)[&quot;raised&quot;] is not None) is one_shot.RAISES_ON_TRUNCATION
+      and (upstream.incremental(trunc)[&quot;raised&quot;] is not None) is incremental.RAISES_ON_TRUNCATION)
+
+print(&quot;\n== 4. a deliberate partial read lands in the same state as an accidental one&quot;)
+capped = upstream.incremental(whole, max_length=100)
+check(&quot;max_length returns exactly the cap&quot;, len(capped[&quot;bytes&quot;]) == 100)
+check(&quot;with eof False&quot;, capped[&quot;eof&quot;] is False)
+check(&quot;and an unconsumed tail&quot;, capped[&quot;unconsumed&quot;] &gt; 0, f'{capped[&quot;unconsumed&quot;]} bytes')
+check(&quot;the accidental truncation has eof False as well&quot;, step[&quot;eof&quot;] is False)
+check(&quot;so eof alone does not say WHY, only that it is not finished&quot;,
+      capped[&quot;eof&quot;] == step[&quot;eof&quot;] and capped[&quot;unconsumed&quot;] != (step[&quot;unconsumed&quot;] or 0))
+
+print(&quot;\n== 5. the truncation cuts mid-record&quot;)
+complete_records, trailing = upstream.whole_records(step[&quot;bytes&quot;])
+check(&quot;the caller collects whole records&quot;, len(complete_records) &gt; 0, f&quot;{len(complete_records)}&quot;)
+check(&quot;and one trailing fragment&quot;, len(trailing) &gt; 0, repr(trailing))
+check(&quot;the fragment starts like a record&quot;, trailing.startswith(b&quot;record-&quot;))
+check(&quot;and is shorter than one&quot;, len(trailing) &lt; len(b&quot;record-000&quot;))
+check(&quot;a complete payload leaves no fragment&quot;,
+      upstream.whole_records(upstream.PAYLOAD)[1] == b&quot;&quot;)
+
+print(&quot;\n== 6. what this does not change&quot;)
+check(&quot;the incremental reader is right not to raise - not-finished-yet is its normal state&quot;,
+      upstream.incremental(whole[: len(whole) // 4])[&quot;raised&quot;] is None)
+check(&quot;feeding it the rest still finishes&quot;,
+      zlib.decompressobj().decompress(whole)[-11:] == b&quot;record-059\n&quot;)
+check(&quot;SCL names the cost in words&quot;,
+      &quot;one attribute read&quot; in POLICY[&quot;what_this_costs&quot;].lower())
+check(&quot;and this deployment does refuse&quot;, POLICY[&quot;a_stream_that_did_not_reach_eof_is&quot;] == &quot;fatal&quot;)
+
+print()
+if FAILURES:
+    print(f'  {len(FAILURES)} FAILED: {&quot; | &quot;.join(FAILURES)}')
+    sys.exit(1)
+print(f&quot;  {RAN[0]} checks passed - every probe ran the real zlib&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;One truncated stream, two readers from the same module.
+
+    python src/main.py            what each reader returns and what it lets you ask
+    python src/main.py --strict   exit 1 if this deployment read a stream that never reached eof
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+from DMS import report
+from SMS import upstream
+from TMS.readers import incremental, one_shot
+
+POLICY = json.loads((pathlib.Path(__file__).parent / &quot;SCL&quot; / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+READERS = {module.READER: module for module in (one_shot, incremental)}
+
+
+def main(argv):
+    whole, trunc = upstream.compressed(), upstream.truncated_stream()
+    print(f&quot;\n  {upstream.versions()}&quot;)
+    print(f'  {POLICY[&quot;deployment&quot;]}: read with {POLICY[&quot;reader&quot;]}\n')
+    print(f&quot;  payload {len(upstream.PAYLOAD)} bytes -&gt; {len(whole)} compressed, &quot;
+          f&quot;truncated to {len(trunc)}\n&quot;)
+
+    rows = [
+        {&quot;stream&quot;: &quot;truncated&quot;, &quot;reader&quot;: &quot;zlib.decompress&quot;, **upstream.one_shot(trunc)},
+        {&quot;stream&quot;: &quot;truncated&quot;, &quot;reader&quot;: &quot;decompressobj&quot;, **upstream.incremental(trunc)},
+        {&quot;stream&quot;: &quot;complete&quot;, &quot;reader&quot;: &quot;zlib.decompress&quot;, **upstream.one_shot(whole)},
+        {&quot;stream&quot;: &quot;complete&quot;, &quot;reader&quot;: &quot;decompressobj&quot;, **upstream.incremental(whole)},
+    ]
+    print(report.reads(rows))
+    print(&quot;\n  Same input. One refuses, the other returns a prefix and says nothing.\n&quot;)
+
+    partial = upstream.incremental(trunc)
+    control = upstream.incremental(upstream.control_for(partial[&quot;bytes&quot;]))
+    print(&quot;  the control - a COMPLETE stream carrying exactly those bytes:&quot;)
+    print(report.identity(partial, control))
+    print(&quot;\n  The only field that separates them is .eof, and it is on the decompressor,&quot;)
+    print(&quot;  not on the bytes. A function that returns the bytes has thrown it away.\n&quot;)
+
+    capped = upstream.incremental(whole, max_length=100)
+    print(f'  decompress(complete, max_length=100) -&gt; {len(capped[&quot;bytes&quot;])} bytes, '
+          f'eof = {capped[&quot;eof&quot;]}, unconsumed_tail = {capped[&quot;unconsumed&quot;]}')
+    print(&quot;  a deliberate partial read lands in the same state as an accidental one\n&quot;)
+
+    complete_records, trailing = upstream.whole_records(partial[&quot;bytes&quot;])
+    print(&quot;  what the idiomatic split leaves the caller:&quot;)
+    print(report.after_the_split(complete_records, trailing))
+
+    if &quot;--strict&quot; in argv and partial[&quot;eof&quot;] is False \
+            and POLICY[&quot;a_stream_that_did_not_reach_eof_is&quot;] == &quot;fatal&quot;:
+        print(f'\n  --strict: the stream never reached eof and this deployment calls that fatal')
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

@@ -33,7 +33,7 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-16</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-17</span></header>
 <main>
   <span class="state">v1.x 開發中</span>
   <article class="content"><h1>MSSP 開發區</h1>
@@ -583,6 +583,50 @@ module.exports = Object.assign({}, first, {
 <p><strong>對照組又一次是能不能說話的關鍵。</strong> 範例 016 的 <code>short-batch</code> 吐兩筆而且<strong>跑完</strong>，跟 <code>breaks-midway</code> 同一個數字、相反的理由；考古 016 的對照組是<strong>沒有人 reject</strong> 的同一批四個成員——那時候兩個 combinator <strong>一模一樣</strong>。沒有它，「allSettled 不一樣」不是一句關於失敗的話。這是第四次由對照組決定一個檢查會不會出錯（<a href="/html/mssp/011-store-boundary.html">範例 011</a> 的記憶體媒介、範例 015 的 <code>archive-dump</code>、以及今天這兩個）。</p>
 <p><strong>已知沒有解決的：</strong> 一個<strong>把自己的例外吞掉、提早 return</strong> 的來源會報成 <code>worked</code>，跟對照組完全無法區分。範例 016 第 7 節把這個界線<strong>斷言</strong>起來——它是一條會紅的檢查，紅了就代表界線變了、文字要跟著改，而不是一句沒有人會回頭讀的限制。</p>
 <p><strong>驗證方式：</strong> 20/20 之後的真實應用。到時候問兩件事——有多少來源真的是「吐了一些才壞」而不是一開始就壞（如果幾乎沒有，這一條的成本就白付了）；以及有沒有任何一次，因為紀錄帶著來源，而讓一份報表說出了它以前說不出的話。</p>
+<hr>
+<h3>改良點 15：宣告的<strong>方向</strong>決定它可不可信</h3>
+<p><a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 14</a> 說「<strong>一個單元可能講錯的事實，就不要讓那個單元來講</strong>」。那條在 <code>finished</code> 上成立，因為 <code>finished</code> 從外面<strong>看得到</strong>。</p>
+<p><a href="/html/mssp/017-finished-is-not-complete.html">範例 017</a> 撞到看不到的那一種：<strong>完整性</strong>。沒有任何東西能看見一個來源沒去追的 cursor。所以它只能用宣告的，而改良點 14 才剛說宣告不可信——<strong>這兩條會撞在一起</strong>，跟<a href="#%E5%B7%B2%E7%9F%A5%E7%BC%BA%E9%BB%9E">缺點 7</a> 當初撞的方式一樣。</p>
+<p>解法不是再加一層驗證，是<strong>方向</strong>：</p>
+<blockquote>
+<p><strong>一個單元可以宣告自己不完整，不可以宣告自己完整。</strong></p>
+</blockquote>
+<p>只會讓自己<strong>變難看</strong>的宣告可以照收：偽造它沒有動機，而且就算偽造了，報表往保守的方向壞。讓自己<strong>變好看</strong>的宣告直接拒絕，因為外面沒有東西可以拿來對。範例 017 裡 <code>COMPLETE = True</code> 會讓建置失敗。</p>
+<p><strong>兩個後果，第二個是價錢：</strong></p>
+<ol>
+<li><strong>完整性欄位只有兩個值</strong>——<code>no - declared</code> 與 <code>not known to be otherwise</code>。<strong>沒有「已驗證完整」這個狀態</strong>，因為這裡產不出來。一份報表如果提供「complete」這個值，它主張的是它沒有量過的東西。</li>
+<li><strong>那個數字是下界，不是計數。</strong> 報表要說 <code>at least</code>、要說 <code>FLOOR</code>、要說<strong>為什麼</strong>它不是計數。這是<a href="/html/mssp/modules/log.html">我自己反覆犯的那一條</a>——把一個上界或下界當成量測值報出去——所以第 5 節三句話都檢查，把 <code>at least</code> 改成 <code>exactly</code> 就變紅。</li>
+</ol>
+<p><strong>洞留在樹裡當一個跑得起來的單元。</strong> <code>quiet-truncation</code> 真的被截斷而且什麼都不說，於是它跟對照組 <code>short-page</code>（真的完整）在收集器讀得到的<strong>每一個欄位上都一樣</strong>。第 6 節<strong>斷言</strong>這件事——它是一條會紅的檢查，紅了代表界線變了、文字要跟著改。這比在 README 寫一句「這個偵測不到」強，因為那句話沒有人會回頭讀。</p>
+<p><strong>上游把最利的版本給了。</strong> <a href="/html/mssp/archaeology/017-cpython-zlib.html">考古 017</a>：截斷的 zlib 串流跟一個完整串流解出來<strong>位元組完全相同</strong>，唯一分得開的是 <code>.eof</code>——而 <code>.eof</code> 在 decompressor <strong>物件</strong>上，bytes 是<strong>回傳值</strong>。所以一個「解壓縮然後回傳 bytes」的函式，在呼叫端看到東西之前就把判別器丟掉了。<strong>那正是改良點 14 第一條（outcome 要跟著紀錄走）在標準庫裡的樣子</strong>，而且同一個模組裡的 <code>zlib.decompress</code> 對同一份輸入是<strong>拋例外</strong>的。</p>
+<h3>順帶：移除與真實失敗的關係，現在有三種</h3>
+<p>改良點 14 已經修正過「孤島測試是固定方向的估計」這個沒寫出來的預設。今天多了第三種：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>移除</th>
+<th>留著（真實狀況）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="/html/mssp/015-present-and-failing.html">範例 015</a></td>
+<td>2 筆</td>
+<td>2 筆（<strong>一樣</strong>）</td>
+</tr>
+<tr>
+<td><a href="/html/mssp/016-partial-and-complete.html">範例 016</a></td>
+<td>5 筆</td>
+<td>0 筆（<strong>移除比較多</strong>）</td>
+</tr>
+<tr>
+<td><a href="/html/mssp/017-finished-is-not-complete.html">範例 017</a></td>
+<td>at least <strong>0</strong> of 7</td>
+<td>at least <strong>2</strong> of 9（<strong>移除讓報表變乾淨，而事實沒變</strong>）</td>
+</tr>
+</tbody></table>
+<p>第三種最難察覺：移除 <code>truncated-page</code> 把<strong>警告</strong>拿掉了，另一個截斷原封不動留在原地。<strong>移除可以讓報表變好看而不改變任何真的事情</strong>——一個只做減法的鑽孔看不出這件事，因為它量的就是減法之後的樣子。</p>
+<p><strong>驗證方式：</strong> 20/20 之後的真實應用。要問的是下界跟真相之間的差距有多大——有多少來源<strong>有能力</strong>知道自己不完整（分頁器有，全表掃描沒有）。如果多數來源根本沒有那個知識，這一條就只是把一個空欄位加到每個單元上。</p>
 <hr>
 <h2>開發路線：四個 MVP 與回饋迴圈</h2>
 <p><a href="/research">程式研究區</a>的四份研究不會停在論文。每一份要先做出 MVP，而 MVP 本身用 MSSP 蓋——於是它同時是產品，也是這個方法在中等規模上的證據。</p>

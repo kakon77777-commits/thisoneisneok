@@ -1,0 +1,30 @@
+{
+  "name": "017-cpython-zlib",
+  "upstream": "CPython zlib, measured at run time",
+  "what_is_being_examined": "Two ways of decompressing the same truncated stream, and what each one lets a caller ask afterwards.",
+
+  "the_finding": "A truncated stream and a complete one decompress to BYTE-IDENTICAL output through decompressobj, and the only field that separates them is `.eof`. The one-shot zlib.decompress raises on the same input. Same data, two APIs in one module, one refuses and one returns a prefix in silence.",
+
+  "second_finding": "`.eof` lives on the decompressor object and the bytes are the return value. The flag does not travel with the data, so a function that decompresses and returns bytes has destroyed the distinction by the time its caller sees it — the same shape example 016 named when it made the outcome travel WITH the records.",
+
+  "third_finding": "The truncation cuts mid-record. A caller doing the idiomatic split on a newline gets a run of whole records and one fragment, and the fragment is well-formed enough to be mistaken for a record.",
+
+  "readers": {
+    "zlib.decompress": {"raises_on_truncation": true,  "reports_completeness": false},
+    "decompressobj":   {"raises_on_truncation": false, "reports_completeness": true}
+  },
+
+  "the_control": "A COMPLETE stream whose payload is exactly what the truncated read produced. Without it, 'the truncated read returned 218 bytes' is not evidence of anything; with it, the two reads are byte-identical and only `.eof` differs.",
+
+  "sets": {
+    "FMS": "this file: what each reader raises and reports, and the units map",
+    "SCL": "which reader this deployment uses, and whether not reaching eof is fatal here",
+    "SMS": "the probes that run the real zlib, including the control stream",
+    "TMS": "one file per reader — each declares what it raises and what it reports, and imports nothing",
+    "DMS": "what the caller holds, what it can still ask, and where the answer lives"
+  },
+
+  "units": {"TMS/readers": ["incremental.py", "one_shot.py"]},
+
+  "the_recut_adds": "A reader declares whether it reports completeness, and the declaration is checked by running it. Section 3b is the drill: a reader claiming to report completeness while returning only bytes must be caught."
+}

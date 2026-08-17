@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>跑完了，跟拿到全部了，是兩件事 | MSSP | Neo.K</title>
+<meta name="description" content="[範例 016](/html/mssp/016-partial-and-complete.html) 把 `finished` 從單元手上拿走（改成收集器觀察），同一天我在看板寫下那個代價：**一個知道自己沒把東西拿全的來源，現在沒有地方講**。這一則把代價還回去。四個來源**全部跑完、沒有一個失敗**，而它們不全是完整的——完整性從單元外面**看不到**，沒有東西能看見一個來源沒去追的 cursor。所以它只能用宣告的，而 016 才剛說宣告不可信。解法是**有方向的**：**一個單元可以宣告自己不完整，不可以宣告自己完整。** 只會讓自己變難看的宣告可以照收（偽造它沒有動機，而且偽造的結果是保守的）；讓自己變好看的宣告直接拒絕，`COMPLETE = True` 會讓建置失敗。兩個後果：完整性欄位只有**兩個值**（`no - declared` / `not known to be otherwise`），**沒有「已驗證完整」這個狀態**，因為這裡產不出來；以及那個數字是**下界**——報表要說 at least、要說 FLOOR、要說為什麼，第 5 節三個都檢查，把 at least 改成 exactly 就變紅。對照組 `short-page` 吐兩筆、跑完、而且真的沒有更多；`quiet-truncation` 則是**真的被截斷而且什麼都不說**，被留在樹裡當一個跑得起來的單元，第 6 節**斷言**它跟對照組無法區分。同日考古 017 量到最利的版本：截斷的 zlib 串流跟完整串流解出來**位元組完全相同**，唯一分得開的是 `.eof`，而 `.eof` 在物件上、bytes 是回傳值。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/017-finished-is-not-complete.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>017-finished-is-not-complete</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>017-finished-is-not-complete</span></div>
+    <div><b>語言</b><span>python</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-17</span></div>
+    <div><b>行數</b><span>473</span></div>
+    <div><b>執行</b><span><code>python src/main.py</code></span></div>
+  </section>
+  <article class="content"><h1>017 — Finishing and being complete are two different things</h1>
+<blockquote>
+<p><code>candidate</code>. Example 016 took <code>finished</code> away from the unit and named the cost
+on the board the same day: a source that <em>knows</em> it did not return everything
+now has nowhere to say so. This is that cost paid back, and it does not come
+free.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>Four sources hand over records. <strong>Every one of them finishes. None of them
+fails.</strong> They are not all complete.</p>
+<pre><code class="language-bash">python src/main.py             # the run under the deployment SCL names
+python src/main.py --axes      # finished and complete, side by side
+python src/main.py --strict    # exit 1 when a source declared itself incomplete
+python src/island_test.py      # 42 checks across 6 sections, and it prints the count itself
+</code></pre>
+<pre><code class="language-console">  source             outcome   records   finished   complete
+  ok full-page        worked    3         True       not known to be otherwise
+  ok quiet-truncation worked    2         True       not known to be otherwise
+  ok short-page       worked    2         True       not known to be otherwise
+  ok truncated-page   worked    2         True       no - declared (more-after-cursor)
+
+  at least 2 of 9 records come from a source that declared itself incomplete.
+  This is a FLOOR and not a count: a source that is truncated and says nothing is
+  reported in the same column as one that is complete.
+</code></pre>
+<h2>The structural decision</h2>
+<p>Completeness <strong>cannot be observed from outside the unit</strong>. Nothing in SMS can
+see the cursor a source was not allowed to follow. So it has to be declared —
+and <a href="/html/mssp/016-partial-and-complete.html">例 016</a> had just concluded that a
+fact a unit could get wrong should not be the unit&#39;s to state.</p>
+<p>The resolution is <strong>directional</strong>:</p>
+<blockquote>
+<p><strong>A unit may declare itself incomplete. It may not declare itself complete.</strong></p>
+</blockquote>
+<p>A declaration that can only make the report <strong>worse for the declarer</strong> is taken
+on trust; there is no motive to forge it, and a forged one degrades the report
+conservatively. A declaration that makes it better is refused, because nothing
+outside the unit can check it. <code>COMPLETE = True</code> fails the build.</p>
+<p>Two things follow, and the second is the price:</p>
+<ol>
+<li><strong>The completeness column has two values, not three</strong> — <code>no - declared</code> and
+<code>not known to be otherwise</code>. There is no <em>verified complete</em> state, because
+nothing here can produce one. A report offering &quot;complete&quot; is claiming
+something it did not measure.</li>
+<li><strong>The number is a floor.</strong> &quot;At least 2 of 9&quot; — and the report says the word
+FLOOR, says &quot;at least&quot;, and says why. Section 5 checks all three, and a
+mutation that changes &quot;at least&quot; to &quot;exactly&quot; turns it red.</li>
+</ol>
+<h2>The island test — and the control that lets section 3 go badly</h2>
+<p><code>short-page</code> returns <strong>two</strong> records, finishes cleanly, and genuinely has
+nothing more. <code>truncated-page</code> returns <strong>two</strong> records and finishes just as
+cleanly.</p>
+<pre><code class="language-text">  PASS  short-page returned two records
+  PASS  and it finished
+  PASS  and it is genuinely complete - the control
+  PASS  truncated-page returned two records as well
+  PASS  and it finished just as cleanly
+  PASS  so neither the count nor `finished` separates them
+  PASS  only the declaration does - not known to be otherwise vs no - declared
+</code></pre>
+<p><strong>And the gap is kept in the tree as a running unit.</strong> <code>quiet-truncation</code> is
+truncated in exactly the way <code>truncated-page</code> is and declares nothing, so the
+collector reports it identically to <code>short-page</code>, which is complete. Section 6
+<strong>asserts that indistinguishability</strong> — if it ever goes red, the limit changed
+and these documents are wrong.</p>
+<p>Five mutations were run and each one turns the suite red: the declaring source
+going quiet (6 checks), the control declaring too (5), SMS accepting a
+self-serving declaration (3), the report offering an exact count (1), and the
+silent unit starting to declare (5).</p>
+<h2>Upstream, the same day</h2>
+<p><a href="/html/mssp/archaeology/017-cpython-zlib.html">Archaeology 017</a> measures the
+sharpest version of this I have found. A truncated zlib stream and a complete
+one, through <code>decompressobj</code>:</p>
+<pre><code class="language-text">    truncated stream -&gt; 218 bytes  eof = False
+    complete  stream -&gt; 218 bytes  eof = True
+    byte-identical   : True
+    told apart by any returned value: False
+    told apart by .eof              : True
+</code></pre>
+<p><strong>Byte-identical.</strong> And <code>.eof</code> is on the decompressor, not on the bytes — so a
+function that decompresses and returns bytes has destroyed the distinction
+before its caller ever sees it. Meanwhile <code>zlib.decompress</code>, the one-shot in the
+same module, <strong>raises</strong> on that input.</p>
+<h2>What this example does not solve</h2>
+<p><strong>The gap the floor exists because of.</strong> A truncated source that says nothing is
+not detectable here, and <code>quiet_truncation.py</code> is in the tree so that the hole
+is a unit somebody can run rather than a sentence somebody can skip.</p>
+<p><strong>Measurable, not measured.</strong> How many real sources are in a position to know
+they are incomplete — a paginator does, a full table scan does not — and
+therefore how large the gap between the floor and the truth typically is.</p>
+<p><strong>Not measurable here.</strong> Whether a declared-incomplete export should be served.
+<code>fatal</code>, <code>degrade</code> and <code>ignore</code> are all defensible and SCL picks one.</p>
+<p><strong>Not attempted:</strong> following the cursor. Resumption was deferred by example 016
+and is deferred again.</p>
+<p><strong>And one thing this got for free that should be said out loud:</strong> removing
+<code>truncated-page</code> — the island test&#39;s own move — takes the <em>warning</em> away and
+leaves the other truncation exactly where it was. That is a third relationship
+between removal and real failure, after <a href="/html/mssp/015-present-and-failing.html">015</a>
+(equal) and <a href="/html/mssp/016-partial-and-complete.html">016</a> (removal gives more):
+<strong>removal can improve the report without changing what is true.</strong></p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;017-finished-is-not-complete&quot;,
+  &quot;what_it_is&quot;: &quot;A gather step over four sources where every one of them finishes cleanly and they are not all complete.&quot;,
+  &quot;the_structural_decision&quot;: &quot;Finishing and being complete are two axes, and the second one is not observable from outside the unit. So it has to be declared — and example 016 had just established that a fact a unit could get wrong should not be the unit's to state. The resolution is directional: a unit may declare itself INCOMPLETE and may not declare itself COMPLETE. A declaration that can only make the report worse for the declarer is taken on trust; one that makes it better is refused, because nothing outside can check it.&quot;,
+  &quot;why_this_one&quot;: &quot;Example 016 removed `finished` from the unit and named the cost on the board the same day — a source that KNOWS it is about to break, or knows it did not return everything, now has nowhere to say so. This is that cost paid back, and it does not come free: what you get is a floor, not a count.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+
+  &quot;the_two_axes&quot;: {
+    &quot;finished&quot;: &quot;observed by the collector — did the call complete without raising (example 016)&quot;,
+    &quot;complete&quot;: &quot;not observable here at all — did the unit return everything behind it&quot;
+  },
+
+  &quot;the_completeness_column_has_two_values&quot;: {
+    &quot;no - declared&quot;: &quot;the unit said so, and this example takes that on trust&quot;,
+    &quot;not known to be otherwise&quot;: &quot;nothing said so — which is NOT the same as complete, and the report never renders it as complete&quot;
+  },
+  &quot;there_is_no_verified_complete_state&quot;: &quot;Nothing in this example can put a source in one. A report that offers 'complete' as a value is claiming something it did not measure.&quot;,
+
+  &quot;sources&quot;: {
+    &quot;full-page&quot;:        {&quot;records&quot;: 3, &quot;declares&quot;: null},
+    &quot;short-page&quot;:       {&quot;records&quot;: 2, &quot;declares&quot;: null, &quot;note&quot;: &quot;the control — the same record count as truncated-page, finishes just as cleanly, and genuinely has nothing more&quot;},
+    &quot;truncated-page&quot;:   {&quot;records&quot;: 2, &quot;declares&quot;: &quot;more-after-cursor&quot;},
+    &quot;quiet-truncation&quot;: {&quot;records&quot;: 2, &quot;declares&quot;: null, &quot;note&quot;: &quot;the limit, kept as a running unit — it IS truncated and says nothing, so it is reported identically to short-page. Island test section 6 asserts that indistinguishability so a change in it goes red.&quot;}
+  },
+
+  &quot;the_finding&quot;: &quot;All four sources finish. None of them fails. The record counts are 3, 2, 2, 2 — and one of the three twos is missing records, one is not, and one is missing records without saying so. Archaeology 017 measures the same thing in zlib: a truncated stream and a complete one decompress to BYTE-IDENTICAL output, and the only field that separates them is `.eof`.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the two axes, the two values completeness may take, what each source declares, and the units map&quot;,
+    &quot;SCL&quot;: &quot;what a declared-incomplete source means in this deployment, and what this deployment cannot refuse&quot;,
+    &quot;SMS&quot;: &quot;running each source, observing `finished`, accepting the self-penalising declaration and refusing the self-serving one&quot;,
+    &quot;TMS&quot;: &quot;one file per source — each declares what it can fail with, and none of them declares itself complete&quot;,
+    &quot;DMS&quot;: &quot;the two axes side by side, and the floor stated as a floor&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/sources&quot;: [&quot;full_page.py&quot;, &quot;quiet_truncation.py&quot;, &quot;short_page.py&quot;, &quot;truncated_page.py&quot;]},
+
+  &quot;non_goals&quot;: [
+    &quot;Detecting a truncated source that says nothing. That is what the floor is a floor because of, and quiet_truncation is kept in the tree so the gap is a running unit rather than a sentence.&quot;,
+    &quot;Deciding whether a declared-incomplete export should be served. SCL picks one and the example takes no position.&quot;,
+    &quot;Following the cursor. Resumption is a different problem, and it was already deferred by example 016.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;deployment&quot;: &quot;compliance-export&quot;,
+  &quot;a_declared_incomplete_source_is&quot;: &quot;fatal&quot;,
+  &quot;why&quot;: &quot;An export that goes to a regulator may be smaller than expected, but it may not be smaller than expected without saying so. This deployment refuses to publish while any source has declared itself incomplete.&quot;,
+  &quot;what_this_deployment_cannot_refuse&quot;: &quot;A source that is truncated and silent. The policy can only act on what was declared, and the report says so rather than implying the export is complete.&quot;,
+  &quot;not_a_general_rule&quot;: &quot;A search page would serve the truncated result and show a 'more results' control. SCL is where the position lives; the example takes none.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Deployment policy: what a declared-incomplete source means here.&quot;&quot;&quot;
+import json
+import pathlib
+
+POLICY = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def is_fatal():
+    return POLICY[&quot;a_declared_incomplete_source_is&quot;] == &quot;fatal&quot;
+
+
+def describe():
+    return f'{POLICY[&quot;deployment&quot;]}: a declared-incomplete source is {POLICY[&quot;a_declared_incomplete_source_is&quot;]}'
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/gather.py</summary><pre><code>&quot;&quot;&quot;Run the sources, and keep `finished` and `complete` apart.
+
+Example 016 established that `finished` is observed here and never declared by
+the unit. Completeness cannot be observed here at all — nothing outside a
+source can see the cursor it did not follow.
+
+So this module applies one rule, and it is the whole example:
+
+    a unit may declare itself INCOMPLETE, and may not declare itself COMPLETE.
+
+A declaration that can only make the report worse for the declarer is taken on
+trust. One that makes it better is refused, because there is nothing to check
+it against. The consequence is that the resulting number is a FLOOR and the
+report has to say so.
+&quot;&quot;&quot;
+import importlib
+
+SOURCES = [&quot;full_page&quot;, &quot;quiet_truncation&quot;, &quot;short_page&quot;, &quot;truncated_page&quot;]
+
+# The two values the completeness column may hold. There is no third: nothing
+# here can put a source in a &quot;verified complete&quot; state, so the report never
+# claims one.
+DECLARED_INCOMPLETE = &quot;no - declared&quot;
+NOT_KNOWN_OTHERWISE = &quot;not known to be otherwise&quot;
+
+
+def load(extra=()):
+    loaded, problems = {}, []
+    for module_name in [*SOURCES, *extra]:
+        module = module_name if not isinstance(module_name, str) else (
+            importlib.import_module(f&quot;TMS.sources.{module_name}&quot;))
+        for attribute in (&quot;NAME&quot;, &quot;CAN_FAIL_WITH&quot;, &quot;collect&quot;):
+            if not hasattr(module, attribute):
+                problems.append(f&quot;a source does not declare {attribute}&quot;)
+        if not getattr(module, &quot;CAN_FAIL_WITH&quot;, None):
+            problems.append(f&quot;{module.NAME}: CAN_FAIL_WITH is empty - a unit that cannot say &quot;
+                            f&quot;what a bad day looks like cannot be reported as degraded&quot;)
+        # The self-serving direction, refused. A unit vouching for its own
+        # completeness is a declaration nothing outside it can check.
+        for vouch in (&quot;COMPLETE&quot;, &quot;IS_COMPLETE&quot;, &quot;RETURNS_EVERYTHING&quot;):
+            if getattr(module, vouch, None) is True:
+                problems.append(f&quot;{module.NAME}: declares {vouch} - a unit may declare itself &quot;
+                                f&quot;incomplete and may not declare itself complete&quot;)
+        loaded[module.NAME] = module
+    return loaded, problems
+
+
+def run(module, absent=False):
+    if absent:
+        return {&quot;source&quot;: module.NAME, &quot;outcome&quot;: &quot;absent&quot;, &quot;records&quot;: [],
+                &quot;finished&quot;: None, &quot;completeness&quot;: None, &quot;reason&quot;: None}
+
+    records, error = [], None
+    reason = None
+    try:
+        result = module.collect()
+        for record in result[&quot;records&quot;]:
+            if not isinstance(record, dict) or record.get(&quot;from&quot;) != module.NAME:
+                raise ValueError(f'a record without a usable &quot;from&quot; reached the collector '
+                                 f'(got {record.get(&quot;from&quot;)!r}, expected {module.NAME!r})')
+            records.append(record)
+        reason = result.get(&quot;incomplete_because&quot;)
+    except Exception as raised:  # noqa: BLE001 - the collector observes, it does not re-raise
+        error = str(raised)
+
+    finished = error is None
+    if not finished and records:
+        outcome = &quot;partial&quot;
+    elif not finished:
+        outcome = &quot;failed&quot;
+    elif records:
+        outcome = &quot;worked&quot;
+    else:
+        outcome = &quot;empty&quot;
+
+    completeness = DECLARED_INCOMPLETE if reason else NOT_KNOWN_OTHERWISE
+    return {&quot;source&quot;: module.NAME, &quot;outcome&quot;: outcome, &quot;records&quot;: records,
+            &quot;finished&quot;: finished, &quot;completeness&quot;: completeness,
+            &quot;reason&quot;: reason or error}
+
+
+def run_all(loaded, absent=()):
+    return [run(loaded[name], absent=name in absent) for name in sorted(loaded)]
+
+
+def at_least_incomplete(rows):
+    &quot;&quot;&quot;A FLOOR, never a count.
+
+    Records known to come from a source that said it was incomplete. A source
+    that is truncated and silent lands in the same column as a complete one, so
+    the true number is greater than or equal to this and nothing here can say
+    by how much.
+    &quot;&quot;&quot;
+    return sum(len(row[&quot;records&quot;]) for row in rows
+               if row[&quot;completeness&quot;] == DECLARED_INCOMPLETE)
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/sources/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/sources/full_page.py</summary><pre><code>&quot;&quot;&quot;A page that returns everything behind it.
+
+It imports nothing and knows nothing about the other sources. Note what it
+does NOT do: it does not declare itself complete. No unit in this example is
+allowed to, and refusing that is the point of section 4.
+&quot;&quot;&quot;
+NAME = &quot;full-page&quot;
+CAN_FAIL_WITH = [&quot;unreadable-page&quot;]
+
+
+def collect():
+    return {
+        &quot;records&quot;: [{&quot;from&quot;: NAME, &quot;id&quot;: f&quot;f-{n}&quot;} for n in range(1, 4)],
+        &quot;incomplete_because&quot;: None,
+    }
+</code></pre></details><details><summary>TMS/sources/quiet_truncation.py</summary><pre><code>&quot;&quot;&quot;A page that is truncated and says nothing. Deliberately in the example.
+
+This is the limit, kept as a running unit rather than as a sentence in the
+README. It is truncated in exactly the way `truncated_page` is, and it declares
+nothing — so the collector reports it identically to `short_page`, which is
+complete.
+
+Section 6 of the island test ASSERTS that indistinguishability. If that check
+ever goes red, the limit changed and the documents are wrong.
+&quot;&quot;&quot;
+NAME = &quot;quiet-truncation&quot;
+CAN_FAIL_WITH = [&quot;unreadable-page&quot;, &quot;cursor-expired&quot;]
+
+# Kept as data so the test can state what is true of this unit and unobservable
+# from outside it. Nothing in SMS reads it.
+TRUTH_THE_COLLECTOR_CANNOT_SEE = &quot;there is a cursor after these two records&quot;
+
+
+def collect():
+    return {
+        &quot;records&quot;: [{&quot;from&quot;: NAME, &quot;id&quot;: f&quot;q-{n}&quot;} for n in range(1, 3)],
+        &quot;incomplete_because&quot;: None,
+    }
+</code></pre></details><details><summary>TMS/sources/short_page.py</summary><pre><code>&quot;&quot;&quot;The control.
+
+Two records, finishes cleanly, and genuinely has nothing more behind it.
+`truncated_page` also returns two records and also finishes cleanly. Without
+this file, &quot;two records and finished&quot; and &quot;two records, finished, and there is
+more&quot; would be one observation, and section 3 could not come out badly.
+
+Same role as `short-batch` in example 016 and `archive-dump` in example 015.
+&quot;&quot;&quot;
+NAME = &quot;short-page&quot;
+CAN_FAIL_WITH = [&quot;unreadable-page&quot;]
+
+
+def collect():
+    return {
+        &quot;records&quot;: [{&quot;from&quot;: NAME, &quot;id&quot;: f&quot;s-{n}&quot;} for n in range(1, 3)],
+        &quot;incomplete_because&quot;: None,
+    }
+</code></pre></details><details><summary>TMS/sources/truncated_page.py</summary><pre><code>&quot;&quot;&quot;A page that finishes cleanly and knows it did not return everything.
+
+Nothing goes wrong here. No exception, no empty result, no early return. The
+call completes and the unit holds one fact the collector cannot observe from
+outside: there is a cursor it was not allowed to follow.
+
+`incomplete_because` is a declaration, and it is the only kind this example
+takes on trust — it can only make the report worse for the unit that made it.
+&quot;&quot;&quot;
+NAME = &quot;truncated-page&quot;
+CAN_FAIL_WITH = [&quot;unreadable-page&quot;, &quot;cursor-expired&quot;]
+
+
+def collect():
+    return {
+        &quot;records&quot;: [{&quot;from&quot;: NAME, &quot;id&quot;: f&quot;t-{n}&quot;} for n in range(1, 3)],
+        &quot;incomplete_because&quot;: &quot;more-after-cursor&quot;,
+    }
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;What a person is shown.
+
+The one thing this report may never print is an exact count of incomplete
+records, because it does not have one. It has a floor. Section 5 of the island
+test checks that the word &quot;at least&quot; is in the sentence, and that no exact
+count is offered anywhere near it.
+&quot;&quot;&quot;
+
+
+def rows(runs):
+    lines = [&quot;  source             outcome   records   finished   complete&quot;]
+    mark = {&quot;worked&quot;: &quot;ok&quot;, &quot;empty&quot;: &quot;--&quot;, &quot;partial&quot;: &quot;~~&quot;, &quot;failed&quot;: &quot;!!&quot;, &quot;absent&quot;: &quot;  &quot;}
+    for row in runs:
+        detail = f' ({row[&quot;reason&quot;]})' if row[&quot;reason&quot;] else &quot;&quot;
+        lines.append(
+            f'  {mark[row[&quot;outcome&quot;]]} {row[&quot;source&quot;]:&lt;16} {row[&quot;outcome&quot;]:&lt;9} '
+            f'{len(row[&quot;records&quot;]):&lt;9} {str(row[&quot;finished&quot;]) if row[&quot;finished&quot;] is not None else &quot;-&quot;:&lt;10} '
+            f'{(row[&quot;completeness&quot;] or &quot;-&quot;)}{detail}')
+    return &quot;\n&quot;.join(lines)
+
+
+def floor(at_least, total):
+    return &quot;\n&quot;.join([
+        f&quot;  at least {at_least} of {total} records come from a source that declared itself incomplete.&quot;,
+        &quot;  This is a FLOOR and not a count: a source that is truncated and says nothing is&quot;,
+        &quot;  reported in the same column as one that is complete.&quot;,
+    ])
+
+
+def two_axes(runs):
+    finished = [row for row in runs if row[&quot;finished&quot;]]
+    lines = [&quot;  what `finished` alone would have said:&quot;]
+    for row in finished:
+        lines.append(f'    {row[&quot;source&quot;]:&lt;16} finished, no error, {len(row[&quot;records&quot;])} records')
+    lines.append(f&quot;    {len(finished)} sources, all of them clean, and they are not all complete&quot;)
+    return &quot;\n&quot;.join(lines)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test.
+
+    python src/island_test.py
+
+Section 3 is the control. Section 4 is the rule the example exists for: a unit
+may declare itself incomplete and may not declare itself complete. Section 6
+asserts what this cannot see, so that a change in the limit goes red.
+&quot;&quot;&quot;
+import json
+import pathlib
+import re
+import sys
+
+from SMS import gather
+from SCL import policy
+from DMS import report
+from TMS.sources import quiet_truncation, short_page, truncated_page
+
+HERE = pathlib.Path(__file__).parent
+CONTRACT = json.loads((HERE / &quot;FMS&quot; / &quot;contract.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+FAILURES = []
+RAN = [0]
+
+
+def check(label, ok, detail=&quot;&quot;):
+    RAN[0] += 1
+    print(f'  {&quot;PASS&quot; if ok else &quot;FAIL&quot;}  {label}{f&quot; - {detail}&quot; if detail else &quot;&quot;}')
+    if not ok:
+        FAILURES.append(label)
+
+
+loaded, problems = gather.load()
+runs = gather.run_all(loaded)
+row = {r[&quot;source&quot;]: r for r in runs}
+
+print(&quot;\n== 1. every source is an island, and FMS matches the tree&quot;)
+check(&quot;loading raised no problems&quot;, not problems, &quot;; &quot;.join(problems))
+for unit, declared in CONTRACT[&quot;units&quot;].items():
+    directory = HERE.joinpath(*unit.split(&quot;/&quot;))
+    on_disk = sorted(p.name for p in directory.glob(&quot;*.py&quot;) if p.name != &quot;__init__.py&quot;)
+    check(f&quot;{unit}: FMS declares what is on disk&quot;, on_disk == sorted(declared),
+          f'disk {&quot;, &quot;.join(on_disk)} | FMS {&quot;, &quot;.join(sorted(declared))}')
+    for name in on_disk:
+        body = directory.joinpath(name).read_text(encoding=&quot;utf-8&quot;)
+        siblings = [n[:-3] for n in on_disk if n != name]
+        reached = [s for s in siblings if re.search(rf&quot;\bimport\b.*\b{s}\b&quot;, body)]
+        check(f&quot;{unit}/{name} reaches no sibling&quot;, not reached, &quot;, &quot;.join(reached))
+        check(f&quot;{unit}/{name} reaches no other set&quot;,
+              not re.search(r&quot;\b(from|import)\s+(SMS|DMS|SCL|FMS)\b&quot;, body))
+
+print(&quot;\n== 2. finished and complete are two axes&quot;)
+check(&quot;every source finished&quot;, all(r[&quot;finished&quot;] for r in runs))
+check(&quot;and none of them failed&quot;, all(r[&quot;outcome&quot;] == &quot;worked&quot; for r in runs))
+check(&quot;so the outcome column separates nothing today&quot;,
+      len({r[&quot;outcome&quot;] for r in runs}) == 1, &quot;, &quot;.join(sorted({r[&quot;outcome&quot;] for r in runs})))
+check(&quot;the completeness column does&quot;,
+      len({r[&quot;completeness&quot;] for r in runs}) == 2,
+      &quot; | &quot;.join(sorted({r[&quot;completeness&quot;] for r in runs})))
+check(&quot;truncated-page is the one that declared&quot;, row[&quot;truncated-page&quot;][&quot;reason&quot;] == &quot;more-after-cursor&quot;)
+absent_row = gather.run(loaded[&quot;truncated-page&quot;], absent=True)
+check(&quot;removed, it is absent and declares nothing&quot;,
+      absent_row[&quot;outcome&quot;] == &quot;absent&quot; and absent_row[&quot;completeness&quot;] is None)
+
+print(&quot;\n== 3. the control - the same number, finished just as cleanly&quot;)
+short, trunc = row[&quot;short-page&quot;], row[&quot;truncated-page&quot;]
+check(&quot;short-page returned two records&quot;, len(short[&quot;records&quot;]) == 2)
+check(&quot;and it finished&quot;, short[&quot;finished&quot;] is True)
+check(&quot;and it is genuinely complete - the control&quot;, short[&quot;reason&quot;] is None)
+check(&quot;truncated-page returned two records as well&quot;, len(trunc[&quot;records&quot;]) == 2)
+check(&quot;and it finished just as cleanly&quot;, trunc[&quot;finished&quot;] is True)
+check(&quot;so neither the count nor `finished` separates them&quot;,
+      len(short[&quot;records&quot;]) == len(trunc[&quot;records&quot;]) and short[&quot;finished&quot;] == trunc[&quot;finished&quot;])
+check(&quot;only the declaration does&quot;,
+      short[&quot;completeness&quot;] != trunc[&quot;completeness&quot;],
+      f'{short[&quot;completeness&quot;]} vs {trunc[&quot;completeness&quot;]}')
+
+print(&quot;\n== 4. a unit may declare itself incomplete and may not declare itself complete&quot;)
+
+
+def drill_source(name, **attributes):
+    module = type(sys)(name)
+    module.NAME = name
+    module.CAN_FAIL_WITH = [&quot;x&quot;]
+    module.collect = lambda: {&quot;records&quot;: [{&quot;from&quot;: name, &quot;id&quot;: &quot;d-1&quot;}], &quot;incomplete_because&quot;: None}
+    for key, value in attributes.items():
+        setattr(module, key, value)
+    return module
+
+
+for vouch in (&quot;COMPLETE&quot;, &quot;IS_COMPLETE&quot;, &quot;RETURNS_EVERYTHING&quot;):
+    _, drilled = gather.load(extra=[drill_source(f&quot;drill-{vouch.lower()}&quot;, **{vouch: True})])
+    check(f&quot;DRILL: a source declaring {vouch} is refused&quot;,
+          any(f&quot;declares {vouch}&quot; in p for p in drilled))
+_, honest = gather.load(extra=[drill_source(&quot;drill-honest&quot;)])
+check(&quot;and a source that declares neither is accepted&quot;, not honest)
+_, silent = gather.load(extra=[drill_source(&quot;drill-silent&quot;, CAN_FAIL_WITH=[])])
+check(&quot;DRILL: an empty CAN_FAIL_WITH is still refused (improvement 13)&quot;,
+      any(&quot;CAN_FAIL_WITH is empty&quot; in p for p in silent))
+check(&quot;the self-penalising direction is taken on trust, and it is the only one&quot;,
+      trunc[&quot;completeness&quot;] == gather.DECLARED_INCOMPLETE
+      and gather.NOT_KNOWN_OTHERWISE != &quot;complete&quot;)
+check(&quot;there is no verified-complete value anywhere in the vocabulary&quot;,
+      &quot;complete&quot; not in {gather.DECLARED_INCOMPLETE, gather.NOT_KNOWN_OTHERWISE})
+
+print(&quot;\n== 5. the number is a floor and the report says so&quot;)
+total = sum(len(r[&quot;records&quot;]) for r in runs)
+at_least = gather.at_least_incomplete(runs)
+sentence = report.floor(at_least, total)
+check(&quot;the floor counts only what was declared&quot;, at_least == 2, f&quot;{at_least} of {total}&quot;)
+check('the report says &quot;at least&quot;', &quot;at least&quot; in sentence)
+check('and says the word &quot;FLOOR&quot;', &quot;FLOOR&quot; in sentence)
+check(&quot;and states why it is not a count&quot;, &quot;truncated and says nothing&quot; in sentence)
+check(&quot;the true number is greater - quiet-truncation is truncated too&quot;,
+      at_least &lt; at_least + len(row[&quot;quiet-truncation&quot;][&quot;records&quot;]))
+check(&quot;removing the declaring source removes the warning, not the truncation&quot;,
+      gather.at_least_incomplete(gather.run_all(loaded, absent=[&quot;truncated-page&quot;])) == 0)
+
+print(&quot;\n== 6. what this cannot see, asserted so it stays measured&quot;)
+quiet = row[&quot;quiet-truncation&quot;]
+check(&quot;quiet-truncation is truncated in the same way truncated-page is&quot;,
+      quiet_truncation.TRUTH_THE_COLLECTOR_CANNOT_SEE.startswith(&quot;there is a cursor&quot;))
+check(&quot;it declares nothing&quot;, quiet[&quot;reason&quot;] is None)
+check(&quot;and every field the collector reads matches short-page, which IS complete&quot;,
+      (quiet[&quot;outcome&quot;], quiet[&quot;finished&quot;], len(quiet[&quot;records&quot;]), quiet[&quot;completeness&quot;])
+      == (short[&quot;outcome&quot;], short[&quot;finished&quot;], len(short[&quot;records&quot;]), short[&quot;completeness&quot;]),
+      &quot;the limit named in FMS non_goals - if this goes red, the limit changed and the text must too&quot;)
+check(&quot;the two source files differ, so the sameness is in the observation and not the tree&quot;,
+      truncated_page.collect()[&quot;incomplete_because&quot;] != quiet_truncation.collect()[&quot;incomplete_because&quot;])
+check(&quot;SCL cannot refuse it, and says that in words&quot;,
+      &quot;truncated and silent&quot; in json.loads(
+          (HERE / &quot;SCL&quot; / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))[&quot;what_this_deployment_cannot_refuse&quot;])
+check(&quot;and the deployment does refuse the declared one&quot;, policy.is_fatal())
+
+print()
+if FAILURES:
+    print(f'  {len(FAILURES)} FAILED: {&quot; | &quot;.join(FAILURES)}')
+    sys.exit(1)
+print(f&quot;  {RAN[0]} checks passed - {len(runs)} sources, all finished, not all complete&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Four sources, all of them finish, and they are not all complete.
+
+    python src/main.py            the run under the deployment SCL names
+    python src/main.py --axes     finished and complete, side by side
+    python src/main.py --strict   exit 1 when a source declared itself incomplete and that is fatal
+&quot;&quot;&quot;
+import sys
+
+from DMS import report
+from SCL import policy
+from SMS import gather
+
+
+def main(argv):
+    loaded, problems = gather.load()
+    if problems:
+        for problem in problems:
+            print(f&quot;  REFUSED: {problem}&quot;)
+        return 1
+
+    runs = gather.run_all(loaded)
+    total = sum(len(row[&quot;records&quot;]) for row in runs)
+    at_least = gather.at_least_incomplete(runs)
+
+    print(f&quot;\n  {policy.describe()}\n&quot;)
+    print(report.rows(runs))
+    print()
+    print(report.floor(at_least, total))
+
+    if &quot;--axes&quot; in argv:
+        print()
+        print(report.two_axes(runs))
+        print()
+        print(&quot;  removed (island test), for contrast:&quot;)
+        removed = gather.run_all(loaded, absent=[&quot;truncated-page&quot;])
+        print(report.rows(removed))
+        print(f'\n  at least {gather.at_least_incomplete(removed)} of '
+              f'{sum(len(row[&quot;records&quot;]) for row in removed)} - removing the one source that '
+              f'declared\n  anything takes the warning away and leaves the other truncation behind.')
+
+    declared = [row for row in runs if row[&quot;completeness&quot;] == gather.DECLARED_INCOMPLETE]
+    if &quot;--strict&quot; in argv and declared and policy.is_fatal():
+        print(f&quot;\n  --strict: {len(declared)} source(s) declared themselves incomplete and this &quot;
+              f&quot;deployment calls that fatal&quot;)
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

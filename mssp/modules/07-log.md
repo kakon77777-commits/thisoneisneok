@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-16
+updated: 2026-08-17
 ---
 
 # 開發日誌
@@ -17,6 +17,54 @@ updated: 2026-08-16
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-17
+
+### 發生了什麼
+
+[範例 017](/html/mssp/017-finished-is-not-complete.html) 與[考古 017](/html/mssp/archaeology/017-cpython-zlib.html)。題目是我昨天**自己在看板上寫下的代價**：範例 016 把 `finished` 從單元手上拿走，於是「一個知道自己沒把東西拿全的來源，現在沒有地方講」。
+
+### 怎麼發現的
+
+先量上游。同一份截斷的 zlib 串流，同一個模組的兩個 reader：
+
+```text
+    stream        reader           bytes   eof     raised
+    truncated     zlib.decompress  -       -       Error -5 ... incomplete or truncated stream
+    truncated     decompressobj    218     False
+```
+
+**一個拒絕，一個交回前綴然後什麼都不說。** 然後是對照組——一個**完整**串流，payload 恰好是那 218 bytes：
+
+```text
+    byte-identical   : True
+    told apart by any returned value: False
+    told apart by .eof              : True
+```
+
+**位元組完全相同。** 這是我做過最乾淨的一組對照，而它把問題講死了：**判別器存在，但它在物件上，資料是回傳值。** 一個「解壓縮然後回傳 bytes」的函式在呼叫端看到東西之前就把它丟掉了——那正是昨天「outcome 要跟著紀錄走」在標準庫裡的樣子。
+
+回到方法本身，撞到的是一個**兩條規則互相牴觸**的地方，跟缺點 7 當年一樣：完整性從外面看不到，只能宣告；而昨天才剛說宣告不可信。
+
+**解法是方向，不是再加一層驗證。** 只會讓自己變難看的宣告可以照收——偽造沒有動機，偽造的結果也是保守的；讓自己變好看的宣告拒絕。`COMPLETE = True` 會讓建置失敗。
+
+價錢誠實寫出來：**完整性欄位只有兩個值，沒有「已驗證完整」這個狀態**，而那個數字是**下界**。報表要說 `at least`、`FLOOR`、以及為什麼——把 `at least` 改成 `exactly` 就變紅。這是我自己反覆犯的那一條（把界線當量測值），所以這次三句話都檢查。
+
+**洞留在樹裡當一個跑得起來的單元。** `quiet-truncation` 真的被截斷、什麼都不說，跟對照組在收集器讀得到的每一個欄位上都一樣，第 6 節斷言這件事。一句寫在 README 的「這偵測不到」沒有人會回頭讀；一條會紅的檢查會。
+
+**十個變異，十個都紅。**
+
+### 順帶量到的第三種關係
+
+移除 `truncated-page`（孤島測試自己的動作）把 at least 2 變成 at least 0——**警告沒了，另一個截斷原封不動留在原地**。加上前兩天，移除與真實失敗的關係現在有三種：一樣（015）、移除比較多（016）、**移除讓報表變乾淨而事實沒變**（017）。第三種最難察覺，因為一個只做減法的鑽孔量的就是減法之後的樣子。
+
+### 對 MSSP 的意義
+
+[改良點 15](/html/mssp/modules/development.html) 進開發區，`candidate`：**宣告的方向決定它可不可信**。它同時是改良點 14 的補丁——14 那條在看得到的事實上成立，看不到的那一種要靠方向。
+
+Metron 與 Pragma 連三天不在，這一則沒有經過交叉審查。
 
 ---
 

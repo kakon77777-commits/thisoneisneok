@@ -1,0 +1,18 @@
+id: 017-finished-is-not-complete
+title:
+  zh: 跑完了，跟拿到全部了，是兩件事
+  en: "Finishing and being complete are two different things"
+summary:
+  zh: [範例 016](/html/mssp/016-partial-and-complete.html) 把 `finished` 從單元手上拿走（改成收集器觀察），同一天我在看板寫下那個代價：**一個知道自己沒把東西拿全的來源，現在沒有地方講**。這一則把代價還回去。四個來源**全部跑完、沒有一個失敗**，而它們不全是完整的——完整性從單元外面**看不到**，沒有東西能看見一個來源沒去追的 cursor。所以它只能用宣告的，而 016 才剛說宣告不可信。解法是**有方向的**：**一個單元可以宣告自己不完整，不可以宣告自己完整。** 只會讓自己變難看的宣告可以照收（偽造它沒有動機，而且偽造的結果是保守的）；讓自己變好看的宣告直接拒絕，`COMPLETE = True` 會讓建置失敗。兩個後果：完整性欄位只有**兩個值**（`no - declared` / `not known to be otherwise`），**沒有「已驗證完整」這個狀態**，因為這裡產不出來；以及那個數字是**下界**——報表要說 at least、要說 FLOOR、要說為什麼，第 5 節三個都檢查，把 at least 改成 exactly 就變紅。對照組 `short-page` 吐兩筆、跑完、而且真的沒有更多；`quiet-truncation` 則是**真的被截斷而且什麼都不說**，被留在樹裡當一個跑得起來的單元，第 6 節**斷言**它跟對照組無法區分。同日考古 017 量到最利的版本：截斷的 zlib 串流跟完整串流解出來**位元組完全相同**，唯一分得開的是 `.eof`，而 `.eof` 在物件上、bytes 是回傳值。
+  en: Example 016 took `finished` away from the unit by having the collector observe it, and the same day I wrote down the cost on the board - a source that knows it did not return everything now has nowhere to say so. This entry pays that cost back. Four sources all finish and none fails, and they are not all complete. Completeness cannot be observed from outside the unit, so it has to be declared, and 016 had just concluded that a fact a unit could get wrong should not be the unit's to state. The resolution is directional - a unit may declare itself incomplete and may not declare itself complete. A declaration that can only make the report worse for the declarer is taken on trust; one that makes it better is refused, and COMPLETE = True fails the build. Two consequences: the completeness column has two values and there is no verified-complete state, because nothing here can produce one; and the number is a floor, so the report says "at least", says FLOOR, and says why, with a mutation from "at least" to "exactly" turning it red. The control is short-page, which returns two records, finishes, and genuinely has nothing more. quiet-truncation is truncated and silent and is kept in the tree as a running unit, with section 6 asserting that it is indistinguishable from the control. The same day's archaeology measures the sharpest version: a truncated zlib stream and a complete one decompress to byte-identical output and only .eof separates them, and .eof is on the object while the bytes are the return value.
+language: python
+date: 2026-08-17
+version: v1.0
+kind: example
+concepts:
+  - finished-and-complete-are-two-axes
+  - a-unit-may-declare-itself-incomplete-not-complete
+  - there-is-no-verified-complete-state
+  - the-number-is-a-floor-and-must-say-so
+  - the-gap-is-kept-in-the-tree-as-a-running-unit
+runnable: python src/main.py

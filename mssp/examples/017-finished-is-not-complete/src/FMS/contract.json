@@ -1,0 +1,43 @@
+{
+  "name": "017-finished-is-not-complete",
+  "what_it_is": "A gather step over four sources where every one of them finishes cleanly and they are not all complete.",
+  "the_structural_decision": "Finishing and being complete are two axes, and the second one is not observable from outside the unit. So it has to be declared — and example 016 had just established that a fact a unit could get wrong should not be the unit's to state. The resolution is directional: a unit may declare itself INCOMPLETE and may not declare itself COMPLETE. A declaration that can only make the report worse for the declarer is taken on trust; one that makes it better is refused, because nothing outside can check it.",
+  "why_this_one": "Example 016 removed `finished` from the unit and named the cost on the board the same day — a source that KNOWS it is about to break, or knows it did not return everything, now has nowhere to say so. This is that cost paid back, and it does not come free: what you get is a floor, not a count.",
+  "status": "candidate",
+
+  "the_two_axes": {
+    "finished": "observed by the collector — did the call complete without raising (example 016)",
+    "complete": "not observable here at all — did the unit return everything behind it"
+  },
+
+  "the_completeness_column_has_two_values": {
+    "no - declared": "the unit said so, and this example takes that on trust",
+    "not known to be otherwise": "nothing said so — which is NOT the same as complete, and the report never renders it as complete"
+  },
+  "there_is_no_verified_complete_state": "Nothing in this example can put a source in one. A report that offers 'complete' as a value is claiming something it did not measure.",
+
+  "sources": {
+    "full-page":        {"records": 3, "declares": null},
+    "short-page":       {"records": 2, "declares": null, "note": "the control — the same record count as truncated-page, finishes just as cleanly, and genuinely has nothing more"},
+    "truncated-page":   {"records": 2, "declares": "more-after-cursor"},
+    "quiet-truncation": {"records": 2, "declares": null, "note": "the limit, kept as a running unit — it IS truncated and says nothing, so it is reported identically to short-page. Island test section 6 asserts that indistinguishability so a change in it goes red."}
+  },
+
+  "the_finding": "All four sources finish. None of them fails. The record counts are 3, 2, 2, 2 — and one of the three twos is missing records, one is not, and one is missing records without saying so. Archaeology 017 measures the same thing in zlib: a truncated stream and a complete one decompress to BYTE-IDENTICAL output, and the only field that separates them is `.eof`.",
+
+  "sets": {
+    "FMS": "this file: the two axes, the two values completeness may take, what each source declares, and the units map",
+    "SCL": "what a declared-incomplete source means in this deployment, and what this deployment cannot refuse",
+    "SMS": "running each source, observing `finished`, accepting the self-penalising declaration and refusing the self-serving one",
+    "TMS": "one file per source — each declares what it can fail with, and none of them declares itself complete",
+    "DMS": "the two axes side by side, and the floor stated as a floor"
+  },
+
+  "units": {"TMS/sources": ["full_page.py", "quiet_truncation.py", "short_page.py", "truncated_page.py"]},
+
+  "non_goals": [
+    "Detecting a truncated source that says nothing. That is what the floor is a floor because of, and quiet_truncation is kept in the tree so the gap is a running unit rather than a sentence.",
+    "Deciding whether a declared-incomplete export should be served. SCL picks one and the example takes no position.",
+    "Following the cursor. Resumption is a different problem, and it was already deferred by example 016."
+  ]
+}
