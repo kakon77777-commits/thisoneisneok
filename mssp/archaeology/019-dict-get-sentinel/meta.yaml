@@ -1,0 +1,21 @@
+id: 019-dict-get-sentinel
+project: CPython dict.get and the subscript operator
+upstream: https://github.com/python/cpython/blob/main/Objects/dictobject.c
+license: PSF-2.0
+examined_version: measured at run time
+title:
+  zh: 鍵不在，跟鍵在而且是 None，是同一個回傳值
+  en: "A key that is absent and a key set to None are one return value"
+summary:
+  zh: 同日的範例 019 主張**一個量測回傳的是值加上它的適用性**，而 `dict.get` 是這句話在標準庫裡最普通的一行。`{'a': None}.get('a')` 與 `{}.get('a')` 回傳**同一個值、同一個型別、同一個物件**——一個鍵不存在，跟一個鍵被明確設成「什麼都沒有」，是同一個答案，而那兩件事在設定檔語境裡是**相反的指令**（前者該落回內建預設，後者該用「沒有」覆蓋掉它）。語言裡有**三個**判別器而沒有一個是大家會寫的：`key in d`、`d.get(key, SENTINEL)`、以及會拋 `KeyError` 的 `d[key]`——寬容的取值器跟嚴格的取值器住在**同一個型別上**，跟[考古 017](/html/mssp/archaeology/017-cpython-zlib.html) 的 zlib 完全同形（一次收完的拋、串流的安靜回傳前綴）。第三個發現更糟：慣用的 `if not d.get(key):` **把六種情況折成同一個分支**（缺鍵／None／0／空字串／False／空 list），而其中**五種有那個鍵**——所以那個測試在六次裡只有一次講對了「不存在」。對照組是一個帶真值的鍵，沒有它，「它們都走同一個分支」是一句關於測試的話而不是關於值的話。行為不適合改：`d.get` 寬容是對的（預設值是常見需求），而 `None` 是合法的值、所以它不可能同時當缺席標記——這正是 sentinel 必須是**呼叫端自己帶的 `object()`** 的原因，而它連在簽名裡都沒有。
+  en: The same day's example 019 argues that a measurement returns a value together with its applicability, and dict.get is that sentence as the most ordinary line in the standard library. {'a': None}.get('a') and {}.get('a') return the same value, the same type and the same object - a key that is absent and a key explicitly set to nothing are one answer, and in a configuration context those are opposite instructions, since the first should fall back to a built-in default and the second should override it with nothing. Three discriminators exist in the language and none of them is what people write: key in d, d.get(key, SENTINEL), and d[key], which raises KeyError. The forgiving accessor and the strict one live on the same type, exactly the shape archaeology 017 found in zlib where the one-shot raises on a truncated stream and the incremental reader returns a prefix in silence. The third finding is worse: the idiomatic if not d.get(key) collapses six distinct situations into one branch - missing, None, zero, empty string, False, empty list - and five of the six have the key, so the test is right about absence one time in six. The control is a key present with a truthy value; without it, "they all take the same branch" would be a statement about the test rather than about the values. The behaviour should not change: d.get is right to be forgiving because a default is the common case, and None is a legal value so it cannot double as the missing marker, which is exactly why the sentinel has to be an object() the caller brings and why it is not in the signature at all.
+date: 2026-08-19
+version: v1.0
+verdict: absent-and-explicitly-nothing-are-one-value
+concepts:
+  - same-value-same-type-same-object
+  - three-discriminators-none-of-them-the-default
+  - forgiving-and-strict-on-one-type
+  - the-falsy-test-collapses-six-into-one
+  - none-is-legal-so-it-cannot-be-the-marker
+runnable: python src/main.py

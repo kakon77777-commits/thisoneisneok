@@ -33,7 +33,7 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-17</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-19</span></header>
 <main>
   <span class="state">v1.x 開發中</span>
   <article class="content"><h1>MSSP 開發區</h1>
@@ -627,6 +627,60 @@ module.exports = Object.assign({}, first, {
 </tbody></table>
 <p>第三種最難察覺：移除 <code>truncated-page</code> 把<strong>警告</strong>拿掉了，另一個截斷原封不動留在原地。<strong>移除可以讓報表變好看而不改變任何真的事情</strong>——一個只做減法的鑽孔看不出這件事，因為它量的就是減法之後的樣子。</p>
 <p><strong>驗證方式：</strong> 20/20 之後的真實應用。要問的是下界跟真相之間的差距有多大——有多少來源<strong>有能力</strong>知道自己不完整（分頁器有，全表掃描沒有）。如果多數來源根本沒有那個知識，這一條就只是把一個空欄位加到每個單元上。</p>
+<hr>
+<h3>改良點 16：宣告的方向由<strong>消費它的政策</strong>決定，而那可以量</h3>
+<p><a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 15</a> 說「只會讓自己變難看的宣告可以照收」。我在 2026-08-17 的看板上把這條丟出去請人攻，並且寫明<strong>自我懲罰是我對動機的判斷、不是程式碼的性質，而我造不出有說服力的反例</strong>。</p>
+<p><a href="/html/mssp/018-who-the-declaration-serves.html">範例 018</a> 是那個反例，而且它<strong>落在合理的設定上</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>政策</th>
+<th>對宣告做什麼</th>
+<th>宣告單元量到的誘因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>refuse-declared</code></td>
+<td>整個丟掉</td>
+<td><strong>−3</strong>（3 壓掉 → 0 宣告）</td>
+</tr>
+<tr>
+<td><code>retry-declared</code></td>
+<td>加預算重跑</td>
+<td><strong>+3</strong>（3 壓掉 → 6 宣告）</td>
+</tr>
+</tbody></table>
+<p><strong>兩個都不是稻草人。</strong> 合規匯出丟掉已知不完整的東西是對的；目錄同步對「剛剛說了還有更多」的來源多花預算也是對的——那份宣告正好就是「多花會多拿」的訊號。</p>
+<p>而在 <code>retry-declared</code> 底下，<strong>誠實的單元拿到 6，沉默的單元拿到 3，兩者手上的資料一模一樣</strong>。誠實被獎勵、沉默被懲罰。改良點 15 的信任前提在這個政策下<strong>不成立</strong>。</p>
+<p><strong>修法不是把判斷拿掉，是把它寫到有東西能反駁的地方</strong>——這是這個實驗室反覆用的同一招：把一個判斷變成會跑的東西。</p>
+<ol>
+<li><strong>SCL 寫下假設</strong>：<code>assumes_declarations_are: &quot;self-penalising&quot;</code>。</li>
+<li><strong>建置用反事實去量</strong>：把那個單元的宣告壓掉再跑一次，比較它的貢獻。</li>
+<li><strong>矛盾是致命的。</strong></li>
+</ol>
+<p>對照組是 <code>silent-page</code>：跟 <code>honest-page</code> 持有同樣六筆、每單位預算交出同樣數量，唯一差別是有沒有宣告——所以兩者的差異只能歸給宣告。誘因也<strong>從不印成單一數字</strong>：<code>+3</code> 沒有人能重算，報表印它算出來的那一對。</p>
+<p><strong>上游同形。</strong> <a href="/html/mssp/archaeology/018-object-freeze.html">考古 018</a> 的 <code>Object.freeze</code> 宣告「不可變」而 <strong><code>Object.freeze.length === 1</code>——沒有第二個參數說違反代表什麼</strong>。sloppy 模式的消費者不會拿到錯誤，而且<strong>賦值運算式仍然求值為 999、物件裡還是 100</strong>：讀運算式的人被告知成功，讀物件的人被告知失敗。對照組是一個從未凍結的物件，它<strong>也</strong>回傳 999，所以那個回傳值不是「錯的」，是<strong>沒有資訊</strong>。</p>
+<p><strong>已知沒有解決的：</strong> 「會獎勵的政策」這個集合<strong>列舉不出來</strong>。這正是為什麼這一條是一個<strong>量測</strong>而不是一條規則——集合列不出來，但<strong>在當前政策底下</strong>的誘因算得出來。</p>
+<hr>
+<h3>改良點 17：一個量測回傳的是<strong>值 + 它的適用性</strong></h3>
+<p>改良點 16 的誘因數字有兩個意思，<a href="/html/mssp/018-who-the-declaration-serves.html">範例 018</a> 自己把它寫進限制裡：<strong>沒有宣告的單元讀 0，宣告壓不掉的單元也讀 0。</strong></p>
+<p><a href="/html/mssp/019-applicability-is-part-of-the-answer.html">範例 019</a> 把它做掉，而<strong>修法不是換一個更好的數字</strong>——那兩種情況從來就不是同一個量。</p>
+<pre><code class="language-python">{&quot;applicable&quot;: True,  &quot;value&quot;: 3, &quot;reason&quot;: None}
+{&quot;applicable&quot;: True,  &quot;value&quot;: 0, &quot;reason&quot;: None}      # 量到的零
+{&quot;applicable&quot;: False, &quot;value&quot;: None, &quot;reason&quot;: &quot;...&quot;}  # 量不到
+</code></pre>
+<p>三條，第三條最一般：</p>
+<ol>
+<li><strong>單元要宣告自己的宣告能不能被壓掉。</strong> 不說的直接拒絕——否則收集器會報一個它沒算過的零。</li>
+<li><strong>SCL 只能被量到的東西反駁。</strong> 沒量到的讀數既不確認也不反駁，而且要<strong>單獨列出來</strong>，不能看起來像同意。</li>
+<li><strong>聚合器要拒絕。</strong> <code>total_incentive</code> 直接拋，因為一個安靜跳過讀不到項目的總和，<strong>會用跟完整總和一樣的自信印出一個比較小的數字</strong>。</li>
+</ol>
+<p><strong>這是<a href="/html/mssp/015-present-and-failing.html">範例 015</a> 開場那個形狀，搬到儀器上。</strong> 015 說的是「三種情況，一個數字」，在<strong>資料</strong>裡；019 說的是同一句話，在<strong>讀資料的東西</strong>裡。這條線從 015 走到 019 走了一圈回來。</p>
+<p>對照組是 <code>ignore-declared</code> 政策：在它底下宣告單元的誘因是<strong>量到的零</strong>（兩臂都跑、而且一致）。沒有這個政策，報表裡每一個零都只會是「沒東西可量」，第 3 節不可能失敗。而第 4 節<strong>用跑的證明</strong>那個不可量測單元講的理由——壓掉欄位之後 <code>baked-in</code> 的標記紀錄還在，而可壓制單元的兩臂是<strong>逐筆相同</strong>的。</p>
+<p><strong>上游是這 20 則裡最普通的一行。</strong> <a href="/html/mssp/archaeology/019-dict-get-sentinel.html">考古 019</a>：<code>{&#39;a&#39;: None}.get(&#39;a&#39;)</code> 與 <code>{}.get(&#39;a&#39;)</code> 回傳<strong>同一個值、同一個型別、同一個物件</strong>，而那兩件事在設定檔語境裡是<strong>相反的指令</strong>。三個判別器都在語言裡（<code>in</code>／<code>get(k, SENTINEL)</code>／會拋的 <code>d[k]</code>），沒有一個是大家會寫的；而慣用的 <code>if not d.get(k):</code> <strong>把六種情況折成一個分支，其中五種有那個鍵</strong>——那行在六次裡只有一次講對了「不存在」。</p>
+<p><code>d.get(k, SENTINEL)</code> 就是這一條的提案本身，<strong>早就在語言裡，只是不是預設，而且哨兵連在簽名裡都沒有</strong>——呼叫端得自己帶一個 <code>object()</code>。</p>
+<p><strong>這兩天各有一個我自己的缺陷，而第二個比第一個有用。</strong> 載入器對一個沒有 <code>POLICY</code> 的模組<strong>直接崩</strong>，而不是把它分類成拒絕；修完之後<strong>註冊那一行仍然去讀那個剛剛被判定缺少的屬性</strong>，所以被拒絕的模組照樣讓載入器崩掉。<strong>一個沒有覆蓋到它後面程式碼的守衛，不是守衛。</strong></p>
+<p><strong>驗證方式：</strong> 20/20 之後的真實應用。要問的是：有多少讀數其實是 <code>n/a</code> 而以前被當成 0 送出去過。</p>
 <hr>
 <h2>開發路線：四個 MVP 與回饋迴圈</h2>
 <p><a href="/research">程式研究區</a>的四份研究不會停在論文。每一份要先做出 MVP，而 MVP 本身用 MSSP 蓋——於是它同時是產品，也是這個方法在中等規模上的證據。</p>

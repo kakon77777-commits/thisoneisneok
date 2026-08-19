@@ -1,0 +1,46 @@
+{
+  "name": "019-applicability-is-part-of-the-answer",
+  "what_it_is": "The incentive measurement from example 018, repaired so that it reports when it does not apply instead of reporting a zero it never computed.",
+  "the_structural_decision": "A measurement returns a value AND its applicability. Example 018's counterfactual handed back a number, and that number had two meanings — a unit that declared nothing measured 0, and a unit whose declaration could not be suppressed measured 0. The repair is not a better number; it is that the harness refuses to hand back a value it did not compute.",
+  "why_this_one": "Example 018 named this in its own limitations. It is also the same shape example 015 opened this run with — several situations arriving as one number — moved from the data to the instrument that reads the data.",
+  "status": "candidate",
+
+  "the_three_answers": {
+    "measured, non-zero": "both arms of the counterfactual ran and disagreed",
+    "measured zero": "both arms ran and agreed — a real reading, and the control proves it is a category and not a synonym",
+    "not applicable": "there was no second arm, so no value exists; a reason is carried instead"
+  },
+
+  "sources": {
+    "declares-openly": {"holds": 6, "suppressible": true, "note": "its declaration is a separate field, so a harness can withhold it without changing anything else"},
+    "never-declares":  {"holds": 6, "suppressible": true, "note": "measures a genuine zero"},
+    "baked-in":        {"holds": 6, "suppressible": false, "note": "its incompleteness IS a record, so withholding the field leaves the marker behind and the two arms are not comparable — this is the unit 018 reported as 0"}
+  },
+
+  "policies": {
+    "retry-declared":  "re-runs a declaring source with more budget",
+    "ignore-declared": "notes the declaration and changes nothing — the control policy, under which a declaring unit has a MEASURED zero"
+  },
+  "why_the_control_policy_exists": "Without a policy that produces a real zero, every zero in the report would mean 'nothing to measure' and section 3 could not come out badly.",
+
+  "the_aggregator_refuses": "total_incentive raises rather than skipping the unmeasured unit. A sum that quietly omits what it could not read prints a smaller number with the same confidence as a complete one.",
+
+  "sets": {
+    "FMS": "this file: the three answers, what each source holds and whether its declaration is separable, and the units map",
+    "SCL": "which policy this deployment applies, what it assumes, and what an unmeasurable unit means here",
+    "SMS": "running the sources, applying the policy, and returning each measurement with its applicability",
+    "TMS": "one file per source and one per policy — each declares itself, including whether its declaration can be suppressed, and reaches no sibling",
+    "DMS": "the three kinds of cell kept visibly apart, and what a bare number would have said instead"
+  },
+
+  "units": {
+    "TMS/sources": ["declaration_is_baked_in.py", "declares_openly.py", "never_declares.py"],
+    "TMS/policies": ["ignore_declared.py", "retry_declared.py"]
+  },
+
+  "non_goals": [
+    "Measuring the unmeasurable unit. The point is that it is named, not that it is solved. Rebuilding baked-in so its declaration is separable is a change to the unit, not to the harness.",
+    "Trusting the unit's own word about suppressibility. A unit could declare itself unsuppressible and be lying; that reads as `n/a` rather than as zero, which is the conservative direction but is not verification.",
+    "Reading intent. The measurement is outcome only, exactly as in example 018."
+  ]
+}

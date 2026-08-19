@@ -1,0 +1,33 @@
+{
+  "name": "019-dict-get-sentinel",
+  "upstream": "CPython dict.get and the subscript operator, measured at run time",
+  "what_is_being_examined": "Three ways of reading one key, and which of them can tell a missing key from a key whose value is None.",
+
+  "the_finding": "{'a': None}.get('a') and {}.get('a') return the same value, the same type, and the same object. A key that is absent and a key that was explicitly set to nothing are one answer.",
+
+  "second_finding": "Three discriminators exist in the language and none of them is what people write: `key in d`, `d.get(key, SENTINEL)`, and `d[key]`, which raises. The forgiving accessor and the strict one live on the same type - the same shape archaeology 017 found in zlib, where the one-shot raises on a truncated stream and the incremental reader returns a prefix in silence.",
+
+  "third_finding": "The idiomatic `if not d.get(key):` collapses further. Six distinct situations take that branch and five of the six have the key, so the test is right about absence in one case out of six.",
+
+  "readers": {
+    "d.get(key)":            {"separates_missing_from_none": false, "raises_on_missing": false},
+    "d.get(key, SENTINEL)":  {"separates_missing_from_none": true,  "raises_on_missing": false},
+    "d[key]":                {"separates_missing_from_none": true,  "raises_on_missing": true}
+  },
+
+  "the_control": "A key present with a truthy value. It must come out differently from the six, or `they all take the same branch` would be a statement about the test rather than about the values.",
+
+  "why_it_belongs_beside_example_019": "d.get(key, SENTINEL) is exactly the repair example 019 argues for - an answer that carries its own applicability - and it has been in the language the whole time without being the default. The sentinel is not in the signature either; the caller has to bring an object().",
+
+  "sets": {
+    "FMS": "this file: what each reader separates and what it raises, and the units map",
+    "SCL": "which reader this deployment uses, what an unset key read as null means here, and what the deployment cannot reach",
+    "SMS": "the probes that run real dicts, including the truthy control",
+    "TMS": "one file per reader - each declares what it separates, and imports nothing",
+    "DMS": "value and present printed together, never one without the other"
+  },
+
+  "units": {"TMS/readers": ["forgiving.py", "subscript.py", "with_sentinel.py"]},
+
+  "the_recut_adds": "A reader declares whether it separates the two situations, and the declaration is verified by running it against both. Section 3b is the drill: a reader claiming to separate them while calling plain get must be caught."
+}

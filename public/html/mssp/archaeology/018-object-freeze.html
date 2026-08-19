@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>宣告「不可變」的人，沒有辦法說違反它代表什麼 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="同日的範例 018 主張**一份宣告到底幫了誰，是讀它的人決定的**，而 `Object.freeze` 是這句話在語言本體裡的樣子。同一個凍結物件、同一行賦值：sloppy 模式**不拋**，而且**賦值運算式求值為 999、物件裡還是 100**——讀運算式的人被告知成功，讀物件的人被告知失敗；strict 模式對同一行拋 TypeError。對照組是一個**從來沒被凍結**的物件，它也回傳 999，所以 `returned` 不是錯的、是**沒有資訊**：成功與安靜失敗兩種情況下一模一樣。第二個發現是宣告者根本沒有被給那個欄位——`Object.freeze.length` 是 **1**，一個參數就是那個物件，沒有第二個參數說違反代表什麼，而兩個模式的入口是不同的語法構造（module／class body／明示指示詞 對上 Function 建構子／eval／傳統 script），不是可以傳進去的設定，所以物件連自己被誰讀了都不知道。第三、凍結是**淺**的：對內層物件的寫入在 strict 模式下也不會拋，那不是模式的問題，是宣告涵蓋的範圍比它的名字小。兩邊都不適合改——凍結做到了它說的事（兩個模式底下物件都保住原值），sloppy 模式是「沒有標記的程式碼」的意思、為了不弄壞既有網頁而不能事後修掉，ES modules 一律 strict 正是只在新入口上改。順手量到的 `Proxy` 只解決一半：引擎自己的**不變量**違反兩個模式都拋，但 `set` trap 自己回 `false` 仍然照模式走。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/018-object-freeze.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>018-object-freeze</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>ECMAScript Object.freeze and the two language modes</span></div>
+    <div><b>授權</b><span>BSD-3-Clause (V8, the implementation measured); MIT (Node.js)</span></div>
+    <div><b>檢視版本</b><span>measured at run time</span></div>
+    <div><b>日期</b><span>2026-08-18</span></div>
+    <div><b>來源</b><span><a href="https://tc39.es/ecma262/#sec-object.freeze">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>018 — <code>Object.freeze</code>：宣告「不可變」的人，沒有辦法說違反它代表什麼</h1>
+<blockquote>
+<p>上游是 ECMAScript 的 <a href="https://tc39.es/ecma262/#sec-object.freeze"><code>Object.freeze</code></a> 與兩個語言模式，
+實作為 V8（BSD-3-Clause），跑在 Node.js（MIT）。版本由執行時量出來。
+這一則不需要任何 I/O——一個凍結物件、一次賦值，全部在本機重現。</p>
+</blockquote>
+<pre><code class="language-bash">node src/main.mjs            # 同一次賦值，兩個模式
+node src/main.mjs --strict   # 這個部署可能吞掉違反就 exit 1
+node src/island_test.mjs     # 34 項檢查，全部直接跑真的內建函式，數字由它自己印
+</code></pre>
+<h2>為什麼選它</h2>
+<p>同日的<a href="/html/mssp/018-who-the-declaration-serves.html">範例 018</a> 主張<strong>一份宣告到底幫了誰，是讀它的人決定的</strong>。</p>
+<p><code>Object.freeze</code> 是這句話在語言本體裡的樣子：<strong>宣告者說「不可變」，而「違反它會怎樣」完全由消費者決定，宣告者既說不出來也看不到。</strong></p>
+<h2>原專案的結構地圖</h2>
+<p>同一個凍結物件，同一行賦值：</p>
+<pre><code class="language-text">    object        mode     returned   actual   threw
+    frozen        sloppy   999        100      -
+    frozen        strict   -          100      TypeError: Cannot assign to read only property &#39;price&#39;
+    never frozen  sloppy   999        999      -
+    never frozen  strict   999        999      -
+</code></pre>
+<p><strong>第一列是重點：運算式求值為 999，物件裡還是 100。</strong></p>
+<pre><code class="language-js">const v = (frozen.price = 999);   // v === 999
+frozen.price;                     // 100
+</code></pre>
+<p><strong>讀運算式的人被告知寫入成功，讀物件的人被告知失敗。</strong> 同一次寫入，兩個答案。</p>
+<p>而<strong>對照組</strong>是第三、四列——一個<strong>從來沒被凍結</strong>的物件也回傳 999。所以 <code>returned</code> 不是「錯的」，是<strong>沒有資訊</strong>：它在成功與安靜失敗兩種情況下一模一樣。沒有這個對照組，「sloppy 回傳 999」不構成任何主張。</p>
+<h2>第二個發現：宣告者根本沒有被給那個欄位</h2>
+<pre><code class="language-text">  Object.freeze.length = 1
+</code></pre>
+<p><strong>一個參數，就是那個物件。沒有第二個參數說違反代表什麼。</strong> 而兩個模式的入口是<strong>不同的語法構造</strong>（module／class body／明示指示詞 對上 Function 建構子／eval／傳統 script），不是一個可以傳進去的設定——所以物件連自己被誰讀了都不知道。</p>
+<p>這正是<a href="/html/mssp/018-who-the-declaration-serves.html">範例 018</a> 的那句話：<strong>方向不是宣告的性質，是宣告加上消費它的政策的性質。</strong> 那一則的修法是把假設寫進 SCL 讓建置去量；<code>Object.freeze</code> 連寫的地方都沒有。</p>
+<h2>第三個發現：宣告比它讀起來的窄</h2>
+<pre><code class="language-text">    frozen({ inner: { price: 100 } }), then inner.price = 999
+    under both modes the nested value is now 999
+</code></pre>
+<p><strong>淺凍結。</strong> 對內層物件的寫入在 <strong>strict 模式下也不會拋</strong>——這一次不是模式的問題，是宣告本身涵蓋的範圍比它的名字小。</p>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>每個模式回不回報違反、怎麼進去，以及 <code>units</code> 對照</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署用哪個模式載入消費者、安靜的違反在這裡是不是致命的，以及<strong>它伸不到哪裡</strong></td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>直接跑真內建函式的探針，包含那個從未凍結的對照物件</td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>一個模式一個檔——各自宣告<strong>回不回報違反</strong>與<strong>怎麼進去</strong>，而且 import 任何東西都沒有</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td><code>returned</code>／<code>actual</code>／<code>threw</code> 三欄<strong>永遠一起印</strong>——任何一欄單獨看都是同一個問題的不同答案</td>
+</tr>
+</tbody></table>
+<p>重切加的只有一件事：<strong>模式要宣告它回不回報違反，而那份宣告用跑的驗。</strong> 第 3b 節是鑽孔——一個宣稱回報、實際吞掉的模式必須被抓到。四個變異跑過，每一個都讓套件變紅，包含「對照組自己也被凍結」。</p>
+<p>SCL 這裡多了一欄值得記：<strong><code>what_this_cannot_reach</code></strong>。凍結不會跟著物件走進一個 Function 建構子，所以部署可以規定自己怎麼載入消費者，規定不了別人怎麼把值再遞出去。<strong>一份說得出自己伸不到哪裡的政策，比一份宣稱全面的政策誠實。</strong></p>
+<h2>什麼不適合拆</h2>
+<p><strong>凍結是對的。</strong> 兩個模式底下物件都保住了原值——<code>Object.freeze</code> 做到了它說的那件事。</p>
+<p><strong>sloppy 模式也不能事後修掉。</strong> 它就是「沒有標記的程式碼」的意思，而那是為了不弄壞既有的網頁。ES modules 一律 strict，正是承認了這件事而且<strong>只在新的入口上</strong>改。</p>
+<p>缺陷不在任何一邊，在於<strong>違反的後果被定義在消費者那一側，而宣告者連問都問不到</strong>。</p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>量得到但這次沒量：</strong> 真實程式碼裡有多少 <code>Object.freeze</code> 的消費者其實在 sloppy 邊界後面；<code>Object.isFrozen</code> 有多少呼叫端真的讀。</p>
+<p><strong>這一則量不到：</strong> 任何一位宣告者當初以為凍結會保證什麼。<strong>它量的是介面讓什麼通過，不是誰誤解了什麼</strong>——跟考古 015、016、017 同一句話。</p>
+<p><strong>沒有做的：</strong> <code>Object.seal</code> 與 <code>preventExtensions</code>。</p>
+<p><strong>而 <code>Proxy</code> 順手量了一下，因為它是同一個語言裡把後果搬回宣告側的例子——量出來是一半：</strong></p>
+<pre><code class="language-text">    proxy invariant, sloppy read : TypeError      不變量違反，兩個模式都拋
+    proxy invariant, strict read : TypeError
+    proxy set trap false, sloppy : no throw       trap 自己回 false，照模式走
+    proxy set trap false, strict : TypeError
+</code></pre>
+<p><strong>不變量</strong>（<code>get</code> 對一個 non-configurable non-writable 屬性回不同的值）<strong>不管消費者是哪個模式都拋</strong>——那確實是把後果搬回宣告側。但 <code>set</code> trap <strong>自己回 <code>false</code></strong> 的時候，行為跟普通賦值一模一樣。所以「Proxy 解決了這件事」是錯的：它只在<strong>引擎自己要維護的那組不變量</strong>上解決了，作者寫進 trap 的拒絕仍然由消費者決定意義。要把這個做成完整的一則需要新的探針，不是重讀既有輸出。</p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;018-object-freeze&quot;,
+  &quot;upstream&quot;: &quot;ECMAScript Object.freeze and the two language modes, measured on the local V8&quot;,
+  &quot;what_is_being_examined&quot;: &quot;One declaration - this object is immutable - and two consumers that disagree about what violating it means.&quot;,
+
+  &quot;the_finding&quot;: &quot;Object.freeze takes no argument about what happens when the declaration is violated. The declarer cannot state it and cannot see it. A sloppy-mode consumer gets no error, and the assignment expression still evaluates to the value that was not stored, so a caller reading the expression is told the write succeeded while the object says it did not. A strict-mode consumer gets a TypeError for the same line.&quot;,
+
+  &quot;second_finding&quot;: &quot;The freeze is shallow, so `frozen.inner.x = 2` succeeds under BOTH modes. The declaration reads as a statement about the object and is a statement about its own properties.&quot;,
+
+  &quot;the_control&quot;: &quot;The same assignment against an object that was never frozen. It also returns 999 - which is what makes the returned value uninformative rather than merely wrong. Without the control, 'sloppy mode returns 999' is not evidence about anything.&quot;,
+
+  &quot;modes&quot;: {
+    &quot;sloppy&quot;: {&quot;reports_violations&quot;: false, &quot;how_it_is_entered&quot;: &quot;a Function constructor, an eval, a classic script - none of which the declarer chose&quot;},
+    &quot;strict&quot;: {&quot;reports_violations&quot;: true,  &quot;how_it_is_entered&quot;: &quot;a module, a class body, or an explicit directive&quot;}
+  },
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: what each mode reports, how it is entered, and the units map&quot;,
+    &quot;SCL&quot;: &quot;which mode this deployment loads consumers in, what a silent violation means here, and what the deployment cannot reach&quot;,
+    &quot;SMS&quot;: &quot;the probes that run the real built-ins, including the never-frozen control&quot;,
+    &quot;TMS&quot;: &quot;one file per mode - each declares whether it reports violations, and imports nothing&quot;,
+    &quot;DMS&quot;: &quot;what was returned, what the object holds, and whether anything was raised - never one of the three alone&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/modes&quot;: [&quot;sloppy.mjs&quot;, &quot;strict.mjs&quot;]},
+
+  &quot;the_recut_adds&quot;: &quot;A mode declares whether it reports violations, and the declaration is checked by running it. Section 3b is the drill: a mode claiming to report violations while swallowing them must be caught.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;deployment&quot;: &quot;config-loader&quot;,
+  &quot;mode&quot;: &quot;strict&quot;,
+  &quot;a_silent_violation_is&quot;: &quot;fatal&quot;,
+  &quot;why&quot;: &quot;A configuration object handed to plugins is frozen so a plugin cannot edit it for everyone else. Under a sloppy-mode caller that freeze is decoration: the write does nothing, nothing is raised, and the assignment expression still evaluates to the value that was not stored. This deployment loads every consumer as a module so the mode is not optional.&quot;,
+  &quot;what_this_cannot_reach&quot;: &quot;A consumer that runs the value through a sloppy-mode boundary the loader did not create - a Function constructor, an eval, a classic script tag. The freeze does not travel with the object into it.&quot;,
+  &quot;not_a_general_rule&quot;: &quot;A best-effort defensive freeze on an object nobody was going to write to is fine either way. SCL is where the position lives.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/upstream.mjs</summary><pre><code>// Probes that run the real built-ins. Nothing here is simulated.
+export const runtime = () =&gt; `${process.release?.name ?? &quot;node&quot;} ${process.version} (V8 ${process.versions.v8})`;
+
+export const frozen = () =&gt; Object.freeze({ price: 100 });
+
+// The control: the same shape, never frozen. It is what makes the returned
+// value uninformative rather than merely wrong — both come back 999.
+export const neverFrozen = () =&gt; ({ price: 100 });
+
+export const nested = () =&gt; Object.freeze({ inner: { price: 100 } });
+
+export function through(mode, target, key = &quot;price&quot;, value = 999) {
+  return { mode: mode.MODE, ...mode.assign(target, key, value) };
+}
+
+// Whether a mode reported the violation at all, measured rather than read off
+// the unit's own declaration.
+export function reportsViolations(mode) {
+  return through(mode, frozen()).threw !== null;
+}
+
+// What Object.freeze was given the chance to say about violations: nothing.
+// It takes one argument, the object, and there is no second one.
+export const freezeArity = () =&gt; Object.freeze.length;
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/modes/sloppy.mjs</summary><pre><code>// Sloppy mode, reached the way real code reaches it: a Function constructor.
+//
+// It imports nothing. It declares that it does NOT report violations, and the
+// declaration is verified by running it (island test section 3b).
+export const MODE = &quot;sloppy&quot;;
+export const REPORTS_VIOLATIONS = false;
+export const HOW_IT_IS_ENTERED = &quot;a Function constructor, an eval, or a classic script&quot;;
+
+// eslint-disable-next-line no-new-func
+const write = new Function(&quot;target&quot;, &quot;key&quot;, &quot;value&quot;,
+  &quot;const returned = (target[key] = value); return { returned, threw: null };&quot;);
+
+export function assign(target, key, value) {
+  return { ...write(target, key, value), actual: target[key] };
+}
+</code></pre></details><details><summary>TMS/modes/strict.mjs</summary><pre><code>// Strict mode, which is what a module body already is.
+//
+// The same line of source as the sloppy unit runs here and raises instead.
+export const MODE = &quot;strict&quot;;
+export const REPORTS_VIOLATIONS = true;
+export const HOW_IT_IS_ENTERED = &quot;a module, a class body, or an explicit directive&quot;;
+
+export function assign(target, key, value) {
+  try {
+    const returned = (target[key] = value);
+    return { returned, threw: null, actual: target[key] };
+  } catch (raised) {
+    return { returned: null, threw: `${raised.constructor.name}: ${raised.message}`, actual: target[key] };
+  }
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.mjs</summary><pre><code>// What a person is shown.
+//
+// The three columns are never printed apart. `returned` alone says the write
+// worked; `actual` alone says it did not; `threw` alone says whether anybody
+// was told. Any one of them is a different answer to the same question.
+const pad = (value, width) =&gt; String(value).padEnd(width);
+
+export function writes(rows) {
+  const lines = [&quot;    object        mode     returned   actual   threw&quot;];
+  for (const row of rows) {
+    lines.push(`    ${pad(row.object, 13)} ${pad(row.mode, 8)} ${pad(row.returned ?? &quot;-&quot;, 10)} `
+      + `${pad(row.actual, 8)} ${row.threw ?? &quot;-&quot;}`);
+  }
+  return lines.join(&quot;\n&quot;);
+}
+
+export function shallow(before, after) {
+  return [
+    `    frozen({ inner: { price: ${before} } }), then inner.price = 999`,
+    `    under both modes the nested value is now ${after}`,
+  ].join(&quot;\n&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.mjs</summary><pre><code>// The island test, run against the real built-ins.
+//
+//   node src/island_test.mjs
+//
+// Section 3 is the control. Section 3b is the drill: a mode that DECLARES it
+// reports violations while swallowing them must be caught by running it.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as upstream from &quot;./SMS/upstream.mjs&quot;;
+import * as sloppy from &quot;./TMS/modes/sloppy.mjs&quot;;
+import * as strict from &quot;./TMS/modes/strict.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const FMS = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;architecture.json&quot;), &quot;utf8&quot;));
+const POLICY = JSON.parse(fs.readFileSync(path.join(here, &quot;SCL&quot;, &quot;policy.json&quot;), &quot;utf8&quot;));
+const failures = [];
+let ran = 0;
+const check = (label, ok, detail = &quot;&quot;) =&gt; {
+  ran += 1;
+  process.stdout.write(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}\n`);
+  if (!ok) failures.push(label);
+};
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+say(`\n  ${upstream.runtime()}`);
+
+say(&quot;\n== 1. each mode is an island, and FMS matches the tree&quot;);
+for (const [unit, declared] of Object.entries(FMS.units)) {
+  const dir = path.join(here, ...unit.split(&quot;/&quot;));
+  const onDisk = fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+  check(`${unit}: FMS declares what is on disk`,
+    JSON.stringify(onDisk) === JSON.stringify([...declared].sort()),
+    `disk ${onDisk.join(&quot;, &quot;)} | FMS ${[...declared].sort().join(&quot;, &quot;)}`);
+  for (const file of onDisk) {
+    const body = fs.readFileSync(path.join(dir, file), &quot;utf8&quot;);
+    check(`${unit}/${file} imports nothing at all`, !/^\s*import\s/m.test(body));
+  }
+}
+check(&quot;both modes declare whether they report violations&quot;,
+  [sloppy, strict].every((m) =&gt; typeof m.REPORTS_VIOLATIONS === &quot;boolean&quot;));
+check(&quot;and how they are entered&quot;, [sloppy, strict].every((m) =&gt; Boolean(m.HOW_IT_IS_ENTERED)));
+
+say(&quot;\n== 2. the same assignment against the same frozen object&quot;);
+const viaSloppy = upstream.through(sloppy, upstream.frozen());
+const viaStrict = upstream.through(strict, upstream.frozen());
+check(&quot;sloppy raised nothing&quot;, viaSloppy.threw === null);
+check(&quot;and the object kept its old value&quot;, viaSloppy.actual === 100);
+check(&quot;but the expression evaluated to the new one&quot;, viaSloppy.returned === 999);
+check(&quot;so `returned` and `actual` disagree about the same write&quot;,
+  viaSloppy.returned !== viaSloppy.actual, `${viaSloppy.returned} vs ${viaSloppy.actual}`);
+check(&quot;strict raised a TypeError for the identical line&quot;, /^TypeError/.test(viaStrict.threw ?? &quot;&quot;),
+  viaStrict.threw ?? &quot;&quot;);
+check(&quot;and its object kept the old value too&quot;, viaStrict.actual === 100);
+check(&quot;so the object agrees across modes and only the report differs&quot;,
+  viaSloppy.actual === viaStrict.actual &amp;&amp; (viaSloppy.threw === null) !== (viaStrict.threw === null));
+
+say(&quot;\n== 3. the control - the same assignment against an object never frozen&quot;);
+const openSloppy = upstream.through(sloppy, upstream.neverFrozen());
+const openStrict = upstream.through(strict, upstream.neverFrozen());
+check(&quot;it raises nothing under either mode&quot;, openSloppy.threw === null &amp;&amp; openStrict.threw === null);
+check(&quot;the write lands&quot;, openSloppy.actual === 999 &amp;&amp; openStrict.actual === 999);
+check(&quot;and it also returns 999 - the control&quot;, openSloppy.returned === 999);
+check(&quot;so `returned` is the same in the success and in the silent failure&quot;,
+  openSloppy.returned === viaSloppy.returned,
+  `${openSloppy.returned} both times, actual ${openSloppy.actual} vs ${viaSloppy.actual}`);
+check(&quot;which is what makes `returned` uninformative rather than merely wrong&quot;,
+  openSloppy.returned === viaSloppy.returned &amp;&amp; openSloppy.actual !== viaSloppy.actual);
+
+say(&quot;\n== 3b. DRILL - a mode that overclaims must be caught by running it&quot;);
+const liar = {
+  MODE: &quot;drill-liar&quot;,
+  REPORTS_VIOLATIONS: true, // the declaration
+  assign(target, key, value) { // the implementation, which swallows
+    try { const returned = (target[key] = value); return { returned, threw: null, actual: target[key] }; }
+    catch { return { returned: null, threw: null, actual: target[key] }; }
+  },
+};
+check(&quot;the drill unit declares it reports violations&quot;, liar.REPORTS_VIOLATIONS === true);
+check(&quot;running it says otherwise&quot;, upstream.reportsViolations(liar) === false);
+check(&quot;so the declaration is refused&quot;, upstream.reportsViolations(liar) !== liar.REPORTS_VIOLATIONS);
+check(&quot;and the honest declarations hold under the same probe&quot;,
+  upstream.reportsViolations(sloppy) === sloppy.REPORTS_VIOLATIONS
+  &amp;&amp; upstream.reportsViolations(strict) === strict.REPORTS_VIOLATIONS);
+
+say(&quot;\n== 4. the declarer was never given a way to say what a violation means&quot;);
+check(&quot;Object.freeze takes one argument&quot;, upstream.freezeArity() === 1, `${upstream.freezeArity()}`);
+check(&quot;and isFrozen answers the same under either mode&quot;, Object.isFrozen(upstream.frozen()));
+check(&quot;so the object cannot tell which consumer it reached&quot;,
+  FMS.modes.sloppy.how_it_is_entered.includes(&quot;none of which the declarer chose&quot;));
+check(&quot;the two entrances are different constructs, not a setting&quot;,
+  sloppy.HOW_IT_IS_ENTERED !== strict.HOW_IT_IS_ENTERED);
+
+say(&quot;\n== 5. the declaration is shallower than it reads&quot;);
+const nested = upstream.nested();
+check(&quot;the outer object is frozen&quot;, Object.isFrozen(nested));
+check(&quot;the inner one is not&quot;, !Object.isFrozen(nested.inner));
+const nestedStrict = strict.assign(nested.inner, &quot;price&quot;, 999);
+check(&quot;so a strict-mode write to the inner object raises nothing&quot;, nestedStrict.threw === null);
+check(&quot;and it lands&quot;, nested.inner.price === 999);
+check(&quot;which is a failure of the declaration, not of either mode&quot;,
+  nestedStrict.threw === null &amp;&amp; viaStrict.threw !== null);
+
+say(&quot;\n== 6. what this does not change&quot;);
+check(&quot;freezing is right - the object did keep its value under both modes&quot;,
+  viaSloppy.actual === 100 &amp;&amp; viaStrict.actual === 100);
+check(&quot;sloppy mode cannot be fixed retroactively - it is what unmarked code means&quot;,
+  sloppy.HOW_IT_IS_ENTERED.includes(&quot;classic script&quot;));
+check(&quot;SCL names what it cannot reach&quot;, POLICY.what_this_cannot_reach.includes(&quot;Function constructor&quot;));
+check(&quot;and this deployment does refuse&quot;, POLICY.a_silent_violation_is === &quot;fatal&quot;);
+
+say(&quot;&quot;);
+if (failures.length &gt; 0) {
+  say(`  ${failures.length} FAILED: ${failures.join(&quot; | &quot;)}`);
+  process.exitCode = 1;
+} else {
+  say(`  ${ran} checks passed - every probe ran the real built-ins`);
+}
+</code></pre></details><details><summary>main.mjs</summary><pre><code>// One frozen object, two consumers, and a declaration that means different
+// things to each of them.
+//
+//   node src/main.mjs            what each mode does with the same assignment
+//   node src/main.mjs --strict   exit 1 if a silent violation is possible here
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as report from &quot;./DMS/report.mjs&quot;;
+import * as upstream from &quot;./SMS/upstream.mjs&quot;;
+import * as sloppy from &quot;./TMS/modes/sloppy.mjs&quot;;
+import * as strict from &quot;./TMS/modes/strict.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const POLICY = JSON.parse(fs.readFileSync(path.join(here, &quot;SCL&quot;, &quot;policy.json&quot;), &quot;utf8&quot;));
+const MODES = { sloppy, strict };
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+function main(argv) {
+  say(`\n  ${upstream.runtime()}`);
+  say(`  ${POLICY.deployment}: consumers loaded in ${POLICY.mode} mode\n`);
+
+  const rows = [
+    { object: &quot;frozen&quot;, ...upstream.through(sloppy, upstream.frozen()) },
+    { object: &quot;frozen&quot;, ...upstream.through(strict, upstream.frozen()) },
+    { object: &quot;never frozen&quot;, ...upstream.through(sloppy, upstream.neverFrozen()) },
+    { object: &quot;never frozen&quot;, ...upstream.through(strict, upstream.neverFrozen()) },
+  ];
+  say(report.writes(rows));
+  say(&quot;&quot;);
+  say(&quot;  Row 1 is the finding: the expression evaluated to 999 and the object kept 100.&quot;);
+  say(&quot;  Rows 3 and 4 are the control - a never-frozen object returns 999 too, which is&quot;);
+  say(&quot;  what makes `returned` uninformative rather than merely wrong.\n&quot;);
+
+  say(`  Object.freeze.length = ${upstream.freezeArity()} - one argument, the object.`);
+  say(&quot;  There is no second argument for what a violation means, so the declarer&quot;);
+  say(&quot;  cannot state it and cannot see which consumer it got.\n&quot;);
+
+  const nested = upstream.nested();
+  const before = nested.inner.price;
+  for (const mode of [sloppy, strict]) mode.assign(nested.inner, &quot;price&quot;, 999);
+  say(&quot;  and the declaration is shallower than it reads:&quot;);
+  say(report.shallow(before, nested.inner.price));
+
+  const silentPossible = !upstream.reportsViolations(MODES.sloppy);
+  if (argv.includes(&quot;--strict&quot;) &amp;&amp; silentPossible &amp;&amp; POLICY.a_silent_violation_is === &quot;fatal&quot;) {
+    say(`\n  --strict: a sloppy-mode consumer swallows the violation and this deployment`);
+    say(`  calls that fatal. ${POLICY.what_this_cannot_reach}`);
+    return 1;
+  }
+  return 0;
+}
+
+process.exitCode = main(process.argv.slice(2));
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

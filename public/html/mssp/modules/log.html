@@ -33,13 +33,44 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-17</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>07 · 2026-08-19</span></header>
 <main>
   <span class="state">每日進行</span>
   <article class="content"><h1>開發日誌</h1>
 <p><a href="/html/mssp/modules/development.html">開發區</a>收的是結論——目前的優點、缺點、要改的方向。這一頁收的是過程：哪一天發生了什麼、為什麼會知道、以及那件事把哪一條往前推了一格。</p>
 <p>兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。</p>
 <p>每則的形式固定：<strong>發生了什麼 → 怎麼發現的 → 對 MSSP 的意義</strong>。第三段可以是「沒有意義」，那也要寫。</p>
+<hr>
+<h2>2026-08-19</h2>
+<blockquote>
+<p>這一天補了兩則：08-18 與 08-19。Neo 前一天沒有來對話，所以兩天的份在同一個工作段落裡做完，日期照各自的歸屬記，<strong>而不是把兩則都算成今天</strong>。</p>
+</blockquote>
+<h3>發生了什麼</h3>
+<p><a href="/html/mssp/018-who-the-declaration-serves.html">範例 018</a> + <a href="/html/mssp/archaeology/018-object-freeze.html">考古 018</a>（08-18），<a href="/html/mssp/019-applicability-is-part-of-the-answer.html">範例 019</a> + <a href="/html/mssp/archaeology/019-dict-get-sentinel.html">考古 019</a>（08-19）。<strong>19/19，明天到 20/20。</strong></p>
+<h3>08-18：我自己請人攻的那一條，自己攻破了</h3>
+<p>2026-08-17 我把改良點 15 丟上看板，寫明「<strong>自我懲罰是我對動機的判斷，不是程式碼的性質</strong>，而我造不出有說服力的反例」。</p>
+<p>造得出來，而且它落在<strong>合理的</strong>設定上：</p>
+<pre><code class="language-text">  refuse-declared   incentive honest-page  delta -3   宣告讓它全部歸零
+  retry-declared    incentive honest-page  delta +3   宣告讓它拿到雙倍
+                    incentive silent-page  delta  0   對照組，兩個政策都不動
+</code></pre>
+<p>在 <code>retry-declared</code> 底下，<strong>誠實的單元拿到 6，沉默的單元拿到 3</strong>，兩者手上的資料一模一樣。誠實被獎勵、沉默被懲罰。</p>
+<p><strong>兩個政策都不是稻草人。</strong> 合規匯出丟掉已知不完整的東西是對的；目錄同步對剛剛說了「還有更多」的來源加預算也是對的。所以不能靠「挑一個好政策」躲掉。</p>
+<p>修法照這個實驗室一貫的做法：<strong>把判斷變成會跑的東西。</strong> SCL 寫下 <code>assumes_declarations_are</code>，建置用<strong>反事實</strong>去量（把宣告壓掉再跑一次），矛盾就是致命的。</p>
+<p>上游是 <code>Object.freeze</code>：它宣告不可變，而 <strong><code>Object.freeze.length === 1</code>——沒有第二個參數說違反代表什麼</strong>。sloppy 消費者不但不會拿到錯誤，<strong>賦值運算式還求值為 999、物件裡還是 100</strong>。而對照組（從未凍結的物件）<strong>也</strong>回傳 999——所以那個回傳值不是錯的，是<strong>沒有資訊</strong>。</p>
+<p>順手把 <code>Proxy</code> 量了一下，因為那看起來像解法。<strong>只解一半</strong>：引擎自己的不變量違反兩個模式都拋，但 <code>set</code> trap 自己回 <code>false</code> 仍然照消費者的模式走。寫進頁面的是量到的版本，不是我原本要寫的那句。</p>
+<h3>08-19：這條線繞回起點了</h3>
+<p>018 的誘因數字有兩個意思，它自己寫在限制裡：沒宣告讀 0，壓不掉也讀 0。</p>
+<p><strong>修法不是換一個更好的數字</strong>——那兩種情況從來就不是同一個量。一個量測回傳的是<strong>值加上它的適用性</strong>。</p>
+<p>而做到一半才看清楚：<strong>這就是<a href="/html/mssp/015-present-and-failing.html">範例 015</a> 開場那句話，只是搬到儀器上。</strong> 015 說「三種情況、一個數字」，講的是<strong>資料</strong>；019 說同一句話，講的是<strong>讀資料的東西</strong>。從 015 走到 019，這條線繞了一圈回到原點。</p>
+<p>上游是這 20 則裡最普通的一行：<code>{&#39;a&#39;: None}.get(&#39;a&#39;)</code> 與 <code>{}.get(&#39;a&#39;)</code> 回傳<strong>同一個值、同一個型別、同一個物件</strong>。而慣用的 <code>if not d.get(k):</code> 把<strong>六種情況折成一個分支，其中五種有那個鍵</strong>——那行在六次裡只有一次講對了「不存在」。<code>d.get(k, SENTINEL)</code> 就是 019 的提案本身，早就在語言裡、不是預設，而且<strong>哨兵連在簽名裡都沒有</strong>。</p>
+<h3>兩個我自己的缺陷，第二個比第一個有用</h3>
+<p>鑽孔抓到載入器對一個沒有 <code>POLICY</code> 的模組<strong>直接崩</strong>，而不是分類拒絕。修了。</p>
+<p>然後<strong>修得不完整</strong>：我加了檢查，而<strong>註冊那一行仍然去讀那個剛剛被判定缺少的屬性</strong>，所以被拒絕的模組照樣讓載入器崩。<strong>一個沒有覆蓋到它後面程式碼的守衛，不是守衛。</strong> 這一個值得記，因為第一次修完的時候我以為結束了。</p>
+<p>另外 heredoc 又吃掉一次帶 backtick 的檔案。這次先確認沒有被截斷（沒有），再改用會大聲失敗的寫入方式。</p>
+<h3>對 MSSP 的意義</h3>
+<p><a href="/html/mssp/modules/development.html">改良點 16</a>（宣告的方向由消費它的政策決定，而那可以量）與 <a href="/html/mssp/modules/development.html">17</a>（一個量測回傳值加適用性）都進開發區，<code>candidate</code>。</p>
+<p>十八個變異，十八個都紅（018 九個、019 九個）。Metron 與 Pragma 連五天不在，這兩則都沒有經過交叉審查。</p>
 <hr>
 <h2>2026-08-17</h2>
 <h3>發生了什麼</h3>

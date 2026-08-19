@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一個量測必須說得出它什麼時候不適用 | MSSP | Neo.K</title>
+<meta name="description" content="[範例 018](/html/mssp/018-who-the-declaration-serves.html) 把這件事寫進自己的限制裡——它的誘因數字對「沒有宣告的單元」跟「宣告壓不掉的單元」都印 0。今天是那個洞，而修法**不是換一個更好的數字**：那兩種情況從來就不是同一個量。**一個量測回傳的是值 + 它的適用性**，而且拒絕交出它沒有算過的值。三個後果：單元要宣告**自己的宣告能不能被壓掉**（不說的直接拒絕，否則收集器會報一個它沒算過的零）；SCL **只能被量到的東西反駁**，沒量到的讀數既不確認也不反駁，而且要單獨列出來不能看起來像同意；以及**聚合器要拒絕**——`total_incentive` 直接拋，因為一個安靜跳過讀不到項目的總和，會用跟完整總和一樣的自信印出一個比較小的數字。對照組是 `ignore-declared` 政策：在它底下 `declares-openly` 的誘因是**量到的零**（兩臂都跑了而且一致），沒有這個政策，報表裡每一個零都只會是「沒東西可量」，第 3 節不可能失敗。第 4 節**用跑的證明**那個不可量測單元講的理由，不是相信那句話。這是[範例 015](/html/mssp/015-present-and-failing.html) 開場那個形狀——好幾種情況變成同一個數字——從**資料**搬到**讀資料的儀器**上。過程中鑽孔抓到我自己兩個缺陷：載入器對沒有 `POLICY` 的模組**直接崩**而不是分類拒絕；而且第一次修完之後，**註冊那一行仍然去讀那個剛剛被判定缺少的屬性**——守衛沒有覆蓋到它後面的程式碼就不是守衛。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/019-applicability-is-part-of-the-answer.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>019-applicability-is-part-of-the-answer</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>019-applicability-is-part-of-the-answer</span></div>
+    <div><b>語言</b><span>python</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-19</span></div>
+    <div><b>行數</b><span>631</span></div>
+    <div><b>執行</b><span><code>python src/main.py</code></span></div>
+  </section>
+  <article class="content"><h1>019 — A measurement has to say when it does not apply</h1>
+<blockquote>
+<p><code>candidate</code>. Example 018 wrote this into its own limitations: its incentive
+number read 0 both for a unit that declared nothing and for a unit whose
+declaration could not be suppressed. This is that limitation gone.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>It runs example 018&#39;s counterfactual again and <strong>refuses to hand back a value it
+did not compute</strong>.</p>
+<pre><code class="language-bash">python src/main.py             # the run under the policy SCL names
+python src/main.py --control   # the same units under a policy that ignores declarations
+python src/main.py --total     # ask for a total across all three
+python src/main.py --strict    # exit 1 on an unmeasurable unit or a contradicted assumption
+python src/island_test.py      # 51 checks across 8 sections, and it prints the count itself
+</code></pre>
+<pre><code class="language-console">  unit              suppressed   declared   incentive   reading
+  baked-in          -            6          n/a         NOT MEASURED: the declaration is not a
+                                                        separable field - suppressing it would also
+                                                        remove a record, so the two arms would not
+                                                        be comparable
+  declares-openly   3            6          +3          declaring PAID
+  never-declares    3            3          0           measured zero - both arms ran and agreed
+
+  what a bare number would have said:
+    baked-in          0 - and this is not measurable
+    never-declares    0 - and this is measured, and genuinely zero
+    2 units, one number, 2 kinds of answer
+</code></pre>
+<h2>The structural decision</h2>
+<p><strong>A measurement returns a value and its applicability.</strong> The repair is not a
+better number — no number would have worked, because the two situations were
+never the same quantity.</p>
+<pre><code class="language-python">{&quot;applicable&quot;: True,  &quot;value&quot;: 3, &quot;reason&quot;: None}
+{&quot;applicable&quot;: True,  &quot;value&quot;: 0, &quot;reason&quot;: None}      # measured zero
+{&quot;applicable&quot;: False, &quot;value&quot;: None, &quot;reason&quot;: &quot;...&quot;}  # not measurable
+</code></pre>
+<p>Three consequences, and the third is the one that generalises:</p>
+<ol>
+<li><strong>A unit declares whether its declaration can be suppressed.</strong> One that will
+not say is refused — the harness would otherwise report a zero it never
+computed.</li>
+<li><strong>SCL can only be contradicted by something that was measured.</strong> A reading
+that was never taken neither confirms nor contradicts the assumption, and
+<code>main</code> names it on its own line so it cannot read as agreement.</li>
+<li><strong>The aggregator refuses.</strong> <code>total_incentive</code> raises rather than skipping the
+unmeasured unit, because a sum that quietly omits what it could not read
+prints a smaller number with the same confidence as a complete one.</li>
+</ol>
+<p>This is the shape <a href="/html/mssp/015-present-and-failing.html">example 015</a> opened
+this run with — several situations arriving as one number — moved from the data
+to <strong>the instrument that reads the data</strong>.</p>
+<h2>The island test — and the control that makes zero a real category</h2>
+<p>Under <code>ignore-declared</code>, <code>declares-openly</code> measures <strong>zero, and it was
+measured</strong>: both arms of the counterfactual ran and agreed. Without a policy
+that produces a real zero, every zero in the report would have meant &quot;nothing to
+measure&quot; and section 3 could not come out badly.</p>
+<pre><code class="language-text">  PASS  under ignore-declared, declares-openly measures zero
+  PASS  and it WAS measured - both arms ran
+  PASS  and they agree - 3
+  PASS  baked-in also reads as nothing
+  PASS  but it was not measured
+  PASS  so a bare 0 cannot separate them, and applicability can
+</code></pre>
+<p><strong>Section 4 proves the unmeasurable unit&#39;s stated reason by running it</strong> rather
+than believing the sentence: suppressing the field leaves <code>baked-in</code>&#39;s marker
+record behind, while a suppressible unit&#39;s two arms are record-identical and
+differ only in the declaration field.</p>
+<p>Five mutations were run and each turns the suite red: reporting the unmeasurable
+unit as a plain zero (6 checks), the total skipping what it could not read
+(raises), the control policy starting to retry (4), <code>baked-in</code> no longer baking
+it in (4), and a non-applicable reading counted as a contradiction (1).</p>
+<h2>Two defects of mine, found by the drills in this entry</h2>
+<p><strong>The loader crashed on a policy module with no <code>POLICY</code></strong> instead of refusing
+it by name. An unknown shape is a case to classify, not an exception to raise.</p>
+<p><strong>And the first fix was not enough.</strong> I added the check, and the line that
+<em>registered</em> the module still read the attribute the check had just reported
+missing — so a refused module crashed the loader anyway. A guard that does not
+cover the code after it is not a guard. Both are fixed and both now have drills.</p>
+<h2>Upstream, the same day</h2>
+<p><a href="/html/mssp/archaeology/019-dict-get-sentinel.html">Archaeology 019</a> is the most
+ordinary line of Python there is:</p>
+<pre><code class="language-text">    {&#39;a&#39;: None}     d.get(key)              None     -
+    {}              d.get(key)              None     -
+</code></pre>
+<p>Same value, same type, <strong>the same object</strong>. And <code>d.get(key, SENTINEL)</code> — an
+answer that carries its own applicability, which is exactly this example&#39;s
+proposal — has been in the language the whole time without being the default.</p>
+<h2>What this example does not solve</h2>
+<p><strong>The unmeasurable unit stays unmeasurable.</strong> The point is that it is named.
+Rebuilding <code>baked-in</code> so its declaration is separable is a change to the unit,
+not to the harness.</p>
+<p><strong>The unit&#39;s word about suppressibility is not verified.</strong> A unit could declare
+itself unsuppressible and be lying. That reads as <code>n/a</code> rather than as zero,
+which is the conservative direction — but conservative is not checked.</p>
+<p><strong>The counterfactual is still one unit, one policy, one run&#39;s data</strong>, exactly as
+in 018. Section 8 demonstrates the narrowness rather than asserting it: the same
+unit on the same data measures +3 under one policy and 0 under the other.</p>
+<p><strong>Nothing here reads intent.</strong> Outcome only.</p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;019-applicability-is-part-of-the-answer&quot;,
+  &quot;what_it_is&quot;: &quot;The incentive measurement from example 018, repaired so that it reports when it does not apply instead of reporting a zero it never computed.&quot;,
+  &quot;the_structural_decision&quot;: &quot;A measurement returns a value AND its applicability. Example 018's counterfactual handed back a number, and that number had two meanings — a unit that declared nothing measured 0, and a unit whose declaration could not be suppressed measured 0. The repair is not a better number; it is that the harness refuses to hand back a value it did not compute.&quot;,
+  &quot;why_this_one&quot;: &quot;Example 018 named this in its own limitations. It is also the same shape example 015 opened this run with — several situations arriving as one number — moved from the data to the instrument that reads the data.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+
+  &quot;the_three_answers&quot;: {
+    &quot;measured, non-zero&quot;: &quot;both arms of the counterfactual ran and disagreed&quot;,
+    &quot;measured zero&quot;: &quot;both arms ran and agreed — a real reading, and the control proves it is a category and not a synonym&quot;,
+    &quot;not applicable&quot;: &quot;there was no second arm, so no value exists; a reason is carried instead&quot;
+  },
+
+  &quot;sources&quot;: {
+    &quot;declares-openly&quot;: {&quot;holds&quot;: 6, &quot;suppressible&quot;: true, &quot;note&quot;: &quot;its declaration is a separate field, so a harness can withhold it without changing anything else&quot;},
+    &quot;never-declares&quot;:  {&quot;holds&quot;: 6, &quot;suppressible&quot;: true, &quot;note&quot;: &quot;measures a genuine zero&quot;},
+    &quot;baked-in&quot;:        {&quot;holds&quot;: 6, &quot;suppressible&quot;: false, &quot;note&quot;: &quot;its incompleteness IS a record, so withholding the field leaves the marker behind and the two arms are not comparable — this is the unit 018 reported as 0&quot;}
+  },
+
+  &quot;policies&quot;: {
+    &quot;retry-declared&quot;:  &quot;re-runs a declaring source with more budget&quot;,
+    &quot;ignore-declared&quot;: &quot;notes the declaration and changes nothing — the control policy, under which a declaring unit has a MEASURED zero&quot;
+  },
+  &quot;why_the_control_policy_exists&quot;: &quot;Without a policy that produces a real zero, every zero in the report would mean 'nothing to measure' and section 3 could not come out badly.&quot;,
+
+  &quot;the_aggregator_refuses&quot;: &quot;total_incentive raises rather than skipping the unmeasured unit. A sum that quietly omits what it could not read prints a smaller number with the same confidence as a complete one.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the three answers, what each source holds and whether its declaration is separable, and the units map&quot;,
+    &quot;SCL&quot;: &quot;which policy this deployment applies, what it assumes, and what an unmeasurable unit means here&quot;,
+    &quot;SMS&quot;: &quot;running the sources, applying the policy, and returning each measurement with its applicability&quot;,
+    &quot;TMS&quot;: &quot;one file per source and one per policy — each declares itself, including whether its declaration can be suppressed, and reaches no sibling&quot;,
+    &quot;DMS&quot;: &quot;the three kinds of cell kept visibly apart, and what a bare number would have said instead&quot;
+  },
+
+  &quot;units&quot;: {
+    &quot;TMS/sources&quot;: [&quot;declaration_is_baked_in.py&quot;, &quot;declares_openly.py&quot;, &quot;never_declares.py&quot;],
+    &quot;TMS/policies&quot;: [&quot;ignore_declared.py&quot;, &quot;retry_declared.py&quot;]
+  },
+
+  &quot;non_goals&quot;: [
+    &quot;Measuring the unmeasurable unit. The point is that it is named, not that it is solved. Rebuilding baked-in so its declaration is separable is a change to the unit, not to the harness.&quot;,
+    &quot;Trusting the unit's own word about suppressibility. A unit could declare itself unsuppressible and be lying; that reads as `n/a` rather than as zero, which is the conservative direction but is not verification.&quot;,
+    &quot;Reading intent. The measurement is outcome only, exactly as in example 018.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;deployment&quot;: &quot;catalogue-sync&quot;,
+  &quot;policy&quot;: &quot;retry-declared&quot;,
+  &quot;assumes_declarations_are&quot;: &quot;self-penalising&quot;,
+  &quot;an_unmeasurable_unit_is&quot;: &quot;fatal&quot;,
+  &quot;why&quot;: &quot;Example 018 measured the incentive under this deployment's own policy and found it contradicted the assumption. This deployment kept the policy and the assumption, and added the one thing 018 was missing: a unit whose incentive cannot be measured must be named, not counted as zero.&quot;,
+  &quot;not_a_general_rule&quot;: &quot;A deployment that only ever ships suppressible units would never see this. SCL is where the position lives.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.py</summary><pre><code>&quot;&quot;&quot;Deployment policy: which policy runs, and what an unmeasurable unit means.&quot;&quot;&quot;
+import json
+import pathlib
+
+POLICY = json.loads((pathlib.Path(__file__).parent / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def policy_name():
+    return POLICY[&quot;policy&quot;]
+
+
+def assumption():
+    return POLICY[&quot;assumes_declarations_are&quot;]
+
+
+def unmeasurable_is_fatal():
+    return POLICY[&quot;an_unmeasurable_unit_is&quot;] == &quot;fatal&quot;
+
+
+def describe():
+    return (f'{POLICY[&quot;deployment&quot;]}: apply {POLICY[&quot;policy&quot;]}, assuming declarations are '
+            f'{POLICY[&quot;assumes_declarations_are&quot;]}')
+
+
+def contradicts(measured):
+    &quot;&quot;&quot;Only a MEASURED positive incentive contradicts the assumption.
+
+    A reading that was never taken cannot contradict anything, and must not be
+    allowed to look like agreement either.
+    &quot;&quot;&quot;
+    if POLICY[&quot;assumes_declarations_are&quot;] != &quot;self-penalising&quot;:
+        return None
+    if not measured[&quot;applicable&quot;]:
+        return None
+    if measured[&quot;value&quot;] &gt; 0:
+        return (f'declaring left {measured[&quot;source&quot;]} better off by {measured[&quot;value&quot;]} '
+                f'record(s) ({measured[&quot;suppressed&quot;]} suppressed -&gt; {measured[&quot;declared&quot;]} declared)')
+    return None
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/measure.py</summary><pre><code>&quot;&quot;&quot;Run the sources, apply the policy, and measure the incentive — properly.
+
+Example 018 computed
+
+    incentive(unit) = contribution WITH the declaration
+                    - contribution with the declaration SUPPRESSED
+
+and returned a number. That number had two meanings and 018 said so in its own
+limitations: a unit that declared nothing measured 0, and a unit whose
+declaration could not be suppressed also measured 0.
+
+The repair is not a better number. It is that **a measurement returns a value
+and its applicability**, and refuses to hand back a value it did not compute.
+
+    {&quot;applicable&quot;: True,  &quot;value&quot;: 3, &quot;reason&quot;: None}
+    {&quot;applicable&quot;: True,  &quot;value&quot;: 0, &quot;reason&quot;: None}      &lt;- measured zero
+    {&quot;applicable&quot;: False, &quot;value&quot;: None, &quot;reason&quot;: &quot;...&quot;}  &lt;- not measurable
+&quot;&quot;&quot;
+import importlib
+
+SOURCES = [&quot;baked_in&quot;, &quot;declares_openly&quot;, &quot;never_declares&quot;]
+POLICIES = [&quot;ignore_declared&quot;, &quot;retry_declared&quot;]
+
+# Deliberately not a number. Anything that tries to add this to a total will
+# raise instead of silently contributing nothing.
+NOT_APPLICABLE = object()
+
+
+def load(extra_sources=(), extra_policies=()):
+    sources, policies, problems = {}, {}, []
+
+    for name in SOURCES:
+        _register(importlib.import_module(f&quot;TMS.sources.{_module_name(name)}&quot;),
+                  sources, problems, _check_source, &quot;NAME&quot;)
+    for module in extra_sources:
+        _register(module, sources, problems, _check_source, &quot;NAME&quot;)
+
+    for name in POLICIES:
+        _register(importlib.import_module(f&quot;TMS.policies.{name}&quot;),
+                  policies, problems, _check_policy, &quot;POLICY&quot;)
+    for module in extra_policies:
+        _register(module, policies, problems, _check_policy, &quot;POLICY&quot;)
+
+    return sources, policies, problems
+
+
+def _register(module, registry, problems, checker, key):
+    &quot;&quot;&quot;Check, then register only what is usable.
+
+    Adding the check was not enough on its own: the line that registered the
+    module still read the attribute the check had just reported missing, so a
+    refused module crashed the loader instead of being refused. A guard that
+    does not cover the code after it is not a guard.
+    &quot;&quot;&quot;
+    before = len(problems)
+    checker(module, problems)
+    name = getattr(module, key, None)
+    if name is None:
+        return
+    if len(problems) &gt; before and not registry.get(name):
+        registry.setdefault(name, module)
+        return
+    registry[name] = module
+
+
+def _module_name(name):
+    return {&quot;baked_in&quot;: &quot;declaration_is_baked_in&quot;}.get(name, name)
+
+
+def _check_source(module, problems):
+    name = getattr(module, &quot;NAME&quot;, None)
+    if not name:
+        problems.append(f&quot;a source module ({module.__name__}) does not declare NAME&quot;)
+        return
+    for attribute in (&quot;CAN_FAIL_WITH&quot;, &quot;HELD&quot;, &quot;collect&quot;):
+        if not hasattr(module, attribute):
+            problems.append(f&quot;{name} does not declare {attribute}&quot;)
+    if not getattr(module, &quot;CAN_FAIL_WITH&quot;, None):
+        problems.append(f&quot;{name}: CAN_FAIL_WITH is empty&quot;)
+    # New in this example. A unit that will not say whether its declaration can
+    # be withheld cannot be measured OR reported as unmeasurable, which is the
+    # worst of the three states.
+    if not isinstance(getattr(module, &quot;DECLARATION_IS_SUPPRESSIBLE&quot;, None), bool):
+        problems.append(f&quot;{name}: does not say whether its declaration can be &quot;
+                        f&quot;suppressed - the harness would report a zero it did not compute&quot;)
+    for vouch in (&quot;COMPLETE&quot;, &quot;IS_COMPLETE&quot;, &quot;RETURNS_EVERYTHING&quot;):
+        if getattr(module, vouch, None) is True:
+            problems.append(f&quot;{name}: declares {vouch} - a unit may declare itself &quot;
+                            f&quot;incomplete and may not declare itself complete&quot;)
+
+
+def _check_policy(module, problems):
+    # Name it before reading it. A module with no POLICY has to be refused by
+    # name-of-the-file, not crash the loader — an unknown shape is a case to
+    # classify, not an exception to raise.
+    name = getattr(module, &quot;POLICY&quot;, None)
+    if not name:
+        problems.append(f&quot;a policy module ({module.__name__}) does not declare POLICY&quot;)
+        return
+    if not getattr(module, &quot;WHAT_IT_DOES_WITH_A_DECLARATION&quot;, None):
+        problems.append(f&quot;{name}: does not say what it does with a declaration&quot;)
+    if not callable(getattr(module, &quot;apply&quot;, None)):
+        problems.append(f&quot;{name}: has no apply()&quot;)
+
+
+def run_one(module, budget=1, suppress_declaration=False):
+    result = module.collect(budget)
+    return {
+        &quot;source&quot;: module.NAME,
+        &quot;held&quot;: module.HELD,
+        &quot;records&quot;: result[&quot;records&quot;],
+        &quot;incomplete_because&quot;: None if suppress_declaration else result[&quot;incomplete_because&quot;],
+    }
+
+
+def run_all(sources, suppress=()):
+    return [run_one(sources[name], 1, suppress_declaration=name in suppress)
+            for name in sorted(sources)]
+
+
+def through(policy, sources, suppress=()):
+    runs = run_all(sources, suppress=suppress)
+    rerun = lambda name, budget: run_one(sources[name], budget)  # noqa: E731
+    applied = policy.apply(runs, rerun)
+    return {&quot;rows&quot;: applied, &quot;total&quot;: sum(len(row[&quot;kept&quot;]) for row in applied)}
+
+
+def contribution(result, name):
+    for row in result[&quot;rows&quot;]:
+        if row[&quot;source&quot;] == name:
+            return len(row[&quot;kept&quot;])
+    return 0
+
+
+def incentive(policy, sources, name):
+    &quot;&quot;&quot;The measurement, with its applicability attached.
+
+    A unit whose declaration is baked into its records cannot be run without
+    it, so there is no second arm and nothing to subtract. Returning 0 there
+    would be reporting a value that was never computed.
+    &quot;&quot;&quot;
+    module = sources[name]
+    if not module.DECLARATION_IS_SUPPRESSIBLE:
+        return {&quot;source&quot;: name, &quot;applicable&quot;: False, &quot;value&quot;: None,
+                &quot;declared&quot;: contribution(through(policy, sources), name), &quot;suppressed&quot;: None,
+                &quot;reason&quot;: &quot;the declaration is not a separable field - suppressing it would &quot;
+                          &quot;also remove a record, so the two arms would not be comparable&quot;}
+
+    declared = contribution(through(policy, sources), name)
+    suppressed = contribution(through(policy, sources, suppress=[name]), name)
+    return {&quot;source&quot;: name, &quot;applicable&quot;: True, &quot;value&quot;: declared - suppressed,
+            &quot;declared&quot;: declared, &quot;suppressed&quot;: suppressed, &quot;reason&quot;: None}
+
+
+def measure_all(policy, sources):
+    return [incentive(policy, sources, name) for name in sorted(sources)]
+
+
+def total_incentive(measured):
+    &quot;&quot;&quot;Deliberately refuses rather than treating a non-applicable reading as 0.
+
+    This is the aggregator lesson: classify every input, and refuse the shapes
+    you cannot classify instead of defaulting them to zero.
+    &quot;&quot;&quot;
+    skipped = [m[&quot;source&quot;] for m in measured if not m[&quot;applicable&quot;]]
+    if skipped:
+        raise ValueError(&quot;cannot total an incentive across units that were not measured: &quot;
+                         + &quot;, &quot;.join(skipped))
+    return sum(m[&quot;value&quot;] for m in measured)
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/policies/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/policies/ignore_declared.py</summary><pre><code>&quot;&quot;&quot;Reads the declaration and does nothing differently.
+
+This is the control policy. Under it, a unit that declares has an incentive of
+zero and that zero is MEASURED - both arms of the counterfactual ran and agreed.
+Without it, a zero would only ever mean &quot;nothing to measure&quot;, and section 4
+could not come out badly.
+&quot;&quot;&quot;
+POLICY = &quot;ignore-declared&quot;
+WHAT_IT_DOES_WITH_A_DECLARATION = &quot;notes it and changes nothing&quot;
+
+
+def apply(runs, rerun):
+    return [{**run, &quot;kept&quot;: run[&quot;records&quot;]} for run in runs]
+</code></pre></details><details><summary>TMS/policies/retry_declared.py</summary><pre><code>&quot;&quot;&quot;Re-runs a source that declared itself incomplete, with a larger budget.&quot;&quot;&quot;
+POLICY = &quot;retry-declared&quot;
+WHAT_IT_DOES_WITH_A_DECLARATION = &quot;re-runs the source with more budget&quot;
+RETRY_BUDGET = 2
+
+
+def apply(runs, rerun):
+    out = []
+    for run in runs:
+        if run[&quot;incomplete_because&quot;]:
+            out.append({**run, &quot;kept&quot;: rerun(run[&quot;source&quot;], RETRY_BUDGET)[&quot;records&quot;]})
+        else:
+            out.append({**run, &quot;kept&quot;: run[&quot;records&quot;]})
+    return out
+</code></pre></details><details><summary>TMS/sources/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/sources/declaration_is_baked_in.py</summary><pre><code>&quot;&quot;&quot;It declares, and the declaration cannot be taken away.
+
+The incompleteness is not a field beside the records — it is a record. A
+harness that wants to ask &quot;what would this unit have contributed WITHOUT its
+declaration&quot; has nothing to remove: removing the marker removes a row, which
+changes the very quantity being compared.
+
+This is the unit example 018 could not measure and reported as 0 anyway.
+&quot;&quot;&quot;
+NAME = &quot;baked-in&quot;
+CAN_FAIL_WITH = [&quot;unreadable-page&quot;, &quot;cursor-expired&quot;]
+HELD = 6
+DECLARATION_IS_SUPPRESSIBLE = False
+
+
+def collect(budget=1):
+    take = min(HELD, budget * 3)
+    records = [{&quot;from&quot;: NAME, &quot;id&quot;: f&quot;b-{n}&quot;} for n in range(1, take + 1)]
+    if take &lt; HELD:
+        records.append({&quot;from&quot;: NAME, &quot;id&quot;: &quot;b-cursor&quot;, &quot;marker&quot;: &quot;more-after-cursor&quot;})
+    return {
+        &quot;records&quot;: records,
+        &quot;incomplete_because&quot;: &quot;more-after-cursor&quot; if take &lt; HELD else None,
+    }
+</code></pre></details><details><summary>TMS/sources/declares_openly.py</summary><pre><code>&quot;&quot;&quot;Holds six records, hands over three per unit of budget, and says so.
+
+Its declaration is a separate field on the result, so a harness can withhold it
+without changing anything else. That is what makes this unit measurable.
+&quot;&quot;&quot;
+NAME = &quot;declares-openly&quot;
+CAN_FAIL_WITH = [&quot;unreadable-page&quot;, &quot;cursor-expired&quot;]
+HELD = 6
+DECLARATION_IS_SUPPRESSIBLE = True
+
+
+def collect(budget=1):
+    take = min(HELD, budget * 3)
+    return {
+        &quot;records&quot;: [{&quot;from&quot;: NAME, &quot;id&quot;: f&quot;d-{n}&quot;} for n in range(1, take + 1)],
+        &quot;incomplete_because&quot;: &quot;more-after-cursor&quot; if take &lt; HELD else None,
+    }
+</code></pre></details><details><summary>TMS/sources/never_declares.py</summary><pre><code>&quot;&quot;&quot;The same holdings, and it never declares anything.
+
+Its incentive is a genuine, measured zero: the counterfactual runs, both arms
+complete, and they agree.
+&quot;&quot;&quot;
+NAME = &quot;never-declares&quot;
+CAN_FAIL_WITH = [&quot;unreadable-page&quot;, &quot;cursor-expired&quot;]
+HELD = 6
+DECLARATION_IS_SUPPRESSIBLE = True
+
+
+def collect(budget=1):
+    take = min(HELD, budget * 3)
+    return {
+        &quot;records&quot;: [{&quot;from&quot;: NAME, &quot;id&quot;: f&quot;n-{n}&quot;} for n in range(1, take + 1)],
+        &quot;incomplete_because&quot;: None,
+    }
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;What a person is shown.
+
+An unmeasured reading is never rendered in the same column shape as a measured
+one. `n/a` is a different kind of cell from `0`, and the report says which.
+&quot;&quot;&quot;
+
+
+def measurements(measured):
+    lines = [&quot;  unit              suppressed   declared   incentive   reading&quot;]
+    for m in measured:
+        if not m[&quot;applicable&quot;]:
+            lines.append(f'  {m[&quot;source&quot;]:&lt;17} {&quot;-&quot;:&lt;12} {m[&quot;declared&quot;]:&lt;10} {&quot;n/a&quot;:&lt;11} '
+                         f'NOT MEASURED: {m[&quot;reason&quot;]}')
+            continue
+        reading = (&quot;declaring PAID&quot; if m[&quot;value&quot;] &gt; 0
+                   else &quot;declaring COST it&quot; if m[&quot;value&quot;] &lt; 0
+                   else &quot;measured zero - both arms ran and agreed&quot;)
+        value = f'+{m[&quot;value&quot;]}' if m[&quot;value&quot;] &gt; 0 else str(m[&quot;value&quot;])
+        lines.append(f'  {m[&quot;source&quot;]:&lt;17} {m[&quot;suppressed&quot;]:&lt;12} {m[&quot;declared&quot;]:&lt;10} '
+                     f'{value:&lt;11} {reading}')
+    return &quot;\n&quot;.join(lines)
+
+
+def what_a_bare_number_would_have_said(measured):
+    zeros = [m for m in measured if not m[&quot;applicable&quot;] or m[&quot;value&quot;] == 0]
+    lines = [&quot;  what a bare number would have said:&quot;]
+    for m in zeros:
+        state = &quot;not measurable&quot; if not m[&quot;applicable&quot;] else &quot;measured, and genuinely zero&quot;
+        lines.append(f'    {m[&quot;source&quot;]:&lt;17} 0 - and this is {state}')
+    kinds = len({m[&quot;applicable&quot;] for m in zeros})
+    lines.append(f&quot;    {len(zeros)} units, one number, {kinds} kinds of answer&quot;)
+    return &quot;\n&quot;.join(lines)
+
+
+def refusal(error):
+    return &quot;\n&quot;.join([
+        f&quot;  the total refuses: {error}&quot;,
+        &quot;  A sum that skips what it could not measure reports a smaller number with the&quot;,
+        &quot;  same confidence as a complete one.&quot;,
+    ])
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test.
+
+    python src/island_test.py
+
+Section 3 is the control: a MEASURED zero, which is what stops zero from being
+a synonym for &quot;nothing to measure&quot;. Section 4 proves the unmeasurable unit's
+stated reason by running it, rather than believing the sentence.
+&quot;&quot;&quot;
+import json
+import pathlib
+import re
+import sys
+
+from SCL import policy
+from SMS import measure
+from TMS.sources import declaration_is_baked_in, declares_openly, never_declares
+from TMS.policies import ignore_declared, retry_declared
+
+HERE = pathlib.Path(__file__).parent
+CONTRACT = json.loads((HERE / &quot;FMS&quot; / &quot;contract.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+FAILURES = []
+RAN = [0]
+
+
+def check(label, ok, detail=&quot;&quot;):
+    RAN[0] += 1
+    print(f'  {&quot;PASS&quot; if ok else &quot;FAIL&quot;}  {label}{f&quot; - {detail}&quot; if detail else &quot;&quot;}')
+    if not ok:
+        FAILURES.append(label)
+
+
+sources, policies, problems = measure.load()
+under_retry = {m[&quot;source&quot;]: m for m in measure.measure_all(retry_declared, sources)}
+under_ignore = {m[&quot;source&quot;]: m for m in measure.measure_all(ignore_declared, sources)}
+
+print(&quot;\n== 1. every unit is an island, and FMS matches the tree&quot;)
+check(&quot;loading raised no problems&quot;, not problems, &quot;; &quot;.join(problems))
+for unit, declared in CONTRACT[&quot;units&quot;].items():
+    directory = HERE.joinpath(*unit.split(&quot;/&quot;))
+    on_disk = sorted(p.name for p in directory.glob(&quot;*.py&quot;) if p.name != &quot;__init__.py&quot;)
+    check(f&quot;{unit}: FMS declares what is on disk&quot;, on_disk == sorted(declared),
+          f'disk {&quot;, &quot;.join(on_disk)} | FMS {&quot;, &quot;.join(sorted(declared))}')
+    for name in on_disk:
+        body = directory.joinpath(name).read_text(encoding=&quot;utf-8&quot;)
+        siblings = [n[:-3] for n in on_disk if n != name]
+        check(f&quot;{unit}/{name} reaches no sibling&quot;,
+              not [s for s in siblings if re.search(rf&quot;\bimport\b.*\b{s}\b&quot;, body)])
+        check(f&quot;{unit}/{name} reaches no other set&quot;,
+              not re.search(r&quot;\b(from|import)\s+(SMS|DMS|SCL|FMS)\b&quot;, body))
+
+print(&quot;\n== 2. a measurement carries its applicability&quot;)
+for name, m in sorted(under_retry.items()):
+    check(f&quot;{name} says whether it was measured&quot;, isinstance(m[&quot;applicable&quot;], bool))
+check(&quot;a non-applicable reading carries no value&quot;, under_retry[&quot;baked-in&quot;][&quot;value&quot;] is None)
+check(&quot;and carries a reason instead&quot;, bool(under_retry[&quot;baked-in&quot;][&quot;reason&quot;]))
+check(&quot;an applicable reading carries a value and no reason&quot;,
+      under_retry[&quot;declares-openly&quot;][&quot;value&quot;] == 3 and under_retry[&quot;declares-openly&quot;][&quot;reason&quot;] is None)
+check(&quot;NOT_APPLICABLE is not a number&quot;, not isinstance(measure.NOT_APPLICABLE, (int, float)))
+
+print(&quot;\n== 3. the control - a MEASURED zero&quot;)
+control = under_ignore[&quot;declares-openly&quot;]
+absent = under_retry[&quot;baked-in&quot;]
+check(&quot;under ignore-declared, declares-openly measures zero&quot;, control[&quot;value&quot;] == 0)
+check(&quot;and it WAS measured - both arms ran&quot;, control[&quot;applicable&quot;] is True)
+check(&quot;and they agree&quot;, control[&quot;declared&quot;] == control[&quot;suppressed&quot;], f'{control[&quot;declared&quot;]}')
+check(&quot;baked-in also reads as nothing&quot;, absent[&quot;value&quot;] is None)
+check(&quot;but it was not measured&quot;, absent[&quot;applicable&quot;] is False)
+check(&quot;so a bare 0 cannot separate them, and applicability can&quot;,
+      control[&quot;applicable&quot;] != absent[&quot;applicable&quot;] and (control[&quot;value&quot;] or 0) == 0)
+check(&quot;never-declares gives a measured zero too, under both policies&quot;,
+      under_retry[&quot;never-declares&quot;][&quot;value&quot;] == 0 and under_ignore[&quot;never-declares&quot;][&quot;value&quot;] == 0)
+
+print(&quot;\n== 4. the unmeasurable unit's reason, proved by running it&quot;)
+with_declaration = measure.run_one(declaration_is_baked_in, 1)
+without_declaration = measure.run_one(declaration_is_baked_in, 1, suppress_declaration=True)
+check(&quot;suppressing the field does not remove the marker record&quot;,
+      any(&quot;marker&quot; in r for r in without_declaration[&quot;records&quot;]))
+check(&quot;so the two arms hold a different number of records than a clean unit's arms do&quot;,
+      len(with_declaration[&quot;records&quot;]) == len(without_declaration[&quot;records&quot;])
+      and any(&quot;marker&quot; in r for r in with_declaration[&quot;records&quot;]))
+clean_with = measure.run_one(declares_openly, 1)
+clean_without = measure.run_one(declares_openly, 1, suppress_declaration=True)
+check(&quot;a suppressible unit's two arms are record-identical&quot;,
+      clean_with[&quot;records&quot;] == clean_without[&quot;records&quot;])
+check(&quot;and differ only in the declaration field&quot;,
+      clean_with[&quot;incomplete_because&quot;] is not None and clean_without[&quot;incomplete_because&quot;] is None)
+check(&quot;baked-in's declaration survives suppression, which is why there is no second arm&quot;,
+      any(r.get(&quot;marker&quot;) for r in without_declaration[&quot;records&quot;]))
+check(&quot;and the unit says so itself, up front&quot;,
+      declaration_is_baked_in.DECLARATION_IS_SUPPRESSIBLE is False)
+
+print(&quot;\n== 5. the total refuses instead of defaulting to zero&quot;)
+try:
+    measure.total_incentive(list(under_retry.values()))
+    check(&quot;a total across an unmeasured unit is refused&quot;, False, &quot;it returned a number&quot;)
+except ValueError as refused:
+    check(&quot;a total across an unmeasured unit is refused&quot;, True, str(refused))
+    check(&quot;and the refusal names the unit&quot;, &quot;baked-in&quot; in str(refused))
+measurable = [m for m in under_retry.values() if m[&quot;applicable&quot;]]
+check(&quot;a total across measured units alone is allowed&quot;,
+      measure.total_incentive(measurable) == 3, f&quot;{measure.total_incentive(measurable)}&quot;)
+check(&quot;which is a different number from the one a silent skip would print&quot;,
+      measure.total_incentive(measurable) == 3 and len(measurable) &lt; len(under_retry))
+
+print(&quot;\n== 6. SCL can only be contradicted by something that was measured&quot;)
+check(&quot;a measured positive contradicts&quot;, policy.contradicts(under_retry[&quot;declares-openly&quot;]) is not None)
+check(&quot;a measured zero does not&quot;, policy.contradicts(under_retry[&quot;never-declares&quot;]) is None)
+check(&quot;and a non-applicable reading does not either&quot;,
+      policy.contradicts(under_retry[&quot;baked-in&quot;]) is None)
+check(&quot;but it must not read as agreement - main names it separately&quot;,
+      &quot;NOT MEASURED&quot; in (HERE / &quot;main.py&quot;).read_text(encoding=&quot;utf-8&quot;))
+check(&quot;the deployment calls an unmeasurable unit fatal&quot;, policy.unmeasurable_is_fatal())
+
+print(&quot;\n== 7. the guards from 013, 015 and 018 still hold&quot;)
+
+
+def drill_source(name, **attributes):
+    module = type(sys)(name)
+    module.NAME = name
+    module.CAN_FAIL_WITH = [&quot;x&quot;]
+    module.HELD = 1
+    module.DECLARATION_IS_SUPPRESSIBLE = True
+    module.collect = lambda budget=1: {&quot;records&quot;: [{&quot;from&quot;: name, &quot;id&quot;: &quot;d-1&quot;}],
+                                       &quot;incomplete_because&quot;: None}
+    for key, value in attributes.items():
+        setattr(module, key, value)
+    return module
+
+
+_, _, mute = measure.load(extra_sources=[drill_source(&quot;drill-mute&quot;, CAN_FAIL_WITH=[])])
+check(&quot;DRILL: an empty CAN_FAIL_WITH is refused&quot;, any(&quot;CAN_FAIL_WITH is empty&quot; in p for p in mute))
+_, _, vouch = measure.load(extra_sources=[drill_source(&quot;drill-vouch&quot;, COMPLETE=True)])
+check(&quot;DRILL: a source declaring COMPLETE is refused&quot;, any(&quot;declares COMPLETE&quot; in p for p in vouch))
+silent = drill_source(&quot;drill-unsaid&quot;)
+del silent.DECLARATION_IS_SUPPRESSIBLE
+_, _, unsaid = measure.load(extra_sources=[silent])
+check(&quot;DRILL: a source that will not say whether it is suppressible is refused&quot;,
+      any(&quot;does not say whether its declaration can be suppressed&quot; in p for p in unsaid))
+secretive = type(sys)(&quot;drill_secretive&quot;)
+secretive.POLICY = &quot;drill-secretive&quot;
+secretive.apply = lambda runs, rerun: [{**r, &quot;kept&quot;: r[&quot;records&quot;]} for r in runs]
+_, _, told = measure.load(extra_policies=[secretive])
+check(&quot;DRILL: a policy that will not say what it does with a declaration is refused&quot;,
+      any(&quot;does not say what it does&quot; in p for p in told))
+_, _, nameless = measure.load(extra_policies=[type(sys)(&quot;drill_nameless&quot;)])
+check(&quot;DRILL: a policy module with no POLICY is refused by name, not by crashing&quot;,
+      any(&quot;does not declare POLICY&quot; in p for p in nameless))
+_, _, honest = measure.load(extra_sources=[drill_source(&quot;drill-honest&quot;)])
+check(&quot;and an honest unit raises nothing&quot;, not honest)
+
+print(&quot;\n== 8. what this still cannot do, asserted so it stays measured&quot;)
+check(&quot;nothing here reads intent&quot;,
+      not re.search(r&quot;\bintent\b|\bstrategic\b&quot;, (HERE / &quot;SMS&quot; / &quot;measure.py&quot;).read_text(encoding=&quot;utf-8&quot;)))
+check(&quot;the reason for non-applicability is the unit's own word, checked only by the record shape&quot;,
+      declaration_is_baked_in.DECLARATION_IS_SUPPRESSIBLE is False
+      and any(r.get(&quot;marker&quot;) for r in without_declaration[&quot;records&quot;]),
+      &quot;a unit could declare itself unsuppressible and be lying; that reads as n/a, not as zero&quot;)
+check(&quot;the counterfactual is still one unit, one policy, one run's data&quot;,
+      under_retry[&quot;declares-openly&quot;][&quot;value&quot;] != under_ignore[&quot;declares-openly&quot;][&quot;value&quot;],
+      f'{under_retry[&quot;declares-openly&quot;][&quot;value&quot;]} under retry, '
+      f'{under_ignore[&quot;declares-openly&quot;][&quot;value&quot;]} under ignore - same unit, same data')
+
+print()
+if FAILURES:
+    print(f'  {len(FAILURES)} FAILED: {&quot; | &quot;.join(FAILURES)}')
+    sys.exit(1)
+print(f&quot;  {RAN[0]} checks passed - {len(sources)} sources, {len(policies)} policies, &quot;
+      f&quot;3 kinds of answer&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;Three sources, and a measurement that says when it does not apply.
+
+    python src/main.py            the run under the policy SCL names
+    python src/main.py --control  the same units under a policy that ignores declarations
+    python src/main.py --total    ask for a total across all three
+    python src/main.py --strict   exit 1 on an unmeasurable unit or a contradicted assumption
+&quot;&quot;&quot;
+import sys
+
+from DMS import report
+from SCL import policy
+from SMS import measure
+
+
+def main(argv):
+    sources, policies, problems = measure.load()
+    if problems:
+        for problem in problems:
+            print(f&quot;  REFUSED: {problem}&quot;)
+        return 1
+
+    name = &quot;ignore-declared&quot; if &quot;--control&quot; in argv else policy.policy_name()
+    in_force = policies[name]
+    measured = measure.measure_all(in_force, sources)
+
+    print(f&quot;\n  {policy.describe()}&quot;)
+    if name != policy.policy_name():
+        print(f'  --control: running {name} instead - {in_force.WHAT_IT_DOES_WITH_A_DECLARATION}')
+    print()
+    print(report.measurements(measured))
+    print()
+    print(report.what_a_bare_number_would_have_said(measured))
+
+    if &quot;--total&quot; in argv:
+        print()
+        try:
+            print(f&quot;  total incentive: {measure.total_incentive(measured)}&quot;)
+        except ValueError as refused:
+            print(report.refusal(refused))
+
+    contradictions = [c for c in (policy.contradicts(m) for m in measured) if c]
+    unmeasured = [m[&quot;source&quot;] for m in measured if not m[&quot;applicable&quot;]]
+    if contradictions:
+        print()
+        for line in contradictions:
+            print(f&quot;  CONTRADICTS SCL: {line}&quot;)
+    if unmeasured:
+        print(f'  NOT MEASURED: {&quot;, &quot;.join(unmeasured)} - the assumption is neither confirmed '
+              f'nor contradicted there')
+
+    if &quot;--strict&quot; in argv and (contradictions or (unmeasured and policy.unmeasurable_is_fatal())):
+        print(&quot;\n  --strict: an unmeasurable unit or a contradicted assumption, both fatal here&quot;)
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

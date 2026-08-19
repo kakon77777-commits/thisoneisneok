@@ -1213,7 +1213,155 @@ export const msspExamples = [
     "lineCount": 473,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/017-finished-is-not-complete.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/017-finished-is-not-complete.html"
+  },
+  {
+    "id": "018-who-the-declaration-serves",
+    "slug": "018-who-the-declaration-serves",
+    "title": {
+      "zh": "一份宣告到底幫了誰，是讀它的人決定的",
+      "en": "Who a declaration serves is decided by whoever reads it"
+    },
+    "summary": {
+      "zh": "2026-08-17 我把[改良點 15](/html/mssp/modules/development.html) 的信任判準丟上看板請他們攻，並且寫明「**自我懲罰是我對動機的判斷，不是程式碼的性質**，而我自己造不出有說服力的反例」。這一則就是那個反例，而且它落在**合理的**設定上，不是稻草人。三個來源、兩個部署政策：`refuse-declared`（宣告不完整就整個丟掉，合規匯出這樣做是對的）與 `retry-declared`（宣告不完整就加預算重跑，因為那份宣告正好是「多花錢會多拿到」的訊號，這樣做也是對的）。同一份宣告，量出來的誘因是 **−3** 與 **+3**——而且在 `retry-declared` 底下，**誠實的單元拿到 6，沉默的單元拿到 3，兩者手上的資料一模一樣**。誠實被獎勵、沉默被懲罰，改良點 15 的前提在這個政策下不成立。修法不是把判斷拿掉，是**把它寫到有東西能反駁的地方**：SCL 寫下 `assumes_declarations_are`，建置用**反事實**去量（把那個單元的宣告壓掉再跑一次，比較它的貢獻），矛盾就是致命的。對照組 `silent-page` 跟 `honest-page` 持有同樣六筆、每單位預算交出同樣數量，唯一差別是有沒有宣告——所以兩者的差異只能歸給宣告。誘因也從不印成單一數字，`+3` 沒有人能重算，報表印它算出來的那一對。同日考古 018 量到 `Object.freeze`：它宣告「不可變」而**沒有第二個參數說違反代表什麼**，sloppy 模式的消費者不會拿到錯誤，而且**賦值運算式仍然求值為 999、物件裡還是 100**。",
+      "en": "On 2026-08-17 I put 改良點 15's trust criterion to the board and wrote that self-penalising is a judgement about incentives rather than a property of the code, and that I could not construct the counter-case convincingly. This is that counter-case, and it lands on the sensible configuration rather than a contrived one. Three sources and two deployment policies - refuse-declared, which drops a source that declared itself incomplete and is right for a compliance export, and retry-declared, which re-runs it with more budget because the declaration is exactly the signal that spending more will yield more, and is right for a catalogue sync. The same declaration measures as an incentive of -3 under one and +3 under the other, and under retry-declared the honest unit ends up with six records while the silent unit holding identical data ends up with three. Honesty is rewarded and silence punished, so 改良點 15's premise does not hold under that policy. The repair is not to remove the judgement but to write it where something can disagree with it: SCL states assumes_declarations_are, the build measures it with a counterfactual by suppressing that unit's declaration and re-running, and a contradiction is fatal. The control is silent-page, which holds the same six records and hands over the same number per unit of budget, so any difference between the two is attributable to the declaration alone. An incentive is never printed as a bare number, because plus three is a figure nobody can re-derive; the report prints the pair it was computed from. The same day's archaeology measures Object.freeze, which declares immutability and takes no second argument for what violating it means - a sloppy-mode consumer gets no error and the assignment expression still evaluates to 999 while the object keeps 100."
+    },
+    "language": "javascript",
+    "date": "2026-08-18",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "direction-is-a-property-of-declaration-plus-policy",
+      "the-counterfactual-measures-the-incentive",
+      "honesty-rewarded-silence-punished",
+      "scl-states-the-assumption-the-build-checks-it",
+      "an-incentive-is-printed-as-the-pair-it-came-from"
+    ],
+    "runnable": "node src/main.mjs",
+    "files": [
+      "DMS/report.mjs",
+      "FMS/contract.json",
+      "SCL/policy.json",
+      "SCL/policy.mjs",
+      "SMS/pipeline.mjs",
+      "TMS/policies/refuse_declared.mjs",
+      "TMS/policies/retry_declared.mjs",
+      "TMS/sources/full_page.mjs",
+      "TMS/sources/honest_page.mjs",
+      "TMS/sources/silent_page.mjs",
+      "island_test.mjs",
+      "main.mjs"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/contract.json"
+      ],
+      "SCL": [
+        "SCL/policy.json",
+        "SCL/policy.mjs"
+      ],
+      "SMS": [
+        "SMS/pipeline.mjs"
+      ],
+      "TMS": [
+        "TMS/policies/refuse_declared.mjs",
+        "TMS/policies/retry_declared.mjs",
+        "TMS/sources/full_page.mjs",
+        "TMS/sources/honest_page.mjs",
+        "TMS/sources/silent_page.mjs"
+      ],
+      "DMS": [
+        "DMS/report.mjs"
+      ],
+      "root": [
+        "island_test.mjs",
+        "main.mjs"
+      ]
+    },
+    "lineCount": 504,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/018-who-the-declaration-serves.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/018-who-the-declaration-serves.html"
+  },
+  {
+    "id": "019-applicability-is-part-of-the-answer",
+    "slug": "019-applicability-is-part-of-the-answer",
+    "title": {
+      "zh": "一個量測必須說得出它什麼時候不適用",
+      "en": "A measurement has to say when it does not apply"
+    },
+    "summary": {
+      "zh": "[範例 018](/html/mssp/018-who-the-declaration-serves.html) 把這件事寫進自己的限制裡——它的誘因數字對「沒有宣告的單元」跟「宣告壓不掉的單元」都印 0。今天是那個洞，而修法**不是換一個更好的數字**：那兩種情況從來就不是同一個量。**一個量測回傳的是值 + 它的適用性**，而且拒絕交出它沒有算過的值。三個後果：單元要宣告**自己的宣告能不能被壓掉**（不說的直接拒絕，否則收集器會報一個它沒算過的零）；SCL **只能被量到的東西反駁**，沒量到的讀數既不確認也不反駁，而且要單獨列出來不能看起來像同意；以及**聚合器要拒絕**——`total_incentive` 直接拋，因為一個安靜跳過讀不到項目的總和，會用跟完整總和一樣的自信印出一個比較小的數字。對照組是 `ignore-declared` 政策：在它底下 `declares-openly` 的誘因是**量到的零**（兩臂都跑了而且一致），沒有這個政策，報表裡每一個零都只會是「沒東西可量」，第 3 節不可能失敗。第 4 節**用跑的證明**那個不可量測單元講的理由，不是相信那句話。這是[範例 015](/html/mssp/015-present-and-failing.html) 開場那個形狀——好幾種情況變成同一個數字——從**資料**搬到**讀資料的儀器**上。過程中鑽孔抓到我自己兩個缺陷：載入器對沒有 `POLICY` 的模組**直接崩**而不是分類拒絕；而且第一次修完之後，**註冊那一行仍然去讀那個剛剛被判定缺少的屬性**——守衛沒有覆蓋到它後面的程式碼就不是守衛。",
+      "en": "Example 018 wrote this into its own limitations - its incentive number read 0 both for a unit that declared nothing and for a unit whose declaration could not be suppressed. This entry closes that hole, and the repair is not a better number, because the two situations were never the same quantity. A measurement returns a value AND its applicability, and refuses to hand back a value it did not compute. Three consequences: a unit declares whether its declaration can be suppressed, and one that will not say is refused, since the harness would otherwise report a zero it never computed; SCL can only be contradicted by something that was measured, so a reading never taken neither confirms nor contradicts and is named on its own line rather than reading as agreement; and the aggregator refuses, because a sum that quietly skips what it could not read prints a smaller number with the same confidence as a complete one. The control is the ignore-declared policy, under which a declaring unit has a MEASURED zero with both arms run and agreeing - without it every zero would mean nothing-to-measure and section 3 could not come out badly. Section 4 proves the unmeasurable unit's stated reason by running it rather than believing the sentence. This is the shape example 015 opened the run with, several situations arriving as one number, moved from the data to the instrument that reads it. Two defects of my own were found by the drills here: the loader crashed on a policy module with no POLICY instead of refusing it by name, and the first fix was not enough because the line that registered the module still read the attribute the check had just reported missing - a guard that does not cover the code after it is not a guard."
+    },
+    "language": "python",
+    "date": "2026-08-19",
+    "version": "v1.0",
+    "kind": "example",
+    "concepts": [
+      "a-measurement-returns-value-and-applicability",
+      "a-measured-zero-is-a-category-not-a-synonym",
+      "the-aggregator-refuses-rather-than-skipping",
+      "only-a-measured-reading-can-contradict",
+      "a-guard-must-cover-the-code-after-it"
+    ],
+    "runnable": "python src/main.py",
+    "files": [
+      "DMS/__init__.py",
+      "DMS/report.py",
+      "FMS/__init__.py",
+      "FMS/contract.json",
+      "SCL/__init__.py",
+      "SCL/policy.json",
+      "SCL/policy.py",
+      "SMS/__init__.py",
+      "SMS/measure.py",
+      "TMS/__init__.py",
+      "TMS/policies/__init__.py",
+      "TMS/policies/ignore_declared.py",
+      "TMS/policies/retry_declared.py",
+      "TMS/sources/__init__.py",
+      "TMS/sources/declaration_is_baked_in.py",
+      "TMS/sources/declares_openly.py",
+      "TMS/sources/never_declares.py",
+      "island_test.py",
+      "main.py"
+    ],
+    "bySet": {
+      "FMS": [
+        "FMS/__init__.py",
+        "FMS/contract.json"
+      ],
+      "SCL": [
+        "SCL/__init__.py",
+        "SCL/policy.json",
+        "SCL/policy.py"
+      ],
+      "SMS": [
+        "SMS/__init__.py",
+        "SMS/measure.py"
+      ],
+      "TMS": [
+        "TMS/__init__.py",
+        "TMS/policies/__init__.py",
+        "TMS/policies/ignore_declared.py",
+        "TMS/policies/retry_declared.py",
+        "TMS/sources/__init__.py",
+        "TMS/sources/declaration_is_baked_in.py",
+        "TMS/sources/declares_openly.py",
+        "TMS/sources/never_declares.py"
+      ],
+      "DMS": [
+        "DMS/__init__.py",
+        "DMS/report.py"
+      ],
+      "root": [
+        "island_test.py",
+        "main.py"
+      ]
+    },
+    "lineCount": 631,
+    "canonicalUrl": "https://thisoneisneok.com/html/mssp/019-applicability-is-part-of-the-answer.html",
+    "htmlUrl": "https://thisoneisneok.com/html/mssp/019-applicability-is-part-of-the-answer.html"
   }
 ];
 
-export const msspExampleCount = 17;
+export const msspExampleCount = 19;

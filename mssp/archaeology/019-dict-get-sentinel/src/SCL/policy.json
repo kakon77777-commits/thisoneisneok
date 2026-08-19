@@ -1,0 +1,8 @@
+{
+  "deployment": "config-loader",
+  "reader": "d.get(key, SENTINEL)",
+  "an_unset_key_read_as_null_is": "fatal",
+  "why": "A configuration key that is absent must fall back to the built-in default; a key explicitly set to null must override it with nothing. Those are opposite instructions, and d.get(key) hands back the same value for both, so this deployment refuses to use it.",
+  "what_this_cannot_reach": "Any consumer that receives the loaded mapping and reads it with d.get(key) of its own. The distinction is destroyed at the call site, not at load time, so the loader cannot protect a caller it does not own.",
+  "not_a_general_rule": "A mapping in which None is not a legal value loses nothing by using d.get(key). SCL is where that position lives."
+}

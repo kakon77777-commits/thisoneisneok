@@ -1,0 +1,28 @@
+{
+  "name": "018-object-freeze",
+  "upstream": "ECMAScript Object.freeze and the two language modes, measured on the local V8",
+  "what_is_being_examined": "One declaration - this object is immutable - and two consumers that disagree about what violating it means.",
+
+  "the_finding": "Object.freeze takes no argument about what happens when the declaration is violated. The declarer cannot state it and cannot see it. A sloppy-mode consumer gets no error, and the assignment expression still evaluates to the value that was not stored, so a caller reading the expression is told the write succeeded while the object says it did not. A strict-mode consumer gets a TypeError for the same line.",
+
+  "second_finding": "The freeze is shallow, so `frozen.inner.x = 2` succeeds under BOTH modes. The declaration reads as a statement about the object and is a statement about its own properties.",
+
+  "the_control": "The same assignment against an object that was never frozen. It also returns 999 - which is what makes the returned value uninformative rather than merely wrong. Without the control, 'sloppy mode returns 999' is not evidence about anything.",
+
+  "modes": {
+    "sloppy": {"reports_violations": false, "how_it_is_entered": "a Function constructor, an eval, a classic script - none of which the declarer chose"},
+    "strict": {"reports_violations": true,  "how_it_is_entered": "a module, a class body, or an explicit directive"}
+  },
+
+  "sets": {
+    "FMS": "this file: what each mode reports, how it is entered, and the units map",
+    "SCL": "which mode this deployment loads consumers in, what a silent violation means here, and what the deployment cannot reach",
+    "SMS": "the probes that run the real built-ins, including the never-frozen control",
+    "TMS": "one file per mode - each declares whether it reports violations, and imports nothing",
+    "DMS": "what was returned, what the object holds, and whether anything was raised - never one of the three alone"
+  },
+
+  "units": {"TMS/modes": ["sloppy.mjs", "strict.mjs"]},
+
+  "the_recut_adds": "A mode declares whether it reports violations, and the declaration is checked by running it. Section 3b is the drill: a mode claiming to report violations while swallowing them must be caught."
+}

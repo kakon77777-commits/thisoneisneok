@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一份宣告到底幫了誰，是讀它的人決定的 | MSSP | Neo.K</title>
+<meta name="description" content="2026-08-17 我把[改良點 15](/html/mssp/modules/development.html) 的信任判準丟上看板請他們攻，並且寫明「**自我懲罰是我對動機的判斷，不是程式碼的性質**，而我自己造不出有說服力的反例」。這一則就是那個反例，而且它落在**合理的**設定上，不是稻草人。三個來源、兩個部署政策：`refuse-declared`（宣告不完整就整個丟掉，合規匯出這樣做是對的）與 `retry-declared`（宣告不完整就加預算重跑，因為那份宣告正好是「多花錢會多拿到」的訊號，這樣做也是對的）。同一份宣告，量出來的誘因是 **−3** 與 **+3**——而且在 `retry-declared` 底下，**誠實的單元拿到 6，沉默的單元拿到 3，兩者手上的資料一模一樣**。誠實被獎勵、沉默被懲罰，改良點 15 的前提在這個政策下不成立。修法不是把判斷拿掉，是**把它寫到有東西能反駁的地方**：SCL 寫下 `assumes_declarations_are`，建置用**反事實**去量（把那個單元的宣告壓掉再跑一次，比較它的貢獻），矛盾就是致命的。對照組 `silent-page` 跟 `honest-page` 持有同樣六筆、每單位預算交出同樣數量，唯一差別是有沒有宣告——所以兩者的差異只能歸給宣告。誘因也從不印成單一數字，`+3` 沒有人能重算，報表印它算出來的那一對。同日考古 018 量到 `Object.freeze`：它宣告「不可變」而**沒有第二個參數說違反代表什麼**，sloppy 模式的消費者不會拿到錯誤，而且**賦值運算式仍然求值為 999、物件裡還是 100**。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/018-who-the-declaration-serves.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>018-who-the-declaration-serves</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>018-who-the-declaration-serves</span></div>
+    <div><b>語言</b><span>javascript</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-18</span></div>
+    <div><b>行數</b><span>504</span></div>
+    <div><b>執行</b><span><code>node src/main.mjs</code></span></div>
+  </section>
+  <article class="content"><h1>018 — Who a declaration serves is decided by whoever reads it</h1>
+<blockquote>
+<p><code>candidate</code>. On 2026-08-17 I asked the board to attack 改良點 15&#39;s trust
+criterion, and said I could not construct the counter-case convincingly.
+This is the counter-case. It lands on the sensible policy.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>Three sources, two deployment policies, and one unit that declares itself
+incomplete. The example does not argue about whether that declaration is
+self-penalising. <strong>It measures it.</strong></p>
+<pre><code class="language-bash">node src/main.mjs             # the run under the policy SCL names
+node src/main.mjs --compare   # both policies, side by side
+node src/main.mjs --strict    # exit 1 when the measurement contradicts SCL&#39;s assumption
+node src/island_test.mjs      # 46 checks across 8 sections, and it prints the count itself
+</code></pre>
+<pre><code class="language-console">  catalogue-sync: apply retry-declared, assuming declarations are self-penalising
+
+  source        held   kept   declared                note
+  full-page     3      3      -
+  honest-page   6      6      more-after-cursor       re-run at budget 2
+  silent-page   6      3      -
+  total kept: 12
+
+  what declaring cost or paid, measured by suppressing it and re-running:
+    unit          suppressed   declared   delta   reading
+    full-page     3            3          0       declared nothing - the control
+    honest-page   3            6          +3      declaring PAID
+    silent-page   3            3          0       declared nothing - the control
+
+  CONTRADICTS SCL: declaring left honest-page better off by 3 record(s) (3 suppressed -&gt; 6 declared)
+  SCL assumes declarations are self-penalising; under this policy they are not.
+</code></pre>
+<h2>The structural decision</h2>
+<p><a href="/html/mssp/modules/development.html">改良點 15</a> takes a <em>self-penalising</em>
+declaration on trust. <strong>Self-penalising is not a property of the declaration.</strong>
+It is a property of the declaration together with the policy that consumes it,
+and the same declaration points opposite ways under two policies that are both
+defensible:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>what it does with a declaration</th>
+<th>incentive for the declaring unit</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>refuse-declared</code></td>
+<td>drops the source</td>
+<td><strong>−3</strong> (3 suppressed → 0 declared)</td>
+</tr>
+<tr>
+<td><code>retry-declared</code></td>
+<td>re-runs it with more budget</td>
+<td><strong>+3</strong> (3 suppressed → 6 declared)</td>
+</tr>
+</tbody></table>
+<p><strong>Neither is a strawman.</strong> A compliance export is right to drop anything
+known-partial. A catalogue sync is right to spend more on a source that just
+told it more is available — that declaration is precisely the signal that
+spending will pay.</p>
+<p>So the judgement is not removed. It is <strong>written down where something can
+disagree with it</strong>:</p>
+<ol>
+<li><strong>SCL states the assumption</strong> — <code>assumes_declarations_are: &quot;self-penalising&quot;</code>.</li>
+<li><strong>The build measures it, with a counterfactual.</strong> Run the pipeline again with
+that unit&#39;s declaration suppressed and compare what the unit contributes.</li>
+<li><strong>A contradiction is fatal.</strong> Under <code>retry-declared</code> it contradicts, and
+<code>--strict</code> exits 1.</li>
+</ol>
+<p>An incentive is never printed as a bare number. <code>+3</code> alone is a figure nobody
+can re-derive, so the report prints the pair it came from.</p>
+<h2>The island test — and the control that makes the measurement mean anything</h2>
+<p><code>honest-page</code> and <code>silent-page</code> hold <strong>six records each</strong> and hand over exactly
+as much per unit of budget. The <strong>only</strong> difference between the two files is
+that one declares.</p>
+<pre><code class="language-text">  PASS  honest-page and silent-page hold the same number of records - 6 and 6
+  PASS  at budget 1 they hand over the same number - 3
+  PASS  at budget 2 they hand over the same number - 6
+  PASS  at budget 3 they hand over the same number - 6
+  PASS  and at budget 1 exactly one of them declares
+  PASS  so any difference between them is attributable to the declaration alone
+</code></pre>
+<p>And under <code>retry-declared</code>, <strong>the honest unit ends up ahead of the silent one
+holding identical data — 6 against 3.</strong> Declaring paid; staying quiet cost.</p>
+<p>Five mutations were run and each turns the suite red: the control holding a
+different amount (4 checks), the retry policy not retrying (6), SCL never
+finding a contradiction (1), the counterfactual comparing a run with itself (8),
+and FMS carrying a stale number (1).</p>
+<h2>Upstream, the same day</h2>
+<p><a href="/html/mssp/archaeology/018-object-freeze.html">Archaeology 018</a> measures a
+declaration whose force is decided entirely by its consumer:</p>
+<pre><code class="language-text">    object        mode     returned   actual   threw
+    frozen        sloppy   999        100      -
+    frozen        strict   -          100      TypeError: Cannot assign to read only property
+    never frozen  sloppy   999        999      -
+</code></pre>
+<p><code>Object.freeze</code> says <em>immutable</em> and <strong>takes no argument about what violating it
+means</strong> — <code>Object.freeze.length</code> is 1. A sloppy-mode consumer gets no error, and
+<strong>the assignment expression still evaluates to 999 while the object keeps 100</strong>.
+Row 3 is the control: an object that was never frozen also returns 999, which is
+what makes <code>returned</code> uninformative rather than merely wrong.</p>
+<h2>What this example does not solve</h2>
+<p><strong>The counterfactual measures one unit, one policy, one run&#39;s data.</strong> It is not
+a general statement about that declaration, and the example does not pretend
+otherwise.</p>
+<p><strong>A zero reading is ambiguous.</strong> A unit that declared nothing and a unit whose
+declaration cannot be suppressed both measure as 0. Section 8 asserts that
+ambiguity, so if it ever stops being true this page is wrong and goes red.</p>
+<p><strong>Nothing here reads intent.</strong> A unit that benefits by accident is
+indistinguishable from one that planned to. The reading is outcome only, and
+section 8 checks that no part of SMS pretends otherwise.</p>
+<p><strong>Not attempted:</strong> deciding which policy is right, and enumerating which
+policies are &quot;rewarding&quot;. The second is why this is a measurement rather than a
+rule — the set of rewarding policies cannot be listed, but the incentive under
+<em>the policy in force</em> can be computed.</p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;018-who-the-declaration-serves&quot;,
+  &quot;what_it_is&quot;: &quot;The same three sources under two defensible deployment policies, where one unit declares itself incomplete and the example measures what that declaration cost it.&quot;,
+  &quot;the_structural_decision&quot;: &quot;The direction of a declaration is not a property of the declaration. It is a property of the declaration together with the policy that consumes it — so it cannot be assumed, and it can be measured. The measurement is a counterfactual: run the pipeline again with that unit's declaration suppressed, and compare what the unit contributes.&quot;,
+  &quot;why_this_one&quot;: &quot;改良點 15 takes a self-penalising declaration on trust. I wrote on the board the same day that self-penalising is a judgement about incentives rather than a property of the code, and that I could not construct the counter-case convincingly. This is the counter-case, and it lands on the sensible policy rather than a contrived one.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+
+  &quot;the_two_policies&quot;: {
+    &quot;refuse-declared&quot;: &quot;a source that declared itself incomplete is dropped from the export — defensible for a compliance export&quot;,
+    &quot;retry-declared&quot;: &quot;a source that declared itself incomplete is re-run with a larger budget — defensible, and common, because the declaration is exactly the signal that spending more will yield more&quot;
+  },
+  &quot;neither_is_a_strawman&quot;: &quot;Both are policies a careful person would write. The finding is not that one of them is wrong.&quot;,
+
+  &quot;sources&quot;: {
+    &quot;full-page&quot;:   {&quot;holds&quot;: 3, &quot;declares&quot;: &quot;never — it always returns everything it has&quot;},
+    &quot;honest-page&quot;: {&quot;holds&quot;: 6, &quot;declares&quot;: &quot;more-after-cursor when the budget cuts it short&quot;},
+    &quot;silent-page&quot;: {&quot;holds&quot;: 6, &quot;declares&quot;: &quot;nothing, ever&quot;, &quot;note&quot;: &quot;the control — it holds exactly what honest-page holds and hands over exactly as much per unit of budget, so any difference between the two is attributable to the declaration and to nothing else&quot;}
+  },
+
+  &quot;the_measurement&quot;: {
+    &quot;definition&quot;: &quot;incentive(unit) = records the unit contributes WITH its declaration - records it contributes with the declaration SUPPRESSED&quot;,
+    &quot;under_refuse_declared&quot;: {&quot;honest-page&quot;: -3, &quot;silent-page&quot;: 0},
+    &quot;under_retry_declared&quot;:  {&quot;honest-page&quot;: 3,  &quot;silent-page&quot;: 0},
+    &quot;note&quot;: &quot;The numbers are emitted by the run, not typed here — the island test asserts these against what the pipeline computes, so a change in the code turns this file red.&quot;
+  },
+
+  &quot;the_finding&quot;: &quot;Under retry-declared the honest unit contributes 6 and the silent unit, holding identical data, contributes 3. Declaring made the unit that declared better off, and the unit that stayed quiet worse off. The trust criterion of 改良點 15 does not hold under that policy, and nothing about the policy is unreasonable.&quot;,
+
+  &quot;the_repair&quot;: &quot;SCL states the assumption (`assumes_declarations_are`), the build measures it with the counterfactual, and a contradiction is fatal. The judgement is not removed — it is written down where something can disagree with it.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the two policies, what each source holds and declares, the definition of the measurement, and the units map&quot;,
+    &quot;SCL&quot;: &quot;which policy this deployment applies, what it assumes about declarations, and what a contradiction means here&quot;,
+    &quot;SMS&quot;: &quot;running the sources, applying the named policy, and computing the counterfactual&quot;,
+    &quot;TMS&quot;: &quot;one file per source and one per policy — each declares itself and reaches no sibling&quot;,
+    &quot;DMS&quot;: &quot;the per-unit contribution, and the incentive shown as the pair it was computed from&quot;
+  },
+
+  &quot;units&quot;: {
+    &quot;TMS/sources&quot;: [&quot;full_page.mjs&quot;, &quot;honest_page.mjs&quot;, &quot;silent_page.mjs&quot;],
+    &quot;TMS/policies&quot;: [&quot;refuse_declared.mjs&quot;, &quot;retry_declared.mjs&quot;]
+  },
+
+  &quot;non_goals&quot;: [
+    &quot;Deciding which policy is right. Both are defensible and SCL picks one; the example takes no position.&quot;,
+    &quot;Claiming the counterfactual measures the incentive in general. It measures it for that unit, under that policy, on that run's data. A unit whose declaration cannot be suppressed cannot be measured this way at all.&quot;,
+    &quot;Detecting a unit that declares strategically. Nothing here reads intent; it reads outcome, and a unit that benefits by accident is indistinguishable from one that planned to.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;deployment&quot;: &quot;catalogue-sync&quot;,
+  &quot;policy&quot;: &quot;retry-declared&quot;,
+  &quot;assumes_declarations_are&quot;: &quot;self-penalising&quot;,
+  &quot;why_this_policy&quot;: &quot;A declaration of incompleteness is exactly the signal that spending more on this source will yield more, so this deployment spends it. Nothing about that is unreasonable, and that is the point: the finding lands on the sensible configuration and not on a contrived one.&quot;,
+  &quot;why_the_assumption_is_written_down&quot;: &quot;改良點 15 takes a self-penalising declaration on trust. That is a claim about incentives, and a claim about incentives can be false. Writing it into SCL is what lets the build measure it instead of inheriting it.&quot;,
+  &quot;on_contradiction&quot;: &quot;fatal&quot;
+}
+</code></pre></details><details><summary>SCL/policy.mjs</summary><pre><code>import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+export const POLICY = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export const policyName = () =&gt; POLICY.policy;
+export const assumption = () =&gt; POLICY.assumes_declarations_are;
+export const isFatal = () =&gt; POLICY.on_contradiction === &quot;fatal&quot;;
+export const describe = () =&gt;
+  `${POLICY.deployment}: apply ${POLICY.policy}, assuming declarations are ${POLICY.assumes_declarations_are}`;
+
+// The assumption, made checkable. A self-penalising declaration must not leave
+// the unit that made it better off than suppressing it would have.
+export function contradicts(measured) {
+  if (POLICY.assumes_declarations_are !== &quot;self-penalising&quot;) return null;
+  return measured.delta &gt; 0
+    ? `declaring left ${measured.source} better off by ${measured.delta} record(s) `
+      + `(${measured.suppressed} suppressed -&gt; ${measured.declared} declared)`
+    : null;
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/pipeline.mjs</summary><pre><code>// Run the sources, apply the policy SCL names, and measure the incentive.
+//
+// The measurement is the point. Example 017 asserted that a unit declaring
+// itself incomplete is penalising itself, and called that a reason to take the
+// declaration on trust. That was a judgement about incentives, not a property
+// of anything in the code — so this module computes it instead.
+//
+//   incentive(unit) = what the unit contributes WITH its declaration
+//                   - what it contributes with the declaration SUPPRESSED
+//
+// Negative means declaring cost the unit. Positive means declaring paid.
+import * as fullPage from &quot;../TMS/sources/full_page.mjs&quot;;
+import * as honestPage from &quot;../TMS/sources/honest_page.mjs&quot;;
+import * as silentPage from &quot;../TMS/sources/silent_page.mjs&quot;;
+import * as refuseDeclared from &quot;../TMS/policies/refuse_declared.mjs&quot;;
+import * as retryDeclared from &quot;../TMS/policies/retry_declared.mjs&quot;;
+
+const SOURCE_MODULES = [fullPage, honestPage, silentPage];
+const POLICY_MODULES = [refuseDeclared, retryDeclared];
+
+export function load(extraSources = [], extraPolicies = []) {
+  const sources = {};
+  const policies = {};
+  const problems = [];
+
+  for (const module of [...SOURCE_MODULES, ...extraSources]) {
+    for (const attribute of [&quot;NAME&quot;, &quot;CAN_FAIL_WITH&quot;, &quot;HELD&quot;, &quot;collect&quot;]) {
+      if (module[attribute] === undefined) problems.push(`a source does not declare ${attribute}`);
+    }
+    if (!module.CAN_FAIL_WITH?.length) {
+      problems.push(`${module.NAME}: CAN_FAIL_WITH is empty`);
+    }
+    for (const vouch of [&quot;COMPLETE&quot;, &quot;IS_COMPLETE&quot;, &quot;RETURNS_EVERYTHING&quot;]) {
+      if (module[vouch] === true) {
+        problems.push(`${module.NAME}: declares ${vouch} - a unit may declare itself incomplete `
+          + `and may not declare itself complete (改良點 15)`);
+      }
+    }
+    sources[module.NAME] = module;
+  }
+
+  for (const module of [...POLICY_MODULES, ...extraPolicies]) {
+    if (!module.WHAT_IT_DOES_WITH_A_DECLARATION) {
+      problems.push(`${module.POLICY}: does not say what it does with a declaration`);
+    }
+    policies[module.POLICY] = module;
+  }
+  return { sources, policies, problems };
+}
+
+export function runOne(module, budget = 1, { suppressDeclaration = false } = {}) {
+  const result = module.collect({ budget });
+  return {
+    source: module.NAME,
+    held: module.HELD,
+    records: result.records,
+    incomplete_because: suppressDeclaration ? null : result.incomplete_because,
+    suppressed: suppressDeclaration &amp;&amp; result.incomplete_because !== null,
+  };
+}
+
+export function runAll(sources, { suppress = [] } = {}) {
+  return Object.keys(sources).sort()
+    .map((name) =&gt; runOne(sources[name], 1, { suppressDeclaration: suppress.includes(name) }));
+}
+
+export function through(policyName, sources, options = {}) {
+  const policy = policyName;
+  const runs = runAll(sources, options);
+  const rerun = (name, budget) =&gt; runOne(sources[name], budget);
+  const applied = policy.apply(runs, rerun);
+  return {
+    rows: applied,
+    total: applied.reduce((n, row) =&gt; n + row.kept.length, 0),
+  };
+}
+
+export function contribution(result, name) {
+  return result.rows.find((row) =&gt; row.source === name)?.kept.length ?? 0;
+}
+
+// The counterfactual. Same policy, same data, one declaration removed.
+export function incentive(policy, sources, name) {
+  const declared = contribution(through(policy, sources), name);
+  const suppressed = contribution(through(policy, sources, { suppress: [name] }), name);
+  return { declared, suppressed, delta: declared - suppressed };
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/policies/refuse_declared.mjs</summary><pre><code>// A source that declared itself incomplete is dropped from the export.
+//
+// Defensible: a compliance export may be smaller than expected but may not be
+// quietly partial, so anything known-partial is excluded and named.
+export const POLICY = &quot;refuse-declared&quot;;
+export const WHAT_IT_DOES_WITH_A_DECLARATION = &quot;drops the source&quot;;
+
+export function apply(runs) {
+  return runs.map((run) =&gt; (run.incomplete_because
+    ? { ...run, kept: [], note: `dropped: ${run.incomplete_because}` }
+    : { ...run, kept: run.records, note: null }));
+}
+</code></pre></details><details><summary>TMS/policies/retry_declared.mjs</summary><pre><code>// A source that declared itself incomplete is run again with a larger budget.
+//
+// Defensible, and common: the declaration is exactly the signal that spending
+// more on this source will yield more. Nothing here is a strawman.
+export const POLICY = &quot;retry-declared&quot;;
+export const WHAT_IT_DOES_WITH_A_DECLARATION = &quot;re-runs the source with more budget&quot;;
+export const RETRY_BUDGET = 2;
+
+export function apply(runs, rerun) {
+  return runs.map((run) =&gt; {
+    if (!run.incomplete_because) return { ...run, kept: run.records, note: null };
+    const second = rerun(run.source, RETRY_BUDGET);
+    return { ...run, kept: second.records, note: `re-run at budget ${RETRY_BUDGET}` };
+  });
+}
+</code></pre></details><details><summary>TMS/sources/full_page.mjs</summary><pre><code>// Returns everything behind it, in one call, and declares nothing.
+export const NAME = &quot;full-page&quot;;
+export const CAN_FAIL_WITH = [&quot;unreadable-page&quot;];
+export const HELD = 3;
+
+export function collect({ budget = 1 } = {}) {
+  const take = Math.min(HELD, budget * 3);
+  return {
+    records: Array.from({ length: take }, (_, n) =&gt; ({ from: NAME, id: `f-${n + 1}` })),
+    incomplete_because: take &lt; HELD ? &quot;budget-exhausted&quot; : null,
+  };
+}
+</code></pre></details><details><summary>TMS/sources/honest_page.mjs</summary><pre><code>// Holds six records, hands over three per unit of budget, and SAYS SO.
+//
+// This is the unit example 017 called self-penalising. Whether that is true is
+// what this example measures rather than assumes.
+export const NAME = &quot;honest-page&quot;;
+export const CAN_FAIL_WITH = [&quot;unreadable-page&quot;, &quot;cursor-expired&quot;];
+export const HELD = 6;
+
+export function collect({ budget = 1 } = {}) {
+  const take = Math.min(HELD, budget * 3);
+  return {
+    records: Array.from({ length: take }, (_, n) =&gt; ({ from: NAME, id: `h-${n + 1}` })),
+    incomplete_because: take &lt; HELD ? &quot;more-after-cursor&quot; : null,
+  };
+}
+</code></pre></details><details><summary>TMS/sources/silent_page.mjs</summary><pre><code>// The control, and the comparison the whole example turns on.
+//
+// It holds exactly what honest-page holds and hands over exactly as much per
+// unit of budget. The ONLY difference between the two units is that this one
+// never declares. So any difference in what they end up contributing is
+// attributable to the declaration and to nothing else.
+export const NAME = &quot;silent-page&quot;;
+export const CAN_FAIL_WITH = [&quot;unreadable-page&quot;, &quot;cursor-expired&quot;];
+export const HELD = 6;
+
+export function collect({ budget = 1 } = {}) {
+  const take = Math.min(HELD, budget * 3);
+  return {
+    records: Array.from({ length: take }, (_, n) =&gt; ({ from: NAME, id: `s-${n + 1}` })),
+    incomplete_because: null,
+  };
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.mjs</summary><pre><code>// What a person is shown.
+//
+// An incentive is never printed as a single number. It is printed as the pair
+// it was computed from, because &quot;+3&quot; without &quot;3 -&gt; 6&quot; is a claim nobody can
+// re-derive.
+const pad = (v, w) =&gt; String(v).padEnd(w);
+
+export function rows(result) {
+  const lines = [&quot;  source        held   kept   declared                note&quot;];
+  for (const row of result.rows) {
+    lines.push(`  ${pad(row.source, 13)} ${pad(row.held, 6)} ${pad(row.kept.length, 6)} `
+      + `${pad(row.incomplete_because ?? &quot;-&quot;, 23)} ${row.note ?? &quot;&quot;}`.trimEnd());
+  }
+  lines.push(`  total kept: ${result.total}`);
+  return lines.join(&quot;\n&quot;);
+}
+
+export function incentives(measured) {
+  const lines = [
+    &quot;  what declaring cost or paid, measured by suppressing it and re-running:&quot;,
+    &quot;    unit          suppressed   declared   delta   reading&quot;,
+  ];
+  for (const m of measured) {
+    const reading = m.delta &lt; 0 ? &quot;declaring COST it&quot;
+      : m.delta &gt; 0 ? &quot;declaring PAID&quot;
+        : &quot;declared nothing - the control&quot;;
+    lines.push(`    ${pad(m.source, 13)} ${pad(m.suppressed, 12)} ${pad(m.declared, 10)} `
+      + `${pad(m.delta &gt; 0 ? `+${m.delta}` : m.delta, 7)} ${reading}`);
+  }
+  return lines.join(&quot;\n&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.mjs</summary><pre><code>// The island test.
+//
+//   node src/island_test.mjs
+//
+// Section 2 is the control that makes everything after it mean something.
+// Section 4 is the finding. Section 6 proves the contradiction check reads SCL
+// rather than a constant.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as pipeline from &quot;./SMS/pipeline.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as honestPage from &quot;./TMS/sources/honest_page.mjs&quot;;
+import * as silentPage from &quot;./TMS/sources/silent_page.mjs&quot;;
+import * as refuseDeclared from &quot;./TMS/policies/refuse_declared.mjs&quot;;
+import * as retryDeclared from &quot;./TMS/policies/retry_declared.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;contract.json&quot;), &quot;utf8&quot;));
+const failures = [];
+let ran = 0;
+const check = (label, ok, detail = &quot;&quot;) =&gt; {
+  ran += 1;
+  process.stdout.write(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}\n`);
+  if (!ok) failures.push(label);
+};
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+const { sources, policies, problems } = pipeline.load();
+const incentiveUnder = (module, name) =&gt; pipeline.incentive(module, sources, name);
+
+say(&quot;\n== 1. every unit is an island, and FMS matches the tree&quot;);
+check(&quot;loading raised no problems&quot;, problems.length === 0, problems.join(&quot;; &quot;));
+for (const [unit, declared] of Object.entries(CONTRACT.units)) {
+  const dir = path.join(here, ...unit.split(&quot;/&quot;));
+  const onDisk = fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+  check(`${unit}: FMS declares what is on disk`,
+    JSON.stringify(onDisk) === JSON.stringify([...declared].sort()),
+    `disk ${onDisk.join(&quot;, &quot;)} | FMS ${[...declared].sort().join(&quot;, &quot;)}`);
+  for (const file of onDisk) {
+    const body = fs.readFileSync(path.join(dir, file), &quot;utf8&quot;);
+    const siblings = onDisk.filter((n) =&gt; n !== file).map((n) =&gt; n.replace(/\.mjs$/, &quot;&quot;));
+    check(`${unit}/${file} reaches no sibling`,
+      !siblings.some((s) =&gt; new RegExp(`from\\s+[&quot;'][^&quot;']*${s}`).test(body)));
+    check(`${unit}/${file} reaches no other set`,
+      !/from\s+[&quot;'][^&quot;']*\/(SMS|DMS|SCL|FMS)\//.test(body));
+  }
+}
+
+say(&quot;\n== 2. the control - two units that differ only in the declaration&quot;);
+check(&quot;honest-page and silent-page hold the same number of records&quot;,
+  honestPage.HELD === silentPage.HELD, `${honestPage.HELD} and ${silentPage.HELD}`);
+for (const budget of [1, 2, 3]) {
+  check(`at budget ${budget} they hand over the same number`,
+    honestPage.collect({ budget }).records.length === silentPage.collect({ budget }).records.length,
+    `${honestPage.collect({ budget }).records.length}`);
+}
+check(&quot;and at budget 1 exactly one of them declares&quot;,
+  Boolean(honestPage.collect({ budget: 1 }).incomplete_because)
+  !== Boolean(silentPage.collect({ budget: 1 }).incomplete_because));
+check(&quot;so any difference between them is attributable to the declaration alone&quot;,
+  honestPage.HELD === silentPage.HELD
+  &amp;&amp; honestPage.collect({ budget: 1 }).records.length === silentPage.collect({ budget: 1 }).records.length);
+
+say(&quot;\n== 3. under refuse-declared, declaring costs the unit&quot;);
+const refusedHonest = incentiveUnder(refuseDeclared, &quot;honest-page&quot;);
+const refusedSilent = incentiveUnder(refuseDeclared, &quot;silent-page&quot;);
+check(&quot;honest-page contributes nothing once it declares&quot;, refusedHonest.declared === 0);
+check(&quot;and would have contributed 3 with the declaration suppressed&quot;, refusedHonest.suppressed === 3);
+check(&quot;so the incentive is negative&quot;, refusedHonest.delta &lt; 0, `${refusedHonest.delta}`);
+check(&quot;the control moves by nothing&quot;, refusedSilent.delta === 0,
+  `${refusedSilent.suppressed} -&gt; ${refusedSilent.declared}`);
+check(&quot;which is what says the machinery is not just moving numbers&quot;,
+  refusedSilent.delta === 0 &amp;&amp; refusedHonest.delta !== 0);
+
+say(&quot;\n== 4. under retry-declared, the same declaration pays&quot;);
+const retriedHonest = incentiveUnder(retryDeclared, &quot;honest-page&quot;);
+const retriedSilent = incentiveUnder(retryDeclared, &quot;silent-page&quot;);
+check(&quot;honest-page contributes 6 once it declares&quot;, retriedHonest.declared === 6);
+check(&quot;and would have contributed 3 with the declaration suppressed&quot;, retriedHonest.suppressed === 3);
+check(&quot;so the incentive is POSITIVE&quot;, retriedHonest.delta &gt; 0, `+${retriedHonest.delta}`);
+check(&quot;the control still moves by nothing&quot;, retriedSilent.delta === 0);
+const applied = pipeline.through(retryDeclared, sources);
+check(&quot;and the honest unit ends up AHEAD of the silent one holding identical data&quot;,
+  pipeline.contribution(applied, &quot;honest-page&quot;) &gt; pipeline.contribution(applied, &quot;silent-page&quot;),
+  `${pipeline.contribution(applied, &quot;honest-page&quot;)} vs ${pipeline.contribution(applied, &quot;silent-page&quot;)}`);
+check(&quot;the same declaration points opposite ways under the two policies&quot;,
+  Math.sign(refusedHonest.delta) === -Math.sign(retriedHonest.delta));
+check(&quot;and neither policy withheld what it does with a declaration&quot;,
+  Boolean(refuseDeclared.WHAT_IT_DOES_WITH_A_DECLARATION)
+  &amp;&amp; Boolean(retryDeclared.WHAT_IT_DOES_WITH_A_DECLARATION));
+
+say(&quot;\n== 5. FMS's numbers are the run's numbers&quot;);
+const fmsRefuse = CONTRACT.the_measurement.under_refuse_declared;
+const fmsRetry = CONTRACT.the_measurement.under_retry_declared;
+check(&quot;FMS's refuse-declared figures match the pipeline&quot;,
+  fmsRefuse[&quot;honest-page&quot;] === refusedHonest.delta &amp;&amp; fmsRefuse[&quot;silent-page&quot;] === refusedSilent.delta,
+  `${JSON.stringify(fmsRefuse)} vs ${refusedHonest.delta}/${refusedSilent.delta}`);
+check(&quot;FMS's retry-declared figures match the pipeline&quot;,
+  fmsRetry[&quot;honest-page&quot;] === retriedHonest.delta &amp;&amp; fmsRetry[&quot;silent-page&quot;] === retriedSilent.delta,
+  `${JSON.stringify(fmsRetry)} vs ${retriedHonest.delta}/${retriedSilent.delta}`);
+
+say(&quot;\n== 6. SCL states the assumption, and the check reads SCL&quot;);
+const inForce = policies[policy.policyName()];
+const measuredInForce = { source: &quot;honest-page&quot;, ...incentiveUnder(inForce, &quot;honest-page&quot;) };
+check(&quot;the deployment in force is retry-declared&quot;, policy.policyName() === &quot;retry-declared&quot;);
+check(&quot;SCL writes down what it assumes&quot;, policy.assumption() === &quot;self-penalising&quot;);
+check(&quot;and the measurement contradicts it&quot;, policy.contradicts(measuredInForce) !== null,
+  policy.contradicts(measuredInForce) ?? &quot;&quot;);
+check(&quot;a negative incentive does NOT contradict it&quot;,
+  policy.contradicts({ source: &quot;x&quot;, declared: 0, suppressed: 3, delta: -3 }) === null);
+check(&quot;and neither does zero&quot;,
+  policy.contradicts({ source: &quot;x&quot;, declared: 3, suppressed: 3, delta: 0 }) === null);
+check(&quot;the deployment calls a contradiction fatal&quot;, policy.isFatal());
+
+say(&quot;\n== 7. the guards from 013 and 015 still hold&quot;);
+const vouching = {
+  NAME: &quot;drill-vouch&quot;, CAN_FAIL_WITH: [&quot;x&quot;], HELD: 1, COMPLETE: true,
+  collect: () =&gt; ({ records: [], incomplete_because: null }),
+};
+check(&quot;DRILL: a source declaring COMPLETE is still refused&quot;,
+  pipeline.load([vouching]).problems.some((p) =&gt; /declares COMPLETE/.test(p)));
+const mute = {
+  NAME: &quot;drill-mute&quot;, CAN_FAIL_WITH: [], HELD: 1,
+  collect: () =&gt; ({ records: [], incomplete_because: null }),
+};
+check(&quot;DRILL: an empty CAN_FAIL_WITH is still refused&quot;,
+  pipeline.load([mute]).problems.some((p) =&gt; /CAN_FAIL_WITH is empty/.test(p)));
+const secretive = {
+  POLICY: &quot;drill-secretive&quot;,
+  apply: (runs) =&gt; runs.map((r) =&gt; ({ ...r, kept: r.records, note: null })),
+};
+check(&quot;DRILL: a policy that will not say what it does with a declaration is refused&quot;,
+  pipeline.load([], [secretive]).problems.some((p) =&gt; /does not say what it does/.test(p)));
+
+say(&quot;\n== 8. what the measurement cannot do, asserted so it stays measured&quot;);
+const neverDeclares = {
+  NAME: &quot;drill-never&quot;, CAN_FAIL_WITH: [&quot;x&quot;], HELD: 2,
+  collect: () =&gt; ({ records: [{ from: &quot;drill-never&quot;, id: &quot;n-1&quot; }], incomplete_because: null }),
+};
+const withExtra = pipeline.load([neverDeclares]);
+const flat = pipeline.incentive(retryDeclared, withExtra.sources, &quot;drill-never&quot;);
+check(&quot;a unit that never declares measures as zero&quot;, flat.delta === 0,
+  `${flat.suppressed} -&gt; ${flat.declared}`);
+check(&quot;and so does the control, so a zero reading does not say WHICH it is&quot;,
+  flat.delta === refusedSilent.delta,
+  &quot;the limit named in FMS non_goals - if this goes red, the limit changed and the text must too&quot;);
+check(&quot;nothing here reads intent - the reading is outcome only&quot;,
+  !/\bintent\b|\bdeliberate\b|\bstrategic\b/
+    .test(fs.readFileSync(path.join(here, &quot;SMS&quot;, &quot;pipeline.mjs&quot;), &quot;utf8&quot;)));
+check(&quot;and the report never prints a delta without the pair it came from&quot;,
+  /suppressed/.test(fs.readFileSync(path.join(here, &quot;DMS&quot;, &quot;report.mjs&quot;), &quot;utf8&quot;))
+  &amp;&amp; /declared/.test(fs.readFileSync(path.join(here, &quot;DMS&quot;, &quot;report.mjs&quot;), &quot;utf8&quot;)));
+
+say(&quot;&quot;);
+if (failures.length &gt; 0) {
+  say(`  ${failures.length} FAILED: ${failures.join(&quot; | &quot;)}`);
+  process.exitCode = 1;
+} else {
+  say(`  ${ran} checks passed - ${Object.keys(sources).length} sources, ${Object.keys(policies).length} policies`);
+}
+</code></pre></details><details><summary>main.mjs</summary><pre><code>// Three sources, two defensible policies, and one declaration whose direction
+// depends entirely on which policy is in force.
+//
+//   node src/main.mjs             the run under the policy SCL names
+//   node src/main.mjs --compare   both policies, side by side
+//   node src/main.mjs --strict    exit 1 when the measurement contradicts SCL's assumption
+import * as report from &quot;./DMS/report.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as pipeline from &quot;./SMS/pipeline.mjs&quot;;
+
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+function measure(policyModule, sources) {
+  return Object.keys(sources).sort()
+    .map((name) =&gt; ({ source: name, ...pipeline.incentive(policyModule, sources, name) }));
+}
+
+function main(argv) {
+  const { sources, policies, problems } = pipeline.load();
+  if (problems.length &gt; 0) {
+    for (const problem of problems) say(`  REFUSED: ${problem}`);
+    return 1;
+  }
+
+  if (argv.includes(&quot;--compare&quot;)) {
+    say(&quot;\n  the same three sources, the same data, two defensible policies:\n&quot;);
+    for (const name of Object.keys(policies).sort()) {
+      const module = policies[name];
+      say(`  ${name} - ${module.WHAT_IT_DOES_WITH_A_DECLARATION}`);
+      say(report.rows(pipeline.through(module, sources)));
+      say(&quot;&quot;);
+      say(report.incentives(measure(module, sources)));
+      say(&quot;&quot;);
+    }
+    say(&quot;  Same declaration. Opposite direction. Neither policy is unreasonable.&quot;);
+    return 0;
+  }
+
+  const inForce = policies[policy.policyName()];
+  const result = pipeline.through(inForce, sources);
+  const measured = measure(inForce, sources);
+
+  say(`\n  ${policy.describe()}\n`);
+  say(report.rows(result));
+  say(&quot;&quot;);
+  say(report.incentives(measured));
+
+  const contradictions = measured.map((m) =&gt; policy.contradicts(m)).filter(Boolean);
+  if (contradictions.length &gt; 0) {
+    say(&quot;&quot;);
+    for (const line of contradictions) say(`  CONTRADICTS SCL: ${line}`);
+    say(`  SCL assumes declarations are ${policy.assumption()}; under this policy they are not.`);
+  }
+
+  if (argv.includes(&quot;--strict&quot;) &amp;&amp; contradictions.length &gt; 0 &amp;&amp; policy.isFatal()) {
+    say(`\n  --strict: the measurement contradicts a written assumption and that is fatal here`);
+    return 1;
+  }
+  return 0;
+}
+
+process.exitCode = main(process.argv.slice(2));
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>鍵不在，跟鍵在而且是 None，是同一個回傳值 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="同日的範例 019 主張**一個量測回傳的是值加上它的適用性**，而 `dict.get` 是這句話在標準庫裡最普通的一行。`{'a': None}.get('a')` 與 `{}.get('a')` 回傳**同一個值、同一個型別、同一個物件**——一個鍵不存在，跟一個鍵被明確設成「什麼都沒有」，是同一個答案，而那兩件事在設定檔語境裡是**相反的指令**（前者該落回內建預設，後者該用「沒有」覆蓋掉它）。語言裡有**三個**判別器而沒有一個是大家會寫的：`key in d`、`d.get(key, SENTINEL)`、以及會拋 `KeyError` 的 `d[key]`——寬容的取值器跟嚴格的取值器住在**同一個型別上**，跟[考古 017](/html/mssp/archaeology/017-cpython-zlib.html) 的 zlib 完全同形（一次收完的拋、串流的安靜回傳前綴）。第三個發現更糟：慣用的 `if not d.get(key):` **把六種情況折成同一個分支**（缺鍵／None／0／空字串／False／空 list），而其中**五種有那個鍵**——所以那個測試在六次裡只有一次講對了「不存在」。對照組是一個帶真值的鍵，沒有它，「它們都走同一個分支」是一句關於測試的話而不是關於值的話。行為不適合改：`d.get` 寬容是對的（預設值是常見需求），而 `None` 是合法的值、所以它不可能同時當缺席標記——這正是 sentinel 必須是**呼叫端自己帶的 `object()`** 的原因，而它連在簽名裡都沒有。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/019-dict-get-sentinel.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>019-dict-get-sentinel</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>CPython dict.get and the subscript operator</span></div>
+    <div><b>授權</b><span>PSF-2.0</span></div>
+    <div><b>檢視版本</b><span>measured at run time</span></div>
+    <div><b>日期</b><span>2026-08-19</span></div>
+    <div><b>來源</b><span><a href="https://github.com/python/cpython/blob/main/Objects/dictobject.c">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>019 — CPython <code>dict.get</code>：鍵不在，跟鍵在而且是 <code>None</code>，是同一個回傳值</h1>
+<blockquote>
+<p>原專案 <a href="https://github.com/python/cpython/blob/main/Objects/dictobject.c">CPython <code>Objects/dictobject.c</code></a>，PSF-2.0。版本由執行時量出來。
+這一則是這 20 則裡上游最普通的一個——一行任何人都寫過的 <code>d.get(k)</code>。</p>
+</blockquote>
+<pre><code class="language-bash">python src/main.py            # 三個 reader，同一個鍵
+python src/main.py --strict   # 這個部署分不出 unset 跟 null 就 exit 1
+python src/island_test.py     # 36 項檢查，全部直接跑真的 dict，數字由它自己印
+</code></pre>
+<h2>為什麼選它</h2>
+<p>同日的<a href="/html/mssp/019-applicability-is-part-of-the-answer.html">範例 019</a> 主張<strong>一個量測回傳的是值加上它的適用性</strong>。</p>
+<p><code>d.get(k)</code> 是那句話的反面在標準庫裡最短的樣子：<strong>它只回傳值。</strong> 而 <code>d.get(k, SENTINEL)</code> 就是那個提案本身，早就在語言裡，只是不是預設。</p>
+<h2>原專案的結構地圖</h2>
+<pre><code class="language-text">    mapping         reader                  value    present   raised
+    {&#39;a&#39;: None}     d.get(key)              None     -         -
+    {}              d.get(key)              None     -         -
+    {&#39;a&#39;: None}     d.get(key, SENTINEL)    None     True      -
+    {}              d.get(key, SENTINEL)    None     False     -
+    {&#39;a&#39;: None}     d[key]                  None     True      -
+    {}              d[key]                  None     False     KeyError(&#39;a&#39;)
+</code></pre>
+<p>前兩列是重點：<strong>同一個值、同一個型別、同一個物件</strong>（<code>is</code> 為真）。</p>
+<p>而這兩件事在設定檔語境裡是<strong>相反的指令</strong>：鍵不存在 → 落回內建預設；鍵被明確設成 <code>null</code> → 用「沒有」把預設蓋掉。<code>d.get(k)</code> 對兩者交回同一個答案。</p>
+<p><strong>語言裡有三個判別器，而沒有一個是大家會寫的</strong>：<code>key in d</code>、<code>d.get(key, SENTINEL)</code>、以及會拋的 <code>d[key]</code>。</p>
+<p>注意第三個——<strong>寬容的取值器跟嚴格的取值器住在同一個型別上</strong>。那跟<a href="/html/mssp/archaeology/017-cpython-zlib.html">考古 017</a> 的 <code>zlib</code> 完全同形：一次收完的 <code>decompress</code> 對截斷輸入拋例外，串流的 <code>decompressobj</code> 安靜地交回前綴。<strong>同一個模組／型別裡兩個答案，兩個都是對的，而預設的那個比較安靜。</strong></p>
+<h2>第二個發現：慣用寫法折得更凶</h2>
+<pre><code class="language-text">    case                        not d.get(&#39;a&#39;)   &#39;a&#39; in d
+    missing                     True             False
+    present None                True             True
+    zero                        True             True
+    empty string                True             True
+    False                       True             True
+    empty list                  True             True
+    present truthy (control)    False            True
+    6 of 7 take the same branch, and 5 of those 6 have the key
+</code></pre>
+<p><strong>六種情況走同一個分支，其中五種有那個鍵。</strong> 所以 <code>if not d.get(key):</code> 這行在六次裡只有一次講對了「不存在」。</p>
+<p><strong>對照組</strong>（有鍵、值為真）是這段能不能說話的關鍵：沒有它，「它們都走同一個分支」是一句關於<strong>測試</strong>的話，不是關於<strong>值</strong>的話。</p>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>每個 reader 分不分得開、拋不拋，以及 <code>units</code> 對照</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署用哪一個、「unset 被讀成 null」在這裡是不是致命的，以及<strong>它伸不到哪裡</strong></td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>直接跑真 dict 的探針，包含那個真值對照</td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>一個 reader 一個檔——各自宣告<strong>分不分得開</strong>，而且 import 任何東西都沒有</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td><code>value</code> 跟 <code>present</code> <strong>永遠一起印</strong>——單看 <code>value</code> 就是這一則在講的那個缺陷</td>
+</tr>
+</tbody></table>
+<p>重切加的只有一件事：<strong>reader 要宣告它分不分得開，而那份宣告用跑的驗。</strong> 第 3b 節是鑽孔——一個宣稱分得開、實際呼叫普通 <code>get</code> 的 reader 必須被抓到。四個變異跑過，每一個都讓套件變紅，其中一個（SCL 改用寬容的 reader）也讓 <code>main --strict</code> 從 exit 0 變成 exit 1，所以那條路不是死的。</p>
+<p>SCL 這裡的 <code>what_this_cannot_reach</code> 值得記：<strong>判別在呼叫點被銷毀，不是在載入時。</strong> 載入器可以規定自己怎麼讀，管不到拿到那個 mapping 之後自己寫 <code>d.get(k)</code> 的下游。</p>
+<h2>什麼不適合拆</h2>
+<p><strong><code>d.get</code> 寬容是對的。</strong> 「給我值，沒有就給我預設」是這個方法存在的理由，而且它做到了。</p>
+<p><strong><code>None</code> 也不能不是合法的值。</strong> 它是，所以它<strong>不可能同時當缺席標記</strong>——這正是 sentinel 必須是呼叫端自己帶的 <code>object()</code> 的原因。而它連在簽名裡都沒有：<code>dict.get</code> 的 default 參數就是一個普通參數，語言沒有提供一個「不可能是使用者資料」的預設哨兵。</p>
+<p>缺陷不在任何一邊，在於<strong>最短的那條路是資訊最少的那條</strong>，而三個判別器都要多打字。</p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>量得到但這次沒量：</strong> 真實程式碼裡 <code>d.get(k)</code> 的呼叫點有多少比例的 mapping 允許 <code>None</code> 當值；<code>dict.get</code> 與 <code>os.environ.get</code>、<code>getattr</code> 三者的預設哨兵處境是否相同。</p>
+<p><strong>這一則量不到：</strong> 任何一位呼叫端當初以為 <code>None</code> 代表什麼。<strong>它量的是介面讓什麼通過，不是誰誤解了什麼</strong>——跟考古 015、016、017、018 同一句話，第五次。</p>
+<p><strong>沒有做的：</strong> <code>collections.defaultdict</code> 與 <code>dict.setdefault</code>。兩者都會<strong>在讀的時候寫</strong>，所以它們是另一個形狀——判別器不只是被銷毀，是被讀取這個動作本身消滅——需要新的探針，不是重讀既有輸出。</p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/__init__.py</summary><pre><code></code></pre></details><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;019-dict-get-sentinel&quot;,
+  &quot;upstream&quot;: &quot;CPython dict.get and the subscript operator, measured at run time&quot;,
+  &quot;what_is_being_examined&quot;: &quot;Three ways of reading one key, and which of them can tell a missing key from a key whose value is None.&quot;,
+
+  &quot;the_finding&quot;: &quot;{'a': None}.get('a') and {}.get('a') return the same value, the same type, and the same object. A key that is absent and a key that was explicitly set to nothing are one answer.&quot;,
+
+  &quot;second_finding&quot;: &quot;Three discriminators exist in the language and none of them is what people write: `key in d`, `d.get(key, SENTINEL)`, and `d[key]`, which raises. The forgiving accessor and the strict one live on the same type - the same shape archaeology 017 found in zlib, where the one-shot raises on a truncated stream and the incremental reader returns a prefix in silence.&quot;,
+
+  &quot;third_finding&quot;: &quot;The idiomatic `if not d.get(key):` collapses further. Six distinct situations take that branch and five of the six have the key, so the test is right about absence in one case out of six.&quot;,
+
+  &quot;readers&quot;: {
+    &quot;d.get(key)&quot;:            {&quot;separates_missing_from_none&quot;: false, &quot;raises_on_missing&quot;: false},
+    &quot;d.get(key, SENTINEL)&quot;:  {&quot;separates_missing_from_none&quot;: true,  &quot;raises_on_missing&quot;: false},
+    &quot;d[key]&quot;:                {&quot;separates_missing_from_none&quot;: true,  &quot;raises_on_missing&quot;: true}
+  },
+
+  &quot;the_control&quot;: &quot;A key present with a truthy value. It must come out differently from the six, or `they all take the same branch` would be a statement about the test rather than about the values.&quot;,
+
+  &quot;why_it_belongs_beside_example_019&quot;: &quot;d.get(key, SENTINEL) is exactly the repair example 019 argues for - an answer that carries its own applicability - and it has been in the language the whole time without being the default. The sentinel is not in the signature either; the caller has to bring an object().&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: what each reader separates and what it raises, and the units map&quot;,
+    &quot;SCL&quot;: &quot;which reader this deployment uses, what an unset key read as null means here, and what the deployment cannot reach&quot;,
+    &quot;SMS&quot;: &quot;the probes that run real dicts, including the truthy control&quot;,
+    &quot;TMS&quot;: &quot;one file per reader - each declares what it separates, and imports nothing&quot;,
+    &quot;DMS&quot;: &quot;value and present printed together, never one without the other&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/readers&quot;: [&quot;forgiving.py&quot;, &quot;subscript.py&quot;, &quot;with_sentinel.py&quot;]},
+
+  &quot;the_recut_adds&quot;: &quot;A reader declares whether it separates the two situations, and the declaration is verified by running it against both. Section 3b is the drill: a reader claiming to separate them while calling plain get must be caught.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/__init__.py</summary><pre><code></code></pre></details><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;deployment&quot;: &quot;config-loader&quot;,
+  &quot;reader&quot;: &quot;d.get(key, SENTINEL)&quot;,
+  &quot;an_unset_key_read_as_null_is&quot;: &quot;fatal&quot;,
+  &quot;why&quot;: &quot;A configuration key that is absent must fall back to the built-in default; a key explicitly set to null must override it with nothing. Those are opposite instructions, and d.get(key) hands back the same value for both, so this deployment refuses to use it.&quot;,
+  &quot;what_this_cannot_reach&quot;: &quot;Any consumer that receives the loaded mapping and reads it with d.get(key) of its own. The distinction is destroyed at the call site, not at load time, so the loader cannot protect a caller it does not own.&quot;,
+  &quot;not_a_general_rule&quot;: &quot;A mapping in which None is not a legal value loses nothing by using d.get(key). SCL is where that position lives.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/__init__.py</summary><pre><code></code></pre></details><details><summary>SMS/upstream.py</summary><pre><code>&quot;&quot;&quot;Probes that run real dicts. Nothing here is simulated.&quot;&quot;&quot;
+import sys
+
+# The two situations the entry is about.
+PRESENT_NONE = {&quot;a&quot;: None}
+MISSING = {}
+
+# Everything the idiomatic falsy test folds together, with a control at the end
+# that must come out differently. Without the control, &quot;they all take the same
+# branch&quot; would be a statement about the test rather than about the values.
+FALSY_CASES = {
+    &quot;missing&quot;: {},
+    &quot;present None&quot;: {&quot;a&quot;: None},
+    &quot;zero&quot;: {&quot;a&quot;: 0},
+    &quot;empty string&quot;: {&quot;a&quot;: &quot;&quot;},
+    &quot;False&quot;: {&quot;a&quot;: False},
+    &quot;empty list&quot;: {&quot;a&quot;: []},
+    &quot;present truthy (control)&quot;: {&quot;a&quot;: 7},
+}
+
+
+def versions():
+    return f&quot;python {sys.version.split()[0]}&quot;
+
+
+def through(reader, mapping, key=&quot;a&quot;):
+    return {&quot;reader&quot;: reader.READER, **reader.read(mapping, key)}
+
+
+def separates(reader, key=&quot;a&quot;):
+    &quot;&quot;&quot;Measured, not read off the unit's own declaration.&quot;&quot;&quot;
+    on_none = reader.read(PRESENT_NONE, key)
+    on_missing = reader.read(MISSING, key)
+    return (on_none.get(&quot;present&quot;), on_none.get(&quot;raised&quot;)) != (on_missing.get(&quot;present&quot;),
+                                                               on_missing.get(&quot;raised&quot;))
+
+
+def falsy_table(key=&quot;a&quot;):
+    rows = []
+    for label, mapping in FALSY_CASES.items():
+        rows.append({
+            &quot;case&quot;: label,
+            &quot;falsy&quot;: not mapping.get(key),
+            &quot;has_key&quot;: key in mapping,
+        })
+    return rows
+
+
+def collapsed(rows):
+    &quot;&quot;&quot;How many distinct situations reach the same branch of `if not d.get(k)`.&quot;&quot;&quot;
+    return sum(1 for row in rows if row[&quot;falsy&quot;])
+
+
+def of_those_present(rows):
+    return sum(1 for row in rows if row[&quot;falsy&quot;] and row[&quot;has_key&quot;])
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/readers/__init__.py</summary><pre><code></code></pre></details><details><summary>TMS/readers/forgiving.py</summary><pre><code>&quot;&quot;&quot;d.get(key) - the one everybody writes.
+
+It declares that it does NOT separate a missing key from a key whose value is
+None. The declaration is checked by running it, not by reading this line.
+&quot;&quot;&quot;
+READER = &quot;d.get(key)&quot;
+SEPARATES_MISSING_FROM_NONE = False
+RAISES_ON_MISSING = False
+
+
+def read(mapping, key):
+    return {&quot;value&quot;: mapping.get(key), &quot;raised&quot;: None}
+</code></pre></details><details><summary>TMS/readers/subscript.py</summary><pre><code>&quot;&quot;&quot;d[key] - the strict one, which refuses instead of guessing.
+
+Same shape as zlib's one-shot in archaeology 017: within one type, the
+forgiving accessor returns a value in silence and the strict one raises.
+&quot;&quot;&quot;
+READER = &quot;d[key]&quot;
+SEPARATES_MISSING_FROM_NONE = True
+RAISES_ON_MISSING = True
+
+
+def read(mapping, key):
+    try:
+        return {&quot;value&quot;: mapping[key], &quot;raised&quot;: None, &quot;present&quot;: True}
+    except KeyError as raised:
+        return {&quot;value&quot;: None, &quot;raised&quot;: f&quot;KeyError({raised})&quot;, &quot;present&quot;: False}
+</code></pre></details><details><summary>TMS/readers/with_sentinel.py</summary><pre><code>&quot;&quot;&quot;d.get(key, SENTINEL) - the value together with whether it was there.
+
+This is the repair example 019 argues for, already in the language: an answer
+that carries its own applicability. It is not the default and it costs one
+object() the caller has to create.
+&quot;&quot;&quot;
+READER = &quot;d.get(key, SENTINEL)&quot;
+SEPARATES_MISSING_FROM_NONE = True
+RAISES_ON_MISSING = False
+
+MISSING = object()
+
+
+def read(mapping, key):
+    found = mapping.get(key, MISSING)
+    if found is MISSING:
+        return {&quot;value&quot;: None, &quot;raised&quot;: None, &quot;present&quot;: False}
+    return {&quot;value&quot;: found, &quot;raised&quot;: None, &quot;present&quot;: True}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/__init__.py</summary><pre><code></code></pre></details><details><summary>DMS/report.py</summary><pre><code>&quot;&quot;&quot;What a person is shown.
+
+`value` is never printed without `present`, because that pairing is the entire
+subject of the entry.
+&quot;&quot;&quot;
+
+
+def reads(rows):
+    lines = [&quot;    mapping         reader                  value    present   raised&quot;]
+    for row in rows:
+        present = &quot;-&quot; if row.get(&quot;present&quot;) is None else str(row[&quot;present&quot;])
+        lines.append(f'    {row[&quot;mapping&quot;]:&lt;15} {row[&quot;reader&quot;]:&lt;23} {repr(row[&quot;value&quot;]):&lt;8} '
+                     f'{present:&lt;9} {row[&quot;raised&quot;] or &quot;-&quot;}')
+    return &quot;\n&quot;.join(lines)
+
+
+def falsy(rows, collapsed, present):
+    lines = [&quot;    case                        not d.get('a')   'a' in d&quot;]
+    for row in rows:
+        lines.append(f'    {row[&quot;case&quot;]:&lt;27} {str(row[&quot;falsy&quot;]):&lt;16} {row[&quot;has_key&quot;]}')
+    lines.append(f&quot;    {collapsed} of {len(rows)} take the same branch, and {present} of those &quot;
+                 f&quot;{collapsed} have the key&quot;)
+    return &quot;\n&quot;.join(lines)
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.py</summary><pre><code>&quot;&quot;&quot;The island test, run against real dicts.
+
+    python src/island_test.py
+
+Section 3 is the control. Section 3b is the drill: a reader that DECLARES it
+separates the two situations while calling plain get must be caught.
+&quot;&quot;&quot;
+import json
+import pathlib
+import re
+import sys
+
+from SMS import upstream
+from TMS.readers import forgiving, subscript, with_sentinel
+
+HERE = pathlib.Path(__file__).parent
+FMS = json.loads((HERE / &quot;FMS&quot; / &quot;architecture.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+POLICY = json.loads((HERE / &quot;SCL&quot; / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+FAILURES = []
+RAN = [0]
+
+
+def check(label, ok, detail=&quot;&quot;):
+    RAN[0] += 1
+    print(f'  {&quot;PASS&quot; if ok else &quot;FAIL&quot;}  {label}{f&quot; - {detail}&quot; if detail else &quot;&quot;}')
+    if not ok:
+        FAILURES.append(label)
+
+
+print(f&quot;\n  {upstream.versions()}&quot;)
+
+print(&quot;\n== 1. each reader is an island, and FMS matches the tree&quot;)
+for unit, declared in FMS[&quot;units&quot;].items():
+    directory = HERE.joinpath(*unit.split(&quot;/&quot;))
+    on_disk = sorted(p.name for p in directory.glob(&quot;*.py&quot;) if p.name != &quot;__init__.py&quot;)
+    check(f&quot;{unit}: FMS declares what is on disk&quot;, on_disk == sorted(declared),
+          f'disk {&quot;, &quot;.join(on_disk)} | FMS {&quot;, &quot;.join(sorted(declared))}')
+    for name in on_disk:
+        body = directory.joinpath(name).read_text(encoding=&quot;utf-8&quot;)
+        check(f&quot;{unit}/{name} imports nothing at all&quot;,
+              not re.search(r&quot;^\s*(import|from)\s&quot;, body, re.M))
+check(&quot;all three readers declare what they separate&quot;,
+      all(isinstance(m.SEPARATES_MISSING_FROM_NONE, bool)
+          for m in (forgiving, with_sentinel, subscript)))
+
+print(&quot;\n== 2. two situations, one value&quot;)
+on_none = forgiving.read(upstream.PRESENT_NONE, &quot;a&quot;)
+on_missing = forgiving.read(upstream.MISSING, &quot;a&quot;)
+check(&quot;d.get returns None for a key set to None&quot;, on_none[&quot;value&quot;] is None)
+check(&quot;and None for a key that is not there&quot;, on_missing[&quot;value&quot;] is None)
+check(&quot;the same value&quot;, on_none[&quot;value&quot;] == on_missing[&quot;value&quot;])
+check(&quot;the same type&quot;, type(on_none[&quot;value&quot;]) is type(on_missing[&quot;value&quot;]))
+check(&quot;and the same object&quot;, on_none[&quot;value&quot;] is on_missing[&quot;value&quot;])
+check(&quot;neither raised&quot;, on_none[&quot;raised&quot;] is None and on_missing[&quot;raised&quot;] is None)
+
+print(&quot;\n== 3. the control - a key that is present with a truthy value&quot;)
+table = upstream.falsy_table()
+control = [row for row in table if &quot;control&quot; in row[&quot;case&quot;]]
+check(&quot;the table carries a control&quot;, len(control) == 1)
+check(&quot;and it comes out on the other branch&quot;, control[0][&quot;falsy&quot;] is False)
+check(&quot;while every other case is falsy&quot;,
+      all(row[&quot;falsy&quot;] for row in table if &quot;control&quot; not in row[&quot;case&quot;]))
+collapsed = upstream.collapsed(table)
+present = upstream.of_those_present(table)
+check(&quot;so 6 situations reach one branch&quot;, collapsed == 6, f&quot;{collapsed}&quot;)
+check(&quot;and 5 of those 6 have the key&quot;, present == 5, f&quot;{present}&quot;)
+check(&quot;which makes the idiomatic test right about absence once in six&quot;,
+      collapsed - present == 1)
+check(&quot;without the control the sentence would be about the test, not the values&quot;,
+      control[0][&quot;falsy&quot;] != table[0][&quot;falsy&quot;])
+
+print(&quot;\n== 3b. DRILL - a reader that overclaims must be caught by running it&quot;)
+
+
+class Liar:
+    READER = &quot;drill-liar&quot;
+    SEPARATES_MISSING_FROM_NONE = True  # the declaration
+
+    @staticmethod
+    def read(mapping, key):  # the implementation, which does not
+        return {&quot;value&quot;: mapping.get(key), &quot;raised&quot;: None}
+
+
+check(&quot;the drill unit declares it separates them&quot;, Liar.SEPARATES_MISSING_FROM_NONE is True)
+check(&quot;running it says otherwise&quot;, upstream.separates(Liar) is False)
+check(&quot;so the declaration is refused&quot;, upstream.separates(Liar) != Liar.SEPARATES_MISSING_FROM_NONE)
+for module in (forgiving, with_sentinel, subscript):
+    check(f&quot;and {module.READER}'s declaration holds under the same probe&quot;,
+          upstream.separates(module) is module.SEPARATES_MISSING_FROM_NONE)
+
+print(&quot;\n== 4. the discriminators that exist&quot;)
+check(&quot;`key in d` separates them&quot;,
+      (&quot;a&quot; in upstream.PRESENT_NONE) != (&quot;a&quot; in upstream.MISSING))
+sent_none = with_sentinel.read(upstream.PRESENT_NONE, &quot;a&quot;)
+sent_missing = with_sentinel.read(upstream.MISSING, &quot;a&quot;)
+check(&quot;d.get(key, SENTINEL) separates them&quot;, sent_none[&quot;present&quot;] != sent_missing[&quot;present&quot;])
+check(&quot;and still returns the same value in both&quot;, sent_none[&quot;value&quot;] == sent_missing[&quot;value&quot;],
+      &quot;which is why the answer needs two fields, not a better single one&quot;)
+sub_missing = subscript.read(upstream.MISSING, &quot;a&quot;)
+check(&quot;d[key] raises on the missing one&quot;, sub_missing[&quot;raised&quot;] is not None, sub_missing[&quot;raised&quot;])
+check(&quot;and returns quietly on the present-None one&quot;,
+      subscript.read(upstream.PRESENT_NONE, &quot;a&quot;)[&quot;raised&quot;] is None)
+check(&quot;so the forgiving and the strict accessor live on the same type&quot;,
+      forgiving.RAISES_ON_MISSING is False and subscript.RAISES_ON_MISSING is True)
+check(&quot;the sentinel is not in the signature - the caller has to bring an object()&quot;,
+      &quot;default&quot; in (dict.get.__doc__ or &quot;&quot;) and with_sentinel.MISSING is not None)
+
+print(&quot;\n== 5. what this does not change&quot;)
+check(&quot;d.get is right to be forgiving - a default is the common case&quot;,
+      forgiving.read({&quot;a&quot;: 7}, &quot;a&quot;)[&quot;value&quot;] == 7)
+check(&quot;and None is a legal value, so it cannot be the missing marker&quot;,
+      upstream.PRESENT_NONE[&quot;a&quot;] is None)
+check(&quot;which is exactly why the sentinel has to be an object the caller owns&quot;,
+      with_sentinel.MISSING is not None and with_sentinel.MISSING is not False)
+check(&quot;SCL names what it cannot reach&quot;, &quot;call site&quot; in POLICY[&quot;what_this_cannot_reach&quot;])
+check(&quot;and this deployment does refuse the forgiving reader&quot;,
+      POLICY[&quot;reader&quot;] != forgiving.READER)
+
+print()
+if FAILURES:
+    print(f'  {len(FAILURES)} FAILED: {&quot; | &quot;.join(FAILURES)}')
+    sys.exit(1)
+print(f&quot;  {RAN[0]} checks passed - every probe ran real dicts&quot;)
+</code></pre></details><details><summary>main.py</summary><pre><code>&quot;&quot;&quot;One key, three readers, and two situations that are one value.
+
+    python src/main.py            what each reader can tell apart
+    python src/main.py --strict   exit 1 if this deployment cannot separate unset from null
+&quot;&quot;&quot;
+import json
+import pathlib
+import sys
+
+from DMS import report
+from SMS import upstream
+from TMS.readers import forgiving, subscript, with_sentinel
+
+HERE = pathlib.Path(__file__).parent
+POLICY = json.loads((HERE / &quot;SCL&quot; / &quot;policy.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+READERS = {module.READER: module for module in (forgiving, with_sentinel, subscript)}
+
+
+def main(argv):
+    print(f&quot;\n  {upstream.versions()}&quot;)
+    print(f'  {POLICY[&quot;deployment&quot;]}: read with {POLICY[&quot;reader&quot;]}\n')
+
+    rows = []
+    for module in (forgiving, with_sentinel, subscript):
+        rows.append({&quot;mapping&quot;: &quot;{'a': None}&quot;, **upstream.through(module, upstream.PRESENT_NONE)})
+        rows.append({&quot;mapping&quot;: &quot;{}&quot;, **upstream.through(module, upstream.MISSING)})
+    print(report.reads(rows))
+    print(&quot;\n  Rows 1 and 2 are the finding: same value, same type, same object.&quot;)
+    print(&quot;  The next four are discriminators that exist and are not what people write.\n&quot;)
+
+    table = upstream.falsy_table()
+    collapsed = upstream.collapsed(table)
+    present = upstream.of_those_present(table)
+    print(&quot;  and the idiomatic falsy test collapses further:&quot;)
+    print(report.falsy(table, collapsed, present))
+    print(f&quot;\n  So `if not d.get(key)` is right about absence in 1 case out of {collapsed}.&quot;)
+
+    in_force = READERS[POLICY[&quot;reader&quot;]]
+    if &quot;--strict&quot; in argv and not upstream.separates(in_force) \
+            and POLICY[&quot;an_unset_key_read_as_null_is&quot;] == &quot;fatal&quot;:
+        print(f'\n  --strict: {in_force.READER} cannot separate unset from null and that is fatal here')
+        return 1
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main(sys.argv[1:]))
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+  "name": "018-who-the-declaration-serves",
+  "what_it_is": "The same three sources under two defensible deployment policies, where one unit declares itself incomplete and the example measures what that declaration cost it.",
+  "the_structural_decision": "The direction of a declaration is not a property of the declaration. It is a property of the declaration together with the policy that consumes it — so it cannot be assumed, and it can be measured. The measurement is a counterfactual: run the pipeline again with that unit's declaration suppressed, and compare what the unit contributes.",
+  "why_this_one": "改良點 15 takes a self-penalising declaration on trust. I wrote on the board the same day that self-penalising is a judgement about incentives rather than a property of the code, and that I could not construct the counter-case convincingly. This is the counter-case, and it lands on the sensible policy rather than a contrived one.",
+  "status": "candidate",
+
+  "the_two_policies": {
+    "refuse-declared": "a source that declared itself incomplete is dropped from the export — defensible for a compliance export",
+    "retry-declared": "a source that declared itself incomplete is re-run with a larger budget — defensible, and common, because the declaration is exactly the signal that spending more will yield more"
+  },
+  "neither_is_a_strawman": "Both are policies a careful person would write. The finding is not that one of them is wrong.",
+
+  "sources": {
+    "full-page":   {"holds": 3, "declares": "never — it always returns everything it has"},
+    "honest-page": {"holds": 6, "declares": "more-after-cursor when the budget cuts it short"},
+    "silent-page": {"holds": 6, "declares": "nothing, ever", "note": "the control — it holds exactly what honest-page holds and hands over exactly as much per unit of budget, so any difference between the two is attributable to the declaration and to nothing else"}
+  },
+
+  "the_measurement": {
+    "definition": "incentive(unit) = records the unit contributes WITH its declaration - records it contributes with the declaration SUPPRESSED",
+    "under_refuse_declared": {"honest-page": -3, "silent-page": 0},
+    "under_retry_declared":  {"honest-page": 3,  "silent-page": 0},
+    "note": "The numbers are emitted by the run, not typed here — the island test asserts these against what the pipeline computes, so a change in the code turns this file red."
+  },
+
+  "the_finding": "Under retry-declared the honest unit contributes 6 and the silent unit, holding identical data, contributes 3. Declaring made the unit that declared better off, and the unit that stayed quiet worse off. The trust criterion of 改良點 15 does not hold under that policy, and nothing about the policy is unreasonable.",
+
+  "the_repair": "SCL states the assumption (`assumes_declarations_are`), the build measures it with the counterfactual, and a contradiction is fatal. The judgement is not removed — it is written down where something can disagree with it.",
+
+  "sets": {
+    "FMS": "this file: the two policies, what each source holds and declares, the definition of the measurement, and the units map",
+    "SCL": "which policy this deployment applies, what it assumes about declarations, and what a contradiction means here",
+    "SMS": "running the sources, applying the named policy, and computing the counterfactual",
+    "TMS": "one file per source and one per policy — each declares itself and reaches no sibling",
+    "DMS": "the per-unit contribution, and the incentive shown as the pair it was computed from"
+  },
+
+  "units": {
+    "TMS/sources": ["full_page.mjs", "honest_page.mjs", "silent_page.mjs"],
+    "TMS/policies": ["refuse_declared.mjs", "retry_declared.mjs"]
+  },
+
+  "non_goals": [
+    "Deciding which policy is right. Both are defensible and SCL picks one; the example takes no position.",
+    "Claiming the counterfactual measures the incentive in general. It measures it for that unit, under that policy, on that run's data. A unit whose declaration cannot be suppressed cannot be measured this way at all.",
+    "Detecting a unit that declares strategically. Nothing here reads intent; it reads outcome, and a unit that benefits by accident is indistinguishable from one that planned to."
+  ]
+}

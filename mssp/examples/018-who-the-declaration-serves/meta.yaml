@@ -1,0 +1,18 @@
+id: 018-who-the-declaration-serves
+title:
+  zh: 一份宣告到底幫了誰，是讀它的人決定的
+  en: "Who a declaration serves is decided by whoever reads it"
+summary:
+  zh: 2026-08-17 我把[改良點 15](/html/mssp/modules/development.html) 的信任判準丟上看板請他們攻，並且寫明「**自我懲罰是我對動機的判斷，不是程式碼的性質**，而我自己造不出有說服力的反例」。這一則就是那個反例，而且它落在**合理的**設定上，不是稻草人。三個來源、兩個部署政策：`refuse-declared`（宣告不完整就整個丟掉，合規匯出這樣做是對的）與 `retry-declared`（宣告不完整就加預算重跑，因為那份宣告正好是「多花錢會多拿到」的訊號，這樣做也是對的）。同一份宣告，量出來的誘因是 **−3** 與 **+3**——而且在 `retry-declared` 底下，**誠實的單元拿到 6，沉默的單元拿到 3，兩者手上的資料一模一樣**。誠實被獎勵、沉默被懲罰，改良點 15 的前提在這個政策下不成立。修法不是把判斷拿掉，是**把它寫到有東西能反駁的地方**：SCL 寫下 `assumes_declarations_are`，建置用**反事實**去量（把那個單元的宣告壓掉再跑一次，比較它的貢獻），矛盾就是致命的。對照組 `silent-page` 跟 `honest-page` 持有同樣六筆、每單位預算交出同樣數量，唯一差別是有沒有宣告——所以兩者的差異只能歸給宣告。誘因也從不印成單一數字，`+3` 沒有人能重算，報表印它算出來的那一對。同日考古 018 量到 `Object.freeze`：它宣告「不可變」而**沒有第二個參數說違反代表什麼**，sloppy 模式的消費者不會拿到錯誤，而且**賦值運算式仍然求值為 999、物件裡還是 100**。
+  en: On 2026-08-17 I put 改良點 15's trust criterion to the board and wrote that self-penalising is a judgement about incentives rather than a property of the code, and that I could not construct the counter-case convincingly. This is that counter-case, and it lands on the sensible configuration rather than a contrived one. Three sources and two deployment policies - refuse-declared, which drops a source that declared itself incomplete and is right for a compliance export, and retry-declared, which re-runs it with more budget because the declaration is exactly the signal that spending more will yield more, and is right for a catalogue sync. The same declaration measures as an incentive of -3 under one and +3 under the other, and under retry-declared the honest unit ends up with six records while the silent unit holding identical data ends up with three. Honesty is rewarded and silence punished, so 改良點 15's premise does not hold under that policy. The repair is not to remove the judgement but to write it where something can disagree with it: SCL states assumes_declarations_are, the build measures it with a counterfactual by suppressing that unit's declaration and re-running, and a contradiction is fatal. The control is silent-page, which holds the same six records and hands over the same number per unit of budget, so any difference between the two is attributable to the declaration alone. An incentive is never printed as a bare number, because plus three is a figure nobody can re-derive; the report prints the pair it was computed from. The same day's archaeology measures Object.freeze, which declares immutability and takes no second argument for what violating it means - a sloppy-mode consumer gets no error and the assignment expression still evaluates to 999 while the object keeps 100.
+language: javascript
+date: 2026-08-18
+version: v1.0
+kind: example
+concepts:
+  - direction-is-a-property-of-declaration-plus-policy
+  - the-counterfactual-measures-the-incentive
+  - honesty-rewarded-silence-punished
+  - scl-states-the-assumption-the-build-checks-it
+  - an-incentive-is-printed-as-the-pair-it-came-from
+runnable: node src/main.mjs

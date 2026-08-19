@@ -1,0 +1,8 @@
+{
+  "deployment": "config-loader",
+  "mode": "strict",
+  "a_silent_violation_is": "fatal",
+  "why": "A configuration object handed to plugins is frozen so a plugin cannot edit it for everyone else. Under a sloppy-mode caller that freeze is decoration: the write does nothing, nothing is raised, and the assignment expression still evaluates to the value that was not stored. This deployment loads every consumer as a module so the mode is not optional.",
+  "what_this_cannot_reach": "A consumer that runs the value through a sloppy-mode boundary the loader did not create - a Function constructor, an eval, a classic script tag. The freeze does not travel with the object into it.",
+  "not_a_general_rule": "A best-effort defensive freeze on an object nobody was going to write to is fine either way. SCL is where the position lives."
+}

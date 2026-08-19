@@ -1,0 +1,21 @@
+id: 018-object-freeze
+project: ECMAScript Object.freeze and the two language modes
+upstream: https://tc39.es/ecma262/#sec-object.freeze
+license: BSD-3-Clause (V8, the implementation measured); MIT (Node.js)
+examined_version: measured at run time
+title:
+  zh: 宣告「不可變」的人，沒有辦法說違反它代表什麼
+  en: "Whoever declares immutability cannot say what violating it means"
+summary:
+  zh: 同日的範例 018 主張**一份宣告到底幫了誰，是讀它的人決定的**，而 `Object.freeze` 是這句話在語言本體裡的樣子。同一個凍結物件、同一行賦值：sloppy 模式**不拋**，而且**賦值運算式求值為 999、物件裡還是 100**——讀運算式的人被告知成功，讀物件的人被告知失敗；strict 模式對同一行拋 TypeError。對照組是一個**從來沒被凍結**的物件，它也回傳 999，所以 `returned` 不是錯的、是**沒有資訊**：成功與安靜失敗兩種情況下一模一樣。第二個發現是宣告者根本沒有被給那個欄位——`Object.freeze.length` 是 **1**，一個參數就是那個物件，沒有第二個參數說違反代表什麼，而兩個模式的入口是不同的語法構造（module／class body／明示指示詞 對上 Function 建構子／eval／傳統 script），不是可以傳進去的設定，所以物件連自己被誰讀了都不知道。第三、凍結是**淺**的：對內層物件的寫入在 strict 模式下也不會拋，那不是模式的問題，是宣告涵蓋的範圍比它的名字小。兩邊都不適合改——凍結做到了它說的事（兩個模式底下物件都保住原值），sloppy 模式是「沒有標記的程式碼」的意思、為了不弄壞既有網頁而不能事後修掉，ES modules 一律 strict 正是只在新入口上改。順手量到的 `Proxy` 只解決一半：引擎自己的**不變量**違反兩個模式都拋，但 `set` trap 自己回 `false` 仍然照模式走。
+  en: The same day's example 018 argues that who a declaration serves is decided by whoever reads it, and Object.freeze is that sentence inside the language itself. On the same frozen object and the same line of assignment, sloppy mode does not raise and the assignment expression still evaluates to 999 while the object keeps 100 - so a caller reading the expression is told the write succeeded and a caller reading the object is told it failed. Strict mode raises a TypeError for the identical line. The control is an object that was never frozen: it also returns 999, which makes the returned value uninformative rather than merely wrong, since it is identical in the success and in the silent failure. The second finding is that the declarer was never given the field at all - Object.freeze.length is 1, one argument for the object and no second argument for what a violation means, and the two modes are entered by different syntactic constructs rather than a setting that could be passed in, so the object cannot tell which consumer it reached. Third, the freeze is shallow: a write to a nested object does not raise even under strict mode, which is not a failure of either mode but of the declaration's reach. Neither side should change - freezing does what it says, since the object kept its value under both modes, and sloppy mode is what unmarked code means and cannot be repaired retroactively without breaking existing pages, which is why ES modules are unconditionally strict only at a new entrance. A Proxy probe measured alongside solves half of it: engine invariant violations raise under both modes, but a set trap returning false still follows the consumer's mode.
+date: 2026-08-18
+version: v1.0
+verdict: the-consequence-is-defined-on-the-consumers-side
+concepts:
+  - returned-and-actual-disagree-about-one-write
+  - the-control-makes-returned-uninformative-not-wrong
+  - freeze-takes-no-argument-about-violations
+  - the-declaration-is-shallower-than-it-reads
+  - proxy-moves-only-the-engine-invariants-back
+runnable: node src/main.mjs
