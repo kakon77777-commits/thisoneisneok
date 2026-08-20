@@ -1358,7 +1358,7 @@ export const msspExamples = [
         "main.py"
       ]
     },
-    "lineCount": 631,
+    "lineCount": 643,
     "canonicalUrl": "https://thisoneisneok.com/html/mssp/019-applicability-is-part-of-the-answer.html",
     "htmlUrl": "https://thisoneisneok.com/html/mssp/019-applicability-is-part-of-the-answer.html"
   },

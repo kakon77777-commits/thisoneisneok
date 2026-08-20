@@ -51,15 +51,21 @@ def _register(module, registry, problems, checker, key):
     module still read the attribute the check had just reported missing, so a
     refused module crashed the loader instead of being refused. A guard that
     does not cover the code after it is not a guard.
+
+    And that repair was still not enough. The first version of this function
+    registered a refused module anyway, on the reasoning that later code should
+    be able to find it by name — so a source this loader had just REPORTED as
+    bad also appeared in the canonical registry. Pragma found it by reading
+    (MSSP_Board issue #8) and it reproduced first try. A registry that holds
+    what the checker rejected is a registry that disagrees with its own report.
     """
     before = len(problems)
     checker(module, problems)
     name = getattr(module, key, None)
     if name is None:
         return
-    if len(problems) > before and not registry.get(name):
-        registry.setdefault(name, module)
-        return
+    if len(problems) > before:
+        return  # refused. It does not go in, under any name.
     registry[name] = module
 
 

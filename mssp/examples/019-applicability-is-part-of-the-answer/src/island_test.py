@@ -127,8 +127,14 @@ def drill_source(name, **attributes):
     return module
 
 
-_, _, mute = measure.load(extra_sources=[drill_source("drill-mute", CAN_FAIL_WITH=[])])
+mute_sources, _, mute = measure.load(extra_sources=[drill_source("drill-mute", CAN_FAIL_WITH=[])])
 check("DRILL: an empty CAN_FAIL_WITH is refused", any("CAN_FAIL_WITH is empty" in p for p in mute))
+# Added 2026-08-20 after Pragma found the hole by reading (MSSP_Board #8).
+# Reporting a source as bad and registering it anyway is a registry that
+# disagrees with its own report, and NOTHING here noticed for a whole day.
+check("and a refused source does not end up in the registry either",
+      "drill-mute" not in mute_sources,
+      "the loader used to report it AND register it - the suite was green through both")
 _, _, vouch = measure.load(extra_sources=[drill_source("drill-vouch", COMPLETE=True)])
 check("DRILL: a source declaring COMPLETE is refused", any("declares COMPLETE" in p for p in vouch))
 silent = drill_source("drill-unsaid")

@@ -45,7 +45,7 @@ footer a{color:var(--accent)}
     <div><b>語言</b><span>python</span></div>
     <div><b>版本</b><span>v1.0</span></div>
     <div><b>日期</b><span>2026-08-19</span></div>
-    <div><b>行數</b><span>631</span></div>
+    <div><b>行數</b><span>643</span></div>
     <div><b>執行</b><span><code>python src/main.py</code></span></div>
   </section>
   <article class="content"><h1>019 — A measurement has to say when it does not apply</h1>
@@ -61,7 +61,7 @@ did not compute</strong>.</p>
 python src/main.py --control   # the same units under a policy that ignores declarations
 python src/main.py --total     # ask for a total across all three
 python src/main.py --strict    # exit 1 on an unmeasurable unit or a contradicted assumption
-python src/island_test.py      # 51 checks across 8 sections, and it prints the count itself
+python src/island_test.py      # 52 checks across 8 sections, and it prints the count itself
 </code></pre>
 <pre><code class="language-console">  unit              suppressed   declared   incentive   reading
   baked-in          -            6          n/a         NOT MEASURED: the declaration is not a
@@ -125,7 +125,15 @@ it by name. An unknown shape is a case to classify, not an exception to raise.</
 <p><strong>And the first fix was not enough.</strong> I added the check, and the line that
 <em>registered</em> the module still read the attribute the check had just reported
 missing — so a refused module crashed the loader anyway. A guard that does not
-cover the code after it is not a guard. Both are fixed and both now have drills.</p>
+cover the code after it is not a guard.</p>
+<p><strong>And the second fix was not enough either — that one was found by someone
+else.</strong> The repaired loader still <em>registered</em> a module it had just reported as
+bad, on the reasoning that later code should be able to find it by name. Pragma
+found it by reading (<a href="https://github.com/kakon77777-commits/MSSP_Board/issues/8">MSSP_Board #8</a>)
+and it reproduced first try. <strong>A registry that holds what the checker rejected
+is a registry that disagrees with its own report</strong> — and this suite was green
+through all three versions, because nothing here asked what the registry
+contained after a refusal. It asks now.</p>
 <h2>Upstream, the same day</h2>
 <p><a href="/html/mssp/archaeology/019-dict-get-sentinel.html">Archaeology 019</a> is the most
 ordinary line of Python there is:</p>
@@ -292,15 +300,21 @@ def _register(module, registry, problems, checker, key):
     module still read the attribute the check had just reported missing, so a
     refused module crashed the loader instead of being refused. A guard that
     does not cover the code after it is not a guard.
+
+    And that repair was still not enough. The first version of this function
+    registered a refused module anyway, on the reasoning that later code should
+    be able to find it by name — so a source this loader had just REPORTED as
+    bad also appeared in the canonical registry. Pragma found it by reading
+    (MSSP_Board issue #8) and it reproduced first try. A registry that holds
+    what the checker rejected is a registry that disagrees with its own report.
     &quot;&quot;&quot;
     before = len(problems)
     checker(module, problems)
     name = getattr(module, key, None)
     if name is None:
         return
-    if len(problems) &gt; before and not registry.get(name):
-        registry.setdefault(name, module)
-        return
+    if len(problems) &gt; before:
+        return  # refused. It does not go in, under any name.
     registry[name] = module
 
 
@@ -662,8 +676,14 @@ def drill_source(name, **attributes):
     return module
 
 
-_, _, mute = measure.load(extra_sources=[drill_source(&quot;drill-mute&quot;, CAN_FAIL_WITH=[])])
+mute_sources, _, mute = measure.load(extra_sources=[drill_source(&quot;drill-mute&quot;, CAN_FAIL_WITH=[])])
 check(&quot;DRILL: an empty CAN_FAIL_WITH is refused&quot;, any(&quot;CAN_FAIL_WITH is empty&quot; in p for p in mute))
+# Added 2026-08-20 after Pragma found the hole by reading (MSSP_Board #8).
+# Reporting a source as bad and registering it anyway is a registry that
+# disagrees with its own report, and NOTHING here noticed for a whole day.
+check(&quot;and a refused source does not end up in the registry either&quot;,
+      &quot;drill-mute&quot; not in mute_sources,
+      &quot;the loader used to report it AND register it - the suite was green through both&quot;)
 _, _, vouch = measure.load(extra_sources=[drill_source(&quot;drill-vouch&quot;, COMPLETE=True)])
 check(&quot;DRILL: a source declaring COMPLETE is refused&quot;, any(&quot;declares COMPLETE&quot; in p for p in vouch))
 silent = drill_source(&quot;drill-unsaid&quot;)

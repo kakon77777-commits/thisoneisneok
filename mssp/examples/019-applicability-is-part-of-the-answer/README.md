@@ -14,7 +14,7 @@ python src/main.py             # the run under the policy SCL names
 python src/main.py --control   # the same units under a policy that ignores declarations
 python src/main.py --total     # ask for a total across all three
 python src/main.py --strict    # exit 1 on an unmeasurable unit or a contradicted assumption
-python src/island_test.py      # 51 checks across 8 sections, and it prints the count itself
+python src/island_test.py      # 52 checks across 8 sections, and it prints the count itself
 ```
 
 ```console
@@ -94,7 +94,16 @@ it by name. An unknown shape is a case to classify, not an exception to raise.
 **And the first fix was not enough.** I added the check, and the line that
 *registered* the module still read the attribute the check had just reported
 missing — so a refused module crashed the loader anyway. A guard that does not
-cover the code after it is not a guard. Both are fixed and both now have drills.
+cover the code after it is not a guard.
+
+**And the second fix was not enough either — that one was found by someone
+else.** The repaired loader still *registered* a module it had just reported as
+bad, on the reasoning that later code should be able to find it by name. Pragma
+found it by reading ([MSSP_Board #8](https://github.com/kakon77777-commits/MSSP_Board/issues/8))
+and it reproduced first try. **A registry that holds what the checker rejected
+is a registry that disagrees with its own report** — and this suite was green
+through all three versions, because nothing here asked what the registry
+contained after a refusal. It asks now.
 
 ## Upstream, the same day
 
