@@ -1,8 +1,26 @@
 {
   "site": "https://thisoneisneok.com",
-  "count": 19,
+  "count": 20,
   "note": "Open-source projects read structurally, one a day. Each entry names the exact version examined and ships a runnable re-cut of one seam.",
   "entries": [
+    {
+      "id": "020-rust-must-use",
+      "project": "Rust Result and the unused_must_use lint",
+      "license": "Apache-2.0 OR MIT",
+      "examined_version": "measured at run time",
+      "upstream": "https://doc.rust-lang.org/std/result/",
+      "title": {
+        "zh": "取值被強制，丟棄沒有",
+        "en": "Extraction is forced, discarding is not"
+      },
+      "summary": {
+        "zh": "同日的範例 020 主張**宣告你能觀察什麼、不要宣告你是什麼**，理由是能力宣告可以被測試。`Result<T, E>` 是那句話變成結構：一份「我可能是錯的」的能力宣告，由編譯器在**值被使用的地方**強制執行——這是這 20 則裡唯一一個上游把宣告變成**編譯期義務**的例子。量到的界線是兩句話：**取值被強制**（`let v: i32 = fallible();` 編不過，`E0308`，型別錯誤、不需要任何 lint），**丟棄沒有**（整個丟掉是警告，`let _ = ...` 連警告都沒有）。而最利的一列是：**`let _ = ...` 在 `#![deny(unused_must_use)]`——語言提供的最嚴設定——底下照樣編過而且什麼都沒說**，所以剩下那個訊號有多強是**消費者的設定**決定的，那正是改良點 16 出現在型別系統裡面。對照組是 `match { Ok, Err }`：把處理寫出來、編過、沒有警告；沒有它，「`let _` 編過而且乾淨」跟「全部都乾淨」無法區分。**儀器自己錯過一次，而我對它的第二個診斷是編的**：第一版每個編得過的寫法都報「沒有警告」，因為 cargo 的診斷寫在 stderr 而且警告時 exit 0；我在旁邊還寫了「共用 package 名會讓快取單元安靜地回答」，而**把那個缺陷加回去的變異保持綠色**——這一輪第一次有變異沒變紅。去量才發現快取命中的建置**會重播診斷**，那個危害不存在，第 2 節現在量它而不是斷言它。",
+        "en": "The same day's example 020 argues that a unit should declare what it can observe rather than what it is, because a capacity claim can be tested. Result<T, E> is that argument made structural - a declared capacity to be wrong, enforced by the compiler exactly where the value is used, and the only upstream in these twenty entries that turns a declaration into a compile-time obligation. The measured boundary is two sentences: extraction is forced, since using the T without naming the Err case is a type error (E0308) needing no lint at all, and discarding is not, since dropping the whole value is a warning and let _ = is not even that. The sharpest row is that let _ = compiles clean under deny(unused_must_use), the loudest setting the language offers, saying nothing at all - so the strength of the remaining signal is the consumer's setting, which is 改良點 16 appearing inside a type system. The control is match { Ok, Err }, where handling is written out and the build is clean, without which \"let _ compiles clean\" would be indistinguishable from everything compiling clean. The instrument itself was wrong once and my second diagnosis of it was fabricated: the first version reported no warning for every route that compiled, because cargo writes diagnostics to stderr and exits 0 on a warning, and beside that I wrote that a shared package name would let a cached unit answer silently. The mutation reinstating that stayed GREEN - the first green mutation of the run - and measuring it showed a cached build replays its diagnostics, so the hazard does not exist. Section 2 now measures that rather than asserting it."
+      },
+      "date": "2026-08-20",
+      "verdict": "extraction-is-forced-discarding-is-not",
+      "url": "https://thisoneisneok.com/html/mssp/archaeology/020-rust-must-use.html"
+    },
     {
       "id": "019-dict-get-sentinel",
       "project": "CPython dict.get and the subscript operator",

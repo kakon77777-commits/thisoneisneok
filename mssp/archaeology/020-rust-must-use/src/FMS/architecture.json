@@ -1,0 +1,37 @@
+{
+  "name": "020-rust-must-use",
+  "upstream": "Rust: Result, #[must_use], and the unused_must_use lint, measured by running rustc",
+  "what_is_being_examined": "Five ways a caller can meet a Result, and which of them the compiler refuses.",
+
+  "the_finding": "Extraction is forced and discarding is not. Using the T without naming the Err case is a type error (E0308), so no lint setting is needed. Dropping the whole value is a warning, and discarding it explicitly with `let _ =` is not even that — it compiles clean under deny(unused_must_use), which is the loudest setting the language offers.",
+
+  "why_it_belongs_beside_example_020": "Example 020 argues that a unit should declare its CAPACITY rather than its state, because a capacity claim is testable. Rust's type system is that argument made structural: Result<T, E> is a declared capacity to be wrong, and the compiler enforces it exactly where the value is used. What it does not do is stop a consumer from refusing to look — which is 改良點 16 appearing inside a type system, since the strength of the remaining signal is the consumer's lint setting.",
+
+  "the_control": "`match { Ok, Err }` — handling written out, compiles clean, no warning. Without it, `let _ = ...` compiling clean would be consistent with every route compiling clean and would be evidence of nothing.",
+
+  "routes": {
+    "bare call":         {"claims_compiler_forces_handling": false, "measured": "compiles, must-use warning"},
+    "let _ = ...":       {"claims_compiler_forces_handling": false, "measured": "compiles, no warning, and still compiles under deny"},
+    ".unwrap_or(0)":     {"claims_compiler_forces_handling": false, "measured": "compiles clean - Err named by method call"},
+    "let v: i32 = ...":  {"claims_compiler_forces_handling": true,  "measured": "does NOT compile, E0308"},
+    "match { Ok, Err }": {"claims_compiler_forces_handling": false, "measured": "the control - compiles clean"}
+  },
+
+  "the_instrument_was_wrong_first": "One defect, fixed, and covered by section 2 of the island test: cargo writes diagnostics to stderr and exits 0, so reading only the return value of execFileSync reported 'no warning' for every route that compiled. I also wrote down a SECOND cause - that a shared package name under a shared target directory would let a cached unit answer silently - and it is not real. The mutation reinstating it stayed green, and measuring it directly showed why: a no-op `Finished` build replays the cached diagnostics. Section 2 measures that instead. It is the first time in this run that a green mutation refuted a defect I had claimed rather than confirming one.",
+
+  "sets": {
+    "FMS": "this file: what each route claims and what was measured, the instrument's own failure modes, and the units map",
+    "SCL": "the deployment's lint setting, and what that setting cannot reach",
+    "SMS": "the compiler probes - each row is a cargo build that really ran",
+    "TMS": "one file per route - each carries its snippet and what it claims about the compiler, and imports nothing",
+    "DMS": "compiles and the warning column printed together, never one alone"
+  },
+
+  "units": {"TMS/routes": ["bare_call.mjs", "direct_assign.mjs", "explicit_discard.mjs", "match_arm.mjs", "unwrap.mjs"]},
+
+  "non_goals": [
+    "Establishing anything about type systems in general. This is one type, in one language, on one toolchain - rustc 1.96 - and the claim is demonstrated there rather than proved.",
+    "Judging whether let _ = should be reachable by a lint. Clippy has opinions and teams have review; this measures what the compiler does, not what a project can arrange around it.",
+    "Comparing with checked exceptions, Option, or Either. Each would need new probes rather than a re-reading of these."
+  ]
+}

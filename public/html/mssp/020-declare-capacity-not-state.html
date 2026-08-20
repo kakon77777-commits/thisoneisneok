@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>宣告你能觀察什麼，不要宣告你是什麼 | MSSP | Neo.K</title>
+<meta name="description" content="第二十則，也是這一輪考古的最後一則。它回答的是 Board host 在 2026-08-19 問的、也是[改良點 13-17](/html/mssp/modules/development.html) 唯一沒解掉的那個問題：**報表要怎麼分辨「這個 reader 檢查過自己的框、確實沒看到下一頁」跟「這個 reader 是一根不透明的管子，來什麼吞什麼」——而且不能重新引入被禁止的正面斷言？** 兩者都沉默，而[範例 017](/html/mssp/017-finished-is-not-complete.html) 把它們放在同一欄，還警告過：如果現實世界多數 reader 都落在那一欄，`not known to be otherwise` 會在讀者腦子裡默默變成「完整」。解法是**換掉被宣告的東西**——不是狀態，是**能力**：一個單元宣告它**能觀察什麼**，而那不是關於結果的主張，所以**可以被測試**：收集器拿一個它已經知道答案的案例去問它。沉默於是分成兩欄，而且沒有加任何正面斷言（仍然沒有 `complete` 這個值）。**挑戰必須有兩臂**：一個永遠回答「截斷」的 reader 對截斷那個案例是對的，單臂挑戰會放它過去，所以 `passed` 是連言，孤島測試把兩個常數都鑽了。**拒絕看的是宣稱，不是結果**——`opaque-pipe` 挑戰失敗但被接受（它從沒宣稱會通過），`claims-framing` 同樣失敗卻被拒絕。對照組是「`framed` 在**完整**串流上也沉默」，所以沉默本身分不開任何東西，只有 completeness 欄分得開。同日考古 020 是這個論點變成結構：`Result&lt;T, E&gt;` 是一份可能出錯的能力宣告，**取值被型別系統強制**（E0308），**丟棄沒有**——`let _ = ...` 在 `deny(unused_must_use)` 底下照樣編過。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/020-declare-capacity-not-state.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.facts div{display:flex;flex-direction:column;gap:5px}.facts b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.facts span{font-size:13px}
+.warn{border:1px solid #a3322b;color:#a3322b;padding:14px 18px;margin:0 0 32px;font-size:14px}
+.content{font-size:17px;line-height:1.85;overflow-wrap:break-word}
+.content h1{font-size:clamp(30px,5vw,48px);line-height:1.12;letter-spacing:-.04em;margin:6px 0 28px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:32px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:34px}
+.set{margin:0 0 26px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}
+summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}
+details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP FIELD LAB</strong><span>020-declare-capacity-not-state</span></header>
+<main>
+  
+  <section class="facts">
+    <div><b>編號</b><span>020-declare-capacity-not-state</span></div>
+    <div><b>語言</b><span>javascript</span></div>
+    <div><b>版本</b><span>v1.0</span></div>
+    <div><b>日期</b><span>2026-08-20</span></div>
+    <div><b>行數</b><span>507</span></div>
+    <div><b>執行</b><span><code>node src/main.mjs</code></span></div>
+  </section>
+  <article class="content"><h1>020 — Declare what you can observe, not what you are</h1>
+<blockquote>
+<p><code>candidate</code>. The twentieth entry, and the last of the archaeology run. It
+answers the question the Board host asked on 2026-08-19, which was the one
+thing 改良點 13–17 left standing.</p>
+</blockquote>
+<h2>What this program does</h2>
+<p>Three readers meet one stream. What each declares is <strong>not its state</strong> but what
+it is <em>able to see</em> — and that claim is answered by a challenge.</p>
+<pre><code class="language-bash">node src/main.mjs              # the run under the policy SCL names
+node src/main.mjs --challenge  # just the challenge table
+node src/main.mjs --strict     # exit 1 when a reader failed its challenge
+node src/island_test.mjs       # 40 checks across 7 sections, and it prints the count itself
+</code></pre>
+<pre><code class="language-console">  the challenge - two streams whose answers the harness already knows:
+    reader           claims   complete-&gt;silent   truncated-&gt;spoke   verdict
+    claims-framing   true     true               false              failed
+    framed           true     true               true               passed
+    opaque-pipe      false    true               false              failed
+
+    claims-framing: REFUSED: capacity claimed and not demonstrated
+    framed: capacity claimed and demonstrated
+    opaque-pipe: capacity disclaimed, and the challenge agrees
+
+  reader           records   completeness
+  ~~ framed          3         no - declared (no terminator record)
+  ?? opaque-pipe     3         not known otherwise, and this reader CANNOT tell
+</code></pre>
+<h2>The structural decision</h2>
+<p><a href="/html/mssp/modules/development.html">改良點 15</a> forbids a unit from declaring
+itself complete, because nothing outside can check that. The Board host put the
+question that leaves open:</p>
+<blockquote>
+<p>How does the report tell <em>&quot;this reader has an internal cursor check and saw no
+further pages&quot;</em> from <em>&quot;this reader is an opaque pipe that swallowed whatever
+bytes arrived&quot;</em>, without re-introducing a forbidden positive assertion?</p>
+</blockquote>
+<p>Both are silent. <a href="/html/mssp/017-finished-is-not-complete.html">Example 017</a> put
+them in the same column, and warned that if most real readers land there, <code>not known to be otherwise</code> quietly becomes &quot;complete&quot; in the reader&#39;s head — the
+very trust the rule exists to remove.</p>
+<p><strong>The move is to change what is declared.</strong> Not the state — the <strong>capacity</strong>:</p>
+<blockquote>
+<p><strong>A unit declares what it is able to observe. That claim is not about the
+outcome, and unlike an outcome claim it can be tested — the harness hands it a
+case whose answer it already knows.</strong></p>
+</blockquote>
+<p>Silence then splits in two, and no positive assertion is added:</p>
+<table>
+<thead>
+<tr>
+<th>value</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>no - declared</code></td>
+<td>the reader said so</td>
+</tr>
+<tr>
+<td><code>not known otherwise, and this reader can tell</code></td>
+<td>silent, <strong>and it demonstrated the capacity to speak</strong></td>
+</tr>
+<tr>
+<td><code>not known otherwise, and this reader CANNOT tell</code></td>
+<td>silent, <strong>and it could not have spoken</strong></td>
+</tr>
+</tbody></table>
+<p>There is still no <code>complete</code>.</p>
+<h2>The island test — the challenge needs both arms, or a constant passes it</h2>
+<p><strong>A reader that always answers &quot;truncated&quot; is right about the truncated
+stream.</strong> A one-armed challenge passes it. So <code>passed</code> is the conjunction, and
+the island test drills <strong>both</strong> constants:</p>
+<pre><code class="language-text">  PASS  a reader that always says truncated IS right about the truncated stream
+  PASS  and wrong about the complete one
+  PASS  so a one-armed challenge would have passed it
+  PASS  and the two-armed one does not
+  PASS  the mirror image fails too
+</code></pre>
+<p><strong>Refusal keys on the claim, not the outcome.</strong> <code>opaque-pipe</code> fails the
+challenge and is <em>accepted</em> — it never claimed to pass. <code>claims-framing</code> fails
+identically and is refused. Section 4 asserts that the two have the same
+<code>passed</code> and opposite acceptance.</p>
+<h2>The control pair — two silences that must not share a column</h2>
+<p>On the <strong>complete</strong> stream <code>framed</code> is silent, exactly as <code>opaque-pipe</code> is
+silent on the truncated one. Silence alone therefore separates nothing, and only
+the completeness column does. Without the pair, the third value would be a
+relabelling rather than a distinction.</p>
+<p>Five mutations were run and each turns the suite red, including one aimed
+precisely at the one-armed challenge.</p>
+<h2>Upstream, the same day</h2>
+<p><a href="/html/mssp/archaeology/020-rust-must-use.html">Archaeology 020</a> is this
+argument made structural, and it is the last entry of the run:</p>
+<pre><code class="language-text">    route                compiles   must_use warning   error
+    bare call            yes        yes                -
+    let _ = ...          yes        -                  -
+    let v: i32 = ...     NO         -                  E0308
+    match { Ok, Err }    yes        -                  -
+</code></pre>
+<p><code>Result&lt;T, E&gt;</code> is a declared capacity to be wrong, and <strong>extraction is forced</strong>:
+using the <code>T</code> without naming the <code>Err</code> case is a type error, no lint needed.
+<strong>Discarding is not forced</strong> — <code>let _ = ...</code> compiles clean even under
+<code>#![deny(unused_must_use)]</code>, the loudest setting the language offers. The
+strength of what remains is the <em>consumer&#39;s</em> setting, which is
+<a href="/html/mssp/modules/development.html">改良點 16</a> appearing inside a type system.</p>
+<h2>What this example does not solve</h2>
+<p><strong>A demonstrated capacity is not a proved one.</strong> Passing on this pair of streams
+says nothing about every shape a reader may meet. Section 7 states that as a
+check rather than a sentence.</p>
+<p><strong>A disclaimer is believed.</strong> A reader that says it <em>cannot</em> discriminate is
+trusted, and one that disclaims falsely is treated as blind. That is the
+conservative direction and the same unverified trade as 改良點 15 — named, not
+closed.</p>
+<p><strong>The challenge only reaches what the harness can construct.</strong> A reader whose
+framing is real but whose inputs cannot be synthesised gets no challenge at all;
+SCL names that gap rather than implying coverage.</p>
+</article>
+  <section class="source"><h2>Source</h2><section class="set"><h3>FMS</h3><details><summary>FMS/contract.json</summary><pre><code>{
+  &quot;name&quot;: &quot;020-declare-capacity-not-state&quot;,
+  &quot;what_it_is&quot;: &quot;Three readers over one stream, where what each unit declares is not its state but what it is able to observe — and that claim is answered by challenge.&quot;,
+  &quot;the_structural_decision&quot;: &quot;改良點 15 forbids a unit from declaring itself complete, because nothing outside can check it. That leaves a reader which genuinely checked its framing indistinguishable from an opaque pipe that swallowed whatever arrived: both are silent. The move is to change WHAT is declared. A capacity claim — 'I am able to tell truncation from completion' — is not a claim about the outcome, and unlike an outcome claim it is testable: the harness hands the unit a case whose answer it already knows.&quot;,
+  &quot;why_this_one&quot;: &quot;The Board host asked exactly this on 2026-08-19, and it is the last open thing in the 改良點 13-17 line. It is also the twentieth entry, so it closes the archaeology run.&quot;,
+  &quot;status&quot;: &quot;candidate&quot;,
+
+  &quot;the_three_completeness_values&quot;: {
+    &quot;no - declared&quot;: &quot;the reader said so&quot;,
+    &quot;not known otherwise, and this reader can tell&quot;: &quot;silent, and it demonstrated the capacity to speak&quot;,
+    &quot;not known otherwise, and this reader CANNOT tell&quot;: &quot;silent, and it could not have spoken - which is a different fact&quot;
+  },
+  &quot;there_is_still_no_complete_value&quot;: &quot;改良點 15 is unchanged. What is new is that silence is split in two by whether the reader could have broken it.&quot;,
+
+  &quot;the_challenge&quot;: {
+    &quot;how&quot;: &quot;the harness builds one complete stream and one truncated stream and asks the reader to classify both&quot;,
+    &quot;why_both_arms&quot;: &quot;a reader that always answers 'truncated' is right about the truncated case. A one-armed challenge passes a constant, so `passed` is the conjunction and the island test drills both constants.&quot;,
+    &quot;what_it_keys_on&quot;: &quot;the CLAIM, not the outcome. opaque-pipe fails the challenge and is accepted, because it never claimed to pass; claims-framing fails identically and is refused.&quot;
+  },
+
+  &quot;readers&quot;: {
+    &quot;framed&quot;:         {&quot;claims&quot;: true,  &quot;note&quot;: &quot;the frame ends with a terminator, so its absence is observable&quot;},
+    &quot;opaque-pipe&quot;:    {&quot;claims&quot;: false, &quot;note&quot;: &quot;the honest half of the control pair — it declares its own blindness and the challenge agrees&quot;},
+    &quot;claims-framing&quot;: {&quot;claims&quot;: true,  &quot;note&quot;: &quot;reads exactly like the opaque pipe. In the tree deliberately: 改良點 18 is worth nothing unless a false capacity claim is caught by RUNNING the unit.&quot;}
+  },
+
+  &quot;the_control_pair&quot;: &quot;On the COMPLETE stream, `framed` is silent — exactly as `opaque-pipe` is silent on the truncated one. Silence alone therefore separates nothing, and only the completeness column does. Without that pair, the third value would look like a relabelling rather than a distinction.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: the three completeness values, the challenge and why it needs both arms, and the units map&quot;,
+    &quot;SCL&quot;: &quot;what a failed challenge means here, what happens to records from a blind reader, and what the challenge cannot reach&quot;,
+    &quot;SMS&quot;: &quot;building the challenge streams, running each reader against both, and placing the result in one of three columns&quot;,
+    &quot;TMS&quot;: &quot;one file per reader — each declares what it can OBSERVE and how, never what its state is, and imports nothing&quot;,
+    &quot;DMS&quot;: &quot;the three columns kept apart, the challenge table, and a floor that now counts blind records separately&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/readers&quot;: [&quot;claims_framing.mjs&quot;, &quot;framed.mjs&quot;, &quot;opaque_pipe.mjs&quot;]},
+
+  &quot;non_goals&quot;: [
+    &quot;Proving a capacity. Passing on one pair of streams demonstrates the claim on that pair; it does not establish it for every shape a reader may meet.&quot;,
+    &quot;Checking a disclaimer. A reader that says it CANNOT discriminate is believed, and a reader that disclaims falsely is treated as blind — the conservative direction, and the same unverified trade as 改良點 15.&quot;,
+    &quot;Reaching a reader whose framing is real but whose challenge inputs the harness cannot construct. SCL names that gap rather than implying coverage.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;deployment&quot;: &quot;audit-ingest&quot;,
+  &quot;a_reader_that_fails_its_challenge_is&quot;: &quot;refused&quot;,
+  &quot;records_from_a_blind_reader_are&quot;: &quot;served, and marked&quot;,
+  &quot;why&quot;: &quot;An audit ingest may accept records from a reader that cannot see its own framing - most real readers cannot - but it may not let that reader's silence sit in the same column as a reader that checked. Refusing the blind reader entirely would exclude most of the world; refusing the LIAR costs nothing, because its claim was never true.&quot;,
+  &quot;what_this_cannot_reach&quot;: &quot;A reader whose framing is real but whose challenge inputs the harness cannot construct. The challenge only works where the harness can build a case whose answer it already knows.&quot;,
+  &quot;not_a_general_rule&quot;: &quot;A pipeline where every reader is framed would never see the third column. SCL is where the position lives.&quot;
+}
+</code></pre></details><details><summary>SCL/policy.mjs</summary><pre><code>import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+export const POLICY = JSON.parse(fs.readFileSync(path.join(here, &quot;policy.json&quot;), &quot;utf8&quot;));
+
+export const refusesLiars = () =&gt; POLICY.a_reader_that_fails_its_challenge_is === &quot;refused&quot;;
+export const servesBlind = () =&gt; POLICY.records_from_a_blind_reader_are.startsWith(&quot;served&quot;);
+export const describe = () =&gt;
+  `${POLICY.deployment}: a reader that fails its challenge is ${POLICY.a_reader_that_fails_its_challenge_is}, `
+  + `records from a blind reader are ${POLICY.records_from_a_blind_reader_are}`;
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/challenge.mjs</summary><pre><code>// The challenge, and the read pipeline that depends on it.
+//
+// 改良點 15 forbids a unit from declaring itself complete, because nothing
+// outside it can check that. But the Board host asked the question that rule
+// leaves open: how does a report tell &quot;this reader checked its framing and saw
+// no further pages&quot; from &quot;this reader is an opaque pipe that swallowed
+// whatever arrived&quot;, without letting the first one make a positive assertion?
+//
+// The answer is to move what is declared. A unit does not declare its STATE.
+// It declares its CAPACITY — what it is able to observe — and a capacity claim
+// is answerable, because the harness can hand it a case whose answer it
+// already knows.
+//
+// The challenge needs BOTH arms. A reader that always answers &quot;truncated&quot; is
+// right about the truncated case, so a one-armed challenge passes a constant.
+import * as claimsFraming from &quot;../TMS/readers/claims_framing.mjs&quot;;
+import * as framed from &quot;../TMS/readers/framed.mjs&quot;;
+import * as opaquePipe from &quot;../TMS/readers/opaque_pipe.mjs&quot;;
+
+export const COMPLETE_STREAM = &quot;r-1|r-2|r-3|&lt;end&gt;&quot;;
+export const TRUNCATED_STREAM = &quot;r-1|r-2|r-3&quot;;
+
+// The three states a completeness column may hold. There is still no
+// verified-complete value (改良點 15); what is new is that silence is split in
+// two, by whether the reader could have spoken.
+export const DECLARED_INCOMPLETE = &quot;no - declared&quot;;
+export const SILENT_AND_CAN_TELL = &quot;not known otherwise, and this reader can tell&quot;;
+export const SILENT_AND_CANNOT = &quot;not known otherwise, and this reader CANNOT tell&quot;;
+
+export function load(extra = []) {
+  const readers = {};
+  const problems = [];
+  for (const module of [framed, opaquePipe, claimsFraming, ...extra]) {
+    const name = module.NAME;
+    if (!name) {
+      problems.push(&quot;a reader module does not declare NAME&quot;);
+      continue;
+    }
+    for (const attribute of [&quot;CAN_FAIL_WITH&quot;, &quot;HOW&quot;, &quot;read&quot;]) {
+      if (module[attribute] === undefined) problems.push(`${name} does not declare ${attribute}`);
+    }
+    if (typeof module.CLAIMS_CAN_DISCRIMINATE !== &quot;boolean&quot;) {
+      problems.push(`${name}: does not claim a discrimination capacity either way - the report `
+        + `would have nowhere to put its silence`);
+    }
+    for (const vouch of [&quot;COMPLETE&quot;, &quot;IS_COMPLETE&quot;, &quot;RETURNS_EVERYTHING&quot;]) {
+      if (module[vouch] === true) {
+        problems.push(`${name}: declares ${vouch} - a unit may declare what it can OBSERVE, `
+          + `never what its state is (改良點 15)`);
+      }
+    }
+    if (problems.some((p) =&gt; p.startsWith(`${name}:`) || p.startsWith(`${name} `))) continue;
+    readers[name] = module;
+  }
+  return { readers, problems };
+}
+
+// Hand the reader two streams whose answers the harness already knows, and see
+// whether it separates them. Both arms are required: `passed` is the
+// conjunction, so a reader that answers the same way every time fails.
+export function challenge(module) {
+  const onComplete = module.read(COMPLETE_STREAM).incomplete_because;
+  const onTruncated = module.read(TRUNCATED_STREAM).incomplete_because;
+  const rightAboutComplete = onComplete === null;
+  const rightAboutTruncated = onTruncated !== null;
+  return {
+    reader: module.NAME,
+    claimed: module.CLAIMS_CAN_DISCRIMINATE,
+    rightAboutComplete,
+    rightAboutTruncated,
+    passed: rightAboutComplete &amp;&amp; rightAboutTruncated,
+    // A reader that got exactly one arm right answered the same way twice.
+    constant: rightAboutComplete !== rightAboutTruncated,
+  };
+}
+
+export function verdict(result) {
+  if (result.claimed &amp;&amp; result.passed) return &quot;capacity claimed and demonstrated&quot;;
+  if (result.claimed &amp;&amp; !result.passed) return &quot;REFUSED: capacity claimed and not demonstrated&quot;;
+  if (!result.claimed &amp;&amp; result.passed) return &quot;capacity disclaimed but demonstrated - accepted, &quot;
+    + &quot;and the report treats it as blind because that is the conservative direction&quot;;
+  return &quot;capacity disclaimed, and the challenge agrees&quot;;
+}
+
+export const accepted = (result) =&gt; !(result.claimed &amp;&amp; !result.passed);
+
+export function run(module, stream, challengeResult) {
+  const result = module.read(stream);
+  let completeness;
+  if (result.incomplete_because) completeness = DECLARED_INCOMPLETE;
+  else if (challengeResult.claimed &amp;&amp; challengeResult.passed) completeness = SILENT_AND_CAN_TELL;
+  else completeness = SILENT_AND_CANNOT;
+  return {
+    reader: module.NAME,
+    records: result.records,
+    incomplete_because: result.incomplete_because,
+    completeness,
+  };
+}
+
+export function readAll(readers, stream) {
+  return Object.keys(readers).sort().map((name) =&gt; {
+    const result = challenge(readers[name]);
+    return { ...run(readers[name], stream, result), challenge: result };
+  });
+}
+
+// The floor, now with the part example 017 could not name: how many records
+// came from a reader that could not have told us either way.
+export function floor(rows) {
+  const total = rows.reduce((n, row) =&gt; n + row.records.length, 0);
+  const declared = rows.filter((r) =&gt; r.completeness === DECLARED_INCOMPLETE)
+    .reduce((n, row) =&gt; n + row.records.length, 0);
+  const blind = rows.filter((r) =&gt; r.completeness === SILENT_AND_CANNOT)
+    .reduce((n, row) =&gt; n + row.records.length, 0);
+  return { total, declared, blind };
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/readers/claims_framing.mjs</summary><pre><code>// It declares that it can discriminate. It reads exactly like the opaque pipe.
+//
+// This unit is in the tree deliberately: 改良點 18 is worth nothing unless a
+// false capacity claim is caught, and it has to be caught by RUNNING the unit,
+// not by reading the constant above.
+export const NAME = &quot;claims-framing&quot;;
+export const CAN_FAIL_WITH = [&quot;unreadable-chunk&quot;];
+export const CLAIMS_CAN_DISCRIMINATE = true;
+export const HOW = &quot;it says the frame is checked; the challenge disagrees&quot;;
+
+export function read(stream) {
+  const chunks = stream.split(&quot;|&quot;).filter(Boolean).filter((c) =&gt; c !== &quot;&lt;end&gt;&quot;);
+  return {
+    records: chunks.map((id) =&gt; ({ from: NAME, id })),
+    incomplete_because: null,
+  };
+}
+</code></pre></details><details><summary>TMS/readers/framed.mjs</summary><pre><code>// A reader over a framed stream. The frame carries a terminator, so this
+// reader can tell a truncated stream from a complete one.
+//
+// What it declares is NOT that it is complete — that remains forbidden by
+// 改良點 15. It declares what it is CAPABLE of observing, and that claim is
+// answerable by challenge: hand it a case whose answer is already known.
+export const NAME = &quot;framed&quot;;
+export const CAN_FAIL_WITH = [&quot;unreadable-chunk&quot;];
+export const CLAIMS_CAN_DISCRIMINATE = true;
+export const HOW = &quot;the frame ends with a terminator record, so its absence is observable&quot;;
+
+const TERMINATOR = &quot;&lt;end&gt;&quot;;
+
+export function read(stream) {
+  const chunks = stream.split(&quot;|&quot;).filter(Boolean);
+  const terminated = chunks.at(-1) === TERMINATOR;
+  const records = chunks.filter((c) =&gt; c !== TERMINATOR).map((id) =&gt; ({ from: NAME, id }));
+  return {
+    records,
+    // The only assertion it is allowed to make: the negative one.
+    incomplete_because: terminated ? null : &quot;no terminator record&quot;,
+  };
+}
+</code></pre></details><details><summary>TMS/readers/opaque_pipe.mjs</summary><pre><code>// A reader over an unframed byte pipe. It takes whatever arrived and hands it
+// over. It cannot tell a clean end from a connection that closed early,
+// because nothing in what it receives says which.
+//
+// It is the honest half of the control pair: it declares that it CANNOT
+// discriminate, and the challenge confirms it. Its silence about completeness
+// therefore means nothing, and the report has to say so rather than letting it
+// sit in the same column as `framed`'s silence.
+export const NAME = &quot;opaque-pipe&quot;;
+export const CAN_FAIL_WITH = [&quot;unreadable-chunk&quot;];
+export const CLAIMS_CAN_DISCRIMINATE = false;
+export const HOW = &quot;nothing in an unframed pipe distinguishes a clean end from an early close&quot;;
+
+export function read(stream) {
+  const chunks = stream.split(&quot;|&quot;).filter(Boolean).filter((c) =&gt; c !== &quot;&lt;end&gt;&quot;);
+  return {
+    records: chunks.map((id) =&gt; ({ from: NAME, id })),
+    incomplete_because: null,
+  };
+}
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.mjs</summary><pre><code>// What a person is shown.
+//
+// The rule this report exists for: two readers that both said nothing about
+// completeness must not appear in the same cell. One of them could have
+// spoken; the other could not.
+const pad = (value, width) =&gt; String(value).padEnd(width);
+
+export function rows(entries) {
+  const lines = [&quot;  reader           records   completeness&quot;];
+  for (const entry of entries) {
+    const mark = entry.completeness.includes(&quot;CANNOT&quot;) ? &quot;??&quot;
+      : entry.incomplete_because ? &quot;~~&quot; : &quot;ok&quot;;
+    lines.push(`  ${mark} ${pad(entry.reader, 15)} ${pad(entry.records.length, 9)} `
+      + `${entry.completeness}${entry.incomplete_because ? ` (${entry.incomplete_because})` : &quot;&quot;}`);
+  }
+  return lines.join(&quot;\n&quot;);
+}
+
+export function challenges(entries) {
+  const lines = [
+    &quot;  the challenge - two streams whose answers the harness already knows:&quot;,
+    &quot;    reader           claims   complete-&gt;silent   truncated-&gt;spoke   verdict&quot;,
+  ];
+  for (const { challenge, reader } of entries) {
+    lines.push(`    ${pad(reader, 16)} ${pad(challenge.claimed, 8)} `
+      + `${pad(challenge.rightAboutComplete, 18)} ${pad(challenge.rightAboutTruncated, 18)} `
+      + `${challenge.passed ? &quot;passed&quot; : &quot;failed&quot;}`);
+  }
+  return lines.join(&quot;\n&quot;);
+}
+
+export function floor({ total, declared, blind }) {
+  return [
+    `  at least ${declared} of ${total} records come from a reader that declared itself incomplete.`,
+    `  and ${blind} of ${total} come from a reader that could not have told us either way.`,
+    &quot;  The second number is what example 017's floor could not name: there, a blind reader&quot;,
+    &quot;  and a checking reader shared one column.&quot;,
+  ].join(&quot;\n&quot;);
+}
+
+export function refusals(refused) {
+  if (refused.length === 0) return &quot;  no reader was refused.&quot;;
+  return [&quot;  REFUSED:&quot;, ...refused.map((r) =&gt; `    ${r.reader} - claimed a capacity the challenge `
+    + `did not demonstrate (right about complete: ${r.rightAboutComplete}, `
+    + `right about truncated: ${r.rightAboutTruncated})`)].join(&quot;\n&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.mjs</summary><pre><code>// The island test.
+//
+//   node src/island_test.mjs
+//
+// Section 2 is the one that matters most: the challenge needs both arms,
+// because a reader that answers the same way every time is right about one of
+// them. Section 3 is the control pair — two silences that must not share a
+// column.
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as harness from &quot;./SMS/challenge.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as claimsFraming from &quot;./TMS/readers/claims_framing.mjs&quot;;
+import * as framed from &quot;./TMS/readers/framed.mjs&quot;;
+import * as opaquePipe from &quot;./TMS/readers/opaque_pipe.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const CONTRACT = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;contract.json&quot;), &quot;utf8&quot;));
+const failures = [];
+let ran = 0;
+const check = (label, ok, detail = &quot;&quot;) =&gt; {
+  ran += 1;
+  process.stdout.write(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}\n`);
+  if (!ok) failures.push(label);
+};
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+const { readers, problems } = harness.load();
+const results = Object.fromEntries(
+  Object.keys(readers).map((name) =&gt; [name, harness.challenge(readers[name])]));
+
+say(&quot;\n== 1. every reader is an island, and FMS matches the tree&quot;);
+check(&quot;loading raised no problems&quot;, problems.length === 0, problems.join(&quot;; &quot;));
+for (const [unit, declared] of Object.entries(CONTRACT.units)) {
+  const dir = path.join(here, ...unit.split(&quot;/&quot;));
+  const onDisk = fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+  check(`${unit}: FMS declares what is on disk`,
+    JSON.stringify(onDisk) === JSON.stringify([...declared].sort()),
+    `disk ${onDisk.join(&quot;, &quot;)} | FMS ${[...declared].sort().join(&quot;, &quot;)}`);
+  for (const file of onDisk) {
+    const body = fs.readFileSync(path.join(dir, file), &quot;utf8&quot;);
+    check(`${unit}/${file} imports nothing at all`, !/^\s*import\s/m.test(body));
+  }
+}
+check(&quot;every reader states a capacity either way&quot;,
+  [framed, opaquePipe, claimsFraming].every((m) =&gt; typeof m.CLAIMS_CAN_DISCRIMINATE === &quot;boolean&quot;));
+check(&quot;and says HOW, so the claim is inspectable as well as testable&quot;,
+  [framed, opaquePipe, claimsFraming].every((m) =&gt; Boolean(m.HOW)));
+
+say(&quot;\n== 2. the challenge needs both arms - a constant answer must not pass&quot;);
+const alwaysTruncated = {
+  NAME: &quot;drill-always-truncated&quot;, CAN_FAIL_WITH: [&quot;x&quot;],
+  CLAIMS_CAN_DISCRIMINATE: true, HOW: &quot;it answers the same way every time&quot;,
+  read: (stream) =&gt; ({ records: [{ from: &quot;drill-always-truncated&quot;, id: &quot;d-1&quot; }],
+    incomplete_because: &quot;no terminator record&quot; }),
+};
+const alwaysComplete = {
+  NAME: &quot;drill-always-complete&quot;, CAN_FAIL_WITH: [&quot;x&quot;],
+  CLAIMS_CAN_DISCRIMINATE: true, HOW: &quot;it answers the same way every time&quot;,
+  read: (stream) =&gt; ({ records: [{ from: &quot;drill-always-complete&quot;, id: &quot;d-1&quot; }],
+    incomplete_because: null }),
+};
+const cheatTruncated = harness.challenge(alwaysTruncated);
+const cheatComplete = harness.challenge(alwaysComplete);
+check(&quot;a reader that always says truncated IS right about the truncated stream&quot;,
+  cheatTruncated.rightAboutTruncated === true);
+check(&quot;and wrong about the complete one&quot;, cheatTruncated.rightAboutComplete === false);
+check(&quot;so a one-armed challenge would have passed it&quot;, cheatTruncated.constant === true);
+check(&quot;and the two-armed one does not&quot;, cheatTruncated.passed === false);
+check(&quot;the mirror image fails too&quot;, cheatComplete.passed === false
+  &amp;&amp; cheatComplete.rightAboutComplete === true &amp;&amp; cheatComplete.rightAboutTruncated === false);
+check(&quot;the harness knows both answers because it built both streams&quot;,
+  harness.COMPLETE_STREAM.endsWith(&quot;&lt;end&gt;&quot;) &amp;&amp; !harness.TRUNCATED_STREAM.endsWith(&quot;&lt;end&gt;&quot;));
+check(&quot;and the two streams differ only by the terminator&quot;,
+  harness.COMPLETE_STREAM.replace(&quot;|&lt;end&gt;&quot;, &quot;&quot;) === harness.TRUNCATED_STREAM);
+
+say(&quot;\n== 3. the control pair - two silences that must not share a column&quot;);
+const truncated = harness.readAll(readers, harness.TRUNCATED_STREAM);
+const row = (name) =&gt; truncated.find((r) =&gt; r.reader === name);
+const onComplete = harness.readAll(readers, harness.COMPLETE_STREAM);
+check(&quot;on the truncated stream, framed speaks&quot;, row(&quot;framed&quot;).incomplete_because !== null);
+check(&quot;and opaque-pipe does not&quot;, row(&quot;opaque-pipe&quot;).incomplete_because === null);
+check(&quot;they return the same number of records&quot;,
+  row(&quot;framed&quot;).records.length === row(&quot;opaque-pipe&quot;).records.length,
+  `${row(&quot;framed&quot;).records.length}`);
+const framedOnComplete = onComplete.find((r) =&gt; r.reader === &quot;framed&quot;);
+check(&quot;on the COMPLETE stream, framed is silent too - the control&quot;,
+  framedOnComplete.incomplete_because === null);
+check(&quot;so silence alone does not separate them&quot;,
+  framedOnComplete.incomplete_because === row(&quot;opaque-pipe&quot;).incomplete_because);
+check(&quot;and the completeness column does&quot;,
+  framedOnComplete.completeness !== row(&quot;opaque-pipe&quot;).completeness,
+  `${framedOnComplete.completeness} | ${row(&quot;opaque-pipe&quot;).completeness}`);
+check(&quot;there are three values, and none of them is `complete`&quot;,
+  new Set([harness.DECLARED_INCOMPLETE, harness.SILENT_AND_CAN_TELL, harness.SILENT_AND_CANNOT]).size === 3
+  &amp;&amp; ![harness.DECLARED_INCOMPLETE, harness.SILENT_AND_CAN_TELL, harness.SILENT_AND_CANNOT]
+    .includes(&quot;complete&quot;));
+
+say(&quot;\n== 4. the liar is caught by running it, not by reading it&quot;);
+check(&quot;claims-framing declares it can discriminate&quot;,
+  claimsFraming.CLAIMS_CAN_DISCRIMINATE === true);
+check(&quot;its source is identical in behaviour to the opaque pipe&quot;,
+  claimsFraming.read(harness.TRUNCATED_STREAM).incomplete_because
+  === opaquePipe.read(harness.TRUNCATED_STREAM).incomplete_because);
+check(&quot;the challenge refuses it&quot;, results[&quot;claims-framing&quot;].passed === false
+  &amp;&amp; harness.accepted(results[&quot;claims-framing&quot;]) === false);
+check(&quot;framed's identical claim is accepted&quot;, results.framed.passed === true
+  &amp;&amp; harness.accepted(results.framed) === true);
+check(&quot;and opaque-pipe, which claimed nothing, is not refused for failing&quot;,
+  harness.accepted(results[&quot;opaque-pipe&quot;]) === true
+  &amp;&amp; results[&quot;opaque-pipe&quot;].passed === false);
+check(&quot;so refusal keys on the CLAIM, not on the outcome&quot;,
+  results[&quot;claims-framing&quot;].passed === results[&quot;opaque-pipe&quot;].passed
+  &amp;&amp; harness.accepted(results[&quot;claims-framing&quot;]) !== harness.accepted(results[&quot;opaque-pipe&quot;]));
+
+say(&quot;\n== 5. the floor now names what example 017's could not&quot;);
+const kept = truncated.filter((entry) =&gt; harness.accepted(entry.challenge));
+const numbers = harness.floor(kept);
+check(&quot;the refused reader contributes nothing&quot;, kept.length === 2);
+check(&quot;the floor counts what was declared&quot;, numbers.declared === 3, `${numbers.declared}`);
+check(&quot;and separately counts what came from a blind reader&quot;, numbers.blind === 3, `${numbers.blind}`);
+check(&quot;the two are different populations&quot;, numbers.declared + numbers.blind === numbers.total);
+check(&quot;neither number is offered as a total of anything complete&quot;,
+  !JSON.stringify(numbers).includes(&quot;complete&quot;));
+
+say(&quot;\n== 6. a capacity claim is not a state claim&quot;);
+const vouching = {
+  NAME: &quot;drill-vouch&quot;, CAN_FAIL_WITH: [&quot;x&quot;], CLAIMS_CAN_DISCRIMINATE: true,
+  HOW: &quot;x&quot;, COMPLETE: true, read: () =&gt; ({ records: [], incomplete_because: null }),
+};
+check(&quot;DRILL: a reader declaring COMPLETE is still refused (改良點 15)&quot;,
+  harness.load([vouching]).problems.some((p) =&gt; /declares COMPLETE/.test(p)));
+const mute = {
+  NAME: &quot;drill-mute&quot;, CAN_FAIL_WITH: [&quot;x&quot;], HOW: &quot;x&quot;,
+  read: () =&gt; ({ records: [], incomplete_because: null }),
+};
+check(&quot;DRILL: a reader that claims no capacity either way is refused&quot;,
+  harness.load([mute]).problems.some((p) =&gt; /does not claim a discrimination capacity/.test(p)));
+check(&quot;but claiming FALSE is perfectly acceptable&quot;,
+  harness.load().problems.length === 0 &amp;&amp; opaquePipe.CLAIMS_CAN_DISCRIMINATE === false);
+check(&quot;and no reader anywhere asserts it is complete&quot;,
+  [framed, opaquePipe, claimsFraming].every((m) =&gt; m.COMPLETE === undefined));
+
+say(&quot;\n== 7. what the challenge cannot do, asserted so it stays measured&quot;);
+check(&quot;it only works where the harness can build a case it knows the answer to&quot;,
+  policy.POLICY.what_this_cannot_reach.includes(&quot;challenge inputs the harness cannot construct&quot;));
+check(&quot;a reader that passes on THESE two streams has not been shown to pass on others&quot;,
+  harness.COMPLETE_STREAM.split(&quot;|&quot;).length === 4,
+  &quot;one pair, one shape - the claim is demonstrated, not proved&quot;);
+check(&quot;and a reader that disclaims capacity is trusted about its own blindness&quot;,
+  results[&quot;opaque-pipe&quot;].claimed === false &amp;&amp; harness.accepted(results[&quot;opaque-pipe&quot;]),
+  &quot;that direction is unchecked, and it is the conservative one - the same trade as 改良點 15&quot;);
+check(&quot;the report never renders a blind reader's silence as informative&quot;,
+  row(&quot;opaque-pipe&quot;).completeness === harness.SILENT_AND_CANNOT);
+
+say(&quot;&quot;);
+if (failures.length &gt; 0) {
+  say(`  ${failures.length} FAILED: ${failures.join(&quot; | &quot;)}`);
+  process.exitCode = 1;
+} else {
+  say(`  ${ran} checks passed - ${Object.keys(readers).length} readers, 3 completeness values`);
+}
+</code></pre></details><details><summary>main.mjs</summary><pre><code>// Three readers over one stream, and a capacity claim that gets challenged.
+//
+//   node src/main.mjs              the run under the policy SCL names
+//   node src/main.mjs --challenge  just the challenge table
+//   node src/main.mjs --strict     exit 1 when a reader failed its challenge
+import * as report from &quot;./DMS/report.mjs&quot;;
+import * as policy from &quot;./SCL/policy.mjs&quot;;
+import * as harness from &quot;./SMS/challenge.mjs&quot;;
+
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+function main(argv) {
+  const { readers, problems } = harness.load();
+  if (problems.length &gt; 0) {
+    for (const problem of problems) say(`  REFUSED: ${problem}`);
+    return 1;
+  }
+
+  const entries = harness.readAll(readers, harness.TRUNCATED_STREAM);
+  const failed = entries.map((e) =&gt; e.challenge).filter((c) =&gt; c.claimed &amp;&amp; !c.passed);
+
+  say(`\n  ${policy.describe()}\n`);
+  say(report.challenges(entries));
+  say(&quot;&quot;);
+  for (const entry of entries) say(`    ${entry.reader}: ${harness.verdict(entry.challenge)}`);
+  say(&quot;&quot;);
+
+  if (argv.includes(&quot;--challenge&quot;)) return failed.length &gt; 0 &amp;&amp; argv.includes(&quot;--strict&quot;) ? 1 : 0;
+
+  const kept = entries.filter((e) =&gt; harness.accepted(e.challenge));
+  say(`  reading the truncated stream (${harness.TRUNCATED_STREAM}):\n`);
+  say(report.rows(kept));
+  say(&quot;&quot;);
+  say(report.floor(harness.floor(kept)));
+  say(&quot;&quot;);
+  say(report.refusals(failed));
+
+  if (argv.includes(&quot;--strict&quot;) &amp;&amp; failed.length &gt; 0 &amp;&amp; policy.refusesLiars()) {
+    say(`\n  --strict: ${failed.length} reader(s) claimed a capacity the challenge did not `
+      + `demonstrate, and that is fatal here`);
+    return 1;
+  }
+  return 0;
+}
+
+process.exitCode = main(process.argv.slice(2));
+</code></pre></details></section></section>
+</main>
+<footer><span>Neo.K × EveMissLab · Apache-2.0</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

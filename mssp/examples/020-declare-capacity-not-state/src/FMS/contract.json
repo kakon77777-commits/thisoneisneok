@@ -1,0 +1,44 @@
+{
+  "name": "020-declare-capacity-not-state",
+  "what_it_is": "Three readers over one stream, where what each unit declares is not its state but what it is able to observe — and that claim is answered by challenge.",
+  "the_structural_decision": "改良點 15 forbids a unit from declaring itself complete, because nothing outside can check it. That leaves a reader which genuinely checked its framing indistinguishable from an opaque pipe that swallowed whatever arrived: both are silent. The move is to change WHAT is declared. A capacity claim — 'I am able to tell truncation from completion' — is not a claim about the outcome, and unlike an outcome claim it is testable: the harness hands the unit a case whose answer it already knows.",
+  "why_this_one": "The Board host asked exactly this on 2026-08-19, and it is the last open thing in the 改良點 13-17 line. It is also the twentieth entry, so it closes the archaeology run.",
+  "status": "candidate",
+
+  "the_three_completeness_values": {
+    "no - declared": "the reader said so",
+    "not known otherwise, and this reader can tell": "silent, and it demonstrated the capacity to speak",
+    "not known otherwise, and this reader CANNOT tell": "silent, and it could not have spoken - which is a different fact"
+  },
+  "there_is_still_no_complete_value": "改良點 15 is unchanged. What is new is that silence is split in two by whether the reader could have broken it.",
+
+  "the_challenge": {
+    "how": "the harness builds one complete stream and one truncated stream and asks the reader to classify both",
+    "why_both_arms": "a reader that always answers 'truncated' is right about the truncated case. A one-armed challenge passes a constant, so `passed` is the conjunction and the island test drills both constants.",
+    "what_it_keys_on": "the CLAIM, not the outcome. opaque-pipe fails the challenge and is accepted, because it never claimed to pass; claims-framing fails identically and is refused."
+  },
+
+  "readers": {
+    "framed":         {"claims": true,  "note": "the frame ends with a terminator, so its absence is observable"},
+    "opaque-pipe":    {"claims": false, "note": "the honest half of the control pair — it declares its own blindness and the challenge agrees"},
+    "claims-framing": {"claims": true,  "note": "reads exactly like the opaque pipe. In the tree deliberately: 改良點 18 is worth nothing unless a false capacity claim is caught by RUNNING the unit."}
+  },
+
+  "the_control_pair": "On the COMPLETE stream, `framed` is silent — exactly as `opaque-pipe` is silent on the truncated one. Silence alone therefore separates nothing, and only the completeness column does. Without that pair, the third value would look like a relabelling rather than a distinction.",
+
+  "sets": {
+    "FMS": "this file: the three completeness values, the challenge and why it needs both arms, and the units map",
+    "SCL": "what a failed challenge means here, what happens to records from a blind reader, and what the challenge cannot reach",
+    "SMS": "building the challenge streams, running each reader against both, and placing the result in one of three columns",
+    "TMS": "one file per reader — each declares what it can OBSERVE and how, never what its state is, and imports nothing",
+    "DMS": "the three columns kept apart, the challenge table, and a floor that now counts blind records separately"
+  },
+
+  "units": {"TMS/readers": ["claims_framing.mjs", "framed.mjs", "opaque_pipe.mjs"]},
+
+  "non_goals": [
+    "Proving a capacity. Passing on one pair of streams demonstrates the claim on that pair; it does not establish it for every shape a reader may meet.",
+    "Checking a disclaimer. A reader that says it CANNOT discriminate is believed, and a reader that disclaims falsely is treated as blind — the conservative direction, and the same unverified trade as 改良點 15.",
+    "Reaching a reader whose framing is real but whose challenge inputs the harness cannot construct. SCL names that gap rather than implying coverage."
+  ]
+}

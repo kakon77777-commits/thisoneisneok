@@ -1,6 +1,6 @@
 {
   "site": "https://thisoneisneok.com",
-  "count": 19,
+  "count": 20,
   "note": "MSSP architecture examples. Each entry runs, and each is checked for TMS-to-TMS coupling at build time.",
   "examples": [
     {
@@ -460,6 +460,31 @@
       "runnable": "python src/main.py",
       "html": "https://thisoneisneok.com/html/mssp/019-applicability-is-part-of-the-answer.html",
       "lines": 631
+    },
+    {
+      "id": "020-declare-capacity-not-state",
+      "title": {
+        "zh": "宣告你能觀察什麼，不要宣告你是什麼",
+        "en": "Declare what you can observe, not what you are"
+      },
+      "summary": {
+        "zh": "第二十則，也是這一輪考古的最後一則。它回答的是 Board host 在 2026-08-19 問的、也是[改良點 13-17](/html/mssp/modules/development.html) 唯一沒解掉的那個問題：**報表要怎麼分辨「這個 reader 檢查過自己的框、確實沒看到下一頁」跟「這個 reader 是一根不透明的管子，來什麼吞什麼」——而且不能重新引入被禁止的正面斷言？** 兩者都沉默，而[範例 017](/html/mssp/017-finished-is-not-complete.html) 把它們放在同一欄，還警告過：如果現實世界多數 reader 都落在那一欄，`not known to be otherwise` 會在讀者腦子裡默默變成「完整」。解法是**換掉被宣告的東西**——不是狀態，是**能力**：一個單元宣告它**能觀察什麼**，而那不是關於結果的主張，所以**可以被測試**：收集器拿一個它已經知道答案的案例去問它。沉默於是分成兩欄，而且沒有加任何正面斷言（仍然沒有 `complete` 這個值）。**挑戰必須有兩臂**：一個永遠回答「截斷」的 reader 對截斷那個案例是對的，單臂挑戰會放它過去，所以 `passed` 是連言，孤島測試把兩個常數都鑽了。**拒絕看的是宣稱，不是結果**——`opaque-pipe` 挑戰失敗但被接受（它從沒宣稱會通過），`claims-framing` 同樣失敗卻被拒絕。對照組是「`framed` 在**完整**串流上也沉默」，所以沉默本身分不開任何東西，只有 completeness 欄分得開。同日考古 020 是這個論點變成結構：`Result<T, E>` 是一份可能出錯的能力宣告，**取值被型別系統強制**（E0308），**丟棄沒有**——`let _ = ...` 在 `deny(unused_must_use)` 底下照樣編過。",
+        "en": "The twentieth entry and the last of the archaeology run. It answers the question the Board host asked on 2026-08-19, which was the one thing 改良點 13 to 17 left standing - how does a report tell a reader that checked its framing and saw no further pages from an opaque pipe that swallowed whatever arrived, without re-introducing a forbidden positive assertion. Both are silent, and example 017 put them in one column while warning that if most real readers land there, \"not known to be otherwise\" quietly becomes \"complete\" in the reader's head. The move is to change what is declared - not the state but the CAPACITY. A unit declares what it is able to observe, which is not a claim about the outcome and, unlike an outcome claim, can be tested: the harness hands it a case whose answer it already knows. Silence then splits in two with no positive assertion added, and there is still no \"complete\" value. The challenge needs both arms, because a reader that always answers \"truncated\" is right about the truncated case and a one-armed challenge would pass a constant; passed is the conjunction and the island test drills both constants. Refusal keys on the claim rather than the outcome - opaque-pipe fails the challenge and is accepted because it never claimed to pass, while claims-framing fails identically and is refused. The control is framed being silent on the COMPLETE stream, so silence alone separates nothing and only the completeness column does. The same day's archaeology is this argument made structural: Result<T, E> is a declared capacity to be wrong, extraction is forced by the type checker with E0308, and discarding is not, since let _ = compiles clean even under deny(unused_must_use)."
+      },
+      "language": "javascript",
+      "date": "2026-08-20",
+      "version": "v1.0",
+      "kind": "example",
+      "concepts": [
+        "declare-capacity-not-state",
+        "a-capacity-claim-is-testable-by-challenge",
+        "a-challenge-needs-both-arms-or-a-constant-passes",
+        "refusal-keys-on-the-claim-not-the-outcome",
+        "two-silences-that-must-not-share-a-column"
+      ],
+      "runnable": "node src/main.mjs",
+      "html": "https://thisoneisneok.com/html/mssp/020-declare-capacity-not-state.html",
+      "lines": 507
     }
   ]
 }

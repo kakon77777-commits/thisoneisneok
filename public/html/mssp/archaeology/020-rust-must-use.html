@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>取值被強制，丟棄沒有 | MSSP 考古 | Neo.K</title>
+<meta name="description" content="同日的範例 020 主張**宣告你能觀察什麼、不要宣告你是什麼**，理由是能力宣告可以被測試。`Result&lt;T, E&gt;` 是那句話變成結構：一份「我可能是錯的」的能力宣告，由編譯器在**值被使用的地方**強制執行——這是這 20 則裡唯一一個上游把宣告變成**編譯期義務**的例子。量到的界線是兩句話：**取值被強制**（`let v: i32 = fallible();` 編不過，`E0308`，型別錯誤、不需要任何 lint），**丟棄沒有**（整個丟掉是警告，`let _ = ...` 連警告都沒有）。而最利的一列是：**`let _ = ...` 在 `#![deny(unused_must_use)]`——語言提供的最嚴設定——底下照樣編過而且什麼都沒說**，所以剩下那個訊號有多強是**消費者的設定**決定的，那正是改良點 16 出現在型別系統裡面。對照組是 `match { Ok, Err }`：把處理寫出來、編過、沒有警告；沒有它，「`let _` 編過而且乾淨」跟「全部都乾淨」無法區分。**儀器自己錯過一次，而我對它的第二個診斷是編的**：第一版每個編得過的寫法都報「沒有警告」，因為 cargo 的診斷寫在 stderr 而且警告時 exit 0；我在旁邊還寫了「共用 package 名會讓快取單元安靜地回答」，而**把那個缺陷加回去的變異保持綠色**——這一輪第一次有變異沒變紅。去量才發現快取命中的建置**會重播診斷**，那個危害不存在，第 2 節現在量它而不是斷言它。">
+<link rel="canonical" href="https://thisoneisneok.com/html/mssp/archaeology/020-rust-must-use.html">
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+:root{--paper:#f2efe8;--ink:#171914;--muted:#686b62;--line:#cbc8bf;--accent:#315b53}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header,main,footer{width:min(920px,calc(100% - 40px));margin:auto}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;font:12px ui-monospace,monospace;letter-spacing:.08em;flex-wrap:wrap}
+main{padding:52px 0 96px}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;border:1px solid var(--line);padding:20px;margin:0 0 44px}
+.prov div{display:flex;flex-direction:column;gap:5px}
+.prov b{color:var(--accent);font:9px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
+.prov span{font-size:13px;overflow-wrap:anywhere}.prov a{color:var(--accent)}
+.content{font-size:17px;line-height:1.86;overflow-wrap:break-word}
+.content h1{font-size:clamp(28px,4.6vw,44px);line-height:1.16;letter-spacing:-.04em;margin:4px 0 26px}
+.content h2{font-size:24px;margin:52px 0 14px}.content h3{font-size:18px;margin:32px 0 10px}
+.content p{margin:0 0 22px}.content li{margin:.4em 0}
+.content table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 26px;display:block;overflow-x:auto}
+.content th,.content td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+.content code{font-family:ui-monospace,monospace;font-size:.86em;background:#e2dfd6;padding:.15em .35em;border-radius:4px}
+.content pre{background:#e6e3da;padding:16px;overflow-x:auto;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.content pre code{background:none;padding:0}
+.content blockquote{margin:30px 0;padding:4px 0 4px 24px;border-left:3px solid var(--accent);color:var(--muted)}
+.content a{color:var(--accent)}
+.source{margin:64px 0 0;border-top:1px solid var(--line);padding-top:32px}
+.set{margin:0 0 24px}.set h3{font:10px ui-monospace,monospace;letter-spacing:.14em;color:var(--accent);margin:0 0 10px}
+details{border:1px solid var(--line);margin:0 0 6px}summary{cursor:pointer;padding:9px 13px;font:12px ui-monospace,monospace}
+details[open] summary{border-bottom:1px solid var(--line)}details pre{margin:0;border-left:0;font-size:12.5px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;display:flex;justify-content:space-between;gap:16px;font:12px ui-monospace,monospace;color:var(--muted);flex-wrap:wrap}
+footer a{color:var(--accent)}
+@media(max-width:640px){.content{font-size:16px}header,footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>NEO.K / MSSP 開源專案考古</strong><span>020-rust-must-use</span></header>
+<main>
+  <section class="prov">
+    <div><b>專案</b><span>Rust Result and the unused_must_use lint</span></div>
+    <div><b>授權</b><span>Apache-2.0 OR MIT</span></div>
+    <div><b>檢視版本</b><span>measured at run time</span></div>
+    <div><b>日期</b><span>2026-08-20</span></div>
+    <div><b>來源</b><span><a href="https://doc.rust-lang.org/std/result/">upstream ↗</a></span></div>
+  </section>
+  <article class="content"><h1>020 — Rust <code>Result</code> 與 <code>#[must_use]</code>：取值被強制，丟棄沒有</h1>
+<blockquote>
+<p>上游是 Rust 的 <a href="https://doc.rust-lang.org/std/result/"><code>Result</code></a> 與 <code>unused_must_use</code> lint，
+用<strong>真的跑 rustc</strong> 量出來（Apache-2.0 / MIT 雙授權）。版本由執行時量出來。
+這一則需要本機有 rust 工具鏈；沒有的時候它<strong>拒絕回報</strong>，不猜。</p>
+</blockquote>
+<pre><code class="language-bash">node src/main.mjs            # 五種寫法，每一列都是真的跑過的 cargo build
+node src/main.mjs --strict   # 這個部署的 lint 設定有缺口就 exit 1
+node src/island_test.mjs     # 39 項檢查，數字由它自己印
+</code></pre>
+<h2>為什麼選它</h2>
+<p>同日的<a href="/html/mssp/020-declare-capacity-not-state.html">範例 020</a> 主張<strong>宣告你能觀察什麼，不要宣告你是什麼</strong>，理由是<strong>能力宣告可以被測試</strong>。</p>
+<p><code>Result&lt;T, E&gt;</code> 就是那句話變成結構：它是一份**「我可能是錯的」的能力宣告**，而編譯器在<strong>值被使用的地方</strong>強制執行它。這是這 20 則裡唯一一個上游把宣告變成<strong>編譯期義務</strong>的例子——所以它適合當最後一則。</p>
+<h2>原專案的結構地圖</h2>
+<pre><code class="language-text">    route                compiles   must_use warning   error
+    bare call            yes        yes                -
+    let _ = ...          yes        -                  -
+    .unwrap_or(0)        yes        -                  -
+    let v: i32 = ...     NO         -                  E0308
+    match { Ok, Err }    yes        -                  -
+</code></pre>
+<p><strong>對照組是最後一列。</strong> 把處理寫出來，編過、沒有警告。沒有它，「<code>let _ = ...</code> 編過而且乾淨」跟「所有寫法都編過而且乾淨」一模一樣，不構成任何主張。</p>
+<p><strong>界線是兩句話：</strong></p>
+<ul>
+<li><strong>取值被強制。</strong> <code>let v: i32 = fallible();</code> <strong>編不過</strong>——<code>E0308</code>，型別錯誤，不需要任何 lint。你不可能在不對 <code>Err</code> 說點什麼的情況下把 <code>T</code> 拿出來。</li>
+<li><strong>丟棄沒有。</strong> 整個丟掉是一個警告；<code>let _ = ...</code> <strong>連警告都沒有</strong>。</li>
+</ul>
+<p>而最有意思的一列在下面：</p>
+<pre><code class="language-text">  and with the consumer&#39;s own deny(unused_must_use):
+    bare call            NO         as an ERROR        -
+    let _ = ...          yes        -                  -
+</code></pre>
+<p><strong><code>let _ = ...</code> 在語言提供的最嚴設定底下照樣編過，而且什麼都沒說。</strong> 也就是說：剩下那個訊號有多強，是<strong>消費者的設定</strong>決定的——那正是<a href="/html/mssp/modules/development.html">改良點 16</a>（宣告的方向由消費它的政策決定）出現在一個型別系統裡面。</p>
+<h2>儀器自己錯過，而且我對它的第二個診斷是編的</h2>
+<p>這一則的第一版<strong>每一個編得過的寫法都報「沒有警告」</strong>。原因：<strong>cargo 的診斷寫在 stderr，而且警告時 exit 0</strong>，<code>execFileSync</code> 的回傳值只有 stdout。改用 <code>spawnSync</code> 就對了。</p>
+<p><strong>然後我在旁邊寫了第二個原因，而它不是真的。</strong> 我寫「共用一個 package 名 + 共用 target 目錄會讓 cargo 用快取單元回答，於是後面的探針全都安靜」。把那個缺陷<strong>加回去的變異保持綠色</strong>——這一輪第一次有變異沒有變紅。去量才知道為什麼：</p>
+<pre><code class="language-text">  PASS  building the same directory twice really does hit the cache the second time - first Compiling, second Finished
+  PASS  and the cached build REPLAYS the warning rather than going quiet
+</code></pre>
+<p><strong>快取命中的建置會把診斷重播出來。</strong> 那個危害不存在。第 2 節現在<strong>量它</strong>，而不是斷言它。</p>
+<p>（順帶量到第三件事：第一版的快取探針<strong>每次都重寫 <code>main.rs</code></strong>，所以檔案 mtime 一直變、cargo 永遠重編，那支探針從來沒看過一次快取命中。要觀察快取，就不能碰來源。）</p>
+<h2>MSSP 重切</h2>
+<table>
+<thead>
+<tr>
+<th>集合</th>
+<th>裡面是什麼</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FMS</td>
+<td>每種寫法宣告什麼、量到什麼，<strong>儀器自己的失敗模式</strong>，以及 <code>units</code> 對照</td>
+</tr>
+<tr>
+<td>SCL</td>
+<td>這個部署的 lint 設定，以及那個設定<strong>伸不到哪裡</strong></td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>編譯器探針——每一列都是真的跑過的 <code>cargo build</code></td>
+</tr>
+<tr>
+<td>TMS</td>
+<td>一種寫法一個檔——各自帶著自己的片段與<strong>它對編譯器的宣稱</strong>，而且 import 任何東西都沒有</td>
+</tr>
+<tr>
+<td>DMS</td>
+<td><code>compiles</code> 跟警告欄<strong>一起印</strong>，不單獨出現</td>
+</tr>
+</tbody></table>
+<p>重切加的是<strong>範例 020 的挑戰，把 rustc 當 oracle</strong>：每種寫法宣告「編譯器會不會強制我處理」，然後去問編譯器。第 6 節逐條驗，加一個鑽孔——一個宣稱被強制、實際沒有的寫法必須被抓到。</p>
+<h2>什麼不適合拆</h2>
+<p><strong><code>#[must_use]</code> 有在做事。</strong> 五列裡只有 bare call 那一列會因為它移動，而那正是它的用途。</p>
+<p><strong><code>let _ = ...</code> 也不該被拿掉。</strong> 它是「我是故意忽略的」這句話的寫法，而那句話有時候是對的。缺陷不在任何一邊，在於<strong>故意忽略跟疏忽忽略最後長得一樣</strong>，而語言沒有留下判別它們的地方。</p>
+<h2>這次沒有解決什麼</h2>
+<p><strong>這一則只量了一個型別、一個語言、一套工具鏈</strong>（rustc 1.96）。它<strong>示範</strong>了那個界線，沒有<strong>證明</strong>任何關於型別系統的一般命題。</p>
+<p><strong>沒有比較的：</strong> checked exceptions、<code>Option</code>、<code>Either</code>。每一個都需要新的探針，不是重讀既有輸出。</p>
+<p><strong>沒有處理的：</strong> clippy 有沒有辦法把 <code>let _ =</code> 也擋下來，以及一個團隊用 review 把它擋掉算不算「機械化」。這一則量的是<strong>編譯器做什麼</strong>，不是專案能在它周圍安排什麼。</p>
+<hr>
+<p><strong>這是這一輪的最後一則考古。</strong> 20 個範例、20 個考古之後，照 Neo 定的路線，接下來是真實市場應用。</p>
+</article>
+  <section class="source"><h2>重切原始碼</h2><section class="set"><h3>FMS</h3><details><summary>FMS/architecture.json</summary><pre><code>{
+  &quot;name&quot;: &quot;020-rust-must-use&quot;,
+  &quot;upstream&quot;: &quot;Rust: Result, #[must_use], and the unused_must_use lint, measured by running rustc&quot;,
+  &quot;what_is_being_examined&quot;: &quot;Five ways a caller can meet a Result, and which of them the compiler refuses.&quot;,
+
+  &quot;the_finding&quot;: &quot;Extraction is forced and discarding is not. Using the T without naming the Err case is a type error (E0308), so no lint setting is needed. Dropping the whole value is a warning, and discarding it explicitly with `let _ =` is not even that — it compiles clean under deny(unused_must_use), which is the loudest setting the language offers.&quot;,
+
+  &quot;why_it_belongs_beside_example_020&quot;: &quot;Example 020 argues that a unit should declare its CAPACITY rather than its state, because a capacity claim is testable. Rust's type system is that argument made structural: Result&lt;T, E&gt; is a declared capacity to be wrong, and the compiler enforces it exactly where the value is used. What it does not do is stop a consumer from refusing to look — which is 改良點 16 appearing inside a type system, since the strength of the remaining signal is the consumer's lint setting.&quot;,
+
+  &quot;the_control&quot;: &quot;`match { Ok, Err }` — handling written out, compiles clean, no warning. Without it, `let _ = ...` compiling clean would be consistent with every route compiling clean and would be evidence of nothing.&quot;,
+
+  &quot;routes&quot;: {
+    &quot;bare call&quot;:         {&quot;claims_compiler_forces_handling&quot;: false, &quot;measured&quot;: &quot;compiles, must-use warning&quot;},
+    &quot;let _ = ...&quot;:       {&quot;claims_compiler_forces_handling&quot;: false, &quot;measured&quot;: &quot;compiles, no warning, and still compiles under deny&quot;},
+    &quot;.unwrap_or(0)&quot;:     {&quot;claims_compiler_forces_handling&quot;: false, &quot;measured&quot;: &quot;compiles clean - Err named by method call&quot;},
+    &quot;let v: i32 = ...&quot;:  {&quot;claims_compiler_forces_handling&quot;: true,  &quot;measured&quot;: &quot;does NOT compile, E0308&quot;},
+    &quot;match { Ok, Err }&quot;: {&quot;claims_compiler_forces_handling&quot;: false, &quot;measured&quot;: &quot;the control - compiles clean&quot;}
+  },
+
+  &quot;the_instrument_was_wrong_first&quot;: &quot;One defect, fixed, and covered by section 2 of the island test: cargo writes diagnostics to stderr and exits 0, so reading only the return value of execFileSync reported 'no warning' for every route that compiled. I also wrote down a SECOND cause - that a shared package name under a shared target directory would let a cached unit answer silently - and it is not real. The mutation reinstating it stayed green, and measuring it directly showed why: a no-op `Finished` build replays the cached diagnostics. Section 2 measures that instead. It is the first time in this run that a green mutation refuted a defect I had claimed rather than confirming one.&quot;,
+
+  &quot;sets&quot;: {
+    &quot;FMS&quot;: &quot;this file: what each route claims and what was measured, the instrument's own failure modes, and the units map&quot;,
+    &quot;SCL&quot;: &quot;the deployment's lint setting, and what that setting cannot reach&quot;,
+    &quot;SMS&quot;: &quot;the compiler probes - each row is a cargo build that really ran&quot;,
+    &quot;TMS&quot;: &quot;one file per route - each carries its snippet and what it claims about the compiler, and imports nothing&quot;,
+    &quot;DMS&quot;: &quot;compiles and the warning column printed together, never one alone&quot;
+  },
+
+  &quot;units&quot;: {&quot;TMS/routes&quot;: [&quot;bare_call.mjs&quot;, &quot;direct_assign.mjs&quot;, &quot;explicit_discard.mjs&quot;, &quot;match_arm.mjs&quot;, &quot;unwrap.mjs&quot;]},
+
+  &quot;non_goals&quot;: [
+    &quot;Establishing anything about type systems in general. This is one type, in one language, on one toolchain - rustc 1.96 - and the claim is demonstrated there rather than proved.&quot;,
+    &quot;Judging whether let _ = should be reachable by a lint. Clippy has opinions and teams have review; this measures what the compiler does, not what a project can arrange around it.&quot;,
+    &quot;Comparing with checked exceptions, Option, or Either. Each would need new probes rather than a re-reading of these.&quot;
+  ]
+}
+</code></pre></details></section><section class="set"><h3>SCL</h3><details><summary>SCL/policy.json</summary><pre><code>{
+  &quot;deployment&quot;: &quot;release-pipeline&quot;,
+  &quot;lint_setting&quot;: &quot;deny(unused_must_use)&quot;,
+  &quot;an_explicitly_discarded_result_is&quot;: &quot;not reachable by any lint setting&quot;,
+  &quot;why&quot;: &quot;This pipeline turns the must-use warning into an error, which is the strongest setting the language offers. It is written down here because the measurement shows what that setting does NOT cover, and a policy that implies coverage it does not have is worse than one that names its gap.&quot;,
+  &quot;what_this_cannot_reach&quot;: &quot;let _ = fallible(). It compiles clean under deny(unused_must_use) - the loudest available setting does not stop the explicit discard.&quot;,
+  &quot;not_a_general_rule&quot;: &quot;A codebase where let _ is banned by review, or by a clippy lint the team enables, closes it socially rather than mechanically. SCL is where the position lives.&quot;
+}
+</code></pre></details></section><section class="set"><h3>SMS</h3><details><summary>SMS/compiler.mjs</summary><pre><code>// Probes that run the real compiler. Nothing here is simulated — every row in
+// the report is a `cargo build` that actually happened.
+//
+// One thing about the instrument got it wrong the first time and is worth
+// keeping in the source: cargo writes diagnostics to STDERR and exits 0 on a
+// warning, and the return value of execFileSync is stdout only — so the first
+// version of this file reported &quot;no warning&quot; for every route that compiled.
+// spawnSync hands back both streams whatever the exit status.
+//
+// I also wrote down a second cause — that a shared package name under a shared
+// target directory would let a cached unit answer silently — and it is NOT
+// real. A mutation reinstating it stayed green, and measuring it directly
+// showed why: a no-op `Finished` build REPLAYS the cached diagnostics. Section
+// 2 of the island test measures that rather than asserting it. Each probe still
+// gets its own package name, which costs nothing and keeps the probes
+// independent of that behaviour either way.
+import { spawnSync } from &quot;node:child_process&quot;;
+import fs from &quot;node:fs&quot;;
+import os from &quot;node:os&quot;;
+import path from &quot;node:path&quot;;
+
+const ROOT = fs.mkdtempSync(path.join(os.tmpdir(), &quot;mssp-020-&quot;));
+const SHARED_TARGET = path.join(ROOT, &quot;target&quot;);
+let crateCounter = 0;
+
+export const PRELUDE = 'fn fallible() -&gt; Result&lt;i32, String&gt; { Err(&quot;broke&quot;.into()) }';
+
+export function versions() {
+  const rustc = spawnSync(&quot;rustc&quot;, [&quot;--version&quot;], { encoding: &quot;utf8&quot; });
+  const cargo = spawnSync(&quot;cargo&quot;, [&quot;--version&quot;], { encoding: &quot;utf8&quot; });
+  return `${(rustc.stdout ?? &quot;&quot;).trim()} | ${(cargo.stdout ?? &quot;&quot;).trim()}`;
+}
+
+export function available() {
+  const probe = spawnSync(&quot;cargo&quot;, [&quot;--version&quot;], { encoding: &quot;utf8&quot; });
+  return probe.status === 0;
+}
+
+// Build one crate and report what the compiler said. `deny` puts the lint
+// setting in the CONSUMER's crate, which is where it lives in real code.
+export function build(body, { deny = false } = {}) {
+  crateCounter += 1;
+  const dir = fs.mkdtempSync(path.join(ROOT, &quot;crate-&quot;));
+  return buildIn(dir, body, { deny, name: `probe${crateCounter}` });
+}
+
+// Split out so the island test can write a crate once and then build it TWICE,
+// which is the only way to see what a cached build reports. Writing the source
+// again gives it a new mtime and forces a recompile — which is what the first
+// version of this probe did, so it never saw a cache hit at all.
+export function buildIn(dir, body, { deny = false, name = &quot;probe&quot; } = {}) {
+  fs.mkdirSync(path.join(dir, &quot;src&quot;), { recursive: true });
+  fs.writeFileSync(path.join(dir, &quot;Cargo.toml&quot;),
+    `[package]\nname = &quot;${name}&quot;\nversion = &quot;0.1.0&quot;\nedition = &quot;2021&quot;\n`);
+  fs.writeFileSync(path.join(dir, &quot;src&quot;, &quot;main.rs&quot;),
+    `${deny ? &quot;#![deny(unused_must_use)]\n&quot; : &quot;&quot;}${PRELUDE}\nfn main() {\n${body}\n}\n`);
+  return rebuild(dir);
+}
+
+// Run cargo against a crate already on disk, touching nothing.
+export function rebuild(dir) {
+  const result = spawnSync(&quot;cargo&quot;, [&quot;build&quot;, &quot;--target-dir&quot;, SHARED_TARGET],
+    { cwd: dir, encoding: &quot;utf8&quot; });
+  const text = `${result.stdout ?? &quot;&quot;}${result.stderr ?? &quot;&quot;}`;
+  return {
+    compiles: result.status === 0,
+    exitStatus: result.status,
+    recompiled: /Compiling/.test(text),
+    mustUseWarning: /warning: unused `Result` that must be used/.test(text),
+    denied: /error: unused `Result` that must be used/.test(text),
+    errorCode: (text.match(/error\[([A-Z0-9]+)\]/) ?? [])[1] ?? null,
+  };
+}
+
+// The challenge: a route claims whether the compiler FORCES the Err case to be
+// named. The compiler answers. This is example 020's shape with rustc as the
+// oracle — and, as there, the claim is checked by running it.
+export function challenge(route) {
+  const plain = build(route.BODY);
+  const strict = build(route.BODY, { deny: true });
+  const forced = plain.compiles === false &amp;&amp; plain.errorCode !== null;
+  return {
+    route: route.NAME,
+    claimed: route.CLAIMS_COMPILER_FORCES_HANDLING,
+    plain,
+    strict,
+    forced,
+    passed: forced === route.CLAIMS_COMPILER_FORCES_HANDLING,
+  };
+}
+
+export function cleanup() {
+  fs.rmSync(ROOT, { recursive: true, force: true });
+}
+</code></pre></details></section><section class="set"><h3>TMS</h3><details><summary>TMS/routes/bare_call.mjs</summary><pre><code>// Call it and let the Result fall on the floor.
+export const NAME = &quot;bare call&quot;;
+export const BODY = &quot;    fallible();&quot;;
+export const CLAIMS_COMPILER_FORCES_HANDLING = false;
+export const HOW = &quot;the value is dropped; #[must_use] makes it noisy, not impossible&quot;;
+</code></pre></details><details><summary>TMS/routes/direct_assign.mjs</summary><pre><code>// Try to use the T without acknowledging the E at all.
+export const NAME = &quot;let v: i32 = ...&quot;;
+export const BODY = &quot;    let v: i32 = fallible();\n    println!(\&quot;{}\&quot;, v);&quot;;
+export const CLAIMS_COMPILER_FORCES_HANDLING = true;
+export const HOW = &quot;Result&lt;i32, String&gt; is not i32, so extraction cannot be written without saying something about Err&quot;;
+</code></pre></details><details><summary>TMS/routes/explicit_discard.mjs</summary><pre><code>// Discard it on purpose. This is the row the entry exists for.
+export const NAME = &quot;let _ = ...&quot;;
+export const BODY = &quot;    let _ = fallible();&quot;;
+export const CLAIMS_COMPILER_FORCES_HANDLING = false;
+export const HOW = &quot;binding to _ is the documented way to say 'I meant to ignore this'&quot;;
+</code></pre></details><details><summary>TMS/routes/match_arm.mjs</summary><pre><code>// The control. It names the Err arm and compiles clean with no warning.
+//
+// Without it, &quot;let _ = ... compiles clean&quot; would not be evidence of anything:
+// it would be consistent with every route compiling clean.
+export const NAME = &quot;match { Ok, Err }&quot;;
+export const BODY = &quot;    let v = match fallible() { Ok(x) =&gt; x, Err(_) =&gt; 0 };\n    println!(\&quot;{}\&quot;, v);&quot;;
+export const CLAIMS_COMPILER_FORCES_HANDLING = false;
+export const HOW = &quot;the control - handling is written out, so nothing needs to be forced&quot;;
+</code></pre></details><details><summary>TMS/routes/unwrap.mjs</summary><pre><code>// Take the value and promise there is no error, at run time.
+export const NAME = &quot;.unwrap_or(0)&quot;;
+export const BODY = &quot;    println!(\&quot;{}\&quot;, fallible().unwrap_or(0));&quot;;
+export const CLAIMS_COMPILER_FORCES_HANDLING = false;
+export const HOW = &quot;the Err case is named, but by a method call rather than by the type checker&quot;;
+</code></pre></details></section><section class="set"><h3>DMS</h3><details><summary>DMS/report.mjs</summary><pre><code>// What a person is shown.
+//
+// `compiles` is never printed without the warning column beside it, because
+// &quot;it built&quot; is the answer three different situations share here.
+const pad = (value, width) =&gt; String(value).padEnd(width);
+
+export function table(rows) {
+  const lines = [&quot;    route                compiles   must_use warning   error&quot;];
+  for (const row of rows) {
+    lines.push(`    ${pad(row.route.NAME, 20)} ${pad(row.compiles ? &quot;yes&quot; : &quot;NO&quot;, 10)} `
+      + `${pad(row.mustUseWarning ? &quot;yes&quot; : row.denied ? &quot;as an ERROR&quot; : &quot;-&quot;, 18)} `
+      + `${row.errorCode ?? &quot;-&quot;}`);
+  }
+  return lines.join(&quot;\n&quot;);
+}
+
+export function boundary(discardPlain, discardStrict, assign) {
+  return [
+    &quot;  the boundary, in two facts:&quot;,
+    `    extraction is forced      - ${assign.route.NAME} does not compile (${assign.errorCode})`,
+    `    discarding is not         - ${discardPlain.route.NAME} compiles, no warning`,
+    `    and the loudest setting available does not change that: still `
+      + `${discardStrict.compiles ? &quot;compiles&quot; : &quot;refused&quot;}`,
+    &quot;&quot;,
+    &quot;  So the type system forces the Err case to be NAMED wherever the value is used,&quot;,
+    &quot;  and forces nothing at all where the value is thrown away.&quot;,
+  ].join(&quot;\n&quot;);
+}
+</code></pre></details></section><section class="set"><h3>root</h3><details><summary>island_test.mjs</summary><pre><code>// The island test, run against the real compiler.
+//
+//   node src/island_test.mjs
+//
+// Section 2 checks the INSTRUMENT, because this entry's first version read only
+// stdout, where cargo writes no diagnostics at all. It also measures the cache
+// claim I wrote down beside that one and could not reproduce: a cached build
+// replays its warnings, so the hazard I described does not exist.
+import fs from &quot;node:fs&quot;;
+import os from &quot;node:os&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as compiler from &quot;./SMS/compiler.mjs&quot;;
+import * as bareCall from &quot;./TMS/routes/bare_call.mjs&quot;;
+import * as directAssign from &quot;./TMS/routes/direct_assign.mjs&quot;;
+import * as explicitDiscard from &quot;./TMS/routes/explicit_discard.mjs&quot;;
+import * as matchArm from &quot;./TMS/routes/match_arm.mjs&quot;;
+import * as unwrap from &quot;./TMS/routes/unwrap.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const FMS = JSON.parse(fs.readFileSync(path.join(here, &quot;FMS&quot;, &quot;architecture.json&quot;), &quot;utf8&quot;));
+const POLICY = JSON.parse(fs.readFileSync(path.join(here, &quot;SCL&quot;, &quot;policy.json&quot;), &quot;utf8&quot;));
+const ROUTES = [bareCall, explicitDiscard, unwrap, directAssign, matchArm];
+const failures = [];
+let ran = 0;
+const check = (label, ok, detail = &quot;&quot;) =&gt; {
+  ran += 1;
+  process.stdout.write(`  ${ok ? &quot;PASS&quot; : &quot;FAIL&quot;}  ${label}${detail ? ` - ${detail}` : &quot;&quot;}\n`);
+  if (!ok) failures.push(label);
+};
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+if (!compiler.available()) {
+  say(&quot;\n  REFUSED: no rust toolchain. This entry measures a compiler and will not guess.&quot;);
+  process.exit(1);
+}
+say(`\n  ${compiler.versions()}`);
+
+say(&quot;\n== 1. each route is an island, and FMS matches the tree&quot;);
+for (const [unit, declared] of Object.entries(FMS.units)) {
+  const dir = path.join(here, ...unit.split(&quot;/&quot;));
+  const onDisk = fs.readdirSync(dir).filter((n) =&gt; n.endsWith(&quot;.mjs&quot;)).sort();
+  check(`${unit}: FMS declares what is on disk`,
+    JSON.stringify(onDisk) === JSON.stringify([...declared].sort()),
+    `disk ${onDisk.join(&quot;, &quot;)} | FMS ${[...declared].sort().join(&quot;, &quot;)}`);
+  for (const file of onDisk) {
+    const body = fs.readFileSync(path.join(dir, file), &quot;utf8&quot;);
+    check(`${unit}/${file} imports nothing at all`, !/^\s*import\s/m.test(body));
+  }
+}
+check(&quot;every route states what it claims about the compiler&quot;,
+  ROUTES.every((r) =&gt; typeof r.CLAIMS_COMPILER_FORCES_HANDLING === &quot;boolean&quot;));
+
+say(&quot;\n== 2. the instrument, checked before anything is measured with it&quot;);
+const first = compiler.build(bareCall.BODY);
+check(&quot;a route known to warn does report the warning&quot;, first.mustUseWarning === true,
+  &quot;cargo writes diagnostics to stderr and exits 0 - reading only stdout loses every one&quot;);
+check(&quot;and it did exit 0 while doing so&quot;, first.exitStatus === 0);
+// Measured rather than assumed. I first wrote down a second instrument defect -
+// that a cached unit would answer silently - and a mutation reinstating it
+// stayed GREEN. This is what is actually true, and it is why that hazard does
+// not exist here.
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), &quot;mssp-020-cache-&quot;));
+const fresh = compiler.buildIn(dir, bareCall.BODY, { name: &quot;cacheprobe&quot; });
+const cached = compiler.rebuild(dir);   // same crate, source untouched
+check(&quot;building the same directory twice really does hit the cache the second time&quot;,
+  fresh.recompiled === true &amp;&amp; cached.recompiled === false,
+  `first ${fresh.recompiled ? &quot;Compiling&quot; : &quot;Finished&quot;}, second ${cached.recompiled ? &quot;Compiling&quot; : &quot;Finished&quot;}`);
+check(&quot;and the cached build REPLAYS the warning rather than going quiet&quot;,
+  cached.mustUseWarning === true,
+  &quot;so a shared package name is not a hazard here - the claim I first wrote down was wrong&quot;);
+fs.rmSync(dir, { recursive: true, force: true });
+check(&quot;a route known NOT to warn reports no warning&quot;,
+  compiler.build(matchArm.BODY).mustUseWarning === false);
+check(&quot;so the warning column can take both values&quot;, first.mustUseWarning !== compiler.build(matchArm.BODY).mustUseWarning);
+const broken = compiler.build(&quot;    this is not rust;&quot;);
+check(&quot;and a build that cannot compile is reported as such&quot;, broken.compiles === false);
+
+say(&quot;\n== 3. the control - handling written out compiles clean&quot;);
+const control = compiler.build(matchArm.BODY);
+check(&quot;match names the Err arm and compiles&quot;, control.compiles === true);
+check(&quot;with no must-use warning&quot;, control.mustUseWarning === false);
+check(&quot;and no error code&quot;, control.errorCode === null);
+const discard = compiler.build(explicitDiscard.BODY);
+check(&quot;let _ = ... also compiles clean with no warning&quot;,
+  discard.compiles === true &amp;&amp; discard.mustUseWarning === false);
+check(&quot;so 'compiles clean' is reached by handling AND by discarding&quot;,
+  control.compiles === discard.compiles &amp;&amp; control.mustUseWarning === discard.mustUseWarning,
+  &quot;which is why the control has to be here - without it, clean would be evidence of nothing&quot;);
+
+say(&quot;\n== 4. extraction is forced, discarding is not&quot;);
+const assign = compiler.build(directAssign.BODY);
+check(&quot;using the T without naming Err does not compile&quot;, assign.compiles === false);
+check(&quot;and the error is a type error, not a lint&quot;, assign.errorCode === &quot;E0308&quot;, assign.errorCode ?? &quot;-&quot;);
+check(&quot;while dropping the whole value compiles&quot;, compiler.build(bareCall.BODY).compiles === true);
+check(&quot;and discarding it explicitly compiles without even a warning&quot;,
+  discard.compiles === true &amp;&amp; discard.mustUseWarning === false);
+const unwrapped = compiler.build(unwrap.BODY);
+check(&quot;unwrap_or names Err by method call and compiles clean&quot;,
+  unwrapped.compiles === true &amp;&amp; unwrapped.mustUseWarning === false);
+
+say(&quot;\n== 5. and the loudest setting the consumer has does not close it&quot;);
+const denyBare = compiler.build(bareCall.BODY, { deny: true });
+const denyDiscard = compiler.build(explicitDiscard.BODY, { deny: true });
+check(&quot;deny(unused_must_use) turns the bare call into an error&quot;, denyBare.compiles === false);
+check(&quot;and it names the lint, not a type&quot;, denyBare.denied === true &amp;&amp; denyBare.errorCode === null);
+check(&quot;but let _ = ... still compiles under the same setting&quot;, denyDiscard.compiles === true);
+check(&quot;with nothing said about it at all&quot;,
+  denyDiscard.mustUseWarning === false &amp;&amp; denyDiscard.denied === false);
+check(&quot;so the setting moves one row and not the other&quot;,
+  denyBare.compiles !== compiler.build(bareCall.BODY).compiles
+  &amp;&amp; denyDiscard.compiles === discard.compiles);
+check(&quot;which puts the decision back on the consumer - 改良點 16, inside a type system&quot;,
+  POLICY.lint_setting === &quot;deny(unused_must_use)&quot;);
+
+say(&quot;\n== 6. the challenge - each route's claim against the compiler&quot;);
+for (const route of ROUTES) {
+  const result = compiler.challenge(route);
+  check(`${route.NAME}: claims forced=${result.claimed}, compiler says ${result.forced}`,
+    result.passed === true);
+}
+const liar = { NAME: &quot;drill-liar&quot;, BODY: explicitDiscard.BODY, CLAIMS_COMPILER_FORCES_HANDLING: true };
+const drilled = compiler.challenge(liar);
+check(&quot;DRILL: a route claiming the compiler forces it, when it does not, is caught&quot;,
+  drilled.passed === false);
+
+say(&quot;\n== 7. what this does not settle&quot;);
+check(&quot;#[must_use] is doing real work - the bare call is the one row that moves&quot;,
+  first.mustUseWarning === true &amp;&amp; discard.mustUseWarning === false);
+check(&quot;SCL names the gap rather than implying coverage&quot;,
+  POLICY.what_this_cannot_reach.includes(&quot;let _ = fallible()&quot;));
+check(&quot;and this entry measures one type in one language on one toolchain&quot;,
+  FMS.non_goals.some((g) =&gt; /one toolchain|single language|other languages/i.test(g)),
+  &quot;the claim is demonstrated on rustc 1.96, not established for type systems in general&quot;);
+
+compiler.cleanup();
+say(&quot;&quot;);
+if (failures.length &gt; 0) {
+  say(`  ${failures.length} FAILED: ${failures.join(&quot; | &quot;)}`);
+  process.exitCode = 1;
+} else {
+  say(`  ${ran} checks passed - every row is a cargo build that really ran`);
+}
+</code></pre></details><details><summary>main.mjs</summary><pre><code>// Five ways to meet a Result, and what the compiler does about each.
+//
+//   node src/main.mjs            the table, built by really running cargo
+//   node src/main.mjs --strict   exit 1 if this deployment's lint setting has a gap
+import fs from &quot;node:fs&quot;;
+import path from &quot;node:path&quot;;
+import { fileURLToPath } from &quot;node:url&quot;;
+
+import * as report from &quot;./DMS/report.mjs&quot;;
+import * as compiler from &quot;./SMS/compiler.mjs&quot;;
+import * as bareCall from &quot;./TMS/routes/bare_call.mjs&quot;;
+import * as directAssign from &quot;./TMS/routes/direct_assign.mjs&quot;;
+import * as explicitDiscard from &quot;./TMS/routes/explicit_discard.mjs&quot;;
+import * as matchArm from &quot;./TMS/routes/match_arm.mjs&quot;;
+import * as unwrap from &quot;./TMS/routes/unwrap.mjs&quot;;
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const POLICY = JSON.parse(fs.readFileSync(path.join(here, &quot;SCL&quot;, &quot;policy.json&quot;), &quot;utf8&quot;));
+export const ROUTES = [bareCall, explicitDiscard, unwrap, directAssign, matchArm];
+const say = (line = &quot;&quot;) =&gt; process.stdout.write(`${line}\n`);
+
+function main(argv) {
+  if (!compiler.available()) {
+    say(&quot;\n  REFUSED: no rust toolchain on this machine. This entry measures a compiler and&quot;);
+    say(&quot;  cannot be simulated - it reports nothing rather than reporting a guess.&quot;);
+    return 1;
+  }
+  say(`\n  ${compiler.versions()}`);
+  say(`  ${POLICY.deployment}: ${POLICY.lint_setting}\n`);
+
+  const rows = ROUTES.map((route) =&gt; ({ route, ...compiler.build(route.BODY) }));
+  say(report.table(rows));
+  say(&quot;&quot;);
+  say(&quot;  The control is the last row: handling written out, compiles clean, no warning.&quot;);
+  say(&quot;  Without it, `let _ = ...` compiling clean would be consistent with everything&quot;);
+  say(&quot;  compiling clean, and would be evidence of nothing.\n&quot;);
+
+  const strict = ROUTES.map((route) =&gt; ({ route, ...compiler.build(route.BODY, { deny: true }) }));
+  say(`  and with the consumer's own ${POLICY.lint_setting}:`);
+  say(report.table(strict));
+  say(&quot;&quot;);
+
+  const discardPlain = rows.find((r) =&gt; r.route === explicitDiscard);
+  const discardStrict = strict.find((r) =&gt; r.route === explicitDiscard);
+  const assignRow = rows.find((r) =&gt; r.route === directAssign);
+  say(report.boundary(discardPlain, discardStrict, assignRow));
+
+  const gap = discardStrict.compiles === true;
+  if (argv.includes(&quot;--strict&quot;) &amp;&amp; gap) {
+    say(`\n  --strict: ${POLICY.what_this_cannot_reach}`);
+    compiler.cleanup();
+    return 1;
+  }
+  compiler.cleanup();
+  return 0;
+}
+
+process.exitCode = main(process.argv.slice(2));
+</code></pre></details></section></section>
+</main>
+<footer><span>分析內容 Apache-2.0；原專案授權見上方</span><a href="https://thisoneisneok.com/mssp">回到 MSSP 專區 ↗</a></footer>
+</body>
+</html>

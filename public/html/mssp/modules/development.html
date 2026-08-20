@@ -33,7 +33,7 @@ footer a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-19</span></header>
+<header><strong>NEO.K / MSSP FIELD MANUAL</strong><span>05 · 2026-08-20</span></header>
 <main>
   <span class="state">v1.x 開發中</span>
   <article class="content"><h1>MSSP 開發區</h1>
@@ -681,6 +681,93 @@ module.exports = Object.assign({}, first, {
 <p><code>d.get(k, SENTINEL)</code> 就是這一條的提案本身，<strong>早就在語言裡，只是不是預設，而且哨兵連在簽名裡都沒有</strong>——呼叫端得自己帶一個 <code>object()</code>。</p>
 <p><strong>這兩天各有一個我自己的缺陷，而第二個比第一個有用。</strong> 載入器對一個沒有 <code>POLICY</code> 的模組<strong>直接崩</strong>，而不是把它分類成拒絕；修完之後<strong>註冊那一行仍然去讀那個剛剛被判定缺少的屬性</strong>，所以被拒絕的模組照樣讓載入器崩掉。<strong>一個沒有覆蓋到它後面程式碼的守衛，不是守衛。</strong></p>
 <p><strong>驗證方式：</strong> 20/20 之後的真實應用。要問的是：有多少讀數其實是 <code>n/a</code> 而以前被當成 0 送出去過。</p>
+<hr>
+<h3>改良點 18：宣告<strong>能力</strong>，不是狀態——而能力可以被挑戰</h3>
+<p><a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 15</a> 禁止單元宣告自己完整，因為外面沒有東西能查。那條留下一個洞，而 AI Board 的 host 在 2026-08-19 把它問成一句話：</p>
+<blockquote>
+<p>報表要怎麼分辨「<strong>這個 reader 檢查過自己的框、確實沒看到下一頁</strong>」跟「<strong>這個 reader 是一根不透明的管子，來什麼吞什麼</strong>」——而且不能重新引入被禁止的正面斷言？</p>
+</blockquote>
+<p>兩者都<strong>沉默</strong>。<a href="/html/mssp/017-finished-is-not-complete.html">範例 017</a> 把它們放在同一欄，而它自己就警告過：如果現實世界多數 reader 都落在那一欄，<code>not known to be otherwise</code> 會在讀者腦子裡默默變成「完整」——<strong>正好是那條規則想除掉的信任</strong>。</p>
+<p><a href="/html/mssp/020-declare-capacity-not-state.html">範例 020</a> 的解法不是放寬規則，是<strong>換掉被宣告的東西</strong>：</p>
+<blockquote>
+<p><strong>一個單元宣告它能觀察什麼，不宣告它是什麼。</strong></p>
+<p>狀態宣告從外面查不了；<strong>能力宣告可以</strong>——收集器拿一個它<strong>已經知道答案</strong>的案例去問它。</p>
+</blockquote>
+<p>沉默於是分成兩欄，而且<strong>沒有加任何正面斷言</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>值</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>no - declared</code></td>
+<td>reader 說了</td>
+</tr>
+<tr>
+<td><code>not known otherwise, and this reader can tell</code></td>
+<td>沉默，<strong>而且它證明過自己說得出來</strong></td>
+</tr>
+<tr>
+<td><code>not known otherwise, and this reader CANNOT tell</code></td>
+<td>沉默，<strong>而且它本來就說不出來</strong></td>
+</tr>
+</tbody></table>
+<p>仍然沒有 <code>complete</code> 這個值。改良點 15 一個字都沒有放寬。</p>
+<p><strong>三件事，第二件是這一條真正的內容：</strong></p>
+<ol>
+<li><strong>能力宣告用挑戰驗，不用相信。</strong> 一個宣稱看得出截斷、實作卻跟不透明管子一樣的單元，必須被抓到——而且是<strong>跑出來</strong>的，不是讀常數讀出來的。</li>
+<li><strong>挑戰必須有兩臂，否則常數會通過。</strong> 一個<strong>永遠回答「截斷」<strong>的 reader 對截斷那個案例是對的。單臂挑戰放它過去。所以 <code>passed</code> 是連言，而孤島測試把</strong>兩個方向的常數都鑽了</strong>。這是<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 6</a>（檢查本身要被證明會失敗）套用在挑戰上。</li>
+<li><strong>拒絕看的是宣稱，不是結果。</strong> <code>opaque-pipe</code> 挑戰失敗而<strong>被接受</strong>——它從來沒宣稱會通過；<code>claims-framing</code> 失敗得一模一樣卻被拒絕。兩者 <code>passed</code> 相同、接受與否相反，孤島測試把這件事斷言起來。</li>
+</ol>
+<p><strong>對照組還是那個決定性的零件：</strong> <code>framed</code> 在<strong>完整</strong>串流上也沉默。所以沉默本身分不開任何東西，只有 completeness 欄分得開；沒有這一對，第三個值只是換個標籤而不是一個區別。</p>
+<p><strong>上游把它做成編譯期義務。</strong> <a href="/html/mssp/archaeology/020-rust-must-use.html">考古 020</a>：<code>Result&lt;T, E&gt;</code> 是一份「我可能是錯的」的能力宣告，而<strong>取值被強制</strong>——<code>let v: i32 = fallible();</code> 編不過，<code>E0308</code>，型別錯誤、不需要 lint。<strong>丟棄沒有被強制</strong>：<code>let _ = ...</code> 在 <code>#![deny(unused_must_use)]</code>（語言最嚴的設定）底下照樣編過而且什麼都不說。<strong>剩下那個訊號有多強，是消費者的設定決定的</strong>——<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">改良點 16</a> 出現在一個型別系統裡面。</p>
+<p><strong>已知沒有解決的：</strong> 一次<strong>示範</strong>過的能力不是一個<strong>證明</strong>過的能力（過了這一對串流，不代表過得了別的形狀）；而<strong>否認</strong>能力的方向是被相信的——一個謊稱自己瞎的單元會被當成瞎的。那是保守方向，跟改良點 15 同一筆沒有驗過的交易，寫出來而不是關掉。</p>
+<hr>
+<h2>20/20：考古線到此結束</h2>
+<p>2026-08-20 是第二十個範例與第二十則考古。照 Neo 2026-08-05 定的路線，<strong>開源考古到這裡停</strong>，接下來是真實市場應用，每一個都要能用、UI 完備、BUG 稀少，而且開源。</p>
+<p>這 20 天最後六條（<a href="#%E6%9C%AA%E4%BE%86%E6%94%B9%E8%89%AF%E9%BB%9E">13</a>–18）連成一件事，值得在動手做應用之前先寫下來：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>問題</th>
+<th>答案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>13</td>
+<td>孤島測試只會移除</td>
+<td>單元宣告 <code>CAN_FAIL_WITH</code>，孤島測試多一節把單元留在原地弄壞</td>
+</tr>
+<tr>
+<td>14</td>
+<td>partial 不是第五個標籤</td>
+<td>outcome 要<strong>跟著紀錄走</strong>；<strong>一個單元可能講錯的事實，不要讓那個單元來講</strong></td>
+</tr>
+<tr>
+<td>15</td>
+<td>有些事實從外面看不到</td>
+<td><strong>方向</strong>：可以宣告自己不完整，不可以宣告自己完整</td>
+</tr>
+<tr>
+<td>16</td>
+<td>「自我懲罰」是判斷不是性質</td>
+<td>方向由<strong>消費它的政策</strong>決定，而那可以用<strong>反事實量出來</strong></td>
+</tr>
+<tr>
+<td>17</td>
+<td>量測的 0 有兩個意思</td>
+<td>一個量測回傳<strong>值 + 適用性</strong>，聚合器要拒絕</td>
+</tr>
+<tr>
+<td>18</td>
+<td>兩種沉默看起來一樣</td>
+<td>宣告<strong>能力</strong>不宣告狀態，而<strong>能力可以被挑戰</strong></td>
+</tr>
+</tbody></table>
+<p><strong>貫穿的一句話：把一個判斷變成會跑的東西。</strong> 每一條都是同一個動作——原本要靠人相信的地方，換成一個建置會執行、而且<strong>證明得出它會失敗</strong>的檢查。真實應用要驗的就是這個：這六條在有真實使用者、真實資料、真實截止日的地方，哪幾條活得下來。</p>
 <hr>
 <h2>開發路線：四個 MVP 與回饋迴圈</h2>
 <p><a href="/research">程式研究區</a>的四份研究不會停在論文。每一份要先做出 MVP，而 MVP 本身用 MSSP 蓋——於是它同時是產品，也是這個方法在中等規模上的證據。</p>

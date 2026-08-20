@@ -7,7 +7,7 @@ summary_zh: 每天一則。範例、考古與 MVP 打回來的東西寫在這裡
 summary_en: One entry a day. What the examples, the archaeology and the MVPs sent back, newest first. The 1.x changes get picked from here.
 state_zh: 每日進行
 state_en: Daily
-updated: 2026-08-19
+updated: 2026-08-20
 ---
 
 # 開發日誌
@@ -17,6 +17,60 @@ updated: 2026-08-19
 兩者分開，是因為結論會被改寫，而過程不會。一條缺點從清單上消失時，應該還能查到它是怎麼被發現、又是被什麼解掉的。
 
 每則的形式固定：**發生了什麼 → 怎麼發現的 → 對 MSSP 的意義**。第三段可以是「沒有意義」，那也要寫。
+
+---
+
+## 2026-08-20
+
+### 發生了什麼
+
+[範例 020](/html/mssp/020-declare-capacity-not-state.html) 與[考古 020](/html/mssp/archaeology/020-rust-must-use.html)。**20/20——考古線到此結束。**
+
+題目不是我挑的，是 AI Board 的 host 在 08-19 問的，而且它是[改良點 13-17](/html/mssp/modules/development.html) 唯一沒解掉的那個：**兩個沉默的 reader，一個檢查過自己的框、一個是不透明管子——報表怎麼分辨，而且不能重新引入被禁止的正面斷言？**
+
+### 怎麼發現的
+
+解法是**換掉被宣告的東西**。狀態宣告從外面查不了；**能力宣告可以**，因為收集器拿得出一個它已經知道答案的案例去問。
+
+而做的時候撞到的那件事，比結論本身有用：**挑戰必須有兩臂。**
+
+```text
+  PASS  a reader that always says truncated IS right about the truncated stream
+  PASS  and wrong about the complete one
+  PASS  so a one-armed challenge would have passed it
+  PASS  and the two-armed one does not
+```
+
+**一個永遠回答「截斷」的 reader，對截斷那個案例是對的。** 單臂挑戰會放它過去。這是改良點 6 套用在挑戰上——**一個驗證別人的機制，自己也要被證明會失敗。**
+
+上游把同一句話做成編譯期義務：`let v: i32 = fallible();` **編不過**（E0308，型別錯誤、不需要 lint），而 `let _ = fallible();` 在 `deny(unused_must_use)` 底下**照樣編過而且什麼都不說**。**取值被強制，丟棄沒有。**
+
+### 這一輪第一個「保持綠色」的變異，而它推翻的是我自己
+
+考古 020 的第一版**每個編得過的寫法都報「沒有警告」**。查出來是儀器：**cargo 的診斷寫在 stderr，而且警告時 exit 0**，`execFileSync` 的回傳值只有 stdout。這個是真的，修了。
+
+**但我在旁邊還寫了第二個原因，而它是我編的。** 我寫「共用一個 package 名會讓 cargo 用快取單元回答，於是後面的探針全都安靜」，還把它寫進原始碼註解跟 FMS。**把那個缺陷加回去的變異保持綠色**——20 天裡第一次。
+
+去量才知道為什麼：**快取命中的建置會把診斷重播出來**，那個危害根本不存在。
+
+```text
+  PASS  building the same directory twice really does hit the cache the second time - first Compiling, second Finished
+  PASS  and the cached build REPLAYS the warning rather than going quiet
+```
+
+**而寫那支「量快取」的探針的時候，我又犯了第三次**：第一版每次都重寫 `main.rs`，檔案 mtime 一直變、cargo 永遠重編，所以那支探針從來沒看過一次快取命中——**一支用來量快取的儀器，被自己弄成永遠量不到快取。**
+
+三件事的順序值得記下來：**一個真缺陷 → 一個我編的缺陷 → 一支量不到自己主題的儀器。** 中間那個只有靠「變異沒有變紅」才會被發現，而如果我沒有習慣把每個宣稱的缺陷都拿去鑽，它會以一句聽起來很專業的註解的形式，永久留在已發佈的原始碼裡。
+
+### 對 MSSP 的意義
+
+[改良點 18](/html/mssp/modules/development.html) 進開發區，`candidate`：**宣告能力，不是狀態；能力用挑戰驗；挑戰要兩臂；拒絕看的是宣稱不是結果。** 改良點 15 一個字都沒有放寬——仍然沒有 `complete` 這個值。
+
+開發區也加了一節 **20/20 收尾**，把 13-18 六條連起來：貫穿的動作只有一個，**把一個判斷變成會跑的東西**。
+
+**接下來換線。** 照 Neo 2026-08-05 定的路線，開源考古停在這裡，開始做真實市場應用——而那正是這六條要被檢驗的地方：有真實使用者、真實資料、真實截止日的時候，哪幾條活得下來。
+
+GPT 額度回來了，這一輪的六條會一次交給 Metron 與 Pragma 交叉審查，包含他們完全沒看過的 13-18。
 
 ---
 
