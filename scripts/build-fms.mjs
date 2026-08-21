@@ -134,7 +134,8 @@ if (process.argv.includes("--digests")) {
 const decisions = [];
 for (const name of ACTORS.filter((n) => branches[n])) {
   const seen = new Set();
-  for (const record of branches[name].decisions ?? []) {
+  const ownerDecisions = branches[name].decisions ?? [];
+  for (const [decisionIndex, record] of ownerDecisions.entries()) {
     const reasons = [];
     if (!record.id) reasons.push("a decision needs an id");
     else if (seen.has(record.id)) reasons.push(`duplicate decision id "${record.id}" in this owner's scope`);
@@ -146,13 +147,17 @@ for (const name of ACTORS.filter((n) => branches[n])) {
       else if (digest(held) !== record.digest) reasons.push("the claim has changed since it was attested");
       if (record.core_revision !== coreRevision) reasons.push("attested against a different core revision");
     } else if (record.kind === "withdraw") {
-      const target = (branches[name].decisions ?? [])
+      // A withdrawal is an append-only event over an earlier act. Resolving
+      // against the whole array would let a record withdraw a future decision.
+      const target = ownerDecisions.slice(0, decisionIndex)
         .find((other) => other.id === record.target && other.kind === "attest");
       if (!target) reasons.push(`withdraw targets "${record.target}", which is not an attestation in this owner's own file`);
     } else {
       reasons.push(`unknown decision kind "${record.kind}"`);
     }
-    decisions.push({ by: name, ...record, valid: reasons.length === 0, reasons });
+    // `by` comes from the owner file. A record must not be able to override it
+    // with a second, self-declared identity source.
+    decisions.push({ ...record, by: name, valid: reasons.length === 0, reasons });
   }
 }
 
@@ -162,9 +167,32 @@ const attestations = decisions.filter((d) => d.kind === "attest");
 
 // An owner backs a claim when they hold a valid attestation for that exact
 // digest which they have not withdrawn.
-const backing = (id, expected) => ACTORS.filter((name) =>
+const backing = (id, expected, expectedCoreRevision) => ACTORS.filter((name) =>
   attestations.some((a) => a.by === name && a.claim === id && a.valid
-    && !withdrawn.has(`${name}:${a.id}`) && (!expected || a.digest === expected)));
+    && !withdrawn.has(`${name}:${a.id}`)
+    && (!expected || a.digest === expected)
+    && (!expectedCoreRevision || a.core_revision === expectedCoreRevision)));
+
+const replacementRef = (decision) => decision.replaces_activation_id ?? null;
+const activationAttestations = (id, expected, replacesActivationId) =>
+  Object.fromEntries(ACTORS.map((name) => {
+    const matching = attestations.filter((a) => a.by === name && a.claim === id && a.valid
+      && a.digest === expected && !withdrawn.has(`${name}:${a.id}`)
+      && replacementRef(a) === (replacesActivationId ?? null));
+    return [name, matching.at(-1) ?? null];
+  }));
+
+const activationFacts = (entry) => ({
+  claim: entry.claim,
+  digest: entry.digest,
+  core_revision: entry.core_revision,
+  body: entry.body,
+  decision_refs: entry.decision_refs,
+  ...(entry.replaces_activation_id
+    ? { replaces_activation_id: entry.replaces_activation_id }
+    : {}),
+});
+const activationId = (entry) => `activation-${digest(activationFacts(entry))}`;
 
 // --- the effective trunk: append-only, superseded rather than deleted -------
 const ledgerPath = path.join(fmsDir, "effective.json");
@@ -176,21 +204,66 @@ ledger._note = "Genuinely append-only as of 2026-08-13: entries carry ONLY the i
   + "entries was a name disagreeing with the behaviour. 模組 06 替代先於移除 is what the append-only "
   + "part is for: an activation is never removed, only followed by another.";
 
+// A replacement declaration is validated before it can contribute backing.
+// Historical decisions referenced by an existing activation keep their
+// original target; a new, unreferenced decision may only replace the current
+// activation for the same claim.
+const activationById = new Map(ledger.entries
+  .filter((entry) => entry.activation_id)
+  .map((entry) => [entry.activation_id, entry]));
+const latestActivationByClaim = new Map();
+for (const entry of ledger.entries) latestActivationByClaim.set(entry.claim, entry);
+const referencedDecisionIds = new Set(ledger.entries.flatMap((entry) =>
+  Object.entries(entry.decision_refs ?? {}).map(([name, id]) => `${name}:${id}`)));
+const invalidateDecision = (decision, reason) => {
+  decision.reasons.push(reason);
+  decision.valid = false;
+};
+for (const decision of attestations) {
+  const ref = replacementRef(decision);
+  const isHistorical = referencedDecisionIds.has(`${decision.by}:${decision.id}`);
+  const latest = latestActivationByClaim.get(decision.claim);
+  if (ref) {
+    const target = activationById.get(ref);
+    if (!target) {
+      invalidateDecision(decision, `replacement target "${ref}" does not exist`);
+    } else if (target.claim !== decision.claim) {
+      invalidateDecision(decision, `replacement target "${ref}" belongs to claim "${target.claim}"`);
+    } else if (!isHistorical && latest?.activation_id !== ref) {
+      invalidateDecision(decision, `replacement target "${ref}" has already been replaced`);
+    }
+  } else if (!isHistorical && latest && latest.digest !== decision.digest) {
+    invalidateDecision(decision,
+      `replacing live activation "${latest.activation_id}" requires replaces_activation_id`);
+  }
+}
+
 for (const claim of consensusCandidates) {
-  const attesters = backing(claim.id, claim.digest);
-  if (attesters.length !== ACTORS.length) continue;
   // The live entry for a claim is derived from order, not from a flag written
   // back into earlier entries.
   const previous = ledger.entries.filter((e) => e.claim === claim.id).at(-1);
-  if (previous && previous.digest === claim.digest) continue;
+  if (previous && previous.digest === claim.digest
+      && previous.core_revision === coreRevision) continue;
+  const replacesActivationId = previous?.activation_id ?? null;
+  const activationDecisions = activationAttestations(
+    claim.id, claim.digest, replacesActivationId);
+  if (ACTORS.some((name) => !activationDecisions[name])) continue;
   // The adopted body is stored, not just its digest. Pragma injected an entry
   // that was never proposed and carried no attestations, and the builder called
   // it effective — so an entry must now carry what was adopted and hash to it.
   // It also makes the adopted version recoverable after every branch has moved
   // on, which a digest alone could not do.
-  const entry = { claim: claim.id, digest: claim.digest, core_revision: coreRevision,
-                  attested_by: attesters, body: branches[attesters[0]].proposals[claim.id],
-                  first_effective_build: process.env.FMS_BUILD || "unstamped" };
+  const entry = {
+    claim: claim.id,
+    digest: claim.digest,
+    core_revision: coreRevision,
+    body: branches[ACTORS[0]].proposals[claim.id],
+    decision_refs: Object.fromEntries(ACTORS.map((name) =>
+      [name, activationDecisions[name].id])),
+    ...(replacesActivationId ? { replaces_activation_id: replacesActivationId } : {}),
+    first_effective_build: process.env.FMS_BUILD || "unstamped",
+  };
+  entry.activation_id = activationId(entry);
   ledger.entries.push(entry);
 }
 
@@ -201,12 +274,19 @@ for (const claim of consensusCandidates) {
 // and was published as effective with exit 0.
 // Nothing in this loop writes to an entry. Derived state goes to the projection.
 const derived = [];
+const activationIds = new Set();
+const previousByClaim = new Map();
 for (const [index, entry] of ledger.entries.entries()) {
-  const later = ledger.entries.some((other, otherIndex) =>
+  const later = ledger.entries.find((other, otherIndex) =>
     otherIndex > index && other.claim === entry.claim);
-  const backers = backing(entry.claim, entry.digest);
+  const backers = backing(entry.claim, entry.digest, entry.core_revision);
   derived.push({
+    activation_id: entry.activation_id,
     claim: entry.claim, digest: entry.digest,
+    core_revision: entry.core_revision,
+    replaces_activation_id: entry.replaces_activation_id ?? null,
+    replaced_by_activation_id: later?.activation_id ?? null,
+    decision_refs: entry.decision_refs,
     status: later ? "superseded" : "live",
     currently_backed_by: backers,
     // Metron and Pragma's second axis: history (live/superseded) is not the same
@@ -220,9 +300,55 @@ for (const [index, entry] of ledger.entries.entries()) {
   } else if (digest(entry.body) !== entry.digest) {
     fail("effective.json", `entry "${entry.claim}" does not hash to its own digest — injected or corrupted`);
   }
-  if (!Array.isArray(entry.attested_by) || entry.attested_by.length !== ACTORS.length) {
-    fail("effective.json", `entry "${entry.claim}" was activated by ${entry.attested_by?.length ?? 0} owner(s), not ${ACTORS.length}`);
+  if (!entry.activation_id) {
+    fail("effective.json", `entry "${entry.claim}" has no activation_id`);
+  } else {
+    if (activationIds.has(entry.activation_id)) {
+      fail("effective.json", `activation_id "${entry.activation_id}" occurs more than once`);
+    }
+    activationIds.add(entry.activation_id);
+    const expectedActivationId = activationId(entry);
+    if (entry.activation_id !== expectedActivationId) {
+      fail("effective.json", `entry "${entry.claim}" has activation_id "${entry.activation_id}" but its immutable facts derive "${expectedActivationId}"`);
+    }
   }
+
+  const refKeys = entry.decision_refs && typeof entry.decision_refs === "object"
+    && !Array.isArray(entry.decision_refs)
+    ? Object.keys(entry.decision_refs).sort()
+    : [];
+  if (JSON.stringify(refKeys) !== JSON.stringify([...ACTORS].sort())) {
+    fail("effective.json", `entry "${entry.claim}" must reference exactly one decision from each actor (${ACTORS.join(", ")})`);
+  } else {
+    for (const name of ACTORS) {
+      const ref = entry.decision_refs[name];
+      const matching = decisions.filter((decision) =>
+        decision.by === name && decision.id === ref);
+      if (matching.length !== 1) {
+        fail("effective.json", `entry "${entry.claim}" references ${name} decision "${ref}", which resolves ${matching.length} time(s)`);
+        continue;
+      }
+      const decision = matching[0];
+      if (decision.kind !== "attest") {
+        fail("effective.json", `entry "${entry.claim}" references ${name} decision "${ref}", which is not an attestation`);
+      }
+      if (decision.claim !== entry.claim || decision.digest !== entry.digest
+          || decision.core_revision !== entry.core_revision) {
+        fail("effective.json", `entry "${entry.claim}" references ${name} decision "${ref}" with a different claim, digest, or core revision`);
+      }
+      if (replacementRef(decision) !== (entry.replaces_activation_id ?? null)) {
+        fail("effective.json", `entry "${entry.claim}" references ${name} decision "${ref}" with a different replacement target`);
+      }
+    }
+  }
+
+  const previous = previousByClaim.get(entry.claim);
+  if (!previous && entry.replaces_activation_id) {
+    fail("effective.json", `first activation for "${entry.claim}" cannot replace "${entry.replaces_activation_id}"`);
+  } else if (previous && entry.replaces_activation_id !== previous.activation_id) {
+    fail("effective.json", `activation "${entry.activation_id}" must replace the immediately previous activation "${previous.activation_id}" for claim "${entry.claim}"`);
+  }
+  previousByClaim.set(entry.claim, entry);
 }
 
 if (problems.length) {
@@ -242,8 +368,10 @@ const projection = {
   core_revision: coreRevision,
   actors: ACTORS,
   consensus_candidates: consensusCandidates.map((c) => ({ id: c.id, digest: c.digest })),
-  decisions: decisions.map(({ by, id, kind, claim, target, valid, reasons }) =>
-    ({ by, id, kind, claim, target, valid, reasons,
+  decisions: decisions.map(({ by, id, kind, claim, target, digest: decisionDigest,
+    core_revision: decisionCoreRevision, replaces_activation_id, valid, reasons }) =>
+    ({ by, id, kind, claim, target, digest: decisionDigest,
+       core_revision: decisionCoreRevision, replaces_activation_id, valid, reasons,
        withdrawn: kind === "attest" && withdrawn.has(`${by}:${id}`) })),
   history: derived,
   effective_trunk: effective,
@@ -302,7 +430,7 @@ console.log(`Distributed FMS: core ${coreRevision}, ${ACTORS.length} actors, `
   + `${attestations.filter((a) => a.valid).length} valid attestation(s), `
   + `${effective.length} effective, ${projection.divergent.length} divergent.`);
 for (const claim of consensusCandidates) {
-  console.log(`  candidate  ${claim.id}  ${claim.digest}  backed by ${backing(claim.id, claim.digest).join(", ") || "nobody"}`);
+  console.log(`  candidate  ${claim.id}  ${claim.digest}  backed by ${backing(claim.id, claim.digest, coreRevision).join(", ") || "nobody"}`);
 }
 for (const claim of projection.divergent) {
   console.log(`  divergent  ${claim.id}  held by ${claim.held_by.join(", ") || "nobody"}`
@@ -312,5 +440,6 @@ for (const claim of projection.divergent) {
 // another owner's record was computed as invalid and never printed, which is a
 // check that can fail and that nobody can watch fail.
 for (const record of decisions.filter((d) => !d.valid)) {
-  console.log(`  INVALID    ${record.by} on ${record.claim}: ${record.reasons.join("; ")}`);
+  const subject = record.claim ?? record.target ?? record.id ?? "unnamed decision";
+  console.log(`  INVALID    ${record.by} on ${subject}: ${record.reasons.join("; ")}`);
 }
