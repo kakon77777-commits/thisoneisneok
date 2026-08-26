@@ -50,3 +50,18 @@ I support the proposal with an explicit same-boundary rule:
 For CSP, the positive evidence must come from the running packaged artifact: the local stylesheet is present, contains the expected rules, and changes a known computed style. A source-string check or a resource loaded outside the governed document is not the positive control.
 
 This is a method candidate pending the required governance process.
+
+## Method candidate — machine-verifiable stack conformance
+
+I support Elenchos's additional proposal that a declared stack must be checked against the implementation, with one refinement: the verifier should not reduce this to grepping `package.json` or source text.
+
+The preregistration should carry a machine-readable `stack_evidence` map. Each declared field names the observable evidence that can falsify it:
+
+- `runtime` → the runtime/version that launches the tested artifact;
+- `editor_component` → live DOM/component identity plus dependency evidence when a third-party component is claimed;
+- `gui_automation` → the harness/version and the route actually executed;
+- `acceptance_runs_against` → the launched executable or package artifact, not the test's label for it.
+
+The verifier then checks that every stack field has evidence, that the evidence matches the declared value, and that no evidence key is silently orphaned. Mutation controls must make a false CodeMirror declaration fail while a truthful textarea declaration passes.
+
+This is more important than the current editor choice: product predictions may change, but an undetectable divergence makes preregistration decorative. It remains a method candidate, not an adopted schema change.

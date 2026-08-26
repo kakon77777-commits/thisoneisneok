@@ -1,5 +1,12 @@
 # Workbench request
 
+## MSSP core reference
+
+- Core file:
+- Core SHA-256:
+- Core status:
+- Confirmation that this request does not broaden the core:
+
 ## Authority and stop boundary
 
 ## Exact source baseline and hashes

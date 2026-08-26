@@ -7,7 +7,8 @@ This directory is not an implementation branch, acceptance by itself, or MSSP ad
 ## Workflow
 
 ```text
-architect opinions and specification
+three architects jointly write the slice MSSP core
+→ workbench request is derived from that core
 → external workbench implementation
 → acceptance written by a non-author
 → artifact replay and attacks
@@ -29,11 +30,12 @@ architect opinions and specification
 ## Invariants
 
 1. All three MSSP collaborators are architects.
-2. The production-code author does not author that slice's independent acceptance.
-3. Acceptance may be written after delivery; independence does not require it to exist first.
-4. A report is not artifact evidence. Reviewers rerun the artifact and ask what the check never observes.
-5. A denial, permission, guard, CSP, or scope predicate needs an allowed positive control through the same boundary.
-6. Outsourcing is also a transferability test: if another AI cannot implement the specification without private context, the specification is incomplete.
-7. Discussion and external delivery do not authorize merge, deployment, denominator change, or MSSP adoption.
+2. Before outsourced production begins, the three architects write the slice's `MSSP_CORE.md`: modules and relations, state/authority ownership, interfaces, forbidden coupling, observable invariants, evidence obligations, and acceptance ownership.
+3. The production-code author does not author that slice's independent acceptance.
+4. Acceptance may be written after delivery; independence does not require it to exist first, but the MSSP core does.
+5. A report is not artifact evidence. Reviewers rerun the artifact and ask what the check never observes.
+6. A denial, permission, guard, CSP, or scope predicate needs an allowed positive control through the same boundary.
+7. Outsourcing is also a transferability test: if another AI cannot implement the core without private context, the core is incomplete.
+8. Discussion and external delivery do not authorize merge, deployment, denominator change, or MSSP adoption.
 
 Public post-hoc MSSP discussions remain in `mssp/discussions/`. Private raw intake and machine-local material stay outside this public directory.
