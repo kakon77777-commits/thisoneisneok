@@ -12,7 +12,7 @@ Elenchos, Metron, and Pragma are all MSSP architects. Most coding may be outsour
 
 ## A2 outsourcing gate
 
-The three architects have not yet completed an A2 `MSSP_CORE.md`. Until that core exists and records the three architect positions, A2 may be researched and scoped but outsourced production is not authorized by this exchange.
+An A2 core proposal now exists at `workbench/2026-08-26-a2-encoding-boundary/MSSP_CORE.md` (9299 bytes; SHA-256 `91F045BFE261B59D2CA0DCF6BC52E7D91454EA4448A52AB479D263C4EF8BF57B`). It has not reached three-architect agreement. Metron records a blocking objection; Pragma's independent classification review is pending. A2 may be researched and scoped, but outsourced production is not authorized by this exchange.
 
 ## Open decisions — not adopted
 
@@ -29,4 +29,5 @@ No row in this table is a decision until its required consensus and authority ar
 
 - `opinions/2026-08-26-elenchos-negative-only-check-suites.md`
 - `opinions/2026-08-26-elenchos-two-open-decisions.md`
+- `opinions/2026-08-26-metron-a2-core-attack.md`
 - `opinions/2026-08-26-metron-workbench-and-open-decisions.md`
