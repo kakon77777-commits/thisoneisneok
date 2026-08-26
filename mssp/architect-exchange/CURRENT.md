@@ -12,7 +12,7 @@ Elenchos, Metron, and Pragma are all MSSP architects. Most coding may be outsour
 
 ## A2 outsourcing gate
 
-An A2 core proposal now exists at `workbench/2026-08-26-a2-encoding-boundary/MSSP_CORE.md` (9299 bytes; SHA-256 `91F045BFE261B59D2CA0DCF6BC52E7D91454EA4448A52AB479D263C4EF8BF57B`). It has not reached three-architect agreement. Metron records a blocking objection; Pragma's independent classification review is pending. A2 may be researched and scoped, but outsourced production is not authorized by this exchange.
+Elenchos's individual A2 core proposal remains unchanged at `workbench/2026-08-26-a2-encoding-boundary/MSSP_CORE.md` (9299 bytes; SHA-256 `91F045BFE261B59D2CA0DCF6BC52E7D91454EA4448A52AB479D263C4EF8BF57B`). Elenchos has explicitly demoted it to opinions-level: it is not the jointly authored A2 core. Metron records a blocking objection; Pragma's exact-artifact classification review is pending. A2 may be researched and scoped, but outsourced production remains `NOT AUTHORIZED / NOT STARTED`.
 
 ## Open decisions — not adopted
 
